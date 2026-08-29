@@ -172,3 +172,97 @@ export interface ProgresoProps {
   sinCambioConfirmado: FilaDato[];
   queSigue: string | null;
 }
+
+// ── UX07 · Activación de Modo Examen ─────────────────────────────────────────
+
+/**
+ * Los estados visibles de `UX07`, de `product-spec-source.md` §VI.7 §15.
+ *
+ * **No son una máquina paralela de UI.** Describen una situación sobre
+ * entidades y lecturas que ya existen. El spec es explícito: *"No se usan
+ * `DRAFT`, `PENDING_ACTIVATION`, `DUPLICATE`, `CANCELLED_ASSESSMENT` ni otros
+ * estados técnicos inventados."*
+ */
+export type EstadoActivacion =
+  | "RECOMENDACION"
+  | "REVISION_MANUAL"
+  | "SELECCION"
+  | "SIN_ASSESSMENT"
+  | "FALTAN_DATOS"
+  | "FECHA_DESCONOCIDA"
+  | "MODALIDAD_DESCONOCIDA"
+  | "FUERA_DE_P0"
+  | "YA_ACTIVA"
+  | "CAMBIO_DE_FECHA"
+  | "CANCELADA"
+  | "PASADA"
+  | "CONTRADICTORIOS"
+  | "NO_DISPONIBLE"
+  | "VERIFICANDO"
+  | "HANDOFF_NO_DISPONIBLE";
+
+/**
+ * Un dato de la evaluación con su procedencia.
+ *
+ * `provenance` llega **ya traducido a copy de producto** (`VI.7` §18.2):
+ * *"Cátedra · oficial"*, *"Reportado por vos · sin verificar"*, *"Dato en
+ * revisión · hay versiones distintas"*. Los enums técnicos nunca son copy
+ * visible (AGENTS.md §2.6), y ninguna capa eleva la verificación.
+ *
+ * `null` ⇒ se omite. Un dato sin provenance conocida no dice *"oficial"*.
+ */
+export interface DatoDeEvaluacion {
+  label: string;
+  valor: string;
+  provenance: string | null;
+  /** Valor anterior, sólo cuando el owner expone el cambio (`VI.7` §16.16). */
+  anterior: string | null;
+  /** Marca visual de dato en disputa. El owner resuelve; la UI no elige. */
+  enRevision?: boolean;
+}
+
+/** Una evaluación elegible dentro del mismo `CourseEnrollment` (`VI.7` §16.14). */
+export interface OpcionDeEvaluacion {
+  id: string;
+  evaluacion: string;
+  datos: DatoDeEvaluacion[];
+  seleccionada: boolean;
+}
+
+export interface ActivacionExamenProps {
+  estado: EstadoActivacion;
+  /** El `CourseEnrollment` de origen. Materia y comisión NO son selectores. */
+  materia: string;
+  comision: string | null;
+  /** Título del microcopy de `VI.7` §22.1, resuelto por estado. */
+  titulo: string;
+  /** `null` cuando todavía no hay una Assessment inequívoca. */
+  evaluacion: string | null;
+  datos: DatoDeEvaluacion[];
+  /**
+   * Por qué apareció. Sólo la razón **recibida**: la vista no calcula
+   * elegibilidad ni prioridad, y no convierte proximidad en hecho.
+   */
+  razonAparicion: string | null;
+  /** Lista corta de faltantes (`VI.7` §16.6). Vacía ⇒ no se muestra. */
+  faltantes: readonly string[];
+  /** Aviso de estado vacío, desconocido, contradictorio o de error (`§25`). */
+  aviso: string | null;
+  /** Sólo en `SELECCION`. La lista conserva el orden recibido; no rankea. */
+  opciones: readonly OpcionDeEvaluacion[] | null;
+  // ── Columna secundaria ────────────────────────────────────────────────────
+  queCambia: readonly string[];
+  queNoCambia: readonly string[];
+  /** Qué ocurrirá después. `null` ⇒ se omite: no se promete un destino. */
+  despues: string | null;
+  // ── Decisión ──────────────────────────────────────────────────────────────
+  /**
+   * `null` ⇒ **no hay CTA primaria y no se renderiza ninguna**. `VI.7` §21.3 es
+   * explícito: cuando ya existe `ACTIVE`, el estado reemplaza el CTA de
+   * activación y *"no se conserva un botón Activar deshabilitado que sugiera
+   * una segunda operación"*.
+   */
+  ctaPrimaria: { texto: string; habilitada: boolean } | null;
+  /** El retorno seguro. Vive en la columna secundaria, nunca como primaria. */
+  ctaRetorno: string;
+}

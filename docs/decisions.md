@@ -61,6 +61,8 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-012](#adr-012) | Alcance de Track A: Operador e Institución se difieren | `ACCEPTED` | — |
 | [ADR-013](#adr-013) | Contenido duplicado en `pending-decisions-annex.md` | `ACCEPTED` | — |
 | [ADR-014](#adr-014) | Desktop-first y contrato del primer viewport | `ACCEPTED` | — |
+| [ADR-015](#adr-015) | Dónde vive la CTA principal en desktop | `ACCEPTED` | — |
+| [ADR-016](#adr-016) | Ninguna CTA del registro lleva a `UX07` | `PENDING` | Golden Path recorrible (0.8) |
 
 ---
 
@@ -818,3 +820,115 @@ lateral no contiene CTAs competidoras se conservan tal cual.
 - El criterio de Done de la Fase 0 *"el test de comprensión de 10 segundos ejecutado con personas
   reales"* se corre **en desktop**.
 - **No afecta a la Etapa 0.1.** El scaffold no depende del breakpoint.
+
+---
+
+<a id="adr-015"></a>
+## ADR-015 — Dónde vive la CTA principal en desktop
+
+**Estado:** `ACCEPTED` · 29 ago 2026
+**Toca:** `design-system.md`, `design-system-capturas.md`.
+**Resuelve:** [`design-system-capturas.md`](design-system-capturas.md) §12.7.
+**Depende de:** [ADR-014](#adr-014), que lo desbloqueó sin decidirlo.
+
+### Contexto
+
+`design-system-capturas.md` §12.7 dejó `PENDING` la posición de la CTA principal en desktop, con dos
+candidatas:
+
+- **a ancho completo al final del primer viewport**, como dice `design-system.md` §6.1 — que era una
+  definición móvil;
+- **píldora negra arriba a la derecha**, con ancho de contenido, como se observó en las capturas.
+
+La Etapa 0.4 (`UX07`) es la primera pantalla que necesita la respuesta.
+
+**El hallazgo.** La pregunta estaba mal planteada, no sin responder. §12.7 razonó desde las capturas
+anonimizadas, que son de **otro producto**. La spec de Achieve tiene wireframes desktop propios y
+normativos para `UX07`, y ya contestan:
+
+> **`product-spec-source.md` §VI.7 §21.2 — Jerarquía visual · Desktop**
+> *"Columna principal: identidad, datos, razón y decisión. Columna secundaria: efecto real,
+> continuidad de Cursado y provenance expandida. **Una sola CTA primaria.** … El ancho adicional no
+> agrega protocolo, analytics ni cronograma."*
+
+Y §24.1 la dibuja: la CTA ocupa **el ancho completo de la columna principal, al final de ella**, con
+el retorno seguro en la columna secundaria.
+
+[`AGENTS.md`](../AGENTS.md) §8 fija el orden de precedencia: `product-spec-source.md` está **por
+encima** de `design-system.md` y de cualquier extracción visual.
+
+### Decisión
+
+**La CTA principal va a ancho completo al final de la columna principal**, en un layout de dos
+columnas: principal con identidad, datos, razón y decisión; secundaria con efecto real, continuidad y
+provenance expandida. **Una sola CTA primaria por pantalla y por estado.** El retorno seguro vive en
+la columna secundaria y **nunca se estiliza como primaria**.
+
+La píldora negra arriba a la derecha **se descarta**: pertenece al producto de las capturas, no a
+Achieve.
+
+**Regla general que este ADR fija, más allá de `UX07`:** cuando `design-system-capturas.md` y una
+spec `VI.*` describan lo mismo, **manda la spec**. Las capturas aportan vocabulario visual, no
+contrato de layout.
+
+### Consecuencias
+
+- `design-system.md` §6.2 deja de remitir a §12.7 como `PENDING` y describe el layout de dos
+  columnas con la CTA al final de la principal.
+- `design-system-capturas.md` §12.7 pasa a **`RESUELTO por ADR-015`**.
+- **La Fase 0 se queda sin decisiones abiertas.** §12.7 era la última.
+- Las etapas 0.5 y 0.6 no vuelven a preguntarlo: `UX08` y `UX09` heredan la regla.
+- No afecta al contrato de orden semántico de §6.1, que ADR-014 dejó viewport-agnóstico.
+
+---
+
+<a id="adr-016"></a>
+## ADR-016 — Ninguna CTA del registro canónico lleva a `UX07`
+
+**Estado:** `PENDING — esperando decisión del producto`
+**Toca:** `product-spec-source.md` Parte III §5 (registro canónico), `product.md` §10.3.
+**Detectado en:** Etapa 0.4, al construir `UX07`.
+**No bloquea:** la Etapa 0.4. `UX07` se construye igual, con ruta propia.
+
+### Contexto
+
+Al transcribir el registro canónico de CTAs en la Etapa 0.3 y revisar los 18 destinos, **`UX07` no
+aparece en ninguno**:
+
+```
+UX01 · UX02 · UX03 · UX04 · UX05 · UX06 · UX08 · UX09
+EJECUCION · UX04_RENEGOCIACION · UX04_RESCATE
+```
+
+Sin embargo, `product-spec-source.md` §VI.7 §9 describe **dos entradas** a la superficie:
+
+1. **Recomendación automática** — una señal propietaria ya emitida presenta una `ExamPreparation`
+   `RECOMMENDED`. Eso no es una CTA: es una señal.
+2. **Entrada manual contextual** — *"el estudiante llega desde Materia/Cursado con un
+   `CourseEnrollment` de origen inmutable y una `Assessment` existente de esa materia"*. Eso **sí**
+   describe una navegación `UX02 → UX07`, y **no tiene CTA en el registro**.
+
+El registro es explícito en que *"ningún otro artifact mantiene una copia normativa"*, así que
+agregar una `CTA-019` sería inventar una regla de negocio que ninguna fuente respalda
+([AGENTS.md](../AGENTS.md) §1.1).
+
+### Opciones
+
+| # | Opción | Costo |
+|---|---|---|
+| A | Falta una CTA en el registro: se agrega `UX02 → UX07` como `CTA-019` y se corrige el spec | Toca la fuente normativa; requiere quien la posea |
+| B | La entrada manual no es una CTA sino una affordance de `UX02` no registrada | Deja `UX02` con una navegación sin contrato observable |
+| C | `UX07` se alcanza **sólo** por recomendación automática, y §9 describe un flujo futuro | Deja sin implementar la entrada manual, que §9 y §13 detallan largo |
+
+### Recomendación
+
+**Opción A.** §9 y §13 describen la entrada manual con suficiente detalle —selección entre
+`Assessments` del mismo `CourseEnrollment`, revisión, confirmación— como para que la ausencia parezca
+un olvido del registro y no una decisión. Pero **la decisión no es de un agente**.
+
+### Mientras tanto
+
+`UX07` se construye con ruta propia (`/examen/activar`) y **no se agrega `CTA-019`**. El registro
+sigue teniendo 18. `UX07` queda alcanzable por URL y por el catálogo de escenarios, no por clic desde
+`UX02`. Es el mismo tipo de hueco que la Etapa 0.3 ya registró para `UX05` y `UX06`, y se resuelve
+junto con ellos antes de la Etapa 0.8.

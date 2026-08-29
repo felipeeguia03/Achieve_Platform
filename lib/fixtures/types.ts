@@ -15,6 +15,7 @@ import type { HeroInput } from "@/lib/domain/precedence";
 import type { ContextoCTA } from "@/lib/navigation/context";
 import type { NodoId } from "@/lib/navigation/surfaces";
 import type {
+  ActivacionExamenProps,
   Chip,
   CompromisoProps,
   EvidenciaProps,
@@ -82,6 +83,7 @@ export interface Escenario {
   compromiso?: CompromisoProps;
   evidencia?: EvidenciaProps;
   progreso?: ProgresoProps;
+  ux07?: ActivacionExamenProps;
 }
 
 export type { FilaDato };

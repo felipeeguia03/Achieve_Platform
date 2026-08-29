@@ -11,6 +11,7 @@
  */
 
 import { contexto } from "@/lib/navigation/context";
+import { escenariosUX07 } from "./ux07";
 import type { Escenario } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -514,6 +515,9 @@ export const escenarios = {
   "FX-REN-INELIGIBLE": FX_REN_INELIGIBLE,
   "FX-REFL-OPT": FX_REFL_OPT,
   "FX-ERROR-IDEM": FX_ERROR_IDEM,
+  // Los 22 estados críticos de UX07 viven en su propio archivo: la matriz de
+  // VI.7 §16 es larga y merece leerse entera y de corrido.
+  ...escenariosUX07,
 } as const satisfies Record<string, Escenario>;
 
 export type EscenarioId = keyof typeof escenarios;

@@ -131,7 +131,7 @@ del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
 | 0.1 | **Scaffold + migración de UI** | Repo que compila con `globals.css`, `components/ui/` (61), `components/screens/` (7), `lib/utils.ts`, `hooks/`. `lint` y `build` en verde | ✅ |
 | 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ✅ |
 | 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ✅ |
-| 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ⬜ |
+| 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ✅ |
 | 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ⬜ |
 | 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ⬜ |
 | 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ⬜ |
@@ -479,11 +479,13 @@ Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
 **Fuente:** `product-spec-source.md` §VI.7 (líneas 10131–11556), §VI.8 (11557–12714), §VI.9
 (12715–14607). **No** el arnés QA.
 
-**Decisiones de diseño transversales a las tres, a aprobar:**
-1. `UX07`: el baseline es `RECOMMENDED → CTA del estudiante → ACTIVE`. **No existe variante
-   auto-activa.** Confirmar que se respeta.
-2. `UX07`: el alta de un `Assessment` no registrado **no se implementa** (`SCP-09`/`SCP-10` abiertos).
-   Se muestra el estado no implementable con retorno seguro.
+**Decisiones de diseño transversales a las tres:**
+1. ✅ **Confirmado en la 0.4.** `UX07`: el baseline es `RECOMMENDED → CTA del estudiante → ACTIVE`.
+   **No existe variante auto-activa.** Hay un test que lo verifica: ningún escenario habilita
+   `CTA-011` sin confirmación explícita del estudiante.
+2. ✅ **Confirmado en la 0.4.** El alta de un `Assessment` no registrado **no se implementa**
+   (`SCP-09`/`SCP-10` abiertos). `FX-LOCAL-EXAM-SIN-ASSESSMENT` muestra el estado no implementable
+   con retorno seguro, sin formulario y sin CTA primaria.
 3. `UX08`: la matriz de precedencia tiene 10 niveles. Confirmar el orden.
 4. `UX08`: **sin card de readiness** ([ADR-011](decisions.md#adr-011)).
 5. `UX09`: **no se muestra "Paso 5 de 12"** ni porcentaje. Los 12 pasos son provisionales.
@@ -511,6 +513,69 @@ Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
 - Una sola CTA primaria por estado.
 - Los fallbacks **omiten**, no inventan.
 - Lint, build y tests en verde.
+
+---
+
+#### ✅ Etapa 0.4 — `UX07` COMPLETA · 29 de agosto de 2026
+
+**Readiness.** La etapa arrancó con `design-system-capturas.md` §12.7 en `PENDING`, que era su único
+bloqueo. Se cerró antes de codear con [ADR-015](decisions.md#adr-015) — y **no hizo falta decidir
+nada nuevo**: la pregunta estaba mal planteada. §12.7 razonaba desde las capturas anonimizadas, que
+son de **otro producto**; la spec `VI.7` tiene wireframes desktop propios (§21.2 y §24) y ya
+contestaba. `AGENTS.md` §8 pone `product-spec-source.md` por encima de las capturas.
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Estados críticos alcanzables | ✅ **23 escenarios**: los 22 de la matriz de `VI.7` §16 más `VERIFICANDO`, que §15 lista y §16 no numera |
+| Los 16 estados funcionales de §15 | ✅ todos cubiertos, verificado por test |
+| Una sola CTA primaria por estado | ✅ test por escenario: se renderiza exactamente una, o ninguna |
+| Fallbacks que omiten, no inventan | ✅ sin alta de `Assessment`, sin countdown con fecha desconocida, sin selector de modalidad, sin elegir entre fuentes disputadas |
+| Contrato de orden en desktop y a 360 px | ✅ los 23 estados renderizados en ambos anchos, sin scroll horizontal ni errores de consola |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **149 tests en 8 archivos** |
+
+**Layout, según ADR-015 y `VI.7` §21.2.** Dos columnas: principal con identidad, datos, razón y
+decisión; secundaria con efecto real, continuidad y salida. La CTA primaria va **a ancho completo al
+final de la columna principal** —medido: ocupa el 92 % del ancho de su columna y es su último
+elemento— y el retorno seguro vive en la secundaria, sin estilizarse como primaria. A 360 px las
+columnas se apilan conservando el orden obligatorio de §21.1.
+
+**Cómo se alcanza cada estado.** `/examen/activar?escenario=<ID>` abre cualquiera de los 23 sin panel
+de debug en pantalla. Es un parámetro de **lectura**: no persiste nada, sigue siendo cero red y cero
+storage. La 0.8 decide cuáles entran en el recorrido limpio.
+
+**Invariantes que la pantalla hace visibles:**
+
+- **§21.3 — cuando ya existe `ACTIVE`, el estado reemplaza el CTA de activación.** No queda un botón
+  *Activar* deshabilitado que sugiera una segunda operación. Es el caso donde la regla de la 0.3
+  cae del lado de *ocultar*, no de *deshabilitar*.
+- **Ninguna capa eleva la verificación.** La provenance se verifica **por dato**, no por pantalla:
+  una misma vista mezcla una fecha reportada por el estudiante con una modalidad oficial, y la
+  primera no hereda la verificación de la segunda. Los datos son direccionables (`data-dato`)
+  justamente para poder testearlo así.
+- **Los enums técnicos nunca son copy visible** — test sobre los 23 escenarios.
+- **Sin porcentajes ni readiness numérica** (`DD5`) — test sobre los 23.
+
+**`CTA-011` quedó cableada.** El guard que la 0.3 dejó puesto hizo exactamente lo que prometía: al
+darle ruta a `UX07`, el test rompió hasta sacarla de la lista de bloqueadas y hacerla alcanzable.
+Quedan 2 bloqueadas: `CTA-012` (0.5) y `CTA-013` (0.5).
+
+**Hallazgo registrado como [ADR-016](decisions.md#adr-016) `PENDING`:** **ninguna de las 18 CTAs del
+registro canónico lleva a `UX07`**, pero `VI.7` §9 describe en detalle una entrada manual *"desde
+Materia/Cursado"*. O falta una CTA en el registro, o la entrada manual es una affordance sin
+contrato. **No se inventó `CTA-019`.** `UX07` queda alcanzable por URL y por catálogo, no por clic
+desde `UX02` — el mismo tipo de hueco que la 0.3 registró para `UX05` y `UX06`, y se resuelve junto
+con ellos antes de la 0.8.
+
+**Diferencias con el wireframe, anotadas para la auditoría de la 0.7:**
+
+1. `VI.7` §24.2 dibuja la lista de selección y el panel de revisión en **columnas contiguas**. Acá
+   van una debajo de otra dentro de la columna principal, porque la secundaria ya lleva el efecto
+   real que §21.2 le asigna. La lista va **antes** del panel: primero se elige y el panel *"sólo
+   aparece para la seleccionada"*.
+2. `CTA-011` apunta a `UX08`, que no existe hasta la 0.5. Hasta entonces la CTA **no navega**; no se
+   inventó un destino.
 
 ---
 
@@ -748,6 +813,7 @@ desvío, riesgo y recuperación.
 | [ADR-003](decisions.md#adr-003) Convergencia | Fase B6 |
 | [ADR-007](decisions.md#adr-007) HUMAN-P0 | Contenido de Fase B5 |
 | [ADR-011](decisions.md#adr-011) Readiness | Readiness visible en B5 |
+| [ADR-016](decisions.md#adr-016) Entrada a `UX07` | Golden Path recorrible (0.8) |
 
 ✅ **Resueltos el 28 de agosto de 2026,** y por eso ya no aparecen arriba:
 [ADR-008](decisions.md#adr-008) (stack), [ADR-009](decisions.md#adr-009) (nomenclatura `DD`),
@@ -769,7 +835,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 3 / 8 |
+| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 4 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

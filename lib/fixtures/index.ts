@@ -20,6 +20,26 @@ export function getEscenario(id: EscenarioId): Escenario {
   return escenarios[id];
 }
 
+/** Los escenarios que traen vista de `UX07`, en el orden del catálogo. */
+export const escenariosConUX07 = (Object.keys(escenarios) as EscenarioId[]).filter(
+  (id) => escenarios[id].ux07 !== undefined,
+);
+
+/**
+ * Resuelve el `?escenario=` de la URL.
+ *
+ * Es un parámetro de **lectura** para poder abrir cualquier estado crítico en
+ * el navegador —revisión de diseño, focus group— sin editar código y sin panel
+ * de debug en pantalla. No persiste nada: sigue siendo cero red y cero storage.
+ *
+ * Un id desconocido devuelve `null`. El que llama decide qué hacer; acá no se
+ * adivina cuál quiso pedir.
+ */
+export function escenarioUX07Desde(valor: string | null): EscenarioId | null {
+  if (valor === null) return null;
+  return escenariosConUX07.find((id) => id === valor) ?? null;
+}
+
 export const escenarioIds = Object.keys(escenarios) as EscenarioId[];
 
 /**

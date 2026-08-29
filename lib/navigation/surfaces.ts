@@ -120,8 +120,8 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     wireframe: "WF-S09",
     nombre: "Activación de Modo Examen",
     pregunta: "¿Qué examen activo y qué implica?",
-    ruta: null,
-    pendienteDeEtapa: "0.4",
+    ruta: "/examen/activar",
+    pendienteDeEtapa: null,
   },
   UX08: {
     id: "UX08",

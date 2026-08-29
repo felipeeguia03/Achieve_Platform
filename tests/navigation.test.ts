@@ -154,7 +154,7 @@ describe("Aparición y habilitación son cosas distintas", () => {
 
 /** Las CTAs cuya superficie de origen todavía no existe, con su etapa. */
 const bloqueadasPorEtapa: Readonly<Record<string, string>> = {
-  "CTA-011": "0.4",
+  // CTA-011 salió de esta lista en la Etapa 0.4, cuando UX07 pasó a existir.
   "CTA-012": "0.5",
   "CTA-013": "0.5",
 };
@@ -172,9 +172,9 @@ function alcanzaAlgunEscenario(id: CtaId): boolean {
 describe("Alcance: toda CTA tiene un escenario que la alcanza", () => {
   const exigibles = ctaIds.filter((id) => !(id in bloqueadasPorEtapa));
 
-  it("hay 15 CTAs exigibles y 3 bloqueadas por etapa", () => {
-    expect(exigibles).toHaveLength(15);
-    expect(Object.keys(bloqueadasPorEtapa)).toHaveLength(3);
+  it("hay 16 CTAs exigibles y 2 bloqueadas por etapa", () => {
+    expect(exigibles).toHaveLength(16);
+    expect(Object.keys(bloqueadasPorEtapa)).toHaveLength(2);
   });
 
   for (const id of ctaIds.filter((x) => !(x in bloqueadasPorEtapa))) {

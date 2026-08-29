@@ -221,10 +221,10 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 3 / 8 etapas.
-**0.1** (scaffold + migración de UI), **0.2** (dominio, fixtures y parametrización) y **0.3**
-(Golden Path y registro de CTAs) ✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.4**:
-`UX07`, activación de Modo Examen.
+**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 4 / 8 etapas.
+**0.1** (scaffold), **0.2** (dominio, fixtures y parametrización), **0.3** (Golden Path y registro de
+CTAs) y **0.4** (`UX07`) ✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.5**: `UX08`, Modo
+Examen / Overview, con su matriz de precedencia de 10 niveles.
 
 Dónde vive cada cosa hoy:
 
@@ -264,6 +264,8 @@ Vitest ([ADR-008](docs/decisions.md#adr-008)).
 `UX01` Hoy · `UX02` Materia/Cursado · `UX03` Próxima Acción · `UX04` Compromiso · `UX05` Evidencia ·
 `UX06` Progreso/Bitácora · `UX07` Activación Modo Examen · `UX08` Modo Examen/Overview ·
 `UX09` Paso de Protocolo.
+
+**Siete existen** como componente real con ruta propia. Faltan `UX08` (0.5) y `UX09` (0.6).
 
 Mapeo canónico: `WF-S10 → UX08`, `WF-S11 → UX09`. **No existe `UX10`.**
 

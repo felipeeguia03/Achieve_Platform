@@ -99,6 +99,36 @@ export const copy = {
   "EVIDENCIA.ENVIAR_IMPLICA":
     "Enviar: queda SUBMITTED; sigue validación. No implica suficiencia ni dominio.",
 
+  // ── UX07 · Activación de Modo Examen ──────────────────────────────────────
+  // Títulos de VI.7 §22.1 y CTAs semánticas de §22.2, literales.
+  "EXAMEN.TITULO.RECOMENDACION": "RECOMENDACIÓN DE ACTIVACIÓN",
+  "EXAMEN.TITULO.REVISION": "REVISÁ ESTA EVALUACIÓN",
+  "EXAMEN.TITULO.NO_ACTIVO": "TODAVÍA NO ESTÁ ACTIVO",
+  "EXAMEN.TITULO.ACTIVO": "MODO EXAMEN ACTIVO",
+  "EXAMEN.TITULO.FALTAN_DATOS": "FALTAN DATOS PARA ACTIVAR",
+  "EXAMEN.TITULO.CONTRADICTORIOS": "HAY DATOS CONTRADICTORIOS",
+  "EXAMEN.TITULO.NO_DISPONIBLE": "NO PUDIMOS CARGAR LA EVALUACIÓN",
+  "EXAMEN.TITULO.VERIFICANDO": "ESTAMOS VERIFICANDO LA ACTIVACIÓN",
+
+  "CTA.EXAMEN.ACTIVAR": "ACTIVAR PREPARACIÓN DE ESTE EXAMEN",
+  "CTA.EXAMEN.ACTIVAR_CON_ESTOS_DATOS": "ACTIVAR CON ESTOS DATOS",
+  "CTA.EXAMEN.REVISAR": "REVISAR EVALUACIÓN",
+  "CTA.EXAMEN.ABRIR": "ABRIR PREPARACIÓN",
+  "CTA.EXAMEN.REINTENTAR": "REINTENTAR",
+  "CTA.EXAMEN.VOLVER_CURSADO": "VOLVER A CURSADO",
+
+  "EXAMEN.QUE_CAMBIA": "QUÉ CAMBIA",
+  "EXAMEN.QUE_NO_CAMBIA": "QUÉ NO CAMBIA",
+  "EXAMEN.DESPUES": "DESPUÉS",
+  "EXAMEN.FALTANTES": "FALTAN ESTOS DATOS",
+  "EXAMEN.ELEGI": "ELEGÍ UNA EVALUACIÓN",
+  "EXAMEN.ANTES": "antes:",
+  // VI.7 §16.14: "lista sin ranking local". La UI no prioriza.
+  "EXAMEN.ORDEN_RECIBIDO": "La lista conserva el orden recibido. No prioriza académicamente.",
+  // VI.7 §24.2: materia y comisión pertenecen al CourseEnrollment de origen.
+  "EXAMEN.NO_ES_SELECTOR": "Materia y comisión no son selectores: pertenecen a esta materia.",
+  "EXAMEN.VOLVER_PREFIJO": "Volver a",
+
   // ── UX06 · Progreso / Bitácora ────────────────────────────────────────────
   "PROGRESO.CAMBIO_CONFIRMADO": "Cambio confirmado",
   "PROGRESO.SIN_CAMBIO": "Sin cambio confirmado",

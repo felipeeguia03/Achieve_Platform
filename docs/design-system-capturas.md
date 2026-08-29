@@ -776,18 +776,19 @@ horas por día. La Bitácora de Achieve la mira un estudiante, ocasionalmente.
 **Qué decidir:** si `UX06` es una tabla o una lista de tarjetas. §10.4 especifica la tabla; la
 decisión de usarla no está tomada.
 
-### 12.7 Dónde vive la CTA principal en desktop — `PENDING`, ya desbloqueado
+### 12.7 Dónde vive la CTA principal en desktop — ✅ `RESUELTO` por [ADR-015](decisions.md#adr-015)
 
-`I-06` exige una sola acción destacada por pantalla, y `design-system.md` §6.1 la pone **a ancho
-completo al final del primer viewport** — una definición móvil. En las capturas, la acción primaria
-va **arriba a la derecha**, en píldora negra, con ancho de contenido.
+**Resuelto el 29 de agosto de 2026.** La CTA principal va **a ancho completo al final de la columna
+principal**, en el layout de dos columnas de `design-system.md` §6.2. La píldora negra arriba a la
+derecha **se descartó**.
 
-**Qué decidir:** la posición de la CTA en desktop.
+**Esta sección estaba mal planteada.** Preguntaba razonando desde las capturas, que son de **otro
+producto**. La spec de Achieve tiene wireframes desktop propios y normativos: `VI.7` §21.2 y §24.1
+ya contestaban, y [`AGENTS.md`](../AGENTS.md) §8 pone `product-spec-source.md` por encima de este
+documento.
 
-**Estado.** Dependía de §12.1, que [ADR-014](decisions.md#adr-014) resolvió el 29 de agosto de 2026.
-**Ya se puede decidir, y sigue sin decidirse.** Es un `PENDING` real, no un bloqueo heredado. **Se
-cierra antes de la Etapa 0.4** (`UX07`), que es la primera pantalla nueva que necesita ubicar su CTA
-en desktop. Las etapas 0.1–0.3 no la tocan.
+**Regla general que dejó ADR-015:** cuando este documento y una spec `VI.*` describan lo mismo,
+**manda la spec**. Lo de acá es vocabulario visual, no contrato de layout.
 
 ---
 
@@ -807,6 +808,7 @@ Registro de reconciliación, para cuando se sincronicen los documentos.
 | §5.3 | **Confirma** los tres semánticos. Rechaza explícitamente el cuarto color del original |
 | §11.2 | **Ancla** los nueve anti-patrones a evidencia visual concreta |
 | §12.1 | ✅ **Conflicto cerrado** por [ADR-014](decisions.md#adr-014): §6.1 se reencuadró como contrato de orden semántico y §6.2 pasó a primaria |
+| §12.7 | ✅ **Cerrado** por [ADR-015](decisions.md#adr-015) con los wireframes desktop de `VI.7` §24: CTA a ancho completo al final de la columna principal |
 | §12.4 | ⚠️ **Abre laguna**: modo oscuro sin paleta ni contrastes medidos |
 
 **Ninguna de estas modificaciones se aplica** hasta que los ADR de §12 estén resueltos, **salvo §12.1,

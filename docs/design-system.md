@@ -365,14 +365,26 @@ reducción a 360 px baja el **tamaño**, nunca la **cantidad de información** �
 ### 6.2 Desktop — el viewport primario
 
 Mantiene **el mismo orden semántico** de §6.1. El espacio adicional se usa para conciencia periférica,
-no para sumar información al Hero. Proporción aproximada: 2/3 Hero + 1/3 contexto. El panel lateral no
-contiene CTAs competidoras.
+no para sumar información al Hero. Proporción aproximada: 2/3 Hero + 1/3 contexto.
 
-> ⚠️ **`PENDING` — dónde vive la CTA principal en desktop.** `I-06` exige una sola acción destacada por
-> pantalla, pero su posición en desktop —píldora negra arriba a la derecha, como en las capturas, o a
-> ancho completo al final del primer viewport— **no está decidida**. Ver
-> [`design-system-capturas.md`](design-system-capturas.md) §12.7. ADR-014 la desbloqueó; se cierra
-> antes de la Etapa 0.4.
+**Las dos columnas tienen contenido asignado** ([ADR-015](decisions.md#adr-015), derivado de
+`product-spec-source.md` §VI.7 §21.2):
+
+| Columna | Qué lleva |
+|---|---|
+| **Principal** (2/3) | Identidad, datos, razón y **decisión** |
+| **Secundaria** (1/3) | Efecto real, continuidad y provenance expandida |
+
+**La CTA principal va a ancho completo, al final de la columna principal.** Una sola por pantalla y
+por estado. El retorno seguro vive en la columna secundaria y **nunca se estiliza como primaria** —
+el panel lateral no contiene CTAs competidoras.
+
+> **La píldora negra arriba a la derecha se descartó.** Pertenece al producto de las capturas
+> anonimizadas, no a Achieve. Regla general de ADR-015: cuando
+> [`design-system-capturas.md`](design-system-capturas.md) y una spec `VI.*` describan lo mismo,
+> **manda la spec**. Las capturas aportan vocabulario visual, no contrato de layout.
+
+**El ancho adicional no agrega información al Hero.** Ni protocolo, ni analytics, ni cronograma.
 
 ### 6.3 Un dato, un dueño visual
 
