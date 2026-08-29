@@ -477,7 +477,15 @@ aplica cuándo**.
 
 `CTA-001`…`CTA-018`. El registro normativo completo, con condición de aparición, acción solicitada,
 destino, resultado autoritativo, fallback y estado de error, vive en `product-spec-source.md`
-Parte III §5.
+Parte III §5. Su **transcripción ejecutable** está en
+[`lib/navigation/cta-registry.ts`](../lib/navigation/cta-registry.ts), con un test que verifica que
+cada condición siga siendo literalmente la del spec.
+
+**Aparición ≠ habilitación** (Etapa 0.3). Si la *condición de aparición* no se cumple, la CTA **no se
+renderiza** — no en gris, no oculta: no está. Si aparece pero falta algo que el estudiante puede
+completar en esa misma pantalla, se renderiza **deshabilitada** con tratamiento propio (`A-08`). El
+propio registro distingue los dos casos: el estado de error de `CTA-017` dice *"ocultar **o** no
+habilitar"*.
 
 | CTA | Condición | Resultado autoritativo |
 |---|---|---|

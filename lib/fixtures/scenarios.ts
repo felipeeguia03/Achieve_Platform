@@ -10,6 +10,7 @@
  * sabe dibujar. **La cobertura completa de estados críticos es la Etapa 0.7.**
  */
 
+import { contexto } from "@/lib/navigation/context";
 import type { Escenario } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,6 +23,20 @@ export const FX_DAY_BASE: Escenario = {
   origen: "spec",
   proposito: "Course + recomendación + Action + disponibilidad",
   cubre: ["C01-003", "C01-006", "C01-007", "C01-011", "SC-DAY-01", "SC-DAY-02"],
+
+  contextos: {
+    UX01: contexto({
+      courseVisible: true,
+      recomendacionPrimariaVigente: true,
+      progresoDisponible: true,
+    }),
+    UX02: contexto({ courseVisible: true, recomendacionPrimariaVigente: true, progresoDisponible: true }),
+    // La Action está recomendada y todavía no aceptada: se puede aceptar.
+    UX03: contexto({ recomendacionPrimariaVigente: true, actionStatus: "RECOMMENDED" }),
+    // Aceptada, con el draft del Commitment abierto. Aceptar NO creó el
+    // Commitment: por eso `commitmentState` es DRAFT y no CONFIRMED.
+    UX04: contexto({ actionStatus: "ACCEPTED", commitmentState: "DRAFT" }),
+  },
 
   hoy: {
     fecha: "vie 28 ago",
@@ -125,6 +140,11 @@ export const FX_LOCAL_DAY_IN_PROGRESS: Escenario = {
   origen: "local",
   proposito: "Action IN_PROGRESS: el nivel 1 de precedencia gana sobre todo lo demás",
   cubre: ["C01-007", "SC-DAY-03"],
+  contextos: {
+    UX01: contexto({ courseVisible: true, actionStatus: "IN_PROGRESS", commitmentState: "STARTED", progresoDisponible: true }),
+    // STARTED no admite renegociación: no se ofrece edición retroactiva.
+    UX04: contexto({ actionStatus: "IN_PROGRESS", commitmentState: "STARTED" }),
+  },
   hoy: {
     fecha: "vie 28 ago",
     estadoGeneral: null,
@@ -162,6 +182,12 @@ export const FX_EVD_BASE: Escenario = {
   origen: "spec",
   proposito: "Evidence esperada y criterio sintético",
   cubre: ["C01-012", "C01-013", "C01-014", "SC-EV-01"],
+
+  contextos: {
+    UX01: contexto({ courseVisible: true, actionStatus: "EVIDENCE_PENDING", progresoDisponible: true }),
+    // Evidence esperada, sin contenido todavía: CTA-007 aparece deshabilitada.
+    UX05: contexto({ actionStatus: "EVIDENCE_PENDING", evidenceState: "EXPECTED", progresoDisponible: true }),
+  },
 
   hoy: {
     fecha: "vie 28 ago",
@@ -213,6 +239,12 @@ export const FX_MISSED: Escenario = {
   origen: "spec",
   proposito: "Commitment original MISSED + alternativa de rescate; preserva el original",
   cubre: ["C01-010", "SC-DAY-04", "SC-REN-01"],
+  contextos: {
+    UX01: contexto({ courseVisible: true, commitmentState: "MISSED", rescate: "REQUIRED", progresoDisponible: true }),
+    // MISSED no habilita renegociar: la única salida del original es CLOSED y
+    // el rescate es otro objeto.
+    UX04: contexto({ commitmentState: "MISSED", rescate: "REQUIRED" }),
+  },
   hoy: {
     fecha: "vie 28 ago",
     estadoGeneral: null,
@@ -251,6 +283,11 @@ export const FX_ADE_NONE: Escenario = {
   origen: "spec",
   proposito: "El ADE confirma ausencia de recomendación: empty honesto",
   cubre: ["C01-006", "SC-ADE-02"],
+  contextos: {
+    // El ADE confirmó ausencia: no hay recomendación primaria vigente, así que
+    // CTA-002 no se renderiza. El Course sigue visible: CTA-001 sí.
+    UX01: contexto({ courseVisible: true, progresoDisponible: true }),
+  },
   hoy: {
     fecha: "vie 28 ago",
     estadoGeneral: null,
@@ -294,6 +331,9 @@ export const FX_LOCAL_PROG_VALIDATED: Escenario = {
   origen: "local",
   proposito: "Evidence VALIDATED con ProgressUpdated real y tres estados de no-cambio distinguibles",
   cubre: ["C01-018", "C01-019", "C01-020", "SC-PROG-01"],
+  contextos: {
+    UX06: contexto({ navegacionDisponible: true }),
+  },
   progreso: {
     contexto: "Avance · Análisis II · Unidad 3",
     estadoEvidencia: { tono: "exito", texto: "Evidencia validada" },
@@ -312,6 +352,154 @@ export const FX_LOCAL_PROG_VALIDATED: Escenario = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Escenarios de navegación.
+//
+// Los que siguen declaran **contexto sin vista**: dicen en qué estado está el
+// mundo para que las CTAs correspondientes sean alcanzables, pero todavía no
+// traen props de pantalla. Dibujar estos estados es la Etapa 0.7; declararlos
+// es lo que hace verificable el registro de CTAs hoy.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Commitment confirmado por el owner y en condiciones de arrancar. */
+export const FX_LOCAL_COMMITMENT_CONFIRMED: Escenario = {
+  id: "FX-LOCAL-COMMITMENT-CONFIRMED",
+  origen: "local",
+  proposito: "Commitment CONFIRMED e iniciable según el owner, y su cierre conductual",
+  cubre: ["C01-010", "C01-011", "SC-DAY-03"],
+  contextos: {
+    UX01: contexto({
+      courseVisible: true,
+      actionStatus: "COMMITTED",
+      commitmentState: "CONFIRMED",
+      // Lo declara el owner. Abrir la pantalla o un timer local no inicia nada.
+      commitmentIniciable: true,
+      progresoDisponible: true,
+    }),
+    UX04: contexto({
+      actionStatus: "COMMITTED",
+      commitmentState: "CONFIRMED",
+      commitmentIniciable: true,
+    }),
+    // Cierre conductual permitido. Finalizar NO crea ni envía Evidence.
+    EJECUCION: contexto({
+      actionStatus: "IN_PROGRESS",
+      commitmentState: "STARTED",
+      cierreConductualPermitido: true,
+    }),
+  },
+};
+
+/** Evidence devuelta para corrección. La original se preserva (invariante I4). */
+export const FX_LOCAL_EVD_RESUBMISSION: Escenario = {
+  id: "FX-LOCAL-EVD-RESUBMISSION",
+  origen: "local",
+  proposito: "Evidence en RESUBMISSION_REQUESTED: se reenvía una nueva, la anterior se preserva",
+  cubre: ["C01-012", "C01-015", "SC-EV-03"],
+  contextos: {
+    UX05: contexto({
+      actionStatus: "EVIDENCE_PENDING",
+      evidenceState: "RESUBMISSION_REQUESTED",
+      contenidoEvidenciaValido: true,
+      progresoDisponible: true,
+    }),
+  },
+};
+
+/**
+ * FX-REN-ELIGIBLE — spec §7: "Commitment original CONFIRMED o DUE, elegibilidad
+ * autoritativa vigente, misma Action y nueva fecha/hora/capacidad válidas".
+ *
+ * Renegociar ANTES del vencimiento es válido y crea un Commitment nuevo; el
+ * original queda RENEGOTIATED y no se edita.
+ */
+export const FX_REN_ELIGIBLE: Escenario = {
+  id: "FX-REN-ELIGIBLE",
+  origen: "spec",
+  proposito:
+    "Renegociación positiva: original no editable; sólo el owner confirma old/new y CommitmentRenegotiated",
+  cubre: ["C01-010", "SC-REN-01"],
+  contextos: {
+    UX01: contexto({
+      courseVisible: true,
+      commitmentState: "CONFIRMED",
+      renegociacionElegible: true,
+      progresoDisponible: true,
+    }),
+    UX04: contexto({
+      commitmentState: "CONFIRMED",
+      renegociacionElegible: true,
+    }),
+    UX04_RENEGOCIACION: contexto({
+      commitmentState: "CONFIRMED",
+      renegociacionElegible: true,
+      propuestaRenegociacionValida: true,
+    }),
+  },
+};
+
+/**
+ * FX-REN-INELIGIBLE — spec §7: "Commitment STARTED o MISSED, o elegibilidad
+ * denegada/inconsistente". **Control negativo:** no se ofrece confirmación y el
+ * original queda intacto.
+ */
+export const FX_REN_INELIGIBLE: Escenario = {
+  id: "FX-REN-INELIGIBLE",
+  origen: "spec",
+  proposito:
+    "Renegociación negativa: no ofrecer confirmación; original intacto; continuar, bloqueo o rescate",
+  cubre: ["C01-010", "SC-REN-02"],
+  contextos: {
+    // CONFIRMED pero con elegibilidad denegada por el owner: CTA-017 se oculta.
+    UX01: contexto({ courseVisible: true, commitmentState: "CONFIRMED", progresoDisponible: true }),
+    UX04: contexto({ commitmentState: "CONFIRMED" }),
+    // El flujo no se abre, así que CTA-018 tampoco aparece.
+    UX04_RENEGOCIACION: contexto({ commitmentState: "CONFIRMED" }),
+  },
+};
+
+/**
+ * FX-REFL-OPT — spec §7: "Reflection OPTIONAL versionada · rama opcional ·
+ * omisión válida". La Reflection es un objeto separado de la Evidence.
+ */
+export const FX_REFL_OPT: Escenario = {
+  id: "FX-REFL-OPT",
+  origen: "spec",
+  proposito: "Reflection OPTIONAL versionada: la omisión es válida",
+  cubre: ["C01-012", "SC-REF-01"],
+  contextos: {
+    UX05: contexto({
+      actionStatus: "EVIDENCE_PENDING",
+      evidenceState: "EXPECTED",
+      contenidoEvidenciaValido: true,
+      reflectionConfigurada: true,
+      reflectionRequerida: "NO_REQUERIDA",
+      progresoDisponible: true,
+    }),
+  },
+};
+
+/**
+ * FX-ERROR-IDEM — spec §7: "respuesta perdida/duplicada · idempotencia visual ·
+ * relectura/reconciliación".
+ *
+ * Ante una respuesta incierta se relee por identidad antes de reintentar; nunca
+ * se reintenta a ciegas (`P3`). Sólo el owner confirma el resultado.
+ */
+export const FX_ERROR_IDEM: Escenario = {
+  id: "FX-ERROR-IDEM",
+  origen: "spec",
+  proposito: "Respuesta perdida o duplicada: relectura y reconciliación, sin presumir éxito",
+  cubre: ["C01-009", "C01-015", "SC-ERR-01"],
+  contextos: {
+    UX04: contexto({
+      actionStatus: "ACCEPTED",
+      commitmentState: "DRAFT",
+      errorRecuperableConOperacionIdempotente: true,
+    }),
+  },
+};
+
 /** El catálogo. Orden estable: el `id` es la clave. */
 export const escenarios = {
   "FX-DAY-BASE": FX_DAY_BASE,
@@ -320,6 +508,12 @@ export const escenarios = {
   "FX-MISSED": FX_MISSED,
   "FX-ADE-NONE": FX_ADE_NONE,
   "FX-LOCAL-PROG-VALIDATED": FX_LOCAL_PROG_VALIDATED,
+  "FX-LOCAL-COMMITMENT-CONFIRMED": FX_LOCAL_COMMITMENT_CONFIRMED,
+  "FX-LOCAL-EVD-RESUBMISSION": FX_LOCAL_EVD_RESUBMISSION,
+  "FX-REN-ELIGIBLE": FX_REN_ELIGIBLE,
+  "FX-REN-INELIGIBLE": FX_REN_INELIGIBLE,
+  "FX-REFL-OPT": FX_REFL_OPT,
+  "FX-ERROR-IDEM": FX_ERROR_IDEM,
 } as const satisfies Record<string, Escenario>;
 
 export type EscenarioId = keyof typeof escenarios;

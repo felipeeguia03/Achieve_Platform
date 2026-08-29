@@ -109,6 +109,11 @@ muestra un error técnico. **No se elige una.**
 Lo único que la UI sí resuelve es la **precedencia operativa de lifecycle**, que es determinista y
 está especificada en `docs/product.md` §10.2.
 
+**Una CTA cuya condición de aparición no se cumple no se renderiza.** No deshabilitada, no en gris:
+no está. Distinto es la **habilitación**: si la CTA aparece pero falta algo que el estudiante puede
+completar en esa misma pantalla, se renderiza deshabilitada con tratamiento propio (`A-08`). El
+registro canónico vive en `lib/navigation/cta-registry.ts`.
+
 ### 2.3 Ningún estado se escribe por inferencia del cliente
 
 - Un timer local **no** completa un `Commitment`.
@@ -216,10 +221,10 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 2 / 8 etapas.
-**0.1** (scaffold + migración de UI) y **0.2** (capa de dominio, fixtures y parametrización)
-✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.3**: grafo del Golden Path y registro de
-`CTA-001`…`CTA-018`.
+**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 3 / 8 etapas.
+**0.1** (scaffold + migración de UI), **0.2** (dominio, fixtures y parametrización) y **0.3**
+(Golden Path y registro de CTAs) ✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.4**:
+`UX07`, activación de Modo Examen.
 
 Dónde vive cada cosa hoy:
 
@@ -227,6 +232,7 @@ Dónde vive cada cosa hoy:
 |---|---|
 | `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, y los view models de `UX01`–`UX06`. **Puro:** sin React, sin I/O |
 | `lib/content/` | El copy con ID tipado (regla `C-07`) |
+| `lib/navigation/` | El grafo del Golden Path y el registro de las 18 CTAs. **No importa `lib/fixtures/`** |
 | `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |
 | `components/screens/` | Las 6 superficies, con props tipadas |
 | `app/(student)/` | Una URL por superficie; la ruta lee el escenario y lo proyecta |

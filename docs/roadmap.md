@@ -130,7 +130,7 @@ del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
 |---|---|---|---|
 | 0.1 | **Scaffold + migración de UI** | Repo que compila con `globals.css`, `components/ui/` (61), `components/screens/` (7), `lib/utils.ts`, `hooks/`. `lint` y `build` en verde | ✅ |
 | 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ✅ |
-| 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ⬜ |
+| 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ✅ |
 | 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ⬜ |
 | 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ⬜ |
 | 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ⬜ |
@@ -366,10 +366,31 @@ no de esta etapa: se agregó desde el primer commit para que no haya que retrofi
 
 ### Etapa 0.3 — Golden Path y registro de CTAs
 
-**Decisiones de diseño a aprobar:**
-1. ¿Cada superficie tiene URL propia (`I-01`)? *Recomendación: sí — es requisito del manual y hace el
-   focus group mucho más manejable.*
-2. Cómo se representa una transición no canónica (los fallbacks de retorno seguro).
+**Decisiones de diseño — ✅ aprobadas el 29 de agosto de 2026:**
+
+1. **Cada superficie tiene URL propia** (`I-01`). Ya quedó resuelto en la Etapa 0.1 con el route
+   group `(student)`; acá solo se confirma. Un test verifica que cada superficie **o** tiene ruta
+   **o** declara qué etapa la construye, nunca las dos ni ninguna.
+2. **Los fallbacks son aristas del grafo, no texto.** El grafo tiene dos clases de arista:
+   `canonica` y `retornoSeguro`, y las dos apuntan a nodos reales. Eso permite verificar por test
+   que todo destino de retorno existe y que ningún nodo queda encerrado — que es literalmente lo que
+   promete "retorno seguro".
+3. **Aparición y habilitación son cosas distintas.** El Done de esta etapa decía que *"una CTA cuya
+   condición no se cumple no se renderiza, en vez de renderizarse deshabilitada"*, y eso chocaba con
+   `UX05`, que muestra *Enviar evidencia* deshabilitada hasta que hay adjunto. Se resolvió
+   separando:
+
+   | | Pregunta | Si no se cumple |
+   |---|---|---|
+   | `aparece` | ¿Existe el contrato y el objeto está en el estado que la CTA supone? | **No se renderiza.** No en gris: desaparece |
+   | `habilitada` | ¿Falta algo que el estudiante puede completar en esta misma pantalla? | Se renderiza **deshabilitada**, con tratamiento propio (`A-08`) |
+
+   El spec respalda la distinción: el estado de error de `CTA-017` dice literalmente *"ocultar **o**
+   no habilitar"*. `UX05` no cambió.
+4. **Alcance:** se declaran las 18 y el test de alcance se exige sobre las CTAs cuya superficie de
+   origen ya existe. `CTA-011`, `CTA-012` y `CTA-013` quedan bloqueadas por etapa, **y un test
+   afirma que lo están porque su superficie es la que falta**: en cuanto la 0.4 le dé ruta a `UX07`,
+   ese test rompe hasta que se cablee `CTA-011`. La brecha no puede quedarse callada.
 
 **Trabajo:** `lib/navigation/golden-path.ts` con el grafo, y `lib/navigation/cta-registry.ts` con las
 18 CTAs, cada una con condición de aparición, acción solicitada, destino, resultado autoritativo,
@@ -379,6 +400,75 @@ fallback y estado de error, según `product-spec-source.md` Parte III §5.
 - Las 18 CTAs están declaradas y son alcanzables desde algún escenario.
 - Una CTA cuya condición no se cumple **no se renderiza**, en vez de renderizarse deshabilitada.
 - Test estático: toda CTA del registro tiene al menos un escenario que la alcanza.
+
+---
+
+#### ✅ Etapa 0.3 — COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Las 18 CTAs declaradas con sus 9 campos | ✅ `lib/navigation/cta-registry.ts`, transcripción de `product-spec-source.md` Parte III §5 |
+| Alcanzables desde algún escenario | ✅ **15 de 15 exigibles.** Las 3 restantes bloqueadas por etapa, con guard que rompe cuando su superficie exista |
+| Una CTA sin condición no se renderiza | ✅ `ctasVisibles` no la devuelve. Con el contexto vacío **ninguna** CTA aparece en **ningún** nodo: deny-by-default |
+| Test estático de alcance | ✅ un test por CTA, más dos que impiden que la lista de bloqueadas crezca o se quede vieja |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **122 tests en 7 archivos** |
+
+**El grafo camina de verdad.** Las rutas ya no usan escenario fijo: el destino de cada CTA sale del
+registro. Verificado por clic en el navegador, sin errores de consola:
+
+```
+/hoy  --[Comprometerme]-->      /accion      (CTA-002)
+/accion --[Me comprometo]-->    /compromiso  (CTA-003)
+/compromiso --[Confirmar]-->    /hoy         (CTA-004)
+/hoy  --[Programación]-->       /materia     (CTA-001)
+/materia --[Comprometerme]-->   /accion      (CTA-002)
+/progreso --[Ver siguiente]-->  /hoy         (CTA-010)
+```
+
+**Dos correcciones que el propio test encontró:**
+
+1. **`CTA-015` apuntaba a `UX04`, saliendo de `UX04`** — un bucle. El spec dice `UX04/rescate`, que
+   es un flujo propio. Se modeló `UX04_RESCATE` como nodo separado, por la misma razón que
+   `UX04_RENEGOCIACION` y por una de fondo: **el rescate es otro objeto, no una edición del
+   original**. Colapsarlo en `UX04` haría parecer que `CTA-015` vuelve sobre el Commitment
+   incumplido.
+2. **Quedarse quieto no es una arista.** El *"conservar Hoy"* de `CTA-001` desde `UX01` no es una
+   transición. Se decide por arista y no por fila, porque una CTA con varios orígenes puede ser las
+   dos cosas: el *"mantener Commitment vigente"* de `CTA-017` es un movimiento real desde `UX01` y
+   ninguno desde `UX04`.
+
+**Tres huecos encontrados, que esta etapa no cierra:**
+
+1. **`UX05` no es alcanzable por clic.** El spec rutea `UX04 → ejecución → UX05`, y `ejecución` es
+   un nodo **sin pantalla**. Hoy sólo se llega a `/evidencia` escribiendo la URL. No se inventó una
+   transición: el grafo dice lo que el spec dice. **Lo tiene que resolver la Etapa 0.8**, que es la
+   que promete un recorrido limpio para focus group.
+2. **`UX06` tampoco es alcanzable por clic.** `CTA-009` (*ver progreso*) está declarada y es
+   alcanzable en contexto desde `UX01`, `UX02` y `UX05`, pero **ninguna pantalla la renderiza
+   todavía**. Es trabajo de la **Etapa 0.7**, que es la que lleva cada pantalla a la cobertura de
+   CTAs de su spec.
+3. **`UX06` promete una transición que el registro no autoriza.** Su CTA principal dice *"Ver
+   siguiente acción"*, pero desde `UX06` la única CTA del registro es `CTA-010`, cuya acción es
+   *"volver a Hoy"*. Se cableó `CTA-010` —lo que el spec autoriza— y **no se tocó el copy**. Si el
+   copy está mal o si falta una CTA en el registro es una pregunta para la auditoría de la **0.7**.
+
+> ⚠️ **Consecuencia para el Done de la Fase 0.** El criterio *"el Golden Path es recorrible extremo a
+> extremo"* **todavía no se cumple**: el loop `UX01 → UX03 → UX04 → UX01` y la rama de lectura sí,
+> pero `UX05` y `UX06` no tienen entrada por clic. Queda anotado acá para que no se dé por hecho al
+> llegar a la 0.8.
+
+**Deuda declarada:**
+
+- **`EJECUCION` no tiene retorno seguro**, y es correcto: su único fallback declarado es *"mantener
+  ejecución"*. El spec no define una salida de la ejecución que no sea terminarla, y agregar una
+  sería inventar una transición. Un test fija la lista de nodos sin retorno en exactamente
+  `["EJECUCION"]`, para que aparezca un segundo y nadie lo note.
+- Los escenarios de navegación nuevos —`FX-REN-ELIGIBLE`, `FX-REN-INELIGIBLE`, `FX-REFL-OPT`,
+  `FX-ERROR-IDEM`, `FX-LOCAL-COMMITMENT-CONFIRMED`, `FX-LOCAL-EVD-RESUBMISSION`— **declaran contexto
+  sin vista**. Dicen en qué estado está el mundo para que las CTAs sean alcanzables; dibujar esos
+  estados es la Etapa 0.7.
 
 ---
 
@@ -679,7 +769,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 2 / 8 |
+| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 3 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

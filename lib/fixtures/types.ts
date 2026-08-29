@@ -12,6 +12,8 @@
  */
 
 import type { HeroInput } from "@/lib/domain/precedence";
+import type { ContextoCTA } from "@/lib/navigation/context";
+import type { NodoId } from "@/lib/navigation/surfaces";
 import type {
   Chip,
   CompromisoProps,
@@ -65,6 +67,15 @@ export interface Escenario {
   proposito: string;
   /** Contratos `C01` y escenarios `SC-*` que este fixture toca. Trazabilidad. */
   cubre: readonly string[];
+  /**
+   * El estado autoritativo del dominio, por nodo del Golden Path. Es lo que
+   * las CTAs releen para decidir si aparecen.
+   *
+   * Un escenario puede declarar contexto para un nodo **sin** tener vista de esa
+   * superficie: el contexto dice en qué estado está el mundo, y dibujarlo es
+   * otra cosa. Varios de estos estados recién se renderizan en la Etapa 0.7.
+   */
+  contextos: Partial<Record<NodoId, ContextoCTA>>;
   hoy?: EscenarioHoy;
   materia?: MateriaProps;
   accion?: ProximaAccionProps;

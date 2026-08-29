@@ -86,6 +86,17 @@ describe("La frontera de lib/fixtures/", () => {
     expect(culpables).toEqual([]);
   });
 
+  it("lib/navigation/ no depende de fixtures", () => {
+    // La dirección es fixtures → navigation. El grafo y el registro describen
+    // el contrato; los escenarios lo instancian, no al revés.
+    const navegacion = files.filter(({ path }) => path.startsWith("lib/navigation/"));
+    expect(navegacion.length).toBeGreaterThan(0);
+    const culpables = navegacion
+      .filter(({ code }) => /from\s+"@\/lib\/fixtures/.test(code))
+      .map(({ path }) => path);
+    expect(culpables).toEqual([]);
+  });
+
   it("lib/domain/ no depende de fixtures ni de contenido", () => {
     // La dirección de la dependencia es fixtures → domain, nunca al revés.
     const culpables = dominio

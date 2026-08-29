@@ -68,13 +68,17 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **2 / 8**. Las etapas 0.1 (scaffold + migración de UI)
-y 0.2 (dominio, fixtures y parametrización) cerraron el 29 ago 2026. **Toca la Etapa 0.3:** grafo del
-Golden Path y registro de `CTA-001`…`CTA-018`.
+**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **3 / 8**. Las etapas 0.1, 0.2 y 0.3 cerraron el
+29 ago 2026. **Toca la Etapa 0.4:** `UX07`, activación de Modo Examen.
 
-La frontera ya existe: `lib/domain/` (puro) → `lib/fixtures/` (catálogo) → `app/(student)/` proyecta
-→ `components/screens/` recibe props tipadas. **Ninguna pantalla importa un fixture**, y hay un test
-estático que lo verifica.
+La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
+`lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
+**Ninguna pantalla importa un fixture** y **`lib/navigation/` no importa `lib/fixtures/`**; hay tests
+estáticos que lo verifican.
+
+⚠️ **El Golden Path todavía NO es recorrible extremo a extremo.** `UX05` no tiene entrada por clic
+(el spec la rutea por `ejecución`, que no tiene pantalla) y `UX06` tampoco (`CTA-009` está declarada
+pero ninguna pantalla la renderiza). Ver `docs/roadmap.md`, Etapa 0.3.
 
 - **Track A** (clickeable, fixtures, sin backend): **sin bloqueos.** Cerrar la Fase 0 cierra el
   track — Operador e Institución se difirieron ([ADR-012](docs/decisions.md#adr-012)).
