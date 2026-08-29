@@ -17,6 +17,7 @@ import type { NodoId } from "@/lib/navigation/surfaces";
 import type {
   ActivacionExamenProps,
   OverviewExamenProps,
+  PasoProtocoloProps,
   Chip,
   CompromisoProps,
   EvidenciaProps,
@@ -86,6 +87,7 @@ export interface Escenario {
   progreso?: ProgresoProps;
   ux07?: ActivacionExamenProps;
   ux08?: OverviewExamenProps;
+  ux09?: PasoProtocoloProps;
 }
 
 export type { FilaDato };

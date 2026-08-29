@@ -136,8 +136,8 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     wireframe: "WF-S11",
     nombre: "Paso de Protocolo",
     pregunta: "¿Qué exige este hito y cómo lo completo?",
-    ruta: null,
-    pendienteDeEtapa: "0.6",
+    ruta: "/examen/paso",
+    pendienteDeEtapa: null,
   },
   EJECUCION: {
     id: "EJECUCION",

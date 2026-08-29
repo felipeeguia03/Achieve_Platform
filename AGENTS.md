@@ -221,9 +221,9 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 5 / 8 etapas.
-**0.1** a **0.5** ✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.6**: `UX09`, Paso de
-Protocolo — la última superficie.
+**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 6 / 8 etapas.
+**0.1** a **0.6** ✅ completas el 29 de agosto de 2026. **Las nueve superficies existen.**
+**Sigue la Etapa 0.7**: estados críticos completos de `UX01`–`UX06`.
 
 Dónde vive cada cosa hoy:
 
@@ -264,11 +264,19 @@ Vitest ([ADR-008](docs/decisions.md#adr-008)).
 `UX06` Progreso/Bitácora · `UX07` Activación Modo Examen · `UX08` Modo Examen/Overview ·
 `UX09` Paso de Protocolo.
 
-**Ocho existen** como componente real con ruta propia. Falta `UX09` (0.6).
+**Las nueve existen** como componente real con ruta propia.
 
-**Hay dos matrices de precedencia distintas y no se mezclan.** `lib/domain/precedence.ts` ordena el
-día del estudiante (`UX01`, 9 niveles); `lib/domain/overview-precedence.ts` ordena una preparación de
-examen concreta (`UX08`, 10 niveles en 14 filas) y **no compara materias**.
+**Hay tres matrices de precedencia distintas y no se mezclan**, porque son tres documentos
+normativos con owners distintos:
+
+| Módulo | Superficie | Niveles |
+|---|---|---|
+| `lib/domain/precedence.ts` | `UX01` — el día del estudiante | 9 |
+| `lib/domain/overview-precedence.ts` | `UX08` — una preparación concreta | 10 en 14 filas |
+| `lib/domain/step-precedence.ts` | `UX09` — un paso del protocolo | 11 en 14 filas |
+
+Las dos últimas **no comparan materias**. Unificarlas haría que un cambio en una spec alterara la
+otra pantalla en silencio.
 
 Mapeo canónico: `WF-S10 → UX08`, `WF-S11 → UX09`. **No existe `UX10`.**
 

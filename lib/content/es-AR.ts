@@ -153,6 +153,25 @@ export const copy = {
   "CTA.OVERVIEW.VER_BITACORA": "VER BITÁCORA",
   "CTA.OVERVIEW.VOLVER_CURSADO": "VOLVER A CURSADO",
 
+  // ── UX09 · Paso de Protocolo ──────────────────────────────────────────────
+  // Microcopy de VI.9 §24, literal.
+  "PASO.MODO_EXAMEN": "MODO EXAMEN",
+  "PASO.ACTUAL": "PASO ACTUAL",
+  "PASO.OBJETIVO": "OBJETIVO DEL PASO",
+  "PASO.ENTREGABLE": "ENTREGABLE ESPERADO",
+  "PASO.CRITERIO": "CRITERIO ESPERADO",
+  "PASO.COMO_TRABAJARLO": "CÓMO TRABAJARLO",
+  "PASO.RECURSO": "RECURSO CONFIGURADO",
+  "PASO.CONFIGURACION": "CONFIGURACIÓN",
+  "PASO.FUENTE_CONTENIDO": "Fuente del contenido:",
+  // §14: el objetivo del paso NO es una Action generada por el Engine.
+  "PASO.SEPARACION": "Objetivo del paso. No es una próxima acción generada por el Engine.",
+  "PASO.ABRIR_NO_COMPLETA": "Abriste este paso. Abrirlo no lo completa.",
+  "PASO.CIERRE_NO_CONFIRMADO": "Cierre del paso todavía no confirmado.",
+
+  "CTA.PASO.ABRIR_RECURSO": "ABRIR RECURSO",
+  "CTA.PASO.VOLVER_OVERVIEW": "VOLVER AL OVERVIEW",
+
   // ── UX06 · Progreso / Bitácora ────────────────────────────────────────────
   "PROGRESO.CAMBIO_CONFIRMADO": "Cambio confirmado",
   "PROGRESO.SIN_CAMBIO": "Sin cambio confirmado",

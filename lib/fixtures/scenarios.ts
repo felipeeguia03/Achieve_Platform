@@ -13,6 +13,7 @@
 import { contexto } from "@/lib/navigation/context";
 import { escenariosUX07 } from "./ux07";
 import { escenariosUX08 } from "./ux08";
+import { escenariosUX09 } from "./ux09";
 import type { Escenario } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -520,6 +521,7 @@ export const escenarios = {
   // VI.7 §16 es larga y merece leerse entera y de corrido.
   ...escenariosUX07,
   ...escenariosUX08,
+  ...escenariosUX09,
 } as const satisfies Record<string, Escenario>;
 
 export type EscenarioId = keyof typeof escenarios;

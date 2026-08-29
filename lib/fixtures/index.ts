@@ -45,10 +45,21 @@ export function escenarioUX07Desde(valor: string | null): EscenarioId | null {
   return escenariosConUX07.find((id) => id === valor) ?? null;
 }
 
+/** Los escenarios que traen vista de `UX09`. */
+export const escenariosConUX09 = (Object.keys(escenarios) as EscenarioId[]).filter(
+  (id) => escenarios[id].ux09 !== undefined,
+);
+
 /** Igual que `escenarioUX07Desde`, para `UX08`. */
 export function escenarioUX08Desde(valor: string | null): EscenarioId | null {
   if (valor === null) return null;
   return escenariosConUX08.find((id) => id === valor) ?? null;
+}
+
+/** Igual, para `UX09`. */
+export function escenarioUX09Desde(valor: string | null): EscenarioId | null {
+  if (valor === null) return null;
+  return escenariosConUX09.find((id) => id === valor) ?? null;
 }
 
 export const escenarioIds = Object.keys(escenarios) as EscenarioId[];

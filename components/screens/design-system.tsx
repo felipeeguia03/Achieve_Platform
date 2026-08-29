@@ -13,6 +13,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { DatoDeEvaluacion } from "@/lib/domain/view-models";
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="eyebrow">{children}</p>;
@@ -93,6 +94,65 @@ export function PasoDelRecorrido({ paso, total, label }: { paso: number; total: 
     <div className="flex items-center justify-between hairline-b pb-3" style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
       <span>{label}</span>
       <span>{paso} de {total}</span>
+    </div>
+  );
+}
+
+/**
+ * Un dato académico con su procedencia — la primitiva `Provenance` que
+ * `design-system.md` §3.2 declaraba faltante.
+ *
+ * **`source_type`, `verification_status` y el contexto de observación son tres
+ * datos distintos** (AGENTS.md §2.6), y ninguna capa eleva la verificación. Por
+ * eso la provenance viaja **por dato y no por pantalla**: una misma vista mezcla
+ * una fecha reportada por el estudiante con una modalidad oficial, y la primera
+ * no hereda la verificación de la segunda.
+ *
+ * `provenance: null` ⇒ la línea desaparece. Un dato sin verificación conocida
+ * **no se presenta como oficial**; se omite, no se rellena.
+ *
+ * `data-dato` hace cada dato direccionable para poder verificar esa regla dato
+ * por dato en vez de por pantalla.
+ *
+ * Extraída en la Etapa 0.6, cuando `UX07`, `UX08` y `UX09` ya la necesitaban:
+ * tres copias de la regla de provenance es la que menos conviene dejar
+ * divergir.
+ */
+export function Dato({
+  dato,
+  layout = "bloque",
+}: {
+  dato: DatoDeEvaluacion;
+  /** `bloque` apila label y provenance; `inline` los alinea en una fila. */
+  layout?: "bloque" | "inline";
+}) {
+  const inline = layout === "inline";
+  return (
+    <div
+      data-dato={dato.label}
+      style={inline ? { display: "inline-block", marginRight: 16 } : { padding: "6px 0" }}
+    >
+      <span style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>
+        {dato.label}:{" "}
+      </span>
+      <span style={{ fontSize: "var(--text-body)", color: "var(--foreground)" }}>{dato.valor}</span>
+      {/* El valor anterior se muestra al lado, nunca fusionado con el vigente. */}
+      {dato.anterior && (
+        <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+          {" "}
+          · antes: {dato.anterior}
+        </span>
+      )}
+      {dato.provenance && (
+        <div
+          style={{
+            fontSize: "var(--text-meta)",
+            color: dato.enRevision ? "var(--urgencia-texto)" : "var(--muted-foreground)",
+          }}
+        >
+          {dato.provenance}
+        </div>
+      )}
     </div>
   );
 }

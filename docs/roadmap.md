@@ -133,7 +133,7 @@ del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
 | 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ✅ |
 | 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ✅ |
 | 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ✅ |
-| 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ⬜ |
+| 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ✅ |
 | 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ⬜ |
 | 0.8 | **Modo focus group** | Recorrido limpio sin panel de debug + guion del test de 10 segundos | ⬜ |
 
@@ -498,7 +498,10 @@ Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
    **Son cosas distintas** — calcular y presentar readiness *versus* releer un valor que
    `ExamPreparation` ya trae. La pantalla no calcula, no deriva, no muestra score ni porcentaje, y
    el descargo *"Esto no predice ni garantiza el resultado"* viaja siempre pegado al valor.
-5. `UX09`: **no se muestra "Paso 5 de 12"** ni porcentaje. Los 12 pasos son provisionales.
+5. ✅ **Confirmado en la 0.6.** `UX09`: **no se muestra "Paso 5 de 12"** ni porcentaje. `VI.9` §13.2
+   lo funda: instancia, orden, `current`/`next` y deduplicación siguen `SOURCE CONTRACT PENDING`. La
+   versión del protocolo sí se muestra, tal como llega y **sin declararla vigente**. Hay un test que
+   verifica las tres cosas sobre los 35 escenarios.
 
 **Estados críticos mínimos por pantalla:**
 
@@ -631,6 +634,41 @@ wireframes son funcionales y no high-fi.
 
 ---
 
+#### ✅ Etapa 0.6 — `UX09` COMPLETA · 29 de agosto de 2026
+
+**Con esto existen las nueve superficies.**
+
+| Criterio | Resultado |
+|---|---|
+| Estados críticos alcanzables | ✅ **35 escenarios** cubriendo los 31 estados obligatorios de `VI.9` §22 |
+| Los 11 niveles de precedencia de §19 | ✅ todos alcanzables, más un test de que cada nivel gana sobre los posteriores |
+| Los 9 conflictos que §19.1 declara | ✅ uno por uno |
+| Nunca `Paso N de M` ni porcentaje | ✅ test sobre los 35, en código y en navegador |
+| Una sola CTA primaria por estado | ✅ test por escenario |
+| Retorno seguro en todos los estados | ✅ los 35 conservan salida al Overview |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **249 tests en 11 archivos** |
+
+**Tres matrices de precedencia, tres funciones puras separadas.** `UX09` §19 se parece mucho a
+`UX08` §13, pero no es la misma: el nivel 7 abre el **recurso** en vez del paso, hay un nivel 10
+propio (paso completado → abrir el nuevo current) y el fallback vuelve al Overview, no al Cursado.
+Se mantuvieron separadas porque son dos documentos normativos distintos: unificarlas haría que un
+cambio en §13 alterara `UX09` en silencio.
+
+**Se extrajo la primitiva `Dato`** a `components/screens/design-system.tsx` —la primitiva
+`Provenance` que §3.2 del sistema de diseño declaraba faltante—. `UX07`, `UX08` y `UX09` ya tenían
+tres copias de la misma regla, y la regla de provenance es justamente la que menos conviene dejar
+divergir. Los 53 tests de `UX07` y `UX08` siguen en verde tras el cambio.
+
+**El guard de destinos se vació.** Al darle ruta a `UX09`, `CTA-012` dejó de tener destino pendiente:
+**las 18 CTAs son alcanzables y todos sus destinos tienen pantalla.**
+
+**Deuda declarada:** en el Track A no hay un `Resource` real que abrir, así que *ABRIR RECURSO*
+no navega. Es coherente con §19.3 —abrir el recurso es navegación, no transición, y no muta nada—
+pero significa que ese CTA no hace nada visible. La **Etapa 0.8** decide si el recorrido de focus
+group lo incluye y con qué destino sintético.
+
+---
+
 ### Etapa 0.7 — Estados críticos completos de UX01–UX06
 
 **Contexto.** Las 6 pantallas existentes son maquetas de **una sola vista cada una**. El arnés QA
@@ -662,7 +700,7 @@ sin instrucciones, y el facilitador tiene el guion con los criterios de PASS.
 
 ### Fase 0 — Done cuando…
 
-- [ ] Las 9 superficies existen como componentes reales con el sistema visual final
+- [x] Las 9 superficies existen como componentes reales con el sistema visual final — **29 ago 2026**
 - [ ] Todos los estados críticos de las 9 specs son alcanzables
 - [ ] El Golden Path es recorrible extremo a extremo
 - [ ] Cero red, cero persistencia, cero datos reales — **verificado por test estático**
@@ -887,7 +925,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 5 / 8 |
+| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 6 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

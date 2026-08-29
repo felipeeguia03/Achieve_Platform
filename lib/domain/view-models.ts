@@ -17,6 +17,7 @@
 
 import type { HeroLevel } from "./precedence";
 import type { NivelOverview, VarianteOverview } from "./overview-precedence";
+import type { NivelPaso, VariantePaso } from "./step-precedence";
 
 export type Tono = "urgencia" | "exito" | "humano";
 
@@ -323,5 +324,74 @@ export interface OverviewExamenProps {
   // ── Banda de continuidad ──────────────────────────────────────────────────
   /** Cursado, sus cinco dimensiones y la Bitácora continúan. */
   cursadoPersistente: string;
+  ctaRetorno: string;
+}
+
+// ── UX09 · Paso de Protocolo ─────────────────────────────────────────────────
+
+/**
+ * Un bloque de contenido configurado del paso.
+ *
+ * `WF-S11` **renderiza contenido recibido**: no deriva, no resume con
+ * significado nuevo, no completa y no corrige contenido pedagógico
+ * (`VI.9` §12.1). `valor: null` ⇒ se muestra el copy de ausencia que el spec
+ * fija en §27, nunca una versión generada.
+ */
+export interface BloqueDePaso {
+  titulo: string;
+  valor: string | null;
+  /** Copy exacto de §27 cuando el contenido falta. */
+  ausencia: string;
+}
+
+export interface RecursoConfigurado {
+  nombre: string;
+  tipo: string | null;
+  /** Provenance ya traducida a copy. `null` ⇒ *"Fuente o verificación no disponible"*. */
+  provenance: string | null;
+  /** Derechos de uso, si el owner los declara. */
+  derechos: string | null;
+}
+
+export interface PasoProtocoloProps {
+  nivel: NivelPaso;
+  variante: VariantePaso | null;
+
+  // ── Identidad (§13.1) ─────────────────────────────────────────────────────
+  assessment: string;
+  materia: string;
+  modalidad: string;
+  /** Label configurado del paso. `null` ⇒ identidad parcial. */
+  labelDelPaso: string | null;
+  /**
+   * *"Protocolo {version recibida}"*. `null` ⇒ no se declara vigencia ni se usa
+   * un protocolo genérico.
+   *
+   * **Nunca se muestra `Paso 5 de 12` ni un porcentaje** (§13.2): instancia,
+   * orden, `current`/`next` y deduplicación siguen `SOURCE CONTRACT PENDING`.
+   */
+  version: string | null;
+
+  // ── Contenido configurable (§12) ──────────────────────────────────────────
+  objetivo: BloqueDePaso;
+  explicacion: BloqueDePaso;
+  entregable: BloqueDePaso;
+  criterio: BloqueDePaso;
+  recurso: RecursoConfigurado | null;
+  /** *"Este paso no tiene un recurso configurado"*. No es un bloqueo. */
+  avisoRecurso: string | null;
+
+  // ── Estado y decisión ─────────────────────────────────────────────────────
+  estadoDominante: string;
+  /** *"Abriste este paso. Abrirlo no lo completa."* */
+  avisoDeApertura: string | null;
+  aviso: string | null;
+  ctaPrimaria: { texto: string; habilitada: boolean } | null;
+  despues: string | null;
+  secundarios: readonly string[];
+
+  // ── Configuración · columna secundaria ────────────────────────────────────
+  /** Fuente del contenido: real o desconocida. Nunca se oficializa. */
+  fuenteDelContenido: string;
   ctaRetorno: string;
 }

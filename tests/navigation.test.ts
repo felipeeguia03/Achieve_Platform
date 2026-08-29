@@ -222,7 +222,9 @@ describe("Alcance: toda CTA tiene un escenario que la alcanza", () => {
       const destino = ctaRegistry[id].destino;
       return destino !== null && nodos[destino].pendienteDeEtapa !== null;
     });
-    expect(sinRuta).toEqual(["CTA-012"]); // abre UX09 · Etapa 0.6
+    // Se vació en la Etapa 0.6, con UX09. Las nueve superficies existen y
+    // todos los destinos del registro tienen pantalla.
+    expect(sinRuta).toEqual([]);
   });
 });
 

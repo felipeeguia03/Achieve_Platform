@@ -34,37 +34,10 @@ import {
   CTAPrincipal,
   CTASecundaria,
   Fila,
+  Dato,
 } from "./design-system";
 import { t } from "@/lib/content/es-AR";
-import type { DatoDeEvaluacion, OverviewExamenProps } from "@/lib/domain/view-models";
-
-function Dato({ dato }: { dato: DatoDeEvaluacion }) {
-  return (
-    <span data-dato={dato.label} style={{ display: "inline-block", marginRight: 16 }}>
-      <span style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>
-        {dato.label}:{" "}
-      </span>
-      <span style={{ fontSize: "var(--text-body)" }}>{dato.valor}</span>
-      {dato.anterior && (
-        <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
-          {" "}
-          · {t("EXAMEN.ANTES")} {dato.anterior}
-        </span>
-      )}
-      {dato.provenance && (
-        <span
-          style={{
-            fontSize: "var(--text-meta)",
-            color: dato.enRevision ? "var(--urgencia-texto)" : "var(--muted-foreground)",
-            display: "block",
-          }}
-        >
-          {dato.provenance}
-        </span>
-      )}
-    </span>
-  );
-}
+import type { OverviewExamenProps } from "@/lib/domain/view-models";
 
 export function OverviewModoExamen({
   materia,
@@ -103,7 +76,7 @@ export function OverviewModoExamen({
           <HeroCard>
             <div>
               {datos.map((d) => (
-                <Dato key={d.label} dato={d} />
+                <Dato key={d.label} dato={d} layout="inline" />
               ))}
             </div>
 

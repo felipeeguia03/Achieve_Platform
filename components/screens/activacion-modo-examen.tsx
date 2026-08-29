@@ -32,50 +32,11 @@ import {
   HeroCard,
   CTAPrincipal,
   CTASecundaria,
+  Dato,
 } from "./design-system";
 import { t } from "@/lib/content/es-AR";
-import type {
-  ActivacionExamenProps,
-  DatoDeEvaluacion,
-  OpcionDeEvaluacion,
-} from "@/lib/domain/view-models";
+import type { ActivacionExamenProps, OpcionDeEvaluacion } from "@/lib/domain/view-models";
 
-/**
- * Un dato con su procedencia.
- *
- * La provenance se muestra **partida, nunca fusionada** con el valor: son dos
- * datos distintos. Si falta, la línea de provenance desaparece — un dato sin
- * verificación conocida no se presenta como oficial.
- */
-function Dato({ dato }: { dato: DatoDeEvaluacion }) {
-  return (
-    // `data-dato` hace cada dato direccionable: la provenance se verifica por
-    // dato y no por pantalla, porque el spec la pone "junto a cada dato
-    // afectado" (§16.2) y una misma vista mezcla fuentes distintas.
-    <div data-dato={dato.label} style={{ padding: "6px 0" }}>
-      <span style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>
-        {dato.label}:{" "}
-      </span>
-      <span style={{ fontSize: "var(--text-body)", color: "var(--foreground)" }}>{dato.valor}</span>
-      {dato.anterior && (
-        <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
-          {" "}
-          · {t("EXAMEN.ANTES")} {dato.anterior}
-        </span>
-      )}
-      {dato.provenance && (
-        <div
-          style={{
-            fontSize: "var(--text-meta)",
-            color: dato.enRevision ? "var(--urgencia-texto)" : "var(--muted-foreground)",
-          }}
-        >
-          {dato.provenance}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /** Lista de evaluaciones del mismo CourseEnrollment. Sin ranking local. */
 function Opciones({ opciones }: { opciones: readonly OpcionDeEvaluacion[] }) {
