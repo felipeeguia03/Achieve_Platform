@@ -55,3 +55,52 @@ describe("Track A — reglas verificables estáticamente", () => {
     expect(offenders(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i)).toEqual([]);
   });
 });
+
+/**
+ * La frontera que hace barato el Track B (architecture.md §2.4).
+ *
+ * Si una pantalla importa un fixture, cambiar de fixtures a backend real toca
+ * la capa de presentación — que es exactamente el costo que esta separación
+ * existe para evitar.
+ */
+describe("La frontera de lib/fixtures/", () => {
+  const pantallas = files.filter(({ path }) => path.startsWith("components/screens/"));
+  const dominio = files.filter(({ path }) => path.startsWith("lib/domain/"));
+
+  it("hay pantallas y hay dominio que revisar", () => {
+    expect(pantallas.length).toBeGreaterThan(0);
+    expect(dominio.length).toBeGreaterThan(0);
+  });
+
+  it("ninguna pantalla importa un fixture", () => {
+    const culpables = pantallas
+      .filter(({ code }) => /from\s+"@?\/?(?:\.\.\/)*lib\/fixtures/.test(code))
+      .map(({ path }) => path);
+    expect(culpables).toEqual([]);
+  });
+
+  it("lib/domain/ es puro: sin React", () => {
+    const culpables = dominio
+      .filter(({ code }) => /from\s+"react|from\s+"next\//.test(code))
+      .map(({ path }) => path);
+    expect(culpables).toEqual([]);
+  });
+
+  it("lib/domain/ no depende de fixtures ni de contenido", () => {
+    // La dirección de la dependencia es fixtures → domain, nunca al revés.
+    const culpables = dominio
+      .filter(({ code }) => /from\s+"@\/lib\/(fixtures|content)/.test(code))
+      .map(({ path }) => path);
+    expect(culpables).toEqual([]);
+  });
+
+  it("las pantallas no traen copy de regla de negocio hardcodeado (regla C-07)", () => {
+    // Los prefijos de dominio viven en lib/content/ con ID. Si aparecen como
+    // literal dentro de un componente, volvieron al JSX.
+    const literales = /"(Porque:|Entregá:|Después:|Cerrás cuando:)/;
+    const culpables = pantallas
+      .filter(({ code }) => literales.test(code))
+      .map(({ path }) => path);
+    expect(culpables).toEqual([]);
+  });
+});

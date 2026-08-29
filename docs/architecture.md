@@ -25,7 +25,10 @@ Ninguna superficie rankea, prioriza, calcula elegibilidad ni genera una `Action`
 
 **Consecuencia de implementación:** el frontend no contiene lógica de priorización académica.
 Contiene, como máximo, **precedencia operativa de lifecycle** — que es determinista, está
-especificada en `product.md` §10.2, y ya vive como función pura (`selectHeroLevel`).
+especificada en `product.md` §10.2, y vive como función pura en `lib/domain/precedence.ts`.
+
+Un fixture declara **la condición del dominio**, nunca la respuesta: el nivel del Hero lo calcula
+`selectHeroLevel` en la proyección, y un test lo verifica escenario por escenario.
 
 Si el backend devuelve varias recomendaciones sin una principal, eso es un **error de contrato**: la
 UI muestra un error técnico, **no** elige una.
@@ -180,7 +183,7 @@ de presentación.
 | `components/ui/*` (61) | `components/ui/*` | Verbatim. **No se editan** (registro vendorizado) |
 | `components/screens/design-system.tsx` | idem | Verbatim + se extiende con primitivas faltantes |
 | `components/screens/{hoy,materia,proxima,compromiso,evidencia,progreso}.tsx` | idem | **Parametrizados con props tipadas.** El JSX y el copy se preservan |
-| `components/screens/hoy-autogestion.tsx` → `selectHeroLevel()` | `lib/domain/precedence.ts` | Extraída como función pura y ampliada a los 9 niveles |
+| `components/screens/hoy-autogestion.tsx` → `selectHeroLevel()` | `lib/domain/precedence.ts` | ✅ Extraída como función pura en la Etapa 0.2. Ya cubría los 9 niveles; lo que faltaba era renderizarlos |
 | `components/screens/recorrido-diseno-visual.tsx` | `lib/navigation/` | **Reemplazado.** Es un pager lineal de 6 pasos, no el grafo del Golden Path |
 | `lib/utils.ts`, `hooks/use-mobile.ts` | idem | Verbatim |
 | `lib/targeted-correction.ts` | — | **Descartado como código.** `evidenceOwnerTransitions` se hereda como especificación en `data-model.md` |

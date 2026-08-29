@@ -129,7 +129,7 @@ del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
 | # | Etapa | Entregable | Estado |
 |---|---|---|---|
 | 0.1 | **Scaffold + migración de UI** | Repo que compila con `globals.css`, `components/ui/` (61), `components/screens/` (7), `lib/utils.ts`, `hooks/`. `lint` y `build` en verde | ✅ |
-| 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ⬜ |
+| 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ✅ |
 | 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ⬜ |
 | 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ⬜ |
 | 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ⬜ |
@@ -250,23 +250,43 @@ no de esta etapa: se agregó desde el primer commit para que no haya que retrofi
 
 **La etapa más importante de la Fase 0.** Define la frontera que hace barato el Track B.
 
-**Decisiones de diseño a aprobar:**
-1. Forma del catálogo de fixtures: ¿escenarios completos (un objeto por escenario) o composición de
-   fragmentos? *Recomendación: escenarios completos y explícitos — el arnés original demostró que la
-   composición implícita produce reglas de negocio escondidas en comparaciones de string.*
-2. Nomenclatura de los escenarios. *Recomendación: conservar los IDs del spec (`FX-DAY-BASE`,
-   `SC-EV-01`…) para preservar trazabilidad con `product-spec-source.md`.*
-3. Dónde vive el copy: ¿en el componente o en un archivo de contenido con ID? *Recomendación:
-   archivo de contenido, cumpliendo `C-07`.*
-4. El orden por defecto de las listas ya está definido por `DD2`: **Commitment más próximo a vencer
-   primero, proximidad del examen en segundo lugar**, nunca fusionados en un solo número
-   ([`domain-translation-dd1-dd10.md`](domain-translation-dd1-dd10.md)).
+**Decisiones de diseño — ✅ aprobadas el 29 de agosto de 2026:**
+
+1. **Escenarios completos y explícitos.** Un objeto por escenario, con su estado escrito literal.
+   Nada hereda de nada y no hay merges. Es verboso a propósito: el arnés original demostró que la
+   composición implícita produce reglas de negocio escondidas en comparaciones de string.
+2. **Se conservan los IDs del spec.** `FX-DAY-BASE`, `FX-MISSED`, `FX-EVD-BASE`, `FX-ADE-NONE` salen
+   del registro canónico de `product-spec-source.md` §7, y cada escenario declara qué `C01` y qué
+   `SC-*` cubre. **Un test verifica que un ID marcado como del spec realmente esté en el spec.**
+
+   *Consecuencia no prevista por el roadmap:* el registro del spec **no nombra todos** los
+   escenarios que el Track A necesita — no hay `FX` para "Action ya iniciada" ni para progreso.
+   Inventar un `FX-` con forma canónica haría que alguien lo buscara en el spec y no lo encontrara.
+   Los que el spec no nombra llevan prefijo **`FX-LOCAL-`**, y un test verifica que esos **no**
+   estén en el spec. Hoy son dos: `FX-LOCAL-DAY-IN-PROGRESS` y `FX-LOCAL-PROG-VALIDATED`.
+3. **El copy vive en `lib/content/es-AR.ts` con ID tipado**, cumpliendo `C-07`. Los datos del
+   dominio viven en el fixture. Un test estático verifica que los prefijos de dominio
+   (`Porque:`, `Entregá:`, `Después:`, `Cerrás cuando:`) no vuelvan al JSX.
+4. **Alcance:** frontera + escenarios base. Esta etapa entrega la capa de dominio completa y los
+   escenarios que hacen que las 6 pantallas rendericen lo que ya rendían. **La cobertura completa de
+   estados críticos sigue siendo la Etapa 0.7**, y no se adelanta acá: escribir escenarios para
+   estados que las pantallas todavía no saben dibujar produce fixtures sin verificación visual.
+5. El orden por defecto de las listas ya estaba definido por `DD2`: **Commitment más próximo a
+   vencer primero, proximidad del examen en segundo lugar**, nunca fusionados en un solo número
+   ([`domain-translation-dd1-dd10.md`](domain-translation-dd1-dd10.md)). Implementado como
+   `compareByDefaultOrder`, con un test que verifica que un examen inminente **no** adelanta a un
+   Commitment que vence antes — que es exactamente lo que pasaría si los dos relojes se fusionaran
+   en un score.
 
 **Trabajo:**
 - `lib/domain/types.ts` — los tipos de [`data-model.md`](data-model.md) §13.
 - `lib/domain/state-machines.ts` — las cuatro máquinas como tablas de transición puras.
-- `lib/domain/precedence.ts` — `selectHeroLevel` extraída de `hoy-autogestion.tsx` y **ampliada de
-  4 a los 9 niveles** de `product.md` §10.2.
+- `lib/domain/precedence.ts` — `selectHeroLevel` extraída de `hoy-autogestion.tsx`.
+
+  > **Corrección de dato.** El roadmap decía "ampliada de 4 a los 9 niveles". La función **ya tenía
+  > los 9**; lo que estaba limitado a 4 era el **renderizado** en `UX01`. La extracción no amplió
+  > nada: agregó el test por nivel que faltaba. Dibujar los niveles restantes sigue siendo trabajo
+  > de la Etapa 0.7, tal como esa etapa ya lo declara.
 - `lib/fixtures/` — el catálogo.
 - `lib/content/` — las frases de regla de negocio con ID.
 - Parametrizar `UX01`–`UX06`: **preservando el JSX y el copy**, reemplazando los datos hardcodeados
@@ -279,6 +299,68 @@ no de esta etapa: se agregó desde el primer commit para que no haya que retrofi
 - `selectHeroLevel` cubre los 9 niveles con test por nivel.
 - Las 6 pantallas renderizan igual que antes. **Verificación visual explícita.**
 - Lint y build en verde.
+
+---
+
+#### ✅ Etapa 0.2 — COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Ninguna pantalla importa un fixture | ✅ test estático en `tests/track-a-rules.test.ts`, junto con "`lib/domain/` no importa React ni fixtures" |
+| Transiciones prohibidas con test | ✅ 18 tests. `MISSED → COMPLETED` falla, `MISSED` solo sale a `CLOSED`, `STARTED` no admite `RENEGOTIATED`, `SUBMITTED` no salta a `VALIDATED` |
+| `selectHeroLevel` con test por nivel | ✅ los 9, más un test que verifica que **cada nivel gana sobre todos los posteriores** |
+| Las 6 pantallas renderizan igual | ✅ ver abajo |
+| `npm run lint` · `npm run build` · `npm test` | ✅ verde · verde · **76 tests en 6 archivos** |
+
+**Verificación visual, en dos capas.**
+
+1. **Diff píxel a píxel** contra las capturas de la Etapa 0.1, en desktop 1440×900 y a 360 px.
+   `UX05` salió **idéntica byte a byte**. `UX02`, `UX03`, `UX04` y `UX06` difieren en **97–459
+   píxeles (≤ 0,07 % de la imagen)**, con los deltas confinados a los bordes de glifo de las líneas
+   donde el prefijo de copy y el dato ahora son dos nodos de texto en vez de uno. Sin corrimiento de
+   layout y sin cambio de contenido. `UX01` difiere mucho, como corresponde: **se le quitó el
+   conmutador de demo interno**, que es trabajo pedido por esta etapa.
+2. **Comparación de texto renderizado** contra el árbol de la Etapa 0.1 (commit `2c2ac8b`): los 84
+   fragmentos de texto del código anterior siguen presentes. 67 visibles hoy en una URL, 11 en el
+   catálogo esperando que la 0.3 los cablee, y 6 que ahora se **componen** en tiempo de render.
+   Esos 6 quedaron cubiertos por `tests/screens-render.test.tsx`, que afirma las frases exactas de
+   la 0.1 —*"En curso · Entregá: 7 ejercicios"*, *"Porque: la acción se cierra con evidencia
+   verificable."*…— en los cinco niveles que `UX01` dibuja. La verificación manual quedó convertida
+   en guard permanente.
+
+**Entregado:**
+
+- `lib/domain/` — `types.ts` (entidades, provenance, las 4 formas de ausencia tipada),
+  `state-machines.ts` (las 4 tablas de transición), `precedence.ts` (`selectHeroLevel` + el orden
+  por defecto de `DD2`), `view-models.ts` (la frontera: las props de cada pantalla).
+- `lib/content/` — `es-AR.ts` (copy con ID tipado) y `hero.ts` (nivel → copy).
+- `lib/fixtures/` — 6 escenarios: `FX-DAY-BASE`, `FX-EVD-BASE`, `FX-MISSED`, `FX-ADE-NONE`,
+  `FX-LOCAL-DAY-IN-PROGRESS`, `FX-LOCAL-PROG-VALIDATED`.
+- Las 6 pantallas con props tipadas; las rutas leen el escenario y lo proyectan.
+
+**Deuda declarada:**
+
+1. **Los segmentos `[id]` siguen sin crearse.** El catálogo ya da identidad, pero elegir escenario
+   por URL es parte del grafo de navegación, que es la **Etapa 0.3**. Cada ruta usa hoy un escenario
+   fijo, y por eso 11 fragmentos de copy están en el catálogo sin URL que los alcance.
+2. **`lib/content/hero.ts` cubre 5 de los 9 niveles**, a propósito. Los otros cuatro entran en la
+   0.7 y dos de ellos **necesitan una decisión previa**: `product.md` §10.2 le da a
+   `COMMITMENT_NEXT` dos verbos (*"Ver compromiso"* / *"Empezar"*) y a `EVIDENCE_INFO` otros dos
+   (*"Ver evidencia"* / *"Ver avance"*) sin decir cuál aplica cuándo. **No se eligió**: elegir sería
+   inventar una regla de negocio.
+3. **`ExamPreparation` no tiene tabla de transiciones.** `data-model.md` §3.4 declara los nueve
+   estados pero no sus transiciones, y tres de ellos colisionan con
+   [ADR-011](decisions.md#adr-011). Se exportan los estados y **no se aproxima una tabla**. Se cierra
+   en la Fase B5.
+4. **`UX02` dice "Entrega:" donde `UX01` dice "Entregá:".** Viene del copy original de las dos specs
+   y **se preservó tal cual**, con los dos IDs separados en `lib/content/`. Si es una grieta de tono
+   (anti-patrón `A-05`) o dos usos legítimos —imperativo voseado vs. sustantivo— lo resuelve la
+   auditoría de la Etapa 0.7. No se normalizó en silencio.
+5. **`DimensionValue` y `TopicProgressDimensions` están tipados pero `UX06` todavía no se apoya en
+   ellos**: sus filas siguen siendo texto con marca de ausencia, como en la 0.1. Atar las cinco
+   dimensiones al tipo es trabajo de la 0.7 y de la Fase B3.
 
 ---
 
@@ -597,7 +679,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 1 / 8 |
+| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 2 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

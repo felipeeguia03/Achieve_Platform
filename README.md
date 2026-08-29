@@ -10,8 +10,8 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
 ## Estado actual
 
 - **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. **Fase 0 en
-  curso, 1 / 8 etapas.** La Etapa 0.1 (scaffold + migración de la capa de UI) cerró el 29 de agosto
-  de 2026.
+  curso, 2 / 8 etapas.** Las etapas 0.1 (scaffold + migración de la capa de UI) y 0.2 (capa de
+  dominio, fixtures y parametrización de `UX01`–`UX06`) cerraron el 29 de agosto de 2026.
 - **Track B:** backend, auth, persistencia e integraciones reales. Bloqueado por las decisiones
   pendientes, especialmente ADR-005 y ADR-006.
 
@@ -36,6 +36,21 @@ etapas 0.4–0.6.
 como piso obligatorio de la variante móvil ([ADR-014](docs/decisions.md#adr-014)) · una sola CTA
 primaria por pantalla y por estado. Las tres primeras se verifican con un test estático
 (`tests/track-a-rules.test.ts`).
+
+## Cómo está organizado el código
+
+```
+lib/domain/     tipos, máquinas de estado, precedencia y view models · PURO
+lib/content/    el copy, con ID tipado (regla C-07)
+lib/fixtures/   el catálogo de escenarios sintéticos
+app/(student)/  una URL por superficie; la ruta lee el escenario y lo proyecta
+components/screens/   las superficies, con props tipadas
+components/ui/  registro shadcn vendorizado · NO se edita
+```
+
+**Las pantallas nunca importan un fixture.** Esa frontera es la que hace barato el Track B: cuando
+el backend exista, cambia lo que hay adentro de `lib/fixtures/` y la capa de presentación no se
+toca. Hay un test estático que lo verifica.
 
 ## Documentación esencial
 

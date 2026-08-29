@@ -3,7 +3,7 @@
 **Documento:** `docs/product.md`
 **Rol:** owner canónico del vocabulario, los roles, las máquinas de estado observables y el alcance.
 **Deriva de:** `docs/product-spec-source.md` (Partes I, II, IV, VI, IX).
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 29 de agosto de 2026
 
 > **Regla de precedencia.** Si este documento entra en conflicto con `product-spec-source.md`, gana
 > el spec fuente y este documento es el defectuoso. Si entra en conflicto con el código, gana este
@@ -462,8 +462,16 @@ La selección de qué ocupa el Hero separa dos responsabilidades:
 > examen, riesgo, dificultad, brecha, antigüedad o starvation. Los estados de riesgo y de examen
 > activo son **modificadores**, no reemplazantes: cambian el estado general y el contexto, no la CTA.
 
-Esta función ya está implementada como `selectHeroLevel()` en
-`components/screens/hoy-autogestion.tsx`.
+Esta función vive como **función pura** en
+[`lib/domain/precedence.ts`](../lib/domain/precedence.ts), extraída de
+`components/screens/hoy-autogestion.tsx` en la Etapa 0.2. Los nueve niveles tienen test propio.
+
+⚠️ **La función cubre los nueve niveles; `UX01` sabe dibujar cinco.**
+`ACTION_RECOMMENDED`, `IN_PROGRESS`, `EVIDENCE_PENDING`, `RESCUE_REQUIRED` y la ausencia confirmada.
+Los otros cuatro se renderizan en la **Etapa 0.7**. Dos de ellos necesitan antes una regla que este
+documento no fija: §10.2 le da a `COMMITMENT_NEXT` dos verbos posibles (*"Ver compromiso"* /
+*"Empezar"*) y a `EVIDENCE_INFO` otros dos (*"Ver evidencia"* / *"Ver avance"*), **sin decir cuál
+aplica cuándo**.
 
 ### 10.3 Registro canónico de CTAs
 

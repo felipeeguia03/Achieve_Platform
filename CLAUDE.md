@@ -68,9 +68,13 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **1 / 8**. La Etapa 0.1 (scaffold + migración de UI)
-cerró el 29 ago 2026. **Toca la Etapa 0.2:** capa de dominio, fixtures y parametrización de
-`UX01`–`UX06`.
+**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **2 / 8**. Las etapas 0.1 (scaffold + migración de UI)
+y 0.2 (dominio, fixtures y parametrización) cerraron el 29 ago 2026. **Toca la Etapa 0.3:** grafo del
+Golden Path y registro de `CTA-001`…`CTA-018`.
+
+La frontera ya existe: `lib/domain/` (puro) → `lib/fixtures/` (catálogo) → `app/(student)/` proyecta
+→ `components/screens/` recibe props tipadas. **Ninguna pantalla importa un fixture**, y hay un test
+estático que lo verifica.
 
 - **Track A** (clickeable, fixtures, sin backend): **sin bloqueos.** Cerrar la Fase 0 cierra el
   track — Operador e Institución se difirieron ([ADR-012](docs/decisions.md#adr-012)).

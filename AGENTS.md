@@ -216,9 +216,20 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 1 / 8 etapas.
-**Etapa 0.1 (scaffold + migración de UI) ✅ completa** el 29 de agosto de 2026. **Sigue la Etapa 0.2**
-(capa de dominio, fixtures y parametrización de `UX01`–`UX06`).
+**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 2 / 8 etapas.
+**0.1** (scaffold + migración de UI) y **0.2** (capa de dominio, fixtures y parametrización)
+✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.3**: grafo del Golden Path y registro de
+`CTA-001`…`CTA-018`.
+
+Dónde vive cada cosa hoy:
+
+| Carpeta | Qué es |
+|---|---|
+| `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, y los view models de `UX01`–`UX06`. **Puro:** sin React, sin I/O |
+| `lib/content/` | El copy con ID tipado (regla `C-07`) |
+| `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |
+| `components/screens/` | Las 6 superficies, con props tipadas |
+| `app/(student)/` | Una URL por superficie; la ruta lee el escenario y lo proyecta |
 
 Dos tracks con costos muy distintos:
 

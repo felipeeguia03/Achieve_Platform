@@ -1,0 +1,188 @@
+/**
+ * Tipos del dominio de Achieve.
+ *
+ * Owner canónico: `docs/data-model.md` §3, §4, §5 y §13. Estos mismos tipos los
+ * consume el backend en el Track B (`data-model.md` §13): cuando `lib/fixtures/`
+ * se reemplace por llamadas reales, esta capa no cambia.
+ *
+ * Regla de esta carpeta (AGENTS.md §6): `lib/domain/` es puro. Sin I/O, sin
+ * React, sin fetch. Testeable en aislamiento.
+ */
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Máquinas de estado · data-model.md §3
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ActionStatus =
+  | "RECOMMENDED"
+  | "ACCEPTED"
+  | "COMMITTED"
+  | "IN_PROGRESS"
+  | "EVIDENCE_PENDING"
+  | "COMPLETED"
+  | "BLOCKED"
+  | "CANCELLED"
+  | "REPLACED";
+
+export type CommitmentState =
+  | "DRAFT"
+  | "CONFIRMED"
+  | "DUE"
+  | "STARTED"
+  | "COMPLETED"
+  | "RENEGOTIATED"
+  | "MISSED"
+  | "CLOSED";
+
+export type EvidenceState =
+  | "EXPECTED"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "SUFFICIENT"
+  | "INSUFFICIENT"
+  | "RESUBMISSION_REQUESTED"
+  | "VALIDATED";
+
+export type ExamPreparationStatus =
+  | "RECOMMENDED"
+  | "ACTIVE"
+  | "BUILDING"
+  | "READY_BY_PROTOCOL"
+  | "NOT_READY"
+  | "BLOCKED"
+  | "EXAM_TAKEN"
+  | "CLOSED"
+  | "ABANDONED";
+
+export type RiskSignalStatus =
+  | "OPEN"
+  | "ACKNOWLEDGED"
+  | "INTERVENTION_REQUIRED"
+  | "RESOLVED"
+  | "ESCALATED"
+  | "EXPIRED";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Provenance · data-model.md §4
+//
+// `source_type`, `verification_status` y el contexto de observación son TRES
+// datos distintos. Ninguna capa eleva un `verificationStatus` (invariante I9).
+// Los enums nunca aparecen como copy visible (AGENTS.md §2.6).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SourceType =
+  | "institution"
+  | "instructor"
+  | "student"
+  | "community"
+  | "public_web"
+  | "inference";
+
+export type VerificationStatus = "unverified" | "corroborated" | "official" | "disputed";
+
+export type RightsStatus = "unknown" | "allowed" | "restricted";
+
+export interface Provenance {
+  sourceType: SourceType;
+  sourceRef: string | null;
+  observedAt: string;
+  validFrom: string | null;
+  validUntil: string | null;
+  /** 0..1, operativa. NO es la confianza declarada por el estudiante. */
+  confidence: number | null;
+  verificationStatus: VerificationStatus;
+  uploadedBy: string | null;
+  rightsStatus: RightsStatus | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ausencia tipada · data-model.md §5, product.md §6, architecture.md P4
+//
+// Cuatro estados que NUNCA se colapsan. "Sin datos no es cero".
+// `unavailable` es operativo: lo produce la lectura ante un fallo y no se
+// persiste.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type DimensionValue =
+  | { kind: "value"; value: number; unit: string; observedAt: string }
+  | { kind: "not_evaluated" }
+  | { kind: "no_information" }
+  | { kind: "unavailable" };
+
+/** Las cinco dimensiones de progreso, separadas y nunca fusionadas en un número. */
+export interface TopicProgressDimensions {
+  /** Recorrido */
+  exposure: DimensionValue;
+  /** Práctica */
+  practice: DimensionValue;
+  /** Dominio */
+  domain: DimensionValue;
+  /** Confianza — autorreporte del estudiante, con fecha */
+  confidence: DimensionValue;
+  /** Recencia */
+  recency: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Entidades · data-model.md §13
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface Action {
+  id: string;
+  courseEnrollmentId: string;
+  topicId: string | null;
+  examPreparationId: string | null;
+  objective: string;
+  verb: string;
+  scope: string;
+  /** `null` ⇒ se omite la línea de tiempo. Omitir, no inventar (AGENTS.md §2.7). */
+  estimatedMinutes: { min: number; max: number } | null;
+  /** `null` ⇒ no se inventa el requisito de evidencia. */
+  expectedEvidence: string | null;
+  completionCriterion: string | null;
+  status: ActionStatus;
+}
+
+export interface Commitment {
+  id: string;
+  actionId: string;
+  /** Fecha y hora acordadas, en la zona declarada. `null` ⇒ todavía no acordadas. */
+  scheduledFor: string | null;
+  timezone: string | null;
+  declaredMinutes: number | null;
+  state: CommitmentState;
+  /** Renegociación: el original queda `RENEGOTIATED` y el nuevo lo referencia. */
+  renegotiatedFromId: string | null;
+  /** Rescate: solo puede apuntar a un Commitment `MISSED` (invariante I3). */
+  rescuesCommitmentId: string | null;
+}
+
+export interface Evidence {
+  id: string;
+  commitmentId: string | null;
+  protocolStepId: string | null;
+  state: EvidenceState;
+  /** `UNDER_REVIEW` exige una instancia real, no un método configurado (I5). */
+  reviewInstanceRef: string | null;
+  /** Resubmission: la anterior se preserva, nunca se sobrescribe (I4). */
+  supersedesId: string | null;
+  supersededById: string | null;
+  submittedAt: string | null;
+}
+
+export interface Reflection {
+  id: string;
+  evidenceId: string | null;
+  requirement: "OPTIONAL" | "REQUIRED";
+  content: string | null;
+}
+
+/** Recomendación del ADE. Exactamente una principal por contexto (I6). */
+export interface ActionRecommendation {
+  id: string;
+  actionId: string;
+  isPrimary: boolean;
+  /** La línea `Porque:` — DD10. `null` ⇒ se omite la línea. */
+  reason: string | null;
+  provenance: Provenance | null;
+}
