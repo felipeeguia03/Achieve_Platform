@@ -1,0 +1,743 @@
+# Achieve — Registro de decisiones de arquitectura (ADR)
+
+**Documento:** `docs/decisions.md`
+**Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
+**Última actualización:** 28 de agosto de 2026
+
+---
+
+## Cómo se usa este documento
+
+Cada decisión importante de producto o arquitectura se registra acá como un ADR numerado, con
+contexto, decisión, alternativas y consecuencias. Reglas:
+
+1. **Nada se implementa contra un ADR en estado `PENDING`.** Si una etapa del roadmap depende de
+   un ADR pendiente, la etapa está bloqueada hasta que el ADR se resuelva.
+2. **Un ADR lo cierra una persona, no un agente.** Un agente puede proponer opciones y recomendar
+   una; la transición a `ACCEPTED` requiere respuesta explícita del owner del producto.
+3. **Cada ADR anota qué documentos toca.** Al aceptarse, esos documentos se actualizan en el mismo
+   commit.
+4. **Un ADR aceptado no se edita: se supersede.** Se crea un ADR nuevo que lo reemplaza y el viejo
+   pasa a `SUPERSEDED por ADR-XXX`.
+
+### Estados
+
+| Estado | Significado |
+|---|---|
+| `ACCEPTED` | Decidido. El código puede depender de esto. |
+| `PENDING` | Esperando decisión del producto. Bloquea las etapas que lo listan como dependencia. |
+| `PROPOSED` | Hay una propuesta razonada con alternativas, esperando aprobación. |
+| `SUPERSEDED` | Reemplazado por un ADR posterior. |
+| `DEFERRED` | Fuera del alcance actual; se reevalúa más adelante. |
+
+### Relación con el registro C01
+
+Este documento **no reemplaza** a [`pending-decisions-annex.md`](pending-decisions-annex.md), que
+contiene las 51 decisiones de negocio `C01` heredadas del spec fuente. Relación:
+
+- `C01-XXX` = decisión **de negocio/producto** pendiente, heredada del spec. Su owner suele estar
+  fuera del equipo técnico.
+- `ADR-XXX` = decisión **de este repositorio**. Puede consumir, agrupar o depender de varios `C01`.
+
+Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01` asociado.
+
+---
+
+## Índice
+
+| ADR | Título | Estado | Bloquea |
+|---|---|---|---|
+| [ADR-001](#adr-001) | Adoptar Spec Driven Development | `ACCEPTED` | — |
+| [ADR-002](#adr-002) | Scaffold nuevo reusando solo la capa de UI | `ACCEPTED` | — |
+| [ADR-003](#adr-003) | Convergencia Operador ↔ coach de Dashboard_Achieve | `PENDING` | Fase B6 |
+| [ADR-004](#adr-004) | Diseño del pipeline del Academic Decision Engine | `PENDING` | Fase B4 |
+| [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | `PENDING` | Todo el Track B |
+| [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | `PENDING` | Toda fase con datos reales |
+| [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | `PENDING` | Contenido de Fase B5 |
+| [ADR-008](#adr-008) | Stack y runtime del frontend | `ACCEPTED` | — |
+| [ADR-009](#adr-009) | Colisión de namespace `D1–D25` vs `D1–D10` | `ACCEPTED` | — |
+| [ADR-010](#adr-010) | Respuestas DD1–DD10 de traducción al dominio | `ACCEPTED` *(DD4 `DEFERRED`)* | — |
+| [ADR-011](#adr-011) | Owner canónico de `PreparationReadiness` (CR-UX08-01) | `PENDING` | Readiness visible en Fase B5 |
+| [ADR-012](#adr-012) | Alcance de Track A: Operador e Institución se difieren | `ACCEPTED` | — |
+| [ADR-013](#adr-013) | Contenido duplicado en `pending-decisions-annex.md` | `ACCEPTED` | — |
+
+---
+
+<a id="adr-001"></a>
+## ADR-001 — Adoptar Spec Driven Development
+
+**Estado:** `ACCEPTED` · 28 ago 2026
+**Toca:** todos los documentos.
+
+### Contexto
+
+El proyecto llega con un spec de producto excepcionalmente detallado (~16.000 líneas repartidas en
+nueve partes) y un prototipo low-fi que fue construido como arnés de verificación de QA. El riesgo
+inmediato es que el código empiece a divergir del spec y que cada agente de IA que toque el repo
+reinterprete las reglas de negocio por su cuenta.
+
+### Decisión
+
+La **fuente de verdad son los documentos markdown de `docs/`**. El código sigue a la documentación,
+nunca al revés. Se trabaja fase por fase y etapa por etapa: readiness → decisiones de diseño
+aprobadas → implementación → pruebas en verde → un commit por etapa → documentación actualizada.
+
+### Alternativas consideradas
+
+- **Code-first con el spec como referencia.** Descartada: el spec contiene cientos de invariantes
+  negativos ("X no implica Y") que se pierden si no están escritos en un lugar que el código cite.
+- **Generar código directamente desde el spec fuente.** Descartada: el spec fuente es un documento
+  de gobernanza de handoff, no una especificación de implementación. Mezcla decisiones vigentes,
+  auditorías, self-audits y trazabilidad documental.
+
+### Consecuencias
+
+- Ninguna línea de código de producto se escribe antes de que la documentación y el roadmap estén
+  aprobados.
+- Cada etapa termina con la documentación sincronizada; un roadmap desactualizado es un defecto.
+- Los agentes de IA leen [`AGENTS.md`](../AGENTS.md) antes de tocar nada.
+
+---
+
+<a id="adr-002"></a>
+## ADR-002 — Scaffold nuevo reusando solo la capa de UI
+
+**Estado:** `ACCEPTED` · 28 ago 2026
+**Toca:** `architecture.md`, `roadmap.md` (Etapa 0.1).
+
+### Contexto
+
+El prototipo low-fi vive fuera de este repositorio, en una carpeta suelta sin git
+(`~/Desktop/ACHIEVE_LOW_FI_REVERSIBLE_PROTOTYPE_BUILD_v0.2 3/`). Contiene dos cosas de naturaleza
+muy distinta:
+
+- **Arnés descartable:** `app/prototype.tsx` (un `switch` de 9 casos con JSX de hasta 3.000
+  caracteres por línea, 12 `useState` sueltos y reglas de negocio codificadas como comparaciones de
+  string de fixture), `lib/targeted-correction.ts` y 12 documentos `ACHIEVE_LOW_FI_*.md` de
+  gobernanza de QA.
+- **UI real y reusable:** `app/globals.css` (sistema de tokens con auditoría de contraste WCAG AA
+  anotada en el propio código), `components/screens/*` (8 archivos con las 6 pantallas del loop
+  diario más las primitivas visuales) y `components/ui/*` (80 componentes shadcn vendorizados).
+
+### Decisión
+
+Se crea un **scaffold nuevo** en este repositorio trayendo únicamente:
+
+- `app/globals.css`
+- `components/screens/` (las 8 primitivas y pantallas)
+- `components/ui/` (shadcn vendorizado) y `vendor/shadcn-tailwind-4.13.0.css`
+- `lib/utils.ts` y `hooks/use-mobile.ts`
+
+El arnés `app/prototype.tsx`, `lib/targeted-correction.ts`, `worker/index.ts` y los 12 `.md` de
+gobernanza **quedan fuera del repositorio**, como referencia de lectura en su carpeta original.
+
+### Alternativas consideradas
+
+- **Traer el prototipo completo y retirarlo por etapas.** Ventaja: el arnés QA seguía corriendo como
+  herramienta viva y el historial de git mostraba la procedencia. Descartada por el owner del
+  producto: el arnés contamina la base con patrones que no queremos que ningún agente tome como
+  referencia.
+- **Repositorio solo-docs con el código en otro repo.** Descartada: no hay razón para separarlos.
+
+### Consecuencias
+
+- El arnés QA deja de ser ejecutable desde este repo. La cobertura que daba (27 fixtures × 9
+  pantallas) se reconstruye en la Etapa 0.2 como una **capa de fixtures tipada**, que es un artefacto
+  de producto, no un arnés.
+- `lib/targeted-correction.ts` no se copia como código, pero su `evidenceOwnerTransitions` sí se
+  hereda como **especificación** de la máquina de estados de Evidence en
+  [`data-model.md`](data-model.md).
+- Se pierde la trazabilidad automática que daba `scripts/verify-low-fi.mjs`. La Etapa 0.2 la
+  reemplaza con verificaciones sobre la capa de fixtures.
+
+---
+
+<a id="adr-003"></a>
+## ADR-003 — Convergencia Operador ↔ coach de Dashboard_Achieve
+
+**Estado:** `PENDING — esperando decisión del producto`
+**Bloquea:** Fase B6 (Operador real). *(Antes bloqueaba también la Fase A1, que
+[ADR-012](#adr-012) difirió al Track B.)*
+**Relacionado:** `C01-039` (CRM–Plataforma, `human_assignment`), `C01-022`, `C01-044`.
+**Toca:** `product.md` (glosario y roles), `data-model.md`, `roadmap.md`.
+
+### Contexto
+
+Existe un segundo codebase en producción, **Dashboard_Achieve** (`~/Desktop/Dashboard_Achieve`):
+Next.js 16 + Supabase, con 29 migraciones SQL y tablas `coaches`, `users`, `challenges`,
+`checkpoints`, `conversations`, `messages`, `leads`, `payments`, más integración de WhatsApp,
+`achieve_daily_logs` y `achieve_streaks`. Es un CRM de coaching con supervisor humano.
+
+Hechos establecidos por el owner del producto (28 ago 2026):
+
+- Los dos codebases están separados **porque los construye gente distinta en paralelo** — el CTO
+  lleva Dashboard_Achieve.
+- **Ninguno de los dos tiene datos reales todavía.**
+- El objetivo a mediano plazo es que el rol **Operador** de Achieve Plataforma y los **coaches** de
+  Dashboard_Achieve **converjan**.
+
+Esto es coherente con el spec fuente, que congela la frontera Plataforma ↔ CRM
+(Parte II §18.1): ownership separado, sin base de datos compartida, integración por contratos
+HTTP/eventos versionados. Pero el spec no dice qué hacer cuando el CRM ya existe y usa otro
+vocabulario.
+
+El 28 de agosto de 2026 se recibió el primer contrato concreto entre ambos sistemas:
+[`platform-integration-contract.md`](platform-integration-contract.md). Confirma la separación actual
+y congela únicamente la autorización de padrón Plataforma → CRM. No define todavía actividad,
+contexto vivo ni la convergencia de roles/modelos.
+
+### Qué falta decidir
+
+1. Aunque hoy operan separados, ¿convergen a mediano plazo en un solo sistema o esa separación queda
+   como arquitectura permanente?
+2. ¿Quién versiona el contrato integral? Hoy existe autorización v1; actividad y contexto vivo aún no
+   tienen endpoint/payload/SLA acordado.
+3. **Reconciliación de terminología**, que es lo urgente y lo barato de hacer ahora:
+
+| Achieve Plataforma | Dashboard_Achieve | ¿Son lo mismo? |
+|---|---|---|
+| Operador | `coaches` | Probablemente sí — confirmar rol y permisos |
+| Estudiante | `users` | Probablemente sí |
+| Commitment | `checkpoints` | **No obviamente.** Un checkpoint parece más cercano a Commitment + Evidence fusionados |
+| Evidence | `checkpoint_validations` | Parcial — validations es la definición, no la presentación |
+| Intervention | `coach_notes` / `activities` | A confirmar |
+| `human_assignment` | `users.coach_id` | Probablemente sí |
+| ProgressEntry / Bitácora | `achieve_daily_logs` | A confirmar |
+| — | `challenges`, `streaks`, `payments`, `leads` | Sin equivalente en Plataforma |
+
+### Decisión requerida antes de
+
+- **Antes de construir la fase de Operador** en el roadmap de Achieve Plataforma, hay que comparar
+  la terminología con Dashboard_Achieve para no bautizar las mismas cosas con nombres distintos y
+  tener que renombrar todo después.
+- **Antes de que cualquiera de los dos llegue a producción**, hay que reconciliar el modelo. Ahora
+  es barato porque ninguno tiene datos reales; después implica migración.
+
+### Consecuencias mientras siga `PENDING`
+
+- Fase B6 queda bloqueada.
+- El Track A completo (Fase 0, solo estudiante) **no está bloqueado**: no toca el rol Operador más
+  allá de `human_assignment` como referencia read-only, que ya tiene contrato de omisión segura.
+- `product.md` documenta los términos de Plataforma como provisionales en lo que hace al rol
+  Operador, y marca esta tabla como el punto de reconciliación.
+
+---
+
+<a id="adr-004"></a>
+## ADR-004 — Diseño del pipeline del Academic Decision Engine
+
+**Estado:** `PENDING — esperando decisión del producto`
+**Bloquea:** Fase B4 (ADE real). No bloquea el Track A, que usa salidas de ADE prefijadas.
+**Relacionado:** `C01-006` (ADE y `ActionRecommendation`), `C01-021` (Risk Engine), `C01-022`.
+**Toca:** `architecture.md`, `data-model.md`, `roadmap.md`.
+
+### Contexto
+
+El ADE es el componente que responde "¿qué acción conviene hacer ahora?". Todo el producto está
+construido alrededor de él, y **su lógica no está diseñada**. El contrato `C01-006` sigue `OPEN`.
+
+Lo que el spec sí congela, y que cualquier diseño debe respetar:
+
+- **Salida mínima** (Parte I §9.2): materia + tema/objetivo + acción concreta + tiempo estimado +
+  recurso/fuente + evidencia esperada + razón de la recomendación.
+- **La UI nunca rankea.** `TodayView`, Materia, Overview de examen y Bitácora son proyecciones que
+  releen una recomendación principal ya elegida por el ADE. Si el ADE devuelve varias
+  recomendaciones sin una principal, eso es un **error de contrato**, no un caso a resolver en el
+  frontend.
+- **Cuatro ramas de salida obligatorias:** `NEW` (recomendación vigente), `NONE` (ausencia
+  autoritativa), `ERROR` (fallo, con reintento) y `PENDING` (resultado todavía no disponible). Están
+  modeladas en los fixtures `FX-ADE-*`.
+- `academic_context_blocker` (`C01-050`) es **semánticamente distinto** de `NONE`: el primero es
+  falta de contexto académico, el segundo es una ausencia que el ADE ya confirmó.
+- El objetivo de optimización provisional (§9.3) es "maximizar avance sostenible del semestre y
+  preparación suficiente de evaluaciones, sujeto a disponibilidad real y sin abandonar la
+  construcción de autonomía".
+
+### Propuesta existente — NO CONFIRMADA
+
+El anexo de decisiones pendientes registra una propuesta de arquitectura identificada el 28 de agosto
+de 2026, en estado **`OPEN — PROPUESTA EN EVALUACIÓN, NO CONFIRMADA`**:
+
+> Contexto académico verificado → paso actual del protocolo → reglas de elegibilidad/prioridad → un
+> LLM genera una `ActionRecommendation` estructurada (JSON con `objective`, `verb`, `scope`,
+> `conditions`, `estimated_minutes`, `resource_id`, `expected_evidence`, `completion_criterion`,
+> `reason`, `confidence`, `requires_human_review`) → validador determinista (el recurso existe, el
+> tema pertenece al examen, la duración entra en la disponibilidad, no duplica una acción, no afirma
+> dominio/progreso/readiness inexistente) → publicación automática o revisión humana según confianza.
+
+**Esta propuesta no es el spec final y no debe implementarse como si lo fuera.** Su gate material es
+`H` — antes de mover a high-fidelity cualquier pantalla que dependa de una recomendación real.
+
+### Qué falta decidir
+
+1. ¿Se adopta el pipeline propuesto, se adopta uno rule-based primero, o un híbrido?
+2. Si hay LLM: qué contexto estructurado exacto recibe, qué schema devuelve, y qué reglas ejecuta el
+   validador determinista antes de publicar.
+3. Umbral de `confidence` que dispara revisión humana en lugar de publicación automática.
+4. Cómo se relaciona con el Risk Engine (`C01-021`), que el spec permite que sea rule-based en v1.
+
+### Recomendación técnica (no vinculante)
+
+Empezar **rule-based y determinista** para el golden path de una carrera piloto, con el mismo
+contrato de salida que tendría la versión con LLM. Eso permite construir todo lo que consume al ADE
+(que es casi todo el producto) sin depender de esta decisión, y cambiar el motor después sin tocar
+a los consumidores. El validador determinista de la propuesta es valioso **exista o no el LLM**:
+es el que impide que el sistema afirme dominio o progreso inexistente.
+
+### Consecuencias mientras siga `PENDING`
+
+- El Track A entero funciona: consume salidas de ADE prefijadas como fixtures.
+- El Track B puede construir el **contrato** de `ActionRecommendation` (Fase B2/B3) sin construir el
+  motor, siempre que el contrato admita las cuatro ramas `NEW/NONE/ERROR/PENDING`.
+- Fase B4 está bloqueada.
+
+---
+
+<a id="adr-005"></a>
+## ADR-005 — Motor de base de datos, auth y persistencia
+
+**Estado:** `PENDING — esperando decisión del producto`
+**Bloquea:** todo el Track B a partir de la Fase B1.
+**Relacionado:** `C01-001` (identidad/tenancy/esquema ADL), `C01-030` (autorización, permisos y
+privacidad institucional), `C01-041` (Architecture/API/Data/Integration Spec).
+**Toca:** `architecture.md`, `data-model.md`, `roadmap.md`.
+
+### Contexto
+
+El spec fuente fue escrito **a propósito sin decidir esto**: era un prototipo low-fi con fixtures y
+cero backend. La declaración de datos del prototipo lista explícitamente como ausentes backend, API
+propia, base de datos, autenticación, cookies de dominio, `localStorage` y persistencia entre
+recargas.
+
+El spec sí congela restricciones que cualquier opción debe cumplir:
+
+- **Aislamiento institucional:** los datos de cada institución permanecen segregados lógica y
+  contractualmente (Parte I §29).
+- **RBAC por rol:** estudiante, operador, docente y autoridad no ven el mismo nivel de detalle.
+- **Auditoría:** cambios de caminos, `RiskSignal`, `Evidence`, intervenciones y accesos críticos
+  quedan registrados.
+- **Sin base de datos compartida con el CRM.** La integración es por contratos HTTP/eventos
+  versionados (Parte II §18.1).
+- **Idempotencia real en el servidor.** El spec exige, para `Action`, `Commitment` y `Evidence`, que
+  la deduplicación esté en el servicio propietario: "la protección real debe estar en el servicio
+  propietario; el frontend solo no es suficiente".
+- **Provenance en el dato, no en la vista:** `source_type`, `source_ref`, `observed_at`,
+  `valid_from/valid_until`, `confidence`, `verification_status`, `uploaded_by`, `rights_status`.
+
+En [`architecture.md`](architecture.md) hay una propuesta razonada con alternativas y trade-offs.
+**Es una propuesta, no una decisión.**
+
+### Nuevo insumo de arquitectura recibido — pendiente de aceptación
+
+El 28 de agosto de 2026 se incorporó un diseño objetivo específico para el backend:
+
+- Supabase como Postgres/Auth/Realtime Broadcast/Storage gestionado.
+- Backend TypeScript en capas **Controller → Service → Repository**, con dependencias inyectadas.
+- Toda lógica de negocio y autorización fina en Service; todo acceso a tablas en Repository.
+- Frontend sin acceso directo a tablas: `/api/*` para negocio; cliente Supabase sólo para Auth y
+  Broadcast.
+- `service_role` únicamente en backend y RLS deny-by-default como cierre de la API autoexpuesta, no
+  como autorización primaria.
+- Constraints/índices/atomicidad en base; sin reglas de negocio en triggers o PL/pgSQL.
+
+El mismo paquete aportó el contrato vigente de autorización CRM, documentado en
+[`platform-integration-contract.md`](platform-integration-contract.md). Esto convierte el vacío de
+`C01-041` en un artefacto parcial y reduce `C01-039`, pero no resuelve Storage/permisos de Evidence,
+operación/runtime ni los flujos futuros de `C01-040`.
+
+### Qué falta decidir
+
+1. Ratificar o rechazar formalmente Supabase como motor/proveedor de auth.
+2. Ratificar el scoping institucional en Service/Repository con RLS deny-by-default como defensa en
+   profundidad, y definir cómo se prueba/monitorea.
+3. Ratificar la separación Controller → Service → Repository y el runtime/deploy físico del backend.
+4. Cerrar Storage de `Evidence` (fotos, PDFs, audio), permisos, retención y borrado junto con ADR-006.
+5. Definir operación de Broadcast/outbox, rotación de secretos y observabilidad.
+6. Definir si `institutionId` de CRM es también la identidad de Plataforma o requiere una tabla de
+   correspondencia; el contrato actual no lo especifica.
+
+### Insumos relevantes, NO decisión
+
+El equipo ya opera **Supabase** en producción para Dashboard_Achieve (Postgres, auth, RLS, storage,
+29 migraciones). Esto es un insumo fuerte para el ADR — familiaridad del equipo, RLS nativo que
+encaja con el aislamiento institucional, storage integrado para Evidence — pero
+**no se toma como decisión** hasta que el owner del producto lo confirme, y su elección interactúa
+con [ADR-003](#adr-003).
+
+El diseño objetivo recibido hace explícita la preferencia por Supabase y por la arquitectura en
+capas. Se conserva como recomendación concreta en `architecture.md`; este ADR permanece `PENDING`
+porque un documento adjunto no reemplaza la aceptación explícita exigida por las reglas de ADR.
+
+### Consecuencias mientras siga `PENDING`
+
+- Todo el Track B a partir de B1 está bloqueado.
+- El Track A no está bloqueado en absoluto.
+- `data-model.md` diseña el schema en **SQL estándar de Postgres**, que es portable entre las
+  alternativas más probables, y marca explícitamente qué construcciones son específicas del proveedor.
+
+---
+
+<a id="adr-006"></a>
+## ADR-006 — Privacidad y consentimiento de datos reales
+
+**Estado:** `PENDING — esperando decisión del producto` · **PRIORIDAD MÁXIMA**
+**Bloquea:** **cualquier fase que toque datos reales de estudiantes.** Bloqueo absoluto.
+**Relacionado:** `C01-042` (golden dataset, adquisición y legalidad, gate `P`), `C01-017`
+(privacidad y retención de Evidence/Reflection), `C01-030`, `C01-046` (métricas institucionales).
+**Toca:** `product.md`, `architecture.md`, `data-model.md`, `roadmap.md`.
+
+### Contexto
+
+**Todo el spec fuente corre sobre datos sintéticos a propósito.** La declaración de cero datos reales
+del prototipo es explícita: sin nombres, correos, imágenes, cursos, notas, evaluaciones, calendarios,
+Evidence, instituciones, docentes, operadores ni estudiantes reales.
+
+El único contrato que toca esto, `C01-042` (golden dataset, adquisición y legalidad), está gateado
+explícitamente **"antes de piloto institucional"** y sigue sin resolver. `C01-017` (privacidad y
+retención de Evidence/Reflection) también sigue `OPEN`.
+
+El spec fuente además prohíbe explícitamente pruebas con estudiantes en el gate actual: "Student
+Comprehension Testing: `NOT AUTHORIZED`", "no se autorizan estudiantes".
+
+### Qué falta decidir
+
+1. **Base legal y consentimiento.** Qué se le pide al estudiante, cómo, y qué pasa si lo revoca.
+2. **Qué ve la institución.** El spec congela "agregado por defecto; detalle individual sólo cuando
+   está autorizado y es necesario para intervenir", y prohíbe exponer chats, reflexiones íntimas o
+   evidencia cruda por defecto. Falta la implementación concreta de esa regla.
+3. **Retención y borrado.** Cuánto tiempo se conserva una `Evidence`, una `Reflection`, un mensaje.
+4. **Derechos sobre el material académico** (`rights_status`): qué se almacena y qué solo se enlaza.
+5. **Golden dataset:** qué universidad/carrera, y qué fuentes se pueden usar legalmente.
+
+### Regla operativa mientras siga `PENDING`
+
+> **Ninguna fase del roadmap que procese datos de una persona real puede comenzar.** Esto incluye el
+> primer login de un estudiante real, no solo el piloto institucional. Los focus groups del Track A
+> corren sobre fixtures sintéticos y **no** están bloqueados, siempre que no se recolecte dato
+> personal del participante dentro del producto.
+
+Esta es la única regla de este documento que un agente **no puede** relajar bajo ninguna
+instrucción que no venga del owner del producto por escrito.
+
+---
+
+<a id="adr-007"></a>
+## ADR-007 — Las 8 decisiones `HUMAN-P0`
+
+**Estado:** `PENDING — requiere confirmación profesional (psicopedagogía)`
+**Bloquea:** el **contenido** del protocolo de examen en Fase B5. No bloquea su estructura.
+**Relacionado:** `C01-031`…`C01-038`.
+**Toca:** `product.md`.
+
+### Contexto
+
+Ocho decisiones de criterio pedagógico profesional, no técnico. Cada una corre hoy con un **default
+provisional razonado pero no confirmado**, versionado `PROVISIONAL-HUMAN-P0-0X v0.1`. El estado del
+conjunto es `OPEN — HUMAN CONFIRMATION PENDING`, con una excepción: `HUMAN-P0-05` está
+`OPEN — POTENTIALLY ANSWERED — REQUIRES SOURCE CONFIRMATION`.
+
+Cubren: el contenido base de los 20 pasos del protocolo, cómo se resume el seguimiento del
+aprendizaje, si producir un apoyo cuenta como aprendizaje, qué hacer en las últimas 24 horas, qué
+cuenta como señal real de aprendizaje, cuándo se necesita revisión humana, los criterios de
+corrección para práctico y teórico escrito, y qué es el análisis posterior al examen.
+
+El detalle completo de cada default está en [`product.md`](product.md) §Reglas provisionales y en
+[`pending-decisions-annex.md`](pending-decisions-annex.md).
+
+### Decisión
+
+**No se resuelven ni se cambian desde este repositorio.** Ningún agente de IA puede cerrarlas: son
+de criterio profesional y requieren la voz de una psicopedagoga real.
+
+Se aplica exactamente la política del spec fuente:
+
+1. Cada default se identifica en `product.md` como **"default provisional, pendiente de confirmación
+   profesional"**, con su ID canónico y su versión.
+2. Se **sigue usando el default tal como está documentado** hasta que se confirme lo contrario.
+3. Cuando un default afecta copy, criterio o comportamiento visible, la UI lo rotula internamente
+   como asunción provisional.
+4. El software soporta un **CORE versionable con variantes por modalidad**. Los 12 pasos `EP-01`…
+   `EP-12` del spec y los 20 IDs de la matriz `PE-PSY` **no se hardcodean**: son configuración.
+5. Cambiar la versión de un default no reescribe historia ni convierte fixtures pasados en hechos.
+
+### Consecuencia arquitectónica
+
+`ExamProtocol` / `ProtocolVersion` / `ProtocolStep` se modelan como **configuración versionada**, no
+como código ni como enum, para que la definición pedagógica pueda cambiar sin migrar el dominio
+central. Esto está reflejado en [`data-model.md`](data-model.md).
+
+---
+
+<a id="adr-008"></a>
+## ADR-008 — Stack y runtime del frontend
+
+**Estado:** `ACCEPTED` · 28 ago 2026
+**Toca:** `architecture.md`, `roadmap.md`.
+
+### Contexto
+
+El prototipo corre sobre una combinación poco habitual: Next.js 16.2.6 App Router **servido por
+vinext 0.0.50 + Vite 8**, con destino Cloudflare Workers (`@cloudflare/vite-plugin`, wrangler 4.92,
+un `worker/index.ts`). No usa `next dev` ni `next build`; usa `vinext`.
+
+Esto tiene consecuencias:
+
+- `vinext` está en versión `0.0.50`. Es una dependencia joven en el camino crítico del build.
+- El build corre a través de `scripts/build-verified.sh`, que requiere GNU `timeout` y falla con
+  código 69 si `vinext` no está instalado.
+- Dashboard_Achieve, el otro codebase del equipo, usa **Next.js 16 estándar**.
+
+Lo que **sí** hay que preservar de ese stack, porque el sistema visual depende de ello:
+
+- **Tailwind v4 en modo CSS-first** (sin `tailwind.config.js`), con `@theme inline` y `@utility`.
+- El CSS vendorizado `vendor/shadcn-tailwind-4.13.0.css`.
+- React 19.
+
+### Propuesta
+
+**Next.js 16 estándar** (`next dev` / `next build`), sin `vinext` ni Cloudflare Workers en el Track A.
+
+Razones:
+
+1. **Convergencia con el otro codebase del equipo.** Dashboard_Achieve ya es Next 16 estándar; si
+   [ADR-003](#adr-003) termina en convergencia, tener dos runtimes distintos es deuda pura.
+2. **Track A no necesita el runtime de Workers.** Es una experiencia clickeable con fixtures: no hay
+   backend, no hay optimización de imágenes en el edge, no hay bindings de D1 ni R2 (el
+   `localBindingConfig` del prototipo los declara vacíos).
+3. **Menos superficie de fallo en el camino crítico.** El scaffold tiene que compilar de forma
+   confiable para que la Fase 0 avance; `vinext 0.0.50` es un riesgo evitable.
+4. Tailwind v4, shadcn y React 19 funcionan idénticamente en ambos.
+
+La decisión de runtime de producción del Track B (Vercel, Cloudflare, contenedor propio) se difiere y
+depende de [ADR-005](#adr-005).
+
+### Alternativas
+
+- **Conservar vinext + Cloudflare Workers.** Ventaja: el prototipo ya está probado ahí y el deploy al
+  edge es barato. Desventaja: divergencia con Dashboard_Achieve, dependencia joven, y complejidad que
+  el Track A no usa.
+- **Vite + React sin Next.** Ventaja: el más simple para una app puramente cliente. Desventaja: se
+  pierde el App Router y habría que rehacer el routing al entrar al Track B.
+
+### Consecuencias
+
+- Se descartan `worker/index.ts`, `vite.config.ts`, `scripts/build-verified.sh`,
+  `scripts/sites-env.sh` y `scripts/install-ci.sh`.
+- `package.json` pasa a `next dev` / `next build` / `next start`.
+- Los tests dejan de depender de `dist/server/index.js`; pasan a Vitest sobre componentes, alineado
+  con Dashboard_Achieve.
+
+---
+
+<a id="adr-009"></a>
+## ADR-009 — Colisión de namespace `D1–D25` vs `D1–D10`
+
+**Estado:** `ACCEPTED` · 28 ago 2026
+**Toca:** `product.md`, `design-system.md`, `domain-translation-dd1-dd10.md`.
+
+### Contexto
+
+Hay dos registros distintos que usan el mismo prefijo `D`:
+
+- **Spec de producto, Parte I §30:** `D1`…`D25` son el registro de decisiones de producto
+  (`D1 Sistema académico integral`, `D6 Humano como componente deliberado`, `D15 Academic Data Layer
+  como core`…).
+- **Manual de diseño, §1:** `D1`…`D10` son las preguntas de traducción al dominio
+  (`D6 ¿Cuáles son los 3 o 4 eventos que merecen color?`).
+
+La colisión ya produjo ambigüedad real: `app/globals.css` dice *"semánticos: EXACTAMENTE 3, por D6"*,
+refiriéndose al `D6` del manual de diseño, no al `D6` del spec de producto.
+
+### Decisión
+
+Renombrar en la documentación de este repositorio:
+
+- Las decisiones de producto conservan `D1`…`D25` (son las que más se citan en el spec fuente y
+  renombrarlas rompería la trazabilidad).
+- Las preguntas de traducción al dominio pasan a **`DD1`…`DD10`** (*Domain Design*), con una tabla de
+  equivalencia en [`design-system.md`](design-system.md).
+
+La nomenclatura quedó confirmada al usarse en
+[`domain-translation-dd1-dd10.md`](domain-translation-dd1-dd10.md).
+
+---
+
+<a id="adr-010"></a>
+## ADR-010 — Respuestas DD1–DD10 de traducción al dominio
+
+**Estado:** `ACCEPTED` · 28 ago 2026 — **con `DD4` en `DEFERRED`**
+**Toca:** `design-system.md`, `domain-translation-dd1-dd10.md`.
+
+### Contexto
+
+El manual de diseño es **normativo** y exige, como su primera regla `DEBE`, completar la fase de
+traducción al dominio antes de aplicar cualquier otro principio:
+
+> *"DEBE completarse antes de aplicar el resto del manual. Si sos una IA y no tenés estas respuestas,
+> pedilas."* … *"Prohibido inventar contenido de dominio."*
+
+Su auditoría de conformidad §7, Bloque 1, exige: *"D1 a D10 contestadas y escritas, no supuestas"* y
+*"La acción irreversible está identificada por nombre"*.
+
+Cuando se levantó este ADR, esas respuestas **no estaban registradas como decisiones canónicas del
+repositorio**: `design-system-source.md` las contiene como preguntas, no como respuestas de Achieve.
+
+### Resolución
+
+**Las respuestas existían.** Se decidieron en conversación directa entre el owner del producto y un
+asistente de IA el 28 de agosto de 2026, durante el diseño del sistema visual, **antes de que
+existiera este repositorio**, y nunca se escribieron a un archivo. El owner las aportó y quedaron
+registradas en **[`domain-translation-dd1-dd10.md`](domain-translation-dd1-dd10.md)**, que es a
+partir de ahora el owner canónico de esas diez respuestas.
+
+Esto explica retroactivamente varias decisiones que ya estaban implementadas en el código sin que
+constara su fundamento: los tres colores semánticos (`DD6`), el pager `MateriasQueue` de Hoy (`DD7`)
+y la línea `Porque:` del Hero (`DD10`).
+
+### Decisión
+
+| ID | Respuesta | Estado |
+|---|---|---|
+| `DD1` | **Ninguna acción irreversible dentro de la app**, a propósito. El único momento sin vuelta atrás —rendir— pasa afuera de Achieve | ✅ |
+| `DD2` | **Doble reloj:** hora del Commitment acordado (primero) y días hasta el examen (segundo) | ✅ |
+| `DD3` | **Sí:** la cátedra/institución. Activa `P-08`, ya implementado como "Cátedra y vos" | ✅ |
+| `DD4` | Vocabulario académico argentino: `parcial`, `final`, `TP`, `cursada`, `cátedra`, `comisión`… | ⚠️ **`DEFERRED`** |
+| `DD5` | **Ninguna magnitud de máquina visible.** `P-03` se cumple no mostrándola | ✅ |
+| `DD6` | **Exactamente 3:** éxito, urgencia, intervención humana. Riesgo queda sin color | ✅ |
+| `DD7` | *"¿Me comprometo con esta acción?"* — resuelto con cola paginable en la lista de materias, sin tocar el Hero | ✅ |
+| `DD8` | Defaults ya resueltos en el spec Parte II §21 | ✅ |
+| `DD9` | **Una `Action` a la vez** — el Hero de Hoy | ✅ |
+| `DD10` | **Por qué esa acción va primero** — la línea `Porque:` | ✅ |
+
+**`DD4` queda `DEFERRED`** porque es la única sin confirmación explícita del owner del producto. Se
+revisa junto con el glosario completo de [`product.md`](product.md) §3. **No bloquea ninguna etapa de
+la Fase 0.**
+
+### Consecuencias
+
+- La auditoría de conformidad visual, Bloque 1, **pasa** — salvo la revisión pendiente de `DD4`.
+- **`P-11` se resuelve por `DD1`:** Achieve no necesita patrón de deshacer ni confirmación con
+  consecuencia enunciada en ningún flujo del Track A, porque no hay acción irreversible.
+  ⚠️ **Esta respuesta se revisa si el Track B introduce una** (datos reales, pagos, borrado
+  definitivo).
+- **`P-05` se desbloquea por `DD2`:** el orden por defecto de las listas prioriza Commitment por
+  vencer y luego proximidad del examen, sin fusionarlos en un número.
+- **`P-10` se resuelve por `DD7`** con la tensión ya arbitrada: la cola se aplica a la lista de
+  materias, no al Hero.
+- **Resabio detectado:** `--chart-2` en `app/globals.css` sigue siendo `#ff9500`, el naranja original
+  de `DD6` antes de la corrección a rosa/magenta. El propio CSS declara que los charts heredan de los
+  tres semánticos, así que ese valor quedó huérfano. Se reconcilia en la Etapa 0.1.
+
+<a id="adr-011"></a>
+## ADR-011 — Owner canónico de `PreparationReadiness` (CR-UX08-01)
+
+**Estado:** `PENDING — heredado del spec fuente como Change Request abierto`
+**Bloquea:** cualquier representación visible de readiness en Fase B5.
+**Relacionado:** `C01-029` (readiness scoped), `C01-025`…`C01-028`.
+**Toca:** `data-model.md`.
+
+### Contexto
+
+Este ADR **no lo introduzco yo**: es una contradicción estructural que el propio spec fuente registra
+como `CR-UX08-01`, prioridad P1 arquitectónica.
+
+El modelo de datos:
+
+- incluye `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` dentro de **`ExamPreparation.status`**;
+- define además una entidad separada **`PreparationReadiness`** con `state`, `required_steps`,
+  `evidence_status`, `autonomous_practice`, `simulation` y `critical_gaps`;
+- usa `NOT_READY → BUILDING → READY_BY_PROTOCOL` como los estados P0 de readiness.
+
+No queda congelado si readiness es una entidad separada, un status de `ExamPreparation`, o ambos;
+ni cuál es la fuente canónica.
+
+### Qué falta decidir
+
+Entidad/campo canónico, owner, relación entre el lifecycle y readiness, mapping, transición e
+historia.
+
+### Consecuencia mientras siga `PENDING`
+
+Sin card de readiness, sin score, sin cálculo. Se puede mostrar el `status` recibido de
+`ExamPreparation` y los lifecycles operativos. `READY_BY_PROTOCOL` nunca se presenta como predicción
+ni garantía de aprobación — es una condición del protocolo, no un pronóstico.
+
+---
+
+<a id="adr-012"></a>
+## ADR-012 — Alcance de Track A: Operador e Institución se difieren
+
+**Estado:** `ACCEPTED` · 28 ago 2026
+**Toca:** `roadmap.md`.
+
+### Contexto
+
+El spec define **cinco superficies de Operador e Institución** que no existen en ningún lado — ni
+como componente, ni siquiera en el arnés QA descartado:
+
+| Wireframe | Superficie |
+|---|---|
+| `WF-O01` | Cola priorizada de intervención |
+| `WF-O02` | Contexto de estudiante (<10 segundos) |
+| `WF-O03` | Registrar intervención + outcome |
+| `WF-O04` | Revisión de evidencia |
+| `WF-I01` | Dashboard institucional mínimo |
+
+El spec es enfático en que **el operador es usuario P0** (Parte I §21.0): *"El operador no es un
+parche humano detrás de la app"*, y *"el golden path del MVP incluye tanto el flujo del estudiante
+como el flujo paralelo del operador"*.
+
+Pero el objetivo inmediato del Track A es un MVP con lindo diseño para **focus groups con
+estudiantes**, testeando comprensión y flujo del loop diario.
+
+### Decisión
+
+**La Fase A1 se difiere al Track B.** No entra en el Track A.
+
+Razones:
+
+1. Los focus groups son con estudiantes. Las vistas de Operador no aportan a ese test.
+2. Construirlas ahora significa bautizar el vocabulario del rol Operador **antes** de reconciliarlo
+   con Dashboard_Achieve ([ADR-003](#adr-003)) — exactamente el renombrado masivo que ese ADR quiere
+   evitar.
+
+### Consecuencias
+
+- La Fase A1 sale del Track A y su contenido se absorbe en la **Fase B6** (Risk, Intervención y
+  Operador), que ya está gateada por [ADR-003](#adr-003).
+- **La Fase 0 pasa a ser el Track A completo.** Cerrarla cierra el track.
+- Queda pendiente de evaluar, cuando se llegue a B6, si `WF-O04` (revisión de evidencia) merece una
+  versión mínima anticipada: es la contraparte del estado `UNDER_REVIEW` que el estudiante **sí** ve
+  en el Track A, y sin ella el loop de evidencia no se puede demostrar completo.
+
+<a id="adr-013"></a>
+## ADR-013 — Contenido duplicado en `pending-decisions-annex.md`
+
+**Estado:** `ACCEPTED` · 28 ago 2026
+**Toca:** `pending-decisions-annex.md`.
+
+### Contexto
+
+El archivo contiene su contenido **dos veces**:
+
+- Líneas 1–96: versión markdown formateada, con tablas.
+- Líneas 97–198: el mismo contenido pegado en texto plano, con las tablas como texto separado por
+  tabulaciones.
+
+Las dos versiones **no son idénticas**. La versión plana incluye una sección que la markdown no
+tiene: **"Decisión agregada — diseño del pipeline del Academic Decision Engine"**, que es
+precisamente la propuesta citada en [ADR-004](#adr-004). Si alguien lee solo la mitad formateada, se
+pierde esa fila entera.
+
+### Decisión
+
+Deduplicar: se conserva la versión markdown y se **porta a ella la sección del pipeline del ADE** que
+solo existía en la copia plana. El archivo sigue siendo un documento vivo y se actualiza cuando
+alguna de las 51 filas se resuelva.
+
+### Consecuencias
+
+- El archivo pasa de 198 a ~110 líneas, sin pérdida de contenido.
+- La decisión agregada del pipeline del ADE ahora es visible en la versión formateada, y queda
+  enlazada desde [ADR-004](#adr-004).
+- **Ninguna de las 51 filas cambia de estado.** Siguen 51 `OPEN`.
