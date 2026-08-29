@@ -174,6 +174,7 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/decisions.md`](docs/decisions.md) | ADRs numerados | **Siempre.** Para saber qué está bloqueado |
 | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) | Las respuestas `DD1`–`DD10` que el manual de diseño exige | Antes de aplicar un principio del manual |
 | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` + 8 `HUMAN-P0` | Cuando dudes si algo está decidido |
+| [`docs/design-system-capturas.md`](docs/design-system-capturas.md) | Extracción visual anonimizada + §12, las decisiones de diseño abiertas | Antes de tocar layout, espaciado o la posición de una CTA |
 | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) | Contrato máquina-a-máquina vigente Plataforma ↔ CRM | Antes de tocar registro, elegibilidad o integración CRM |
 
 ### Documentos de referencia — **no se editan**
@@ -215,7 +216,9 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** No iniciada, **lista para arrancar**.
+**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 1 / 8 etapas.
+**Etapa 0.1 (scaffold + migración de UI) ✅ completa** el 29 de agosto de 2026. **Sigue la Etapa 0.2**
+(capa de dominio, fixtures y parametrización de `UX01`–`UX06`).
 
 Dos tracks con costos muy distintos:
 
@@ -233,7 +236,10 @@ Vitest ([ADR-008](docs/decisions.md#adr-008)).
 - **Cero red.** Sin `fetch`, `XMLHttpRequest` ni `WebSocket`.
 - **Cero persistencia.** Sin `localStorage`, `sessionStorage` ni `IndexedDB`.
 - **Cero datos reales.** Solo identificadores sintéticos.
-- **Mobile-first a 360 px.**
+- **Desktop-first** ([ADR-014](docs/decisions.md#adr-014)). El viewport primario de diseño y de
+  verificación es desktop; **360 px es el piso obligatorio** de la variante móvil, no la medida de
+  referencia. El contrato del primer viewport de `docs/design-system.md` §6.1 es de **orden
+  semántico** y rige en todo ancho.
 - **Una sola CTA primaria** por pantalla y por estado.
 
 ### Las nueve superficies

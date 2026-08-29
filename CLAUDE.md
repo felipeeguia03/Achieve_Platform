@@ -68,7 +68,9 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-**Fase 0 — Cerrar el Track A.** No iniciada, **lista para arrancar**.
+**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **1 / 8**. La Etapa 0.1 (scaffold + migración de UI)
+cerró el 29 ago 2026. **Toca la Etapa 0.2:** capa de dominio, fixtures y parametrización de
+`UX01`–`UX06`.
 
 - **Track A** (clickeable, fixtures, sin backend): **sin bloqueos.** Cerrar la Fase 0 cierra el
   track — Operador e Institución se difirieron ([ADR-012](docs/decisions.md#adr-012)).
@@ -77,14 +79,19 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 **Stack:** Next.js 16 · React 19 · Tailwind v4 CSS-first · shadcn vendorizado · Vitest.
 
-Superficies: `UX01`–`UX09`. Seis existen como componente real; faltan `UX07`, `UX08`, `UX09`.
-**No existe `UX10`.**
+Superficies: `UX01`–`UX09`. Seis existen como componente real y tienen ruta propia bajo
+`app/(student)/`; faltan `UX07`, `UX08`, `UX09`. **No existe `UX10`.**
+
+**Único `PENDING` dentro de la Fase 0:** dónde vive la CTA principal en desktop
+([`docs/design-system-capturas.md`](docs/design-system-capturas.md) §12.7). No afecta a las etapas
+0.1–0.3; se cierra antes de la 0.4.
 
 ---
 
 ## Reglas del Track A
 
-Cero red · cero persistencia · cero datos reales · mobile-first 360 px · una sola CTA primaria.
+Cero red · cero persistencia · cero datos reales · **desktop-first** (360 px es el piso móvil,
+[ADR-014](docs/decisions.md#adr-014)) · una sola CTA primaria.
 
 ---
 

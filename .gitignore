@@ -2,3 +2,18 @@
 # Versionar únicamente derivados textuales anonimizados.
 /docs/design-system-source.html
 /docs/diseño/
+
+# Dependencias y artefactos de build
+/node_modules
+/.next
+/out
+/build
+/coverage
+*.tsbuildinfo
+next-env.d.ts
+
+# Entorno y sistema
+.env*
+!.env.example
+.DS_Store
+npm-debug.log*

@@ -9,9 +9,33 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
 
 ## Estado actual
 
-- **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. Listo para iniciar.
+- **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. **Fase 0 en
+  curso, 1 / 8 etapas.** La Etapa 0.1 (scaffold + migración de la capa de UI) cerró el 29 de agosto
+  de 2026.
 - **Track B:** backend, auth, persistencia e integraciones reales. Bloqueado por las decisiones
   pendientes, especialmente ADR-005 y ADR-006.
+
+## Cómo correrlo
+
+```bash
+npm install
+npm run dev     # http://localhost:3000 → redirige a /hoy
+npm run lint
+npm run build
+npm test
+```
+
+**Stack:** Next.js 16 App Router · React 19 · Tailwind v4 CSS-first (sin `tailwind.config.js`) ·
+shadcn/ui vendorizado · Vitest. Ver [ADR-008](docs/decisions.md#adr-008).
+
+Superficies con ruta propia hoy: `/hoy` (`UX01`), `/materia` (`UX02`), `/accion` (`UX03`),
+`/compromiso` (`UX04`), `/evidencia` (`UX05`), `/progreso` (`UX06`). `UX07`–`UX09` llegan en las
+etapas 0.4–0.6.
+
+**Reglas del Track A:** cero red · cero persistencia · cero datos reales · desktop-first, con 360 px
+como piso obligatorio de la variante móvil ([ADR-014](docs/decisions.md#adr-014)) · una sola CTA
+primaria por pantalla y por estado. Las tres primeras se verifican con un test estático
+(`tests/track-a-rules.test.ts`).
 
 ## Documentación esencial
 

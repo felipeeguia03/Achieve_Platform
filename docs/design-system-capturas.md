@@ -8,7 +8,7 @@ tokens, principios y auditoría. **Este documento no redefine nada de allí.**
 **Deriva de:** una revisión local de 34 capturas —27 páginas del manual visual y 7 capturas crudas
 del software de referencia—. Los originales no se versionan porque contienen datos reales; este
 documento conserva únicamente observaciones visuales sin identidad personal, conforme a ADR-006.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 29 de agosto de 2026
 
 ---
 
@@ -51,16 +51,16 @@ error estimado de ±2 px. Donde la lectura fue ambigua, está declarado.
 buena parte de pantallas vacías o en carga. Todo lo de acá está validado por coherencia, no por
 telemetría. Son hipótesis fuertes.
 
-### 0.4 Discrepancia abierta sobre el viewport
+### 0.4 El viewport — resuelto
 
-> ⚠️ **Sin resolver.** [`AGENTS.md`](../AGENTS.md) y [`design-system.md`](design-system.md) §6.1
-> establecen **mobile-first 360 px** como regla del Track A. La conducción del producto indicó el
-> 28 de agosto de 2026 que el diseño se piensa **desktop-first**, con el mismo lenguaje visual
-> escalado a móvil.
+> ✅ **Resuelto por [ADR-014](decisions.md#adr-014), 29 de agosto de 2026.** Achieve es
+> **desktop-first**, con el mismo lenguaje visual escalado a móvil. **360 px es el piso obligatorio**
+> de la variante móvil, no la medida de referencia.
 >
-> **Este documento está escrito desktop-first**, siguiendo esa indicación. La contradicción
-> documental **no está resuelta**: requiere un ADR que decida cuál de las dos reglas queda y que
-> actualice el documento perdedor. Ver §12.1.
+> **Este documento está escrito desktop-first** y ya no contradice a `AGENTS.md` ni a
+> [`design-system.md`](design-system.md) §6.1, que se corrigieron en el mismo commit. El contrato del
+> primer viewport de §6.1 se conservó entero, reencuadrado como contrato de **orden semántico**
+> obligatorio en todo ancho. Ver §12.1.
 
 ---
 
@@ -716,21 +716,17 @@ el lenguaje sin quedar vacío.
 Cada una es **candidata a ADR**. Ninguna se resuelve en este documento
 ([`AGENTS.md`](../AGENTS.md): *no inventes reglas; registralas como `PENDING` y preguntá*).
 
-### 12.1 Desktop-first vs. mobile-first — `PENDING`, y bloquea
+### 12.1 Desktop-first vs. mobile-first — ✅ `RESUELTO` por [ADR-014](decisions.md#adr-014)
 
-**El conflicto.** [`AGENTS.md`](../AGENTS.md) y [`design-system.md`](design-system.md) §6.1
-establecen mobile-first 360 px. La conducción indicó desktop-first el 28 de agosto de 2026. **Hoy el
-repositorio dice dos cosas distintas.**
+**Resuelto el 29 de agosto de 2026.** Achieve es **desktop-first**. El contrato del primer viewport de
+`design-system.md` §6.1 —los siete elementos, su orden y lo prohibido entre el estado y la CTA— **no
+cambió**: dejó de estar atado a 360 px y pasó a ser un contrato de **orden semántico**, obligatorio en
+todo ancho. Se verifica en **desktop** (viewport primario, donde corre el test de 10 segundos) y a
+**360 px** (piso obligatorio de la variante móvil).
 
-**Qué está en juego.** `design-system.md` §6.1 define el contrato del primer viewport —el orden
-exacto de siete elementos above the fold y qué está prohibido entre el estado y la CTA— y ese
-contrato está escrito **a 360 px**. Desktop-first no lo invalida, pero lo deja sin la restricción que
-lo hacía verificable.
-
-**Lo que este documento hizo:** escribir desktop-first, y **no tocar** `design-system.md` §6.1.
-
-**Qué resuelve el ADR:** cuál de los dos documentos se corrige, y si el contrato del primer viewport
-se reescribe para desktop o se conserva como el piso de la variante móvil.
+`AGENTS.md` §5, `CLAUDE.md`, `architecture.md` §2.1/§2.6, `design-system.md` §6.1/§6.2 y `roadmap.md`
+se corrigieron en el mismo commit. Este documento, escrito desktop-first, **ya no contradice a
+ninguno**.
 
 ### 12.2 ¿Se eleva `C-04`? — `PENDING`
 
@@ -780,13 +776,18 @@ horas por día. La Bitácora de Achieve la mira un estudiante, ocasionalmente.
 **Qué decidir:** si `UX06` es una tabla o una lista de tarjetas. §10.4 especifica la tabla; la
 decisión de usarla no está tomada.
 
-### 12.7 Dónde vive la CTA principal en desktop
+### 12.7 Dónde vive la CTA principal en desktop — `PENDING`, ya desbloqueado
 
 `I-06` exige una sola acción destacada por pantalla, y `design-system.md` §6.1 la pone **a ancho
 completo al final del primer viewport** — una definición móvil. En las capturas, la acción primaria
 va **arriba a la derecha**, en píldora negra, con ancho de contenido.
 
-**Qué decidir:** la posición de la CTA en desktop. Depende de §12.1 y no se puede resolver antes.
+**Qué decidir:** la posición de la CTA en desktop.
+
+**Estado.** Dependía de §12.1, que [ADR-014](decisions.md#adr-014) resolvió el 29 de agosto de 2026.
+**Ya se puede decidir, y sigue sin decidirse.** Es un `PENDING` real, no un bloqueo heredado. **Se
+cierra antes de la Etapa 0.4** (`UX07`), que es la primera pantalla nueva que necesita ubicar su CTA
+en desktop. Las etapas 0.1–0.3 no la tocan.
 
 ---
 
@@ -805,8 +806,9 @@ Registro de reconciliación, para cuando se sincronicen los documentos.
 | §1.4 | **Propone** modificar `C-04`. Sujeto a §12.2 |
 | §5.3 | **Confirma** los tres semánticos. Rechaza explícitamente el cuarto color del original |
 | §11.2 | **Ancla** los nueve anti-patrones a evidencia visual concreta |
-| §12.1 | ⚠️ **Abre conflicto** con §6.1 (mobile-first). Sin resolver |
+| §12.1 | ✅ **Conflicto cerrado** por [ADR-014](decisions.md#adr-014): §6.1 se reencuadró como contrato de orden semántico y §6.2 pasó a primaria |
 | §12.4 | ⚠️ **Abre laguna**: modo oscuro sin paleta ni contrastes medidos |
 
-**Ninguna de estas modificaciones se aplica** hasta que los ADR de §12 estén resueltos. Este
+**Ninguna de estas modificaciones se aplica** hasta que los ADR de §12 estén resueltos, **salvo §12.1,
+que ya se aplicó** por [ADR-014](decisions.md#adr-014) el 29 de agosto de 2026. Para el resto este
 documento las registra; no las ejecuta.

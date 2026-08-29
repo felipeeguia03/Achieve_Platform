@@ -1,0 +1,192 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../vendor/shadcn-tailwind-4.13.0.css";
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
+}
+
+:root {
+  /* ── superficies (P-06: base acromática) ── */
+  --background: #f5f5f7;      /* fondo-app: el gris de Apple, no gris genérico */
+  --foreground: #1d1d1f;      /* ink: nunca negro puro */
+  --card: #ffffff;            /* superficie */
+  --card-foreground: #1d1d1f;
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1f;
+
+  /* ── acción primaria: negro/inversión, nunca color semántico (I-06) ── */
+  --primary: #1d1d1f;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f7;
+  --secondary-foreground: #1d1d1f;
+  --muted: #f5f5f7;
+  --muted-foreground: #707070; /* corregido: #86868b daba 3.33:1, falla AA. Este da 4.55:1 mínimo. */
+  --accent: #f5f5f7;
+  --accent-foreground: #1d1d1f;
+
+  /* ── semánticos: EXACTAMENTE 3, por D6. Riesgo queda en texto, sin color ──
+     Cada uno en DOS variantes: -fill (relleno sólido, ink encima) y -texto
+     (uso directo como color de texto/ícono sobre superficie clara).
+     Nunca uses la variante -fill como color de texto ni como borde fino:
+     falla contraste (medido, no estimado — ver auditoría). */
+  --exito-fill: #34c759;      /* fondo de chip; texto SIEMPRE ink encima, 7.58:1 */
+  --exito-texto: #23883c;     /* texto/ícono directo sobre card o background, 4.51:1 */
+  --urgencia-fill: #f472b6;   /* rosa/magenta — misma familia que Zop (muestreado de capturas reales); ink encima, 6.35:1 */
+  --urgencia-texto: #9c3d68;  /* texto/ícono directo; pasa 4.5:1+ contra card, background y el propio fill */
+  --humano: #0071e3;          /* Intervention abierta — pasa 4.5:1 como texto directo */
+  --destructive: #9c3d68;     /* reusa --urgencia-texto: reconciliación/rescate es urgencia, no un 4to color */
+
+  /* ── bordes: hairline de .5px, no gris de 1px (Mac feature #2) ── */
+  --border: rgba(0, 0, 0, 0.09);
+  --input: rgba(0, 0, 0, 0.09);
+  --ring: #1d1d1f;
+
+  /* charts heredan de los 3 semánticos + ink, nunca colores nuevos */
+  --chart-1: #34c759;          /* = --exito-fill */
+  --chart-2: #f472b6;          /* = --urgencia-fill. Reconciliado en la Etapa 0.1:
+                                  era #ff9500, el naranja anterior a la corrección
+                                  de DD6, huérfano de esa corrección. Ver
+                                  docs/design-system.md §1.5. */
+  --chart-3: #0071e3;
+  --chart-4: #86868b;
+  --chart-5: #48484a;
+
+  /* ── radios: un radio de esquina consistente (V-04) ── */
+  --radius: 0.75rem; /* r-tarjeta: 12px */
+  --radius-control: 0.4375rem; /* r-control: 7px, interior siempre menor que el exterior */
+  --radius-pildora: 980px;
+
+  --sidebar: rgba(246, 246, 248, 0.72);
+  --sidebar-foreground: #1d1d1f;
+  --sidebar-primary: #1d1d1f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f7;
+  --sidebar-accent-foreground: #1d1d1f;
+  --sidebar-border: rgba(0, 0, 0, 0.09);
+  --sidebar-ring: #1d1d1f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: var(--radius-control);   /* 7px: controles */
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius);           /* 12px: tarjetas */
+  --radius-xl: var(--radius);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+/* V-01: máximo 4 tamaños de texto por pantalla + eyebrow como quinto elemento fijo */
+:root {
+  --text-meta: 0.6875rem;   /* 11px: metadatos, fixture IDs */
+  --text-label: 0.8125rem;  /* 13px: labels, eyebrow */
+  --text-body: 0.9375rem;   /* 15px: cuerpo */
+  --text-title-sm: 1.1875rem; /* 19px: subtítulo de tarjeta */
+  --text-title-lg: 1.875rem;  /* 30px: título de pantalla */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* V-04: un radio de esquina en todo el sistema; controles usan el radio interior, siempre menor que el de la tarjeta que los contiene */
+button, [role="combobox"] { border-radius: var(--radius-control) !important; }
+textarea, input { border-radius: var(--radius-control) !important; }
+
+/* V-04: las píldoras (radio completo) quedan reservadas a chips de estado y segmentado */
+.pill, [data-slot="badge"] { border-radius: var(--radius-pildora) !important; }
+
+h2 {
+  font-size: var(--text-title-lg);
+  font-weight: 700;
+  letter-spacing: -0.022em; /* tracking negativo en títulos, cero en cuerpo */
+  line-height: 1.1;
+  color: var(--foreground);
+}
+
+/* eyebrow: label de categoría, NO un identificador — V-02 reserva monoespaciada
+   solo para lo que se compara carácter por carácter. Antes usaba mono acá, corregido. */
+.eyebrow {
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.subcopy {
+  color: var(--muted-foreground);
+  font-size: var(--text-body);
+  margin-top: 0.4rem;
+}
+
+/* V-02/V-03: identificadores y fixture IDs en mono, cifras tabulares */
+.id-code, [data-slot="badge"] {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* hairline en vez de borde gris de 1px (Mac feature #2) */
+.hairline-t { border-top: 0.5px solid var(--border); }
+.hairline-b { border-bottom: 0.5px solid var(--border); }
+
+/* foco: alto contraste con ink, no consume presupuesto de color semántico (P-06/A-08) */
+*:focus-visible { outline: 2px solid var(--foreground); outline-offset: 2px; }
+
+/* chrome translúcido / contenido opaco — Mac feature #1, solo para barras fijas */
+.chrome-translucent {
+  background: rgba(250, 250, 252, 0.82);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}

@@ -2,7 +2,7 @@
 
 **Documento:** `docs/roadmap.md`
 **Rol:** owner canónico del plan por fases y del estado de avance.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 29 de agosto de 2026
 
 ---
 
@@ -104,24 +104,31 @@ que se puede hacer hoy sin esperar una respuesta de nadie.
 
 **Dependencias.** ✅ **Ninguna abierta.** [ADR-008](decisions.md#adr-008) (stack),
 [ADR-010](decisions.md#adr-010) (traducción al dominio) y [ADR-012](decisions.md#adr-012) (alcance)
-quedaron `ACCEPTED` el 28 de agosto de 2026. **La fase está lista para arrancar.**
+quedaron `ACCEPTED` el 28 de agosto de 2026; [ADR-014](decisions.md#adr-014) (desktop-first y contrato
+del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
+
+> **Único `PENDING` dentro de la Fase 0:** dónde vive la CTA principal en desktop
+> ([`design-system-capturas.md`](design-system-capturas.md) §12.7). ADR-014 lo desbloqueó. **No afecta
+> a las etapas 0.1–0.3**; se cierra antes de la 0.4.
 
 ### Pre-flight checklist
 
 - [x] [ADR-008](decisions.md#adr-008) **aprobado** — Next.js 16 estándar
 - [x] [ADR-010](decisions.md#adr-010) **aprobado** — las respuestas `DD1`–`DD10` están escritas
 - [x] [ADR-012](decisions.md#adr-012) **aprobado** — Operador e Institución se difieren al Track B
-- [ ] Documentación SDD aprobada
-- [ ] Confirmado que la carpeta del prototipo sigue accesible como origen de la migración
-- [ ] Node ≥ 22.13 disponible (local: v24.10.0 ✓)
-- [ ] Confirmado que las 3 pantallas nuevas se construyen **desde las specs `VI.7`–`VI.9`**, no desde
+- [x] [ADR-014](decisions.md#adr-014) **aprobado** — desktop-first; 360 px es el piso móvil
+- [x] Documentación SDD aprobada — 29 ago 2026
+- [x] Confirmado que la carpeta del prototipo sigue accesible como origen de la migración —
+      `~/Desktop/ACHIEVE_LOW_FI_REVERSIBLE_PROTOTYPE_BUILD_v0.2 3/`, verificado el 29 ago 2026
+- [x] Node ≥ 22.13 disponible (local: v24.10.0 ✓, npm 11.6.0)
+- [x] Confirmado que las 3 pantallas nuevas se construyen **desde las specs `VI.7`–`VI.9`**, no desde
       el arnés QA
 
 ### Etapas
 
 | # | Etapa | Entregable | Estado |
 |---|---|---|---|
-| 0.1 | **Scaffold + migración de UI** | Repo que compila con `globals.css`, `components/ui/` (80), `components/screens/` (8), `lib/utils.ts`, `hooks/`. `lint` y `build` en verde | ⬜ |
+| 0.1 | **Scaffold + migración de UI** | Repo que compila con `globals.css`, `components/ui/` (61), `components/screens/` (7), `lib/utils.ts`, `hooks/`. `lint` y `build` en verde | ✅ |
 | 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ⬜ |
 | 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ⬜ |
 | 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ⬜ |
@@ -134,12 +141,41 @@ quedaron `ACCEPTED` el 28 de agosto de 2026. **La fase está lista para arrancar
 
 ### Etapa 0.1 — Scaffold + migración de UI
 
-**Decisiones de diseño a aprobar antes de codear:**
-1. ¿Se conservan los 80 componentes de `components/ui/` o solo los que se usan? *Recomendación:
-   conservarlos todos — es un registro vendorizado y podar ahora crea trabajo cuando aparezca una
-   pantalla nueva.*
-2. Estructura de rutas del App Router.
-3. Configuración de ESLint: mantener la excepción para `components/ui/**` (código vendorizado).
+**Decisiones de diseño — ✅ aprobadas el 29 de agosto de 2026:**
+
+1. **Se conservan los 61 componentes de `components/ui/`**, verbatim. Es un registro vendorizado;
+   podar ahora crea trabajo cuando aparezca una pantalla nueva en 0.4–0.6, y el bundler descarta lo
+   no usado.
+   *Corrección de dato: el prototipo tiene **61** archivos en `components/ui/`, no 80. El número
+   anterior estaba mal en `architecture.md` §2.2 y §2.5; se corrigió por medición.*
+2. **Rutas del App Router: route group `(student)` con rutas en el vocabulario de la UI**, tal como
+   [`architecture.md`](architecture.md) §2.3 ya declaraba. El identificador `UXnn` vive en el registro
+   de navegación (Etapa 0.3), **no en la URL** — el estudiante del focus group no ve identificadores
+   internos. Cumple `I-01`: una URL propia por superficie.
+
+   ```
+   app/
+   ├── layout.tsx
+   ├── globals.css
+   └── (student)/
+       ├── hoy/                 UX01
+       ├── materia/[id]/        UX02
+       ├── accion/[id]/         UX03
+       ├── compromiso/[id]/     UX04
+       ├── evidencia/[id]/      UX05
+       ├── progreso/            UX06
+       └── examen/
+           ├── activar/         UX07
+           ├── [id]/            UX08
+           └── [id]/paso/[n]/   UX09
+   ```
+
+   El route group deja lugar a `(operador)` en la Fase B6 sin refactorizar layouts.
+3. **ESLint mantiene la excepción para `components/ui/**`** (código vendorizado, no se edita).
+4. **`--chart-2` se reconcilia a `#f472b6`** (`--urgencia-fill`), no se elimina la familia. Es lo que
+   la regla ya escrita implica: `chart-1` es `exito-fill`, `chart-3` es `humano`, `chart-4`/`chart-5`
+   son grises ink; la ranura 2 es la de urgencia. No se inventa un color: se usa el que `DD6` ya
+   eligió. Ver [`design-system.md`](design-system.md) §1.5.
 
 **Trabajo:** copiar los archivos listados en [`architecture.md`](architecture.md) §2.5, adaptar
 `package.json` al stack de ADR-008, `layout.tsx` mínimo, `tsconfig.json` con `@/*`.
@@ -154,6 +190,59 @@ charts heredan solo de los tres semánticos. Ver
 - La app arranca y renderiza una pantalla de las existentes con sus tokens correctos.
 - `--chart-2` reconciliado con la paleta de tres semánticos.
 - `git log` muestra un commit único y descriptivo.
+
+---
+
+#### ✅ Etapa 0.1 — COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` | ✅ verde, sin warnings |
+| `npm run build` | ✅ verde · Next.js 16.2.6 · 7 rutas estáticas prerenderizadas |
+| `npm test` | ✅ 9 tests en 2 archivos |
+| La app renderiza con tokens correctos | ✅ verificado en desktop 1440×900 y a 360 px, sin errores de consola ni pérdida de información |
+| `--chart-2` reconciliado | ✅ `#ff9500` → `#f472b6` (`--urgencia-fill`), verificado en el CSS servido y en los tokens computados del navegador |
+| Commit único | ✅ |
+
+**Migrado desde el prototipo:** `app/globals.css`, `vendor/` (2), `components/ui/` (61),
+`components/screens/` (7), `lib/utils.ts`, `hooks/use-mobile.ts`, `public/favicon.svg`.
+
+**Rutas creadas:** `/hoy` `/materia` `/accion` `/compromiso` `/evidencia` `/progreso` bajo el route
+group `(student)`, más `/` que redirige a `/hoy`.
+
+**Tests agregados:** `tests/design-tokens.test.ts` (los 3 semánticos, la herencia de los charts, la
+corrección de contraste de `--muted-foreground`) y `tests/track-a-rules.test.ts` (guard estático de
+cero red, cero persistencia y cero datos reales). El segundo es un criterio de Done de la **Fase 0**,
+no de esta etapa: se agregó desde el primer commit para que no haya que retrofitearlo en la 0.8.
+
+**Correcciones de dato aplicadas a los docs** (medidas, no decididas):
+
+- `components/ui/` tiene **61** archivos, no 80. `architecture.md` §2.2 y §2.5 decían 80.
+- El entregable de esta etapa decía `components/screens/` **(8)**, contando
+  `recorrido-diseno-visual.tsx`. [`architecture.md`](architecture.md) §2.5 —que este mismo párrafo
+  cita como la lista a copiar— lo marca **Reemplazado**: es un pager lineal de 6 pasos, no el grafo
+  del Golden Path, y su reemplazo es la Etapa 0.3. **No se migró.** Migran **7**.
+
+**Desviaciones y deuda declarada:**
+
+1. **Los segmentos dinámicos `[id]` no se crearon todavía.** La forma de rutas aprobada los incluye
+   (`materia/[id]`, `accion/[id]`, `compromiso/[id]`, `evidencia/[id]`), pero en esta etapa no existe
+   identidad sobre la cual rutear: el catálogo de fixtures es el entregable de la **Etapa 0.2**.
+   Crear el segmento ahora obligaba a inventar un identificador sintético sin catálogo que lo
+   respalde. **Los `[id]` se agregan en la 0.2, junto con los fixtures que les dan significado.**
+2. **El conmutador de demo interno de `HoyAutogestion`** (los chips `A · Al día`, `B · En curso`,
+   `C · Evidencia`, `D1 · Rescate`) **sigue visible.** La migración es verbatim por diseño; quitarlo
+   es trabajo explícito de la **Etapa 0.2**.
+3. **Las CTAs no navegan.** Las pantallas reciben `onAvanzar`/`onVerMateria` opcionales y nadie se
+   los pasa. El grafo de transiciones es la **Etapa 0.3**.
+4. **`(student)/layout.tsx` solo centra el contenido.** No implementa la proporción 2/3 + 1/3 de
+   `design-system.md` §6.2 ni ubica la CTA principal en desktop: eso depende de
+   [`design-system-capturas.md`](design-system-capturas.md) §12.7, que sigue `PENDING`.
+5. **`npm audit` reporta 3 vulnerabilidades `high`** en el árbol de dependencias heredado del
+   prototipo. No se tocaron: cambiar versiones del stack es una decisión de ADR-008, no de esta
+   etapa. **Queda registrado como deuda a evaluar antes de la Fase 0 Done.**
 
 ---
 
@@ -245,7 +334,8 @@ Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
 
 **Done cuando (cada una):**
 - Todos los estados críticos de su spec son alcanzables desde el catálogo de fixtures.
-- El primer viewport a 360 px cumple el contrato de su spec.
+- El primer viewport cumple el contrato de orden semántico de su spec **en desktop**, y no lo pierde
+  a 360 px ([ADR-014](decisions.md#adr-014)).
 - Una sola CTA primaria por estado.
 - Los fallbacks **omiten**, no inventan.
 - Lint, build y tests en verde.
@@ -290,7 +380,8 @@ sin instrucciones, y el facilitador tiene el guion con los criterios de PASS.
 - [ ] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 corrida, con los
       fallos reportados y no escondidos
 - [ ] Lint, build y tests en verde
-- [ ] El test de comprensión de 10 segundos ejecutado **con personas reales**
+- [ ] El test de comprensión de 10 segundos ejecutado **con personas reales, en desktop**
+      ([ADR-014](decisions.md#adr-014)), sin pérdida de información a 360 px
 
 ---
 
@@ -492,6 +583,9 @@ desvío, riesgo y recuperación.
 [ADR-012](decisions.md#adr-012) (alcance del Track A) y
 [ADR-013](decisions.md#adr-013) (anexo deduplicado).
 
+✅ **Resuelto el 29 de agosto de 2026:** [ADR-014](decisions.md#adr-014) (desktop-first; el contrato
+del primer viewport pasa a orden semántico, con 360 px como piso móvil).
+
 > **Nada bloquea la Fase 0. Está lista para arrancar.**
 
 **Único pendiente que no bloquea nada de la Fase 0:** `DD4` (vocabulario del oficio), en `DEFERRED`.
@@ -503,7 +597,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | ⬜ **NO INICIADA · lista para arrancar** | 0 / 8 |
+| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 1 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

@@ -2,7 +2,7 @@
 
 **Documento:** `docs/architecture.md`
 **Rol:** owner canónico de la arquitectura del repositorio.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 29 de agosto de 2026
 
 > ⚠️ **Estado de este documento.** La arquitectura del **Track A** está **decidida y aprobada**
 > ([ADR-008](decisions.md#adr-008), 28 ago 2026). Para el **Track B** se recibió un diseño objetivo
@@ -75,7 +75,8 @@ decoración de la vista. Ninguna capa eleva un `verification_status`.
 ### 2.1 Objetivo
 
 Una experiencia clickeable de las 9 superficies `UX01`–`UX09`, con fixtures sintéticos, sin backend,
-apta para focus groups y test de comprensión de 10 segundos en 360 px.
+apta para focus groups y test de comprensión de 10 segundos en desktop, con 360 px como piso
+obligatorio de la variante móvil ([ADR-014](decisions.md#adr-014)).
 
 ### 2.2 Stack
 
@@ -86,7 +87,7 @@ Decidido por [ADR-008](decisions.md#adr-008) (`ACCEPTED`).
 | Framework | **Next.js 16 App Router** (`next dev` / `next build`) | ✅ Decidido — reemplaza `vinext` + Cloudflare Workers |
 | React | **19.2** | Heredado, confirmado |
 | Estilos | **Tailwind v4 CSS-first** (`@theme inline`, `@utility`, sin `tailwind.config.js`) | Heredado, confirmado |
-| Componentes | **shadcn/ui "new-york"** vendorizado, 80 componentes | Heredado, confirmado |
+| Componentes | **shadcn/ui "new-york"** vendorizado, 61 componentes | Heredado, confirmado |
 | Iconos | `lucide-react` | Heredado |
 | Validación | `zod` | Heredado |
 | Tests | **Vitest** + Testing Library | ✅ Decidido — alinea con Dashboard_Achieve |
@@ -113,8 +114,17 @@ Achieve_Platform/
 │
 ├── app/
 │   ├── layout.tsx
+│   ├── page.tsx                 ← redirige a /hoy
 │   ├── globals.css              ← tokens del sistema visual · REUSADO
 │   └── (student)/               ← rutas del Golden Path
+│       ├── layout.tsx
+│       ├── hoy/                 ← UX01
+│       ├── materia/             ← UX02
+│       ├── accion/              ← UX03
+│       ├── compromiso/          ← UX04
+│       ├── evidencia/           ← UX05
+│       ├── progreso/            ← UX06
+│       └── examen/              ← UX07–UX09 · Etapas 0.4–0.6
 │
 ├── components/
 │   ├── ui/                      ← shadcn vendorizado · REUSADO · no se edita
@@ -167,7 +177,7 @@ de presentación.
 |---|---|---|
 | `app/globals.css` | `app/globals.css` | **Verbatim.** Tiene auditoría de contraste anotada |
 | `vendor/shadcn-tailwind-4.13.0.css` | `vendor/` | Verbatim |
-| `components/ui/*` (80) | `components/ui/*` | Verbatim. **No se editan** (registro vendorizado) |
+| `components/ui/*` (61) | `components/ui/*` | Verbatim. **No se editan** (registro vendorizado) |
 | `components/screens/design-system.tsx` | idem | Verbatim + se extiende con primitivas faltantes |
 | `components/screens/{hoy,materia,proxima,compromiso,evidencia,progreso}.tsx` | idem | **Parametrizados con props tipadas.** El JSX y el copy se preservan |
 | `components/screens/hoy-autogestion.tsx` → `selectHeroLevel()` | `lib/domain/precedence.ts` | Extraída como función pura y ampliada a los 9 niveles |
@@ -184,7 +194,9 @@ de presentación.
   sesión y el reset lo devuelve al inicial.
 - **Cero datos reales.** Solo identificadores sintéticos (`ACT-SYN-*`, `COM-SYN-*`, `EVD-SYN-*`) y
   nombres genéricos.
-- **Mobile-first a 360 px.** El test de 10 segundos corre sobre el primer viewport.
+- **Desktop-first** ([ADR-014](decisions.md#adr-014)). El test de 10 segundos corre sobre el primer
+  viewport de desktop; **360 px es el piso obligatorio** de la variante móvil. El contrato de orden
+  semántico de `design-system.md` §6.1 rige en los dos anchos.
 - **Una sola CTA primaria por pantalla y por estado.**
 
 ---
@@ -412,7 +424,7 @@ deben cerrarse en el Track B antes de codear la superficie que las consume:
 | **Componente** | Cada pantalla renderiza correctamente cada estado crítico de su spec |
 | **Invariantes de fixture** | Todos los escenarios del catálogo son alcanzables y su reset es determinista |
 | **Estático** | Cero `fetch`/`localStorage`; cero identificadores no sintéticos; todas las CTAs declaradas existen |
-| **Comprensión** | Test de 10 segundos en 360 px — **con personas, no simulado** |
+| **Comprensión** | Test de 10 segundos en desktop — **con personas, no simulado** |
 
 La verificación estática hereda el espíritu de `scripts/verify-low-fi.mjs`: existen `UX01`–`UX09`, no
 existe `UX10`, `CTA-001`…`CTA-018` están declaradas, y ninguna capacidad de red o persistencia se

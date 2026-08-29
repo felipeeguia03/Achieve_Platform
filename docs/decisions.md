@@ -2,7 +2,7 @@
 
 **Documento:** `docs/decisions.md`
 **Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 29 de agosto de 2026
 
 ---
 
@@ -60,6 +60,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-011](#adr-011) | Owner canónico de `PreparationReadiness` (CR-UX08-01) | `PENDING` | Readiness visible en Fase B5 |
 | [ADR-012](#adr-012) | Alcance de Track A: Operador e Institución se difieren | `ACCEPTED` | — |
 | [ADR-013](#adr-013) | Contenido duplicado en `pending-decisions-annex.md` | `ACCEPTED` | — |
+| [ADR-014](#adr-014) | Desktop-first y contrato del primer viewport | `ACCEPTED` | — |
 
 ---
 
@@ -741,3 +742,79 @@ alguna de las 51 filas se resuelva.
 - La decisión agregada del pipeline del ADE ahora es visible en la versión formateada, y queda
   enlazada desde [ADR-004](#adr-004).
 - **Ninguna de las 51 filas cambia de estado.** Siguen 51 `OPEN`.
+
+---
+
+<a id="adr-014"></a>
+## ADR-014 — Desktop-first, y qué pasa con el contrato del primer viewport
+
+**Estado:** `ACCEPTED` · 29 ago 2026
+**Toca:** `AGENTS.md`, `CLAUDE.md`, `architecture.md`, `design-system.md`,
+`design-system-capturas.md`, `roadmap.md`.
+**Resuelve:** [`design-system-capturas.md`](design-system-capturas.md) §12.1.
+**Desbloquea:** §12.7 (posición de la CTA principal en desktop), que dependía de esta decisión.
+
+### Contexto
+
+El repositorio decía **dos cosas distintas al mismo tiempo**:
+
+- [`AGENTS.md`](../AGENTS.md) §5, [`CLAUDE.md`](../CLAUDE.md), [`architecture.md`](architecture.md)
+  §2.6 y [`design-system.md`](design-system.md) §6.1 establecían **mobile-first a 360 px** como regla
+  del Track A.
+- La conducción del producto indicó el **28 de agosto de 2026** que Achieve se piensa
+  **desktop-first**, escalando el mismo lenguaje visual a móvil.
+  [`design-system-capturas.md`](design-system-capturas.md) se escribió siguiendo esa indicación y
+  registró el conflicto en su §12.1 **sin tocar** §6.1.
+
+**Qué estaba realmente en juego.** No era una preferencia de ancho. `design-system.md` §6.1 no define
+un breakpoint: define el **contrato del primer viewport** —el orden exacto de siete elementos above
+the fold y qué está prohibido entre el estado y la CTA—. Ese contrato es el criterio que hace
+verificable el test de comprensión de 10 segundos. Estaba escrito *a 360 px*, y esa medida era lo
+único que lo hacía falsable. Desktop-first no lo invalidaba, pero lo dejaba sin criterio de
+verificación.
+
+### Decisión
+
+**1. Achieve es desktop-first.** El viewport primario de diseño y de verificación es desktop.
+
+**2. El contrato del primer viewport de §6.1 deja de estar atado a 360 px y pasa a ser un contrato de
+orden semántico, obligatorio en todo viewport.** Los siete elementos, su orden, y la lista de lo
+prohibido entre el estado y la CTA **no cambian**. Lo que cambia es que ya no se enuncian como una
+propiedad de la pantalla de 360 px, sino de toda pantalla de decisión.
+
+**3. Se verifica en dos anchos:**
+
+| Ancho | Rol | Qué se verifica |
+|---|---|---|
+| **Desktop** | Primario | El contrato de orden completo. Es donde se corre el test de 10 segundos |
+| **360 px** | Piso obligatorio de la variante móvil | El mismo contrato de orden, sin pérdida de información |
+
+360 px deja de ser *la medida de referencia* y pasa a ser *el piso que no se puede romper*. Una
+pantalla que cumple el contrato en desktop y lo pierde a 360 px **no está terminada**.
+
+**4. `design-system.md` §6.2 (Desktop) pasa de apéndice a sección primaria**, y §6.1 se reencuadra
+como el contrato transversal. La proporción 2/3 Hero + 1/3 contexto y la regla de que el panel
+lateral no contiene CTAs competidoras se conservan tal cual.
+
+### Alternativas descartadas
+
+| Alternativa | Por qué no |
+|---|---|
+| Reescribir §6.1 solo en términos de desktop, y definir móvil después | Deja las etapas 0.4–0.7 sin criterio verificable en móvil y saca el 360 px del Done de la Fase 0. El contrato se vuelve más débil, no más claro |
+| Mantener mobile-first e interpretar que "desktop-first" aplicaba solo a la exploración visual de `design-system-capturas.md` | Contradice la indicación explícita de la conducción del 28 de agosto de 2026 |
+
+### Consecuencias
+
+- `AGENTS.md` §5, `CLAUDE.md`, `architecture.md` §2.1/§2.6 y `roadmap.md` cambian
+  *"mobile-first a 360 px"* por *"desktop-first; 360 px es el piso obligatorio de la variante
+  móvil"*.
+- `design-system.md` §6.1 conserva **el mismo contrato**, reencuadrado como viewport-agnóstico; §6.2
+  pasa a primaria. Ningún token, ninguna primitiva y ningún principio cambian.
+- `design-system-capturas.md` §12.1 pasa de `PENDING` a **`RESUELTO por ADR-014`**. Su §13 deja de
+  registrar el conflicto como abierto.
+- **§12.7 queda desbloqueado** pero **sigue `PENDING`**: dónde vive la CTA principal en desktop
+  —píldora negra arriba a la derecha, como en las capturas, o a ancho completo al final del primer
+  viewport— es una decisión propia que este ADR no toma. Se cierra antes de la Etapa 0.4.
+- El criterio de Done de la Fase 0 *"el test de comprensión de 10 segundos ejecutado con personas
+  reales"* se corre **en desktop**.
+- **No afecta a la Etapa 0.1.** El scaffold no depende del breakpoint.

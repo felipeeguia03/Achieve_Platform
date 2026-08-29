@@ -5,7 +5,7 @@
 **Deriva de:** `docs/design-system-source.md` (manual normativo), la extracción visual anonimizada
 en [`design-system-capturas.md`](design-system-capturas.md) y `app/globals.css` (implementación
 auditada). Los originales visuales no se versionan por ADR-006.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 29 de agosto de 2026
 
 ---
 
@@ -285,7 +285,7 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 | ID | Principio | Estado |
 |---|---|---|
 | `P-05` | Ordená por costo de no actuar | ✅ **Resuelto por `DD2`:** Commitment por vencer primero, proximidad del examen después |
-| `P-07` | Ningún atajo elimina su camino visible | Aplica poco: la interfaz del estudiante es mobile-first, con pocos atajos |
+| `P-07` | Ningún atajo elimina su camino visible | Aplica poco: la interfaz del estudiante tiene pocos atajos |
 | `P-10` | Una decisión por vez, con el reloj a la vista | ✅ **Resuelto por `DD7`:** cola paginable en la lista de materias, sin tocar el Hero. Ver §1.4 |
 | `P-12` | Los estados de carga tienen la forma del contenido real | Pendiente: falta la primitiva `Esqueleto` |
 | `P-13` | Canal de feedback de alcance angosto | `N/A` en el Track A |
@@ -327,9 +327,14 @@ Lista consolidada en [`product.md`](product.md) §13.
 
 ## 6. Layout y responsive
 
-### 6.1 Mobile-first a 360 px
+> **Desktop-first** ([ADR-014](decisions.md#adr-014), 29 ago 2026). El viewport primario de diseño y
+> de verificación es **desktop**. **360 px es el piso obligatorio** de la variante móvil, no la medida
+> de referencia. El contrato de §6.1 **no cambió**: dejó de enunciarse como una propiedad de la
+> pantalla de 360 px y pasó a ser un contrato de **orden semántico**, obligatorio en todo ancho.
 
-El contrato del primer viewport, para toda pantalla de decisión:
+### 6.1 El contrato del primer viewport — orden semántico
+
+Rige en **todo viewport**. Para toda pantalla de decisión:
 
 ```
 estado en una línea
@@ -346,11 +351,28 @@ qué pasa después, en una línea
 último mensaje, indicador de progreso, link secundario que compita, o presencia humana sin hecho
 operacional.
 
-### 6.2 Desktop
+**Dónde se verifica:**
 
-Mantiene **el mismo orden semántico**. El espacio adicional se usa para conciencia periférica, no
-para sumar información al Hero. Proporción aproximada: 2/3 Hero + 1/3 contexto. El panel lateral no
+| Ancho | Rol | Qué se verifica |
+|---|---|---|
+| **Desktop** | Primario | El contrato de orden completo. Es donde corre el test de 10 segundos |
+| **360 px** | Piso obligatorio de la variante móvil | El mismo orden, sin pérdida de información |
+
+Una pantalla que cumple el contrato en desktop y lo pierde a 360 px **no está terminada**. La
+reducción a 360 px baja el **tamaño**, nunca la **cantidad de información** — es el anti-patrón
+`A-03`.
+
+### 6.2 Desktop — el viewport primario
+
+Mantiene **el mismo orden semántico** de §6.1. El espacio adicional se usa para conciencia periférica,
+no para sumar información al Hero. Proporción aproximada: 2/3 Hero + 1/3 contexto. El panel lateral no
 contiene CTAs competidoras.
+
+> ⚠️ **`PENDING` — dónde vive la CTA principal en desktop.** `I-06` exige una sola acción destacada por
+> pantalla, pero su posición en desktop —píldora negra arriba a la derecha, como en las capturas, o a
+> ancho completo al final del primer viewport— **no está decidida**. Ver
+> [`design-system-capturas.md`](design-system-capturas.md) §12.7. ADR-014 la desbloqueó; se cierra
+> antes de la Etapa 0.4.
 
 ### 6.3 Un dato, un dueño visual
 
@@ -448,7 +470,7 @@ en una línea`. **No se esconden los que fallan.**
 - [ ] `I-05` El bloqueante está arriba de todo
 - [ ] Recorrido completo con `Tab`
 - [ ] Lector de pantalla sobre la pantalla más compleja
-- [ ] **La pantalla de decisión sirve en 360 px**
+- [ ] **La pantalla de decisión cumple el contrato de orden de §6.1 en desktop, y no lo pierde a 360 px**
 
 ---
 
