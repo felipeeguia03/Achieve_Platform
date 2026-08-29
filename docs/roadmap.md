@@ -132,7 +132,7 @@ del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
 | 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ✅ |
 | 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ✅ |
 | 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ✅ |
-| 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ⬜ |
+| 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ✅ |
 | 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ⬜ |
 | 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ⬜ |
 | 0.8 | **Modo focus group** | Recorrido limpio sin panel de debug + guion del test de 10 segundos | ⬜ |
@@ -486,8 +486,18 @@ Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
 2. ✅ **Confirmado en la 0.4.** El alta de un `Assessment` no registrado **no se implementa**
    (`SCP-09`/`SCP-10` abiertos). `FX-LOCAL-EXAM-SIN-ASSESSMENT` muestra el estado no implementable
    con retorno seguro, sin formulario y sin CTA primaria.
-3. `UX08`: la matriz de precedencia tiene 10 niveles. Confirmar el orden.
-4. `UX08`: **sin card de readiness** ([ADR-011](decisions.md#adr-011)).
+3. ✅ **Confirmado en la 0.5.** `UX08`: la matriz de precedencia tiene **10 niveles ordenados, en
+   14 filas** — el spec abre el nivel 3 en tres variantes (`CONFIRMED` futuro / `DUE` / `STARTED`),
+   el 4 en dos (rescate requerido / rescate materializado) y el 9 en `9a`/`9b`. Se conservó la
+   numeración del spec en vez de aplanarla a catorce, porque aplanarla rompía la trazabilidad contra
+   §13. Implementada como `selectOverviewLevel`, función pura, con los **nueve conflictos que §13
+   declara** testeados uno por uno.
+4. ✅ **Confirmado y precisado en la 0.5.** `UX08` **no crea card de readiness**
+   ([ADR-011](decisions.md#adr-011)). Pero eso no es lo mismo que ocultar un status recibido:
+   `VI.8` §18 autoriza mostrar `READY_BY_PROTOCOL` con una frase literal cuando el owner lo manda.
+   **Son cosas distintas** — calcular y presentar readiness *versus* releer un valor que
+   `ExamPreparation` ya trae. La pantalla no calcula, no deriva, no muestra score ni porcentaje, y
+   el descargo *"Esto no predice ni garantiza el resultado"* viaja siempre pegado al valor.
 5. `UX09`: **no se muestra "Paso 5 de 12"** ni porcentaje. Los 12 pasos son provisionales.
 
 **Estados críticos mínimos por pantalla:**
@@ -576,6 +586,48 @@ con ellos antes de la 0.8.
    aparece para la seleccionada"*.
 2. `CTA-011` apunta a `UX08`, que no existe hasta la 0.5. Hasta entonces la CTA **no navega**; no se
    inventó un destino.
+
+---
+
+#### ✅ Etapa 0.5 — `UX08` COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Estados críticos alcanzables | ✅ **35 escenarios** cubriendo los 28 estados obligatorios de `VI.8` §16 y sus variantes |
+| Los 10 niveles de precedencia | ✅ todos alcanzables desde el catálogo, y las 7 variantes también |
+| Los 9 conflictos que §13 declara | ✅ un test por conflicto, más el de que cada nivel gana sobre todos los posteriores |
+| Una sola CTA primaria por estado | ✅ test por escenario |
+| Sin readiness calculada | ✅ ningún escenario muestra porcentaje, score ni *"Listo para rendir"*; sólo uno trae status recibido, y con su descargo |
+| Contrato de orden en desktop y a 360 px | ✅ los 35 renderizados en ambos anchos, sin scroll horizontal ni errores de consola |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **203 tests en 10 archivos** |
+
+**La matriz de precedencia es distinta de la de `UX01`.** Aquélla ordena el día; ésta ordena una
+preparación concreta y **no compara materias**. Vive en `lib/domain/overview-precedence.ts`, separada
+de `precedence.ts`, y sigue el mismo patrón: la función decide, el fixture declara la condición.
+
+**Dos huecos que encontraron los propios tests:**
+
+1. **Faltaba el nivel 5** — `Evidence RESUBMISSION_REQUESTED` → *PREPARAR NUEVA EVIDENCIA*. §16 no lo
+   numera como estado obligatorio, pero §13 y §14 lo declaran. El test de cobertura de niveles lo
+   cazó y se agregó `FX-LOCAL-OV-RESUBMISSION`.
+2. **Faltaba la variante de rescate materializado** del nivel 4, que tiene su propio lifecycle y
+   convive con el `MISSED` original preservado. Se agregó `FX-LOCAL-OV-RESCATE-REAL`.
+
+**El guard de CTAs se afinó, porque estaba midiendo lo que no era.** Al darle ruta a `UX08` rompió
+por `CTA-012` — pero `CTA-012` **nace** en `UX08`, así que su origen ya existe; lo que le falta es el
+**destino** (`UX09`, Etapa 0.6). Son dos huecos distintos y ahora se testean por separado:
+
+- la lista de CTAs con **superficie de origen pendiente** quedó **vacía**: las 18 son exigibles y
+  alcanzables;
+- una lista nueva fija las CTAs con **destino sin ruta**, hoy exactamente `["CTA-012"]`, que se
+  vacía cuando la 0.6 construya `UX09`.
+
+**Diferencia con el wireframe, anotada para la 0.7:** `VI.8` §25 muestra el estado de la preparación
+como el enum `ExamPreparation ACTIVE`. Acá se usa el microcopy que §23 define —*"PREPARACIÓN
+ACTIVA"*— porque §19 prohíbe que los enums técnicos sean copy principal, y §24 declara que los
+wireframes son funcionales y no high-fi.
 
 ---
 
@@ -835,7 +887,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 4 / 8 |
+| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 5 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

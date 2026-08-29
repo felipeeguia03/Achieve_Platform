@@ -153,11 +153,17 @@ describe("Aparición y habilitación son cosas distintas", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Las CTAs cuya superficie de origen todavía no existe, con su etapa. */
-const bloqueadasPorEtapa: Readonly<Record<string, string>> = {
-  // CTA-011 salió de esta lista en la Etapa 0.4, cuando UX07 pasó a existir.
-  "CTA-012": "0.5",
-  "CTA-013": "0.5",
-};
+/**
+ * CTAs cuya **superficie de origen** todavía no existe.
+ *
+ * Se vació en la Etapa 0.5: `CTA-011` salió en la 0.4 (`UX07`), y `CTA-012` y
+ * `CTA-013` en la 0.5 (`UX08`). Las tres nacen en superficies que ya existen.
+ *
+ * No confundir con tener el **destino** pendiente: `CTA-012` abre `UX09`, que
+ * llega en la 0.6, pero eso no impide que aparezca ni que sea alcanzable. Ese
+ * otro hueco lo cubre el test de destinos sin ruta, más abajo.
+ */
+const bloqueadasPorEtapa: Readonly<Record<string, string>> = {};
 
 function alcanzaAlgunEscenario(id: CtaId): boolean {
   const cta = ctaRegistry[id];
@@ -172,9 +178,9 @@ function alcanzaAlgunEscenario(id: CtaId): boolean {
 describe("Alcance: toda CTA tiene un escenario que la alcanza", () => {
   const exigibles = ctaIds.filter((id) => !(id in bloqueadasPorEtapa));
 
-  it("hay 16 CTAs exigibles y 2 bloqueadas por etapa", () => {
-    expect(exigibles).toHaveLength(16);
-    expect(Object.keys(bloqueadasPorEtapa)).toHaveLength(2);
+  it("las 18 CTAs son exigibles: ninguna superficie de origen falta ya", () => {
+    expect(exigibles).toHaveLength(18);
+    expect(Object.keys(bloqueadasPorEtapa)).toHaveLength(0);
   });
 
   for (const id of ctaIds.filter((x) => !(x in bloqueadasPorEtapa))) {
@@ -204,6 +210,19 @@ describe("Alcance: toda CTA tiene un escenario que la alcanza", () => {
     for (const id of exigibles) {
       expect(Object.keys(bloqueadasPorEtapa)).not.toContain(id);
     }
+  });
+
+  /**
+   * Una CTA puede ser alcanzable y aun así no navegar, porque su **destino**
+   * todavía no tiene pantalla. Fijar la lista hace que aparezca una nueva sin
+   * que nadie lo note, y que ésta se saque cuando la 0.6 construya `UX09`.
+   */
+  it("las CTAs cuyo destino todavía no tiene ruta son exactamente las esperadas", () => {
+    const sinRuta = ctaIds.filter((id) => {
+      const destino = ctaRegistry[id].destino;
+      return destino !== null && nodos[destino].pendienteDeEtapa !== null;
+    });
+    expect(sinRuta).toEqual(["CTA-012"]); // abre UX09 · Etapa 0.6
   });
 });
 

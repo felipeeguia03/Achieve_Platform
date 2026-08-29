@@ -16,6 +16,7 @@
  */
 
 import type { HeroLevel } from "./precedence";
+import type { NivelOverview, VarianteOverview } from "./overview-precedence";
 
 export type Tono = "urgencia" | "exito" | "humano";
 
@@ -264,5 +265,63 @@ export interface ActivacionExamenProps {
    */
   ctaPrimaria: { texto: string; habilitada: boolean } | null;
   /** El retorno seguro. Vive en la columna secundaria, nunca como primaria. */
+  ctaRetorno: string;
+}
+
+// ── UX08 · Modo Examen / Overview ────────────────────────────────────────────
+
+/** Un hito del recorrido. Sin porcentaje y sin lista fija de pasos. */
+export interface PasoDelRecorrido {
+  label: string;
+  estado: "CONFIRMADO" | "ACTUAL" | "PENDIENTE";
+}
+
+export interface OverviewExamenProps {
+  /** Lo decide `selectOverviewLevel`, no la pantalla. */
+  nivel: NivelOverview;
+  variante: VarianteOverview | null;
+
+  // ── Identidad y contexto ──────────────────────────────────────────────────
+  materia: string;
+  evaluacion: string;
+  datos: DatoDeEvaluacion[];
+
+  // ── Estado dominante · columna principal ──────────────────────────────────
+  /** Microcopy de `VI.8` §23, resuelto por estado. */
+  estadoDominante: string;
+  /** El objeto que gana la precedencia. `null` ⇒ no hay objeto que mostrar. */
+  objeto: string | null;
+  /**
+   * Una sola CTA primaria, sobre el mismo objeto y lifecycle autoritativo, con
+   * destino real. `null` ⇒ no se renderiza ninguna.
+   */
+  ctaPrimaria: { texto: string; habilitada: boolean } | null;
+  /** Qué pasa después. Sin outcome anticipado ni saltos. */
+  despues: string | null;
+  /** Lo que queda secundario por precedencia. Se muestra, no se oculta. */
+  secundarios: readonly string[];
+  aviso: string | null;
+
+  // ── Columna secundaria ────────────────────────────────────────────────────
+  /** `null` ⇒ *"Recorrido todavía no disponible."* No se listan 12 pasos. */
+  recorrido: readonly PasoDelRecorrido[] | null;
+  /** Sólo dimensiones con un `ProgressUpdated` real detrás. */
+  cambioConfirmado: readonly FilaDato[];
+  /** Lo que no cambió, distinguible entre sí: "no evaluado" ≠ "sin datos". */
+  pendiente: readonly FilaDato[];
+  fuenteProgreso: string | null;
+
+  /**
+   * Status de preparación **recibido del owner**, con su descargo literal.
+   *
+   * `UX08` **no calcula readiness, no muestra score ni porcentaje y no crea
+   * card** ([ADR-011](../../docs/decisions.md), `VI.8` §18). Esto es otra cosa:
+   * releer un valor que `ExamPreparation` ya trae. `null` ⇒ no se muestra nada.
+   */
+  statusRecibido: { valor: string; descargo: string } | null;
+
+  // ── Banda de continuidad ──────────────────────────────────────────────────
+  /** Cursado, sus cinco dimensiones y la Bitácora continúan. */
+  cursadoPersistente: string;
   ctaRetorno: string;
 }

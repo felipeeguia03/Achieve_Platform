@@ -25,6 +25,11 @@ export const escenariosConUX07 = (Object.keys(escenarios) as EscenarioId[]).filt
   (id) => escenarios[id].ux07 !== undefined,
 );
 
+/** Los escenarios que traen vista de `UX08`. */
+export const escenariosConUX08 = (Object.keys(escenarios) as EscenarioId[]).filter(
+  (id) => escenarios[id].ux08 !== undefined,
+);
+
 /**
  * Resuelve el `?escenario=` de la URL.
  *
@@ -38,6 +43,12 @@ export const escenariosConUX07 = (Object.keys(escenarios) as EscenarioId[]).filt
 export function escenarioUX07Desde(valor: string | null): EscenarioId | null {
   if (valor === null) return null;
   return escenariosConUX07.find((id) => id === valor) ?? null;
+}
+
+/** Igual que `escenarioUX07Desde`, para `UX08`. */
+export function escenarioUX08Desde(valor: string | null): EscenarioId | null {
+  if (valor === null) return null;
+  return escenariosConUX08.find((id) => id === valor) ?? null;
 }
 
 export const escenarioIds = Object.keys(escenarios) as EscenarioId[];

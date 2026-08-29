@@ -68,8 +68,8 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **4 / 8**. Las etapas 0.1 a 0.4 cerraron el
-29 ago 2026. **Toca la Etapa 0.5:** `UX08`, Modo Examen / Overview.
+**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **5 / 8**. Las etapas 0.1 a 0.5 cerraron el
+29 ago 2026. **Toca la Etapa 0.6:** `UX09`, Paso de Protocolo — la última superficie.
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
@@ -87,13 +87,14 @@ pero ninguna pantalla la renderiza). Ver `docs/roadmap.md`, Etapa 0.3.
 
 **Stack:** Next.js 16 · React 19 · Tailwind v4 CSS-first · shadcn vendorizado · Vitest.
 
-Superficies: `UX01`–`UX09`. **Siete existen** como componente real con ruta propia bajo
-`app/(student)/`; faltan `UX08` y `UX09`. **No existe `UX10`.**
+Superficies: `UX01`–`UX09`. **Ocho existen** como componente real con ruta propia bajo
+`app/(student)/`; falta `UX09`. **No existe `UX10`.**
 
 **Ningún ADR bloquea la Fase 0.** [ADR-016](docs/decisions.md#adr-016) está `PENDING` pero solo
 afecta al recorrido por clic de la 0.8: ninguna de las 18 CTAs lleva a `UX07`.
 
-Para ver cualquier estado crítico sin panel de debug: `/examen/activar?escenario=<ID>`.
+Para ver cualquier estado crítico sin panel de debug: `/examen/activar?escenario=<ID>` y
+`/examen/overview?escenario=<ID>`.
 
 ---
 

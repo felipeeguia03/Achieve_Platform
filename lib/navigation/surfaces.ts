@@ -128,8 +128,8 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     wireframe: "WF-S10",
     nombre: "Modo Examen / Overview",
     pregunta: "¿Dónde estoy en la preparación y qué atiendo?",
-    ruta: null,
-    pendienteDeEtapa: "0.5",
+    ruta: "/examen/overview",
+    pendienteDeEtapa: null,
   },
   UX09: {
     id: "UX09",

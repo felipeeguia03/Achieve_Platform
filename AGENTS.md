@@ -221,10 +221,9 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 4 / 8 etapas.
-**0.1** (scaffold), **0.2** (dominio, fixtures y parametrización), **0.3** (Golden Path y registro de
-CTAs) y **0.4** (`UX07`) ✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.5**: `UX08`, Modo
-Examen / Overview, con su matriz de precedencia de 10 niveles.
+**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 5 / 8 etapas.
+**0.1** a **0.5** ✅ completas el 29 de agosto de 2026. **Sigue la Etapa 0.6**: `UX09`, Paso de
+Protocolo — la última superficie.
 
 Dónde vive cada cosa hoy:
 
@@ -265,7 +264,11 @@ Vitest ([ADR-008](docs/decisions.md#adr-008)).
 `UX06` Progreso/Bitácora · `UX07` Activación Modo Examen · `UX08` Modo Examen/Overview ·
 `UX09` Paso de Protocolo.
 
-**Siete existen** como componente real con ruta propia. Faltan `UX08` (0.5) y `UX09` (0.6).
+**Ocho existen** como componente real con ruta propia. Falta `UX09` (0.6).
+
+**Hay dos matrices de precedencia distintas y no se mezclan.** `lib/domain/precedence.ts` ordena el
+día del estudiante (`UX01`, 9 niveles); `lib/domain/overview-precedence.ts` ordena una preparación de
+examen concreta (`UX08`, 10 niveles en 14 filas) y **no compara materias**.
 
 Mapeo canónico: `WF-S10 → UX08`, `WF-S11 → UX09`. **No existe `UX10`.**
 

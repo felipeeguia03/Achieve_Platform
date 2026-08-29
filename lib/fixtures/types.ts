@@ -16,6 +16,7 @@ import type { ContextoCTA } from "@/lib/navigation/context";
 import type { NodoId } from "@/lib/navigation/surfaces";
 import type {
   ActivacionExamenProps,
+  OverviewExamenProps,
   Chip,
   CompromisoProps,
   EvidenciaProps,
@@ -84,6 +85,7 @@ export interface Escenario {
   evidencia?: EvidenciaProps;
   progreso?: ProgresoProps;
   ux07?: ActivacionExamenProps;
+  ux08?: OverviewExamenProps;
 }
 
 export type { FilaDato };

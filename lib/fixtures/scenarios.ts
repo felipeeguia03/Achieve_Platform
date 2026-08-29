@@ -12,6 +12,7 @@
 
 import { contexto } from "@/lib/navigation/context";
 import { escenariosUX07 } from "./ux07";
+import { escenariosUX08 } from "./ux08";
 import type { Escenario } from "./types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -518,6 +519,7 @@ export const escenarios = {
   // Los 22 estados críticos de UX07 viven en su propio archivo: la matriz de
   // VI.7 §16 es larga y merece leerse entera y de corrido.
   ...escenariosUX07,
+  ...escenariosUX08,
 } as const satisfies Record<string, Escenario>;
 
 export type EscenarioId = keyof typeof escenarios;
