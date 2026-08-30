@@ -9,8 +9,15 @@
  * tiempo; si falta `expectedEvidence` no se inventa el requisito.
  */
 
-import { Eyebrow, ReglaDeNegocio, HeroCard, CTAPrincipal, CTASecundaria, Fila } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import {
+  CTAPrincipal,
+  CTASecundaria,
+  Fila,
+  HeroCard,
+  ReglaDeNegocio,
+  TituloDePanel,
+} from "./design-system";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import type { ProximaAccionProps } from "@/lib/domain/view-models";
 
 export function ProximaAccion({
@@ -33,10 +40,7 @@ export function ProximaAccion({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>{contexto}</Eyebrow>
-        <h2 style={{ fontSize: 22 }}>{unidad}</h2>
-      </header>
+      <TituloDePanel eyebrow={contexto} titulo={unidad} subcopy={SUBCOPY_PENDIENTE.UX03} />
 
       <HeroCard>
         <p

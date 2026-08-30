@@ -6,16 +6,17 @@
  */
 
 import {
-  Eyebrow,
-  EstadoGeneral,
-  ReglaDeNegocio,
-  HeroCard,
-  EstadoChip,
   CTAPrincipal,
   CTASecundaria,
+  EstadoChip,
+  EstadoGeneral,
+  Eyebrow,
   Fila,
+  HeroCard,
+  ReglaDeNegocio,
+  TituloDePanel,
 } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
 import type { ColumnaFuente, MateriaProps } from "@/lib/domain/view-models";
 
@@ -71,16 +72,13 @@ export function MateriaCursado({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>{materia}</Eyebrow>
-        <h2 style={{ fontSize: 22 }}>{t("MATERIA.TITULO")}</h2>
-        {/* Sin Assessment registrado la línea desaparece; no se inventa. */}
-        {examen && (
-          <p className="subcopy" style={{ marginTop: 2 }}>
-            Examen · {examen}
-          </p>
-        )}
-      </header>
+      {/* Sin Assessment registrado la línea de examen desaparece; no se inventa. */}
+      <TituloDePanel
+        eyebrow={materia}
+        titulo={t("MATERIA.TITULO")}
+        meta={examen ? `Examen · ${examen}` : undefined}
+        subcopy={SUBCOPY_PENDIENTE.UX02}
+      />
 
       <EstadoGeneral>
         <EstadoChip tone={chip.tono}>{chip.texto}</EstadoChip>

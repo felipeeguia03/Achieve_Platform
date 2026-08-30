@@ -32,6 +32,109 @@ export function ReglaDeNegocio({ children }: { children: React.ReactNode }) {
   return <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)", lineHeight: 1.5 }}>{children}</p>;
 }
 
+/**
+ * `TituloDePanel` — la cabecera de una superficie: eyebrow, título, meta,
+ * subcopy explicativa y acciones secundarias del objeto.
+ *
+ * Cierra tres diferencias de `design-system-capturas.md` §14.2:
+ *
+ * - **`D-01`** — ninguna de las nueve superficies tenía `<h1>`, y cuatro no
+ *   tenían encabezado alguno. Un producto sin `h1` no tiene título de
+ *   documento: para un lector de pantalla, la pantalla no se llama nada.
+ * - **`D-02`** — falta la subcopy que dice *qué es esto y por qué importa*
+ *   (§11.9.4). El hueco existe; el texto **no se inventa**. Ver `subcopy`.
+ * - **`D-07`** — las acciones secundarias del objeto van **arriba a la
+ *   derecha**, en píldora de borde fino con ancho de contenido (§11.9.3), no
+ *   al pie centradas. Son navegación, nunca la decisión principal, así que
+ *   esto **no toca** [ADR-015](../../docs/decisions.md#adr-015): la CTA
+ *   primaria sigue a ancho completo al final de la columna.
+ *
+ * **Cuando no hay `titulo`, el eyebrow es el `h1`.** Cuatro superficies
+ * (`UX06`–`UX09`) hoy se identifican por su eyebrow y nada más. Promoverlo a
+ * encabezado les da título de documento **sin agregar una palabra**; ponerles
+ * un título nuevo sería escribir copy de dominio, que no es trabajo de esta
+ * capa. Quedan listadas en `SUBCOPY_PENDIENTE`.
+ */
+export function TituloDePanel({
+  eyebrow,
+  titulo,
+  escala = 22,
+  meta,
+  subcopy,
+  acciones,
+}: {
+  eyebrow?: React.ReactNode;
+  /** Si falta, el eyebrow se promueve a `h1`: nunca se inventa un título. */
+  titulo?: React.ReactNode;
+  escala?: number;
+  /** Línea de contexto bajo el título — una fecha, una modalidad. */
+  meta?: React.ReactNode;
+  /**
+   * Qué es este panel y por qué importa (§11.9.4). `null` ⇒ **no se dibuja**.
+   * Omitir, no inventar: una subcopy escrita por la capa visual afirmaría algo
+   * del dominio que ninguna spec dice.
+   */
+  subcopy?: string | null;
+  /** Navegación del objeto, arriba a la derecha. Nunca la decisión principal. */
+  acciones?: React.ReactNode;
+}) {
+  const eyebrowEsTitulo = titulo === undefined;
+  return (
+    <header className="flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        {eyebrow &&
+          (eyebrowEsTitulo ? (
+            <h1 className="eyebrow" style={{ margin: 0 }}>
+              {eyebrow}
+            </h1>
+          ) : (
+            <Eyebrow>{eyebrow}</Eyebrow>
+          ))}
+        {!eyebrowEsTitulo && (
+          <h1 style={{ fontSize: escala, letterSpacing: escala >= 30 ? "-0.022em" : undefined, fontWeight: 600 }}>
+            {titulo}
+          </h1>
+        )}
+        {meta && (
+          <p className="subcopy" style={{ marginTop: 2 }}>
+            {meta}
+          </p>
+        )}
+        {subcopy && (
+          <p className="subcopy" style={{ marginTop: 6, maxWidth: 620, lineHeight: 1.5 }}>
+            {subcopy}
+          </p>
+        )}
+      </div>
+      {acciones && <div className="flex shrink-0 items-center gap-2">{acciones}</div>}
+    </header>
+  );
+}
+
+/**
+ * Acción secundaria del objeto, en píldora de borde fino con ancho de
+ * contenido (§11.9.3). Va arriba a la derecha del título, no al pie.
+ */
+export function AccionDeObjeto({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-pildora)",
+        padding: "5px 12px",
+        fontSize: "var(--text-label)",
+        fontWeight: 500,
+        color: "var(--foreground)",
+        background: "var(--card)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function HeroCard({ children }: { children: React.ReactNode }) {
   return (
     <Card className="shadow-none" style={{ borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--card)" }}>

@@ -15,15 +15,16 @@
  */
 
 import {
-  Eyebrow,
-  ReglaDeNegocio,
-  HeroCard,
-  EstadoChip,
   CTAPrincipal,
   CTASecundaria,
+  EstadoChip,
+  Eyebrow,
   Fila,
+  HeroCard,
+  ReglaDeNegocio,
+  TituloDePanel,
 } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import type { ProgresoProps } from "@/lib/domain/view-models";
 
 export function ProgresoBitacora({
@@ -44,9 +45,8 @@ export function ProgresoBitacora({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>{contexto}</Eyebrow>
-      </header>
+      {/* Sin título propio todavía: el eyebrow se promueve a `h1`. Ver SUBCOPY_PENDIENTE.UX06. */}
+      <TituloDePanel eyebrow={contexto} subcopy={SUBCOPY_PENDIENTE.UX06} />
 
       <div>
         <EstadoChip tone={estadoEvidencia.tono}>{estadoEvidencia.texto}</EstadoChip>

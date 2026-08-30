@@ -11,14 +11,15 @@
 
 import { useState } from "react";
 import {
-  Eyebrow,
-  EstadoGeneral,
-  ReglaDeNegocio,
-  HeroCard,
   CTAPrincipal,
   CTASecundaria,
+  EstadoGeneral,
+  Eyebrow,
+  HeroCard,
+  ReglaDeNegocio,
+  TituloDePanel,
 } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import type { EvidenciaProps } from "@/lib/domain/view-models";
 
 export function Evidencia({
@@ -46,15 +47,13 @@ export function Evidencia({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>{contexto}</Eyebrow>
-        <h2 style={{ fontSize: 20 }}>{titulo}</h2>
-        {unidad && (
-          <p className="subcopy" style={{ marginTop: 2 }}>
-            {unidad}
-          </p>
-        )}
-      </header>
+      <TituloDePanel
+        eyebrow={contexto}
+        titulo={titulo}
+        escala={20}
+        meta={unidad}
+        subcopy={SUBCOPY_PENDIENTE.UX05}
+      />
 
       <HeroCard>
         {/* El lifecycle en copy de producto, nunca el enum crudo. */}

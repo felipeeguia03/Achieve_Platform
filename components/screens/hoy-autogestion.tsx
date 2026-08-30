@@ -15,15 +15,16 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
+  AccionDeObjeto,
   Eyebrow,
   EstadoGeneral,
   ReglaDeNegocio,
   HeroCard,
   EstadoChip,
   CTAPrincipal,
-  CTASecundaria,
+  TituloDePanel,
 } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
 import type { HeroProjection, HoyProps, MateriaResumen } from "@/lib/domain/view-models";
 
@@ -179,15 +180,18 @@ export function HoyAutogestion({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>{t("HOY.EYEBROW")}</Eyebrow>
-        <h2 style={{ fontSize: 30, letterSpacing: "-0.022em", fontWeight: 600 }}>
-          {t("HOY.TITULO")}
-        </h2>
-        <p className="subcopy" style={{ marginTop: 2 }}>
-          {fecha}
-        </p>
-      </header>
+      <TituloDePanel
+        eyebrow={t("HOY.EYEBROW")}
+        titulo={t("HOY.TITULO")}
+        escala={30}
+        meta={fecha}
+        subcopy={SUBCOPY_PENDIENTE.UX01}
+        acciones={
+          // `CTA-009` es navegación de lectura: va arriba a la derecha (§11.9.3),
+          // no compite con la CTA primaria del Hero.
+          verProgreso ? <AccionDeObjeto onClick={onVerProgreso}>{verProgreso}</AccionDeObjeto> : undefined
+        }
+      />
 
       <EstadoGeneral>{estadoGeneral}</EstadoGeneral>
 
@@ -195,8 +199,12 @@ export function HoyAutogestion({
 
       <MateriasQueue materias={materias} onVerMateria={onVerMateria} />
 
-      {/* CTA-009 · lectura, sin mutación. Sólo si la Bitácora está disponible. */}
-      {verProgreso && <CTASecundaria onClick={onVerProgreso}>{verProgreso}</CTASecundaria>}
+      {/*
+        `CTA-009` ya vive arriba a la derecha, como acción del objeto (§11.9.3).
+        Estaba también acá abajo: la misma acción dos veces en una pantalla es
+        `C-02` roto —un concepto, un lugar— y ruido en la única superficie donde
+        el estudiante decide.
+      */}
     </div>
   );
 }

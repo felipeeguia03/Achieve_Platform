@@ -22,6 +22,54 @@
  * estado operativo del sistema.
  */
 
+/**
+ * La subcopy explicativa de cada superficie — `D-02` de
+ * `design-system-capturas.md` §14.2, **sin escribir**.
+ *
+ * Las capturas ponen, bajo el título de cada panel, un párrafo que dice **qué
+ * es esto y por qué importa** en lenguaje llano (§11.9.4). Achieve pone el
+ * título y la fecha, y nada más.
+ *
+ * **Por qué está en `null` y no escrita.** Esa frase afirma algo del dominio:
+ * qué contiene la pantalla, para qué sirve y qué se espera del estudiante. Con
+ * 51 contratos `C01` abiertos, escribirla desde la capa visual sería inventar
+ * una regla de negocio — la regla 1 de `AGENTS.md`. `C-07` ya declara deuda de
+ * contenido; esto la hace visible en vez de agrandarla en silencio.
+ *
+ * **Mientras valga `null`, el panel no dibuja subcopy.** Omitir, no inventar.
+ *
+ * **Cómo completarla:** reemplazar el `null` por la frase. Una o dos líneas,
+ * voseo (`C-01`), sin veredictos (`C-06`), sin placeholders genéricos (`C-03`).
+ * No hace falta tocar ningún componente: aparece sola.
+ *
+ * Las cuatro superficies marcadas `TÍTULO` además **no tienen título propio**:
+ * hoy su `h1` es el eyebrow, promovido para no dejarlas sin título de
+ * documento. Necesitan las dos cosas.
+ *
+ * `tests/titulos.test.tsx` falla si esta lista se vacía sin actualizarse, y
+ * `npm test` imprime cuáles siguen pendientes.
+ */
+export const SUBCOPY_PENDIENTE = {
+  /** `UX01` Hoy — qué es "hoy" y por qué hay una sola acción. */
+  UX01: null,
+  /** `UX02` Materia / Cursado — qué son las cinco dimensiones y por qué no se suman. */
+  UX02: null,
+  /** `UX03` Próxima Acción — por qué esta acción y no otra. */
+  UX03: null,
+  /** `UX04` Compromiso — qué cambia al comprometerse, y qué no. */
+  UX04: null,
+  /** `UX05` Evidencia — qué se espera adjuntar y qué pasa después de enviar. */
+  UX05: null,
+  /** `UX06` Progreso / Bitácora — **TÍTULO** + qué registra y qué no. */
+  UX06: null,
+  /** `UX07` Activación Modo Examen — **TÍTULO** + qué activa y qué no interrumpe. */
+  UX07: null,
+  /** `UX08` Modo Examen / Overview — **TÍTULO** + qué muestra esta preparación. */
+  UX08: null,
+  /** `UX09` Paso de Protocolo — **TÍTULO** + qué es un paso y cómo se cierra. */
+  UX09: null,
+} as const satisfies Record<string, string | null>;
+
 export const copy = {
   // ── Prefijos y etiquetas compartidas ──────────────────────────────────────
   "COMUN.PORQUE": "Porque:",

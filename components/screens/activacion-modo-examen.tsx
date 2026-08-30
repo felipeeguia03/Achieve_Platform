@@ -26,15 +26,15 @@
  */
 
 import {
-  Eyebrow,
-  EstadoGeneral,
-  ReglaDeNegocio,
-  HeroCard,
   CTAPrincipal,
   CTASecundaria,
   Dato,
+  Eyebrow,
+  HeroCard,
+  ReglaDeNegocio,
+  TituloDePanel,
 } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import type { ActivacionExamenProps, OpcionDeEvaluacion } from "@/lib/domain/view-models";
 
 
@@ -90,13 +90,18 @@ export function ActivacionModoExamen({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>
-          ← {materia}
-          {comision ? ` · ${comision}` : ""}
-        </Eyebrow>
-        <EstadoGeneral>{titulo}</EstadoGeneral>
-      </header>
+      <TituloDePanel
+        eyebrow={
+          <>
+            <span aria-hidden="true">← </span>
+            {materia}
+            {comision ? ` · ${comision}` : ""}
+          </>
+        }
+        titulo={titulo}
+        escala={20}
+        subcopy={SUBCOPY_PENDIENTE.UX07}
+      />
 
       {/* Dos columnas en desktop; apiladas a 360 px, en el orden de §21.1. */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start">

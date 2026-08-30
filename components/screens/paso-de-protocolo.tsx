@@ -28,14 +28,15 @@
 
 import {
   Ausencia,
-  Eyebrow,
-  EstadoGeneral,
-  ReglaDeNegocio,
-  HeroCard,
   CTAPrincipal,
   CTASecundaria,
+  EstadoGeneral,
+  Eyebrow,
+  HeroCard,
+  ReglaDeNegocio,
+  TituloDePanel,
 } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import type { BloqueDePaso, PasoProtocoloProps } from "@/lib/domain/view-models";
 
 /**
@@ -86,14 +87,17 @@ export function PasoDeProtocolo({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>
-          ← {t("PASO.MODO_EXAMEN")} · {assessment}
-        </Eyebrow>
-        <p className="subcopy" style={{ marginTop: 2 }}>
-          {materia} · {modalidad}
-        </p>
-      </header>
+      {/* Sin título propio todavía: el eyebrow se promueve a `h1`. Ver SUBCOPY_PENDIENTE.UX09. */}
+      <TituloDePanel
+        eyebrow={
+          <>
+            <span aria-hidden="true">← </span>
+            {t("PASO.MODO_EXAMEN")} · {assessment}
+          </>
+        }
+        meta={`${materia} · ${modalidad}`}
+        subcopy={SUBCOPY_PENDIENTE.UX09}
+      />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start">
         {/* ── Columna principal: identidad, contenido, estado y decisión ── */}

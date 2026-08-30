@@ -824,7 +824,7 @@ dos exigen una persona y datos que el Track A no tiene.
 
 ## Fase A2 — Shell de aplicación · 🟡 EN CURSO
 
-**Estado:** 🟡 **4 / 5 etapas · sin bloqueos.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
+**Estado:** 🟡 **5 / 5 etapas construibles.** `A2.6` y los restos de `A2.4` esperan copy de dominio. Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
 **Abierta por:** [ADR-018](decisions.md#adr-018), 30 de agosto de 2026.
 
 **Objetivo.** Que Achieve **se parezca al software de `docs/diseño/`**. Las nueve superficies ya
@@ -854,7 +854,7 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 | A2.1 | **Navegación lateral + topbar** ✅ | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
 | A2.2 | **Buscador `⌘K`** ✅ | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
 | A2.3 | **Ausencia tipada** ✅ | La primitiva que `design-system.md` §3.2 declaraba faltante. **Reemplaza al dock**, descartado por [ADR-019](decisions.md#adr-019) |
-| A2.4 | **Segmentados y densidad de panel** | Las primitivas que faltan. Cierra `D-01`, `D-02`, `D-03`, `D-05` y `D-07` de §14.2 |
+| A2.4 | **Cabecera de panel** ✅ | `TituloDePanel` y `AccionDeObjeto`. Cierra `D-01` y `D-07`; deja `D-02` con el hueco listo y `D-03`/`D-05` bloqueadas por contenido (§14.5) |
 | A2.5 | **Las nueve dentro del shell + comparación** ✅ | Verificado con guard estático, y la **comparación lado a lado** con las capturas: 7 diferencias reportadas (§14.2) |
 | A2.6 | **Vacíos que explican** | `C-04` elevado. Cierra `D-04`. ⚠️ **Necesita copy de dominio nuevo:** no lo escribe un agente solo |
 
@@ -1017,6 +1017,42 @@ hairlines, racionamiento de color y shell ya son los de las capturas.
 **`D-06` se reportó y no se tocó.** El único badge del menú está en Progreso, y la regla de la
 captura 02 dice que el único badge es el del **trabajo pendiente que caduca** — la Bitácora no
 caduca. Moverlo exige definir qué es, en Achieve, ese trabajo: es dominio, no estilo. Ver §14.3.
+
+---
+
+#### ✅ Etapa A2.4 — Cabecera de panel · COMPLETA · 30 de agosto de 2026
+
+**La etapa entró con cinco diferencias asignadas y sale con dos cerradas, una andamiada y dos
+bloqueadas.** El desglose está abajo; ninguna se escondió.
+
+| Criterio | Resultado |
+|---|---|
+| `D-01` — toda superficie con `<h1>` | ✅ **cerrada.** Las nueve tienen exactamente uno, con guard estático |
+| `D-07` — acciones del objeto arriba a la derecha | ✅ **cerrada.** `AccionDeObjeto` en píldora de borde fino; `CTA-009` se movió en `UX01` |
+| `D-02` — subcopy explicativa | 🟡 **hueco listo, texto pendiente.** Ver abajo |
+| `D-03` — segmentados · `D-05` — densidad | ⚠️ **bloqueadas por contenido**, no diferidas. §14.5 |
+| `lint` · `build` · `test` | ✅ verde · verde · **390 tests en 18 archivos** |
+
+**`D-01` no era estético.** Ninguna de las nueve superficies tenía `<h1>`: para un lector de
+pantalla, **ninguna pantalla se llamaba nada**. Era el ítem *"lector de pantalla"* de §9 bloque 6,
+que figuraba sin correr.
+
+**Cuatro superficies no tienen título propio**, sólo un eyebrow. `TituloDePanel` **promueve el
+eyebrow a `h1`** en vez de inventarles un nombre: les da título de documento **sin agregar una
+palabra**. La flecha de retorno queda fuera del nombre accesible — es afordancia visual, no parte
+del nombre.
+
+**`D-02` está andamiado y vacío a propósito.** `SUBCOPY_PENDIENTE` en
+[`lib/content/es-AR.ts`](../lib/content/es-AR.ts) tiene una entrada por superficie, en `null`, con
+qué debería contestar cada una. **Mientras valga `null`, el panel no dibuja subcopy** — omitir, no
+inventar. Se completa reemplazando el `null` por la frase: **no hay que tocar ningún componente**.
+`npm test` imprime en cada corrida cuáles siguen pendientes, para que la deuda no se pierda por no
+verse.
+
+**Un defecto propio, encontrado en una captura de pantalla y no en un test.** Al mover `CTA-009`
+arriba dejé el botón viejo al pie: *"Ver progreso"* aparecía **dos veces** en la única superficie
+donde el estudiante decide. Es `C-02` roto —un concepto, un lugar—. Corregido, con guard nuevo que
+falla si una superficie ofrece la misma acción arriba y abajo.
 
 ---
 
@@ -1244,7 +1280,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase | Estado | Etapas completas |
 |---|---|---|
 | Fase 0 — Cerrar Track A | 🟡 **8 / 8 etapas · falta el test con personas reales** | 8 / 8 |
-| Fase A2 — Shell de aplicación | 🟡 **EN CURSO · sin bloqueos** | 4 / 5 |
+| Fase A2 — Shell de aplicación | 🟡 **EN CURSO** | 5 / 5 · **A2.6 espera copy de una persona** |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

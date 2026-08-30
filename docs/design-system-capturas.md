@@ -962,13 +962,13 @@ esconden las que fallan.
 
 | ID | Diferencia | Evidencia | Dónde se cierra |
 |---|---|---|---|
-| `D-01` | **Ninguna de las nueve superficies tiene `<h1>`**, y cuatro no tienen encabezado alguno (`UX06`, `UX07`, `UX08`, `UX09`) | `grep '<h1'` da 0 en `components/screens/`; el probe de navegador devuelve título `null` en cuatro rutas | **A2.4** — es también el ítem *"lector de pantalla"* de §9, bloque 6 |
-| `D-02` | **Falta la subcopy explicativa de panel.** Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | **A2.4** + **A2.6** (copy nuevo) |
-| `D-03` | **Cero controles segmentados** en las nueve superficies | `[role=tablist],[role=radiogroup]` da 0 en las nueve, y §10.2 los asigna a `UX05` y `UX07` | **A2.4** |
+| `D-01` ✅ | **Cerrada en A2.4.** Ninguna de las nueve tenía `<h1>`, y cuatro no tienen encabezado alguno (`UX06`, `UX07`, `UX08`, `UX09`) | `grep '<h1'` da 0 en `components/screens/`; el probe de navegador devuelve título `null` en cuatro rutas | ✅ **A2.4** — cada superficie tiene exactamente un `h1`, con guard. Las cuatro sin título propio promueven su eyebrow: título de documento **sin agregar una palabra** |
+| `D-02` 🟡 | **Andamiaje en A2.4, texto pendiente.** Falta la subcopy explicativa de panel. Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | 🟡 El hueco existe y se omite mientras esté vacío (`SUBCOPY_PENDIENTE`, `lib/content/es-AR.ts`). **Las nueve frases las escribe una persona** |
+| `D-03` ⚠️ | **Cero controles segmentados** en las nueve superficies | `[role=tablist],[role=radiogroup]` da 0 en las nueve, y §10.2 los asigna a `UX05` y `UX07` | ⚠️ **Bloqueada, no diferida.** Ver §14.5 |
 | `D-04` | **Los vacíos dicen que no hay dato**, no qué va a aparecer ni por qué importa | `UX08`: *"Todavía no hay un paso para abrir."* | **A2.6** — es la elevación de `C-04` (§12.2, `PENDING`) |
-| `D-05` | **La columna mide 1120 px y el contenido no la usa.** Una sola columna centrada donde las capturas ponen lista + detalle. Sólo `UX08` tiene dos columnas | Tarjeta de 1088 px con líneas de texto cortas en `UX01`–`UX06` | **A2.4** (§11.9.4, *dos columnas cuando hay una lista y un detalle*) |
+| `D-05` ⚠️ | **La columna mide 1120 px y el contenido no la usa.** Una sola columna centrada donde las capturas ponen lista + detalle. Sólo `UX08` tiene dos columnas | Tarjeta de 1088 px con líneas de texto cortas en `UX01`–`UX06` | ⚠️ **Depende de `D-02`/`D-04`.** Ver §14.5 |
 | `D-06` | **El único badge del menú está en Progreso**, y la regla dice que el único badge es el del **trabajo pendiente que caduca**. La Bitácora no caduca | Regla 2 de la captura 02: *"un solo badge numérico en todo el menú: el del trabajo pendiente que caduca"* | ⚠️ **Decisión de dominio, no de estilo.** Ver abajo |
-| `D-07` | **No hay acciones secundarias del objeto arriba a la derecha.** Achieve las pone abajo y centradas | `UX01`: *"Ver progreso"* centrado al pie. `UX08`: *"VOLVER A CURSADO"* ídem. §11.9.3 las quiere en píldora de borde fino junto al título | **A2.4** |
+| `D-07` ✅ | **Cerrada en A2.4.** No había acciones secundarias del objeto arriba a la derecha. Achieve las pone abajo y centradas | `UX01`: *"Ver progreso"* centrado al pie. `UX08`: *"VOLVER A CURSADO"* ídem. §11.9.3 las quiere en píldora de borde fino junto al título | ✅ `AccionDeObjeto` en píldora de borde fino. `CTA-009` se movió en `UX01` |
 
 ### 14.3 `D-06` no lo cierra un agente
 
@@ -989,3 +989,21 @@ falta es que **cada pantalla diga qué es y para qué sirve**, y que use el anch
 Eso es exactamente `A2.4` y `A2.6`, y **`A2.6` no es trabajo de un agente solo**: `D-02` y `D-04`
 piden **copy de dominio nuevo**, y `C-07` ya declara deuda de contenido. Escribir esas frases sin
 una persona sería inventar reglas de negocio.
+
+### 14.5 Las dos que la A2.4 no cerró, y por qué
+
+**`D-03` — segmentados.** §10.2 los asigna a *"método de evidencia / tipo de examen, **con lo
+inaplicable visible y atenuado**"*. Ninguna de las dos listas de opciones existe en los view models:
+`UX07` tiene `opciones`, pero son **Assessments a elegir** —la primitiva `SeleccionExplicita`, no un
+segmentado—, y `UX05` no tiene lista de métodos. Fabricar esas opciones sería inventar dominio.
+
+**Se decidió no construir el primitivo vacío.** Un `Segmentado` que ninguna pantalla renderiza es lo
+mismo que el em-dash de la Etapa A2.3 o el conmutador de tema de §12.4: dibujar un mecanismo sin el
+hecho que lo justifica.
+
+**`D-05` — la columna de 1120 px sin usar.** El diagnóstico inicial era de layout y resultó ser de
+contenido: las tarjetas ocupan el ancho, lo que sobra es **espacio vertical vacío** porque cada panel
+dice tres líneas. §11.9.4 pide dos columnas *"cuando hay una lista y un detalle"*, y `UX08`/`UX09` ya
+las tienen. Poner dos columnas donde no hay dos cosas movería el vacío de lugar.
+
+**Las dos esperan lo mismo que `D-02` y `D-04`: contenido que escribe una persona.**

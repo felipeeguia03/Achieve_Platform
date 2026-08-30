@@ -8,8 +8,16 @@
  * Commitment, y el estado resultante lo confirma el owner (AGENTS.md §2.3).
  */
 
-import { Eyebrow, ReglaDeNegocio, HeroCard, EstadoChip, CTAPrincipal, Fila } from "./design-system";
-import { t } from "@/lib/content/es-AR";
+import {
+  CTAPrincipal,
+  EstadoChip,
+  Eyebrow,
+  Fila,
+  HeroCard,
+  ReglaDeNegocio,
+  TituloDePanel,
+} from "./design-system";
+import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
 import type { CompromisoProps } from "@/lib/domain/view-models";
 
 export function Compromiso({
@@ -32,10 +40,7 @@ export function Compromiso({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <header>
-        <Eyebrow>{contexto}</Eyebrow>
-        <h2 style={{ fontSize: 20 }}>{titulo}</h2>
-      </header>
+      <TituloDePanel eyebrow={contexto} titulo={titulo} escala={20} subcopy={SUBCOPY_PENDIENTE.UX04} />
 
       {/*
         El Commitment original, cuando esta vista es una renegociación o un
