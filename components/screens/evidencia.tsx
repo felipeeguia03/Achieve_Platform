@@ -19,7 +19,7 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { EvidenciaProps } from "@/lib/domain/view-models";
 
 export function Evidencia({
@@ -52,7 +52,7 @@ export function Evidencia({
         titulo={titulo}
         escala={20}
         meta={unidad}
-        subcopy={SUBCOPY_PENDIENTE.UX05}
+        subcopy={SUBCOPY.UX05}
       />
 
       <HeroCard>

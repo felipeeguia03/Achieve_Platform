@@ -17,7 +17,7 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { CompromisoProps } from "@/lib/domain/view-models";
 
 export function Compromiso({
@@ -40,7 +40,7 @@ export function Compromiso({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <TituloDePanel eyebrow={contexto} titulo={titulo} escala={20} subcopy={SUBCOPY_PENDIENTE.UX04} />
+      <TituloDePanel eyebrow={contexto} titulo={titulo} escala={20} subcopy={SUBCOPY.UX04} />
 
       {/*
         El Commitment original, cuando esta vista es una renegociación o un

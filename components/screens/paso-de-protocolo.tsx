@@ -36,7 +36,7 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { BloqueDePaso, PasoProtocoloProps } from "@/lib/domain/view-models";
 
 /**
@@ -87,8 +87,8 @@ export function PasoDeProtocolo({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      {/* Sin título propio todavía: el eyebrow se promueve a `h1`. Ver SUBCOPY_PENDIENTE.UX09. */}
       <TituloDePanel
+        titulo={t("PASO.TITULO")}
         eyebrow={
           <>
             <span aria-hidden="true">← </span>
@@ -96,7 +96,7 @@ export function PasoDeProtocolo({
           </>
         }
         meta={`${materia} · ${modalidad}`}
-        subcopy={SUBCOPY_PENDIENTE.UX09}
+        subcopy={SUBCOPY.UX09}
       />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start">

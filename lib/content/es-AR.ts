@@ -24,50 +24,89 @@
 
 /**
  * La subcopy explicativa de cada superficie — `D-02` de
- * `design-system-capturas.md` §14.2, **sin escribir**.
+ * `design-system-capturas.md` §14.2.
  *
  * Las capturas ponen, bajo el título de cada panel, un párrafo que dice **qué
- * es esto y por qué importa** en lenguaje llano (§11.9.4). Achieve pone el
+ * es esto y por qué importa** en lenguaje llano (§11.9.4). Achieve ponía el
  * título y la fecha, y nada más.
  *
- * **Por qué está en `null` y no escrita.** Esa frase afirma algo del dominio:
- * qué contiene la pantalla, para qué sirve y qué se espera del estudiante. Con
- * 51 contratos `C01` abiertos, escribirla desde la capa visual sería inventar
- * una regla de negocio — la regla 1 de `AGENTS.md`. `C-07` ya declara deuda de
- * contenido; esto la hace visible en vez de agrandarla en silencio.
+ * **Escrita por el owner en la Etapa A2.6.** Las nueve frases salen del JTBD
+ * de cada spec (`product-spec-source.md`, Parte VI), no de la capa visual:
+ * cada una traduce a una o dos líneas la pregunta que esa pantalla ya declara
+ * que debe responder en menos de 10 segundos. La cita de origen está en el
+ * comentario de cada entrada, y `tests/titulos.test.tsx` verifica que sea
+ * textual — una cita que deja de existir en el spec hace fallar el test.
  *
- * **Mientras valga `null`, el panel no dibuja subcopy.** Omitir, no inventar.
- *
- * **Cómo completarla:** reemplazar el `null` por la frase. Una o dos líneas,
- * voseo (`C-01`), sin veredictos (`C-06`), sin placeholders genéricos (`C-03`).
- * No hace falta tocar ningún componente: aparece sola.
- *
- * Las cuatro superficies marcadas `TÍTULO` además **no tienen título propio**:
- * hoy su `h1` es el eyebrow, promovido para no dejarlas sin título de
- * documento. Necesitan las dos cosas.
- *
- * `tests/titulos.test.tsx` falla si esta lista se vacía sin actualizarse, y
- * `npm test` imprime cuáles siguen pendientes.
+ * **Si una entrada vuelve a `null`, el panel no dibuja subcopy.** Omitir, no
+ * inventar: la regla queda vigente para cualquier superficie futura.
  */
-export const SUBCOPY_PENDIENTE = {
-  /** `UX01` Hoy — qué es "hoy" y por qué hay una sola acción. */
-  UX01: null,
-  /** `UX02` Materia / Cursado — qué son las cinco dimensiones y por qué no se suman. */
-  UX02: null,
-  /** `UX03` Próxima Acción — por qué esta acción y no otra. */
-  UX03: null,
-  /** `UX04` Compromiso — qué cambia al comprometerse, y qué no. */
-  UX04: null,
-  /** `UX05` Evidencia — qué se espera adjuntar y qué pasa después de enviar. */
-  UX05: null,
-  /** `UX06` Progreso / Bitácora — **TÍTULO** + qué registra y qué no. */
-  UX06: null,
-  /** `UX07` Activación Modo Examen — **TÍTULO** + qué activa y qué no interrumpe. */
-  UX07: null,
-  /** `UX08` Modo Examen / Overview — **TÍTULO** + qué muestra esta preparación. */
-  UX08: null,
-  /** `UX09` Paso de Protocolo — **TÍTULO** + qué es un paso y cómo se cierra. */
-  UX09: null,
+export const SUBCOPY = {
+  /**
+   * `UX01` Hoy — qué es "hoy" y por qué hay una sola acción.
+   * VI.1 §1: *"El Hero responde “¿Qué necesita hacer el estudiante AHORA?”."*
+   * ... *"No responde qué es lo más grave históricamente ni qué tiene el score
+   * más alto."*
+   */
+  UX01: "Te mostramos una sola acción por vez: la que conviene hacer ahora, no la que acumuló más historia.",
+
+  /**
+   * `UX02` Materia / Cursado — qué son las cinco dimensiones y por qué no se suman.
+   * VI.2 §1: *"inspeccionar Recorrido, Práctica, Dominio, Confianza y
+   * Recencia sin colapsarlas en un % aprendido"*
+   */
+  UX02: "Recorrido, Práctica, Dominio, Confianza y Recencia se muestran por separado: fusionarlas en un solo número escondería en qué estás realmente.",
+
+  /**
+   * `UX03` Próxima Acción — por qué esta acción y no otra.
+   * VI.3 §1.2: *"La pantalla convierte una recomendación ya priorizada en
+   * una decisión binaria y comprensible"*
+   */
+  UX03: "Esta acción ya viene priorizada — acá entendés qué hacer, con qué y qué la cierra, sin necesidad de interpretar cómo se decidió.",
+
+  /**
+   * `UX04` Compromiso — qué cambia al comprometerse, y qué no.
+   * VI.4 §1.2: *"La pantalla convierte una Action en estado ACCEPTED en un
+   * Commitment confirmado... Antes del CTA final no existe un Commitment
+   * confirmado ni visible"*
+   */
+  UX04: "Comprometerte no cambia el trabajo académico: solo acuerda cuándo y cómo vas a hacerlo. Hasta que confirmes, no queda registrado en ningún lado.",
+
+  /**
+   * `UX05` Evidencia — qué se espera adjuntar y qué pasa después de enviar.
+   * VI.5 §1.1: *"presentar la producción acordada en segundos... entender
+   * exactamente en qué estado queda."*
+   */
+  UX05: "Subís la producción que acordaste en el compromiso. Enviarla no significa que ya esté validada — eso lo confirma un paso aparte.",
+
+  /**
+   * `UX06` Progreso / Bitácora — qué registra y qué no.
+   * VI.6 §3: *"pasar de “envié algo” a entender qué ocurrió realmente, qué
+   * cambió o todavía no cambió... sin confundir actividad, validación y
+   * aprendizaje."*
+   */
+  UX06: "Acá ves qué cambió de verdad después de tu evidencia, y qué todavía no tiene un cambio confirmado — sin inventar un avance que no ocurrió.",
+
+  /**
+   * `UX07` Activación Modo Examen — qué activa y qué no interrumpe.
+   * VI.7 §4: *"activar un contexto específico de examen sin perder el
+   * contexto persistente de la materia"*
+   */
+  UX07: "Activar Modo Examen agrega una preparación para este examen — no interrumpe ni reemplaza lo que ya venías haciendo en la materia.",
+
+  /**
+   * `UX08` Modo Examen / Overview — qué muestra esta preparación.
+   * VI.8 §3: *"orientarse sin reconstruir el proceso... La degradación
+   * honesta satisface mejor el JTBD que una etapa, recomendación o
+   * porcentaje inventados."*
+   */
+  UX08: "Acá ves cómo viene tu preparación para este examen: qué está confirmado, qué falta y cuál es el próximo paso — sin inventar una etapa que no exista.",
+
+  /**
+   * `UX09` Paso de Protocolo — qué es un paso y cómo se cierra.
+   * VI.9 §3: *"comprender inmediatamente qué producción concreta se espera
+   * y cómo comenzar"*
+   */
+  UX09: "Un paso es un hito concreto de tu preparación: qué tenés que producir y qué lo cierra. Abrirlo no lo completa — eso lo confirma tu producción.",
 } as const satisfies Record<string, string | null>;
 
 export const copy = {
@@ -186,6 +225,14 @@ export const copy = {
 
   // ── UX07 · Activación de Modo Examen ──────────────────────────────────────
   // Títulos de VI.7 §22.1 y CTAs semánticas de §22.2, literales.
+  //
+  // `EXAMEN.TITULO_PANTALLA` es el **título de documento** de la superficie.
+  // Se llama distinto de `EXAMEN.TITULO.<estado>` —que son los banners
+  // internos de cada wireframe crítico— a propósito: son dos cosas distintas
+  // que comparten prefijo, y leer una como caso particular de la otra es el
+  // error que `C-02` previene.
+  "EXAMEN.TITULO_PANTALLA": "Activación",
+
   "EXAMEN.TITULO.RECOMENDACION": "RECOMENDACIÓN DE ACTIVACIÓN",
   "EXAMEN.TITULO.REVISION": "REVISÁ ESTA EVALUACIÓN",
   "EXAMEN.TITULO.NO_ACTIVO": "TODAVÍA NO ESTÁ ACTIVO",
@@ -216,6 +263,7 @@ export const copy = {
 
   // ── UX08 · Modo Examen / Overview ─────────────────────────────────────────
   // Microcopy de VI.8 §23, literal.
+  "OVERVIEW.TITULO": "Modo Examen",
   "OVERVIEW.EXAMEN": "EXAMEN",
   "OVERVIEW.RECORRIDO": "RECORRIDO VIGENTE",
   "OVERVIEW.SIN_RECORRIDO": "RECORRIDO TODAVÍA NO DISPONIBLE",
@@ -240,6 +288,7 @@ export const copy = {
 
   // ── UX09 · Paso de Protocolo ──────────────────────────────────────────────
   // Microcopy de VI.9 §24, literal.
+  "PASO.TITULO": "Paso",
   "PASO.MODO_EXAMEN": "MODO EXAMEN",
   "PASO.ACTUAL": "PASO ACTUAL",
   "PASO.OBJETIVO": "OBJETIVO DEL PASO",
@@ -258,6 +307,7 @@ export const copy = {
   "CTA.PASO.VOLVER_OVERVIEW": "VOLVER AL OVERVIEW",
 
   // ── UX06 · Progreso / Bitácora ────────────────────────────────────────────
+  "PROGRESO.TITULO": "Progreso",
   "PROGRESO.CAMBIO_CONFIRMADO": "Cambio confirmado",
   "PROGRESO.SIN_CAMBIO": "Sin cambio confirmado",
   "PROGRESO.FUENTE_PREFIJO": "Fuente:",

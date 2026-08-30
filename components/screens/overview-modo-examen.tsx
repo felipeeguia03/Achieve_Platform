@@ -37,7 +37,7 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { OverviewExamenProps } from "@/lib/domain/view-models";
 
 export function OverviewModoExamen({
@@ -65,8 +65,8 @@ export function OverviewModoExamen({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      {/* Sin título propio todavía: el eyebrow se promueve a `h1`. Ver SUBCOPY_PENDIENTE.UX08. */}
       <TituloDePanel
+        titulo={t("OVERVIEW.TITULO")}
         eyebrow={
           <>
             {/* La flecha es afordancia visual de retorno, no parte del nombre
@@ -75,7 +75,7 @@ export function OverviewModoExamen({
             {materia} · {t("OVERVIEW.EXAMEN")} · {evaluacion}
           </>
         }
-        subcopy={SUBCOPY_PENDIENTE.UX08}
+        subcopy={SUBCOPY.UX08}
       />
 
       <div className="flex flex-col gap-4 md:flex-row md:items-start">

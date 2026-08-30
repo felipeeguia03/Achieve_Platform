@@ -78,16 +78,14 @@ los estados críticos son alcanzables y el Golden Path se recorre por clic.
 **Falta ejecutar el test de comprensión de 10 segundos con personas reales.** El guion está en
 [`docs/guion-focus-group.md`](docs/guion-focus-group.md); correrlo no lo puede hacer un agente.
 
-**Fase A2 — Shell de aplicación.** 🟡 **5 / 5 etapas construibles.** Navegación lateral y topbar,
-paleta `⌘K`, la primitiva `Ausencia`, la comparación lado a lado con las capturas y la cabecera de
-panel. **Eran 6 etapas:** [ADR-019](docs/decisions.md#adr-019) descartó el dock inferior porque la
-fuente misma lo desaconseja para flujos lineales.
+**Fase A2 — Shell de aplicación.** ✅ **5 / 5 etapas.** Navegación lateral y topbar, paleta `⌘K`,
+la primitiva `Ausencia`, la comparación con las capturas y la cabecera de panel con sus nueve
+subcopys. **Eran 6:** [ADR-019](docs/decisions.md#adr-019) descartó el dock inferior porque la fuente
+misma lo desaconseja para flujos lineales.
 
-⚠️ **Lo que queda de A2 lo destraba una persona, no un agente.** Las nueve subcopys de panel están
-en `SUBCOPY_PENDIENTE` ([`lib/content/es-AR.ts`](lib/content/es-AR.ts)) en `null`: **mientras valgan
-`null` no se dibuja nada** (*omitir, no inventar*), y `npm test` imprime cuáles faltan. Se completan
-reemplazando el `null` por la frase, sin tocar componentes. De ahí dependen `D-02`, `D-03`, `D-04` y
-`D-05` de [`design-system-capturas.md`](docs/design-system-capturas.md) §14.
+De las **siete diferencias** contra las capturas ([`design-system-capturas.md`](docs/design-system-capturas.md)
+§14) quedan tres —`D-03` segmentados, `D-04` vacíos que explican, `D-05` densidad—, **las tres
+esperando la elevación de `C-04`** (§12.2, `PENDING`).
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.

@@ -24,7 +24,7 @@ import {
   CTAPrincipal,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
 import type { HeroProjection, HoyProps, MateriaResumen } from "@/lib/domain/view-models";
 
@@ -185,7 +185,7 @@ export function HoyAutogestion({
         titulo={t("HOY.TITULO")}
         escala={30}
         meta={fecha}
-        subcopy={SUBCOPY_PENDIENTE.UX01}
+        subcopy={SUBCOPY.UX01}
         acciones={
           // `CTA-009` es navegación de lectura: va arriba a la derecha (§11.9.3),
           // no compite con la CTA primaria del Hero.

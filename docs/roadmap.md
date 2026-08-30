@@ -822,9 +822,9 @@ dos exigen una persona y datos que el Track A no tiene.
 
 ---
 
-## Fase A2 — Shell de aplicación · 🟡 EN CURSO
+## Fase A2 — Shell de aplicación · ✅ COMPLETA
 
-**Estado:** 🟡 **5 / 5 etapas construibles.** `A2.6` y los restos de `A2.4` esperan copy de dominio. Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
+**Estado:** ✅ **5 / 5 etapas.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock. De las siete diferencias de §14.2 quedan **`D-03`, `D-04` y `D-05`**, las tres esperando la elevación de `C-04` (§12.2, `PENDING`). Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
 **Abierta por:** [ADR-018](decisions.md#adr-018), 30 de agosto de 2026.
 
 **Objetivo.** Que Achieve **se parezca al software de `docs/diseño/`**. Las nueve superficies ya
@@ -856,7 +856,7 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 | A2.3 | **Ausencia tipada** ✅ | La primitiva que `design-system.md` §3.2 declaraba faltante. **Reemplaza al dock**, descartado por [ADR-019](decisions.md#adr-019) |
 | A2.4 | **Cabecera de panel** ✅ | `TituloDePanel` y `AccionDeObjeto`. Cierra `D-01` y `D-07`; deja `D-02` con el hueco listo y `D-03`/`D-05` bloqueadas por contenido (§14.5) |
 | A2.5 | **Las nueve dentro del shell + comparación** ✅ | Verificado con guard estático, y la **comparación lado a lado** con las capturas: 7 diferencias reportadas (§14.2) |
-| A2.6 | **Vacíos que explican** | `C-04` elevado. Cierra `D-04`. ⚠️ **Necesita copy de dominio nuevo:** no lo escribe un agente solo |
+| A2.6 | **Subcopy de panel** ✅ | Las nueve frases, escritas por el owner desde el JTBD de cada spec. Cierra `D-02`; `D-04` (vacíos) sigue abierta |
 
 ### Lo que esta fase NO toca
 
@@ -1053,6 +1053,45 @@ verse.
 arriba dejé el botón viejo al pie: *"Ver progreso"* aparecía **dos veces** en la única superficie
 donde el estudiante decide. Es `C-02` roto —un concepto, un lugar—. Corregido, con guard nuevo que
 falla si una superficie ofrece la misma acción arriba y abajo.
+
+---
+
+#### ✅ Etapa A2.6 — Subcopy de panel · COMPLETA · 30 de agosto de 2026
+
+**Las nueve frases las escribió el owner**, que es como tenía que pasar: `D-02` afirma qué contiene
+cada pantalla y qué se espera del estudiante, y eso es dominio. La capa visual dejó el hueco listo
+en la A2.4 y no lo llenó.
+
+| Criterio | Resultado |
+|---|---|
+| `D-02` — subcopy en las nueve | ✅ **cerrada.** Cada frase sale del JTBD de su spec (`Parte VI`) |
+| Cita textual verificada | ✅ un test compara cada cita del comentario contra `product-spec-source.md`. **Siete estaban parafraseadas** y se corrigieron a la cita exacta |
+| Título propio en las cuatro que no lo tenían | ✅ `Progreso`, `Activación`, `Modo Examen`, `Paso` |
+| `D-06` — el badge del menú | ✅ cerrada por [ADR-021](decisions.md#adr-021) |
+| `lint` · `build` · `test` | ✅ verde · verde · **392 tests en 18 archivos** |
+
+**`UX07` tenía dos cosas peleando por el mismo lugar.** Su `h1` era el banner de estado
+—*"RECOMENDACIÓN DE ACTIVACIÓN"*, *"FALTAN DATOS PARA ACTIVAR"*…—, así que **la pantalla se llamaba
+distinto en cada estado** y un lector de pantalla la anunciaba con otro nombre cada vez. Ahora la
+superficie se llama `Activación` y el banner volvió a ser lo que es: estado.
+
+**El test de citas no es decoración.** Si mañana la spec cambia y una cita deja de existir, la
+subcopy pasa a afirmar algo que ya nadie respalda — que es justo lo que `C-07` intenta evitar. Lee
+las citas del propio comentario, así que no hay una segunda lista que mantener sincronizada.
+
+---
+
+#### ✅ `D-06` — el badge del menú · [ADR-021](decisions.md#adr-021)
+
+**Lo que caduca en Achieve es el `Commitment`**: es el único objeto que el estudiante acordó hacer
+*para un momento*, y al pasar ese momento cambia a `MISSED` de forma irreversible. Una `Action` se
+reemplaza, una `Evidence` `SUBMITTED` espera a otra persona, la Bitácora sólo acumula.
+
+Así que el badge **no iba en Progreso** — estaba en la única superficie sin nada que vencer.
+
+**Y apareció un segundo problema, peor:** el número era un **literal `1`**, una cifra sin un hecho
+detrás. Se retiró. Vuelve cuando haya de dónde contarlo, en `Hoy`. Un badge que aparece en una ruta
+y desaparece en las otras tres **miente más que un badge ausente**.
 
 ---
 
@@ -1280,7 +1319,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase | Estado | Etapas completas |
 |---|---|---|
 | Fase 0 — Cerrar Track A | 🟡 **8 / 8 etapas · falta el test con personas reales** | 8 / 8 |
-| Fase A2 — Shell de aplicación | 🟡 **EN CURSO** | 5 / 5 · **A2.6 espera copy de una persona** |
+| Fase A2 — Shell de aplicación | ✅ **5 / 5 etapas completas** | 5 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

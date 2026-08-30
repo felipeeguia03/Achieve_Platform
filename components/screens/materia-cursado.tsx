@@ -16,7 +16,7 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
 import type { ColumnaFuente, MateriaProps } from "@/lib/domain/view-models";
 
@@ -77,7 +77,7 @@ export function MateriaCursado({
         eyebrow={materia}
         titulo={t("MATERIA.TITULO")}
         meta={examen ? `Examen · ${examen}` : undefined}
-        subcopy={SUBCOPY_PENDIENTE.UX02}
+        subcopy={SUBCOPY.UX02}
       />
 
       <EstadoGeneral>

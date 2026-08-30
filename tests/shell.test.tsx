@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { NavegacionLateral } from "@/components/shell/navegacion-lateral";
+import { Item, NavegacionLateral } from "@/components/shell/navegacion-lateral";
 import { BarraSuperior } from "@/components/shell/barra-superior";
 import { menu, rutaDelItem } from "@/lib/navigation/menu";
 import { migasDe, padreDeMiga } from "@/lib/navigation/migas";
@@ -99,21 +99,39 @@ describe("Navegación lateral", () => {
     expect(container.querySelectorAll(".sr-only")).toHaveLength(0);
   });
 
+  /**
+   * `A-03` es una regla del **componente**, no del menú de producción: un modo
+   * compacto reduce tamaño, nunca cantidad de información. Se prueba sobre un
+   * ítem sintético con contador porque hoy ningún ítem real lleva número
+   * ([ADR-021](../docs/decisions.md#adr-021)) — atar el test al menú de
+   * producción haría que la regla dejara de verificarse justo cuando el menú
+   * cambia, que es cuando más falta hace.
+   */
   it("colapsar NO degrada el contador a un punto (anti-patrón A-03)", () => {
-    // El manual lo marca como defecto del producto original: "se perdió
-    // información para ganar 250 px". Un modo compacto reduce tamaño, nunca
-    // cantidad de información.
-    const conContador = menu.filter((m) => m.contador !== null);
-    expect(conContador.length, "hace falta al menos un contador para probarlo").toBeGreaterThan(0);
+    const conNumero = { nodo: "UX01", etiqueta: "Hoy", contador: 17 } as const;
 
     for (const colapsada of [false, true]) {
-      const { container, unmount } = render1(colapsada);
-      const contadores = container.querySelectorAll("[data-contador]");
-      expect(contadores.length, `colapsada=${colapsada}`).toBe(conContador.length);
-      for (const item of conContador) {
-        expect(container.textContent, `colapsada=${colapsada}`).toContain(String(item.contador));
-      }
+      const { container, unmount } = render(
+        <Item item={conNumero} activo={false} colapsada={colapsada} />,
+      );
+      const contador = container.querySelector("[data-contador]");
+      expect(contador, `colapsada=${colapsada}`).not.toBeNull();
+      // Sigue siendo un número, no un punto: es la regla entera.
+      expect(contador!.textContent, `colapsada=${colapsada}`).toBe("17");
+      // Y la etiqueta no desaparece para ganar ancho.
+      expect(container.textContent, `colapsada=${colapsada}`).toContain("Hoy");
       unmount();
+    }
+  });
+
+  /**
+   * El contador que había en Progreso era un literal `1`: una cifra en pantalla
+   * sin un hecho detrás. Este guard impide que vuelva a colarse un número
+   * inventado en el menú.
+   */
+  it("ningún contador del menú es un literal sin fuente", () => {
+    for (const item of menu) {
+      expect(item.contador, `${item.etiqueta}`).toBeNull();
     }
   });
 

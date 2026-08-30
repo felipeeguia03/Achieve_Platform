@@ -24,7 +24,7 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { ProgresoProps } from "@/lib/domain/view-models";
 
 export function ProgresoBitacora({
@@ -45,8 +45,7 @@ export function ProgresoBitacora({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      {/* Sin título propio todavía: el eyebrow se promueve a `h1`. Ver SUBCOPY_PENDIENTE.UX06. */}
-      <TituloDePanel eyebrow={contexto} subcopy={SUBCOPY_PENDIENTE.UX06} />
+      <TituloDePanel eyebrow={contexto} titulo={t("PROGRESO.TITULO")} subcopy={SUBCOPY.UX06} />
 
       <div>
         <EstadoChip tone={estadoEvidencia.tono}>{estadoEvidencia.texto}</EstadoChip>

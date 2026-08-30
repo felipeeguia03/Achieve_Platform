@@ -38,7 +38,7 @@ const ICONOS: Record<NodoId, typeof Sun> = {
   UX07: CalendarDays,
 } as unknown as Record<NodoId, typeof Sun>;
 
-function Item({
+export function Item({
   item,
   activo,
   colapsada,

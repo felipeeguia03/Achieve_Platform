@@ -53,7 +53,7 @@ export function ReglaDeNegocio({ children }: { children: React.ReactNode }) {
  * (`UX06`–`UX09`) hoy se identifican por su eyebrow y nada más. Promoverlo a
  * encabezado les da título de documento **sin agregar una palabra**; ponerles
  * un título nuevo sería escribir copy de dominio, que no es trabajo de esta
- * capa. Quedan listadas en `SUBCOPY_PENDIENTE`.
+ * capa. Quedan listadas en `SUBCOPY`.
  */
 export function TituloDePanel({
   eyebrow,

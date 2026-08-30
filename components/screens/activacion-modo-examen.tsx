@@ -29,12 +29,13 @@ import {
   CTAPrincipal,
   CTASecundaria,
   Dato,
+  EstadoGeneral,
   Eyebrow,
   HeroCard,
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { ActivacionExamenProps, OpcionDeEvaluacion } from "@/lib/domain/view-models";
 
 
@@ -98,10 +99,18 @@ export function ActivacionModoExamen({
             {comision ? ` · ${comision}` : ""}
           </>
         }
-        titulo={titulo}
-        escala={20}
-        subcopy={SUBCOPY_PENDIENTE.UX07}
+        titulo={t("EXAMEN.TITULO_PANTALLA")}
+        subcopy={SUBCOPY.UX07}
       />
+
+      {/*
+        El banner de estado de `VI.7` §22.1 **no es el nombre de la pantalla**:
+        la superficie se llama "Activación" y el banner dice en qué estado está.
+        Hasta la A2.6 el banner ocupaba el `h1`, que es `C-02` roto —un
+        concepto, un lugar—: un lector de pantalla anunciaba la pantalla con un
+        nombre distinto en cada estado.
+      */}
+      <EstadoGeneral>{titulo}</EstadoGeneral>
 
       {/* Dos columnas en desktop; apiladas a 360 px, en el orden de §21.1. */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start">

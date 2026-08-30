@@ -17,7 +17,7 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY_PENDIENTE, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { ProximaAccionProps } from "@/lib/domain/view-models";
 
 export function ProximaAccion({
@@ -40,7 +40,7 @@ export function ProximaAccion({
       className="space-y-4"
       style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
     >
-      <TituloDePanel eyebrow={contexto} titulo={unidad} subcopy={SUBCOPY_PENDIENTE.UX03} />
+      <TituloDePanel eyebrow={contexto} titulo={unidad} subcopy={SUBCOPY.UX03} />
 
       <HeroCard>
         <p

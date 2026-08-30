@@ -963,22 +963,33 @@ esconden las que fallan.
 | ID | Diferencia | Evidencia | Dónde se cierra |
 |---|---|---|---|
 | `D-01` ✅ | **Cerrada en A2.4.** Ninguna de las nueve tenía `<h1>`, y cuatro no tienen encabezado alguno (`UX06`, `UX07`, `UX08`, `UX09`) | `grep '<h1'` da 0 en `components/screens/`; el probe de navegador devuelve título `null` en cuatro rutas | ✅ **A2.4** — cada superficie tiene exactamente un `h1`, con guard. Las cuatro sin título propio promueven su eyebrow: título de documento **sin agregar una palabra** |
-| `D-02` 🟡 | **Andamiaje en A2.4, texto pendiente.** Falta la subcopy explicativa de panel. Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | 🟡 El hueco existe y se omite mientras esté vacío (`SUBCOPY_PENDIENTE`, `lib/content/es-AR.ts`). **Las nueve frases las escribe una persona** |
+| `D-02` ✅ | **Cerrada en A2.6.** Faltaba la subcopy explicativa de panel. Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | ✅ Las nueve las escribió el owner, del JTBD de cada spec. Un test verifica que cada cita sea **textual** |
 | `D-03` ⚠️ | **Cero controles segmentados** en las nueve superficies | `[role=tablist],[role=radiogroup]` da 0 en las nueve, y §10.2 los asigna a `UX05` y `UX07` | ⚠️ **Bloqueada, no diferida.** Ver §14.5 |
 | `D-04` | **Los vacíos dicen que no hay dato**, no qué va a aparecer ni por qué importa | `UX08`: *"Todavía no hay un paso para abrir."* | **A2.6** — es la elevación de `C-04` (§12.2, `PENDING`) |
 | `D-05` ⚠️ | **La columna mide 1120 px y el contenido no la usa.** Una sola columna centrada donde las capturas ponen lista + detalle. Sólo `UX08` tiene dos columnas | Tarjeta de 1088 px con líneas de texto cortas en `UX01`–`UX06` | ⚠️ **Depende de `D-02`/`D-04`.** Ver §14.5 |
-| `D-06` | **El único badge del menú está en Progreso**, y la regla dice que el único badge es el del **trabajo pendiente que caduca**. La Bitácora no caduca | Regla 2 de la captura 02: *"un solo badge numérico en todo el menú: el del trabajo pendiente que caduca"* | ⚠️ **Decisión de dominio, no de estilo.** Ver abajo |
+| `D-06` ✅ | **Cerrada por [ADR-021](decisions.md#adr-021).** El único badge del menú estaba en Progreso, y la regla dice que el único badge es el del **trabajo pendiente que caduca**. La Bitácora no caduca | Regla 2 de la captura 02: *"un solo badge numérico en todo el menú: el del trabajo pendiente que caduca"* | ✅ Lo que caduca es el **`Commitment`**, y su lugar es `Hoy`. **No se dibuja todavía:** el `1` era un literal sin fuente. Ver §14.3 |
 | `D-07` ✅ | **Cerrada en A2.4.** No había acciones secundarias del objeto arriba a la derecha. Achieve las pone abajo y centradas | `UX01`: *"Ver progreso"* centrado al pie. `UX08`: *"VOLVER A CURSADO"* ídem. §11.9.3 las quiere en píldora de borde fino junto al título | ✅ `AccionDeObjeto` en píldora de borde fino. `CTA-009` se movió en `UX01` |
 
-### 14.3 `D-06` no lo cierra un agente
+### 14.3 `D-06`, resuelto — lo que caduca es el `Commitment`
 
-Mover el badge exige contestar **qué es, en Achieve, el trabajo pendiente que caduca**. El candidato
-obvio es un `Commitment` por vencer, pero eso vive en `UX01`, que es la superficie por defecto:
-badgear la pantalla en la que ya estás no informa nada. La alternativa —badgear *Materias*— supone
-que el contador agrega materias, y **`P-08` prohíbe fusionar fuentes**.
+**Cerrado el 30 de agosto de 2026 por [ADR-021](decisions.md#adr-021)**, delegado por el owner.
 
-Es la misma clase de pregunta que [ADR-020](decisions.md#adr-020): decide **qué afirma el producto**,
-no cómo se pinta. Queda reportada acá y sin resolver.
+El `Commitment` es el único objeto que el estudiante **acordó hacer para un momento**, y al pasar ese
+momento cambia a `MISSED` de forma irreversible. Esa irreversibilidad **es** la caducidad. Una
+`Action` se reemplaza, una `Evidence` `SUBMITTED` espera a otra persona, la Bitácora sólo acumula, y
+la preparación de un examen no vence aunque el examen tenga fecha.
+
+Así que el badge **no iba en Progreso**: estaba en la única superficie sin nada que vencer. Su lugar
+es `Hoy`.
+
+**Y no se dibuja todavía.** Al abrirlo apareció un segundo problema, peor que el primero: el número
+era un **literal `1`** en `menu.ts`, una cifra sin un hecho detrás. Bajo el Track A sólo `/hoy`
+conoce el estado del `Commitment`, así que un badge real aparecería ahí y desaparecería en las otras
+tres, y esa ausencia se leería como *"no hay nada por vencer"*. **Un badge intermitente miente más
+que un badge ausente.**
+
+Se retiró, y vuelve cuando haya de dónde contarlo. Sigue habiendo **cero badges**, que es lo que la
+regla pide mientras ninguno se gane el lugar.
 
 ### 14.4 Lectura de conjunto
 
@@ -986,9 +997,8 @@ Las siete diferencias son **de densidad y de estructura, no de lenguaje visual**
 tipografía, los hairlines, el racionamiento de color y el shell ya son los de las capturas; lo que
 falta es que **cada pantalla diga qué es y para qué sirve**, y que use el ancho que tiene.
 
-Eso es exactamente `A2.4` y `A2.6`, y **`A2.6` no es trabajo de un agente solo**: `D-02` y `D-04`
-piden **copy de dominio nuevo**, y `C-07` ya declara deuda de contenido. Escribir esas frases sin
-una persona sería inventar reglas de negocio.
+Eso fue exactamente `A2.4` y `A2.6`. **`D-02` la cerró el owner** escribiendo las nueve subcopys
+desde el JTBD de cada spec — no la capa visual, que habría inventado reglas de negocio.
 
 ### 14.5 Las dos que la A2.4 no cerró, y por qué
 

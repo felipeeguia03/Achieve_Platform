@@ -67,6 +67,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-018](#adr-018) | El lenguaje visual sale de las capturas, y hay que mirarlas | `ACCEPTED` | — |
 | [ADR-019](#adr-019) | El dock inferior no se construye; `Ausencia` ocupa su etapa | `ACCEPTED` | [ADR-018](#adr-018) |
 | [ADR-020](#adr-020) | Cuántas clases de ausencia distingue Achieve, y con qué palabras | `PENDING` | [ADR-019](#adr-019) |
+| [ADR-021](#adr-021) | Qué es, en Achieve, el «trabajo pendiente que caduca» | `ACCEPTED` | — |
 
 ---
 
@@ -1209,3 +1210,74 @@ explícito: qué dice la pantalla lo manda la spec, no las capturas. Y ninguna s
 
 **Mientras siga abierta:** las dos filas comparten `SIN_ASIGNAR`, que es el comportamiento que ya
 tenían. No se degradó nada; se dejó de afirmar que estaban distinguidas cuando no lo estaban.
+
+---
+
+## ADR-021 — Qué es, en Achieve, el «trabajo pendiente que caduca»
+
+**Estado:** `ACCEPTED` · 30 ago 2026
+**Toca:** `lib/navigation/menu.ts`, `design-system-capturas.md` §14.2 (`D-06`).
+**Delegado por el owner** el 30 de agosto de 2026, con la pregunta abierta en §14.3.
+
+### Contexto
+
+La captura 02 fija una regla precisa para el badge del menú:
+
+> Un solo badge numérico en todo el menú: **el del trabajo pendiente que caduca**. Si todo tiene
+> badge, nada tiene badge.
+
+La Etapa A2.1 puso un contador en **Progreso**. La comparación de la A2.5 lo marcó como `D-06`: la
+Bitácora no caduca. Al abrirlo aparecieron **dos problemas, no uno**.
+
+### Decisión
+
+**1. Lo que caduca en Achieve es el `Commitment`.**
+
+Es el único objeto que el estudiante **acordó hacer para un momento**, y al pasar ese momento cambia
+a `MISSED` de forma irreversible — el invariante dice que *un `Commitment` `MISSED` nunca se edita
+para parecer cumplido*. Esa irreversibilidad **es** la caducidad.
+
+Nada más en el producto caduca:
+
+| Objeto | Por qué no |
+|---|---|
+| `Action` recomendada | No vence: la reemplaza la siguiente |
+| `Evidence` `SUBMITTED` | Espera a otra persona. El estudiante no puede actuar sobre ella |
+| Bitácora / Progreso | Sólo acumula. No hay nada que se pierda por no mirarlo |
+| Modo Examen | El examen tiene fecha, pero la **preparación** no vence: se sigue trabajando |
+
+**Corolario: el badge no va en Progreso.** Estaba en la única superficie que no tiene nada que
+vencer. Su lugar es `Hoy`, que es donde la matriz de precedencia de `UX01` ya eleva el `Commitment`
+(`COMMITMENT_NEXT`, `COMMITMENT_MISSED`).
+
+**2. Y todavía no se dibuja, en ninguna.**
+
+El número que había era un **literal `1`** en `menu.ts`: una cifra en pantalla sin un hecho detrás.
+Eso es peor que estar en el ítem equivocado — es el reverso de *sin datos no es cero*.
+
+Bajo el Track A cada ruta proyecta su propio escenario, y **sólo `/hoy` conoce el estado del
+`Commitment`**. Un badge real aparecería en `Hoy` y desaparecería en las otras tres superficies, y el
+estudiante leería esa ausencia como *"no hay nada por vencer"*. **Un badge intermitente miente más
+que un badge ausente.**
+
+Así que el contador se retira, y **vuelve cuando haya de dónde contarlo**: con el `Commitment` como
+fuente y en `Hoy`. El componente ya sabe dibujarlo.
+
+### Por qué esto no es inventar una regla de negocio
+
+No define un contrato nuevo: **lee** los que ya están escritos. Que el `Commitment` tenga hora
+acordada y transición a `MISSED` está en `data-model.md` y en las máquinas de estado; que `UX01` lo
+eleve está en su matriz de precedencia. La decisión es **de traducción visual**, que es lo que
+`AGENTS.md` §1.5 asigna a las capturas.
+
+Lo que sí quedaría abierto —**cuántos** commitments cuenta el badge, y si cuenta los `MISSED` además
+de los que vencen— no hace falta contestarlo mientras el badge no se dibuje.
+
+### Consecuencias
+
+- `tests/shell.test.tsx` verifica `A-03` sobre un **ítem sintético** con contador, no sobre el menú de
+  producción. La regla del componente se sigue probando aunque ningún ítem real lleve número — atarla
+  al menú la haría dejar de verificarse justo cuando el menú cambia.
+- Un guard nuevo impide que vuelva a colarse un contador literal sin fuente.
+- **Sigue habiendo cero badges, que es lo que la regla pide** mientras no haya uno que se gane el
+  lugar: *si todo tiene badge, nada tiene badge*.

@@ -4,7 +4,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { TituloDePanel, AccionDeObjeto } from "@/components/screens/design-system";
-import { SUBCOPY_PENDIENTE } from "@/lib/content/es-AR";
+import { SUBCOPY } from "@/lib/content/es-AR";
 
 /**
  * Etapa A2.4 — `D-01`, `D-02` y `D-07` de `design-system-capturas.md` §14.2.
@@ -78,14 +78,38 @@ describe("D-02 · la subcopy no se inventa", () => {
    * las nombra en cada corrida, para que la deuda de contenido no se olvide por
    * no verse. Cuando se escriban todas, el `console.info` desaparece solo.
    */
+  /**
+   * Cada frase declara de qué parte del spec sale. Si esa cita deja de existir
+   * —porque la spec cambió— la subcopy pasa a afirmar algo que ya nadie
+   * respalda, y eso es exactamente lo que `C-07` intenta evitar. El test lee
+   * las citas del propio comentario, así que no hay una segunda lista que
+   * mantener sincronizada.
+   */
+  it("cada subcopy cita un texto que existe en el spec, palabra por palabra", () => {
+    const spec = readFileSync(resolve(RAIZ, "docs/product-spec-source.md"), "utf8");
+    const fuente = readFileSync(resolve(RAIZ, "lib/content/es-AR.ts"), "utf8");
+    const bloque = fuente.slice(fuente.indexOf("export const SUBCOPY"), fuente.indexOf("export const copy"));
+
+    const citas = [...bloque.matchAll(/\*"([\s\S]*?)"\*/g)]
+      .map((m) => m[1].replace(/\n\s*\*/g, " ").replace(/\s+/g, " ").trim())
+      // Las citas largas se abrevian con "…": cada mitad se verifica aparte.
+      .flatMap((c) => c.split("...").map((t) => t.trim()))
+      .filter((c) => c.length > 20);
+
+    expect(citas.length).toBeGreaterThanOrEqual(9);
+    const inventadas = citas.filter((c) => !spec.includes(c));
+    expect(inventadas).toEqual([]);
+  });
+
   it("informa qué superficies siguen sin subcopy", () => {
-    const pendientes = Object.entries(SUBCOPY_PENDIENTE)
+    const pendientes = Object.entries(SUBCOPY)
       .filter(([, v]) => v === null)
       .map(([k]) => k);
     if (pendientes.length > 0) {
       console.info(`D-02 · subcopy pendiente en: ${pendientes.join(", ")} — la escribe una persona.`);
     }
-    expect(Object.keys(SUBCOPY_PENDIENTE)).toHaveLength(9);
+    expect(Object.keys(SUBCOPY)).toHaveLength(9);
+    expect(pendientes, "las nueve las escribió el owner en la A2.6").toEqual([]);
   });
 });
 
