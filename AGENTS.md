@@ -221,9 +221,10 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 6 / 8 etapas.
-**0.1** a **0.6** ✅ completas el 29 de agosto de 2026. **Las nueve superficies existen.**
-**Sigue la Etapa 0.7**: estados críticos completos de `UX01`–`UX06`.
+**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 7 / 8 etapas.
+**0.1** a **0.7** ✅ completas. Las nueve superficies existen y **todos los estados críticos de las
+9 specs son alcanzables**, cada uno con URL propia vía `?escenario=`.
+**Sigue la Etapa 0.8**: modo focus group — la última.
 
 Dónde vive cada cosa hoy:
 

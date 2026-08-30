@@ -43,6 +43,10 @@ export const copy = {
   "HOY.ESTADO.IN_PROGRESS": "ACCIÓN EN CURSO",
   "HOY.ESTADO.EVIDENCE_PENDING": "FALTA CERRAR ESTA ACCIÓN",
   "HOY.ESTADO.RESCUE_REQUIRED": "NECESITA RECUPERACIÓN",
+  "HOY.ESTADO.COMMITMENT_NEXT": "COMPROMISO ACORDADO",
+  "HOY.ESTADO.COMMITMENT_MISSED": "COMPROMISO INCUMPLIDO",
+  "HOY.ESTADO.CONTEXT_INCOMPLETE": "FALTA CONTEXTO DE CURSADO",
+  "HOY.ESTADO.EVIDENCE_INFO": "SIN ACCIÓN PENDIENTE",
   "HOY.ESTADO.DEFECTO": "SIN ACCIONES POR AHORA",
 
   // ── CTAs · registro canónico en product.md §10.3 ──────────────────────────
@@ -52,6 +56,13 @@ export const copy = {
   "CTA.SUBIR_EVIDENCIA": "Subir evidencia",
   "CTA.RETOMAR": "Retomar",
   "CTA.VER_MATERIAS": "Ver materias",
+  // Los verbos que ADR-017 desambiguó a partir de VI.1 §3.2.
+  "CTA.VER_COMPROMISO": "Ver compromiso",
+  "CTA.EMPEZAR": "Empezar",
+  "CTA.EMPEZAR_RESCATE": "Empezar rescate",
+  "CTA.VER_EVIDENCIA": "Ver evidencia",
+  "CTA.VER_AVANCE": "Ver avance",
+  "CTA.COMPLETAR_INFORMACION": "Completar información",
   "CTA.CONFIRMAR_COMPROMISO": "Confirmar compromiso",
   "CTA.ENVIAR_EVIDENCIA": "Enviar evidencia",
   "CTA.VER_SIGUIENTE_ACCION": "Ver siguiente acción",
@@ -65,13 +76,22 @@ export const copy = {
   "MATERIA.AHORA": "Ahora",
   "MATERIA.CATEDRA_Y_VOS": "Cátedra y vos",
   "MATERIA.UNIDADES": "Unidades",
+  "MATERIA.DIMENSIONES": "Cómo venís",
   /**
-   * "Entrega:" (sustantivo), no "Entregá:" (imperativo voseado) como en UX01.
-   * La diferencia viene del copy original de las dos specs y se **preserva**.
-   * Si es una grieta de tono (anti-patrón `A-05`) o dos usos legítimos, lo
-   * resuelve la auditoría de la Etapa 0.7. No se normaliza en silencio.
+   * **Unificado en la auditoría de la Etapa 0.7.**
+   *
+   * `UX02` decía "Entrega:" (sustantivo) donde `UX01` dice "Entregá:"
+   * (imperativo voseado), para **el mismo campo**. Las dos formas son español
+   * correcto, así que no era un error: era la excepción que el checklist de
+   * `design-system.md` §9 pide buscar —*"`C-01` Una sola persona gramatical.
+   * Buscá la excepción: siempre hay una"*—.
+   *
+   * Se unificó a la forma de `UX01` por dos reglas escritas: `C-01` pide una
+   * sola persona gramatical, y `C-02` pide un concepto = una palabra en menú,
+   * título y copy. **Es un cambio de copy respecto del prototipo**, y por eso
+   * queda anotado acá y en `docs/roadmap.md`.
    */
-  "MATERIA.ENTREGA": "Entrega:",
+  "MATERIA.ENTREGA": "Entregá:",
 
   // ── UX03 · Próxima Acción ─────────────────────────────────────────────────
   "ACCION.DURACION": "Duración",
@@ -79,6 +99,8 @@ export const copy = {
   "ACCION.EVIDENCIA": "Evidencia",
 
   // ── UX04 · Compromiso ─────────────────────────────────────────────────────
+  "COMPROMISO.ORIGINAL": "COMPROMISO ORIGINAL",
+  "COMPROMISO.ORIGINAL_NO_EDITABLE": "El original se conserva sin cambios.",
   "COMPROMISO.FECHA": "Fecha",
   "COMPROMISO.HORA": "Hora",
   "COMPROMISO.TIEMPO_DECLARADO": "Tiempo que declarás",
@@ -176,6 +198,7 @@ export const copy = {
   "PROGRESO.CAMBIO_CONFIRMADO": "Cambio confirmado",
   "PROGRESO.SIN_CAMBIO": "Sin cambio confirmado",
   "PROGRESO.FUENTE_PREFIJO": "Fuente:",
+  "PROGRESO.BITACORA": "Bitácora",
   "PROGRESO.QUE_SIGUE": "Qué sigue",
 } as const;
 

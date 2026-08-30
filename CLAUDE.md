@@ -68,9 +68,9 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **6 / 8**. Las etapas 0.1 a 0.6 cerraron el
-29 ago 2026. **Las nueve superficies existen.** **Toca la Etapa 0.7:** estados críticos completos de
-`UX01`–`UX06`.
+**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **7 / 8**. Las etapas 0.1 a 0.7 están cerradas. Las
+nueve superficies existen y **todos los estados críticos son alcanzables**. **Toca la Etapa 0.8:**
+modo focus group — la última.
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
@@ -95,8 +95,12 @@ pantalla.
 **Ningún ADR bloquea la Fase 0.** [ADR-016](docs/decisions.md#adr-016) está `PENDING` pero solo
 afecta al recorrido por clic de la 0.8: ninguna de las 18 CTAs lleva a `UX07`.
 
-Para ver cualquier estado crítico sin panel de debug: `?escenario=<ID>` en `/examen/activar`,
-`/examen/overview` y `/examen/paso`.
+Para ver cualquier estado crítico sin panel de debug: `?escenario=<ID>` en **cualquiera** de las
+nueve rutas.
+
+⚠️ **`UX05` todavía no es alcanzable por clic**: el spec la rutea por `ejecución`, que no tiene
+pantalla. Es uno de los dos huecos que quedan para la 0.8, junto con
+[ADR-016](docs/decisions.md#adr-016).
 
 ---
 

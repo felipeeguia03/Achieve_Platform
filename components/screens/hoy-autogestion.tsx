@@ -21,6 +21,7 @@ import {
   HeroCard,
   EstadoChip,
   CTAPrincipal,
+  CTASecundaria,
 } from "./design-system";
 import { t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
@@ -49,7 +50,7 @@ function HeroContent({ hero, onAvanzar }: { hero: HeroProjection; onAvanzar?: ()
     return (
       <HeroCard>
         <ReglaDeNegocio>{t("HOY.VACIO")}</ReglaDeNegocio>
-        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel)}</CTAPrincipal>
+        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
       </HeroCard>
     );
   }
@@ -73,7 +74,7 @@ function HeroContent({ hero, onAvanzar }: { hero: HeroProjection; onAvanzar?: ()
           {hero.queSigue.texto}
         </ReglaDeNegocio>
       )}
-      <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel)}</CTAPrincipal>
+      <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
     </HeroCard>
   );
 }
@@ -164,9 +165,15 @@ export function HoyAutogestion({
   estadoGeneral,
   hero,
   materias,
+  verProgreso,
   onAvanzar,
   onVerMateria,
-}: HoyProps & { onAvanzar?: () => void; onVerMateria?: () => void }) {
+  onVerProgreso,
+}: HoyProps & {
+  onAvanzar?: () => void;
+  onVerMateria?: () => void;
+  onVerProgreso?: () => void;
+}) {
   return (
     <div
       className="space-y-4"
@@ -187,6 +194,9 @@ export function HoyAutogestion({
       <HeroContent hero={hero} onAvanzar={onAvanzar} />
 
       <MateriasQueue materias={materias} onVerMateria={onVerMateria} />
+
+      {/* CTA-009 · lectura, sin mutación. Sólo si la Bitácora está disponible. */}
+      {verProgreso && <CTASecundaria onClick={onVerProgreso}>{verProgreso}</CTASecundaria>}
     </div>
   );
 }

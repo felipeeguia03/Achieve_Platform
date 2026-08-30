@@ -11,6 +11,8 @@
  */
 
 import { contexto } from "@/lib/navigation/context";
+import { escenariosEstadosCriticos } from "./estados-criticos";
+import { escenariosUX01 } from "./ux01";
 import { escenariosUX07 } from "./ux07";
 import { escenariosUX08 } from "./ux08";
 import { escenariosUX09 } from "./ux09";
@@ -47,10 +49,10 @@ export const FX_DAY_BASE: Escenario = {
     heroInput: {
       action: "NONE",
       commitment: "NONE",
-      rescue: "NONE",
+      rescate: "NONE",
       actionRecommended: true,
       contextIncomplete: false,
-      evidenceInfoOnly: false,
+      evidenciaInformativa: "NONE",
     },
     heroContenido: {
       contexto: "Programación · Unidad 4",
@@ -71,10 +73,12 @@ export const FX_DAY_BASE: Escenario = {
   materia: {
     materia: "Análisis Matemático II",
     examen: "Parcial 1",
-    estado: { tono: "urgencia", texto: "Necesita atención" },
+    estado: "NORMAL",
+    chip: { tono: "urgencia", texto: "Necesita atención" },
     ultimoAvance: "avance hace 2 días",
     hero: {
       nivel: "ACTION_RECOMMENDED",
+      variante: null,
       contexto: "Unidad 3",
       titulo: "Resolver ejercicios 8–14",
       razon: "prepara la próxima clase.",
@@ -103,9 +107,13 @@ export const FX_DAY_BASE: Escenario = {
       { label: "U3", valor: "necesita atención", tono: "urgencia" },
       { label: "U4", valor: "recorrido inicial" },
     ],
+    dimensiones: [],
+    aviso: null,
+    capturaDeClase: "Pasó algo en clase",
   },
 
   accion: {
+    estado: "NORMAL",
     contexto: "Cursado · Análisis II",
     unidad: "Unidad 3",
     titulo: "Resolver ejercicios 8–14",
@@ -115,9 +123,13 @@ export const FX_DAY_BASE: Escenario = {
     evidenciaEsperada: "7 ejercicios resueltos",
     criterioCierre: "están completos y adjuntás la producción acordada.",
     queSigue: "definís cuándo vas a hacerla.",
+    provenanceRecurso: "Cátedra · oficial",
+    aviso: null,
+    ctaPrimaria: { texto: "Me comprometo", habilitada: true },
   },
 
   compromiso: {
+    estado: "DRAFT",
     contexto: "Unidad 3 · Acción aceptada",
     titulo: "Resolver ejercicios 8–14",
     fecha: "Sáb 23 ago ▾",
@@ -127,6 +139,9 @@ export const FX_DAY_BASE: Escenario = {
     evidenciaEsperada: "7 ejercicios",
     criterioCierre: "completos y adjuntos",
     estadoResultante: { tono: "humano", texto: "CONFIRMED" },
+    aviso: null,
+    original: null,
+    ctaPrimaria: { texto: "Confirmar compromiso", habilitada: true },
   },
 };
 
@@ -154,10 +169,10 @@ export const FX_LOCAL_DAY_IN_PROGRESS: Escenario = {
     heroInput: {
       action: "IN_PROGRESS",
       commitment: "NONE",
-      rescue: "NONE",
+      rescate: "NONE",
       actionRecommended: false,
       contextIncomplete: false,
-      evidenceInfoOnly: false,
+      evidenciaInformativa: "NONE",
     },
     heroContenido: {
       contexto: "Análisis II · Unidad 3",
@@ -198,10 +213,10 @@ export const FX_EVD_BASE: Escenario = {
     heroInput: {
       action: "EVIDENCE_PENDING",
       commitment: "NONE",
-      rescue: "NONE",
+      rescate: "NONE",
       actionRecommended: false,
       contextIncomplete: false,
-      evidenceInfoOnly: false,
+      evidenciaInformativa: "NONE",
     },
     heroContenido: {
       contexto: "Análisis II · Unidad 3",
@@ -218,6 +233,7 @@ export const FX_EVD_BASE: Escenario = {
   },
 
   evidencia: {
+    estado: "EXPECTED",
     contexto: "Cursado · Análisis II",
     titulo: "Resolver ejercicios 8–14",
     unidad: "Unidad 3",
@@ -225,6 +241,11 @@ export const FX_EVD_BASE: Escenario = {
     criterioCierre: "producción inspeccionable",
     formatosPermitidos: "foto o archivo",
     nombreAdjuntoDemo: "foto_01.jpg",
+    estadoVisible: null,
+    aviso: null,
+    reflection: { titulo: "Agregar reflexión (opcional)", requerida: false },
+    ctaPrimaria: { texto: "Enviar evidencia", habilitada: true },
+    adjuntoPrevio: null,
   },
 };
 
@@ -254,10 +275,10 @@ export const FX_MISSED: Escenario = {
     heroInput: {
       action: "NONE",
       commitment: "MISSED",
-      rescue: "REQUIRED",
+      rescate: "REQUIRED",
       actionRecommended: false,
       contextIncomplete: false,
-      evidenceInfoOnly: false,
+      evidenciaInformativa: "NONE",
     },
     heroContenido: {
       contexto: null,
@@ -297,10 +318,10 @@ export const FX_ADE_NONE: Escenario = {
     heroInput: {
       action: "NONE",
       commitment: "NONE",
-      rescue: "NONE",
+      rescate: "NONE",
       actionRecommended: false,
       contextIncomplete: false,
-      evidenceInfoOnly: false,
+      evidenciaInformativa: "NONE",
     },
     heroContenido: {
       contexto: null,
@@ -338,6 +359,7 @@ export const FX_LOCAL_PROG_VALIDATED: Escenario = {
     UX06: contexto({ navegacionDisponible: true }),
   },
   progreso: {
+    estado: "CAMBIO_CONFIRMADO",
     contexto: "Avance · Análisis II · Unidad 3",
     estadoEvidencia: { tono: "exito", texto: "Evidencia validada" },
     detalleEvidencia: "Ejercicios 8–14 · validada 20:26",
@@ -352,6 +374,9 @@ export const FX_LOCAL_PROG_VALIDATED: Escenario = {
       { label: "Confianza", valor: "alta · declarada ayer" },
     ],
     queSigue: "Reforzar cambio de variables.",
+    aviso: null,
+    bitacora: null,
+    ctaPrimaria: { texto: "Ver siguiente acción", habilitada: true },
   },
 };
 
@@ -519,6 +544,8 @@ export const escenarios = {
   "FX-ERROR-IDEM": FX_ERROR_IDEM,
   // Los 22 estados críticos de UX07 viven en su propio archivo: la matriz de
   // VI.7 §16 es larga y merece leerse entera y de corrido.
+  ...escenariosUX01,
+  ...escenariosEstadosCriticos,
   ...escenariosUX07,
   ...escenariosUX08,
   ...escenariosUX09,

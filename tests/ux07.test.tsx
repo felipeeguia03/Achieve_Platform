@@ -56,7 +56,7 @@ describe("Una sola CTA primaria por estado (I-06)", () => {
   it("se renderiza exactamente un botón primario, o ninguno", () => {
     for (const e of todos) {
       const { container, unmount } = render(<ActivacionModoExamen {...e.ux07!} />);
-      const primarios = container.querySelectorAll("button.w-full");
+      const primarios = container.querySelectorAll("[data-cta-primaria]");
       expect(primarios.length, `${e.id}`).toBe(e.ux07!.ctaPrimaria ? 1 : 0);
       unmount();
     }

@@ -1,23 +1,33 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Evidencia } from "@/components/screens/evidencia";
-import { getEscenario } from "@/lib/fixtures";
+import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { rutaDeCta } from "@/lib/navigation";
 
-// La CTA principal de esta superficie es CTA-007. Su destino sale del registro
-// canónico, no de un recorrido lineal escrito a mano.
 const DESTINO = rutaDeCta("CTA-007");
 
-export default function EvidenciaPage() {
+function Vista() {
   const router = useRouter();
-  const props = getEscenario("FX-EVD-BASE").evidencia;
-  if (!props) throw new Error("El escenario FX-EVD-BASE no proyecta UX05");
+  const params = useSearchParams();
+
+  const id = escenarioDesde(params.get("escenario"), "evidencia") ?? "FX-EVD-BASE";
+  const props = getEscenario(id).evidencia;
+  if (!props) throw new Error(`El escenario ${id} no proyecta esta vista`);
 
   return (
     <Evidencia
       {...props}
       onAvanzar={DESTINO ? () => router.push(DESTINO) : undefined}
     />
+  );
+}
+
+export default function EvidenciaPage() {
+  return (
+    <Suspense>
+      <Vista />
+    </Suspense>
   );
 }

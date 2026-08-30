@@ -35,31 +35,90 @@ export type HeroLevel =
   | "EVIDENCE_INFO"
   | "NO_ACTION_AVAILABLE";
 
+/**
+ * Las variantes que discriminan la CTA dentro de un nivel
+ * ([ADR-017](../../docs/decisions.md)).
+ *
+ * `product.md` §10.2 ofrecía dos verbos en los niveles 3 y 8 sin decir cuál
+ * aplica. No era una decisión abierta: era un resumen que perdió el
+ * discriminador. `VI.1` §3.2 lo fija — el nivel 3 se decide **por lifecycle y
+ * tiempo acordado**, y el 8 **por lifecycle de la Evidence**.
+ */
+export type HeroVariante =
+  /** Commitment acordado a futuro → `Ver compromiso`. */
+  | "COMMITMENT_PROXIMO"
+  /** Commitment startable now → `Empezar`. */
+  | "COMMITMENT_STARTABLE"
+  /** Rescate materializado y startable now → `Empezar rescate`. */
+  | "RESCATE_STARTABLE"
+  /** Evidence `SUBMITTED`/`UNDER_REVIEW` sin acción posterior → `Ver evidencia`. */
+  | "EVIDENCIA_ENVIADA"
+  /** Evidence `VALIDATED` sin acción posterior → `Ver avance`. */
+  | "EVIDENCIA_VALIDADA";
+
+export interface ResultadoHero {
+  nivel: HeroLevel;
+  variante: HeroVariante | null;
+}
+
 export type HeroInput = {
   action: "NONE" | "IN_PROGRESS" | "EVIDENCE_PENDING";
-  commitment: "NONE" | "CONFIRMED_OR_DUE" | "MISSED";
-  rescue: RescueCondition;
+  /**
+   * `PROXIMO` = acordado a futuro. `STARTABLE` = iniciable ahora según el
+   * owner — nunca según un reloj local.
+   */
+  commitment: "NONE" | "PROXIMO" | "STARTABLE" | "MISSED";
+  /**
+   * `MATERIALIZED` **no es un nivel**: sólo declara que el objeto en juego es
+   * un rescate, para que la CTA diga `Empezar rescate` en vez de `Empezar`.
+   *
+   * `VI.1` §3.2: *"RESCUE_MATERIALIZED no describe por sí solo qué necesita
+   * hacer el alumno ahora, por eso participa en la precedencia según su
+   * lifecycle real"*. Una Action de rescate `IN_PROGRESS` es nivel 1;
+   * `EVIDENCE_PENDING`, nivel 2; un Commitment de rescate `PROXIMO`/`STARTABLE`,
+   * nivel 3. **Un compromiso actual no es desplazado por un rescate anterior
+   * sólo por ser un rescate.**
+   */
+  rescate: RescueCondition;
   actionRecommended: boolean;
   contextIncomplete: boolean;
-  evidenceInfoOnly: boolean;
+  /** El lifecycle de una Evidence informativa, sin acción posterior válida. */
+  evidenciaInformativa: "NONE" | "ENVIADA" | "VALIDADA";
 };
 
 /**
  * VI.1 §3.2 — **el primero que aplique gana.** No se reordena por riesgo ni por
- * proximidad de examen (§3.3).
+ * proximidad de examen (§3.3): son modificadores, no reemplazantes.
  */
-export function selectHeroLevel(input: HeroInput): HeroLevel {
-  if (input.action === "IN_PROGRESS") return "IN_PROGRESS";
-  if (input.action === "EVIDENCE_PENDING") return "EVIDENCE_PENDING";
-  if (input.commitment === "CONFIRMED_OR_DUE" || input.rescue === "MATERIALIZED") {
-    return "COMMITMENT_NEXT";
+export function selectHeroLevel(input: HeroInput): ResultadoHero {
+  if (input.action === "IN_PROGRESS") return { nivel: "IN_PROGRESS", variante: null };
+  if (input.action === "EVIDENCE_PENDING") return { nivel: "EVIDENCE_PENDING", variante: null };
+
+  // Nivel 3 — el discriminador es el tiempo acordado, no la prioridad académica.
+  if (input.commitment === "PROXIMO") {
+    return { nivel: "COMMITMENT_NEXT", variante: "COMMITMENT_PROXIMO" };
   }
-  if (input.rescue === "REQUIRED") return "RESCUE_REQUIRED";
-  if (input.commitment === "MISSED") return "COMMITMENT_MISSED";
-  if (input.actionRecommended) return "ACTION_RECOMMENDED";
-  if (input.contextIncomplete) return "CONTEXT_INCOMPLETE";
-  if (input.evidenceInfoOnly) return "EVIDENCE_INFO";
-  return "NO_ACTION_AVAILABLE";
+  if (input.commitment === "STARTABLE") {
+    return {
+      nivel: "COMMITMENT_NEXT",
+      variante: input.rescate === "MATERIALIZED" ? "RESCATE_STARTABLE" : "COMMITMENT_STARTABLE",
+    };
+  }
+
+  if (input.rescate === "REQUIRED") return { nivel: "RESCUE_REQUIRED", variante: null };
+  if (input.commitment === "MISSED") return { nivel: "COMMITMENT_MISSED", variante: null };
+  if (input.actionRecommended) return { nivel: "ACTION_RECOMMENDED", variante: null };
+  if (input.contextIncomplete) return { nivel: "CONTEXT_INCOMPLETE", variante: null };
+
+  // Nivel 8 — el discriminador es el lifecycle de la Evidence.
+  if (input.evidenciaInformativa === "ENVIADA") {
+    return { nivel: "EVIDENCE_INFO", variante: "EVIDENCIA_ENVIADA" };
+  }
+  if (input.evidenciaInformativa === "VALIDADA") {
+    return { nivel: "EVIDENCE_INFO", variante: "EVIDENCIA_VALIDADA" };
+  }
+
+  return { nivel: "NO_ACTION_AVAILABLE", variante: null };
 }
 
 /** Los nueve niveles en orden, para tests exhaustivos y para el catálogo. */

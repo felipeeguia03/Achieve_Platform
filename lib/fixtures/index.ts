@@ -75,12 +75,31 @@ export function proyectarHoy(escenario: Escenario): HoyProps | null {
   const hoy = escenario.hoy;
   if (!hoy) return null;
 
-  const nivel = selectHeroLevel(hoy.heroInput);
+  const { nivel, variante } = selectHeroLevel(hoy.heroInput);
 
   return {
     fecha: hoy.fecha,
     estadoGeneral: hoy.estadoGeneral ?? estadoGeneralPara(nivel),
-    hero: { nivel, ...hoy.heroContenido },
+    hero: { nivel, variante, ...hoy.heroContenido },
     materias: hoy.materias,
+    // La CTA de lectura aparece sólo si el contexto declara la Bitácora
+    // disponible: es la condición de aparición de CTA-009.
+    verProgreso: escenario.contextos.UX01?.progresoDisponible === true ? "Ver progreso" : null,
   };
+}
+
+/**
+ * Resuelve `?escenario=` para una vista cualquiera.
+ *
+ * Generaliza lo que las Etapas 0.4–0.6 hicieron por pantalla: poder abrir
+ * cualquier estado crítico en el navegador sin panel de debug. Es lectura pura
+ * — no persiste nada, sigue siendo cero red y cero storage.
+ */
+export function escenarioDesde(
+  valor: string | null,
+  vista: "hoy" | "materia" | "accion" | "compromiso" | "evidencia" | "progreso",
+): EscenarioId | null {
+  if (valor === null) return null;
+  const id = (Object.keys(escenarios) as EscenarioId[]).find((x) => x === valor);
+  return id !== undefined && escenarios[id][vista] !== undefined ? id : null;
 }

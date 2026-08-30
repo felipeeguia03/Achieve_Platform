@@ -15,7 +15,7 @@
  * placeholder" (AGENTS.md §2.7, "omitir, no inventar").
  */
 
-import type { HeroLevel } from "./precedence";
+import type { HeroLevel, HeroVariante } from "./precedence";
 import type { NivelOverview, VarianteOverview } from "./overview-precedence";
 import type { NivelPaso, VariantePaso } from "./step-precedence";
 
@@ -46,6 +46,8 @@ export interface FilaDato {
 export interface HeroProjection {
   /** Lo elige `selectHeroLevel`, no la pantalla. */
   nivel: HeroLevel;
+  /** El discriminador de CTA dentro del nivel (ADR-017). */
+  variante: HeroVariante | null;
   contexto: string | null;
   titulo: string | null;
   /** La línea `Porque:` — DD10. Sin el prefijo: el prefijo es copy. */
@@ -82,6 +84,11 @@ export interface HoyProps {
   estadoGeneral: string;
   hero: HeroProjection;
   materias: MateriaResumen[];
+  /**
+   * `CTA-009` — *ver progreso*. `null` ⇒ la Bitácora no está disponible y la
+   * CTA **no se renderiza**, en vez de renderizarse deshabilitada.
+   */
+  verProgreso: string | null;
 }
 
 // ── UX02 · Materia / Cursado ─────────────────────────────────────────────────
@@ -99,20 +106,56 @@ export interface ColumnaFuente {
   tono: "neutral" | "urgencia";
 }
 
+/** Estados críticos de `UX02` (spec `VI.2`). */
+export type EstadoMateria =
+  | "NORMAL"
+  | "CONTEXTO_INCOMPLETO"
+  | "CONFIANZA_VS_DOMINIO"
+  | "SIN_RECOMENDACION"
+  | "NO_DISPONIBLE";
+
 export interface MateriaProps {
+  estado: EstadoMateria;
   materia: string;
   /** `null` ⇒ no hay examen registrado; se omite la línea. */
   examen: string | null;
-  estado: Chip;
+  /** El chip de estado general de la materia. */
+  chip: Chip;
   ultimoAvance: string | null;
   hero: HeroProjection;
   catedraYVos: { catedra: ColumnaFuente; vos: ColumnaFuente } | null;
   unidades: FilaDato[];
+  /**
+   * Las cinco dimensiones, **separadas**. Confianza no es dominio: una
+   * confianza alta con dominio no evaluado se muestra como dos hechos
+   * distintos, y la vista **no genera una Action** a partir de la brecha.
+   */
+  dimensiones: readonly FilaDato[];
+  /** Aviso de estado vacío, incompleto o de error. `null` ⇒ se omite. */
+  aviso: string | null;
+  /**
+   * Captura de "pasó algo en clase". `null` ⇒ no se ofrece.
+   *
+   * Un reporte del alumno registrado durante una clase **no** se convierte en
+   * voz de la cátedra (AGENTS.md §2.6).
+   */
+  capturaDeClase: string | null;
 }
 
 // ── UX03 · Próxima Acción ────────────────────────────────────────────────────
 
+/** Estados críticos de `UX03` (spec `VI.3`). */
+export type EstadoAccion =
+  | "NORMAL"
+  | "INCERTIDUMBRE"
+  | "RAZON_NO_CONFIRMADA"
+  | "SIN_RECURSO"
+  | "BLOQUEADA"
+  | "REEMPLAZADA"
+  | "CORRECCION";
+
 export interface ProximaAccionProps {
+  estado: EstadoAccion;
   contexto: string;
   unidad: string;
   titulo: string;
@@ -123,11 +166,36 @@ export interface ProximaAccionProps {
   evidenciaEsperada: string | null;
   criterioCierre: string | null;
   queSigue: string | null;
+  /** Provenance del recurso. `null` ⇒ no se oficializa lo desconocido. */
+  provenanceRecurso: string | null;
+  aviso: string | null;
+  /** `null` ⇒ **no se renderiza CTA primaria**, en vez de una deshabilitada. */
+  ctaPrimaria: { texto: string; habilitada: boolean } | null;
 }
 
 // ── UX04 · Compromiso ────────────────────────────────────────────────────────
 
+/**
+ * Estados críticos de `UX04` (spec `VI.4`), incluidos los ocho del lifecycle de
+ * `Commitment`.
+ */
+export type EstadoCompromiso =
+  | "DRAFT"
+  | "CONFIRMED"
+  | "DUE"
+  | "STARTED"
+  | "COMPLETED"
+  | "RENEGOTIATED"
+  | "MISSED"
+  | "CLOSED"
+  | "CAPACIDAD_INSUFICIENTE"
+  | "FECHA_INVALIDA"
+  | "RENEGOCIACION"
+  | "RENEGOCIACION_NO_ELEGIBLE"
+  | "RESCATE";
+
 export interface CompromisoProps {
+  estado: EstadoCompromiso;
   contexto: string;
   titulo: string;
   fecha: string | null;
@@ -139,11 +207,34 @@ export interface CompromisoProps {
   criterioCierre: string | null;
   /** El estado en que queda al confirmar. Se muestra como chip. */
   estadoResultante: Chip | null;
+  aviso: string | null;
+  /**
+   * El Commitment original, cuando esta vista es una renegociación o un
+   * rescate. **No es editable**: el original se preserva (AGENTS.md §2.4).
+   */
+  original: readonly FilaDato[] | null;
+  /** `null` ⇒ no se renderiza CTA primaria. */
+  ctaPrimaria: { texto: string; habilitada: boolean } | null;
 }
 
 // ── UX05 · Evidencia ─────────────────────────────────────────────────────────
 
+/** Los siete estados de `Evidence` más los de la propia entrega (`VI.5`). */
+export type EstadoEvidencia =
+  | "EXPECTED"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "SUFFICIENT"
+  | "INSUFFICIENT"
+  | "RESUBMISSION_REQUESTED"
+  | "VALIDATED"
+  | "SUBIENDO"
+  | "UPLOAD_FALLIDO"
+  | "ARTEFACTO_FORMAL"
+  | "TARDIA";
+
 export interface EvidenciaProps {
+  estado: EstadoEvidencia;
   contexto: string;
   titulo: string;
   unidad: string | null;
@@ -153,11 +244,39 @@ export interface EvidenciaProps {
   formatosPermitidos: string | null;
   /** Nombre del archivo sintético que simula el adjunto en el Track A. */
   nombreAdjuntoDemo: string;
+  /** Estado del lifecycle en copy de producto. Nunca el enum crudo. */
+  estadoVisible: string | null;
+  aviso: string | null;
+  /**
+   * La Reflection configurada. `requerida` bloquea sólo el submit dependiente;
+   * `null` ⇒ no se ofrece.
+   */
+  reflection: { titulo: string; requerida: boolean } | null;
+  /** `null` ⇒ no se renderiza CTA primaria: no hay entrega posible. */
+  ctaPrimaria: { texto: string; habilitada: boolean } | null;
+  /** El adjunto ya existe y la pantalla no lo pide de nuevo. */
+  adjuntoPrevio: string | null;
 }
 
 // ── UX06 · Progreso / Bitácora ───────────────────────────────────────────────
 
+/** Los cuatro resultados posibles de una re-evaluación (`VI.6`). */
+export type EstadoProgreso =
+  | "CAMBIO_CONFIRMADO"
+  | "SIN_CAMBIO_EXPLICITO"
+  | "SIN_DATOS"
+  | "NO_DISPONIBLE";
+
+/** Una entrada de la Bitácora. Los eventos del mismo ciclo se agrupan. */
+export interface EntradaDeBitacora {
+  titulo: string;
+  detalle: string;
+  /** Provenance ya en copy. `null` ⇒ *"Fuente o estado no disponible"*. */
+  provenance: string | null;
+}
+
 export interface ProgresoProps {
+  estado: EstadoProgreso;
   contexto: string;
   estadoEvidencia: Chip;
   detalleEvidencia: string;
@@ -173,6 +292,13 @@ export interface ProgresoProps {
    */
   sinCambioConfirmado: FilaDato[];
   queSigue: string | null;
+  aviso: string | null;
+  /**
+   * Bitácora agrupada por ciclo. Los eventos de un mismo ciclo se muestran
+   * juntos y **no como cuatro avances independientes**.
+   */
+  bitacora: readonly { ciclo: string; entradas: readonly EntradaDeBitacora[] }[] | null;
+  ctaPrimaria: { texto: string; habilitada: boolean } | null;
 }
 
 // ── UX07 · Activación de Modo Examen ─────────────────────────────────────────

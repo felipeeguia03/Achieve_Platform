@@ -10,8 +10,8 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
 ## Estado actual
 
 - **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. **Fase 0 en
-  curso, 6 / 8 etapas.** Las etapas 0.1 a 0.6 cerraron el 29 de agosto de 2026: **las nueve
-  superficies `UX01`–`UX09` existen** como componentes reales con ruta propia.
+  curso, 7 / 8 etapas.** Las nueve superficies `UX01`–`UX09` existen y **todos los estados críticos
+  de sus specs son alcanzables**, cada uno con URL propia.
 - **Track B:** backend, auth, persistencia e integraciones reales. Bloqueado por las decisiones
   pendientes, especialmente ADR-005 y ADR-006.
 
@@ -32,8 +32,8 @@ Superficies con ruta propia hoy: `/hoy` (`UX01`), `/materia` (`UX02`), `/accion`
 `/compromiso` (`UX04`), `/evidencia` (`UX05`), `/progreso` (`UX06`), `/examen/activar` (`UX07`),
 `/examen/overview` (`UX08`) y `/examen/paso` (`UX09`).
 
-Para abrir un estado crítico concreto sin panel de debug:
-`/examen/paso?escenario=FX-LOCAL-PASO-GATE-REAL`. Es un parámetro de lectura; no persiste nada.
+Para abrir un estado crítico concreto sin panel de debug, en **cualquier** ruta:
+`/compromiso?escenario=FX-LOCAL-COM-MISSED`. Es un parámetro de lectura; no persiste nada.
 
 **Reglas del Track A:** cero red · cero persistencia · cero datos reales · desktop-first, con 360 px
 como piso obligatorio de la variante móvil ([ADR-014](docs/decisions.md#adr-014)) · una sola CTA

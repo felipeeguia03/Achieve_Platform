@@ -12,6 +12,7 @@ import {
   HeroCard,
   EstadoChip,
   CTAPrincipal,
+  CTASecundaria,
   Fila,
 } from "./design-system";
 import { t } from "@/lib/content/es-AR";
@@ -54,13 +55,17 @@ function Columna({ fuente }: { fuente: ColumnaFuente }) {
 export function MateriaCursado({
   materia,
   examen,
-  estado,
+  chip,
   ultimoAvance,
   hero,
   catedraYVos,
   unidades,
+  dimensiones,
+  aviso,
+  capturaDeClase,
   onAvanzar,
-}: MateriaProps & { onAvanzar?: () => void }) {
+  onCapturar,
+}: MateriaProps & { onAvanzar?: () => void; onCapturar?: () => void }) {
   return (
     <div
       className="space-y-4"
@@ -78,13 +83,20 @@ export function MateriaCursado({
       </header>
 
       <EstadoGeneral>
-        <EstadoChip tone={estado.tono}>{estado.texto}</EstadoChip>
+        <EstadoChip tone={chip.tono}>{chip.texto}</EstadoChip>
         {ultimoAvance && (
           <span style={{ marginLeft: 8, fontWeight: 400, color: "var(--muted-foreground)" }}>
             {ultimoAvance}
           </span>
         )}
       </EstadoGeneral>
+
+      {/* Estado vacío, incompleto o de error: se dice, no se disimula. */}
+      {aviso && (
+        <ReglaDeNegocio>
+          <span style={{ color: "var(--urgencia-texto)" }}>{aviso}</span>
+        </ReglaDeNegocio>
+      )}
 
       <HeroCard>
         {hero.contexto && (
@@ -112,8 +124,15 @@ export function MateriaCursado({
               .join(" · ")}
           </ReglaDeNegocio>
         )}
-        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel)}</CTAPrincipal>
+        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
       </HeroCard>
+
+      {/*
+        Captura de "pasó algo en clase". Es un reporte del alumno: registrarlo
+        durante una clase NO lo convierte en voz de la cátedra, y ninguna capa
+        eleva su verificación (AGENTS.md §2.6).
+      */}
+      {capturaDeClase && <CTASecundaria onClick={onCapturar}>{capturaDeClase}</CTASecundaria>}
 
       {catedraYVos && (
         <div>
@@ -125,6 +144,20 @@ export function MateriaCursado({
             <Columna fuente={catedraYVos.catedra} />
             <Columna fuente={catedraYVos.vos} />
           </div>
+        </div>
+      )}
+
+      {/*
+        Las cinco dimensiones, separadas. Confianza no es dominio: una confianza
+        alta con dominio no evaluado son dos hechos distintos, y la vista no
+        genera una Action a partir de la brecha.
+      */}
+      {dimensiones.length > 0 && (
+        <div>
+          <Eyebrow>{t("MATERIA.DIMENSIONES")}</Eyebrow>
+          {dimensiones.map((d) => (
+            <Fila key={d.label} label={d.label} value={d.valor} ausente={d.ausente} />
+          ))}
         </div>
       )}
 

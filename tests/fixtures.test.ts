@@ -67,7 +67,9 @@ describe("proyectarHoy — el nivel lo decide el dominio, no el fixture", () => 
     for (const e of conHoy) {
       const props = proyectarHoy(e);
       expect(props, e.id).not.toBeNull();
-      expect(props!.hero.nivel, e.id).toBe(selectHeroLevel(e.hoy!.heroInput));
+      const esperado = selectHeroLevel(e.hoy!.heroInput);
+      expect(props!.hero.nivel, e.id).toBe(esperado.nivel);
+      expect(props!.hero.variante, e.id).toBe(esperado.variante);
     }
   });
 
@@ -83,17 +85,23 @@ describe("proyectarHoy — el nivel lo decide el dominio, no el fixture", () => 
     expect(proyectarHoy(sinHoy!)).toBeNull();
   });
 
-  it("los niveles que UX01 sabe dibujar hoy están todos cubiertos por el catálogo", () => {
-    const cubiertos = new Set(conHoy.map((e) => selectHeroLevel(e.hoy!.heroInput)));
-    // Los cuatro con contenido propio + la ausencia confirmada del ADE.
-    // Los otros cuatro niveles llegan en la Etapa 0.7.
-    expect(cubiertos).toEqual(
+  it("los NUEVE niveles de UX01 están cubiertos por el catálogo", () => {
+    // Cerrado en la Etapa 0.7, con ADR-017. Hasta la 0.6 eran cinco.
+    const cubiertos = new Set(conHoy.map((e) => selectHeroLevel(e.hoy!.heroInput).nivel));
+    expect(cubiertos.size).toBe(9);
+  });
+
+  it("las cinco variantes de CTA también", () => {
+    const variantes = new Set(
+      conHoy.map((e) => selectHeroLevel(e.hoy!.heroInput).variante).filter((v) => v !== null),
+    );
+    expect(variantes).toEqual(
       new Set([
-        "ACTION_RECOMMENDED",
-        "IN_PROGRESS",
-        "EVIDENCE_PENDING",
-        "RESCUE_REQUIRED",
-        "NO_ACTION_AVAILABLE",
+        "COMMITMENT_PROXIMO",
+        "COMMITMENT_STARTABLE",
+        "RESCATE_STARTABLE",
+        "EVIDENCIA_ENVIADA",
+        "EVIDENCIA_VALIDADA",
       ]),
     );
   });

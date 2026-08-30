@@ -63,6 +63,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-014](#adr-014) | Desktop-first y contrato del primer viewport | `ACCEPTED` | — |
 | [ADR-015](#adr-015) | Dónde vive la CTA principal en desktop | `ACCEPTED` | — |
 | [ADR-016](#adr-016) | Ninguna CTA del registro lleva a `UX07` | `PENDING` | Golden Path recorrible (0.8) |
+| [ADR-017](#adr-017) | Las dos CTAs ambiguas de `product.md` §10.2 | `ACCEPTED` | — |
 
 ---
 
@@ -932,3 +933,73 @@ un olvido del registro y no una decisión. Pero **la decisión no es de un agent
 sigue teniendo 18. `UX07` queda alcanzable por URL y por el catálogo de escenarios, no por clic desde
 `UX02`. Es el mismo tipo de hueco que la Etapa 0.3 ya registró para `UX05` y `UX06`, y se resuelve
 junto con ellos antes de la Etapa 0.8.
+
+---
+
+<a id="adr-017"></a>
+## ADR-017 — Las dos CTAs que `product.md` §10.2 dejaba ambiguas
+
+**Estado:** `ACCEPTED` · 29 ago 2026
+**Toca:** `product.md` §10.2, `lib/domain/precedence.ts`, `lib/content/hero.ts`.
+**Detectado en:** Etapa 0.2, al mapear nivel → copy. Resuelto en la Etapa 0.7.
+
+### Contexto
+
+`product.md` §10.2 resume la tabla de precedencia del Hero y en dos niveles ofrece **dos verbos sin
+decir cuál aplica cuándo**:
+
+| Nivel | Lo que dice §10.2 |
+|---|---|
+| 3 | `Commitment CONFIRMED/DUE, o rescate materializado` → *"Ver compromiso" / "Empezar"* |
+| 8 | `Evidence informativa sin acción posterior` → *"Ver evidencia" / "Ver avance"* |
+
+Por eso `lib/content/hero.ts` cubría 5 de los 9 niveles desde la Etapa 0.2, y las etapas siguientes lo
+arrastraron como decisión abierta.
+
+**El hallazgo.** No era una decisión abierta: era **un resumen que perdió el discriminador**. La spec
+lo dice completo, y en tres lugares distintos:
+
+> **`product-spec-source.md` §VI.1 §3.2**
+> Nivel 3 — *"**Ver compromiso si es próximo**; **Empezar** / **Empezar rescate** **si es startable
+> now**. Se decide por lifecycle y tiempo acordado, no por prioridad académica."*
+> Nivel 8 — *"**Ver evidencia / Ver avance según lifecycle**."*
+
+> **§VI.1 §5** — `COMMITMENT_CONFIRMED` → *"Ver compromiso si es próximo; Empezar si es startable
+> now"*. `EVIDENCE_VALIDATED` → *"Ver avance"*.
+
+> **§VI.2 — CTA por lifecycle** — *"Commitment futuro → Ver compromiso"*; *"Commitment startable →
+> Empezar"*; *"Evidence enviada sin nueva acción → Ver evidencia"*; *"Evidence validada sin nueva
+> acción → Ver avance"*; *"rescue materializado startable → Empezar rescate"*.
+
+Es el mismo patrón que [ADR-015](#adr-015): la respuesta existía en la fuente de mayor precedencia y
+se había perdido en un documento derivado. [`AGENTS.md`](../AGENTS.md) §8 pone
+`product-spec-source.md` por encima de `product.md`.
+
+### Decisión
+
+**El discriminador del nivel 3 es el tiempo acordado del Commitment; el del nivel 8 es el lifecycle
+de la Evidence.** No hay nada que inventar:
+
+| Condición | CTA |
+|---|---|
+| Commitment **próximo** (acordado a futuro) | `Ver compromiso` |
+| Commitment **startable now** | `Empezar` |
+| Rescate materializado y **startable now** | `Empezar rescate` |
+| Evidence **enviada** (`SUBMITTED` / `UNDER_REVIEW`), sin acción posterior | `Ver evidencia` |
+| Evidence **validada**, sin acción posterior | `Ver avance` |
+
+**Corolario que §10.2 también había perdido:** `RESCUE_MATERIALIZED` **no es un nivel propio**.
+§VI.1 §3.2 lo dice explícitamente — *"no describe por sí solo qué necesita hacer el alumno ahora,
+por eso participa en la precedencia según su lifecycle real"*: una Action de rescate `IN_PROGRESS`
+es nivel 1, `EVIDENCE_PENDING` es nivel 2, y un Commitment de rescate `CONFIRMED`/`DUE` es nivel 3.
+Un compromiso actual **no** es desplazado por un rescate anterior sólo por ser un rescate.
+
+### Consecuencias
+
+- `product.md` §10.2 se corrige: los dos niveles ambiguos pasan a declarar su discriminador, y se
+  agrega la regla de `RESCUE_MATERIALIZED`.
+- `selectHeroLevel` deja de tratar `MATERIALIZED` como un nivel 3 automático y pasa a devolver
+  **nivel + variante**, como ya hacían `UX08` y `UX09`.
+- `lib/content/hero.ts` cubre los **nueve** niveles y sus variantes. La cobertura parcial que la
+  Etapa 0.2 declaró a propósito deja de existir.
+- La Etapa 0.7 puede renderizar los nueve niveles de `UX01`.

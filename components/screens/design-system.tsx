@@ -56,6 +56,9 @@ export function CTAPrincipal({ children, onClick, disabled }: { children: React.
     <Button
       onClick={onClick}
       disabled={disabled}
+      // Marca estable para poder contar CTAs primarias en los tests: `w-full`
+      // no sirve, lo usan también áreas de arrastre y otros controles.
+      data-cta-primaria
       className="w-full"
       style={{
         background: disabled ? "var(--border)" : "var(--primary)",

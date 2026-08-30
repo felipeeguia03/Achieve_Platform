@@ -1,47 +1,59 @@
 /**
- * Mapeo nivel de precedencia → copy, para UX01.
+ * Mapeo nivel de precedencia → copy, para `UX01`.
  *
- * El nivel lo decide `selectHeroLevel` (dominio puro). Acá solo se resuelve qué
- * frase le corresponde. Separado del catálogo general de copy porque es la
- * única tabla que depende de un tipo del dominio.
+ * El nivel y su variante los decide `selectHeroLevel` (dominio puro). Acá sólo
+ * se resuelve qué frase le corresponde.
  *
- * ⚠️ **Cobertura parcial, a propósito.** Están los cinco niveles que UX01 sabe
- * renderizar hoy. Los cuatro restantes —`COMMITMENT_NEXT`, `COMMITMENT_MISSED`,
- * `CONTEXT_INCOMPLETE`, `EVIDENCE_INFO`— entran en la **Etapa 0.7**, que es la
- * que lleva UX01 a los nueve niveles.
- *
- * Dos de ellos además necesitan una regla que el spec no fija:
- * `product.md` §10.2 le da a `COMMITMENT_NEXT` dos verbos posibles
- * (*"Ver compromiso"* / *"Empezar"*) y a `EVIDENCE_INFO` otros dos
- * (*"Ver evidencia"* / *"Ver avance"*), sin decir cuál aplica cuándo. **No se
- * elige acá**: elegir sería inventar una regla de negocio (AGENTS.md §1.1). Se
- * pregunta antes de la 0.7.
+ * **Cobertura completa desde la Etapa 0.7.** Hasta la 0.6 faltaban cuatro
+ * niveles porque `product.md` §10.2 dejaba dos CTAs ambiguas;
+ * [ADR-017](../../docs/decisions.md) mostró que no era una decisión abierta
+ * sino un resumen que había perdido el discriminador, y `VI.1` §3.2 lo fija:
+ * el nivel 3 se decide por **tiempo acordado** y el 8 por **lifecycle de la
+ * Evidence**.
  */
 
-import type { HeroLevel } from "@/lib/domain/precedence";
+import type { HeroLevel, HeroVariante } from "@/lib/domain/precedence";
 import { t, type CopyId } from "./es-AR";
 
-const estadoGeneralPorNivel: Partial<Record<HeroLevel, CopyId>> = {
-  ACTION_RECOMMENDED: "HOY.ESTADO.ACTION_RECOMMENDED",
+const estadoGeneralPorNivel: Record<HeroLevel, CopyId> = {
   IN_PROGRESS: "HOY.ESTADO.IN_PROGRESS",
   EVIDENCE_PENDING: "HOY.ESTADO.EVIDENCE_PENDING",
+  COMMITMENT_NEXT: "HOY.ESTADO.COMMITMENT_NEXT",
   RESCUE_REQUIRED: "HOY.ESTADO.RESCUE_REQUIRED",
+  COMMITMENT_MISSED: "HOY.ESTADO.COMMITMENT_MISSED",
+  ACTION_RECOMMENDED: "HOY.ESTADO.ACTION_RECOMMENDED",
+  CONTEXT_INCOMPLETE: "HOY.ESTADO.CONTEXT_INCOMPLETE",
+  EVIDENCE_INFO: "HOY.ESTADO.EVIDENCE_INFO",
+  NO_ACTION_AVAILABLE: "HOY.ESTADO.DEFECTO",
 };
 
-const ctaPorNivel: Partial<Record<HeroLevel, CopyId>> = {
-  ACTION_RECOMMENDED: "CTA.COMPROMETERME",
+/** Los niveles cuya CTA no depende de la variante. */
+const ctaPorNivel: Record<HeroLevel, CopyId> = {
   IN_PROGRESS: "CTA.CONTINUAR",
   EVIDENCE_PENDING: "CTA.SUBIR_EVIDENCIA",
+  // El nivel 3 siempre trae variante; este valor no se usa en la práctica.
+  COMMITMENT_NEXT: "CTA.VER_COMPROMISO",
   RESCUE_REQUIRED: "CTA.RETOMAR",
+  COMMITMENT_MISSED: "CTA.RETOMAR",
+  ACTION_RECOMMENDED: "CTA.COMPROMETERME",
+  CONTEXT_INCOMPLETE: "CTA.COMPLETAR_INFORMACION",
+  EVIDENCE_INFO: "CTA.VER_EVIDENCIA",
   NO_ACTION_AVAILABLE: "CTA.VER_MATERIAS",
 };
 
+/** Cuando hay variante, ella manda: es el discriminador que fija `VI.1` §3.2. */
+const ctaPorVariante: Record<HeroVariante, CopyId> = {
+  COMMITMENT_PROXIMO: "CTA.VER_COMPROMISO",
+  COMMITMENT_STARTABLE: "CTA.EMPEZAR",
+  RESCATE_STARTABLE: "CTA.EMPEZAR_RESCATE",
+  EVIDENCIA_ENVIADA: "CTA.VER_EVIDENCIA",
+  EVIDENCIA_VALIDADA: "CTA.VER_AVANCE",
+};
+
 export function estadoGeneralPara(nivel: HeroLevel): string {
-  const id = estadoGeneralPorNivel[nivel];
-  return t(id ?? "HOY.ESTADO.DEFECTO");
+  return t(estadoGeneralPorNivel[nivel]);
 }
 
-export function ctaPara(nivel: HeroLevel): string {
-  const id = ctaPorNivel[nivel];
-  return t(id ?? "CTA.VER_MATERIAS");
+export function ctaPara(nivel: HeroLevel, variante: HeroVariante | null = null): string {
+  return t(variante !== null ? ctaPorVariante[variante] : ctaPorNivel[nivel]);
 }

@@ -10,7 +10,14 @@
  */
 
 import { useState } from "react";
-import { Eyebrow, ReglaDeNegocio, HeroCard, CTAPrincipal, CTASecundaria } from "./design-system";
+import {
+  Eyebrow,
+  EstadoGeneral,
+  ReglaDeNegocio,
+  HeroCard,
+  CTAPrincipal,
+  CTASecundaria,
+} from "./design-system";
 import { t } from "@/lib/content/es-AR";
 import type { EvidenciaProps } from "@/lib/domain/view-models";
 
@@ -22,9 +29,17 @@ export function Evidencia({
   criterioCierre,
   formatosPermitidos,
   nombreAdjuntoDemo,
+  estadoVisible,
+  aviso,
+  reflection,
+  ctaPrimaria,
+  adjuntoPrevio,
   onAvanzar,
 }: EvidenciaProps & { onAvanzar?: () => void }) {
+  // Estado local de sesión, no de dominio: un upload exitoso NO produce
+  // SUBMITTED (AGENTS.md §2.3).
   const [adjunto, setAdjunto] = useState(false);
+  const hayContenido = adjunto || adjuntoPrevio !== null;
 
   return (
     <div
@@ -42,6 +57,10 @@ export function Evidencia({
       </header>
 
       <HeroCard>
+        {/* El lifecycle en copy de producto, nunca el enum crudo. */}
+        {estadoVisible && <EstadoGeneral>{estadoVisible}</EstadoGeneral>}
+        {aviso && <ReglaDeNegocio>{aviso}</ReglaDeNegocio>}
+
         <Eyebrow>{t("EVIDENCIA.ESPERADA")}</Eyebrow>
         {(evidenciaEsperada || criterioCierre) && (
           <ReglaDeNegocio>
@@ -54,6 +73,12 @@ export function Evidencia({
           </ReglaDeNegocio>
         )}
 
+        {/* Con una entrega previa no se vuelve a pedir el adjunto. */}
+        {adjuntoPrevio ? (
+          <ReglaDeNegocio>
+            <span data-adjunto-previo>{adjuntoPrevio}</span>
+          </ReglaDeNegocio>
+        ) : (
         <button
           onClick={() => setAdjunto(true)}
           className="w-full text-center"
@@ -99,13 +124,20 @@ export function Evidencia({
             </div>
           )}
         </button>
+        )}
 
-        <CTASecundaria>{t("CTA.AGREGAR_REFLEXION")}</CTASecundaria>
+        {/*
+          La Reflection es un objeto separado de la Evidence. Si es requerida,
+          su ausencia bloquea sólo el submit dependiente.
+        */}
+        {reflection && <CTASecundaria>{reflection.titulo}</CTASecundaria>}
         {/* Enviar no es suficiencia; suficiencia no es validación. */}
         <ReglaDeNegocio>{t("EVIDENCIA.ENVIAR_IMPLICA")}</ReglaDeNegocio>
-        <CTAPrincipal onClick={onAvanzar} disabled={!adjunto}>
-          {t("CTA.ENVIAR_EVIDENCIA")}
-        </CTAPrincipal>
+        {ctaPrimaria && (
+          <CTAPrincipal onClick={onAvanzar} disabled={!ctaPrimaria.habilitada || !hayContenido}>
+            {ctaPrimaria.texto}
+          </CTAPrincipal>
+        )}
       </HeroCard>
     </div>
   );

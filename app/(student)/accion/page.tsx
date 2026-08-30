@@ -1,23 +1,33 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ProximaAccion } from "@/components/screens/proxima-accion";
-import { getEscenario } from "@/lib/fixtures";
+import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { rutaDeCta } from "@/lib/navigation";
 
-// La CTA principal de esta superficie es CTA-003. Su destino sale del registro
-// canónico, no de un recorrido lineal escrito a mano.
 const DESTINO = rutaDeCta("CTA-003");
 
-export default function ProximaAccionPage() {
+function Vista() {
   const router = useRouter();
-  const props = getEscenario("FX-DAY-BASE").accion;
-  if (!props) throw new Error("El escenario FX-DAY-BASE no proyecta UX03");
+  const params = useSearchParams();
+
+  const id = escenarioDesde(params.get("escenario"), "accion") ?? "FX-DAY-BASE";
+  const props = getEscenario(id).accion;
+  if (!props) throw new Error(`El escenario ${id} no proyecta esta vista`);
 
   return (
     <ProximaAccion
       {...props}
       onAvanzar={DESTINO ? () => router.push(DESTINO) : undefined}
     />
+  );
+}
+
+export default function ProximaAccionPage() {
+  return (
+    <Suspense>
+      <Vista />
+    </Suspense>
   );
 }

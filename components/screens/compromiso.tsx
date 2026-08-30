@@ -22,6 +22,9 @@ export function Compromiso({
   evidenciaEsperada,
   criterioCierre,
   estadoResultante,
+  aviso,
+  original,
+  ctaPrimaria,
   onAvanzar,
 }: CompromisoProps & { onAvanzar?: () => void }) {
   return (
@@ -34,6 +37,21 @@ export function Compromiso({
         <h2 style={{ fontSize: 20 }}>{titulo}</h2>
       </header>
 
+      {/*
+        El Commitment original, cuando esta vista es una renegociación o un
+        rescate. Se muestra y NO es editable: el original se preserva y su
+        incumplimiento no se maquilla (AGENTS.md §2.4).
+      */}
+      {original && (
+        <div data-original>
+          <Eyebrow>{t("COMPROMISO.ORIGINAL")}</Eyebrow>
+          {original.map((f) => (
+            <Fila key={f.label} label={f.label} value={f.valor} ausente={f.ausente} />
+          ))}
+          <ReglaDeNegocio>{t("COMPROMISO.ORIGINAL_NO_EDITABLE")}</ReglaDeNegocio>
+        </div>
+      )}
+
       <HeroCard>
         {fecha && <Fila label={t("COMPROMISO.FECHA")} value={fecha} />}
         {hora && <Fila label={t("COMPROMISO.HORA")} value={hora} />}
@@ -41,6 +59,11 @@ export function Compromiso({
           <Fila label={t("COMPROMISO.TIEMPO_DECLARADO")} value={tiempoDeclarado} />
         )}
         {notaEstimacion && <ReglaDeNegocio>{notaEstimacion}</ReglaDeNegocio>}
+        {aviso && (
+          <ReglaDeNegocio>
+            <span style={{ color: "var(--urgencia-texto)" }}>{aviso}</span>
+          </ReglaDeNegocio>
+        )}
       </HeroCard>
 
       <HeroCard>
@@ -61,7 +84,16 @@ export function Compromiso({
             {t("COMPROMISO.RESULTADO")}
           </ReglaDeNegocio>
         )}
-        <CTAPrincipal onClick={onAvanzar}>{t("CTA.CONFIRMAR_COMPROMISO")}</CTAPrincipal>
+        {/*
+          Sin datos válidos no hay confirmación que ofrecer, y un estado
+          terminal del lifecycle no ofrece ninguna: no se deja un botón
+          deshabilitado que sugiera una operación posible.
+        */}
+        {ctaPrimaria && (
+          <CTAPrincipal onClick={onAvanzar} disabled={!ctaPrimaria.habilitada}>
+            {ctaPrimaria.texto}
+          </CTAPrincipal>
+        )}
       </HeroCard>
     </div>
   );

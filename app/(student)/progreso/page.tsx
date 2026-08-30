@@ -1,23 +1,33 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ProgresoBitacora } from "@/components/screens/progreso-bitacora";
-import { getEscenario } from "@/lib/fixtures";
+import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { rutaDeCta } from "@/lib/navigation";
 
-// La CTA principal de esta superficie es CTA-010. Su destino sale del registro
-// canónico, no de un recorrido lineal escrito a mano.
 const DESTINO = rutaDeCta("CTA-010");
 
-export default function ProgresoBitacoraPage() {
+function Vista() {
   const router = useRouter();
-  const props = getEscenario("FX-LOCAL-PROG-VALIDATED").progreso;
-  if (!props) throw new Error("El escenario FX-LOCAL-PROG-VALIDATED no proyecta UX06");
+  const params = useSearchParams();
+
+  const id = escenarioDesde(params.get("escenario"), "progreso") ?? "FX-LOCAL-PROG-VALIDATED";
+  const props = getEscenario(id).progreso;
+  if (!props) throw new Error(`El escenario ${id} no proyecta esta vista`);
 
   return (
     <ProgresoBitacora
       {...props}
       onAvanzar={DESTINO ? () => router.push(DESTINO) : undefined}
     />
+  );
+}
+
+export default function ProgresoBitacoraPage() {
+  return (
+    <Suspense>
+      <Vista />
+    </Suspense>
   );
 }

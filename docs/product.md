@@ -448,13 +448,15 @@ La selección de qué ocupa el Hero separa dos responsabilidades:
 ```
 1. Action IN_PROGRESS                          → "Continuar"
 2. Action EVIDENCE_PENDING                     → "Subir evidencia"
-3. Commitment CONFIRMED/DUE, o rescate         → "Ver compromiso" / "Empezar"
-   materializado
+3. Commitment CONFIRMED/DUE                    → "Ver compromiso" si es próximo
+                                                  "Empezar" si es startable now
+                                                  "Empezar rescate" si es un rescate
 4. RESCUE_REQUIRED sin rescate concreto        → "Retomar"
 5. Commitment MISSED sin resolución            → "Retomar"
 6. ACTION_RECOMMENDED (principal del ADE)      → "Comprometerme"
 7. ACADEMIC_CONTEXT_INCOMPLETE que bloquea     → "Completar información"
-8. Evidence informativa sin acción posterior   → "Ver evidencia" / "Ver avance"
+8. Evidence informativa sin acción posterior   → "Ver evidencia" si está enviada
+                                                  "Ver avance" si está validada
 9. NO_ACTION_AVAILABLE                         → "Ver materias"
 ```
 
@@ -466,12 +468,19 @@ Esta función vive como **función pura** en
 [`lib/domain/precedence.ts`](../lib/domain/precedence.ts), extraída de
 `components/screens/hoy-autogestion.tsx` en la Etapa 0.2. Los nueve niveles tienen test propio.
 
-⚠️ **La función cubre los nueve niveles; `UX01` sabe dibujar cinco.**
-`ACTION_RECOMMENDED`, `IN_PROGRESS`, `EVIDENCE_PENDING`, `RESCUE_REQUIRED` y la ausencia confirmada.
-Los otros cuatro se renderizan en la **Etapa 0.7**. Dos de ellos necesitan antes una regla que este
-documento no fija: §10.2 le da a `COMMITMENT_NEXT` dos verbos posibles (*"Ver compromiso"* /
-*"Empezar"*) y a `EVIDENCE_INFO` otros dos (*"Ver evidencia"* / *"Ver avance"*), **sin decir cuál
-aplica cuándo**.
+✅ **La función cubre los nueve niveles y `UX01` los dibuja todos** desde la Etapa 0.7.
+
+**Los discriminadores de los niveles 3 y 8** los fija `product-spec-source.md` §VI.1 §3.2 y los
+cerró [ADR-017](decisions.md#adr-017): el nivel 3 se decide **por lifecycle y tiempo acordado**, no
+por prioridad académica; el nivel 8, **por lifecycle de la Evidence**.
+
+> **`RESCUE_MATERIALIZED` no es un nivel propio.** §VI.1 §3.2: *"no describe por sí solo qué necesita
+> hacer el alumno ahora, por eso participa en la precedencia según su lifecycle real"*. Una Action de
+> rescate `IN_PROGRESS` es nivel 1; `EVIDENCE_PENDING`, nivel 2; un Commitment de rescate
+> `CONFIRMED`/`DUE`, nivel 3. **Un compromiso actual no es desplazado por un rescate anterior sólo
+> por tratarse de un rescate.**
+
+---
 
 ### 10.3 Registro canónico de CTAs
 

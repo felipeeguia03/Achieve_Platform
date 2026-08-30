@@ -130,7 +130,7 @@ describe("Cobertura de la matriz de estados críticos (VI.9 §22)", () => {
   it("se renderiza exactamente una CTA primaria, o ninguna", () => {
     for (const e of todos) {
       const { container, unmount } = render(<PasoDeProtocolo {...e.ux09!} />);
-      expect(container.querySelectorAll("button.w-full").length, e.id).toBe(e.ux09!.ctaPrimaria ? 1 : 0);
+      expect(container.querySelectorAll("[data-cta-primaria]").length, e.id).toBe(e.ux09!.ctaPrimaria ? 1 : 0);
       unmount();
     }
   });

@@ -23,6 +23,9 @@ export function ProximaAccion({
   evidenciaEsperada,
   criterioCierre,
   queSigue,
+  provenanceRecurso,
+  aviso,
+  ctaPrimaria,
   onAvanzar,
 }: ProximaAccionProps & { onAvanzar?: () => void }) {
   return (
@@ -52,7 +55,28 @@ export function ProximaAccion({
           </ReglaDeNegocio>
         )}
         {duracion && <Fila label={t("ACCION.DURACION")} value={duracion} />}
-        {recurso && <Fila label={t("ACCION.RECURSO")} value={recurso} />}
+        {recurso && (
+          <Fila
+            label={t("ACCION.RECURSO")}
+            value={
+              <span>
+                {recurso}
+                {/* Sin provenance conocida el recurso no se presenta como oficial. */}
+                {provenanceRecurso && (
+                  <span
+                    style={{
+                      display: "block",
+                      fontSize: "var(--text-meta)",
+                      color: "var(--muted-foreground)",
+                    }}
+                  >
+                    {provenanceRecurso}
+                  </span>
+                )}
+              </span>
+            }
+          />
+        )}
         {evidenciaEsperada && <Fila label={t("ACCION.EVIDENCIA")} value={evidenciaEsperada} />}
         {criterioCierre && (
           <ReglaDeNegocio>
@@ -64,8 +88,21 @@ export function ProximaAccion({
             {t("COMUN.DESPUES")} {queSigue}
           </ReglaDeNegocio>
         )}
-        {/* Aceptar una Action NO crea un Commitment: eso pasa en UX04. */}
-        <CTAPrincipal onClick={onAvanzar}>{t("CTA.ME_COMPROMETO")}</CTAPrincipal>
+        {aviso && (
+          <ReglaDeNegocio>
+            <span style={{ color: "var(--urgencia-texto)" }}>{aviso}</span>
+          </ReglaDeNegocio>
+        )}
+        {/*
+          Aceptar una Action NO crea un Commitment: eso pasa en UX04. Si la
+          Action está bloqueada o fue reemplazada, no hay CTA que ofrecer y no
+          se deja una deshabilitada.
+        */}
+        {ctaPrimaria && (
+          <CTAPrincipal onClick={onAvanzar} disabled={!ctaPrimaria.habilitada}>
+            {ctaPrimaria.texto}
+          </CTAPrincipal>
+        )}
         <CTASecundaria>{t("CTA.NO_PUEDO")}</CTASecundaria>
       </HeroCard>
 

@@ -134,7 +134,7 @@ del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
 | 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ✅ |
 | 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ✅ |
 | 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ✅ |
-| 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ⬜ |
+| 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ✅ |
 | 0.8 | **Modo focus group** | Recorrido limpio sin panel de debug + guion del test de 10 segundos | ⬜ |
 
 ---
@@ -690,6 +690,65 @@ imprimir en blanco y negro no pierde información.
 
 ---
 
+#### ✅ Etapa 0.7 — COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Los 9 niveles de precedencia de `UX01` | ✅ los nueve, más sus **cinco variantes de CTA** |
+| Los 8 estados del lifecycle de `Commitment` | ✅ los ocho, verificados contra la tabla de transiciones |
+| Los 7 estados de `Evidence` | ✅ los siete, más upload en curso, upload fallido, artefacto formal, entrega tardía y Reflection requerida |
+| Renegociación, rescate y provenance | ✅ elegible y no elegible, con el original visible y no editable |
+| Las 4 variantes de resultado de progreso | ✅ y los tres estados de no-cambio, distinguibles entre sí |
+| Imprimir en blanco y negro | ✅ verificado en el navegador: el texto es idéntico con `grayscale(1)` |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **304 tests en 13 archivos** |
+
+**37 escenarios nuevos** para `UX02`–`UX06` más **7** para los niveles que le faltaban a `UX01`.
+Las seis rutas aceptan `?escenario=`, así que **todo estado crítico tiene URL** (`I-01`).
+
+**[ADR-017](decisions.md#adr-017) cerró la deuda que venía desde la Etapa 0.2.** Los dos verbos que
+`product.md` §10.2 dejaba ambiguos no eran una decisión abierta: era **un resumen que había perdido
+el discriminador**. `VI.1` §3.2 lo dice completo —el nivel 3 se decide por **tiempo acordado**, el 8
+por **lifecycle de la Evidence**— y `VI.2` lo repite en su tabla de CTA por lifecycle. Mismo patrón
+que ADR-015: la respuesta estaba en la fuente de mayor precedencia.
+
+**Un defecto real que el ADR destapó.** `selectHeroLevel` trataba `RESCUE_MATERIALIZED` como un nivel
+3 automático. `VI.1` §3.2 dice lo contrario: *"no describe por sí solo qué necesita hacer el alumno
+ahora, por eso participa en la precedencia según su lifecycle real"*. Con el código anterior, un
+rescate materializado **desplazaba a una recomendación vigente sin tener objeto que abrir**. Ahora
+participa por su lifecycle y hay un test que fija la conducta.
+
+**`UX06` pasó a ser alcanzable por clic.** `CTA-009` (*ver progreso*) estaba declarada desde la
+Etapa 0.3 y ninguna pantalla la renderizaba. Ahora aparece en `UX01` **sólo si el contexto declara la
+Bitácora disponible** —es su condición de aparición— y el recorrido `Hoy → Progreso → Hoy` funciona.
+
+**Auditoría de conformidad de [`design-system.md`](design-system.md) §9.** Corrida, con los fallos
+reportados:
+
+| Bloque | Resultado |
+|---|---|
+| 2 · Contenido | ✅ `C-01`, `C-02`, `C-03`, `C-06`, `C-07` automatizados y en verde |
+| 4 · Datos | ✅ `P-03` sin magnitudes crudas; `P-09` las cuatro ausencias con copy propio |
+| 5 · Visual | ✅ `A-08` deshabilitado con tratamiento propio; `P-06` ningún estado sólo por color; `V-02` mono sólo donde corresponde |
+| 6 · Interacción | ✅ `I-01` todo estado con URL; `I-05` el bloqueante arriba de la CTA; **recorrido completo con `Tab` en las 9 superficies, con anillo de foco visible en todas las paradas** |
+| **No corrido** | ⚠️ **Lector de pantalla** sobre la pantalla más compleja, y **`A-01` con datos sucios reales**. Los dos exigen una persona y datos que el Track A no tiene. Quedan para la **0.8** y para el Track B respectivamente |
+
+**Se cerró la grieta de tono que la 0.2 había dejado anotada.** `UX02` decía *"Entrega:"* donde
+`UX01` dice *"Entregá:"*, para el mismo campo. No era un error —las dos formas son español
+correcto—: era **la excepción que el propio checklist pide buscar** (*"`C-01` Una sola persona
+gramatical. Buscá la excepción: siempre hay una"*). Se unificó a la forma de `UX01` por `C-01` y
+`C-02`. **Es un cambio de copy respecto del prototipo** y queda anotado.
+
+**Cambio menor de infraestructura:** la CTA primaria lleva `data-cta-primaria`. Contar por `w-full`
+daba falsos positivos —el área de adjuntar de `UX05` también la usa— y el test de *una sola CTA
+primaria* estaba midiendo mal.
+
+**Lo que sigue abierto para la 0.8:** `UX05` **todavía no es alcanzable por clic**. El spec la rutea
+`UX04 → ejecución → UX05`, y `ejecución` es un nodo sin pantalla. Junto con
+[ADR-016](decisions.md#adr-016) (ninguna CTA lleva a `UX07`), son los dos huecos que quedan del
+recorrido.
+
+---
+
 ### Etapa 0.8 — Modo focus group
 
 **Trabajo:** un recorrido limpio sin panel de debug, con reset determinista, y el guion del test de
@@ -701,11 +760,12 @@ sin instrucciones, y el facilitador tiene el guion con los criterios de PASS.
 ### Fase 0 — Done cuando…
 
 - [x] Las 9 superficies existen como componentes reales con el sistema visual final — **29 ago 2026**
-- [ ] Todos los estados críticos de las 9 specs son alcanzables
+- [x] Todos los estados críticos de las 9 specs son alcanzables — **30 ago 2026**
 - [ ] El Golden Path es recorrible extremo a extremo
 - [ ] Cero red, cero persistencia, cero datos reales — **verificado por test estático**
-- [ ] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 corrida, con los
-      fallos reportados y no escondidos
+- [x] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 corrida, con los
+      fallos reportados y no escondidos — **30 ago 2026.** Dos ítems **no corridos**: lector de
+      pantalla y `A-01` con datos sucios reales
 - [ ] Lint, build y tests en verde
 - [ ] El test de comprensión de 10 segundos ejecutado **con personas reales, en desktop**
       ([ADR-014](decisions.md#adr-014)), sin pérdida de información a 360 px
@@ -925,7 +985,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 6 / 8 |
+| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 7 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

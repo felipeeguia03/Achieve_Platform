@@ -45,7 +45,7 @@ describe("Una sola CTA primaria (§14)", () => {
   it("se renderiza exactamente una, o ninguna", () => {
     for (const e of todos) {
       const { container, unmount } = render(<OverviewModoExamen {...e.ux08!} />);
-      expect(container.querySelectorAll("button.w-full").length, e.id).toBe(e.ux08!.ctaPrimaria ? 1 : 0);
+      expect(container.querySelectorAll("[data-cta-primaria]").length, e.id).toBe(e.ux08!.ctaPrimaria ? 1 : 0);
       unmount();
     }
   });

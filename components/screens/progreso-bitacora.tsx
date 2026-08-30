@@ -34,6 +34,9 @@ export function ProgresoBitacora({
   fuenteCambio,
   sinCambioConfirmado,
   queSigue,
+  aviso,
+  bitacora,
+  ctaPrimaria,
   onAvanzar,
 }: ProgresoProps & { onAvanzar?: () => void }) {
   return (
@@ -49,6 +52,16 @@ export function ProgresoBitacora({
         <EstadoChip tone={estadoEvidencia.tono}>{estadoEvidencia.texto}</EstadoChip>
         <ReglaDeNegocio>{detalleEvidencia}</ReglaDeNegocio>
       </div>
+
+      {/*
+        Una falla de lectura NO es un no-cambio, y "sin información" no es 0
+        (AGENTS.md §2.5). Los cuatro resultados posibles se ven distintos.
+      */}
+      {aviso && (
+        <ReglaDeNegocio>
+          <span style={{ color: "var(--urgencia-texto)" }}>{aviso}</span>
+        </ReglaDeNegocio>
+      )}
 
       {cambioConfirmado.length > 0 && (
         <div>
@@ -79,11 +92,39 @@ export function ProgresoBitacora({
         </div>
       )}
 
-      {queSigue && (
+      {/*
+        Bitácora agrupada por ciclo: los eventos de un mismo ciclo se muestran
+        juntos y no como cuatro avances independientes.
+      */}
+      {bitacora && (
+        <div data-bitacora>
+          <Eyebrow>{t("PROGRESO.BITACORA")}</Eyebrow>
+          {bitacora.map((grupo) => (
+            <div key={grupo.ciclo} data-ciclo={grupo.ciclo} className="hairline-t pt-2">
+              <p style={{ fontSize: "var(--text-label)", fontWeight: 600 }}>{grupo.ciclo}</p>
+              {grupo.entradas.map((e) => (
+                <div key={e.titulo} style={{ padding: "4px 0" }}>
+                  <span style={{ fontSize: "var(--text-body)" }}>{e.titulo}</span>
+                  <ReglaDeNegocio>{e.detalle}</ReglaDeNegocio>
+                  <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+                    {e.provenance ?? "Fuente o estado no disponible"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(queSigue || ctaPrimaria) && (
         <HeroCard>
           <Eyebrow>{t("PROGRESO.QUE_SIGUE")}</Eyebrow>
-          <ReglaDeNegocio>{queSigue}</ReglaDeNegocio>
-          <CTAPrincipal onClick={onAvanzar}>{t("CTA.VER_SIGUIENTE_ACCION")}</CTAPrincipal>
+          {queSigue && <ReglaDeNegocio>{queSigue}</ReglaDeNegocio>}
+          {ctaPrimaria && (
+            <CTAPrincipal onClick={onAvanzar} disabled={!ctaPrimaria.habilitada}>
+              {ctaPrimaria.texto}
+            </CTAPrincipal>
+          )}
         </HeroCard>
       )}
       <CTASecundaria>{t("CTA.VER_BITACORA")}</CTASecundaria>
