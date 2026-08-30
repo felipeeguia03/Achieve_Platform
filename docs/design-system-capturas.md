@@ -934,3 +934,58 @@ Registro de reconciliación, para cuando se sincronicen los documentos.
 **Ninguna de estas modificaciones se aplica** hasta que los ADR de §12 estén resueltos, **salvo §12.1,
 que ya se aplicó** por [ADR-014](decisions.md#adr-014) el 29 de agosto de 2026. Para el resto este
 documento las registra; no las ejecuta.
+
+---
+
+## 14. Comparación lado a lado — Achieve contra las capturas
+
+**Corrida el 30 de agosto de 2026, Etapa A2.5**, a 1440 × 900 sobre el build de producción, las
+nueve superficies. Es el criterio de Done que la Fase A2 dejó explícito: *"comparación lado a lado
+con las capturas, **con las diferencias reportadas y no escondidas**"*. Formato de §9: no se
+esconden las que fallan.
+
+### 14.1 Lo que ya coincide
+
+| Patrón | Evidencia |
+|---|---|
+| Sidebar 256 / 80 px, topbar 56 px | Medido en el build; idéntico a la captura (§12.3) |
+| Ítem activo por **inversión de contraste**, no por color de marca | Píldora blanca sólida. Regla 3 de la captura 02 |
+| **Un solo badge numérico** en todo el menú | Regla 2 de la captura 02. Ver §14.2 · `D-06`: está en el ítem equivocado |
+| Máximo siete destinos de primer nivel | Achieve tiene cuatro |
+| Colapsar reduce tamaño, nunca información | `A-03` corregido en la A2.1, con test |
+| `⌘K` impreso **dentro** del control que dispara | Regla 4 de la captura 01 |
+| Cola `N de M` con flechas | Lista de materias de `UX01` |
+| CTA primaria a ancho completo al final de la columna | [ADR-015](decisions.md#adr-015) |
+| Fondo acromático, color racionado a tres semánticos | `P-06`, con la auditoría AA medida |
+
+### 14.2 Las diferencias, sin esconder ninguna
+
+| ID | Diferencia | Evidencia | Dónde se cierra |
+|---|---|---|---|
+| `D-01` | **Ninguna de las nueve superficies tiene `<h1>`**, y cuatro no tienen encabezado alguno (`UX06`, `UX07`, `UX08`, `UX09`) | `grep '<h1'` da 0 en `components/screens/`; el probe de navegador devuelve título `null` en cuatro rutas | **A2.4** — es también el ítem *"lector de pantalla"* de §9, bloque 6 |
+| `D-02` | **Falta la subcopy explicativa de panel.** Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | **A2.4** + **A2.6** (copy nuevo) |
+| `D-03` | **Cero controles segmentados** en las nueve superficies | `[role=tablist],[role=radiogroup]` da 0 en las nueve, y §10.2 los asigna a `UX05` y `UX07` | **A2.4** |
+| `D-04` | **Los vacíos dicen que no hay dato**, no qué va a aparecer ni por qué importa | `UX08`: *"Todavía no hay un paso para abrir."* | **A2.6** — es la elevación de `C-04` (§12.2, `PENDING`) |
+| `D-05` | **La columna mide 1120 px y el contenido no la usa.** Una sola columna centrada donde las capturas ponen lista + detalle. Sólo `UX08` tiene dos columnas | Tarjeta de 1088 px con líneas de texto cortas en `UX01`–`UX06` | **A2.4** (§11.9.4, *dos columnas cuando hay una lista y un detalle*) |
+| `D-06` | **El único badge del menú está en Progreso**, y la regla dice que el único badge es el del **trabajo pendiente que caduca**. La Bitácora no caduca | Regla 2 de la captura 02: *"un solo badge numérico en todo el menú: el del trabajo pendiente que caduca"* | ⚠️ **Decisión de dominio, no de estilo.** Ver abajo |
+| `D-07` | **No hay acciones secundarias del objeto arriba a la derecha.** Achieve las pone abajo y centradas | `UX01`: *"Ver progreso"* centrado al pie. `UX08`: *"VOLVER A CURSADO"* ídem. §11.9.3 las quiere en píldora de borde fino junto al título | **A2.4** |
+
+### 14.3 `D-06` no lo cierra un agente
+
+Mover el badge exige contestar **qué es, en Achieve, el trabajo pendiente que caduca**. El candidato
+obvio es un `Commitment` por vencer, pero eso vive en `UX01`, que es la superficie por defecto:
+badgear la pantalla en la que ya estás no informa nada. La alternativa —badgear *Materias*— supone
+que el contador agrega materias, y **`P-08` prohíbe fusionar fuentes**.
+
+Es la misma clase de pregunta que [ADR-020](decisions.md#adr-020): decide **qué afirma el producto**,
+no cómo se pinta. Queda reportada acá y sin resolver.
+
+### 14.4 Lectura de conjunto
+
+Las siete diferencias son **de densidad y de estructura, no de lenguaje visual**. Los tokens, la
+tipografía, los hairlines, el racionamiento de color y el shell ya son los de las capturas; lo que
+falta es que **cada pantalla diga qué es y para qué sirve**, y que use el ancho que tiene.
+
+Eso es exactamente `A2.4` y `A2.6`, y **`A2.6` no es trabajo de un agente solo**: `D-02` y `D-04`
+piden **copy de dominio nuevo**, y `C-07` ya declara deuda de contenido. Escribir esas frases sin
+una persona sería inventar reglas de negocio.

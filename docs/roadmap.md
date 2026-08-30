@@ -824,7 +824,7 @@ dos exigen una persona y datos que el Track A no tiene.
 
 ## Fase A2 — Shell de aplicación · 🟡 EN CURSO
 
-**Estado:** 🟡 **3 / 5 etapas · sin bloqueos.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
+**Estado:** 🟡 **4 / 5 etapas · sin bloqueos.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
 **Abierta por:** [ADR-018](decisions.md#adr-018), 30 de agosto de 2026.
 
 **Objetivo.** Que Achieve **se parezca al software de `docs/diseño/`**. Las nueve superficies ya
@@ -854,9 +854,9 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 | A2.1 | **Navegación lateral + topbar** ✅ | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
 | A2.2 | **Buscador `⌘K`** ✅ | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
 | A2.3 | **Ausencia tipada** ✅ | La primitiva que `design-system.md` §3.2 declaraba faltante. **Reemplaza al dock**, descartado por [ADR-019](decisions.md#adr-019) |
-| A2.4 | **Segmentados y densidad de panel** | Las primitivas que faltan, extraídas a `design-system.tsx` |
-| A2.5 | **Las nueve superficies dentro del shell** | Cada `UX01`–`UX09` recolocada, **sin tocar su contenido** |
-| A2.6 | **Vacíos que explican** | `C-04` elevado: el vacío dice qué va a aparecer **y por qué importa** |
+| A2.4 | **Segmentados y densidad de panel** | Las primitivas que faltan. Cierra `D-01`, `D-02`, `D-03`, `D-05` y `D-07` de §14.2 |
+| A2.5 | **Las nueve dentro del shell + comparación** ✅ | Verificado con guard estático, y la **comparación lado a lado** con las capturas: 7 diferencias reportadas (§14.2) |
+| A2.6 | **Vacíos que explican** | `C-04` elevado. Cierra `D-04`. ⚠️ **Necesita copy de dominio nuevo:** no lo escribe un agente solo |
 
 ### Lo que esta fase NO toca
 
@@ -984,6 +984,39 @@ proyecta también `tono` — son las dos mitades de *qué clase de cosa es este 
 declaraba *"tres estados de no-cambio, distinguibles entre sí"* y **dos de los tres se ven igual**.
 Distinguirlos exige decidir si un no-cambio declarado es una ausencia o un dato — que es dominio, no
 estilo. Se dejó de afirmar la distinción en vez de fabricarla.
+
+---
+
+#### ✅ Etapa A2.5 — Las nueve dentro del shell, y la comparación · COMPLETA · 30 de agosto de 2026
+
+**La mitad de esta etapa ya estaba hecha, y decirlo es parte del trabajo.** La A2.1 recolocó las
+nueve superficies dentro del shell cuando construyó el marco. No había nada que mover.
+
+Lo que **no** estaba hecho es lo que la etapa verifica y lo que la fase pedía como criterio de Done:
+
+| Criterio | Resultado |
+|---|---|
+| Las nueve dentro del shell, sin cambiar su contenido | ✅ **ahora con guard estático**: toda ruta de `app/(student)/` envuelve su superficie en `Shell` con un nodo propio y sin repetir |
+| Recorrido de focus group de punta a punta | ✅ sigue verde |
+| Auditoría de conformidad §9 | ✅ sin regresiones; `P-09` pasó a `[x]` en la A2.3 |
+| **Comparación lado a lado con las capturas** | ✅ **corrida por primera vez** — 1440 × 900, build de producción, las nueve. `design-system-capturas.md` §14 |
+| `lint` · `build` · `test` | ✅ verde · verde · **381 tests en 17 archivos** |
+
+**Nueve coincidencias y siete diferencias**, todas escritas en §14 con su evidencia. Las que más
+importan:
+
+- **`D-01` — ninguna superficie tiene `<h1>`, y cuatro no tienen encabezado alguno.** Es el hallazgo
+  más caro y no es estético: es el ítem *"lector de pantalla"* de §9 bloque 6, que estaba sin correr.
+- **`D-02` y `D-04` — falta la subcopy de panel y los vacíos no explican.** Las capturas dicen *qué
+  es esto y por qué importa*; Achieve dice el título y la fecha.
+- **`D-05` — la columna mide 1120 px y el contenido no la usa.** Sólo `UX08` tiene dos columnas.
+
+**Las siete diferencias son de densidad y estructura, no de lenguaje visual.** Tokens, tipografía,
+hairlines, racionamiento de color y shell ya son los de las capturas.
+
+**`D-06` se reportó y no se tocó.** El único badge del menú está en Progreso, y la regla de la
+captura 02 dice que el único badge es el del **trabajo pendiente que caduca** — la Bitácora no
+caduca. Moverlo exige definir qué es, en Achieve, ese trabajo: es dominio, no estilo. Ver §14.3.
 
 ---
 
@@ -1211,7 +1244,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase | Estado | Etapas completas |
 |---|---|---|
 | Fase 0 — Cerrar Track A | 🟡 **8 / 8 etapas · falta el test con personas reales** | 8 / 8 |
-| Fase A2 — Shell de aplicación | 🟡 **EN CURSO · sin bloqueos** | 3 / 5 |
+| Fase A2 — Shell de aplicación | 🟡 **EN CURSO · sin bloqueos** | 4 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

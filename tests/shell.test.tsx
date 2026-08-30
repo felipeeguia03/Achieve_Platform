@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { NavegacionLateral } from "@/components/shell/navegacion-lateral";
@@ -167,5 +169,48 @@ describe("Barra superior", () => {
   it("no lleva la CTA primaria de la pantalla", () => {
     const { container } = render(<BarraSuperior migas={migasDe("UX01")} onAbrirPaleta={() => {}} />);
     expect(container.querySelectorAll("[data-cta-primaria]")).toHaveLength(0);
+  });
+});
+
+
+// ── A2.5 · las nueve superficies viven dentro del shell ──────────────────────
+
+const RAIZ = process.cwd();
+
+function paginas(dir: string): string[] {
+  const abs = resolve(RAIZ, dir);
+  return readdirSync(abs).flatMap((entrada) => {
+    const full = join(abs, entrada);
+    if (statSync(full).isDirectory()) return paginas(join(dir, entrada));
+    return entrada === "page.tsx" ? [join(dir, entrada)] : [];
+  });
+}
+
+describe("A2.5 · las nueve superficies dentro del shell", () => {
+  /**
+   * El criterio de la etapa, hecho verificable. Una superficie fuera del shell
+   * no se rompe: se ve *casi* igual y pierde la navegación, que es la clase de
+   * regresión que nadie nota hasta que un estudiante se queda sin salida.
+   */
+  it("toda ruta del estudiante envuelve su superficie en `Shell`, con su nodo", () => {
+    const rutas = paginas("app/(student)");
+    expect(rutas.length).toBe(9);
+
+    const sinShell = rutas.filter((f) => {
+      const src = readFileSync(resolve(RAIZ, f), "utf8");
+      return !/<Shell\s+nodo="UX0[1-9]"/.test(src);
+    });
+    expect(sinShell).toEqual([]);
+  });
+
+  /**
+   * Cada ruta declara un nodo distinto. Dos rutas con el mismo nodo darían un
+   * breadcrumb que miente y un ítem activo en el lugar equivocado.
+   */
+  it("cada ruta declara un nodo propio, sin repetirse", () => {
+    const nodos = paginas("app/(student)")
+      .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="(UX0[1-9])"/)?.[1])
+      .filter(Boolean);
+    expect(new Set(nodos).size).toBe(9);
   });
 });
