@@ -35,6 +35,15 @@ export const copy = {
   "SHELL.COLAPSAR": "Colapsar la navegación",
   "SHELL.EXPANDIR": "Expandir la navegación",
   "SHELL.BUSCAR": "Buscar…",
+  "PALETA.TITULO": "Buscar en Achieve",
+  "PALETA.PLACEHOLDER": "Buscá una pantalla o un escenario…",
+  // La vía de escape de I-03 se muestra: forzar la interpretación no sirve si
+  // hay que adivinar cómo se fuerza.
+  "PALETA.AYUDA": "Escribí > para buscar sólo pantallas, o # para buscar sólo escenarios.",
+  "PALETA.FORZADO.SUPERFICIE": "Buscando sólo pantallas.",
+  "PALETA.FORZADO.ESCENARIO": "Buscando sólo escenarios.",
+  "PALETA.VACIO": "No encontramos nada con eso.",
+  "PALETA.VACIO_AYUDA": "Probá con el nombre de una pantalla, o con el ID de un escenario.",
 
   // ── UX01 · Hoy / Autogestión ──────────────────────────────────────────────
   "HOY.TITULO": "Hoy",

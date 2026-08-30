@@ -10,6 +10,9 @@
  * **La topbar no lleva la CTA primaria de la pantalla.** Lleva navegación y
  * contexto. La acción principal vive a ancho completo al final de la columna
  * principal ([ADR-015](../../docs/decisions.md)).
+ *
+ * El buscador **dispara la paleta de comandos** y muestra su atajo adentro
+ * (`I-04`). No es un campo de texto: es el control que abre la paleta.
  */
 
 import Link from "next/link";
@@ -22,7 +25,13 @@ export interface Miga {
   href: string | null;
 }
 
-export function BarraSuperior({ migas }: { migas: readonly Miga[] }) {
+export function BarraSuperior({
+  migas,
+  onAbrirPaleta,
+}: {
+  migas: readonly Miga[];
+  onAbrirPaleta: () => void;
+}) {
   return (
     <header
       className="hairline-b flex items-center gap-4"
@@ -65,23 +74,20 @@ export function BarraSuperior({ migas }: { migas: readonly Miga[] }) {
       </nav>
 
       {/*
-        El buscador se dibuja deshabilitado hasta que exista la paleta de
-        comandos (Etapa A2.2). Deshabilitado con tratamiento propio —opacidad,
-        cursor y `aria-disabled`— distinto de secundario, que es el
-        anti-patrón `A-08`. No se ofrece un campo que no busca nada.
+        `I-04`: el atajo se muestra **dentro del control que dispara**, no en un
+        tooltip. Y `P-07`: el atajo no elimina su camino visible — el mismo
+        control se puede tocar.
       */}
-      <div
+      <button
+        onClick={onAbrirPaleta}
+        aria-keyshortcuts="Meta+K Control+K"
         className="ml-auto hidden lg:flex items-center gap-2"
-        aria-disabled="true"
-        title="Disponible en la próxima etapa"
         style={{
           background: "var(--muted)",
           border: ".5px solid var(--border)",
           borderRadius: "var(--radius-pildora)",
           padding: "6px 14px",
           minWidth: 260,
-          opacity: 0.55,
-          cursor: "not-allowed",
           color: "var(--muted-foreground)",
           fontSize: "var(--text-label)",
         }}
@@ -97,7 +103,8 @@ export function BarraSuperior({ migas }: { migas: readonly Miga[] }) {
         >
           ⌘K
         </kbd>
-      </div>
+      </button>
+
     </header>
   );
 }

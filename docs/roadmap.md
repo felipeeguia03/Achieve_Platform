@@ -852,7 +852,7 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 | # | Etapa | Entregable |
 |---|---|---|
 | A2.1 | **Navegación lateral + topbar** ✅ | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
-| A2.2 | **Buscador `⌘K`** | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
+| A2.2 | **Buscador `⌘K`** ✅ | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
 | A2.3 | **Dock inferior** | Lo que quedó abierto, persistente entre superficies. **Sin `localStorage`:** estado de sesión |
 | A2.4 | **Segmentados y densidad de panel** | Las primitivas que faltan, extraídas a `design-system.tsx` |
 | A2.5 | **Las nueve superficies dentro del shell** | Cada `UX01`–`UX09` recolocada, **sin tocar su contenido** |
@@ -897,9 +897,37 @@ evidencia sin la acción que la pide.
 ([ADR-016](decisions.md#adr-016)). **No la convierte en una `CTA-019`**: sigue siendo navegación, y
 el recorrido de focus group sigue marcándola como paso del facilitador.
 
-**El buscador se dibuja deshabilitado** hasta que exista la paleta de comandos (A2.2), con
-tratamiento propio —opacidad, cursor y `aria-disabled`— distinto de secundario (`A-08`). No se ofrece
-un campo que no busca nada.
+**El buscador se dibujó deshabilitado** hasta A2.2, con tratamiento propio distinto de secundario
+(`A-08`). No se ofrece un campo que no busca nada.
+
+---
+
+#### ✅ Etapa A2.2 — Paleta de comandos · COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| `I-03` entrada polimórfica que desambigua sola | ✅ *"evidencia"* trae la pantalla **y** los escenarios; las superficies primero, porque son destinos |
+| `I-03` vía de escape para formatos que colisionan | ✅ `>` fuerza pantallas, `#` fuerza escenarios, **y se muestran en la propia paleta** |
+| `I-04` el atajo dentro del control que dispara | ✅ el `⌘K` vive en el buscador, no en un tooltip |
+| `P-07` el atajo no elimina su camino visible | ✅ el mismo control se puede tocar |
+| Navegación por teclado y `Escape` con jerarquía | ✅ flechas, `Enter`, y `Escape` cierra **sin navegar** |
+| Cero red | ✅ índice estático en memoria sobre el catálogo |
+| `lint` · `build` · `test` | ✅ verde · verde · **370 tests en 16 archivos** |
+
+**Los prefijos no son un adorno.** Los dos tipos colisionan de verdad: el propósito de un escenario
+nombra su superficie, así que *"evidencia"* trae `UX05` y los escenarios de `Evidence` a la vez. `I-03`
+pide exactamente una vía de escape para ese caso, y **se muestra en pantalla**: una vía de escape que
+hay que adivinar no es una vía de escape.
+
+**Dos defectos propios, corregidos en la misma etapa:**
+
+1. **`lib/navigation/paleta.ts` importaba `lib/fixtures/`**, rompiendo la dirección de dependencias
+   que la Etapa 0.3 fijó y que un test verifica. **El test lo cazó.** Se separó: la búsqueda queda en
+   `navigation`, **pura y sin datos**, y el índice lo arma `lib/fixtures/indice-paleta.ts`, que es
+   quien tiene el catálogo. La misma función busca sobre cualquier índice, y hay un test que lo
+   prueba.
+2. **`setState` dentro de un efecto**, que encadena renders. Se resolvió remontando el diálogo en
+   cada apertura en vez de resetear estado desde un efecto.
 
 ### Done cuando…
 

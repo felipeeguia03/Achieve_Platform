@@ -16,15 +16,30 @@
  * se apila es el marco, no el contenido.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavegacionLateral } from "./navegacion-lateral";
 import { BarraSuperior } from "./barra-superior";
+import { PaletaDeComandos } from "./paleta-de-comandos";
 import { migasDe } from "@/lib/navigation/migas";
 import type { NodoId } from "@/lib/navigation/surfaces";
 
 export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactNode }) {
   // Estado de sesión, no de dominio: no se persiste (regla del Track A).
   const [colapsada, setColapsada] = useState(false);
+  const [paleta, setPaleta] = useState(false);
+
+  // ⌘K / Ctrl+K. El atajo no reemplaza al control: la topbar sigue siendo
+  // clickeable (`P-07`, ningún atajo elimina su camino visible).
+  useEffect(() => {
+    function alTeclear(e: KeyboardEvent) {
+      if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setPaleta((p) => !p);
+      }
+    }
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, []);
 
   return (
     <div className="flex" style={{ minHeight: "100vh", background: "var(--background)" }}>
@@ -35,11 +50,13 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <BarraSuperior migas={migasDe(nodo)} />
+        <BarraSuperior migas={migasDe(nodo)} onAbrirPaleta={() => setPaleta(true)} />
         <main className="min-w-0 flex-1" style={{ padding: "24px" }}>
           <div style={{ maxWidth: 1120, margin: "0 auto" }}>{children}</div>
         </main>
       </div>
+
+      <PaletaDeComandos abierta={paleta} onCerrar={() => setPaleta(false)} />
     </div>
   );
 }

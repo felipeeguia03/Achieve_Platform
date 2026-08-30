@@ -85,11 +85,33 @@ describe("Navegación lateral", () => {
     expect(activo).toHaveTextContent("Hoy");
   });
 
-  it("colapsada conserva el nombre accesible de cada ítem", () => {
-    // Se ve sólo el ícono, pero el lector de pantalla sigue leyendo el nombre.
-    render1(true);
+  it("colapsada conserva el nombre de cada ítem, visible", () => {
+    // `A-03`: "los íconos sin etiqueta obligan a recordar en un producto que
+    // en todo lo demás evita el recuerdo". La etiqueta baja de tamaño, no se va.
+    const { container } = render1(true);
     for (const item of menu) {
-      expect(screen.getByRole("link", { name: item.etiqueta })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: new RegExp(item.etiqueta) })).toBeInTheDocument();
+      // Visible de verdad: no escondida con sr-only.
+      expect(container.textContent, item.etiqueta).toContain(item.etiqueta);
+    }
+    expect(container.querySelectorAll(".sr-only")).toHaveLength(0);
+  });
+
+  it("colapsar NO degrada el contador a un punto (anti-patrón A-03)", () => {
+    // El manual lo marca como defecto del producto original: "se perdió
+    // información para ganar 250 px". Un modo compacto reduce tamaño, nunca
+    // cantidad de información.
+    const conContador = menu.filter((m) => m.contador !== null);
+    expect(conContador.length, "hace falta al menos un contador para probarlo").toBeGreaterThan(0);
+
+    for (const colapsada of [false, true]) {
+      const { container, unmount } = render1(colapsada);
+      const contadores = container.querySelectorAll("[data-contador]");
+      expect(contadores.length, `colapsada=${colapsada}`).toBe(conContador.length);
+      for (const item of conContador) {
+        expect(container.textContent, `colapsada=${colapsada}`).toContain(String(item.contador));
+      }
+      unmount();
     }
   });
 
@@ -124,22 +146,26 @@ describe("Navegación lateral", () => {
 
 describe("Barra superior", () => {
   it("el elemento actual no se enlaza", () => {
-    render(<BarraSuperior migas={migasDe("UX09")} />);
+    render(<BarraSuperior migas={migasDe("UX09")} onAbrirPaleta={() => {}} />);
     expect(screen.getByText("Paso")).toHaveAttribute("aria-current", "page");
   });
 
-  it("el buscador se ofrece deshabilitado, con tratamiento propio (A-08)", () => {
-    // Todavía no existe la paleta de comandos (A2.2). No se ofrece un campo que
-    // no busca nada, y deshabilitado no se confunde con secundario.
-    const { container } = render(<BarraSuperior migas={migasDe("UX01")} />);
-    const buscador = container.querySelector('[aria-disabled="true"]')!;
-    expect(buscador).not.toBeNull();
-    expect((buscador as HTMLElement).style.cursor).toBe("not-allowed");
-    expect((buscador as HTMLElement).style.opacity).not.toBe("");
+  it("el buscador muestra su atajo adentro del control que dispara (I-04)", () => {
+    render(<BarraSuperior migas={migasDe("UX01")} onAbrirPaleta={() => {}} />);
+    const boton = screen.getByRole("button", { name: /Buscar/ });
+    expect(boton).toHaveTextContent("⌘K");
+    expect(boton).toHaveAttribute("aria-keyshortcuts");
+  });
+
+  it("el atajo no elimina su camino visible (P-07): el control se puede tocar", () => {
+    let abierto = 0;
+    render(<BarraSuperior migas={migasDe("UX01")} onAbrirPaleta={() => abierto++} />);
+    fireEvent.click(screen.getByRole("button", { name: /Buscar/ }));
+    expect(abierto).toBe(1);
   });
 
   it("no lleva la CTA primaria de la pantalla", () => {
-    const { container } = render(<BarraSuperior migas={migasDe("UX01")} />);
+    const { container } = render(<BarraSuperior migas={migasDe("UX01")} onAbrirPaleta={() => {}} />);
     expect(container.querySelectorAll("[data-cta-primaria]")).toHaveLength(0);
   });
 });

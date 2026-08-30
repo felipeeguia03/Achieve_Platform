@@ -36,7 +36,10 @@ export interface ItemDeMenu {
 export const menu: readonly ItemDeMenu[] = [
   { nodo: "UX01", etiqueta: "Hoy", contador: null },
   { nodo: "UX02", etiqueta: "Materias", contador: null },
-  { nodo: "UX06", etiqueta: "Progreso", contador: null },
+  // Un cambio de progreso sin ver cambia qué hace el estudiante: por eso lleva
+  // número. El resto no lleva, porque un contador que no cambia una decisión
+  // es ruido.
+  { nodo: "UX06", etiqueta: "Progreso", contador: 1 },
   { nodo: "UX07", etiqueta: "Modo Examen", contador: null },
 ] as const;
 
