@@ -8,7 +8,7 @@ tokens, principios y auditoría. **Este documento no redefine nada de allí.**
 **Deriva de:** una revisión local de 34 capturas —27 páginas del manual visual y 7 capturas crudas
 del software de referencia—. Los originales no se versionan porque contienen datos reales; este
 documento conserva únicamente observaciones visuales sin identidad personal, conforme a ADR-006.
-**Última actualización:** 29 de agosto de 2026
+**Última actualización:** 30 de agosto de 2026
 
 ---
 
@@ -708,6 +708,63 @@ Copiar la densidad, los hairlines y el gris **sin** las respuestas `DD1`–`DD10
 pantallas que se parecen al original y no resuelven nada. Achieve tiene las diez respuestas escritas
 ([`domain-translation-dd1-dd10.md`](domain-translation-dd1-dd10.md)) — por eso puede tomar prestado
 el lenguaje sin quedar vacío.
+
+---
+
+## 11.9 El shell de aplicación — lo que Achieve todavía no tiene
+
+Registrado el 30 de agosto de 2026 por [ADR-018](decisions.md#adr-018). **Este documento es el único
+artefacto del lenguaje visual que viaja**: las capturas no se versionan
+([ADR-006](decisions.md#adr-006)), así que un patrón que no esté descrito acá, para cualquier máquina
+que no sea la del owner, **no existe**.
+
+### 11.9.1 Navegación lateral
+
+- Persistente a la izquierda, **colapsable** con un control en la cabecera.
+- Ítems con **ícono + etiqueta**, agrupados sin separadores visibles.
+- El **ítem activo** es una píldora de superficie clara con sombra suave — no un fondo de color ni
+  una barra lateral.
+- **Contadores** a la derecha del ítem, en píldora oscura con número en blanco. Sólo donde el número
+  cambia una decisión.
+- Al pie: el conmutador de tema.
+
+### 11.9.2 Topbar
+
+- **Breadcrumb** a la izquierda, con el camino completo y el objeto actual al final.
+- **Buscador** centrado, con el atajo visible dentro del control.
+- **Notificaciones** con contador, y **selector de cuenta** con avatar a la derecha.
+- La topbar **no lleva la CTA primaria de la pantalla**: lleva navegación y contexto.
+
+### 11.9.3 Acciones secundarias del objeto
+
+Arriba a la derecha del título, en **píldora de borde fino con ancho de contenido**. Son
+**navegación** —abrir en otro lado, ver en otro contexto—, nunca la decisión principal.
+
+> Esto **no contradice** [ADR-015](decisions.md#adr-015). Aquél decidió dónde va la **CTA primaria**
+> —a ancho completo, al final de la columna principal— y sigue vigente. Las píldoras de arriba a la
+> derecha son secundarias.
+
+### 11.9.4 Densidad de panel
+
+- Tarjeta blanca, radio generoso, hairline.
+- **Título + subcopy explicativa** debajo: la subcopy dice **qué es esto y por qué importa**, en
+  lenguaje llano. Es `P-01` aplicado al panel entero.
+- Contenido en dos columnas cuando hay una lista y un detalle.
+
+### 11.9.5 Controles segmentados
+
+Grupo de píldoras para alternar vistas del mismo objeto. El activo es superficie clara con sombra;
+los inactivos, texto atenuado. **Alternar no muta nada.**
+
+### 11.9.6 Vacíos que explican
+
+El vacío **no dice que no hay dato**: dice **qué va a aparecer ahí y por qué importa**. Es la
+elevación de `C-04` que §12.2 dejó como propuesta, y las capturas la usan de forma consistente.
+
+### 11.9.7 Dock inferior
+
+Barra persistente con lo que quedó abierto, cada ítem con su identificador y un cierre. Sobrevive a
+la navegación entre superficies.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Documento:** `docs/roadmap.md`
 **Rol:** owner canónico del plan por fases y del estado de avance.
-**Última actualización:** 29 de agosto de 2026
+**Última actualización:** 30 de agosto de 2026
 
 ---
 
@@ -822,6 +822,69 @@ dos exigen una persona y datos que el Track A no tiene.
 
 ---
 
+## Fase A2 — Shell de aplicación · ⬜ NO INICIADA
+
+**Estado:** ⬜ **NO INICIADA · sin bloqueos.**
+**Abierta por:** [ADR-018](decisions.md#adr-018), 30 de agosto de 2026.
+
+**Objetivo.** Que Achieve **se parezca al software de `docs/diseño/`**. Las nueve superficies ya
+existen, con sus estados críticos y su Golden Path; lo que falta es el **marco que las contiene**.
+
+**Por qué es una fase nueva y no una etapa más de la Fase 0.** La Fase 0 se cerró con un criterio de
+Done que **nunca incluyó parecerse a las capturas**. Pedírselo ahora sería mover el arco después del
+gol. Esto es trabajo nuevo, con su propio objetivo.
+
+### La brecha, en concreto
+
+Lo que muestran las capturas y Achieve hoy no tiene:
+
+| Patrón en las capturas | Achieve hoy |
+|---|---|
+| **Navegación lateral** persistente, colapsable, con el ítem activo en píldora y contadores | No hay navegación: se llega por URL o por CTA |
+| **Topbar** con breadcrumb, buscador `⌘K`, notificaciones y selector de cuenta | No hay topbar |
+| **Dock inferior** con lo que quedó abierto | No existe |
+| **Controles segmentados** en píldora para alternar vistas | No existen |
+| **Densidad de panel**: tarjeta con título, subcopy explicativa y contenido tabular | Tarjetas de una sola columna, centradas |
+| **Vacíos que explican** qué va a aparecer y por qué importa | Los vacíos dicen que no hay dato, sin explicar |
+
+### Etapas
+
+| # | Etapa | Entregable |
+|---|---|---|
+| A2.1 | **Navegación lateral + topbar** | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
+| A2.2 | **Buscador `⌘K`** | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
+| A2.3 | **Dock inferior** | Lo que quedó abierto, persistente entre superficies. **Sin `localStorage`:** estado de sesión |
+| A2.4 | **Segmentados y densidad de panel** | Las primitivas que faltan, extraídas a `design-system.tsx` |
+| A2.5 | **Las nueve superficies dentro del shell** | Cada `UX01`–`UX09` recolocada, **sin tocar su contenido** |
+| A2.6 | **Vacíos que explican** | `C-04` elevado: el vacío dice qué va a aparecer **y por qué importa** |
+
+### Lo que esta fase NO toca
+
+Dominio, fixtures, registro de CTAs, las tres matrices de precedencia, los estados críticos y el
+guion del focus group. **Todo eso ya está y no depende del shell.** Si una etapa de A2 necesita
+cambiar una regla de dominio, es señal de que se pasó de alcance.
+
+### Antes de empezar
+
+1. **Abrir las capturas.** Es la regla de `AGENTS.md` §1.5. Si `docs/diseño/` está vacía, la fase no
+   empieza: se dice y se para.
+2. **Resolver `design-system-capturas.md` §12.3 y §12.6** — la escala de espaciado sigue siendo una
+   inferencia con ±2 px de error, y la densidad de `UX06` (tabla vs. tarjetas) sigue `PENDING`. Las
+   dos son decisiones de layout que A2 necesita.
+3. **§12.4 — modo oscuro.** Las capturas tienen toggle de tema y `design-system.md` **no define
+   paleta oscura**. Los tres semánticos están medidos **sobre superficie clara**; sobre oscuro
+   fallan. Un modo oscuro exige una segunda tabla de contrastes **medida**, no estimada.
+
+### Done cuando…
+
+- [ ] Las nueve superficies viven dentro del shell, sin haber cambiado su contenido ni sus estados
+- [ ] El recorrido del focus group sigue funcionando de punta a punta
+- [ ] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 sigue en verde
+- [ ] Lint, build y tests en verde
+- [ ] **Comparación lado a lado con las capturas**, con las diferencias reportadas y no escondidas
+
+---
+
 ## Fase A1 — Operador e Institución · ⏸️ DIFERIDA al Track B
 
 **Estado:** ⏸️ **DIFERIDA** por [ADR-012](decisions.md#adr-012), aprobado el 28 de agosto de 2026.
@@ -1036,6 +1099,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase | Estado | Etapas completas |
 |---|---|---|
 | Fase 0 — Cerrar Track A | 🟡 **8 / 8 etapas · falta el test con personas reales** | 8 / 8 |
+| Fase A2 — Shell de aplicación | ⬜ **NO INICIADA · sin bloqueos** | 0 / 6 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

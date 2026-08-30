@@ -19,7 +19,7 @@ Si el código y `docs/` discrepan, **el código es el defectuoso**.
 
 ---
 
-## 1. Las cinco reglas que no se rompen
+## 1. Las seis reglas que no se rompen
 
 ### 1.1 No inventes reglas de negocio
 
@@ -70,7 +70,47 @@ Nunca dejes algo a medias. Por cada etapa del roadmap:
 5. **Un commit o PR por etapa.**
 6. **Documentación sincronizada** — se marca la etapa en `docs/roadmap.md`.
 
-### 1.5 No reescribas lo que ya funciona
+### 1.5 Antes de tocar UI, mirá el diseño
+
+**Achieve es desktop-first y su lenguaje visual sale de las capturas de
+[`docs/diseño/`](docs/diseño/)** ([ADR-018](docs/decisions.md#adr-018)). El objetivo declarado es que
+el producto **se parezca a ese software**.
+
+Antes de diseñar o modificar cualquier pantalla, en este orden:
+
+1. **Abrí las capturas de `docs/diseño/`.** No "consultá el sistema de diseño": abrí los PNG y
+   miralos. Ahí está la navegación lateral, el topbar con breadcrumb y buscador, la densidad de
+   panel, la forma de los controles y el dock.
+2. **Contrastá con [`docs/design-system-capturas.md`](docs/design-system-capturas.md)**, que es la
+   extracción anonimizada y **el único artefacto que viaja**.
+3. **Si `docs/diseño/` está vacía, decilo y frená.**
+
+> ⚠️ **La carpeta no está versionada.** Contiene datos de un sistema real y
+> [ADR-006](docs/decisions.md#adr-006) la mantiene fuera del repositorio. En una máquina que no sea
+> la del owner, **vas a encontrarla vacía**.
+>
+> Cuando eso pase: **decí que no tenés las capturas y pará.** No improvises un lenguaje visual, no lo
+> deduzcas de lo que ya existe en el repo, no sigas como si nada. *"No tengo las capturas para
+> mirar"* es la respuesta correcta; inventar un diseño no lo es.
+
+**Dos cosas que no se hacen nunca:**
+
+- **No commitees las capturas**, ni recortadas ni difuminadas a ojo. ADR-006 exige anonimización
+  **verificable**.
+- **No copies su contenido de dominio.** De ahí se toma el **mecanismo visual** —cómo se ve, cómo se
+  ordena, cómo se comporta—, jamás sus marcas, expedientes, clientes ni nombres.
+
+**Qué manda cuándo.** Las capturas y las specs `VI.*` no hablan de lo mismo:
+
+| Pregunta | Manda |
+|---|---|
+| **Qué dice la pantalla** — objeto, estado, CTA, qué se omite, qué no se promete | La spec `VI.*`. Las capturas **no tienen autoridad de dominio** |
+| **Cómo se ve** — shell, densidad, tipografía, espaciado, forma de los controles | Las capturas, y su extracción versionada |
+
+Si los dos hablan del mismo píxel, gana la spec ([ADR-015](docs/decisions.md#adr-015)) **y el choque
+se registra** en `design-system-capturas.md` §12. No se resuelve en silencio.
+
+### 1.6 No reescribas lo que ya funciona
 
 En particular: **no reescribas `components/screens/*` ni `app/globals.css`** salvo que el roadmap lo
 pida explícitamente. `globals.css` tiene una auditoría de contraste WCAG AA **medida** anotada en el
@@ -180,6 +220,7 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) | Las respuestas `DD1`–`DD10` que el manual de diseño exige | Antes de aplicar un principio del manual |
 | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` + 8 `HUMAN-P0` | Cuando dudes si algo está decidido |
 | [`docs/design-system-capturas.md`](docs/design-system-capturas.md) | Extracción visual anonimizada + §12, las decisiones de diseño abiertas | Antes de tocar layout, espaciado o la posición de una CTA |
+| **`docs/diseño/*.png`** | **Las 34 capturas: la fuente del lenguaje visual.** No versionadas ([ADR-006](docs/decisions.md#adr-006)) | **Siempre, antes de tocar UI.** Ver §1.5 |
 | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) | Contrato máquina-a-máquina vigente Plataforma ↔ CRM | Antes de tocar registro, elegibilidad o integración CRM |
 | [`docs/guion-focus-group.md`](docs/guion-focus-group.md) | El recorrido de sesión y el test de 10 segundos por pantalla | Antes de correr un focus group |
 
@@ -262,6 +303,8 @@ Vitest ([ADR-008](docs/decisions.md#adr-008)).
   verificación es desktop; **360 px es el piso obligatorio** de la variante móvil, no la medida de
   referencia. El contrato del primer viewport de `docs/design-system.md` §6.1 es de **orden
   semántico** y rige en todo ancho.
+- **El lenguaje visual sale de `docs/diseño/`** ([ADR-018](docs/decisions.md#adr-018)). Se miran las
+  capturas antes de diseñar. Si no están, se dice y se para. Ver §1.5.
 - **Una sola CTA primaria** por pantalla y por estado.
 
 ### Las nueve superficies

@@ -18,7 +18,7 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
 
 ---
 
-## Las cinco reglas
+## Las seis reglas
 
 1. **No inventes reglas de negocio.** Hay 51 decisiones abiertas. Si falta una regla, registrala como
    ADR `PENDING` y **preguntá**.
@@ -26,7 +26,10 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
 3. **Datos reales: bloqueo absoluto** hasta que [ADR-006](docs/decisions.md#adr-006) esté resuelto.
 4. **Una etapa por vez, completa.** Readiness → decisiones aprobadas → implementar → verificar →
    commit → docs actualizados.
-5. **No reescribas `components/screens/*`, `app/globals.css` ni `components/ui/*`** salvo que el
+5. **Antes de tocar UI, abrí las capturas de `docs/diseño/`.** Achieve es desktop-first y su
+   lenguaje visual sale de ahí ([ADR-018](docs/decisions.md#adr-018)). **La carpeta no está
+   versionada:** si la encontrás vacía, **decilo y pará** — no improvises un diseño.
+6. **No reescribas `components/screens/*`, `app/globals.css` ni `components/ui/*`** salvo que el
    roadmap lo pida.
 
 ---
@@ -56,7 +59,8 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Entender el dominio, un estado o el copy permitido | [`docs/product.md`](docs/product.md) |
 | Saber qué está bloqueado y por qué | [`docs/decisions.md`](docs/decisions.md) |
 | Saber qué toca hacer ahora | [`docs/roadmap.md`](docs/roadmap.md) |
-| Tocar UI | [`docs/design-system.md`](docs/design-system.md) |
+| Tocar UI | **`docs/diseño/*.png` primero**, después [`docs/design-system.md`](docs/design-system.md) |
+| Ver qué patrón visual usar | [`docs/design-system-capturas.md`](docs/design-system-capturas.md) |
 | Tocar datos | [`docs/data-model.md`](docs/data-model.md) |
 | Tocar estructura | [`docs/architecture.md`](docs/architecture.md) |
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |

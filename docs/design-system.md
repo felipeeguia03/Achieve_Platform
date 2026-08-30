@@ -5,6 +5,10 @@
 **Deriva de:** `docs/design-system-source.md` (manual normativo), la extracción visual anonimizada
 en [`design-system-capturas.md`](design-system-capturas.md) y `app/globals.css` (implementación
 auditada). Los originales visuales no se versionan por ADR-006.
+
+> **La fuente del lenguaje visual son las capturas de `docs/diseño/`**
+> ([ADR-018](decisions.md#adr-018)). **Se miran antes de tocar UI.** No están versionadas: si la
+> carpeta está vacía, se dice y se para — no se improvisa un diseño. Ver `AGENTS.md` §1.5.
 **Última actualización:** 29 de agosto de 2026
 
 ---

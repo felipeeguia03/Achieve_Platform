@@ -60,6 +60,19 @@ El destino de cada CTA sale del registro canónico, no de un recorrido escrito a
 el backend exista, cambia lo que hay adentro de `lib/fixtures/` y la capa de presentación no se
 toca. Hay un test estático que lo verifica.
 
+## Antes de tocar UI
+
+**Achieve es desktop-first y su lenguaje visual sale de las capturas de `docs/diseño/`**
+([ADR-018](docs/decisions.md#adr-018)). Se miran **antes** de diseñar cualquier pantalla.
+
+⚠️ **Esa carpeta no está versionada.** Contiene datos de un sistema real y
+[ADR-006](docs/decisions.md#adr-006) la mantiene fuera del repositorio. Si al clonar la encontrás
+vacía, **eso es lo esperado**: pedile las capturas al owner. **No improvises un diseño** — ver
+[`AGENTS.md`](AGENTS.md) §1.5.
+
+El contrato de layout que sí viaja es
+[`docs/design-system-capturas.md`](docs/design-system-capturas.md), §11.9 en particular.
+
 ## Documentación esencial
 
 | Documento | Importancia |

@@ -64,6 +64,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-015](#adr-015) | Dónde vive la CTA principal en desktop | `ACCEPTED` | — |
 | [ADR-016](#adr-016) | Ninguna CTA del registro lleva a `UX07` | `PENDING` | Golden Path recorrible (0.8) |
 | [ADR-017](#adr-017) | Las dos CTAs ambiguas de `product.md` §10.2 | `ACCEPTED` | — |
+| [ADR-018](#adr-018) | El lenguaje visual sale de las capturas, y hay que mirarlas | `ACCEPTED` | — |
 
 ---
 
@@ -1003,3 +1004,89 @@ Un compromiso actual **no** es desplazado por un rescate anterior sólo por ser 
 - `lib/content/hero.ts` cubre los **nueve** niveles y sus variantes. La cobertura parcial que la
   Etapa 0.2 declaró a propósito deja de existir.
 - La Etapa 0.7 puede renderizar los nueve niveles de `UX01`.
+
+---
+
+<a id="adr-018"></a>
+## ADR-018 — El lenguaje visual sale de las capturas, y hay que mirarlas
+
+**Estado:** `ACCEPTED` · 30 ago 2026
+**Toca:** `AGENTS.md`, `CLAUDE.md`, `design-system.md`, `design-system-capturas.md`, `roadmap.md`.
+**Precisa:** [ADR-015](#adr-015), sin contradecirlo. Ver *Reconciliación*.
+**Depende de:** [ADR-006](#adr-006), que es la razón de la parte incómoda.
+
+### Contexto
+
+La conducción del producto pidió, el 30 de agosto de 2026, que **Achieve se construya desktop-first
+bajo el diseño de `docs/diseño/`**, y que el resultado **se parezca al software de esas capturas**.
+
+`docs/diseño/` tiene **34 PNG** de **Zop**, un producto B2B real de gestión de marcas. De ahí sale el
+lenguaje visual que Achieve quiere: navegación lateral con ítem activo en píldora, topbar con
+breadcrumb y buscador `⌘K`, tarjetas de radio generoso con hairlines, subcopy explicativa bajo cada
+título de sección, controles segmentados en píldora, dock inferior persistente, vacíos que explican
+en vez de decir "sin datos".
+
+**El problema con la regla tal como se pidió.** Las 34 capturas **no están versionadas**: el
+`.gitignore` las excluye desde el primer commit porque contienen **datos de un sistema real** —
+nombres completos de clientes, un estudio jurídico identificable, cantidades de expedientes—. Es
+[ADR-006](#adr-006).
+
+Una regla que diga *"andá siempre a `docs/diseño/`"* funciona en la máquina donde están las
+capturas y **falla en silencio en cualquier otra**: otro agente, otra máquina, CI o un compañero ven
+una carpeta vacía y, sin una instrucción explícita, improvisan un diseño creyendo que cumplen.
+
+### Decisión
+
+**1. Achieve es desktop-first y su lenguaje visual sale de las capturas.** El objetivo declarado es
+que el producto se parezca al de `docs/diseño/`.
+
+**2. Antes de tocar UI hay dos anclas, y las dos son obligatorias:**
+
+| Ancla | Qué es | Dónde vive |
+|---|---|---|
+| **Las capturas** | La fuente. Se **abren y se miran** antes de diseñar cualquier pantalla | `docs/diseño/*.png`, **local, nunca versionado** |
+| **La extracción** | El contrato de layout, anonimizado y versionado | [`design-system-capturas.md`](design-system-capturas.md) |
+
+**3. Si `docs/diseño/` está vacía, el agente lo dice y para.** No improvisa un lenguaje visual, no lo
+deduce de lo que ya existe en el repo y no sigue como si nada. Decir *"no tengo las capturas"* es la
+respuesta correcta; inventar un diseño no lo es.
+
+**4. Las capturas siguen fuera del repositorio.** No se commitean, ni siquiera recortadas. Su
+contenido de dominio —marcas, expedientes, clientes, el nombre del estudio— **no se copia jamás**:
+de Zop se toma el **mecanismo visual**, nunca su contenido.
+
+**5. `design-system-capturas.md` se mantiene sincronizado.** Cuando las capturas muestren un patrón
+que el documento no describe, se agrega al documento. Es el único artefacto que viaja, así que si no
+está ahí, para el resto del mundo no existe.
+
+### Reconciliación con [ADR-015](#adr-015)
+
+ADR-015 dijo: *"cuando `design-system-capturas.md` y una spec `VI.*` describan lo mismo, manda la
+spec. Las capturas aportan vocabulario visual, no contrato de layout."*
+
+**Sigue vigente, y este ADR lo precisa** separando dos preguntas que se estaban mezclando:
+
+| Pregunta | Quién manda |
+|---|---|
+| **Qué dice la pantalla** — qué objeto, qué estado, qué CTA, qué se omite, qué no se promete | **La spec `VI.*`.** Siempre. Las capturas no tienen ninguna autoridad de dominio |
+| **Cómo se ve** — shell, densidad, tipografía, espaciado, forma de los controles | **Las capturas**, y su extracción versionada |
+
+No hay conflicto porque nunca hablaron de lo mismo. Lo que ADR-015 resolvió —dónde va la CTA
+principal en desktop— era **contrato de pantalla**, y por eso ganó la spec. El shell de la aplicación
+es **lenguaje visual**, y ahí manda la captura.
+
+Cuando los dos hablen del mismo píxel, sigue mandando la spec, **y se registra el choque** en
+`design-system-capturas.md` §12 en vez de resolverlo en silencio.
+
+### Consecuencias
+
+- `AGENTS.md` gana un paso obligatorio antes de tocar UI, con la instrucción explícita de frenar si
+  las capturas no están.
+- Se abre la **Fase A2 — Shell de aplicación** en el roadmap. La Fase 0 se cerró sin este objetivo y
+  no se le mueve el arco: cambia el marco que contiene a las nueve superficies, no su contenido.
+- **Lo que la Fase A2 no toca:** dominio, fixtures, registro de CTAs, las tres matrices de
+  precedencia, los estados críticos y el guion del focus group. Todo eso ya está y no depende del
+  shell.
+- El riesgo que este ADR **no** elimina: mientras las capturas no viajen, un agente en otra máquina
+  sólo tiene la extracción textual. Por eso la sincronización de `design-system-capturas.md` deja de
+  ser una cortesía y pasa a ser parte del trabajo.
