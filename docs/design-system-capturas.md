@@ -117,7 +117,7 @@ a aparecer: dice **por qué importa que aparezca**.
 > quien la abrió."*
 
 `C-04` en `design-system.md` pide que el vacío explique qué va a aparecer. Esto es un escalón más
-arriba. Ver §12.2 — es un candidato a modificar `C-04`.
+arriba. **Modificó `C-04`**: ver §12.2 y [ADR-022](decisions.md#adr-022).
 
 ### 1.5 Lo inaplicable se atenúa, no se oculta
 
@@ -785,16 +785,25 @@ todo ancho. Se verifica en **desktop** (viewport primario, donde corre el test d
 se corrigieron en el mismo commit. Este documento, escrito desktop-first, **ya no contradice a
 ninguno**.
 
-### 12.2 ¿Se eleva `C-04`? — `PENDING`
+### 12.2 ¿Se eleva `C-04`? — ✅ `RESUELTO` por [ADR-022](decisions.md#adr-022): sí, con condición
 
-**A favor:** el vacío que dice *por qué importa el dato* (§1.4) es medible como mejor. Es `P-01`
-aplicado a la ausencia.
+**Decidido por el owner el 30 de agosto de 2026.** `C-04` pasa a pedir **qué va a aparecer** y **por
+qué importa** siempre, y **cómo hacer que aparezca sólo cuando la aparición depende del estudiante**.
 
-**En contra:** multiplica la deuda de contenido que `C-07` ya declara. Cada vacío pasa de una frase a
-dos, y las dos mienten si cambia la regla.
+**Dos correcciones al planteo original de esta sección**, anotadas porque cambian de dónde partía la
+decisión:
 
-**Qué decidir:** si `C-04` pasa a *"el vacío explica qué va a aparecer **y por qué importa**"*, o si
-queda como está y esto es solo una recomendación.
+1. `design-system.md` tenía **sólo la primera cláusula**. La de «por qué importa» **es decisión nueva
+   de ese día**, no una regla escrita que faltara aplicar.
+2. El manual normativo ya pedía una tercera que esta sección no mencionaba: *"y **cómo hacer que
+   aparezca**"*. Entró a la regla, pero **condicional**.
+
+**La condición es lo que responde al argumento en contra.** Cuando el dato no aparece por algo que el
+estudiante pueda hacer, el vacío queda en dos cláusulas: **no se inventa una acción falsa para
+completar el patrón**. De los tres vacíos de Achieve, sólo uno lleva las tres.
+
+**Deuda acotada, no negada.** Son tres frases con ID en `lib/content/es-AR.ts`, que es exactamente
+para lo que `C-07` pide contenido versionado.
 
 ### 12.3 Escala de espaciado — ✅ `CONFIRMADA` por medición
 
@@ -921,7 +930,7 @@ Registro de reconciliación, para cuando se sincronicen los documentos.
 | §9.1 | **Especifica** la primitiva `Esqueleto`, declarada faltante en §3.2 |
 | §9.2 / §1.6 | **Especifica** la primitiva `Ausencia`, declarada faltante en §3.2 |
 | §10.2 | **Especifica** la primitiva `Provenance` vía el patrón de partición sin fusión |
-| §1.4 | **Propone** modificar `C-04`. Sujeto a §12.2 |
+| §1.4 | ✅ **Modificó `C-04`** por [ADR-022](decisions.md#adr-022) |
 | §5.3 | **Confirma** los tres semánticos. Rechaza explícitamente el cuarto color del original |
 | §11.2 | **Ancla** los nueve anti-patrones a evidencia visual concreta |
 | §12.3 | ✅ **Confirmada por medición** el 30 ago 2026: 256 / 80 / 56 px, todos múltiplos de 8 |
@@ -965,7 +974,7 @@ esconden las que fallan.
 | `D-01` ✅ | **Cerrada en A2.4.** Ninguna de las nueve tenía `<h1>`, y cuatro no tienen encabezado alguno (`UX06`, `UX07`, `UX08`, `UX09`) | `grep '<h1'` da 0 en `components/screens/`; el probe de navegador devuelve título `null` en cuatro rutas | ✅ **A2.4** — cada superficie tiene exactamente un `h1`, con guard. Las cuatro sin título propio promueven su eyebrow: título de documento **sin agregar una palabra** |
 | `D-02` ✅ | **Cerrada en A2.6.** Faltaba la subcopy explicativa de panel. Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | ✅ Las nueve las escribió el owner, del JTBD de cada spec. Un test verifica que cada cita sea **textual** |
 | `D-03` ⚠️ | **Cero controles segmentados** en las nueve superficies | `[role=tablist],[role=radiogroup]` da 0 en las nueve, y §10.2 los asigna a `UX05` y `UX07` | ⚠️ **Bloqueada, no diferida.** Ver §14.5 |
-| `D-04` | **Los vacíos dicen que no hay dato**, no qué va a aparecer ni por qué importa | `UX08`: *"Todavía no hay un paso para abrir."* | **A2.6** — es la elevación de `C-04` (§12.2, `PENDING`) |
+| `D-04` ✅ | **Cerrada por [ADR-022](decisions.md#adr-022).** Los vacíos decían que no hay dato, no qué va a aparecer ni por qué importa | `UX08` mostraba el rótulo *"RECORRIDO TODAVÍA NO DISPONIBLE"* **y nada debajo** | ✅ Los tres vacíos argumentan. La tercera cláusula es condicional: dos de los tres no la llevan |
 | `D-05` ⚠️ | **La columna mide 1120 px y el contenido no la usa.** Una sola columna centrada donde las capturas ponen lista + detalle. Sólo `UX08` tiene dos columnas | Tarjeta de 1088 px con líneas de texto cortas en `UX01`–`UX06` | ⚠️ **Depende de `D-02`/`D-04`.** Ver §14.5 |
 | `D-06` ✅ | **Cerrada por [ADR-021](decisions.md#adr-021).** El único badge del menú estaba en Progreso, y la regla dice que el único badge es el del **trabajo pendiente que caduca**. La Bitácora no caduca | Regla 2 de la captura 02: *"un solo badge numérico en todo el menú: el del trabajo pendiente que caduca"* | ✅ Lo que caduca es el **`Commitment`**, y su lugar es `Hoy`. **No se dibuja todavía:** el `1` era un literal sin fuente. Ver §14.3 |
 | `D-07` ✅ | **Cerrada en A2.4.** No había acciones secundarias del objeto arriba a la derecha. Achieve las pone abajo y centradas | `UX01`: *"Ver progreso"* centrado al pie. `UX08`: *"VOLVER A CURSADO"* ídem. §11.9.3 las quiere en píldora de borde fino junto al título | ✅ `AccionDeObjeto` en píldora de borde fino. `CTA-009` se movió en `UX01` |

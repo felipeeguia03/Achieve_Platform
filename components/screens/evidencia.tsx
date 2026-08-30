@@ -104,16 +104,25 @@ export function Evidencia({
             </div>
           )}
           {!adjunto && (
-            <div
+            /*
+              Vacío de pantalla según §9.2: párrafo de 13 px, centrado, ancho
+              máximo ~380 px. **Sin itálica** — la itálica atenuada es el
+              tratamiento de `SIN_ASIGNAR` (ADR-019), y esto no es un dato que
+              falta: es una explicación de qué va a aparecer acá.
+            */
+            <p
               style={{
-                fontStyle: "italic",
                 color: "var(--muted-foreground)",
                 fontSize: "var(--text-label)",
-                marginTop: 6,
+                lineHeight: 1.5,
+                marginTop: 8,
+                maxWidth: 380,
+                marginLeft: "auto",
+                marginRight: "auto",
               }}
             >
               {t("EVIDENCIA.SIN_ADJUNTO")}
-            </div>
+            </p>
           )}
           {adjunto && (
             <div

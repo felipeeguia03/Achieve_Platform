@@ -66,7 +66,7 @@ describe("UX01 — el copy de la Etapa 0.1 se preserva en los cinco niveles", ()
   it("NO_ACTION_AVAILABLE (FX-ADE-NONE) — empty honesto", () => {
     renderHoy("FX-ADE-NONE");
     expect(
-      screen.getByText("No hay una próxima acción disponible. Podés revisar tus materias."),
+      screen.getByText(/Hoy no hay una acción recomendada\./),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ver materias" })).toBeInTheDocument();
     expect(screen.getByText("SIN ACCIONES POR AHORA")).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe("UX05 — el adjunto es estado local, no de dominio", () => {
 
     const enviar = screen.getByRole("button", { name: "Enviar evidencia" });
     expect(enviar).toBeDisabled();
-    expect(screen.getByText("Todavía no adjuntaste contenido.")).toBeInTheDocument();
+    expect(screen.getByText(/Todavía no adjuntaste la producción\./)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Adjuntar evidencia"));
 

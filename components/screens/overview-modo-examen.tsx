@@ -145,6 +145,13 @@ export function OverviewModoExamen({
         <div className="md:basis-1/3 space-y-4">
           <div>
             <Eyebrow>{recorrido ? t("OVERVIEW.RECORRIDO") : t("OVERVIEW.SIN_RECORRIDO")}</Eyebrow>
+            {/*
+              `C-04` elevado: sin recorrido, la sección explica qué va a
+              aparecer y por qué importa, en vez de dejar un rótulo con nada
+              debajo. Sin tercera cláusula: el recorrido no lo hace aparecer el
+              estudiante.
+            */}
+            {!recorrido && <ReglaDeNegocio>{t("OVERVIEW.SIN_RECORRIDO_EXPLICA")}</ReglaDeNegocio>}
             {/* Sin porcentaje y sin lista fija: no se listan 12 pasos. */}
             {recorrido?.map((paso) => (
               <ReglaDeNegocio key={paso.label}>

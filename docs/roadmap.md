@@ -1095,6 +1095,39 @@ y desaparece en las otras tres **miente más que un badge ausente**.
 
 ---
 
+#### ✅ `D-04` — los vacíos argumentan · [ADR-022](decisions.md#adr-022) · 30 de agosto de 2026
+
+**`C-04` elevado por el owner**, con una condición que cambia la regla más de lo que parece.
+
+| Cláusula | Cuándo |
+|---|---|
+| Qué va a aparecer | Siempre |
+| Por qué importa | Siempre |
+| **Cómo hacer que aparezca** | **Sólo si depende del estudiante** |
+
+**La condición es lo que sostiene la regla.** Cuando el dato no aparece por algo que el estudiante
+pueda hacer, el vacío queda en dos cláusulas: **no se inventa una acción falsa para completar el
+patrón**. De los tres vacíos de Achieve, sólo `EVIDENCIA.SIN_ADJUNTO` lleva las tres — la próxima
+acción la produce el Engine y el recorrido lo arma el servicio propietario.
+
+**Dos precisiones que quedaron en el ADR**, porque cambian de dónde partía la decisión: la cláusula
+*"por qué importa"* **es decisión nueva de ese día** —`design-system.md` sólo tenía la primera—, y el
+manual normativo ya pedía una tercera que §12.2 no mencionaba (*"y cómo hacer que aparezca"*), que
+entró condicional.
+
+**`OVERVIEW.SIN_RECORRIDO` era un rótulo con nada debajo**, el caso más puro del defecto.
+**`HOY.VACIO` pasó a decir *"Hoy no hay"*** en vez de *"No hay"*: es una ausencia confirmada por el
+ADE, no una carga pendiente, y el copy no debe dejar creer que algo está por llegar.
+
+**Y el vacío dejó de usar itálica.** La itálica atenuada es el tratamiento de `SIN_ASIGNAR`
+([ADR-019](decisions.md#adr-019)): un vacío que explica **no es un dato que falta**, y pintarlos
+igual rompía la distinción que `P-09` obliga a sostener.
+
+**Dos guards, los dos probados contra su regresión:** ninguno de los tres vacíos puede volver a ser
+una sola frase de ausencia, y **sólo lleva instrucción el que el estudiante puede resolver**.
+
+---
+
 ### Done cuando…
 
 - [ ] Las nueve superficies viven dentro del shell, sin haber cambiado su contenido ni sus estados

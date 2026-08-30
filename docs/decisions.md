@@ -68,6 +68,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-019](#adr-019) | El dock inferior no se construye; `Ausencia` ocupa su etapa | `ACCEPTED` | [ADR-018](#adr-018) |
 | [ADR-020](#adr-020) | Cuántas clases de ausencia distingue Achieve, y con qué palabras | `PENDING` | [ADR-019](#adr-019) |
 | [ADR-021](#adr-021) | Qué es, en Achieve, el «trabajo pendiente que caduca» | `ACCEPTED` | — |
+| [ADR-022](#adr-022) | `C-04` elevado: el vacío argumenta, con tercera cláusula condicional | `ACCEPTED` | — |
 
 ---
 
@@ -1281,3 +1282,75 @@ de los que vencen— no hace falta contestarlo mientras el badge no se dibuje.
 - Un guard nuevo impide que vuelva a colarse un contador literal sin fuente.
 - **Sigue habiendo cero badges, que es lo que la regla pide** mientras no haya uno que se gane el
   lugar: *si todo tiene badge, nada tiene badge*.
+
+---
+
+## ADR-022 — `C-04` elevado: el vacío argumenta, y la tercera cláusula es condicional
+
+**Estado:** `ACCEPTED` · 30 ago 2026 · **decidido por el owner**
+**Toca:** `design-system.md` §4.4 y §7, `design-system-capturas.md` §12.2 y §14.2 (`D-04`).
+**Cierra:** §12.2, abierta desde que se escribió `design-system-capturas.md`.
+
+### Contexto
+
+`design-system-capturas.md` §1.4 registró el hallazgo más fuerte de las capturas: el vacío del panel
+de contactos **no dice qué va a aparecer, dice por qué importa que aparezca**.
+
+> *"Sin contactos cargados. Es el dato que hace que la cuenta se pueda atender sin preguntarle a
+> quien la abrió."*
+
+§12.2 lo dejó como propuesta con un argumento en contra escrito: eleva la deuda de contenido que
+`C-07` ya declara, y *"cada vacío pasa de una frase a dos, y las dos mienten si cambia la regla"*.
+
+**Dos precisiones sobre qué estaba escrito y qué no**, porque el ADR tiene que ser honesto sobre su
+propio punto de partida:
+
+1. **`design-system.md` tenía sólo la primera cláusula:** *"Los estados vacíos explican qué va a
+   aparecer"*. **La cláusula «por qué importa» es decisión nueva del 30 de agosto de 2026**, no algo
+   que ya estuviera aprobado y sólo faltara aplicar.
+2. **El manual normativo tenía una tercera que §12.2 no menciona.** `design-system-source.md`:
+   *"C-04 (DEBERÍA) Los estados vacíos explican qué va a aparecer ahí **y cómo hacer que
+   aparezca**."* Es distinta de «por qué importa», y ya era normativa.
+
+### Decisión
+
+**`C-04` queda con tres cláusulas, y la tercera es condicional:**
+
+| Cláusula | Cuándo |
+|---|---|
+| **Qué va a aparecer** | Siempre |
+| **Por qué importa** | Siempre |
+| **Cómo hacer que aparezca** | **Sólo si la aparición depende de una acción del estudiante** |
+
+**La condición es la parte que importa.** Cuando el dato no aparece por algo que el estudiante pueda
+hacer, el vacío queda en **dos cláusulas**. **No se inventa una acción falsa para completar el
+patrón**: darle una palanca que no tiene es peor que un vacío corto, y es exactamente la clase de
+promesa que el resto del producto evita.
+
+Se ve en los tres vacíos que la decisión tocó:
+
+| Vacío | Cláusulas | Por qué |
+|---|---|---|
+| `EVIDENCIA.SIN_ADJUNTO` | **3** | El estudiante adjunta. La palanca es suya |
+| `HOY.VACIO` | **2** | La próxima acción la produce el Academic Decision Engine |
+| `OVERVIEW.SIN_RECORRIDO` | **2** | El recorrido lo arma el servicio propietario |
+
+**Tratamiento visual.** Párrafo de `--text-label`, ancho máximo ~380 px (§9.2). **Nunca itálica
+atenuada:** ése es el tratamiento de `SIN_ASIGNAR` ([ADR-019](#adr-019)), y **un vacío que explica no
+es un dato que falta**. Usar el mismo gris en itálica para las dos cosas rompe la distinción que
+`P-09` obliga a sostener.
+
+### Qué responde al argumento en contra de §12.2
+
+§12.2 objetaba que *"las dos frases mienten si cambia la regla"*. Sigue siendo cierto, y por eso la
+deuda queda **acotada, no negada**: son tres vacíos, todos en `lib/content/es-AR.ts` con ID, que es
+lo que `C-07` pide justamente para que una regla que cambia se corrija en un lugar.
+
+### Consecuencias
+
+- **`OVERVIEW.SIN_RECORRIDO` era un rótulo con nada debajo** — el caso más puro del defecto. Ahora la
+  sección explica. Se agregó `OVERVIEW.SIN_RECORRIDO_EXPLICA`; el rótulo no cambió.
+- **`HOY.VACIO` pasó a decir *"Hoy no hay"* en vez de *"No hay"***: es una **ausencia confirmada**
+  —el ADE respondió que no hay recomendación—, no una carga pendiente, y el copy no debe dejar creer
+  que algo está por llegar.
+- `D-04` de §14.2 queda cerrada.

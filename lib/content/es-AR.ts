@@ -138,7 +138,18 @@ export const copy = {
   "HOY.MATERIAS": "Materias",
   "HOY.PAGINACION": "de",
   "HOY.ULTIMO_AVANCE": "Último avance:",
-  "HOY.VACIO": "No hay una próxima acción disponible. Podés revisar tus materias.",
+  /**
+   * `C-04` elevado. **Dos cláusulas, no tres:** la próxima acción la produce el
+   * Academic Decision Engine, no el estudiante, así que decirle cómo hacerla
+   * aparecer sería inventarle una palanca que no tiene.
+   *
+   * *"Hoy no hay"* y no *"todavía no hay"*: es una **ausencia confirmada** —el
+   * ADE respondió que no hay recomendación—, no una carga pendiente. La salida
+   * a materias se conserva: es una alternativa, no la forma de hacer aparecer
+   * la acción.
+   */
+  "HOY.VACIO":
+    "Hoy no hay una acción recomendada. Acá aparece la que conviene hacer ahora: es lo que te evita tener que decidir por dónde empezar. Mientras tanto, podés revisar tus materias.",
 
   // Estado general por nivel de precedencia.
   "HOY.ESTADO.ACTION_RECOMMENDED": "BAJO CONTROL",
@@ -216,7 +227,16 @@ export const copy = {
   "EVIDENCIA.ESPERADA": "Evidencia esperada",
   "EVIDENCIA.ADJUNTAR": "Adjuntar evidencia",
   "EVIDENCIA.PERMITIDO_PREFIJO": "Permitido:",
-  "EVIDENCIA.SIN_ADJUNTO": "Todavía no adjuntaste contenido.",
+  /**
+   * `C-04` elevado (§12.2). El vacío dice las tres cosas: **qué va a aparecer**,
+   * **por qué importa** y **cómo hacer que aparezca**.
+   *
+   * No repite lo que ya está al lado —los formatos permitidos y la cadena de
+   * `EVIDENCIA.ENVIAR_IMPLICA`— y no promete revisión ni suficiencia: *"la
+   * acción sigue esperando"* es un hecho observable, no un veredicto (`C-06`).
+   */
+  "EVIDENCIA.SIN_ADJUNTO":
+    "Todavía no adjuntaste la producción. Es lo que se envía como evidencia de esta acción: mientras no esté, la acción sigue esperando. Hacé clic para adjuntarla.",
   "EVIDENCIA.CARGADA_SUFIJO": "cargada",
   // Enviar no es demostrar suficiencia; suficiencia no es validación
   // (AGENTS.md §2.1). Esta frase es exactamente esa cadena de no-implicación.
@@ -267,6 +287,16 @@ export const copy = {
   "OVERVIEW.EXAMEN": "EXAMEN",
   "OVERVIEW.RECORRIDO": "RECORRIDO VIGENTE",
   "OVERVIEW.SIN_RECORRIDO": "RECORRIDO TODAVÍA NO DISPONIBLE",
+  /**
+   * `C-04` elevado. **Dos cláusulas:** el recorrido lo arma el servicio
+   * propietario, no el estudiante. Antes esta sección mostraba un rótulo y
+   * debajo nada — el caso más puro de *"el vacío dice que no hay dato"*.
+   *
+   * No promete cuándo va a estar: `VI.8` §3 pide **degradación honesta**, y una
+   * fecha inventada sería peor que la ausencia.
+   */
+  "OVERVIEW.SIN_RECORRIDO_EXPLICA":
+    "Acá va a aparecer el orden de pasos de esta preparación. Es lo que te dice por dónde seguir sin tener que reconstruirlo vos.",
   "OVERVIEW.ULTIMO_CAMBIO": "ÚLTIMO CAMBIO",
   "OVERVIEW.PENDIENTE": "PENDIENTE",
   "OVERVIEW.DESPUES": "Después:",

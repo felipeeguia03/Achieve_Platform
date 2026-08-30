@@ -294,6 +294,30 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 | `P-12` | Los estados de carga tienen la forma del contenido real | Pendiente: falta la primitiva `Esqueleto` |
 | `P-13` | Canal de feedback de alcance angosto | `N/A` en el Track A |
 
+### 4.4 `C-04` elevado — el vacío argumenta
+
+**Elevado el 30 de agosto de 2026** por [ADR-022](decisions.md#adr-022). Antes pedía una sola cosa:
+*"los estados vacíos explican qué va a aparecer"*. Ahora pide hasta tres.
+
+| Cláusula | Obligatoria | Ejemplo |
+|---|---|---|
+| **Qué va a aparecer** | Siempre | *"Acá va a aparecer el orden de pasos de esta preparación."* |
+| **Por qué importa** | Siempre | *"Es lo que te dice por dónde seguir sin tener que reconstruirlo vos."* |
+| **Cómo hacer que aparezca** | **Sólo si depende del estudiante** | *"Hacé clic para adjuntarla."* |
+
+**La tercera es condicional, y esa condición es la parte importante de la regla.** Cuando la
+aparición del dato **no** depende del estudiante —el recorrido lo arma el servicio propietario, la
+próxima acción la produce el Engine—, el vacío queda en **dos cláusulas**. No se inventa una acción
+falsa para completar el patrón: darle una palanca que no tiene es peor que un vacío corto.
+
+**Tratamiento.** Párrafo, `--text-label`, ancho máximo ~380 px (§9.2 de
+[`design-system-capturas.md`](design-system-capturas.md)). **Nunca en itálica atenuada**: ése es el
+tratamiento de `SIN_ASIGNAR` ([ADR-019](decisions.md#adr-019)), y un vacío que explica **no es un
+dato que falta** — usar el mismo tratamiento para las dos cosas rompe la distinción que `P-09` pide.
+
+**Lo que el vacío no hace:** no promete cuándo va a estar el dato, no emite veredicto sobre el
+estudiante (`C-06`) y no repite lo que ya está al lado.
+
 ### 4.3 `P-03` — mayormente `N/A`, y es una decisión fuerte
 
 El manual exige anclar toda magnitud de máquina a una escala de juicio humano. **En Achieve no hay
@@ -313,7 +337,7 @@ que el manual exime explícitamente de anclaje.
 | `C-01` | Una sola persona gramatical | **Voseo rioplatense en todo el producto.** *"Entregá"*, *"Subí"*, *"Comprometerme"*. El anti-patrón `A-05` es exactamente una grieta de tono en la pantalla más importante |
 | `C-02` | Un concepto = una palabra | El glosario de [`product.md`](product.md) §3 es normativo. `A-04` es la deriva de vocabulario |
 | `C-03` | Placeholders con ejemplos reales | Nunca *"Ingresá un valor"* |
-| `C-04` | Los estados vacíos explican qué va a aparecer | *"Tu trabajo registrado en esta materia va a aparecer acá."* |
+| `C-04` | **Elevado ([ADR-022](decisions.md#adr-022)).** El vacío explica **qué va a aparecer** y **por qué importa**, y —**sólo si la aparición depende del estudiante**— **cómo hacer que aparezca**. Ver §4.4 | *"Acá va a aparecer el orden de pasos de esta preparación. Es lo que te dice por dónde seguir sin tener que reconstruirlo vos."* |
 | `C-05` | Nombrá roles en la situación, no estados de base | *"Compromiso incumplido"*, no *"state: MISSED"* |
 | `C-06` | Las etiquetas describen, no juzgan | `INSUFFICIENT` se dice *"Todavía no cumple el criterio mínimo"*, nunca *"Fallaste"* |
 | `C-07` | Las frases de regla en archivo de contenido versionado | ⚠️ **Deuda: hoy están hardcodeadas** |
