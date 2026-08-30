@@ -65,6 +65,8 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-016](#adr-016) | Ninguna CTA del registro lleva a `UX07` | `PENDING` | Golden Path recorrible (0.8) |
 | [ADR-017](#adr-017) | Las dos CTAs ambiguas de `product.md` §10.2 | `ACCEPTED` | — |
 | [ADR-018](#adr-018) | El lenguaje visual sale de las capturas, y hay que mirarlas | `ACCEPTED` | — |
+| [ADR-019](#adr-019) | El dock inferior no se construye; `Ausencia` ocupa su etapa | `ACCEPTED` | [ADR-018](#adr-018) |
+| [ADR-020](#adr-020) | Cuántas clases de ausencia distingue Achieve, y con qué palabras | `PENDING` | [ADR-019](#adr-019) |
 
 ---
 
@@ -1090,3 +1092,120 @@ Cuando los dos hablen del mismo píxel, sigue mandando la spec, **y se registra 
 - El riesgo que este ADR **no** elimina: mientras las capturas no viajen, un agente en otra máquina
   sólo tiene la extracción textual. Por eso la sincronización de `design-system-capturas.md` deja de
   ser una cortesía y pasa a ser parte del trabajo.
+
+---
+
+## ADR-019 — El dock inferior no se construye, y la primitiva `Ausencia` ocupa su etapa
+
+**Estado:** `ACCEPTED` · 30 ago 2026
+**Toca:** `roadmap.md` (Fase A2), `design-system-capturas.md` §12.8, `design-system.md` §3.2.
+**Corrige:** [ADR-018](#adr-018), que enumeró el dock entre los patrones a tomar sin advertir que
+`design-system-capturas.md` §7.4 ya lo había descartado.
+
+### Contexto
+
+El roadmap de la Fase A2 abrió una etapa **A2.3 — Dock inferior**: *"lo que quedó abierto,
+persistente entre superficies"*. Al abrir las capturas para especificarla —regla de `AGENTS.md`
+§1.5— resultó que **la fuente misma dice que no**.
+
+La captura 07 del manual visual documenta el dock y cierra la sección con dos bloques literales:
+
+> **Dónde no:** productos de tarea única, flujos lineales, o cualquier cosa que se use
+> mayoritariamente en móvil. **Ahí el dock es puro costo.**
+
+> **Requisitos innegociables del multi-ventana.** Si vas a hacer ventanas internas, **todo** esto es
+> obligatorio. Si no podés cumplirlo, **no lo hagas**: una vista dividida de dos paneles resuelve el
+> 80 % del problema al 10 % del costo.
+>
+> 1. URL por ficha · 2. Botón Atrás definido · 3. Trampa de foco y orden de tabulación ·
+> 4. Jerarquía de `Escape` con dos capas · 5. Comportamiento del dock a escala · 6. Límite duro de
+> fichas abiertas.
+
+**Achieve es exactamente el caso que el manual excluye:** un flujo lineal (`UX01`→`UX09`) de una
+decisión por pantalla (`DD9`). No tiene dos objetos abiertos a la vez porque su unidad de trabajo es
+**una Action**.
+
+`design-system-capturas.md` ya lo había registrado en **tres lugares distintos** —§7.4 (*"requiere
+multiventana"*), §10.1 (*"no aplica"*) y §11.3 (*"lo que no se copia aunque esté bien hecho"*)— y
+`A-07`, uno de los nueve anti-patrones catalogados, **es un defecto del dock**: ya trunca títulos
+con dos elementos abiertos.
+
+**De dónde salió el error.** La tabla de brecha de la Fase A2 se armó mirando las capturas y
+listando lo que Achieve no tenía. El dock entró en esa lista por ser visible, sin cruzarlo contra
+§7.4. Es la misma falla que produjo el defecto `A-03` en la Etapa A2.1: **tomar la superficie de una
+captura en vez de su razonamiento.**
+
+### Decisión
+
+**1. No se construye el dock inferior.** No hay etapa, no hay componente, no hay deuda pendiente:
+queda descartado, no diferido.
+
+**2. El trabajo que el dock decía resolver ya está resuelto.** *"No perder el lugar"* en un producto
+lineal lo contesta el **breadcrumb** de la Etapa A2.1, que muestra el camino completo y el objeto
+actual. Un dock encima duplicaría esa función y agregaría una segunda lista de destinos que compite
+con la navegación lateral.
+
+**3. Un test estático prohíbe reintroducirlo**, del mismo modo que los tests de la Etapa 0.3
+verifican la dirección de dependencias. Una regla sin test se pierde en dos meses.
+
+**4. La etapa A2.3 se reasigna a la primitiva `Ausencia`**, que sí sale de las capturas (§1.6, tres
+tratamientos observados en columnas contiguas de la misma tabla), sí está declarada faltante
+(`design-system.md` §3.2) y sí sirve al invariante más caro de Achieve: **sin datos no es cero**.
+
+### Consecuencias
+
+- La Fase A2 pasa de **6 etapas a 5**. Se achica quitando trabajo que la propia fuente desaconseja.
+- ADR-018 queda corregido en un punto: su enumeración de patrones a tomar incluía el dock. **El resto
+  de ADR-018 no se toca.**
+- La regla de `AGENTS.md` §1.5 funcionó como se esperaba —abrir las capturas antes de tocar UI
+  evitó construir la etapa equivocada—, pero funcionó **tarde**: el error ya estaba escrito en el
+  roadmap. Se agrega a §1.5 el paso de cruzar contra §7.4/§11.3 **antes de anotar un patrón como
+  brecha**, no sólo antes de implementarlo.
+
+---
+
+## ADR-020 — Cuántas clases de ausencia distingue Achieve, y con qué palabras
+
+**Estado:** `PENDING` · abierta el 30 ago 2026 · **la cierra una persona**
+**Bloquea:** nada. La Etapa A2.3 entregó la primitiva; esto refina qué dato usa cuál.
+**Sale de:** [ADR-019](#adr-019), al migrar el booleano `ausente` a tipos.
+
+### Contexto
+
+`P-09` exige distinguir **vacío, no-cargado, sin-asignar y cero**. La Etapa A2.3 tipó los
+tratamientos y resolvió tres de los cuatro sin inventar nada: *cero real* es un valor con cifra
+tabular, *no cargado* no ocurre bajo la regla de cero red del Track A, y *no hay dato* se resuelve
+omitiendo la fila entera (*omitir, no inventar*).
+
+Queda uno abierto, y se ve en un fixture que ya se contradice a sí mismo. `FX-LOCAL-PROG-SIN-CAMBIO-EXPLICITO`
+declara *"los tres estados de no-cambio, **distinguibles entre sí**"* y lista:
+
+| Fila | Qué significa | Cómo se ve |
+|---|---|---|
+| *Recorrido: conserva su estado* | El owner **declaró** que no hubo cambio | itálica atenuada |
+| *Dominio: no evaluado* | La dimensión **nunca se midió** | itálica atenuada |
+| *Confianza: alta · declarada ayer* | Dato presente | normal |
+
+**Los dos primeros son hechos distintos y se ven igual.** Un no-cambio declarado es información
+positiva —alguien miró y dijo que no cambió—; *no evaluado* es la ausencia de esa mirada. El
+invariante *"sin datos no es cero"* separa justamente esas dos cosas, y hoy la interfaz las funde.
+
+### Qué hay que decidir
+
+1. **¿Son dos clases de ausencia o son dos copys de la misma clase?** Si son dos, hace falta un
+   tratamiento visual más, y `design-system-capturas.md` §1.6 sólo tiene tres, todos ya asignados.
+2. **¿Cuál es el vocabulario canónico?** `design-system.md` §4.1 nombra *"no evaluado"* ≠ *"no
+   disponible"* ≠ `0`. *"conserva su estado"* no está en esa lista y aparece sólo en un fixture.
+3. **¿Un no-cambio declarado es una ausencia?** Se puede argumentar que **no** lo es —es un dato
+   confirmado por una persona— y que entonces debería verse como dato presente, con su provenance.
+   Esa lectura cerraría la decisión sin agregar tratamiento visual, pero **cambia lo que la pantalla
+   afirma**, y eso es dominio.
+
+### Por qué no lo cierra un agente
+
+La pregunta 3 decide **qué afirma el producto** sobre un dato, no cómo se pinta. `AGENTS.md` §1.5 es
+explícito: qué dice la pantalla lo manda la spec, no las capturas. Y ninguna spec `VI.*` define
+*"conserva su estado"*.
+
+**Mientras siga abierta:** las dos filas comparten `SIN_ASIGNAR`, que es el comportamiento que ya
+tenían. No se degradó nada; se dejó de afirmar que estaban distinguidas cuando no lo estaban.

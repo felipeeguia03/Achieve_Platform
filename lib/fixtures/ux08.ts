@@ -37,7 +37,7 @@ const RECORRIDO: PasoDelRecorrido[] = [
   { label: "Práctica dirigida", estado: "ACTUAL" },
 ];
 
-const PENDIENTE_BASE: FilaDato[] = [{ label: "Dominio", valor: "no evaluado", ausente: true }];
+const PENDIENTE_BASE: FilaDato[] = [{ label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" }];
 
 const nada: OverviewInput = {
   action: "NONE",
@@ -417,7 +417,7 @@ export const FX_LOCAL_OV_CONFIANZA_VS_DOMINIO = esc(
     ctaPrimaria: { texto: "ABRIR PASO ACTUAL", habilitada: true },
     pendiente: [
       { label: "Confianza", valor: "alta · declarada ayer" },
-      { label: "Dominio", valor: "no evaluado", ausente: true },
+      { label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" },
     ],
   },
 );

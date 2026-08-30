@@ -875,6 +875,40 @@ documento.
 
 ---
 
+### 12.8 El dock inferior — ✅ `RESUELTO` por [ADR-019](decisions.md#adr-019): no se construye
+
+**Registrado el 30 de agosto de 2026.** No era una decisión abierta: era un **choque entre dos
+documentos del propio repositorio**, y §1.5 de [`AGENTS.md`](../AGENTS.md) exige que un choque así
+se registre acá en vez de resolverse en silencio.
+
+| Documento | Qué decía |
+|---|---|
+| `roadmap.md`, tabla de brecha de la Fase A2 | *"Dock inferior con lo que quedó abierto → **no existe**"*, como brecha a cerrar |
+| **Este documento**, §7.4 · §10.1 · §11.3 | *"requiere multiventana"* · *"no aplica"* · *"lo que no se copia aunque esté bien hecho"* |
+
+Ganó este documento, por tres razones que no dependen de quién escribió cada línea:
+
+1. **La captura 07 lo dice ella misma.** *"**Dónde no:** productos de tarea única, **flujos
+   lineales**, o cualquier cosa que se use mayoritariamente en móvil. Ahí el dock es puro costo."*
+2. **Los seis requisitos innegociables del multiventana** cierran con *"si no podés cumplirlo, no lo
+   hagas: una vista dividida de dos paneles resuelve el 80 % del problema al 10 % del costo"*.
+3. **`A-07` es un defecto del dock**, no de su implementación: ya trunca títulos con dos elementos
+   abiertos. Está en la lista de anti-patrones de §11.2.
+
+**Qué hace Achieve en su lugar.** El trabajo real —*no perder el lugar*— lo resuelve el **breadcrumb**
+de la Etapa A2.1, que muestra el camino completo y el objeto actual. Un dock encima sería una segunda
+lista de destinos compitiendo con la navegación lateral.
+
+**Cómo entró el error.** La tabla de brecha se armó **mirando las capturas y listando lo que Achieve
+no tenía**, sin cruzar cada patrón contra §7.4 y §11.3. Es el mismo mecanismo que produjo `A-03` en
+la A2.1. La corrección quedó en `AGENTS.md` §1.5: **cruzar contra §7.4/§11.3 antes de anotar un
+patrón como brecha**, no sólo antes de implementarlo.
+
+**Hay un test que lo sostiene** (`tests/ausencia.test.tsx`): ningún archivo de `app/`,
+`components/` o `lib/` puede llamarse dock ni multiventana, y este documento tiene que seguir
+descartándolo en más de un lugar. Una regla que vive sólo en un markdown vuelve en dos meses.
+
+
 ## 13. Qué le agrega este documento a `design-system.md`
 
 Registro de reconciliación, para cuando se sincronicen los documentos.

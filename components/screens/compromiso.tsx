@@ -46,7 +46,7 @@ export function Compromiso({
         <div data-original>
           <Eyebrow>{t("COMPROMISO.ORIGINAL")}</Eyebrow>
           {original.map((f) => (
-            <Fila key={f.label} label={f.label} value={f.valor} ausente={f.ausente} />
+            <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
           ))}
           <ReglaDeNegocio>{t("COMPROMISO.ORIGINAL_NO_EDITABLE")}</ReglaDeNegocio>
         </div>

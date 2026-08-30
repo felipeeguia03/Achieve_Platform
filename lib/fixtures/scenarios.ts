@@ -369,8 +369,8 @@ export const FX_LOCAL_PROG_VALIDATED: Escenario = {
     ],
     fuenteCambio: "Evidence validada",
     sinCambioConfirmado: [
-      { label: "Recorrido", valor: "conserva su estado", ausente: true },
-      { label: "Dominio", valor: "no evaluado", ausente: true },
+      { label: "Recorrido", valor: "conserva su estado", ausencia: "SIN_ASIGNAR" },
+      { label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" },
       { label: "Confianza", valor: "alta · declarada ayer" },
     ],
     queSigue: "Reforzar cambio de variables.",

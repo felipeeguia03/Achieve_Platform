@@ -67,7 +67,7 @@ export function ProgresoBitacora({
         <div>
           <Eyebrow>{t("PROGRESO.CAMBIO_CONFIRMADO")}</Eyebrow>
           {cambioConfirmado.map((f) => (
-            <Fila key={f.label} label={f.label} value={f.valor} ausente={f.ausente} />
+            <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
           ))}
           {fuenteCambio && (
             <p
@@ -87,7 +87,7 @@ export function ProgresoBitacora({
         <div>
           <Eyebrow>{t("PROGRESO.SIN_CAMBIO")}</Eyebrow>
           {sinCambioConfirmado.map((f) => (
-            <Fila key={f.label} label={f.label} value={f.valor} ausente={f.ausente} />
+            <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
           ))}
         </div>
       )}

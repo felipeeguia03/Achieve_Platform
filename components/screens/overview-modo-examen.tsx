@@ -150,7 +150,7 @@ export function OverviewModoExamen({
             <div>
               <Eyebrow>{t("OVERVIEW.ULTIMO_CAMBIO")}</Eyebrow>
               {cambioConfirmado.map((f) => (
-                <Fila key={f.label} label={f.label} value={f.valor} ausente={f.ausente} />
+                <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
               ))}
               {fuenteProgreso && (
                 <p
@@ -170,7 +170,7 @@ export function OverviewModoExamen({
             <div>
               <Eyebrow>{t("OVERVIEW.PENDIENTE")}</Eyebrow>
               {pendiente.map((f) => (
-                <Fila key={f.label} label={f.label} value={f.valor} ausente={f.ausente} />
+                <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
               ))}
             </div>
           )}

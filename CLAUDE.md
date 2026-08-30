@@ -78,6 +78,10 @@ los estados críticos son alcanzables y el Golden Path se recorre por clic.
 **Falta ejecutar el test de comprensión de 10 segundos con personas reales.** El guion está en
 [`docs/guion-focus-group.md`](docs/guion-focus-group.md); correrlo no lo puede hacer un agente.
 
+**Fase A2 — Shell de aplicación.** 🟡 **3 / 5 etapas.** Navegación lateral y topbar, paleta `⌘K` y
+la primitiva `Ausencia`. **Eran 6 etapas:** [ADR-019](docs/decisions.md#adr-019) descartó el dock
+inferior porque la fuente misma lo desaconseja para flujos lineales.
+
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
 **Ninguna pantalla importa un fixture** y **`lib/navigation/` no importa `lib/fixtures/`**; hay tests

@@ -822,9 +822,9 @@ dos exigen una persona y datos que el Track A no tiene.
 
 ---
 
-## Fase A2 — Shell de aplicación · ⬜ NO INICIADA
+## Fase A2 — Shell de aplicación · 🟡 EN CURSO
 
-**Estado:** ⬜ **NO INICIADA · sin bloqueos.**
+**Estado:** 🟡 **3 / 5 etapas · sin bloqueos.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
 **Abierta por:** [ADR-018](decisions.md#adr-018), 30 de agosto de 2026.
 
 **Objetivo.** Que Achieve **se parezca al software de `docs/diseño/`**. Las nueve superficies ya
@@ -842,7 +842,7 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 |---|---|
 | **Navegación lateral** persistente, colapsable, con el ítem activo en píldora y contadores | No hay navegación: se llega por URL o por CTA |
 | **Topbar** con breadcrumb, buscador `⌘K`, notificaciones y selector de cuenta | No hay topbar |
-| **Dock inferior** con lo que quedó abierto | No existe |
+| ~~**Dock inferior** con lo que quedó abierto~~ | **Descartado.** La fuente misma lo desaconseja para flujos lineales ([ADR-019](decisions.md#adr-019)) |
 | **Controles segmentados** en píldora para alternar vistas | No existen |
 | **Densidad de panel**: tarjeta con título, subcopy explicativa y contenido tabular | Tarjetas de una sola columna, centradas |
 | **Vacíos que explican** qué va a aparecer y por qué importa | Los vacíos dicen que no hay dato, sin explicar |
@@ -853,7 +853,7 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 |---|---|---|
 | A2.1 | **Navegación lateral + topbar** ✅ | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
 | A2.2 | **Buscador `⌘K`** ✅ | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
-| A2.3 | **Dock inferior** | Lo que quedó abierto, persistente entre superficies. **Sin `localStorage`:** estado de sesión |
+| A2.3 | **Ausencia tipada** ✅ | La primitiva que `design-system.md` §3.2 declaraba faltante. **Reemplaza al dock**, descartado por [ADR-019](decisions.md#adr-019) |
 | A2.4 | **Segmentados y densidad de panel** | Las primitivas que faltan, extraídas a `design-system.tsx` |
 | A2.5 | **Las nueve superficies dentro del shell** | Cada `UX01`–`UX09` recolocada, **sin tocar su contenido** |
 | A2.6 | **Vacíos que explican** | `C-04` elevado: el vacío dice qué va a aparecer **y por qué importa** |
@@ -928,6 +928,64 @@ hay que adivinar no es una vía de escape.
    prueba.
 2. **`setState` dentro de un efecto**, que encadena renders. Se resolvió remontando el diálogo en
    cada apertura en vez de resetear estado desde un efecto.
+
+#### ✅ Etapa A2.3 — `Ausencia` tipada · COMPLETA · 30 de agosto de 2026
+
+**Esta etapa era el dock. La fuente dijo que no.**
+
+Al abrir las capturas para especificarlo —regla de [`AGENTS.md`](../AGENTS.md) §1.5— la captura 07
+cierra con dos bloques literales: *"**Dónde no:** productos de tarea única, **flujos lineales**… ahí
+el dock es puro costo"*, y una lista de **seis requisitos innegociables** del multiventana que
+termina en *"si no podés cumplirlo, no lo hagas"*. Achieve es exactamente el caso excluido: nueve
+superficies encadenadas, una decisión por pantalla.
+
+`design-system-capturas.md` ya lo descartaba en **§7.4, §10.1 y §11.3**, y `A-07` —uno de los nueve
+anti-patrones catalogados— **es un defecto del dock**. La tabla de brecha de esta fase lo listó
+igual, por ser visible. **Es la misma falla que produjo `A-03` en la A2.1: tomar la superficie de
+una captura en vez de su razonamiento.** Registrado en [ADR-019](decisions.md#adr-019).
+
+**La etapa se reasignó** a la primitiva que sí faltaba y que las capturas sí especifican.
+
+| Criterio | Resultado |
+|---|---|
+| Primitiva `Ausencia` | ✅ `design-system.md` §3.2 la declaraba faltante desde el primer día |
+| `P-09` verificable | ✅ los tratamientos se distinguen **sin color** — test que compara forma, no gris |
+| El dock no vuelve | ✅ guard estático sobre `app/`, `components/` y `lib/` |
+| `lint` · `build` · `test` | ✅ verde · verde · **379 tests en 17 archivos** |
+
+**Lo que se encontró al migrar.** El booleano `ausente` marcaba tres cosas distintas con el mismo
+gris en itálica:
+
+| Fixture | Qué era en realidad |
+|---|---|
+| *Dominio: no evaluado* | Una ausencia. Correcto |
+| *Recorrido: conserva su estado* | Un no-cambio **declarado por el owner**. Ver [ADR-020](decisions.md#adr-020) |
+| *Estado: **incumplido*** | **No es una ausencia**: es un dato presente y adverso |
+
+El tercero importa más de lo que parece. Atenuar *"incumplido"* con el gris del vacío es **ablandar
+visualmente el único estado que el dominio prohíbe ablandar** — *un `Commitment` `MISSED` nunca se
+edita para parecer cumplido*. Ahora lleva chip de urgencia, que es lo que §1.6 le da al dato adverso.
+
+**Dos de los cuatro estados de `P-09` no se dibujaron, y es deliberado:**
+
+- ***No hay dato*** → §1.6 usa em-dash porque en una **tabla** la columna conserva su lugar. Achieve
+  no es una tabla (§12.6) y su regla es más fuerte: **omitir, no inventar**; la fila desaparece
+  entera. Un em-dash sería copiar la superficie otra vez.
+- ***No cargado*** → es la primitiva `Esqueleto`, y bajo **cero red** no ocurre. Dibujar un esqueleto
+  para una carga que no existe es prometer lo que no se sostiene.
+
+**Un defecto que los tests unitarios no vieron.** `Fila` dibujaba el chip bien y `FilaDato` llevaba
+el `tono`, pero **seis de las siete llamadas no lo pasaban**: *"incumplido"* salía como texto común.
+Verde en 378 tests, mal en la pantalla. **Lo encontró abrir el navegador**, que es exactamente para
+lo que sirve. Se corrigió y se agregó el guard que faltaba: si una llamada proyecta `ausencia`,
+proyecta también `tono` — son las dos mitades de *qué clase de cosa es este valor*.
+
+**Lo que quedó abierto y no se cerró solo:** [ADR-020](decisions.md#adr-020) `PENDING`. Un fixture
+declaraba *"tres estados de no-cambio, distinguibles entre sí"* y **dos de los tres se ven igual**.
+Distinguirlos exige decidir si un no-cambio declarado es una ausencia o un dato — que es dominio, no
+estilo. Se dejó de afirmar la distinción en vez de fabricarla.
+
+---
 
 ### Done cuando…
 
@@ -1153,7 +1211,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase | Estado | Etapas completas |
 |---|---|---|
 | Fase 0 — Cerrar Track A | 🟡 **8 / 8 etapas · falta el test con personas reales** | 8 / 8 |
-| Fase A2 — Shell de aplicación | ⬜ **NO INICIADA · sin bloqueos** | 0 / 6 |
+| Fase A2 — Shell de aplicación | 🟡 **EN CURSO · sin bloqueos** | 3 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

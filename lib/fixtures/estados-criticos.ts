@@ -10,6 +10,7 @@ import type { Escenario } from "./types";
 import type {
   CompromisoProps,
   EvidenciaProps,
+  FilaDato,
   MateriaProps,
   ProgresoProps,
   ProximaAccionProps,
@@ -59,7 +60,7 @@ export const FX_LOCAL_MAT_CONFIANZA_VS_DOMINIO = esc(
       estado: "CONFIANZA_VS_DOMINIO",
       dimensiones: [
         { label: "Confianza", valor: "alta · declarada ayer" },
-        { label: "Dominio", valor: "no evaluado", ausente: true },
+        { label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" },
         { label: "Práctica", valor: "12 ejercicios" },
         { label: "Recorrido", valor: "U1–U3" },
         { label: "Recencia", valor: "hace 2 días" },
@@ -284,10 +285,18 @@ const compromisoBase: CompromisoProps = {
   ctaPrimaria: null,
 };
 
-const ORIGINAL = [
+/**
+ * El compromiso original de una renegociación. **"Incumplido" no es una
+ * ausencia: es un dato presente y adverso**, y hasta la Etapa A2.3 se dibujaba
+ * en la itálica atenuada reservada al vacío. Eso ablandaba visualmente el
+ * único estado que el dominio prohíbe ablandar —un `Commitment` `MISSED` nunca
+ * se edita para parecer cumplido—. Chip de urgencia, que es lo que
+ * `design-system-capturas.md` §1.6 da al dato adverso.
+ */
+const ORIGINAL: FilaDato[] = [
   { label: "Fecha", valor: "Mié 27 ago" },
   { label: "Hora", valor: "19:00" },
-  { label: "Estado", valor: "incumplido", ausente: true },
+  { label: "Estado", valor: "incumplido", tono: "urgencia" },
 ];
 
 function compromiso(
@@ -626,10 +635,21 @@ const progresoBase: ProgresoProps = {
   ctaPrimaria: null,
 };
 
-/** Los tres estados de no-cambio, distinguibles entre sí. */
-const NO_CAMBIO = [
-  { label: "Recorrido", valor: "conserva su estado", ausente: true },
-  { label: "Dominio", valor: "no evaluado", ausente: true },
+/**
+ * Los tres estados de no-cambio.
+ *
+ * ⚠️ **Sólo dos de los tres se distinguen visualmente hoy.** *"conserva su
+ * estado"* y *"no evaluado"* son ausencias de clase distinta —una es un
+ * no-cambio declarado por el owner, la otra es una dimensión nunca medida— y
+ * las dos caen en `SIN_ASIGNAR`. Separarlas exige decidir qué vocabulario de
+ * ausencia usa Achieve, que es una pregunta de dominio y no de estilo: queda
+ * abierta en [ADR-020](../../docs/decisions.md#adr-020).
+ *
+ * Lo que sí se distingue es *"alta · declarada ayer"*: un dato presente.
+ */
+const NO_CAMBIO: FilaDato[] = [
+  { label: "Recorrido", valor: "conserva su estado", ausencia: "SIN_ASIGNAR" },
+  { label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" },
   { label: "Confianza", valor: "alta · declarada ayer" },
 ];
 
@@ -657,7 +677,7 @@ export const FX_LOCAL_PROG_SIN_DATOS = esc(
       estadoEvidencia: { tono: "humano", texto: "Sin datos suficientes" },
       detalleEvidencia: "Todavía no hay evidencia registrada en esta unidad.",
       aviso: "Sin información suficiente para mostrar un avance.",
-      sinCambioConfirmado: [{ label: "Dominio", valor: "no evaluado", ausente: true }],
+      sinCambioConfirmado: [{ label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" }],
     },
   },
   ["C01-019", "SC-PROG-01"],

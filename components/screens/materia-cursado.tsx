@@ -156,7 +156,7 @@ export function MateriaCursado({
         <div>
           <Eyebrow>{t("MATERIA.DIMENSIONES")}</Eyebrow>
           {dimensiones.map((d) => (
-            <Fila key={d.label} label={d.label} value={d.valor} ausente={d.ausente} />
+            <Fila key={d.label} label={d.label} value={d.valor} ausencia={d.ausencia} tono={d.tono} />
           ))}
         </div>
       )}
@@ -165,18 +165,7 @@ export function MateriaCursado({
         <div>
           <Eyebrow>{t("MATERIA.UNIDADES")}</Eyebrow>
           {unidades.map((u) => (
-            <Fila
-              key={u.label}
-              label={u.label}
-              ausente={u.ausente}
-              value={
-                u.tono === "urgencia" ? (
-                  <span style={{ color: "var(--urgencia-texto)" }}>{u.valor}</span>
-                ) : (
-                  u.valor
-                )
-              }
-            />
+            <Fila key={u.label} label={u.label} value={u.valor} ausencia={u.ausencia} tono={u.tono} />
           ))}
         </div>
       )}

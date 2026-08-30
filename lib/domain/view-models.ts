@@ -27,7 +27,40 @@ export interface Chip {
 }
 
 /**
- * Una fila etiqueta/valor. `ausente` la marca como ausencia tipada, no como
+ * Los tratamientos de ausencia, tipados. `P-09` exige que vacío, no-cargado,
+ * sin-asignar y cero **se vean distinto**; un booleano `ausente` los colapsaba
+ * en uno solo, que es exactamente lo que el principio prohíbe.
+ *
+ * `design-system-capturas.md` §1.6 observa tres tratamientos en columnas
+ * contiguas de una misma tabla, y §9.2 agrega el cuarto caso. **Achieve usa
+ * dos de ellos, y resuelve los otros dos por vías más fuertes:**
+ *
+ * | Estado de `P-09` | En Achieve |
+ * |---|---|
+ * | Sin asignar | `SIN_ASIGNAR` — *itálica* atenuada, con el copy que fija la spec |
+ * | Cero real | `CERO_REAL` — el número, ink pleno, cifra tabular |
+ * | No hay dato | **la fila no se renderiza.** Ver abajo |
+ * | No cargado | **no ocurre:** el Track A es cero red |
+ *
+ * **Por qué no hay em-dash.** §1.6 pinta *"no hay dato"* con un em-dash en la
+ * celda, porque en una tabla la columna tiene que conservar su lugar. Achieve
+ * no es una tabla —§12.6 decidió tarjetas— y su regla es más fuerte:
+ * **omitir, no inventar**; si falta el contrato, la línea desaparece entera.
+ * Un em-dash acá sería copiar la superficie de la captura en vez de su
+ * razonamiento, y además dejaría un renglón que no dice nada.
+ *
+ * **`CERO_REAL` no es una ausencia: es un valor.** Está en la lista porque el
+ * checklist lo exige distinguible de las otras, y porque confundirlo con ellas
+ * es la trampa concreta que `design-system.md` §7 marca como verificable.
+ *
+ * ⚠️ **Un dato adverso tampoco es una ausencia.** *"incumplido"*, *"vencido"* o
+ * *"necesita atención"* son datos presentes, y §1.6 les da chip de color. Se
+ * expresan con `tono`, nunca con `ausencia`.
+ */
+export type TipoDeAusencia = "SIN_ASIGNAR" | "CERO_REAL";
+
+/**
+ * Una fila etiqueta/valor. `ausencia` la marca como ausencia tipada, no como
  * dato: se renderiza distinto porque "no evaluado" no es un valor.
  *
  * Se llama `FilaDato` y no `Fila` para no colisionar con el componente `Fila`
@@ -36,7 +69,8 @@ export interface Chip {
 export interface FilaDato {
   label: string;
   valor: string;
-  ausente?: boolean;
+  /** Qué clase de ausencia es. Ausente ⇒ el valor es un dato normal. */
+  ausencia?: TipoDeAusencia;
   /** El color lo trae el dato, nunca una comparación de string en el componente. */
   tono?: Tono;
 }

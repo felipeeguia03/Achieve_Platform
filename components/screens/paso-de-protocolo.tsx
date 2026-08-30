@@ -27,6 +27,7 @@
  */
 
 import {
+  Ausencia,
   Eyebrow,
   EstadoGeneral,
   ReglaDeNegocio,
@@ -42,23 +43,16 @@ import type { BloqueDePaso, PasoProtocoloProps } from "@/lib/domain/view-models"
  *
  * Si el contenido falta, se muestra el copy de ausencia que §27 fija —
  * *"Objetivo de este paso no disponible"*— y **no se genera** una versión
- * propia. La ausencia se ve como ausencia: itálica y color atenuado, además del
- * texto, para que la distinción sobreviva a imprimir en blanco y negro.
+ * propia. Desde la Etapa A2.3 ese tratamiento sale de la primitiva `Ausencia`
+ * y no de una copia local: era la tercera implementación del mismo estilo, y
+ * tres copias de una regla visual es la que menos conviene dejar divergir.
  */
 function Bloque({ bloque }: { bloque: BloqueDePaso }) {
-  const ausente = bloque.valor === null;
   return (
     <div data-bloque={bloque.titulo}>
       <Eyebrow>{bloque.titulo}</Eyebrow>
-      <p
-        style={{
-          fontSize: "var(--text-body)",
-          color: ausente ? "var(--muted-foreground)" : "var(--foreground)",
-          fontStyle: ausente ? "italic" : "normal",
-          lineHeight: 1.5,
-        }}
-      >
-        {bloque.valor ?? bloque.ausencia}
+      <p style={{ fontSize: "var(--text-body)", lineHeight: 1.5, color: "var(--foreground)" }}>
+        {bloque.valor ?? <Ausencia tipo="SIN_ASIGNAR">{bloque.ausencia}</Ausencia>}
       </p>
     </div>
   );

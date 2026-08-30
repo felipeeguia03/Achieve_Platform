@@ -82,7 +82,10 @@ Antes de diseñar o modificar cualquier pantalla, en este orden:
    miralos. Ahí está la navegación lateral, el topbar con breadcrumb y buscador, la densidad de
    panel, la forma de los controles y el dock.
 2. **Contrastá con [`docs/design-system-capturas.md`](docs/design-system-capturas.md)**, que es la
-   extracción anonimizada y **el único artefacto que viaja**.
+   extracción anonimizada y **el único artefacto que viaja**. **Antes de anotar un patrón como
+   brecha, cruzalo contra §7.4 y §11.3** —lo que Achieve descarta y lo que no se copia aunque esté
+   bien hecho—. Un patrón visible en una captura **no es** un patrón a construir: el dock estaba
+   descartado en tres lugares y aun así entró al roadmap ([ADR-019](docs/decisions.md#adr-019)).
 3. **Si `docs/diseño/` está vacía, decilo y frená.**
 
 > ⚠️ **La carpeta no está versionada.** Contiene datos de un sistema real y

@@ -13,7 +13,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { DatoDeEvaluacion } from "@/lib/domain/view-models";
+import type { DatoDeEvaluacion, TipoDeAusencia, Tono } from "@/lib/domain/view-models";
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="eyebrow">{children}</p>;
@@ -82,11 +82,79 @@ export function CTASecundaria({ children, onClick }: { children: React.ReactNode
   );
 }
 
-export function Fila({ label, value, ausente }: { label: string; value: React.ReactNode; ausente?: boolean }) {
+/**
+ * `Ausencia` — la primitiva que `design-system.md` §3.2 declaraba faltante,
+ * especificada por `design-system-capturas.md` §1.6 y §9.2.
+ *
+ * `P-09` exige que los estados de vacío **se vean distinto entre sí**. Hasta la
+ * Etapa A2.3 el repositorio tenía un booleano `ausente` que los pintaba a todos
+ * igual —itálica atenuada— y de paso atenuaba datos que no eran ausencias.
+ *
+ * **La distinción es de forma, no de color.** Los dos tratamientos se separan
+ * por itálica vs. cifra tabular en ink pleno, no por un gris nuevo. Es
+ * deliberado por dos razones: `P-06` prohíbe comunicar estado sólo por color, y
+ * la auditoría de contraste de `globals.css` no tiene un cuarto gris medido —
+ * inventarlo para distinguir una ausencia sería cambiar la paleta a ojo.
+ *
+ * La prueba que el propio `design-system.md` fija: **imprimir en blanco y negro
+ * y que sigan siendo distinguibles.**
+ *
+ * El tercer estado —*no hay dato*— no tiene componente **a propósito**: en
+ * Achieve la fila desaparece. Ver `TipoDeAusencia` en `view-models.ts`.
+ */
+export function Ausencia({
+  tipo,
+  children,
+}: {
+  tipo: TipoDeAusencia;
+  /** El copy que la spec fija para esta ausencia. Nunca se inventa acá. */
+  children: React.ReactNode;
+}) {
+  if (tipo === "CERO_REAL") {
+    // Un cero real es un dato: ink pleno, peso normal, cifra tabular. Que no se
+    // parezca a "no evaluado" es el punto entero del principio.
+    return (
+      <span data-ausencia="CERO_REAL" style={{ color: "var(--foreground)", fontWeight: 400, fontVariantNumeric: "tabular-nums" }}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <span data-ausencia="SIN_ASIGNAR" style={{ color: "var(--muted-foreground)", fontStyle: "italic", fontWeight: 500 }}>
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Par label/valor con hairline. El valor se dibuja según lo que sea:
+ * una ausencia tipada, un dato adverso con chip, o un dato normal.
+ *
+ * `ausencia` y `tono` son excluyentes por construcción del tipo de dominio: un
+ * dato adverso está **presente**, y atenuarlo como si faltara es la confusión
+ * que la Etapa A2.3 vino a deshacer.
+ */
+export function Fila({
+  label,
+  value,
+  ausencia,
+  tono,
+}: {
+  label: string;
+  value: React.ReactNode;
+  ausencia?: TipoDeAusencia;
+  tono?: Tono;
+}) {
   return (
     <div className="flex items-center justify-between" style={{ padding: "9px 0", borderBottom: ".5px solid var(--border)", fontSize: "var(--text-body)" }}>
       <span style={{ color: "var(--muted-foreground)", fontSize: "var(--text-label)" }}>{label}</span>
-      <span style={{ fontWeight: 500, fontStyle: ausente ? "italic" : "normal", color: ausente ? "var(--muted-foreground)" : "var(--foreground)" }}>{value}</span>
+      {ausencia ? (
+        <Ausencia tipo={ausencia}>{value}</Ausencia>
+      ) : tono ? (
+        <EstadoChip tone={tono}>{value}</EstadoChip>
+      ) : (
+        <span style={{ fontWeight: 500, color: "var(--foreground)" }}>{value}</span>
+      )}
     </div>
   );
 }

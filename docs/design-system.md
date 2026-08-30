@@ -234,7 +234,7 @@ no duplicar ni divergir el sistema de tokens.
 | `EstadoChip` | Chip de estado con relleno sólido + ink encima | `P-06` |
 | `CTAPrincipal` | Una sola por pantalla, en negro/inversión | `I-06` |
 | `CTASecundaria` | Acción secundaria, nunca compite | `I-06` |
-| `Fila` | Par label/valor con hairline, con estilo propio para ausencia | **`P-09`** |
+| `Fila` | Par label/valor con hairline. Delega en `Ausencia` (tipada) o en `EstadoChip` (dato adverso) | **`P-09`** |
 | `PasoDelRecorrido` | Progreso del recorrido de diseño — **no es parte del producto** | — |
 
 ### 3.1 `ReglaDeNegocio` es la primitiva más importante
@@ -264,7 +264,7 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 | Primitiva | Para qué | Principio |
 |---|---|---|
 | `Provenance` | Label de fuente + `verification_status` junto al dato | `P-08` |
-| `Ausencia` | Los cuatro estados de vacío tipados | `P-09` |
+| ~~`Ausencia`~~ | ✅ **Extraída** en la Etapa A2.3. Dos tratamientos dibujados; *no hay dato* omite la fila y *no cargado* no ocurre bajo cero red. Ver [ADR-019](decisions.md#adr-019) | `P-09` |
 | `Esqueleto` | Estados de carga con la geometría real del contenido | `P-12` |
 | `SeleccionExplicita` | Elegir entre varios Assessment sin ranking local | `UX07` |
 
@@ -469,7 +469,10 @@ en una línea`. **No se esconden los que fallan.**
 ### Bloque 4 — Datos
 - [ ] `P-03` Ninguna magnitud de máquina llega cruda → ✅ el spec prohíbe mostrarlas
 - [ ] `P-08` Las dos fuentes de verdad son visibles; las ediciones locales están marcadas
-- [ ] `P-09` Vacío, no-cargado, sin-asignar y cero se ven distinto
+- [x] `P-09` Vacío, no-cargado, sin-asignar y cero se ven distinto — **A2.3**, con matiz declarado:
+      *sin-asignar* y *cero* se dibujan y se testean sin depender del color; *vacío* omite la fila
+      entera (*omitir, no inventar*); *no cargado* es `N/A` bajo cero red. Falta separar dos clases
+      de ausencia que hoy comparten tratamiento: [ADR-020](decisions.md#adr-020) `PENDING`
 - [ ] `A-01` Con datos sucios reales, ninguna celda quedó ilegible
 
 ### Bloque 5 — Visual
