@@ -21,6 +21,15 @@ export {
   type ClaseDeArista,
 } from "./golden-path";
 
+export {
+  recorridoFocusGroup,
+  siguienteEstacion,
+  siguienteUrl,
+  urlDe,
+  INICIO_DEL_RECORRIDO,
+  type Estacion,
+} from "./focus-group";
+
 import { ctaRegistry, type CtaId } from "./cta-registry";
 import { rutaDe } from "./golden-path";
 

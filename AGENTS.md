@@ -181,6 +181,7 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` + 8 `HUMAN-P0` | Cuando dudes si algo está decidido |
 | [`docs/design-system-capturas.md`](docs/design-system-capturas.md) | Extracción visual anonimizada + §12, las decisiones de diseño abiertas | Antes de tocar layout, espaciado o la posición de una CTA |
 | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) | Contrato máquina-a-máquina vigente Plataforma ↔ CRM | Antes de tocar registro, elegibilidad o integración CRM |
+| [`docs/guion-focus-group.md`](docs/guion-focus-group.md) | El recorrido de sesión y el test de 10 segundos por pantalla | Antes de correr un focus group |
 
 ### Documentos de referencia — **no se editan**
 
@@ -221,10 +222,14 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🔵 **EN CURSO** · 7 / 8 etapas.
-**0.1** a **0.7** ✅ completas. Las nueve superficies existen y **todos los estados críticos de las
-9 specs son alcanzables**, cada uno con URL propia vía `?escenario=`.
-**Sigue la Etapa 0.8**: modo focus group — la última.
+**Fase actual: Fase 0 — Cerrar el Track A.** 🟡 **8 / 8 etapas completas.**
+
+Las nueve superficies existen, todos los estados críticos son alcanzables, el Golden Path se recorre
+por clic y el guion del focus group está escrito en
+[`docs/guion-focus-group.md`](docs/guion-focus-group.md).
+
+**Falta una sola cosa para cerrar la fase: ejecutar el test de comprensión de 10 segundos con
+personas reales.** Eso no lo puede hacer un agente.
 
 Dónde vive cada cosa hoy:
 

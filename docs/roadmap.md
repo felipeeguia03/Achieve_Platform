@@ -135,7 +135,7 @@ del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
 | 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ✅ |
 | 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ✅ |
 | 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ✅ |
-| 0.8 | **Modo focus group** | Recorrido limpio sin panel de debug + guion del test de 10 segundos | ⬜ |
+| 0.8 | **Modo focus group** | Recorrido limpio sin panel de debug + guion del test de 10 segundos | ✅ |
 
 ---
 
@@ -757,18 +757,68 @@ recorrido.
 **Done cuando:** una persona ajena al proyecto puede recorrer el Golden Path completo en un teléfono
 sin instrucciones, y el facilitador tiene el guion con los criterios de PASS.
 
+---
+
+#### ✅ Etapa 0.8 — COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Recorrido completo por clic, a 360 px | ✅ **10 de 10 estaciones**, sin errores de consola |
+| Sin panel de debug | ✅ ninguna pantalla muestra IDs de fixture ni andamiaje interno |
+| Reset determinista | ✅ recargar `/hoy`. Verificado: tras paginar la lista y adjuntar evidencia, la recarga devuelve el DOM inicial |
+| Guion del facilitador | ✅ [`guion-focus-group.md`](guion-focus-group.md), con las preguntas y respuestas de cada spec `VI.*` y su criterio de PASS |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **337 tests en 14 archivos** |
+
+**El recorrido es una cadena coherente**, no nueve pantallas sueltas: el mismo estudiante avanzando
+por el loop, y la CTA principal de cada estación lleva a la siguiente. Vive en
+`lib/navigation/focus-group.ts`, **aparte del registro canónico**, porque es el guion de una sesión y
+no un contrato de producto.
+
+**Las dos costuras se atraviesan sin taparlas:**
+
+1. **`UX05`** — el spec la rutea `UX04 → ejecución → UX05` y `ejecución` **no tiene pantalla**. El
+   recorrido recorre los dos contratos de una vez (`CTA-005` sale, `CTA-006` llega) y la estación lo
+   **declara**. No se inventó una transición.
+2. **`UX07`** — ninguna CTA lleva ahí ([ADR-016](decisions.md#adr-016), `PENDING`). Esa estación se
+   alcanza por **navegación del facilitador**, marcada como tal. **No se agregó `CTA-019`.**
+
+**Tres defectos que encontró el propio recorrido:**
+
+1. **El marcador `facilitador` era decorativo.** `siguienteUrl` encadenaba igual, así que el botón de
+   `UX02` **llevaba a `UX07`** — creando en los hechos la `CTA-019` que este mismo trabajo se había
+   negado a inventar. Corregido: la cadena se corta antes de una estación del facilitador, con test.
+2. **`UX08` decía una cosa y llevaba a otra.** El escenario por defecto de la ruta es una preparación
+   recién activada, cuya CTA es *"VOLVER A CURSADO"*; encadenada al paso, el botón decía *volver* y
+   avanzaba. La estación pasó a usar el escenario con handoff disponible, cuya CTA sí es *ABRIR PASO
+   ACTUAL*, y hay un guard que prohíbe que una estación avance con un verbo de retorno.
+3. **El guard de cero-persistencia se disparaba con su propia documentación.** Escaneaba prosa además
+   de código. Ahora quita comentarios antes de escanear, y **siete tests nuevos prueban que la
+   relajación no abrió un agujero**: sigue cazando `localStorage.setItem`, `fetch(` y código pegado a
+   un comentario.
+
+**Un hallazgo de producto, no un defecto:** `Enviar evidencia` está **visible pero deshabilitada**
+hasta que el participante adjunta algo. Es la **única interacción obligatoria** del recorrido y es la
+regla de aparición/habilitación de la Etapa 0.3 funcionando: el botón dice qué va a pasar antes de
+que se pueda hacer. Quedó anotado en el guion como momento de observación.
+
+**Lo que el guion declara que NO cubre:** el lector de pantalla y `A-01` con datos sucios reales. Los
+dos exigen una persona y datos que el Track A no tiene.
+
 ### Fase 0 — Done cuando…
 
 - [x] Las 9 superficies existen como componentes reales con el sistema visual final — **29 ago 2026**
 - [x] Todos los estados críticos de las 9 specs son alcanzables — **30 ago 2026**
-- [ ] El Golden Path es recorrible extremo a extremo
-- [ ] Cero red, cero persistencia, cero datos reales — **verificado por test estático**
+- [x] El Golden Path es recorrible extremo a extremo — **30 ago 2026.** 10 de 10 estaciones por clic a 360 px, con una navegación del facilitador declarada ([ADR-016](decisions.md#adr-016))
+- [x] Cero red, cero persistencia, cero datos reales — **verificado por test estático**
 - [x] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 corrida, con los
       fallos reportados y no escondidos — **30 ago 2026.** Dos ítems **no corridos**: lector de
       pantalla y `A-01` con datos sucios reales
-- [ ] Lint, build y tests en verde
+- [x] Lint, build y tests en verde — **337 tests**
 - [ ] El test de comprensión de 10 segundos ejecutado **con personas reales, en desktop**
       ([ADR-014](decisions.md#adr-014)), sin pérdida de información a 360 px
+      → ⏳ **lo único que falta.** El guion está listo en
+      [`guion-focus-group.md`](guion-focus-group.md); ejecutarlo requiere personas y no lo puede
+      hacer un agente
 
 ---
 
@@ -985,7 +1035,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🔵 **EN CURSO** | 7 / 8 |
+| Fase 0 — Cerrar Track A | 🟡 **8 / 8 etapas · falta el test con personas reales** | 8 / 8 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
 | Fase B1 — Fundación | 🔒 BLOQUEADA | — |

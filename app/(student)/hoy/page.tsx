@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
 import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
-import { rutaDeCta } from "@/lib/navigation";
+import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
 
 // Los tres destinos salen del registro canónico, no de un recorrido escrito a
 // mano: CTA-002 a la próxima acción, CTA-001 a la materia, CTA-009 al progreso.
@@ -20,10 +20,12 @@ function Hoy() {
   const props = proyectarHoy(getEscenario(id));
   if (!props) throw new Error(`El escenario ${id} no proyecta UX01`);
 
+  const destino = siguienteUrl("/hoy", params.get("escenario")) ?? A_ACCION;
+
   return (
     <HoyAutogestion
       {...props}
-      onAvanzar={A_ACCION ? () => router.push(A_ACCION) : undefined}
+      onAvanzar={destino ? () => router.push(destino) : undefined}
       onVerMateria={A_MATERIA ? () => router.push(A_MATERIA) : undefined}
       onVerProgreso={A_PROGRESO ? () => router.push(A_PROGRESO) : undefined}
     />

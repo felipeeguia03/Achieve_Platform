@@ -30,13 +30,59 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
+/**
+ * Quita comentarios antes de escanear.
+ *
+ * El guard busca **uso**, no menciones. Un comentario que explica *"acá no se
+ * usa `localStorage`"* no es una violación, y sin este paso el guard se
+ * dispara contra su propia documentación.
+ *
+ * El `//` sólo se trata como comentario cuando no viene pegado a `:`, para no
+ * cortar una URL. Es conservador a propósito: si algo se le escapa, escanea de
+ * más, nunca de menos.
+ */
+function sinComentarios(code: string): string {
+  return code.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
 const files = SCANNED.flatMap(sourceFiles)
   .filter((path) => path !== SELF)
-  .map((path) => ({ path, code: readFileSync(resolve(ROOT, path), "utf8") }));
+  .map((path) => ({
+    path,
+    code: sinComentarios(readFileSync(resolve(ROOT, path), "utf8")),
+  }));
 
 function offenders(pattern: RegExp) {
   return files.filter(({ code }) => pattern.test(code)).map(({ path }) => path);
 }
+
+describe("El propio guard sigue cazando uso real", () => {
+  // Quitar comentarios es una relajación del escaneo. Estas aserciones prueban
+  // que la relajación no abrió un agujero.
+  const casos: [string, string][] = [
+    ["llamada directa", 'localStorage.setItem("k", "v");'],
+    ["dentro de una función", "function f() { return sessionStorage.getItem('k'); }"],
+    ["fetch a secas", 'const r = await fetch("/api/x");'],
+    ["código después de un comentario", "// no usamos storage\nlocalStorage.clear();"],
+    ["código antes de un comentario", "localStorage.clear(); // limpieza"],
+  ];
+
+  for (const [nombre, codigo] of casos) {
+    it(`detecta ${nombre}`, () => {
+      const limpio = sinComentarios(codigo);
+      expect(/\b(localStorage|sessionStorage|indexedDB)\b|\bfetch\(/.test(limpio)).toBe(true);
+    });
+  }
+
+  it("NO se dispara con una mención dentro de un comentario", () => {
+    const soloProsa = "/* Acá no se usa localStorage ni fetch(). */";
+    expect(sinComentarios(soloProsa).trim()).toBe("");
+  });
+
+  it("no corta una URL en dos", () => {
+    expect(sinComentarios('const u = "https://ejemplo/x";')).toContain("https://ejemplo/x");
+  });
+});
 
 describe("Track A — reglas verificables estáticamente", () => {
   it("hay archivos que escanear", () => {

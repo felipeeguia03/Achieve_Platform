@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OverviewModoExamen } from "@/components/screens/overview-modo-examen";
 import { getEscenario, escenarioUX08Desde } from "@/lib/fixtures";
-import { rutaDeCta } from "@/lib/navigation";
+import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
 
 // CTA-012 abre UX09, que se construye en la Etapa 0.6. Hasta entonces
 // `rutaDeCta` devuelve null y la CTA no navega: no se inventa un destino.
@@ -19,10 +19,12 @@ function Overview() {
   const props = getEscenario(id).ux08;
   if (!props) throw new Error(`El escenario ${id} no proyecta UX08`);
 
+  const destino = siguienteUrl("/examen/overview", params.get("escenario")) ?? AL_PASO;
+
   return (
     <OverviewModoExamen
       {...props}
-      onAvanzar={AL_PASO ? () => router.push(AL_PASO) : undefined}
+      onAvanzar={destino ? () => router.push(destino) : undefined}
       onVolver={() => router.push(A_CURSADO)}
     />
   );

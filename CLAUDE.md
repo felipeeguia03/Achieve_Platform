@@ -68,9 +68,11 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-**Fase 0 — Cerrar el Track A.** 🔵 EN CURSO · **7 / 8**. Las etapas 0.1 a 0.7 están cerradas. Las
-nueve superficies existen y **todos los estados críticos son alcanzables**. **Toca la Etapa 0.8:**
-modo focus group — la última.
+**Fase 0 — Cerrar el Track A.** 🟡 **8 / 8 etapas completas.** Las nueve superficies existen, todos
+los estados críticos son alcanzables y el Golden Path se recorre por clic.
+
+**Falta ejecutar el test de comprensión de 10 segundos con personas reales.** El guion está en
+[`docs/guion-focus-group.md`](docs/guion-focus-group.md); correrlo no lo puede hacer un agente.
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
@@ -98,9 +100,10 @@ afecta al recorrido por clic de la 0.8: ninguna de las 18 CTAs lleva a `UX07`.
 Para ver cualquier estado crítico sin panel de debug: `?escenario=<ID>` en **cualquiera** de las
 nueve rutas.
 
-⚠️ **`UX05` todavía no es alcanzable por clic**: el spec la rutea por `ejecución`, que no tiene
-pantalla. Es uno de los dos huecos que quedan para la 0.8, junto con
-[ADR-016](docs/decisions.md#adr-016).
+El recorrido de focus group vive en `lib/navigation/focus-group.ts`, **aparte del registro
+canónico**: es el guion de una sesión, no un contrato. Atraviesa dos costuras sin taparlas — `UX05`
+se alcanza cruzando `ejecución`, que no tiene pantalla, y `UX07` por navegación del facilitador
+porque ninguna CTA lleva ahí ([ADR-016](docs/decisions.md#adr-016), `PENDING`).
 
 ---
 

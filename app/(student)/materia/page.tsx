@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MateriaCursado } from "@/components/screens/materia-cursado";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
-import { rutaDeCta } from "@/lib/navigation";
+import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
 
 const DESTINO = rutaDeCta("CTA-002");
 
@@ -16,10 +16,14 @@ function Vista() {
   const props = getEscenario(id).materia;
   if (!props) throw new Error(`El escenario ${id} no proyecta esta vista`);
 
+  // El recorrido de focus group manda sobre el destino genérico: en una
+  // sesión, la CTA tiene que llevar a la estación siguiente.
+  const destino = siguienteUrl("/materia", params.get("escenario")) ?? DESTINO;
+
   return (
     <MateriaCursado
       {...props}
-      onAvanzar={DESTINO ? () => router.push(DESTINO) : undefined}
+      onAvanzar={destino ? () => router.push(destino) : undefined}
     />
   );
 }

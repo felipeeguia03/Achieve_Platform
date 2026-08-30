@@ -9,9 +9,11 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
 
 ## Estado actual
 
-- **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. **Fase 0 en
-  curso, 7 / 8 etapas.** Las nueve superficies `UX01`–`UX09` existen y **todos los estados críticos
-  de sus specs son alcanzables**, cada uno con URL propia.
+- **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. **Las 8 etapas
+  de la Fase 0 están completas.** Las nueve superficies `UX01`–`UX09` existen, todos los estados
+  críticos de sus specs son alcanzables con URL propia, y el Golden Path se recorre por clic de
+  punta a punta. **Falta ejecutar el test de comprensión de 10 segundos con personas reales**
+  ([guion](docs/guion-focus-group.md)).
 - **Track B:** backend, auth, persistencia e integraciones reales. Bloqueado por las decisiones
   pendientes, especialmente ADR-005 y ADR-006.
 
