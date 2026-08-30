@@ -30,6 +30,12 @@ export const copy = {
   "COMUN.CIERRE": "Cerrás cuando:",
   "COMUN.SIN_AVANCE": "Sin avance registrado",
 
+  // ── Shell de aplicación (Fase A2) ─────────────────────────────────────────
+  "SHELL.NAVEGACION": "Navegación principal",
+  "SHELL.COLAPSAR": "Colapsar la navegación",
+  "SHELL.EXPANDIR": "Expandir la navegación",
+  "SHELL.BUSCAR": "Buscar…",
+
   // ── UX01 · Hoy / Autogestión ──────────────────────────────────────────────
   "HOY.TITULO": "Hoy",
   "HOY.EYEBROW": "Proyección · no prioriza",

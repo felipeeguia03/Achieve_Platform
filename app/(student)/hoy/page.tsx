@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { Shell } from "@/components/shell/shell";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
 import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
@@ -34,8 +35,10 @@ function Hoy() {
 
 export default function HoyPage() {
   return (
-    <Suspense>
-      <Hoy />
-    </Suspense>
+    <Shell nodo="UX01">
+      <Suspense>
+        <Hoy />
+      </Suspense>
+    </Shell>
   );
 }

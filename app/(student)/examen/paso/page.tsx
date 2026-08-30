@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { Shell } from "@/components/shell/shell";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PasoDeProtocolo } from "@/components/screens/paso-de-protocolo";
 import { getEscenario, escenarioUX09Desde } from "@/lib/fixtures";
@@ -34,8 +35,10 @@ function Paso() {
 
 export default function PasoDeProtocoloPage() {
   return (
-    <Suspense>
-      <Paso />
-    </Suspense>
+    <Shell nodo="UX09">
+      <Suspense>
+        <Paso />
+      </Suspense>
+    </Shell>
   );
 }

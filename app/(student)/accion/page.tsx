@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { Shell } from "@/components/shell/shell";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProximaAccion } from "@/components/screens/proxima-accion";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
@@ -30,8 +31,10 @@ function Vista() {
 
 export default function ProximaAccionPage() {
   return (
-    <Suspense>
-      <Vista />
-    </Suspense>
+    <Shell nodo="UX03">
+      <Suspense>
+        <Vista />
+      </Suspense>
+    </Shell>
   );
 }

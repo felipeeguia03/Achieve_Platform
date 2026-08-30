@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { Shell } from "@/components/shell/shell";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OverviewModoExamen } from "@/components/screens/overview-modo-examen";
 import { getEscenario, escenarioUX08Desde } from "@/lib/fixtures";
@@ -32,8 +33,10 @@ function Overview() {
 
 export default function OverviewModoExamenPage() {
   return (
-    <Suspense>
-      <Overview />
-    </Suspense>
+    <Shell nodo="UX08">
+      <Suspense>
+        <Overview />
+      </Suspense>
+    </Shell>
   );
 }

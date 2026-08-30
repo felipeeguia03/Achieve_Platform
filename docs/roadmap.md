@@ -851,7 +851,7 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 
 | # | Etapa | Entregable |
 |---|---|---|
-| A2.1 | **Navegación lateral + topbar** | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
+| A2.1 | **Navegación lateral + topbar** ✅ | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
 | A2.2 | **Buscador `⌘K`** | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
 | A2.3 | **Dock inferior** | Lo que quedó abierto, persistente entre superficies. **Sin `localStorage`:** estado de sesión |
 | A2.4 | **Segmentados y densidad de panel** | Las primitivas que faltan, extraídas a `design-system.tsx` |
@@ -864,16 +864,42 @@ Dominio, fixtures, registro de CTAs, las tres matrices de precedencia, los estad
 guion del focus group. **Todo eso ya está y no depende del shell.** Si una etapa de A2 necesita
 cambiar una regla de dominio, es señal de que se pasó de alcance.
 
-### Antes de empezar
+### Antes de empezar — ✅ resuelto el 30 de agosto de 2026
 
-1. **Abrir las capturas.** Es la regla de `AGENTS.md` §1.5. Si `docs/diseño/` está vacía, la fase no
-   empieza: se dice y se para.
-2. **Resolver `design-system-capturas.md` §12.3 y §12.6** — la escala de espaciado sigue siendo una
-   inferencia con ±2 px de error, y la densidad de `UX06` (tabla vs. tarjetas) sigue `PENDING`. Las
-   dos son decisiones de layout que A2 necesita.
-3. **§12.4 — modo oscuro.** Las capturas tienen toggle de tema y `design-system.md` **no define
-   paleta oscura**. Los tres semánticos están medidos **sobre superficie clara**; sobre oscuro
-   fallan. Un modo oscuro exige una segunda tabla de contrastes **medida**, no estimada.
+1. ✅ **Capturas abiertas.** Regla de `AGENTS.md` §1.5.
+2. ✅ **§12.3 cerrada por medición, no por inferencia.** Se detectaron los hairlines por gradiente de
+   luminancia sobre las capturas: sidebar **255,5 px → 256**, colapsada **79,5 → 80**, topbar
+   **55,5 → 56**. Los tres múltiplos de 8, así que **la escala base 4/8 queda confirmada**.
+3. ✅ **§12.4 — sin modo oscuro**, y **el conmutador no se dibuja**. Un control de tema que no cambia
+   nada sería prometer lo que no se sostiene. El ítem del checklist §9 se marca `N/A` con
+   justificación escrita.
+4. ✅ **§12.6 — `UX06` es lista de tarjetas, no tabla.** La tabla de las capturas es densidad de
+   trabajo diario; la Bitácora se mira ocasionalmente y ya viene agrupada por ciclo.
+
+---
+
+#### ✅ Etapa A2.1 — COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Medidas fieles a las capturas | ✅ sidebar **256 px**, colapsada **80**, topbar **56** — medido en el build, idéntico a la captura |
+| Ítem activo y breadcrumb | ✅ `aria-current`, no sólo color. `UX09` da `Hoy › Materia › Modo Examen › Preparación › Paso` |
+| A 360 px | ✅ la barra se oculta y **no aparece scroll horizontal** |
+| Las nueve superficies dentro del shell | ✅ sin tocar su contenido |
+| `lint` · `build` · `test` | ✅ verde · verde · **354 tests en 15 archivos** |
+
+**El menú no duplica el registro de CTAs.** La navegación lateral es orientación, no acción de
+dominio: no lleva ninguna CTA primaria y hay un test que lo verifica. `UX03`–`UX05` **no están en el
+menú** — son pasos de un flujo que se abren desde su origen, y ofrecerlos sería dejar entrar a una
+evidencia sin la acción que la pide.
+
+**Efecto lateral bueno:** el menú alcanza `UX07`, que es justo la superficie que ninguna CTA alcanza
+([ADR-016](decisions.md#adr-016)). **No la convierte en una `CTA-019`**: sigue siendo navegación, y
+el recorrido de focus group sigue marcándola como paso del facilitador.
+
+**El buscador se dibuja deshabilitado** hasta que exista la paleta de comandos (A2.2), con
+tratamiento propio —opacidad, cursor y `aria-disabled`— distinto de secundario (`A-08`). No se ofrece
+un campo que no busca nada.
 
 ### Done cuando…
 

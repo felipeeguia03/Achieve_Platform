@@ -796,15 +796,25 @@ dos, y las dos mienten si cambia la regla.
 **Qué decidir:** si `C-04` pasa a *"el vacío explica qué va a aparecer **y por qué importa**"*, o si
 queda como está y esto es solo una recomendación.
 
-### 12.3 Escala de espaciado — propuesta, no observación pura
+### 12.3 Escala de espaciado — ✅ `CONFIRMADA` por medición
 
-§4 es **una escala inferida** de medidas con ±2 px de error. Los valores caen limpio en base 4, lo
-que sugiere que el original la usa, pero **no está confirmado**.
+**Resuelto el 30 de agosto de 2026**, al arrancar la Fase A2. §4 era una escala **inferida** con ±2 px
+de error. Se midió sobre las capturas, detectando los hairlines por gradiente de luminancia en vez de
+a ojo:
 
-**Qué decidir:** adoptar §4.1 como canónica y moverla a `design-system.md` §2, o tratarla como
-provisional hasta la primera pantalla implementada.
+| Elemento | Medido | Sobre grilla de 8 |
+|---|---|---|
+| Sidebar expandida | **255,5 px** → 256 | 32 × 8 |
+| Sidebar colapsada | **79,5 px** → 80 | 10 × 8 |
+| Topbar | **55,5 px** → 56 | 7 × 8 |
 
-### 12.4 Modo oscuro — sin decidir, y el checklist lo exige
+Los tres caen limpio en múltiplos de 8. **La escala de base 4/8 queda confirmada por medición, no
+por inferencia**, y §4.1 pasa a canónica.
+
+> El hairline entre sidebar y página tiene una diferencia de luminancia de **~1,6 sobre 255**: son
+> casi el mismo gris. La separación la hace la línea, no el contraste de fondos.
+
+### 12.4 Modo oscuro — ✅ `DECIDIDO`: no hay, y el conmutador no se dibuja
 
 El checklist del manual incluye *"Modo oscuro: los colores semánticos siguen funcionando"*, y el
 software tiene toggle de tema. **`design-system.md` no define paleta oscura.**
@@ -813,8 +823,18 @@ software tiene toggle de tema. **`design-system.md` no define paleta oscura.**
 `--exito-texto` `#23883c` da 4.51:1 sobre card blanco; sobre una superficie oscura **falla**. Un modo
 oscuro exige una segunda tabla de contrastes medida, no estimada.
 
-**Qué decidir:** si el Track A tiene modo oscuro. Si no lo tiene, ese ítem del checklist se marca
-`N/A` con justificación escrita, no se deja en blanco.
+**Decidido el 30 de agosto de 2026: el Track A no tiene modo oscuro, y no se dibuja el conmutador.**
+
+La Fase A2 construye el shell en claro, que es lo que muestran todas las capturas de producto. **El
+conmutador de tema de las capturas no se replica**: un control de tema que no cambia nada es
+exactamente *"no prometas lo que no podés sostener"*.
+
+El ítem del checklist de §9 se marca **`N/A` con justificación escrita** —que es lo que el propio
+checklist exige en vez de dejarlo en blanco—: *"no hay paleta oscura definida; los tres semánticos
+están medidos sobre superficie clara y sobre oscuro fallan"*.
+
+**Deuda declarada:** un modo oscuro exige una **segunda tabla de contrastes medida**, no estimada.
+Mientras no exista, no hay modo oscuro.
 
 ### 12.5 Estados de error — no hay fuente
 
@@ -825,13 +845,19 @@ imágenes muestra un error.
 abiertos hasta tener referencia. El Track A los necesita: `UX05` (Evidencia) tiene siete estados y
 varios son de falla.
 
-### 12.6 Densidad de `UX06` — `PENDING`
+### 12.6 Densidad de `UX06` — ✅ `DECIDIDO`: lista de tarjetas
 
 La tabla de referencia muestra **7 columnas y 204 filas** para un usuario experto que la mira ocho
 horas por día. La Bitácora de Achieve la mira un estudiante, ocasionalmente.
 
-**Qué decidir:** si `UX06` es una tabla o una lista de tarjetas. §10.4 especifica la tabla; la
-decisión de usarla no está tomada.
+**Decidido el 30 de agosto de 2026: `UX06` es una lista de tarjetas, no una tabla.**
+
+El patrón de tabla de las capturas está diseñado para **densidad de trabajo diario**. La Bitácora la
+mira un estudiante **ocasionalmente**, y ya viene agrupada por ciclo desde la Etapa 0.7. Una tabla de
+siete columnas para eso agrega ruido sin agregar información, y a 360 px obliga a scroll horizontal,
+que el contrato de `design-system.md` §6.1 no admite.
+
+§10.4 sigue describiendo la tabla como patrón observado; **Achieve no la usa en `UX06`.**
 
 ### 12.7 Dónde vive la CTA principal en desktop — ✅ `RESUELTO` por [ADR-015](decisions.md#adr-015)
 
@@ -864,6 +890,9 @@ Registro de reconciliación, para cuando se sincronicen los documentos.
 | §1.4 | **Propone** modificar `C-04`. Sujeto a §12.2 |
 | §5.3 | **Confirma** los tres semánticos. Rechaza explícitamente el cuarto color del original |
 | §11.2 | **Ancla** los nueve anti-patrones a evidencia visual concreta |
+| §12.3 | ✅ **Confirmada por medición** el 30 ago 2026: 256 / 80 / 56 px, todos múltiplos de 8 |
+| §12.4 | ✅ **Decidido:** sin modo oscuro en el Track A, y sin dibujar el conmutador |
+| §12.6 | ✅ **Decidido:** `UX06` es lista de tarjetas, no tabla |
 | §12.1 | ✅ **Conflicto cerrado** por [ADR-014](decisions.md#adr-014): §6.1 se reencuadró como contrato de orden semántico y §6.2 pasó a primaria |
 | §12.7 | ✅ **Cerrado** por [ADR-015](decisions.md#adr-015) con los wireframes desktop de `VI.7` §24: CTA a ancho completo al final de la columna principal |
 | §12.4 | ⚠️ **Abre laguna**: modo oscuro sin paleta ni contrastes medidos |

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import { Shell } from "@/components/shell/shell";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ActivacionModoExamen } from "@/components/screens/activacion-modo-examen";
 import { getEscenario, escenarioUX07Desde } from "@/lib/fixtures";
@@ -34,8 +35,10 @@ function Activacion() {
 
 export default function ActivarModoExamenPage() {
   return (
-    <Suspense>
-      <Activacion />
-    </Suspense>
+    <Shell nodo="UX07">
+      <Suspense>
+        <Activacion />
+      </Suspense>
+    </Shell>
   );
 }
