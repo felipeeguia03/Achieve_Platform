@@ -8,7 +8,10 @@
 > ([ADR-008](decisions.md#adr-008), 28 ago 2026). Para el **Track B** se recibió un diseño objetivo
 > concreto —Supabase gestionado detrás de un backend TypeScript en tres capas— y un contrato vigente
 > de autorización con el CRM. Se registran acá como insumos autoritativos para decidir, pero
-> [ADR-005](decisions.md#adr-005) sigue `PENDING`: nada del Track B se implementa hasta su aceptación,
+> [ADR-005](decisions.md#adr-005) está ✅ `ACCEPTED` **alcanzado a su Bloque A** (30 ago 2026): Supabase,
+> el scoping en dos capas y la separación Controller → Service → Repository quedaron ratificados.
+> Storage de `Evidence`, operación y el mapping de `institutionId` siguen `DEFERRED`. Lo que sigue
+> sin habilitarse es cualquier dato real, que depende de [ADR-006](decisions.md#adr-006):
 > y ningún flujo con personas reales se habilita mientras [ADR-006](decisions.md#adr-006) siga abierto.
 
 ---
@@ -316,7 +319,7 @@ dos requests concurrentes no violen el resultado.
 El acoplamiento a Supabase queda confinado a Repositories, proveedor de JWT, Storage y transporte de
 Broadcast. Cambiar uno de ellos no debe modificar las reglas de Service.
 
-Estructura orientativa, ajustable al runtime que finalmente acepte ADR-005:
+Estructura orientativa. El runtime físico quedó explícitamente movible en la aceptación de ADR-005:
 
 ```text
 backend/src/
@@ -337,7 +340,7 @@ capa de servicio propia. Desplaza dos aspectos de la propuesta anterior:
 - Las reglas de dominio dejan de proponerse como triggers; los triggers quedan limitados a funciones
   técnicas que no deciden el negocio.
 
-La elección todavía no es ejecutable: ADR-005 debe ratificar proveedor/runtime, aislamiento,
+Proveedor, aislamiento y capas quedaron ratificados por ADR-005 (Bloque A). Sigue sin ratificar:
 Storage y operación. Hasta entonces se conserva como diseño objetivo y no se crean migraciones.
 
 ### 3.9 Frontera Plataforma ↔ CRM
@@ -449,9 +452,9 @@ sobre eventos de dominio y sobre el endpoint vigente de CRM.
 
 Explícitamente fuera de alcance de este documento hasta que se resuelvan sus ADRs:
 
-- Aceptación formal del diseño objetivo, runtime y operación de Supabase → [ADR-005](decisions.md#adr-005)
+- ✅ Proveedor, aislamiento y capas → [ADR-005](decisions.md#adr-005) Bloque A, `ACCEPTED`. **Operación y runtime de producción siguen `DEFERRED`** (Bloque B, ítem 5)
 - Pipeline del ADE → [ADR-004](decisions.md#adr-004)
-- Runtime de producción del Track B → depende de ADR-005
+- Runtime de producción del Track B → ADR-005 Bloque B, ítem 5, `DEFERRED`
 - Convergencia con Dashboard_Achieve → [ADR-003](decisions.md#adr-003)
 - Política de privacidad, retención y consentimiento → [ADR-006](decisions.md#adr-006)
 - Owner de `PreparationReadiness` → [ADR-011](decisions.md#adr-011)

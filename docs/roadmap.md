@@ -1197,7 +1197,7 @@ no cambian por sí solos el estado de los ADRs ni habilitan datos reales.
 
 | Decisión | ADR | Quién decide |
 |---|---|---|
-| Backend, auth, persistencia | [ADR-005](decisions.md#adr-005) | Producto + CTO |
+| ✅ Backend, auth, persistencia | [ADR-005](decisions.md#adr-005) — **`ACCEPTED` (Bloque A)** 30 ago 2026 | Producto + CTO |
 | Pipeline del ADE | [ADR-004](decisions.md#adr-004) | Producto |
 | Convergencia con Dashboard_Achieve | [ADR-003](decisions.md#adr-003) | Producto + CTO |
 | Privacidad y consentimiento | [ADR-006](decisions.md#adr-006) | Producto + asesoría legal |
@@ -1225,8 +1225,8 @@ son todas legales**: tres las puede contestar producto hoy.
 
 | Orden | Qué | Por qué |
 |---|---|---|
-| 1.º | Aceptar **`ADR-005` Bloque A**, con Bloque B `DEFERRED` | Desbloquea `B1.1`–`B1.5` sin comprometer lo no diseñado. No depende de nadie externo |
-| 2.º | Arrancar **B1 sobre datos sintéticos**, en paralelo | El trabajo de fundación no espera al abogado |
+| 1.º ✅ | Aceptar **`ADR-005` Bloque A**, con Bloque B `DEFERRED` — **hecho el 30 ago 2026** | Desbloqueó `B1.1`–`B1.5` sin comprometer lo no diseñado |
+| 2.º ⬅️ | Arrancar **B1 sobre datos sintéticos** | **Es lo que toca ahora.** El trabajo de fundación no espera al abogado |
 | 3.º | **`ADR-006`** con asesoría, en paralelo desde ya | Es el de plazo más largo y **debe cerrar antes del primer usuario real** |
 | 4.º | `ADR-003` y `ADR-004` | Bloquean B6 y B4: hay tiempo |
 
@@ -1238,20 +1238,26 @@ son todas legales**: tres las puede contestar producto hoy.
 
 ## Fase B1 — Fundación
 
-**Estado:** 🔒 [ADR-005](decisions.md#adr-005). Además [ADR-006](decisions.md#adr-006) desde el
-momento en que exista **un solo usuario real**.
+**Estado:** 🟢 **DESBLOQUEADA para `B1.1`–`B1.5`.** [ADR-005](decisions.md#adr-005) quedó `ACCEPTED`
+alcanzado a su **Bloque A** el 30 de agosto de 2026: Supabase, scoping en Service/Repository con RLS
+deny-by-default, y Controller → Service → Repository.
+
+🔒 **`B1.6` sigue bloqueada** por el ítem 6 del Bloque B (`institutionId` ↔ CRM), `DEFERRED`.
+
+⚠️ **Toda la fase corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) entra desde el
+momento en que exista **un solo usuario real**, y sigue `PENDING`.
 
 **Objetivo.** Backend en capas, base de datos, auth, tenancy y esquema base de la Academic Data Layer,
 sin acceso del frontend a tablas de negocio.
 
 | # | Etapa |
 |---|---|
-| B1.1 | Proyecto Supabase + migraciones iniciales + entorno local reproducible *(sujeto a aceptación de ADR-005)* |
+| B1.1 | Proyecto Supabase + migraciones iniciales + entorno local reproducible ✅ *desbloqueada* |
 | B1.2 | Schema de la capa académica ([`data-model.md`](data-model.md) §7) |
 | B1.3 | Auth + `student` + `institution`; JWT en `/api/*`; RLS deny-by-default |
 | B1.4 | Frontera Controller → Service → Repository; máquinas de estado, scoping e idempotencia en Service |
 | B1.5 | `product_event` y `audit_log` append-only |
-| B1.6 | Cliente de autorización CRM v1 con contract tests y datos sintéticos; uso real gateado por ADR-006 |
+| B1.6 | 🔒 Cliente de autorización CRM v1 con contract tests y datos sintéticos; **bloqueada por ADR-005 ítem 6**; uso real gateado por ADR-006 |
 
 **Done cuando:** un test de aislamiento demuestra que un tenant **no puede** leer datos de otro; las
 transiciones prohibidas fallan en Service incluso bajo concurrencia; ningún código cliente accede a
@@ -1406,8 +1412,8 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase 0 — Cerrar Track A | ✅ **COMPLETA** — 8/8 etapas y el test de 10 segundos corrido | 8 / 8 |
 | Fase A2 — Shell de aplicación | ✅ **5 / 5 etapas completas** | 5 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
-| Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
-| Fase B1 — Fundación | 🔒 BLOQUEADA | — |
+| Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-005` aceptado (Bloque A) | 1 / 5 |
+| Fase B1 — Fundación | 🟢 **DESBLOQUEADA** — `B1.1`–`B1.5`; `B1.6` espera ADR-005 ítem 6 | 0 / 6 |
 | Fase B2 — Dominio de ejecución | 🔒 BLOQUEADA | — |
 | Fase B3 — Progreso y eventos | 🔒 BLOQUEADA | — |
 | Fase B4 — ADE v1 | 🔒 BLOQUEADA | — |

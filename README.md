@@ -18,8 +18,11 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
   `⌘K`, la primitiva `Ausencia` y la cabecera de panel. La comparación lado a lado con las capturas
   está en [`docs/design-system-capturas.md`](docs/design-system-capturas.md) §14: **siete
   diferencias, seis cerradas**, y la séptima con su bloqueo escrito.
-- **Track B:** backend, auth, persistencia e integraciones reales. Bloqueado por las decisiones
-  pendientes, especialmente ADR-005 y ADR-006.
+- **Track B:** backend, auth, persistencia e integraciones reales. **[ADR-005](docs/decisions.md#adr-005)
+  quedó `ACCEPTED` alcanzado a su Bloque A** (Supabase, scoping en dos capas, Controller → Service →
+  Repository), así que las etapas `B1.1`–`B1.5` de la Fase B1 están desbloqueadas **sobre datos
+  sintéticos**. Cualquier flujo que toque un dato de una persona real sigue bloqueado por
+  [ADR-006](docs/decisions.md#adr-006).
 
 ## Cómo correrlo
 
@@ -99,5 +102,7 @@ Los documentos `*-source.md` son referencias normativas de origen y no se editan
 - Supabase cliente se limita a Auth y Realtime Broadcast.
 - CRM y Plataforma no comparten base: se integran únicamente por HTTP versionado.
 
-Este diseño todavía requiere aceptación formal de [ADR-005](docs/decisions.md#adr-005), y ningún flujo
-puede procesar datos reales mientras [ADR-006](docs/decisions.md#adr-006) siga `PENDING`.
+El proveedor, el aislamiento y las capas quedaron ratificados por
+[ADR-005](docs/decisions.md#adr-005) (Bloque A). **Storage de `Evidence`, operación y el mapping de
+`institutionId` siguen `DEFERRED`**, y ningún flujo puede procesar datos reales mientras
+[ADR-006](docs/decisions.md#adr-006) siga `PENDING`.

@@ -24,6 +24,7 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
    ADR `PENDING` y **preguntá**.
 2. **No resuelvas una decisión `PENDING`.** La cierra una persona.
 3. **Datos reales: bloqueo absoluto** hasta que [ADR-006](docs/decisions.md#adr-006) esté resuelto.
+   **Que ADR-005 esté aceptado no cambia esto:** el backend se construye sobre datos sintéticos.
 4. **Una etapa por vez, completa.** Readiness → decisiones aprobadas → implementar → verificar →
    commit → docs actualizados.
 5. **Antes de tocar UI, abrí las capturas de `docs/diseño/`.** Achieve es desktop-first y su
@@ -76,10 +77,15 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 críticos son alcanzables, el Golden Path se recorre por clic y **el test de comprensión de 10
 segundos se corrió con resultado PASS** (reportado por el owner, 30 ago 2026).
 
-**Fase B0 — Cerrar decisiones.** Es lo que sigue, y **no se decide todo junto.** `ADR-005` se puede
-aceptar alcanzado a su **Bloque A** —tres ratificaciones— y eso desbloquea `B1.1`–`B1.5`;
-[ADR-006](docs/decisions.md#adr-006) **no** bloquea el arranque de B1, sólo el primer usuario real.
-Secuencia recomendada en `roadmap.md`, Fase B0.
+**Fase B0 — Cerrar decisiones.** 🟡 **1 / 5.** [ADR-005](docs/decisions.md#adr-005) quedó
+✅ `ACCEPTED` **alcanzado a su Bloque A** el 30 ago 2026 — Supabase, scoping en Service/Repository
+con RLS deny-by-default, y Controller → Service → Repository. El **Bloque B** (Storage de `Evidence`,
+operación, mapping de `institutionId`) quedó `DEFERRED` con sus fases marcadas.
+
+**Fase B1 — Fundación.** 🟢 **DESBLOQUEADA para `B1.1`–`B1.5`**, es lo que toca ahora. `B1.6` espera
+el ítem 6 del Bloque B. **Toda la fase corre sobre datos sintéticos:**
+[ADR-006](docs/decisions.md#adr-006) sigue `PENDING` y es bloqueo absoluto desde el primer usuario
+real — aceptar ADR-005 **no** adelantó ese permiso.
 
 **Fase A2 — Shell de aplicación.** ✅ **5 / 5 etapas.** Navegación lateral y topbar, paleta `⌘K`,
 la primitiva `Ausencia`, la comparación con las capturas y la cabecera de panel con sus nueve
@@ -102,7 +108,8 @@ pero ninguna pantalla la renderiza). Ver `docs/roadmap.md`, Etapa 0.3.
 
 - **Track A** (clickeable, fixtures, sin backend): **sin bloqueos.** Cerrar la Fase 0 cierra el
   track — Operador e Institución se difirieron ([ADR-012](docs/decisions.md#adr-012)).
-- **Track B** (backend real): bloqueado por [ADR-005](docs/decisions.md#adr-005) y
+- **Track B** (backend real): `B1.1`–`B1.5` **desbloqueadas** por
+  [ADR-005](docs/decisions.md#adr-005) Bloque A. Todo lo que toque un dato real sigue bloqueado por
   [ADR-006](docs/decisions.md#adr-006).
 
 **Stack:** Next.js 16 · React 19 · Tailwind v4 CSS-first · shadcn vendorizado · Vitest.

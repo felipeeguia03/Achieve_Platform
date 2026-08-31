@@ -6,7 +6,11 @@
 
 > ⚠️ **Estado.** Las **entidades, relaciones y máquinas de estado** (§1–§5) están heredadas del spec
 > fuente y son firmes. El **schema SQL** (§6–§10) es un **diseño propuesto** que asume Postgres; no se
-> ejecuta ninguna migración hasta que [ADR-005](decisions.md#adr-005) esté `ACCEPTED`.
+> ejecutaba ninguna migración hasta que [ADR-005](decisions.md#adr-005) estuviera `ACCEPTED`. **Lo
+> está desde el 30 de agosto de 2026** (Bloque A: Supabase, scoping en dos capas, Controller →
+> Service → Repository), así que las migraciones de `B1.1`–`B1.2` quedan habilitadas **sobre datos
+> sintéticos**. Cualquier dato de una persona real sigue bloqueado por
+> [ADR-006](decisions.md#adr-006).
 >
 > Se usa SQL estándar de Postgres, portable entre las alternativas probables. Donde algo es
 > específico de un proveedor, está marcado.

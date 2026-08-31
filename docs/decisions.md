@@ -51,7 +51,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-002](#adr-002) | Scaffold nuevo reusando solo la capa de UI | `ACCEPTED` | — |
 | [ADR-003](#adr-003) | Convergencia Operador ↔ coach de Dashboard_Achieve | `PENDING` | Fase B6 |
 | [ADR-004](#adr-004) | Diseño del pipeline del Academic Decision Engine | `PENDING` | Fase B4 |
-| [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | `PENDING` | Todo el Track B |
+| [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | ✅ `ACCEPTED` *(Bloque A; Bloque B `DEFERRED`)* | `B1.6`, `B2.3`, `B3` |
 | [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | `PENDING` | Toda fase con datos reales |
 | [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | `PENDING` | Contenido de Fase B5 |
 | [ADR-008](#adr-008) | Stack y runtime del frontend | `ACCEPTED` | — |
@@ -305,11 +305,45 @@ es el que impide que el sistema afirme dominio o progreso inexistente.
 <a id="adr-005"></a>
 ## ADR-005 — Motor de base de datos, auth y persistencia
 
-**Estado:** `PENDING — esperando decisión del producto`
-**Bloquea:** todo el Track B a partir de la Fase B1.
+**Estado:** ✅ **`ACCEPTED` — alcance: Bloque A** · 30 ago 2026 · aceptado por el owner
+**Bloque B:** `DEFERRED`. Ver *Alcance de la aceptación*.
+**Bloquea:** ya no bloquea `B1.1`–`B1.5`. `B1.6` sigue esperando el ítem 6 (Bloque B).
 **Relacionado:** `C01-001` (identidad/tenancy/esquema ADL), `C01-030` (autorización, permisos y
 privacidad institucional), `C01-041` (Architecture/API/Data/Integration Spec).
 **Toca:** `architecture.md`, `data-model.md`, `roadmap.md`.
+
+### Alcance de la aceptación — 30 de agosto de 2026
+
+**Aceptado (Bloque A), y ya no se vuelve a discutir sin un ADR que lo revierta:**
+
+1. **Supabase** como Postgres gestionado + Auth.
+2. **Scoping institucional en Service/Repository**, con **RLS deny-by-default** como defensa en
+   profundidad — **las dos capas**, no una.
+3. **Controller → Service → Repository**, con dependencias inyectadas. El runtime físico se puede
+   mover después sin tocar dominio.
+
+**Diferido (Bloque B), con su fase bloqueada marcada:**
+
+| # | Qué | Bloquea |
+|---|---|---|
+| 4 | Storage de `Evidence`: motor, permisos, retención, borrado | **`B2.3`** |
+| 5 | Operación: Broadcast/outbox, rotación de secretos, observabilidad | **`B3`** en adelante |
+| 6 | `institutionId`: ¿identidad compartida con CRM o tabla de correspondencia? | **`B1.6`** |
+
+**Lo que esta aceptación NO habilita.** [ADR-006](#adr-006) sigue siendo bloqueo absoluto para
+cualquier dato de una persona real: `B1` corre **sobre datos sintéticos**, y `B1.6` los exige de
+forma explícita para sus contract tests.
+
+### Consecuencia que hay que mirar de frente: esto acerca [ADR-003](#adr-003)
+
+Ratificar Supabase **no decide** la convergencia con Dashboard_Achieve, que ya corre sobre Supabase
+con 29 migraciones — pero **la hace más barata y por lo tanto más probable**. Dos productos sobre el
+mismo proveedor tienden a compartir proyecto, y de ahí a compartir base hay un paso.
+
+**El spec lo prohíbe** (Parte II §18.1: sin base de datos compartida con el CRM; la integración es
+por contratos HTTP/eventos versionados), y esa prohibición **no se relaja por compartir proveedor**.
+Queda escrito acá porque es el momento en que el riesgo aparece, no cuando alguien proponga la
+migración.
 
 ### Contexto
 
@@ -399,10 +433,10 @@ El diseño objetivo recibido hace explícita la preferencia por Supabase y por l
 capas. Se conserva como recomendación concreta en `architecture.md`; este ADR permanece `PENDING`
 porque un documento adjunto no reemplaza la aceptación explícita exigida por las reglas de ADR.
 
-### Consecuencias mientras siga `PENDING`
+### Consecuencias
 
-- Todo el Track B a partir de B1 está bloqueado.
-- El Track A no está bloqueado en absoluto.
+- **`B1.1`–`B1.5` quedan desbloqueadas.** `B1.6` espera el ítem 6.
+- El Track A no está afectado.
 - `data-model.md` diseña el schema en **SQL estándar de Postgres**, que es portable entre las
   alternativas más probables, y marca explícitamente qué construcciones son específicas del proveedor.
 
