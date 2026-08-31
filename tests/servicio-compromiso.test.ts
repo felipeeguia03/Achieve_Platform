@@ -5,6 +5,7 @@ import {
   type Compromiso,
   type RepositorioDeCompromisos,
 } from "@/lib/server/servicios/compromiso";
+import type { EventoDeProducto, PublicadorDeEventos } from "@/lib/server/servicios/eventos";
 import type { CommitmentState } from "@/lib/domain/types";
 import { commitmentTransitions } from "@/lib/domain/state-machines";
 
@@ -20,6 +21,7 @@ import { commitmentTransitions } from "@/lib/domain/state-machines";
 
 /** Repository falso, con lo mínimo: una fila y un contador de escrituras. */
 function repoFalso(inicial: Compromiso, opciones: { seLoLlevanOtro?: boolean } = {}) {
+  const publicados: EventoDeProducto[] = [];
   let fila: Compromiso | null = { ...inicial };
   const escrituras: Array<{ esperado: CommitmentState; nuevo: CommitmentState; marcas?: object }> = [];
 
@@ -38,7 +40,12 @@ function repoFalso(inicial: Compromiso, opciones: { seLoLlevanOtro?: boolean } =
       return { ...fila };
     },
   };
-  return { repo, escrituras, actual: () => fila };
+  const eventos: PublicadorDeEventos = {
+    async publicar(e) {
+      publicados.push(e);
+    },
+  };
+  return { deps: { repo, eventos }, repo, eventos, escrituras, publicados, actual: () => fila };
 }
 
 const BASE: Compromiso = {
@@ -50,8 +57,8 @@ const BASE: Compromiso = {
 
 describe("B1.4 · el Service ejecuta la máquina de estados del dominio", () => {
   it("permite una transición declarada", async () => {
-    const { repo, actual } = repoFalso(BASE);
-    const r = await transicionar(repo, "inst-A", "c-1", "DUE");
+    const { deps, actual } = repoFalso(BASE);
+    const r = await transicionar(deps, "inst-A", "c-1", "DUE");
     expect(r.estado).toBe("OK");
     expect(actual()?.state).toBe("DUE");
   });
@@ -63,8 +70,8 @@ describe("B1.4 · el Service ejecuta la máquina de estados del dominio", () => 
    * agrega.
    */
   it("un MISSED no vuelve a COMPLETED, y no llega a tocar la base", async () => {
-    const { repo, escrituras, actual } = repoFalso({ ...BASE, state: "MISSED" });
-    const r = await transicionar(repo, "inst-A", "c-1", "COMPLETED");
+    const { deps, escrituras, actual } = repoFalso({ ...BASE, state: "MISSED" });
+    const r = await transicionar(deps, "inst-A", "c-1", "COMPLETED");
 
     expect(r.estado).toBe("TRANSICION_PROHIBIDA");
     expect(escrituras, "una transición prohibida no merece un viaje a la base").toEqual([]);
@@ -76,8 +83,8 @@ describe("B1.4 · el Service ejecuta la máquina de estados del dominio", () => 
     for (const desde of estados) {
       for (const hacia of estados) {
         if (commitmentTransitions[desde].includes(hacia)) continue;
-        const { repo, escrituras } = repoFalso({ ...BASE, state: desde });
-        const r = await transicionar(repo, "inst-A", "c-1", hacia);
+        const { deps, escrituras } = repoFalso({ ...BASE, state: desde });
+        const r = await transicionar(deps, "inst-A", "c-1", hacia);
         expect(r.estado, `${desde} → ${hacia}`).toBe("TRANSICION_PROHIBIDA");
         expect(escrituras, `${desde} → ${hacia}`).toEqual([]);
       }
@@ -92,8 +99,8 @@ describe("B1.4 · scoping institucional", () => {
    * y eso ya es una filtración entre tenants.
    */
   it("otra institución recibe NO_ENCONTRADO, no un error distinto", async () => {
-    const { repo, escrituras } = repoFalso(BASE);
-    const r = await transicionar(repo, "inst-B", "c-1", "DUE");
+    const { deps, escrituras } = repoFalso(BASE);
+    const r = await transicionar(deps, "inst-B", "c-1", "DUE");
     expect(r.estado).toBe("NO_ENCONTRADO");
     expect(escrituras).toEqual([]);
   });
@@ -101,15 +108,15 @@ describe("B1.4 · scoping institucional", () => {
 
 describe("B1.4 · el conflicto no se confunde con lo prohibido", () => {
   it("si otro se adelantó, es CONFLICTO y no TRANSICION_PROHIBIDA", async () => {
-    const { repo } = repoFalso(BASE, { seLoLlevanOtro: true });
-    const r = await transicionar(repo, "inst-A", "c-1", "DUE");
+    const { deps } = repoFalso(BASE, { seLoLlevanOtro: true });
+    const r = await transicionar(deps, "inst-A", "c-1", "DUE");
     // Distinguirlos importa: de un conflicto se reintenta; de lo prohibido no.
     expect(r.estado).toBe("CONFLICTO");
   });
 
   it("el estado esperado viaja al Repository: es el compare-and-swap", async () => {
-    const { repo, escrituras } = repoFalso(BASE);
-    await transicionar(repo, "inst-A", "c-1", "DUE");
+    const { deps, escrituras } = repoFalso(BASE);
+    await transicionar(deps, "inst-A", "c-1", "DUE");
     expect(escrituras[0].esperado).toBe("CONFIRMED");
   });
 });
@@ -123,8 +130,8 @@ describe("B1.4 · marcas de tiempo", () => {
       ["DUE", "MISSED", "missed_at"],
     ];
     for (const [desde, hacia, columna] of casos) {
-      const { repo, escrituras } = repoFalso({ ...BASE, state: desde });
-      await transicionar(repo, "inst-A", "c-1", hacia, reloj);
+      const { deps, escrituras } = repoFalso({ ...BASE, state: desde });
+      await transicionar(deps, "inst-A", "c-1", hacia, null, reloj);
       expect(escrituras[0].marcas, `${desde} → ${hacia}`).toEqual({
         [columna]: "2026-08-30T12:00:00.000Z",
       });
@@ -132,8 +139,53 @@ describe("B1.4 · marcas de tiempo", () => {
   });
 
   it("una transición sin marca propia no inventa columnas", async () => {
-    const { repo, escrituras } = repoFalso(BASE);
-    await transicionar(repo, "inst-A", "c-1", "DUE");
+    const { deps, escrituras } = repoFalso(BASE);
+    await transicionar(deps, "inst-A", "c-1", "DUE");
     expect(escrituras[0].marcas).toEqual({});
+  });
+});
+
+describe("B1.5 · cada transición deja su hecho en `product_event`", () => {
+  it("publica el evento con actor, institución, objeto y causa", async () => {
+    const { deps, publicados } = repoFalso(BASE);
+    await transicionar(deps, "inst-A", "c-1", "DUE", "actor-9");
+
+    expect(publicados).toHaveLength(1);
+    expect(publicados[0]).toMatchObject({
+      nombre: "CommitmentDue",
+      institutionId: "inst-A",
+      actorId: "actor-9",
+      sujetoTipo: "commitment",
+      sujetoId: "c-1",
+      causa: "CONFIRMED->DUE",
+    });
+  });
+
+  /**
+   * Un evento de algo que perdió la carrera sería un hecho que no ocurrió. El
+   * `product_event` es el registro de lo que pasó, no de lo que se intentó.
+   */
+  it("no publica si la escritura perdió la carrera", async () => {
+    const { deps, publicados } = repoFalso(BASE, { seLoLlevanOtro: true });
+    const r = await transicionar(deps, "inst-A", "c-1", "DUE");
+    expect(r.estado).toBe("CONFLICTO");
+    expect(publicados).toEqual([]);
+  });
+
+  it("no publica si la transición estaba prohibida", async () => {
+    const { deps, publicados } = repoFalso({ ...BASE, state: "MISSED" });
+    await transicionar(deps, "inst-A", "c-1", "COMPLETED");
+    expect(publicados).toEqual([]);
+  });
+
+  /**
+   * El hecho va en columnas propias y el `payload` queda vacío salvo que haga
+   * falta. Es la separación que ADR-006 necesita para que una eventual purga
+   * no tenga que borrar la fila entera.
+   */
+  it("el hecho no viaja dentro del payload", async () => {
+    const { deps, publicados } = repoFalso(BASE);
+    await transicionar(deps, "inst-A", "c-1", "DUE", "actor-9");
+    expect(publicados[0].payload ?? {}).toEqual({});
   });
 });

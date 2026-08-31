@@ -56,6 +56,30 @@ else
   ok "la segunda con la misma clave se rechaza en la base"
 fi
 
+echo "→ 4. Append-only: el pasado no se reescribe (I12)"
+corre "insert into product_event (event_name,institution_id,subject_type,subject_id,payload) values ('CommitmentCreated','$A','commitment','a8000000-0000-0000-0000-000000000001','{\"k\":1}');"
+corre "insert into audit_log (institution_id,action,target_type,target_id) values ('$A','read','commitment','a8000000-0000-0000-0000-000000000001');"
+ok "se pueden insertar hechos"
+
+# Con el rol del backend, no con `postgres`: el riesgo real es un UPDATE del
+# propio backend, no un cliente anónimo que ya no llega a la tabla.
+if corre "set role service_role; update product_event set payload='{\"k\":2}';"; then
+  mal "el backend pudo REESCRIBIR un evento"
+else
+  ok "service_role no puede hacer UPDATE de product_event"
+fi
+if corre "set role service_role; delete from audit_log;"; then
+  mal "el backend pudo BORRAR auditoría"
+else
+  ok "service_role no puede hacer DELETE de audit_log"
+fi
+if corre "set role service_role; update commitment set state='DUE' where institution_id='$A';"; then
+  ok "y sigue pudiendo actualizar las tablas normales"
+else
+  mal "la revocación se llevó puesto el resto del schema"
+fi
+q "delete from product_event; delete from audit_log;" >/dev/null
+
 echo "→ Coherencia entre estado y marcas de tiempo"
 if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,completed_at) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'UTC',40,'DRAFT',now());"; then
   mal "un DRAFT pudo guardar completed_at"

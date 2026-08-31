@@ -50,8 +50,16 @@ else
   echo "   ✓ anon/authenticated no alcanzan ninguna tabla de negocio"
 fi
 
+echo "→ Append-only de product_event y audit_log (I12)"
+violado=$(q "select coalesce(string_agg(nombre || ':' || privilegio, ', '), '') from public.tablas_append_only_violadas();")
+if [ -n "$violado" ]; then
+  echo "   ✗ el pasado se puede reescribir: $violado"; fallos=$((fallos + 1))
+else
+  echo "   ✓ nadie puede UPDATE ni DELETE sobre el registro de hechos"
+fi
+
 echo "→ Convenciones de §6 disponibles"
-for fn in set_updated_at tablas_sin_rls tablas_sin_acceso_de_servicio tablas_expuestas_al_cliente; do
+for fn in set_updated_at tablas_sin_rls tablas_sin_acceso_de_servicio tablas_expuestas_al_cliente tablas_append_only_violadas; do
   if [ "$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname='$fn';")" = "1" ]; then
     echo "   ✓ $fn()"
   else

@@ -1256,7 +1256,7 @@ sin acceso del frontend a tablas de negocio.
 | B1.2 | ✅ **COMPLETA** — schema de la capa académica ([`data-model.md`](data-model.md) §7), 13 tablas |
 | B1.3 | 🟡 **PARCIAL** — auth, `student` y JWT en `/api/*` completos. **El rol institucional no tiene modelo en el doc**: ver abajo |
 | B1.4 | ✅ **COMPLETA** — frontera Controller → Service → Repository, con §9 y los cuatro criterios de aislamiento probados |
-| B1.5 | `product_event` y `audit_log` append-only |
+| B1.5 | ✅ **COMPLETA** — `product_event` y `audit_log`, append-only **probado contra el propio backend** |
 | B1.6 | 🔒 Cliente de autorización CRM v1 con contract tests y datos sintéticos; **bloqueada por ADR-005 ítem 6**; uso real gateado por ADR-006 |
 
 #### ✅ Etapa B1.1 — COMPLETA · 30 de agosto de 2026
@@ -1409,6 +1409,44 @@ carrera.
 **Y un tercero en el propio guard.** `sinComentarios` sólo borraba comentarios a principio de línea,
 así que un `// .from("x")` al final de una línea seguía contando como violación. Lo encontró su
 auto-prueba. **Un guard con falsos positivos enseña a no documentar la regla que vigila.**
+
+---
+
+#### ✅ Etapa B1.5 — Eventos y auditoría · COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| `product_event` registra actor, timestamp, institución, objeto y causa | ✅ los cinco, en columnas propias |
+| Append-only (I12) | ✅ **revocado también a `service_role`**, y probado con un `UPDATE` real |
+| `lint` · `build` · `test` | ✅ verde · verde · **421 tests en 22 archivos** |
+
+**Append-only que aguanta al propio backend.** I12 dice *"revocar `UPDATE`/`DELETE`"*, y se revocó
+**incluyendo `service_role`** — el rol con el que entra el backend. Una regla que sólo vale para
+roles que nadie usa no es una regla: el riesgo real no es un cliente anónimo que ya no llega a la
+tabla, es un `UPDATE` del propio backend. El test lo comprueba **ejecutando** el `UPDATE`, no
+leyendo el catálogo de privilegios, y verifica además que la revocación **no se llevó puesto el
+resto del schema**.
+
+**El evento se publica después de que la escritura ganó**, nunca antes: un evento de algo que perdió
+la carrera sería un hecho que no ocurrió. Y el nombre es semántico —`CommitmentDue`, no
+`commitment_update`—: `product_event` es el registro de lo que pasó en el producto, no un diario de
+escrituras.
+
+#### Dónde choca esto con [ADR-006](decisions.md#adr-006), y qué se hizo
+
+Un log append-only y un derecho de supresión empujan en direcciones opuestas. **No se resolvió, y
+tampoco se cerró ninguna de las dos salidas:**
+
+- **El hecho y el contenido viven en columnas distintas.** `event_name`, `actor_id`, `subject_*` y
+  `occurred_at` son el hecho; `payload`, `before_value` y `after_value` son lo único que podría
+  contener dato personal. Vaciar esas tres conservando la fila es una operación de una línea el día
+  que asesoría lo autorice.
+- **No se construyó ningún mecanismo de borrado.** Inventarlo hoy sería adelantar la decisión — y
+  además el propio append-only lo impide: haría falta levantar la revocación, que es fricción
+  deliberada.
+
+Un test verifica que **el hecho no viaja dentro del `payload`**: si empezara a viajar ahí, la
+separación existiría en el schema y no en la práctica.
 
 ---
 

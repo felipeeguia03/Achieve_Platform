@@ -1,5 +1,6 @@
 import { assertTransition, commitmentTransitions } from "@/lib/domain/state-machines";
 import type { CommitmentState } from "@/lib/domain/types";
+import type { PublicadorDeEventos } from "./eventos";
 
 /**
  * Service de `Commitment`. Acá viven las reglas, la máquina de estados, el
@@ -61,12 +62,14 @@ const MARCA_DE_TIEMPO: Partial<Record<CommitmentState, string>> = {
  * base. Aceptarlo del request sería regalar el aislamiento de Parte I §29.
  */
 export async function transicionar(
-  repo: RepositorioDeCompromisos,
+  deps: { repo: RepositorioDeCompromisos; eventos: PublicadorDeEventos },
   institutionId: string,
   id: string,
   hacia: CommitmentState,
+  actorId: string | null = null,
   ahora: () => Date = () => new Date(),
 ): Promise<ResultadoDeTransicion> {
+  const { repo, eventos } = deps;
   const actual = await repo.porId(institutionId, id);
   if (!actual) return { estado: "NO_ENCONTRADO" };
 
@@ -85,6 +88,21 @@ export async function transicionar(
   // Cero filas: entre la lectura y la escritura alguien más lo movió. El estado
   // que validamos ya no es el estado que hay.
   if (!guardado) return { estado: "CONFLICTO" };
+
+  // El evento se publica **después** de que la escritura ganó, no antes: un
+  // evento de algo que perdió la carrera sería un hecho que no ocurrió.
+  //
+  // El nombre es semántico —`CommitmentConfirmed`, no `commitment_update`—
+  // porque `product_event` es el registro de lo que pasó en el producto, no un
+  // diario de escrituras.
+  await eventos.publicar({
+    nombre: `Commitment${hacia.charAt(0)}${hacia.slice(1).toLowerCase()}`,
+    institutionId,
+    actorId,
+    sujetoTipo: "commitment",
+    sujetoId: guardado.id,
+    causa: `${actual.state}->${hacia}`,
+  });
 
   return { estado: "OK", compromiso: guardado };
 }
