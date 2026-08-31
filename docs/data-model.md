@@ -237,6 +237,18 @@ type DimensionValue =
 **Nunca** se agrega un campo `overall_progress`, `percentage` ni `score` a esta estructura. La UI
 puede sintetizar para mostrar; el modelo no colapsa.
 
+**La escala breve de `HUMAN-P0-02 v1.0` no cambia esto.** La psicopedagoga confirmó el modelo mixto
+—escala breve para el día a día, dimensiones separadas cuando hay desempeño observable
+([ADR-025](decisions.md#adr-025))—, y esa escala es **proyección de lectura**: se deriva, **no se
+persiste**, no reemplaza a las dimensiones y no dispara un `ProgressUpdated`. Ninguna columna nueva
+sale de ahí.
+
+⚠️ **El conjunto de ejes sigue abierto.** El vocabulario profesional —contacto, recuperación,
+aplicación, corrección, confianza aparte— **no coincide** con estos cinco campos: *corrección* no
+tiene eje y *recuperación* y *aplicación* viven colapsadas en `domain`. La reconciliación es
+`C01-019` (gate `H`) y **hasta que se cierre esta estructura no gana ni pierde campos**. Ver
+[`product.md`](product.md) §6.1.
+
 ---
 
 ## 6. Schema propuesto — convenciones
@@ -633,6 +645,16 @@ CREATE TABLE evidence (
   review_sla_at      TIMESTAMPTZ,       -- solo si existe SLA real
 
   -- Las tres señales SEPARADAS. Ninguna se deriva del upload.
+  --
+  -- HUMAN-P0-05 v1.0 (ADR-025) confirmó esta separación y le puso nombre:
+  --   `signal_execution` + `signal_production` = EVIDENCIA DE TRABAJO.
+  --     Un cronograma, una foto del material, un checklist, una ficha o un resumen.
+  --     Prueban que hubo actividad. NO habilitan ninguna afirmación de aprendizaje.
+  --   `signal_domain`                          = EVIDENCIA DE APRENDIZAJE.
+  --     Exige una instancia que compruebe qué puede hacer con el contenido de manera
+  --     AUTÓNOMA. Por eso es la única NOT NULL y arranca en 'not_evaluated'.
+  -- Excepción declarada por la fuente, alcance abierto en `C01-035`: una tarea cuya
+  -- consigna misma exija comprensión.
   signal_execution   TEXT CHECK (signal_execution IN ('none','low','medium','high','not_evaluated')),
   signal_production  TEXT CHECK (signal_production IN ('none','low','medium','high','not_evaluated')),
   signal_domain      TEXT NOT NULL DEFAULT 'not_evaluated'
@@ -719,6 +741,10 @@ CREATE TABLE protocol_step (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   exam_protocol_id   UUID NOT NULL REFERENCES exam_protocol(id) ON DELETE CASCADE,
   canonical_id       TEXT NOT NULL,       -- p.ej. 'PE-PSY-06'
+  -- ⚠️ BRECHA ABIERTA (ADR-025 / HUMAN-P0-01 v1.0): `sequence` asume un recorrido
+  -- lineal. La psicopedagoga confirmó que los pasos 9 a 18 NO lo son: el orden es
+  -- variable, modificable y transversal. Este campo ordena la LISTA, y no puede
+  -- usarse para derivar "el siguiente paso" en ese tramo.
   sequence           INTEGER NOT NULL,
   step_type          TEXT NOT NULL,
   label              TEXT NOT NULL,
@@ -726,11 +752,15 @@ CREATE TABLE protocol_step (
   explanation        TEXT,
   expected_artifact  TEXT,
   criterion          TEXT,
+  -- ⚠️ `C01-031` SIGUE ABIERTO: la respuesta profesional confirmó la secuencia y no
+  -- cambió ningún paso, pero NO declaró cuáles de los 20 son obligatorios.
   is_required        BOOLEAN NOT NULL DEFAULT TRUE,
-  -- Rotula el contenido como asunción provisional pendiente de confirmación
-  -- humana. Ver ADR-007.
-  provisional_default_id TEXT,            -- 'PROVISIONAL-HUMAN-P0-01'
-  provisional_version    TEXT,            -- 'v0.1'
+  -- Rotula la procedencia del contenido pedagógico. Desde ADR-025 ya no rotula una
+  -- asunción del equipo sino CRITERIO PROFESIONAL CONFIRMADO: 'HUMAN-P0-01' / 'v1.0'.
+  -- Los defaults 'PROVISIONAL-HUMAN-P0-0X v0.1' quedan sólo en contenido histórico,
+  -- que no se reescribe.
+  provisional_default_id TEXT,            -- 'HUMAN-P0-01'
+  provisional_version    TEXT,            -- 'v1.0'
   UNIQUE (exam_protocol_id, canonical_id)
 );
 
@@ -744,6 +774,8 @@ CREATE TABLE exam_preparation (
   status               TEXT NOT NULL DEFAULT 'RECOMMENDED'
                          CHECK (status IN ('RECOMMENDED','ACTIVE','BUILDING','READY_BY_PROTOCOL',
                                            'NOT_READY','BLOCKED','EXAM_TAKEN','CLOSED','ABANDONED')),
+  -- ⚠️ Un único puntero. Compatible con el tramo reentrante 9-18 sólo si se lo lee
+  -- como "dónde está ahora", nunca como "hasta dónde llegó". Ver ADR-025.
   current_step_id      UUID REFERENCES protocol_step(id) ON DELETE SET NULL,
   activated_at         TIMESTAMPTZ,
   -- Impide dos preparaciones para el mismo estudiante y evaluación.
@@ -755,6 +787,15 @@ ALTER TABLE action
   FOREIGN KEY (exam_preparation_id) REFERENCES exam_preparation(id) ON DELETE SET NULL;
 
 -- Completion como HECHO, no como enum de estado por paso.
+--
+-- 🔴 BRECHA ESTRUCTURAL ABIERTA — ADR-025 / HUMAN-P0-01 v1.0.
+-- Este UNIQUE dice "un paso se completa una vez y no vuelve". La psicopedagoga
+-- confirmó lo contrario para el tramo 9-18: el estudiante avanza, vuelve sobre un
+-- tema, recupera, detecta un error, corrige, practica y vuelve a recuperar, y esas
+-- acciones "pueden darse varias veces sobre un mismo tema".
+-- La Fase B5 NO se construye contra este schema sin resolverlo. NO se cambia acá:
+-- cómo se modela la repetición (¿varias completions con `occurrence`? ¿completion
+-- por tema y no por paso?) toca `C01-026` y `C01-028`, que siguen OPEN.
 CREATE TABLE protocol_step_completion (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   exam_preparation_id UUID NOT NULL REFERENCES exam_preparation(id) ON DELETE CASCADE,
@@ -888,6 +929,8 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 | Estados `RESCUE_REQUIRED` / `RESCUE_MATERIALIZED` | Son **condiciones derivadas**, no estados persistidos |
 | Enum de estado por `ProtocolStep` | El spec no lo congela: solo hay un hecho de completion |
 | Tabla `student_model` | `C01-043` sigue `OPEN`: mencionado, no especificado |
+| **Pauta o criterio de evaluación de la cátedra** | `HUMAN-P0-07 v1.0` la vuelve **la referencia determinante** de la corrección, y el ADL no tiene dónde guardarla. No se inventa el campo: se resuelve al construir B5 con `C01-027`. Nota de procedencia: cargada por el estudiante entra `student` / `unverified`, porque el ingestor **no puede declarar `institution` ni `instructor`** ([ADR-023](decisions.md#adr-023)) |
+| **Repetición de un `ProtocolStep`** | El tramo 9–18 es reentrante (`HUMAN-P0-01 v1.0`) y hoy `protocol_step_completion` admite **una sola completion por paso**. Cómo se modela toca `C01-026` y `C01-028`, `OPEN` |
 
 ---
 

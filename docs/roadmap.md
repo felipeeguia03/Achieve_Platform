@@ -78,7 +78,7 @@ TRACK B ─── cada fase tiene su gate ────────────�
   ┌────┴─────────────────────────┐
   ↓                              ↓
   Fase B4 · ADE v1 🟡            Fase B5 · Modo Examen real
-  Engine + reloj + base ✅        🔒 ADR-007 (contenido) · ADR-011 (readiness)
+  Engine + reloj + base ✅        ✅ contenido (ADR-025) · 🔒 ADR-011 (readiness)
   └────┬─────────────────────────┘
        ↓
   Fase B6 · Risk + Intervención + Operador   🔒 ADR-003
@@ -1881,15 +1881,33 @@ las cuatro ramas son observables.
 
 ## Fase B5 — Modo Examen real
 
-**Estado:** 🔒 [ADR-007](decisions.md#adr-007) para el **contenido**, [ADR-011](decisions.md#adr-011)
-para readiness. La **estructura** no está bloqueada.
+**Estado:** 🟢 **Contenido desbloqueado el 31 de agosto de 2026** por
+[ADR-025](decisions.md#adr-025): las ocho `HUMAN-P0` están respondidas por la psicopedagoga real. La
+estructura nunca estuvo bloqueada. **Readiness sigue 🔒** por
+[ADR-011](decisions.md#adr-011) — es una contradicción estructural del spec (`CR-UX08-01`), no una
+pregunta pedagógica, y estas respuestas no la tocan.
 
 **Objetivo.** `ExamPreparation` real con `ExamProtocol` como configuración versionada.
 
-**Regla:** los pasos son configuración, nunca código. Los defaults `HUMAN-P0` se usan tal como están
-documentados y se rotulan como asunción provisional.
+**Regla:** los pasos son configuración, nunca código. El contenido **ya no es una asunción del
+equipo**: se carga como `HUMAN-P0-0X v1.0` y se cita. Lo único que se sigue rotulando como abierto
+son los **residuos** que ADR-025 lista.
 
-**Contratos a cerrar:** `C01-005`, `C01-024`…`C01-029`.
+### Lo que hay que resolver antes de escribir la primera migración
+
+Las respuestas trajeron tres requisitos que **el schema actual no satisface**. No son copy:
+
+| # | Qué | Dónde pega |
+|---|---|---|
+| 1 | **El tramo 9–18 es reentrante.** El estudiante vuelve sobre un tema, corrige y recupera de nuevo, varias veces. Hoy `protocol_step_completion` tiene `UNIQUE (exam_preparation_id, protocol_step_id)`: **un paso se completa una vez y no vuelve** | `data-model.md` §10 · `C01-026`, `C01-028` |
+| 2 | **La pauta de la cátedra manda** en la corrección, y **el ADL no tiene dónde guardarla**. Cargada por el estudiante entra `student`/`unverified` — el ingestor no puede declarar `institution` ni `instructor` ([ADR-023](decisions.md#adr-023)) | `data-model.md` §7 y §12 · `C01-027` |
+| 3 | **El núcleo H24 tiene siete componentes**, no uno. Incluye diagnóstico (*una prueba breve sin ayuda*) y **corrección de errores**, que el default anterior no contemplaba | Contenido del protocolo · `C01-034` |
+
+**Y una regla de producto que ya es firme:** repetir un paso **no es retroceder**. Ninguna superficie
+lo presenta como incumplimiento ni como pérdida de progreso ([`product.md`](product.md) §8.2).
+
+**Contratos a cerrar:** `C01-005`, `C01-024`…`C01-029`. Los residuos de `C01-031`…`C01-038` **no los
+cierra esta fase**: los cierra la misma persona que respondió las ocho.
 
 ---
 
@@ -1899,6 +1917,14 @@ documentados y se rotulan como asunción provisional.
 
 **Objetivo.** `RiskSignal` rule-based explicable, `Intervention` con playbook/SLA/outcome, y la
 consola operativa P0.
+
+**Insumo nuevo — 31 ago 2026.** `HUMAN-P0-06 v1.0` ([ADR-025](decisions.md#adr-025)) dice cuándo hace
+falta una persona, y **los tres disparadores que dio la profesional son señales de riesgo, no
+propiedades de una entrega**: un error que se repite y exige corregir el método, no avanzar a pesar
+de las devoluciones, y factores subjetivos —frustración, inseguridad, desmotivación, ansiedad frente
+al examen—. Su cierre es literal: *"ya no se trata de verificar si una respuesta está bien o mal,
+sino de comprender qué le está pasando a ese estudiante"*. **Eso es un `Operator`, no un reviewer**,
+y por eso `HUMAN-P0-06` alimenta esta fase y no sólo `C01-016`.
 
 **Absorbe la ex-Fase A1:** las cinco superficies `WF-O01`…`WF-O04` y `WF-I01`, diferidas por
 [ADR-012](decisions.md#adr-012).
@@ -1943,7 +1969,6 @@ desvío, riesgo y recuperación.
 |---|---|
 | [ADR-006](decisions.md#adr-006) Privacidad | **Cualquier fase con datos reales.** Absoluto |
 | [ADR-003](decisions.md#adr-003) Convergencia | Fase B6 |
-| [ADR-007](decisions.md#adr-007) HUMAN-P0 | Contenido de Fase B5 |
 | [ADR-011](decisions.md#adr-011) Readiness | Readiness visible en B5 |
 | [ADR-020](decisions.md#adr-020) Clases de ausencia | Control segmentado bloqueado en `UX05`/`UX07` |
 
@@ -1955,6 +1980,12 @@ desvío, riesgo y recuperación.
 
 ✅ **Resuelto el 29 de agosto de 2026:** [ADR-014](decisions.md#adr-014) (desktop-first; el contrato
 del primer viewport pasa a orden semántico, con 360 px como piso móvil).
+
+✅ **Resuelto el 31 de agosto de 2026:** [ADR-007](decisions.md#adr-007) — **las ocho decisiones
+`HUMAN-P0` fueron respondidas por la psicopedagoga real.** Ver [ADR-025](decisions.md#adr-025) y la
+fuente literal en [`human-p0-source.md`](human-p0-source.md). **El contenido de la Fase B5 deja de
+estar bloqueado.** Su readiness **no**: [ADR-011](decisions.md#adr-011) es una contradicción
+estructural del spec y sigue `PENDING`.
 
 > **La Fase 0 está cerrada.** `ADR-016` sigue pendiente como deuda del registro canónico, pero el
 > recorrido de focus group declara la navegación del facilitador y ya no bloquea el cierre.
@@ -1977,12 +2008,13 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | 🔒 Depende del cierre de B2 | 0 / — |
 | Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |
-| Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA por [ADR-024](decisions.md#adr-024) | 0 / — |
+| Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA, y ahora **con contenido real**: [ADR-025](decisions.md#adr-025) cerró las ocho `HUMAN-P0`. Readiness sigue bloqueada por [ADR-011](decisions.md#adr-011) | 0 / — |
 | Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por [ADR-006](decisions.md#adr-006)** — es la fase que lo cierra | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
-**Estado de los 51 contratos `C01`: 51 `OPEN`, 0 `CLOSED`.** Ver
+**Estado de los 51 contratos `C01`: 43 `OPEN`, 8 `ANSWERED — RESIDUO ABIERTO`, 0 `CLOSED`.** Las
+ocho respondidas son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026. Ver
 [`pending-decisions-annex.md`](pending-decisions-annex.md).
 
 ### 3.1 Deuda técnica abierta — `npm audit`

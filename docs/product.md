@@ -118,6 +118,8 @@ es exactamente la deriva de vocabulario).
 | **Action** | Unidad ejecutable de trabajo: verbo + alcance + objetivo | No es un compromiso |
 | **Commitment** | Acuerdo conductual: qué, cuándo, cuánto tiempo, qué evidencia | No es ejecución ni producción |
 | **Evidence** | Presentación canónica de la producción acordada | No es suficiencia, validación ni dominio |
+| **Evidencia de trabajo** | Prueba de que el estudiante **hizo una actividad**: cronograma, foto del material, checklist, ficha, resumen | **No prueba aprendizaje.** Nunca alimenta una afirmación de dominio |
+| **Evidencia de aprendizaje** | Instancia que comprueba **qué puede hacer con el contenido de manera autónoma** | No es una entrega más: exige desempeño observable, con condiciones y criterios claros |
 | **Reflection** | Feedback breve y contextual del alumno. **Objeto separado de Evidence** | No es un diario ni un diagnóstico |
 | **ProgressEntry** | Bundle derivado de eventos que reconstruye la Bitácora | No es una entidad de verdad paralela |
 
@@ -151,6 +153,7 @@ es exactamente la deriva de vocabulario).
 |---|---|
 | **Desvío académico** | Diferencia relevante entre dónde debería estar el estudiante y dónde está |
 | **Perception–Evidence Gap** | Brecha entre la confianza declarada y el dominio demostrado |
+| **Recuperación activa** | Traer el contenido a la memoria **sin el material a la vista**. `HUMAN-P0-03 v1.0`: es un proceso cognitivo **distinto** de producir un apoyo, y ninguno reemplaza al otro |
 | **No Cortar** | Rescate mínimo que evita el cero sin borrar el incumplimiento original |
 | **Golden Path** | Recorrido pequeño pero completo que representa la promesa real de Achieve |
 | **Golden Dataset** | Datos académicos de una carrera suficientemente completos para demostrar la experiencia objetivo |
@@ -288,6 +291,12 @@ confianza, aceptar una recomendación, crear o cumplir un Commitment, iniciar o 
 subir Evidence, ni ninguno de los estados `SUBMITTED`, `UNDER_REVIEW`, `SUFFICIENT`, `VALIDATED`,
 `ProgressUpdated`, recibir feedback, pasar tiempo o alcanzar una fecha.
 
+**Y un paso completado puede volver a trabajarse.** `HUMAN-P0-01 v1.0` confirma que en el tramo 9–18
+—estudio, recuperación, revisión y práctica— el recorrido es reentrante: el estudiante vuelve sobre
+un tema, corrige y recupera de nuevo, **varias veces sobre el mismo tema**. Repetir un paso **no es
+retroceder** y no se presenta como incumplimiento ni como pérdida de progreso. El modelo de datos
+todavía no admite esto — ver §8.2.
+
 ---
 
 ## 6. Las cinco dimensiones de progreso
@@ -319,6 +328,33 @@ subir Evidence, ni ninguno de los estados `SUBMITTED`, `UNDER_REVIEW`, `SUFFICIE
 | Resultado pendiente | *"Todavía no hay un cambio de progreso confirmado."* |
 | No-cambio confirmado | *"Esta actividad quedó registrada, pero no cambió las dimensiones de progreso."* |
 | Dato no disponible | *"No pudimos cargar el progreso. Tu evidencia conserva su estado."* |
+
+### 6.1 La escala breve, confirmada — y el vocabulario que todavía no cierra
+
+`HUMAN-P0-02 v1.0` ([ADR-025](decisions.md#adr-025)) confirma el **modelo mixto**: una **escala
+breve para el día a día**, y **las dimensiones separadas cuando hay desempeño observable**. La razón
+que dio la profesional es de carga, no de precisión: un registro simple que no le coma el tiempo al
+estudiante, y detalle sólo cuando hay evidencia concreta.
+
+Eso **no relaja** ninguna regla de abajo. La escala breve es **proyección de lectura**: se deriva,
+nunca se persiste como verdad, nunca reemplaza a las dimensiones y **nunca es la fuente de un
+`ProgressUpdated`**. La UI sintetiza; el modelo no colapsa.
+
+⚠️ **Los dos vocabularios todavía no se reconciliaron.** La profesional nombra **contacto,
+recuperación, aplicación y corrección**, con la **confianza aparte**. La tabla de arriba tiene
+**Recorrido, Práctica, Dominio, Confianza y Recencia**. No son el mismo conjunto:
+
+| Lo que dijo la profesional | Dónde cae hoy |
+|---|---|
+| Contacto con el contenido | **Recorrido** — coincide |
+| Recuperación sin ayuda | Colapsada dentro de **Dominio** |
+| Aplicación | Colapsada dentro de **Dominio** |
+| Corrección de errores | **No tiene eje propio** |
+| Confianza, aparte | **Confianza** — coincide, y ya está separada |
+| — | **Recencia** no es una dimensión que ella nombre |
+
+Traducir un conjunto al otro **es exactamente el tipo de inferencia que este producto no hace**.
+Queda abierto en `C01-019` (gate `H`), y hasta que se cierre **el modelo no gana ni pierde ejes**.
 
 ---
 
@@ -363,26 +399,27 @@ Todo dato académico que pueda cambiar o discutirse conserva:
 
 ---
 
-## 8. Reglas provisionales — `HUMAN-P0`
+## 8. Las ocho reglas `HUMAN-P0` — confirmadas por la psicopedagoga
 
-> ⚠️ **Las ocho reglas de esta sección son defaults provisionales pendientes de confirmación
-> profesional.** No son decisiones cerradas. Ningún agente de IA puede resolverlas ni cambiarlas:
-> requieren la voz de una psicopedagoga real. Ver [ADR-007](decisions.md#adr-007).
+> ✅ **Las ocho fueron respondidas por la psicopedagoga real el 31 de agosto de 2026.** Dejaron de
+> ser defaults provisionales del equipo: son **criterio profesional confirmado, `v1.0`**. Ver
+> [ADR-025](decisions.md#adr-025), y la **fuente literal** en
+> [`human-p0-source.md`](human-p0-source.md) — cuando esta tabla y esa transcripción discrepen,
+> **manda la transcripción**.
 >
-> **Se sigue usando cada default tal como está documentado** hasta que se confirme lo contrario.
-> Cuando un default afecta copy, criterio o comportamiento visible, la UI lo rotula internamente como
-> asunción provisional.
+> **Lo que sigue abierto son los residuos** de la columna derecha. Ésos siguen bajo la regla de
+> siempre: ningún agente de IA los cierra, se preguntan y no se aproximan.
 
-| ID | Cláusula | Qué decide | Default provisional en uso | Qué falta confirmar |
+| ID | Versión | Qué decide | Criterio confirmado | Residuo abierto |
 |---|---|---|---|---|
-| `HUMAN-P0-01` | `PROVISIONAL-HUMAN-P0-01 v0.1` | Contenido base de los 20 pasos del protocolo de examen | Usar la matriz `PE-PSY-01…20` completa como baseline, con granularidad y trazabilidad **por paso**, no como bloque indivisible | Obligatoriedad, dependencias, repetición y variantes H24 de cada uno de los 20 pasos, uno por uno |
-| `HUMAN-P0-02` | `PROVISIONAL-HUMAN-P0-02 v0.1` | Cómo se resume el seguimiento del aprendizaje | Modelo híbrido: escala breve para lectura rápida **+ dimensiones separadas** (contacto, recuperación, aplicación, corrección, confianza) cuando hay desempeño observable | Si la escala breve es aceptable como lectura secundaria reversible, o si debe eliminarse |
-| `HUMAN-P0-03` | `PROVISIONAL-HUMAN-P0-03 v0.1` | Si producir un apoyo (mapa, ficha, resumen) cuenta como aprendizaje | **No.** La recuperación activa sin ayuda es el resultado central; producir un apoyo es opcional y contextual | Excepciones por disciplina, nivel previo o modalidad donde construir la representación **sí** sea parte de la tarea evaluada |
-| `HUMAN-P0-04` | `PROVISIONAL-HUMAN-P0-04 v0.1` | Qué hacer cuando quedan menos de 24 h para el examen | Priorizar logística + **una única** actividad cognitiva de mayor retorno + proteger descanso. **Jerarquía adaptable, no checklist fijo** | Composición exacta del núcleo adaptable; qué es indelegable vs. omitible |
-| `HUMAN-P0-05` | `PROVISIONAL-HUMAN-P0-05 v0.1` | Qué cuenta como señal real de aprendizaje | Solo **desempeño observable** bajo condiciones y criterios claros. Fotos, checklists y mapas no alcanzan | Alcance exacto de "producciones admisibles" por disciplina. **Estado especial: `POTENTIALLY ANSWERED — REQUIRES SOURCE CONFIRMATION`** |
-| `HUMAN-P0-06` | `PROVISIONAL-HUMAN-P0-06 v0.1` | Cuándo se necesita revisión humana vs. corrección automática | Pauta objetiva cuando existe; **persona real** ante respuesta abierta, ambigua o de alto impacto | Definición operativa de "alto impacto"; qué producciones admiten autoevaluación |
-| `HUMAN-P0-07` | `PROVISIONAL-HUMAN-P0-07 v0.1` | Criterios de corrección para práctico y teórico escrito | Familias generales (procedimiento/resultado para práctico; precisión/relación conceptual/aplicación para teórico). **La pauta de la materia tiene precedencia** | Peso relativo de cada criterio; mínimos por disciplina |
-| `HUMAN-P0-08` | `PROVISIONAL-HUMAN-P0-08 v0.1` | Qué es el análisis posterior al examen | Revisión narrativa **breve y no culpabilizante**, sin número fijo de ajustes obligatorios | Momento exacto (antes/después de la nota); contenido mínimo obligatorio |
+| `HUMAN-P0-01` | `v1.0` | Contenido base de los 20 pasos del protocolo de examen | La secuencia `PE-PSY-01…20` **se confirma como base**, con granularidad y trazabilidad **por paso**. **Los pasos 9 a 18 no son lineales ni rígidos:** el orden es variable, modificable y transversal según contenido, modalidad y nivel de dominio, y **una misma acción puede repetirse varias veces sobre el mismo tema** | **Cuáles de los 20 son obligatorios.** La respuesta confirma la secuencia y no cambia ningún paso, pero no declara obligatoriedad caso por caso (`C01-031`) |
+| `HUMAN-P0-02` | `v1.0` | Cómo se resume el seguimiento del aprendizaje | **Modelo mixto:** una **escala breve** para el día a día **+ dimensiones separadas cuando hay desempeño observable**. Razón dada: mantener un registro simple que no le coma el tiempo al estudiante, y profundizar sólo cuando hay evidencia concreta de desempeño | **Cómo se reconcilian los dos vocabularios.** La profesional nombra *contacto, recuperación, aplicación y corrección* (+ confianza aparte); el modelo tiene las cinco de §6. No son el mismo conjunto (`C01-019`, gate `H`) |
+| `HUMAN-P0-03` | `v1.0` | Si producir un apoyo (mapa, ficha, resumen) cuenta como aprendizaje | Son **dos resultados separados dentro del mismo paso**, y **según el caso uno puede no aplicar**. Organizar el contenido y recuperarlo sin ayuda son **procesos cognitivos distintos**: una buena ficha no reemplaza la recuperación, y una buena recuperación no obliga a producir una ficha. **La técnica se usa cuando cumple una función concreta** — si el estudiante ya comprende y organiza el tema, exigirle producirla es tiempo perdido | **Si la recuperación también puede omitirse.** La opción dice *"uno puede no aplicar"* sin decir cuál; la justificación sólo cubre la ficha (`C01-033`) |
+| `HUMAN-P0-04` | `v1.0` | Qué hacer cuando quedan menos de 24 h para el examen | **Siete componentes:** situación real y logística · contenidos críticos · **una prueba breve sin ayuda** · priorización · práctica parecida al examen · **corrección de los errores importantes** · descanso y estrategia. *"Consolidar y no incorporar contenido nuevo"* supone un ideal donde **todo ya fue visto y recuperado**: si hay un **contenido central que nunca se trabajó, puede ser necesario abordarlo**, con expectativas realistas. El descanso se mide en **efectividad, no en horas** | **Si los siete son obligatorios o priorizables**, y en qué orden se sacrifican cuando no entran todos (`C01-034`) |
+| `HUMAN-P0-05` | `v1.0` | Qué cuenta como señal real de aprendizaje | **Confirmado, y con nombre propio: evidencia de trabajo ≠ evidencia de aprendizaje.** Un cronograma, una foto del material, un checklist, una ficha o un resumen **muestran que hubo actividad**; por sí solos **no permiten afirmar que el estudiante aprendió**. Hace falta una instancia que compruebe **qué puede hacer con ese contenido de manera autónoma** | **Qué tareas "exigen comprensión" por sí mismas.** La excepción está declarada, su alcance por disciplina no (`C01-035`) |
+| `HUMAN-P0-06` | `v1.0` | Cuándo se necesita revisión humana vs. corrección automática | **Selectiva y proporcional.** Lo comprobable **se automatiza**: no es pedagógicamente necesario que una persona mire cada entrega. **La persona entra por la situación del estudiante, no por el tipo de entrega** — error reiterado que exige corregir el método, no avanzar a pesar de las devoluciones, o factores subjetivos (frustración, inseguridad, desmotivación, ansiedad frente al examen). Ahí **ya no se trata de verificar si una respuesta está bien o mal, sino de entender qué le está pasando** | **Cuántas repeticiones hacen a un error "reiterativo"** y qué umbral dispara la intervención (`C01-036`, `C01-021`) |
+| `HUMAN-P0-07` | `v1.0` | Criterios de corrección para práctico y teórico escrito | Se conservan **las dos familias**, distintas entre sí — **práctico:** procedimiento, resultado, elección del método, resolver variaciones; **teórico escrito:** precisión, relaciones entre conceptos, aplicación, claridad, responder la consigna — **y la pauta de la cátedra manda cuando existe**, porque *"es lo que va a determinar qué se espera del estudiante en ese examen"* | **Peso relativo de cada criterio**, y qué pasa cuando la pauta de la cátedra **contradice** las familias generales (`C01-037`) |
+| `HUMAN-P0-08` | `v1.0` | Qué es el análisis posterior al examen | Separar **preparación, desempeño, estrategia y contexto**; registrar aprendizajes; **uno o más ajustes viables cuando correspondan, sin cantidad fija** — el *"exactamente dos cambios"* de la intervención #32 era un ejemplo, **no una regla**. Y **también se registra lo que funcionó y debe mantenerse** | **El momento**: antes o después de conocer la nota (`C01-038`) |
 
 ### 8.1 Consecuencia arquitectónica
 
@@ -394,19 +431,46 @@ provisional**. La propia fuente prohíbe hardcodearlos. Por eso:
 - No se deriva el paso actual desde la posición en una lista.
 - Cambiar la versión de un default **no reescribe historia**.
 
+**Esto ya se cobró.** Las respuestas del 31 de agosto cambiaron el contenido de cuatro de las ocho
+reglas. Con el protocolo como configuración, eso es cargar otra versión; hardcodeado, habría sido
+migrar el dominio para cambiar una regla pedagógica.
+
+### 8.2 El tramo 9–18 es reentrante — y todavía no hay modelo para eso
+
+`HUMAN-P0-01 v1.0` dice que en estudio, recuperación, revisión y práctica el estudiante **avanza,
+vuelve sobre un tema, recupera, detecta un error, corrige, practica, repasa y vuelve a recuperar**, y
+que **algunas de esas acciones pueden darse varias veces sobre el mismo tema**.
+
+El modelo de examen de [`data-model.md`](data-model.md) §10 asume hoy lo contrario: hay un
+`sequence` obligatorio por paso, un único `current_step_id`, y **una sola completion por paso**
+(`UNIQUE (exam_preparation_id, protocol_step_id)`). **Un paso se completa una vez y no vuelve.**
+
+Es una brecha estructural, no de copy, y la Fase B5 no se construye contra el schema actual sin
+resolverla. Consecuencias que ya son firmes, aunque el schema cambie:
+
+- **Volver sobre un tema no es retroceder.** Ninguna superficie presenta una repetición como
+  incumplimiento, recaída ni pérdida de progreso.
+- **El paso actual no se deriva de la posición en la lista** — ya era regla, y ahora además sería
+  falso: en el tramo central no hay "el siguiente".
+- **El orden depende del contenido, la modalidad y el nivel de dominio.** Un protocolo que fuerce una
+  única secuencia en 9–18 contradice el criterio profesional confirmado.
+
 ---
 
 ## 9. Otras reglas marcadas como provisionales o pendientes
 
-Además de las ocho `HUMAN-P0`, estas reglas visibles del producto corren sobre un default no cerrado:
+Las ocho `HUMAN-P0` ya no están en esta lista: [ADR-025](decisions.md#adr-025) las cerró. Estas
+reglas visibles del producto **sí** siguen corriendo sobre un default no cerrado:
 
 | Regla | Estado | Referencia |
 |---|---|---|
 | Activación de Modo Examen a los **14 días** | **Default UX documentado, no regla pedagógica rígida.** La UI **no calcula la ventana**: consume una señal ya emitida | `C01-024`, `SCP-01`/`SCP-02` |
-| Umbrales de `BUILDING` → `READY_BY_PROTOCOL` | Criterios generales definidos; **umbrales exactos pendientes** de psicopedagogía | `C01-029`, [ADR-011](decisions.md#adr-011) |
+| Owner canónico de readiness | **La contradicción es estructural, no pedagógica:** las respuestas de la psicopedagoga **no la tocan**. Sin card, sin score, sin cálculo | `C01-029`, [ADR-011](decisions.md#adr-011) |
+| Umbrales de `BUILDING` → `READY_BY_PROTOCOL` | Criterios generales definidos; umbrales exactos pendientes. **Ya hay insumo profesional** para fijarlos: `HUMAN-P0-04` y `HUMAN-P0-05` | `C01-029` |
 | Obligatoriedad de `Reflection` | Configurable `OPTIONAL` / `REQUIRED` por Action o paso. **La configuración exacta no está cerrada** | `C01-051` (gate `H`) |
-| Secuencia y criterio de cierre del Exam Protocol | Abiertos deliberadamente | `C01-027` |
-| `TopicProgress` y resumen de materia | Semántica técnica pendiente | `C01-019` (gate `H`) |
+| Secuencia y criterio de cierre del Exam Protocol | **La secuencia dejó de estar abierta** (`HUMAN-P0-01 v1.0`). Sigue abierto **el criterio de cierre**, y ahora también **cómo se modela el tramo reentrante 9–18** — ver §8.2 | `C01-027` |
+| Dónde vive la **pauta de la cátedra** | `HUMAN-P0-07 v1.0` la vuelve la referencia determinante de la corrección, y **el ADL no tiene entidad ni campo para guardarla**. No se inventa: se resuelve al construir B5 | `C01-027`, [ADR-025](decisions.md#adr-025) |
+| `TopicProgress` y resumen de materia | Semántica técnica pendiente, **más la reconciliación de vocabularios** que abre `HUMAN-P0-02` — ver §6 | `C01-019` (gate `H`) |
 | Contenido ejecutable de Action y Resource | Pendiente | `C01-008` (gate `H`) |
 
 ---
@@ -631,3 +695,9 @@ Lista consolidada de frases que el producto **no dice nunca**, con la razón:
 | *"Empezar a estudiar"* al activar Modo Examen | Activar no es estudiar |
 | *"Tu plan fue generado"* | Activar no crea un plan |
 | *"Completaste el paso"* por abrirlo | Abrir no completa |
+| *"Tu resumen / tu ficha / tu cronograma demuestra que aprendiste"* | `HUMAN-P0-05 v1.0`: eso es **evidencia de trabajo**, no de aprendizaje |
+| *"Retrocediste"* / *"Volviste atrás"* al repetir un paso del tramo 9–18 | `HUMAN-P0-01 v1.0`: el recorrido es reentrante. Volver sobre un tema es el método, no una recaída |
+| *"Te falta el resumen para completar el paso"* cuando el apoyo no aplica | `HUMAN-P0-03 v1.0`: producir un apoyo y recuperar son resultados separados; uno puede no aplicar |
+| *"Hacé dos cambios para el próximo examen"* | `HUMAN-P0-08 v1.0`: la cantidad de ajustes **no es fija**; salen del análisis o no salen |
+| *"No incorpores ningún contenido nuevo"* como prohibición absoluta a menos de 24 h | `HUMAN-P0-04 v1.0`: un contenido central nunca trabajado **puede** abordarse, con expectativas realistas |
+| *"Dormí 8 horas"* como requisito | `HUMAN-P0-04 v1.0`: el descanso se cuida en **efectividad**, no en una cantidad fija de horas |

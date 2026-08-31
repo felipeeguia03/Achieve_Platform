@@ -112,7 +112,8 @@ Achieve_Platform/
 │   ├── roadmap.md               ← fases y etapas
 │   ├── decisions.md             ← ADRs
 │   ├── domain-translation-dd1-dd10.md  ← respuestas DD1–DD10
-│   ├── pending-decisions-annex.md   ← las 51 C01 + 8 HUMAN-P0 (documento vivo)
+│   ├── pending-decisions-annex.md   ← las 51 C01: 43 abiertas, 8 respondidas (vivo)
+│   ├── human-p0-source.md           ← respuestas de la psicopedagoga, literales
 │   ├── product-spec-source.md       ← spec maestro (referencia, no se edita)
 │   └── design-system-source.md     ← manual de diseño (referencia, no se edita)
 │

@@ -143,8 +143,10 @@ Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `Materia
 - El progreso se muestra con las **5 dimensiones separadas**, nunca fusionadas en un solo número.
 
 **Nota:** varios defaults del dominio pedagógico específico (protocolo de examen, criterios de
-corrección) **no** entran acá — son las 8 `HUMAN-P0`, que siguen `PENDING` de confirmación
-profesional real, no de "mejor criterio" inferido. Ver [ADR-007](decisions.md#adr-007).
+corrección) **no** entran acá — son las 8 `HUMAN-P0`, que se resolvieron como corresponde: **con
+confirmación profesional real**, no con "mejor criterio" inferido. Respondidas el 31 de agosto de
+2026; ver [ADR-025](decisions.md#adr-025) y la fuente en
+[`human-p0-source.md`](human-p0-source.md). **Sus residuos siguen abiertos y se preguntan igual.**
 
 ---
 

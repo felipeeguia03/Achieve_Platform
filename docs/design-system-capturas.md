@@ -616,7 +616,7 @@ reportes no vuelven.
 | **Ausencia en tres tratamientos** (§1.6) | `UX02`, `UX06`, `UX08` | Especifica la primitiva `Ausencia`, pendiente en §3.2 |
 | **Esqueleto isomorfo** (§9.1) | Todas | Especifica la primitiva `Esqueleto`, pendiente en §3.2 |
 | **Anatomía de campo con regla** (§8.2) | `UX04`, `UX05` | Compromiso y Evidencia son los dos formularios reales del producto |
-| **Interruptor con default profesional** (§8.3) | `UX04`, `UX07` | ⚠️ Los defaults de Achieve son `HUMAN-P0` provisionales ([ADR-007](decisions.md#adr-007)) |
+| **Interruptor con default profesional** (§8.3) | `UX04`, `UX07` | ✅ Los defaults `HUMAN-P0` son **criterio profesional confirmado** desde el 31 ago 2026 ([ADR-025](decisions.md#adr-025)) |
 | **Segmentado con opciones atenuadas** (§8.3) | `UX05`, `UX07` | Método de evidencia / tipo de examen, con lo inaplicable visible y atenuado |
 | **Umbral con escala de juicio** (§8.3) | **Ninguna** | `DD5`: Achieve no muestra magnitudes de máquina. Se documenta, no se usa |
 | **Encabezado de entidad** (§10.3) | `UX02`, `UX08` | Materia y Examen son las dos entidades con ficha propia |

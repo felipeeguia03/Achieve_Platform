@@ -23,9 +23,12 @@ Si el código y `docs/` discrepan, **el código es el defectuoso**.
 
 ### 1.1 No inventes reglas de negocio
 
-Este proyecto tiene **51 decisiones de negocio abiertas** (`C01-001`…`C01-051`) y **8 decisiones
-psicopedagógicas** (`HUMAN-P0-01`…`08`) que corren con defaults provisionales. Todas están en
-[`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md).
+Este proyecto tiene **43 decisiones de negocio abiertas** (de `C01-001` a `C01-051`). Las **8
+decisiones psicopedagógicas** (`HUMAN-P0-01`…`08`) **fueron respondidas** por la psicopedagoga real
+el 31 de agosto de 2026: se construye contra su criterio confirmado `v1.0`, **citándolo**, y sus
+residuos siguen abiertos. Todas están en
+[`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md); las respuestas, en
+[`docs/human-p0-source.md`](docs/human-p0-source.md) y [ADR-025](docs/decisions.md#adr-025).
 
 Si te falta una regla del dominio:
 
@@ -43,8 +46,16 @@ aproximes."*
 Un ADR en `PENDING` lo cierra **una persona**, no un agente. Podés proponer opciones y recomendar una.
 No podés implementar contra él.
 
-Las 8 `HUMAN-P0` son de criterio profesional y **ningún agente puede cerrarlas**. Se usa el default
-provisional documentado, tal como está, y se lo rotula como asunción provisional.
+Las 8 `HUMAN-P0` son de criterio profesional y **ningún agente puede cerrarlas**. **Ya no hace
+falta:** las respondió la psicopedagoga real el 31 de agosto de 2026. Se usa el criterio confirmado
+`HUMAN-P0-0X v1.0` tal como está documentado en [`docs/product.md`](docs/product.md) §8, y se lo
+cita.
+
+**Lo que sigue cerrado para un agente son los residuos** que [ADR-025](docs/decisions.md#adr-025)
+lista —obligatoriedad paso a paso, reconciliación de dimensiones, umbral de "error reiterativo",
+peso de los criterios, momento del postmortem—. Ésos se preguntan. Y una fuente literal manda sobre
+cualquier paráfrasis: si [`docs/human-p0-source.md`](docs/human-p0-source.md) y un resumen
+discrepan, **gana la transcripción**.
 
 ### 1.3 Datos reales: bloqueo absoluto
 
@@ -221,7 +232,8 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/roadmap.md`](docs/roadmap.md) | Fases, etapas, bloqueos, estado | Antes de empezar cualquier trabajo |
 | [`docs/decisions.md`](docs/decisions.md) | ADRs numerados | **Siempre.** Para saber qué está bloqueado |
 | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) | Las respuestas `DD1`–`DD10` que el manual de diseño exige | Antes de aplicar un principio del manual |
-| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` + 8 `HUMAN-P0` | Cuando dudes si algo está decidido |
+| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` — 43 abiertas, 8 respondidas | Cuando dudes si algo está decidido |
+| [`docs/human-p0-source.md`](docs/human-p0-source.md) | **Fuente literal** de las 8 respuestas psicopedagógicas | Antes de escribir contenido del protocolo de examen |
 | [`docs/design-system-capturas.md`](docs/design-system-capturas.md) | Extracción visual anonimizada + §12, las decisiones de diseño abiertas | Antes de tocar layout, espaciado o la posición de una CTA |
 | **`docs/diseño/*.png`** | **Las 34 capturas: la fuente del lenguaje visual.** No versionadas ([ADR-006](docs/decisions.md#adr-006)) | **Siempre, antes de tocar UI.** Ver §1.5 |
 | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) | Contrato máquina-a-máquina vigente Plataforma ↔ CRM | Antes de tocar registro, elegibilidad o integración CRM |

@@ -6,7 +6,7 @@
 
 ## Qué es esto y qué no es
 
-Son 51 decisiones de negocio/producto sin resolver (registro C01) más 8 decisiones psicopedagógicas específicas que forman parte de esas 51 (`HUMAN-P0-01…08`, dentro de C01-031…038). Ninguna bloquea generar el prototipo low-fi: para eso alcanza con fixtures y estados sintéticos, que es justamente lo que ya cubre el spec consolidado. Bloquean, en cambio, cualquier paso hacia high-fidelity, implementación real o piloto — ahí estas 51 filas dejan de poder resolverse con un fixture y necesitan una respuesta real de un owner.
+Son 51 decisiones de negocio/producto (registro C01), de las que **43 siguen sin resolver** más 8 decisiones psicopedagógicas específicas que forman parte de esas 51 (`HUMAN-P0-01…08`, dentro de C01-031…038). Ninguna bloquea generar el prototipo low-fi: para eso alcanza con fixtures y estados sintéticos, que es justamente lo que ya cubre el spec consolidado. Bloquean, en cambio, cualquier paso hacia high-fidelity, implementación real o piloto — ahí estas 51 filas dejan de poder resolverse con un fixture y necesitan una respuesta real de un owner.
 
 **Severidad:**
 - `P1` — tiene fallback reversible hoy (fixture/omisión/estado neutral), pero debe cerrarse antes de su gate material.
@@ -15,7 +15,16 @@ Son 51 decisiones de negocio/producto sin resolver (registro C01) más 8 decisio
 **Gate material** (a partir de qué etapa deja de poder posponerse):
 `I` = antes de implementación productiva · `H` = antes de high-fidelity · `P` = antes de piloto institucional · `O` = fuera del MVP, no bloquea nada del corte actual.
 
-Las 51 filas están `OPEN`. Ninguna reclasificación ni uso en el low-fi las cierra — cerrarlas requiere una respuesta real de su owner, documentada, no una inferencia.
+**43 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
+`ANSWERED — RESIDUO ABIERTO` el 31 de agosto de 2026: su owner —una psicopedagoga real— respondió por
+escrito. Ver [ADR-025](decisions.md#adr-025) y la fuente literal en
+[`human-p0-source.md`](human-p0-source.md).
+
+Eso es exactamente lo que este anexo pedía: **una respuesta real de su owner, documentada, no una
+inferencia.** Ninguna reclasificación ni uso en el low-fi cierra una fila; sólo su owner.
+
+**`ANSWERED — RESIDUO ABIERTO` no es `CLOSED`.** El criterio principal está confirmado y se puede
+construir contra él; lo que queda listado en la columna de residuo sigue sin poder inventarse.
 
 ## Tabla maestra — 51 decisiones pendientes (C01)
 
@@ -33,32 +42,32 @@ Las 51 filas están `OPEN`. Ninguna reclasificación ni uso en el low-fi las cie
 | C01-010 | Commitment temporal, renegociación y rescate | Commitment owner; Hoy/Materia/Bitácora/CRM; C01-003/008 | OPEN | P1 | I |
 | C01-011 | Coordinación observable Action–Commitment | Product lifecycle owner; UX01/03/04; C01-007/009/010/023 | OPEN | P1 | I |
 | C01-012 | Evidence content y pre-submission | Evidence System; UX05/Protocol; C01-001/008 | OPEN; Reflection config separada en C01-051 | P1 | I |
-| C01-013 | Criterios, validación y señales de Evidence | Evidence System/Product; Progress/Protocol/ADE; C01-008/012 | OPEN; selectividad resuelta por CR, semántica técnica abierta | P1 | I |
+| C01-013 | Criterios, validación y señales de Evidence | Evidence System/Product; Progress/Protocol/ADE; C01-008/012/035 | OPEN; semántica técnica abierta. **Confirmado por `HUMAN-P0-05 v1.0`:** `signal_execution`/`signal_production` son **evidencia de trabajo**; sólo `signal_domain` es **evidencia de aprendizaje** | P1 | I |
 | C01-014 | Relaciones, agregación y tardanza de Evidence | Evidence System; Commitment/Progress/Protocol; C01-007/010/012/027 | OPEN | P1 | I |
 | C01-015 | Idempotencia y normalización Web/WhatsApp de Evidence | Evidence Integration; UX05/auditoría; C01-012/014/023 | OPEN | P1 | I |
-| C01-016 | Instancia técnica de revisión R1 | Validation/Security; Evidence/R1; C01-013/030 | OPEN; R1 autorizada, R3 fallback, assignment técnico pendiente | P1 | I |
+| C01-016 | Instancia técnica de revisión R1 | Validation/Security; Evidence/R1; C01-013/030/036 | OPEN; R1 autorizada, R3 fallback, assignment técnico pendiente. **Insumo nuevo:** `HUMAN-P0-06 v1.0` dice **cuándo** hace falta una persona — y el disparador es la situación del estudiante, no la entrega | P1 | I |
 | C01-017 | Privacidad y retención de Evidence/Reflection | Product Privacy; estudiante/R1/institución; C01-001/030/051 | OPEN | P1 | I |
 | C01-018 | `ProgressUpdated`: payload, causalidad y no-cambio | Progress owner; UX06/08/09/ADE/Risk; C01-013/014/023 | OPEN | P1 | I |
 | C01-019 | TopicProgress y resumen de materia | Product Progress; Hoy/Materia/Bitácora/Risk; C01-003/018 | OPEN; semántica técnica pendiente | P1 | H |
 | C01-020 | ProgressEntry / Bitácora bundle | Progress/Event owner; Bitácora/Materia; C01-018/019/023 | OPEN; read model/materialización no decididos | P1 | I |
-| C01-021 | Risk Engine v1 y sujeto de RiskSignal | Risk owner; TodayView/CRM/ADE; C01-001/002/019/023 | OPEN | P1 | I |
+| C01-021 | Risk Engine v1 y sujeto de RiskSignal | Risk owner; TodayView/CRM/ADE; C01-001/002/019/023/036 | OPEN. **Insumo nuevo:** los tres disparadores de `HUMAN-P0-06 v1.0` —error reiterado, no avanzar pese a devoluciones, factores subjetivos— son **señales de riesgo**, no propiedades de una entrega | P1 | I |
 | C01-022 | Closed-loop Risk–Intervention–Outcome | Product Operations; CRM/Risk/institución; C01-021/039/044 | OPEN; core sin contrato completo | P1 | I |
 | C01-023 | Product Event Model | Product Event owner; analytics/servicios; C01-001 | OPEN; artifact ausente | P1 | I |
 | C01-024 | Recomendación/activación temporal de Modo Examen | Product/ADE; UX01/02/07; C01-005/006/023 | OPEN; default configurable | P1 | I |
 | C01-025 | ExamPreparation: ownership y lifecycle | ExamPreparation owner; UX07–09; C01-005/023/024 | OPEN | P1 | I |
 | C01-026 | ExamProtocol instance y estado por paso | Exam Protocol owner; UX08/09/Evidence/ADE; C01-025 | OPEN | P1 | I |
-| C01-027 | Contenido/Resource versionado de ProtocolStep | Exam Protocol content owner; UX09/Evidence; C01-002/026/031–038/051 | OPEN; defaults sustituibles | P1 | I |
-| C01-028 | Completion, gates y `ProtocolStepCompleted` | Exam Protocol/Evidence; UX08/09/Progress; C01-013/014/016/023/026/027 | OPEN | P1 | I |
-| C01-029 | Readiness scoped de ExamPreparation | Product; UX08/ADE/Risk; C01-025–028/031–038 | OPEN; `C01-CF-02` contradicción real | P1 | I |
+| C01-027 | Contenido/Resource versionado de ProtocolStep | Exam Protocol content owner; UX09/Evidence; C01-002/026/031–038/051 | OPEN. **Los defaults dejaron de ser del equipo:** el contenido es `HUMAN-P0 v1.0`. Sigue abierto el criterio de cierre, y aparece uno nuevo: **dónde vive la pauta de la cátedra** | P1 | I |
+| C01-028 | Completion, gates y `ProtocolStepCompleted` | Exam Protocol/Evidence; UX08/09/Progress; C01-013/014/016/023/026/027 | OPEN. **Requisito nuevo y firme:** el tramo 9–18 es **reentrante** (`HUMAN-P0-01 v1.0`) y el schema actual admite **una sola completion por paso** | P1 | I |
+| C01-029 | Readiness scoped de ExamPreparation | Product; UX08/ADE/Risk; C01-025–028/031–038 | OPEN; `C01-CF-02` contradicción real — **estructural, no pedagógica: las respuestas de la psicopedagoga no la tocan** ([ADR-011](decisions.md#adr-011)). Sí aportan insumo para los umbrales | P1 | I |
 | C01-030 | Autorización, permisos y privacidad institucional | Product Security/Privacy; todas las superficies/CRM; C01-001/002/017/039 | OPEN; diseño JWT/backend/RLS recibido, política y aceptación técnica pendientes | P1 | I |
-| C01-031 | `HUMAN-P0-01`: baseline granular de 20 IDs | Psicopedagoga real; Protocol content; provenance humana | OPEN; default configurable | P1 | I |
-| C01-032 | `HUMAN-P0-02`: dimensiones y proyección breve | Psicopedagoga real; Evidence/Progress/Protocol | OPEN; default configurable | P1 | I |
-| C01-033 | `HUMAN-P0-03`: recuperación y apoyos producidos | Psicopedagoga real; Protocol/ADE/Evidence | OPEN; default configurable | P1 | I |
-| C01-034 | `HUMAN-P0-04`: núcleo H24 adaptable | Psicopedagoga real; Protocol/readiness scoped | OPEN; default configurable | P1 | I |
-| C01-035 | `HUMAN-P0-05`: señal de aprendizaje | Psicopedagoga real; Evidence signals/Progress | OPEN; potentially answered, source confirmation required | P1 | I |
-| C01-036 | `HUMAN-P0-06`: aplicabilidad de revisión humana | Psicopedagoga real; Protocol/Validation | OPEN; no reabre R1/R3 | P1 | I |
-| C01-037 | `HUMAN-P0-07`: criterios práctico/teórico escrito | Psicopedagoga real; Protocol content/completion | OPEN; default configurable | P1 | I |
-| C01-038 | `HUMAN-P0-08`: postmortem | Psicopedagoga real; Protocol post-exam | OPEN; asunción visible | P1 | I |
+| C01-031 | `HUMAN-P0-01`: baseline granular de 20 IDs | Psicopedagoga real; Protocol content; provenance humana | **ANSWERED 31 ago 2026** ([ADR-025](decisions.md#adr-025)) — secuencia confirmada como base, tramo 9–18 **reentrante**. Residuo: **obligatoriedad paso a paso** | P1 | I |
+| C01-032 | `HUMAN-P0-02`: dimensiones y proyección breve | Psicopedagoga real; Evidence/Progress/Protocol | **ANSWERED 31 ago 2026** — modelo mixto confirmado, la escala breve **se queda**. Residuo: **reconciliar los dos vocabularios de dimensiones** (`C01-019`) | P1 | I |
+| C01-033 | `HUMAN-P0-03`: recuperación y apoyos producidos | Psicopedagoga real; Protocol/ADE/Evidence | **ANSWERED 31 ago 2026** — dos resultados **separados**; la técnica se usa cuando cumple una función concreta. Residuo: **si la recuperación también puede omitirse** | P1 | I |
+| C01-034 | `HUMAN-P0-04`: núcleo H24 adaptable | Psicopedagoga real; Protocol/readiness scoped | **ANSWERED 31 ago 2026** — **siete componentes**, con diagnóstico y corrección adentro. Residuo: **si son obligatorios o priorizables**, y el orden de sacrificio | P1 | I |
+| C01-035 | `HUMAN-P0-05`: señal de aprendizaje | Psicopedagoga real; Evidence signals/Progress | **ANSWERED 31 ago 2026** — la fuente **confirmó**: evidencia de trabajo ≠ evidencia de aprendizaje. Sale de `POTENTIALLY ANSWERED`. Residuo: **qué tareas exigen comprensión por sí mismas** | P1 | I |
+| C01-036 | `HUMAN-P0-06`: aplicabilidad de revisión humana | Psicopedagoga real; Protocol/Validation; **y Risk/Intervention** | **ANSWERED 31 ago 2026** — selectiva y proporcional; **la persona entra por la situación del estudiante, no por el tipo de entrega**. Residuo: **umbral de "error reiterativo"** | P1 | I |
+| C01-037 | `HUMAN-P0-07`: criterios práctico/teórico escrito | Psicopedagoga real; Protocol content/completion | **ANSWERED 31 ago 2026** — las dos familias se conservan y **la pauta de la cátedra manda**. Residuo: **peso relativo**, y qué pasa si la pauta contradice las familias | P1 | I |
+| C01-038 | `HUMAN-P0-08`: postmortem | Psicopedagoga real; Protocol post-exam | **ANSWERED 31 ago 2026** — cuatro ejes, **sin cantidad fija** de ajustes, y **se registra lo que funcionó**. Residuo: **el momento**, antes o después de la nota | P1 | I |
 | C01-039 | CRM–Plataforma, incl. `human_assignment` | CRM/Operations; Plataforma/Hoy/Compromiso/Risk; C01-001/021/022/030 | OPEN; autorización v1 documentada, actividad/contexto/assignment pendientes | P1 | I |
 | C01-040 | Webhooks, sincronización y reconciliación | Integration/Security; CRM/Evidence/Event Model; C01-015/023/030/039 | OPEN; retry de autorización v1 definido, webhooks/reconciliación futuros sin contrato | P1 | I |
 | C01-041 | Architecture/API/Data/Integration Spec | CTO/Architecture; equipos; depende de contratos funcionales | OPEN; artefacto parcial recibido, falta aceptación y contratos productivos completos | P1 | I |
@@ -74,26 +83,39 @@ Las 51 filas están `OPEN`. Ninguna reclasificación ni uso en el low-fi las cie
 | C01-051 | Configuración y obligatoriedad funcional de Reflection | Product/Evidence configuration; Evidence/Protocol/Bitácora; C01-008/012/017/027 | OPEN; SCP antes omitido, distinto de privacidad | P1 | H |
 
 
-## Detalle — las 8 decisiones psicopedagógicas (`HUMAN-P0-01…08`)
+## Detalle — las 8 decisiones psicopedagógicas (`HUMAN-P0-01…08`) — **RESPONDIDAS**
 
-Estas ocho son un subconjunto de C01-031…038: no son técnicas, son de criterio profesional (una psicopedagoga real tiene que confirmarlas). Hoy cada una corre con un **default provisional** razonado pero no confirmado. Resumen — para el detalle completo con fundamento, riesgos y fallback ver `ACHIEVE_EP01_PROVISIONAL_HUMAN_DEFAULTS_v0.1.md` dentro del paquete C01.
+Estas ocho son un subconjunto de C01-031…038: no son técnicas, son de criterio profesional. **El 31
+de agosto de 2026 la psicopedagoga real las respondió por escrito**, con las ocho opciones marcadas y
+observaciones. La fuente literal está en [`human-p0-source.md`](human-p0-source.md); su lectura, en
+[ADR-025](decisions.md#adr-025). Los defaults `PROVISIONAL-HUMAN-P0-0X v0.1` que el equipo venía
+usando quedan **reemplazados** por `HUMAN-P0-0X v1.0`.
 
-| ID | Qué decide | Default provisional en uso | Qué falta confirmar |
+**Cuatro de las ocho cambiaron el criterio que el equipo asumía.** Vale la pena mirarlas: son las que
+habrían quedado mal si se construía B5 antes de preguntar.
+
+| ID | Criterio confirmado (`v1.0`) | ¿Cambió el default? | Residuo abierto |
 |---|---|---|---|
-| `HUMAN-P0-01` | Contenido base de los 20 pasos del protocolo de examen | Usar la matriz `PE-PSY-01…20` completa como baseline, con granularidad y trazabilidad por paso — no como bloque indivisible | Obligatoriedad, dependencias, repetición y variantes H24 de cada uno de los 20 pasos, uno por uno |
-| `HUMAN-P0-02` | Cómo se resume el seguimiento del aprendizaje | Modelo híbrido: escala breve para lectura rápida + dimensiones separadas (contacto, recuperación, aplicación, corrección, confianza) cuando hay desempeño observable | Si la escala breve es aceptable como lectura secundaria reversible, o si debe eliminarse y dejar solo dimensiones separadas |
-| `HUMAN-P0-03` | Si producir un apoyo (mapa, ficha, resumen) cuenta como aprendizaje | No — la recuperación activa sin ayuda es el resultado central; producir un apoyo es opcional/contextual | Excepciones por disciplina, nivel previo o modalidad donde construir la representación sí sea parte de la tarea evaluada |
-| `HUMAN-P0-04` | Qué hacer cuando quedan menos de 24hs para el examen | Priorizar logística + una única actividad cognitiva de mayor retorno + proteger descanso, no un checklist fijo | Composición exacta del núcleo adaptable; qué es indelegable vs. omitible |
-| `HUMAN-P0-05` | Qué cuenta como señal real de aprendizaje | Solo desempeño observable bajo condiciones y criterios claros; fotos/checklists/mapas no alcanzan | Alcance exacto de "producciones admisibles" por disciplina |
-| `HUMAN-P0-06` | Cuándo se necesita revisión humana vs. corrección automática | Pauta objetiva cuando existe; persona real ante respuesta abierta, ambigua o de alto impacto | Definición operativa de "alto impacto"; qué producciones admiten autoevaluación |
-| `HUMAN-P0-07` | Criterios de corrección para práctico y teórico escrito | Familias generales (procedimiento/resultado para práctico; precisión/relación conceptual/aplicación para teórico), pauta de la materia tiene precedencia | Peso relativo de cada criterio; mínimos por disciplina |
-| `HUMAN-P0-08` | Qué es el análisis posterior al examen | Revisión narrativa breve y no culpabilizante; sin número fijo de ajustes obligatorios | Momento exacto (antes/después de la nota); contenido mínimo obligatorio |
+| `HUMAN-P0-01` | Secuencia `PE-PSY-01…20` confirmada como base, sin cambiar ningún paso. **Los pasos 9 a 18 no son lineales ni rígidos** y una misma acción puede repetirse varias veces sobre el mismo tema | **Amplía** — el default no decía que el tramo central fuera reentrante | Cuáles de los 20 son **obligatorios** |
+| `HUMAN-P0-02` | Modelo **mixto**: escala breve para el día a día + dimensiones separadas cuando hay desempeño observable | **Ratifica** — y responde que la escala breve se queda | Reconciliar *contacto / recuperación / aplicación / corrección* con las cinco dimensiones del modelo |
+| `HUMAN-P0-03` | Producir un apoyo y recuperar sin ayuda son **dos resultados separados** del mismo paso; **uno puede no aplicar**. La técnica se usa cuando cumple una función concreta | **Corrige** — el apoyo deja de estar subordinado | Si la **recuperación** también puede omitirse |
+| `HUMAN-P0-04` | **Siete componentes:** situación y logística · contenidos críticos · prueba breve sin ayuda · priorización · práctica parecida al examen · corrección de errores importantes · descanso y estrategia. Un contenido central nunca trabajado **puede** abordarse | **Reemplaza** — el default era *una única* actividad cognitiva | Si los siete son obligatorios o priorizables |
+| `HUMAN-P0-05` | **Evidencia de trabajo ≠ evidencia de aprendizaje.** Foto, cronograma, checklist, ficha y resumen prueban actividad, no aprendizaje | **Ratifica y bautiza** — y sale de `POTENTIALLY ANSWERED` | Qué tareas exigen comprensión por sí mismas |
+| `HUMAN-P0-06` | Revisión **selectiva y proporcional**. Lo comprobable se automatiza. **La persona entra por la situación del estudiante** —error reiterado, no avanzar pese a devoluciones, factores subjetivos—, no por el tipo de entrega | **Redefine** — el default hablaba de *"alto impacto"* del artefacto | Umbral de *"error reiterativo"* |
+| `HUMAN-P0-07` | Las dos familias de criterios se conservan **y la pauta de la cátedra manda cuando existe** | **Ratifica y jerarquiza** | Peso relativo; qué pasa si la pauta contradice las familias |
+| `HUMAN-P0-08` | Cuatro ejes —preparación, desempeño, estrategia, contexto—, **sin cantidad fija** de ajustes, y **se registra también lo que funcionó** | **Ratifica y agrega** — el *"exactamente dos cambios"* era ejemplo, no regla | El **momento**: antes o después de la nota |
+
+> ⚠️ **Procedencia.** La hoja es la respuesta escrita **previa** a la reunión de cierre que el propio
+> cuestionario anunciaba. Alcanza para cerrar lo marcado; los residuos de arriba son, en buena parte,
+> el temario de esa conversación. Si algo de ahí contradice esta lectura, **se supersede
+> [ADR-025](decisions.md#adr-025)**, no se lo edita.
 
 ## Cómo usar esto en la práctica
 
 1. Ninguna de estas 51 filas te frena para seguir generando pantallas del low-fi con el spec consolidado — ya están resueltas ahí como fixture o estado neutral.
 2. Antes de mover cualquier pantalla a high-fidelity, revisá si toca una fila con gate `H` (hoy: C01-008, C01-019, C01-051) y conseguí la respuesta real primero.
-3. Las 8 `HUMAN-P0` no las podés cerrar vos ni un builder de IA — necesitan la voz de la psicopedagoga real. Todo lo demás (gate `I`) sí lo podés ir resolviendo con el equipo técnico a medida que avanzás.
+3. **Las 8 `HUMAN-P0` ya tienen la voz de la psicopedagoga real** (31 ago 2026). Podés construir contra el criterio confirmado `v1.0`, citándolo. **Lo que no podés** es cerrar sus residuos: ésos siguen necesitando a la misma persona, y aproximarlos es exactamente lo que este anexo existe para impedir.
+4. Todo lo demás (gate `I`) sí lo podés ir resolviendo con el equipo técnico a medida que avanzás.
 
 
 ## Decisión agregada — diseño del pipeline del Academic Decision Engine

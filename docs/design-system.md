@@ -278,7 +278,7 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 |---|---|---|
 | `P-01` | La interfaz explica **la regla del negocio**, no la función del control | `ReglaDeNegocio` en cada Hero. *"Porque: prepara la próxima clase."* |
 | `P-02` | Vocabulario del oficio intacto + glosa | Se dice "Unidad 3", "Parcial 1", "cátedra", "comisión". No se traduce a lenguaje llano |
-| `P-04` | Los defaults toman partido profesional | ⚠️ Varios defaults son `HUMAN-P0` **provisionales**. Ver [ADR-007](decisions.md#adr-007) |
+| `P-04` | Los defaults toman partido profesional | ✅ Los defaults `HUMAN-P0` **son criterio profesional confirmado** (`v1.0`, 31 ago 2026). Ver [ADR-025](decisions.md#adr-025). Sus residuos siguen abiertos |
 | `P-06` | El color se raciona a eventos semánticos | Base acromática + exactamente 3 semánticos |
 | `P-08` | La procedencia del dato es parte del dato | `source_type` + `verification_status` junto a cada dato discutible |
 | `P-09` | La ausencia se tipa | Cuatro estados distintos. *"Dominio: no evaluado"* ≠ *"no disponible"* ≠ `0` |

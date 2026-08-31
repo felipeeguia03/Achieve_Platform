@@ -53,7 +53,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-004](#adr-004) | Diseño del pipeline del ADE | ✅ `ACCEPTED` *(v1 provisional, alcance MVP)* | — |
 | [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | ✅ `ACCEPTED` *(sólo el ítem 5 `DEFERRED`)* | `B3` |
 | [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | `PENDING` | Toda fase con datos reales |
-| [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | `PENDING` | Contenido de Fase B5 |
+| [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | ✅ `ACCEPTED` *(resuelto por [ADR-025](#adr-025))* | — |
 | [ADR-008](#adr-008) | Stack y runtime del frontend | `ACCEPTED` | — |
 | [ADR-009](#adr-009) | Colisión de namespace `D1–D25` vs `D1–D10` | `ACCEPTED` | — |
 | [ADR-010](#adr-010) | Respuestas DD1–DD10 de traducción al dominio | `ACCEPTED` *(DD4 `DEFERRED`)* | — |
@@ -71,6 +71,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-022](#adr-022) | `C-04` elevado: el vacío argumenta, con tercera cláusula condicional | `ACCEPTED` | — |
 | [ADR-023](#adr-023) | La ingesta del ADL se construye antes que el ADE, y empieza asistida | `ACCEPTED` | — |
 | [ADR-024](#adr-024) | Modo MVP: se construye todo sobre datos sintéticos | `ACCEPTED` | — |
+| [ADR-025](#adr-025) | Las ocho `HUMAN-P0`, respondidas por la psicopedagoga | ✅ `ACCEPTED` | — |
 
 ---
 
@@ -515,17 +516,28 @@ instrucción que no venga del owner del producto por escrito.
 <a id="adr-007"></a>
 ## ADR-007 — Las 8 decisiones `HUMAN-P0`
 
-**Estado:** `PENDING — requiere confirmación profesional (psicopedagogía)`
-**Bloquea:** el **contenido** del protocolo de examen en Fase B5. No bloquea su estructura.
+**Estado:** ✅ **`ACCEPTED` · 31 ago 2026 — resuelto por [ADR-025](#adr-025)**
+**Ya no bloquea:** el contenido del protocolo de examen en Fase B5.
 **Relacionado:** `C01-031`…`C01-038`.
 **Toca:** `product.md`.
 
+> ✅ **Las ocho fueron respondidas por la psicopedagoga real el 31 de agosto de 2026.** El mecanismo
+> que este ADR definió —*sólo una profesional las cierra*— se ejecutó tal cual estaba escrito. Las
+> respuestas y su lectura están en **[ADR-025](#adr-025)**; la fuente literal, en
+> [`human-p0-source.md`](human-p0-source.md).
+>
+> **Lo que sigue vigente de este ADR** es su consecuencia arquitectónica: el protocolo es
+> configuración versionada, no código. Es lo que permitió aplicar las respuestas sin migrar el
+> dominio. **Lo que caducó** es la política de defaults provisionales del equipo: ya no hay que
+> inventar ninguno, salvo en los residuos que ADR-025 lista.
+
 ### Contexto
 
-Ocho decisiones de criterio pedagógico profesional, no técnico. Cada una corre hoy con un **default
-provisional razonado pero no confirmado**, versionado `PROVISIONAL-HUMAN-P0-0X v0.1`. El estado del
-conjunto es `OPEN — HUMAN CONFIRMATION PENDING`, con una excepción: `HUMAN-P0-05` está
-`OPEN — POTENTIALLY ANSWERED — REQUIRES SOURCE CONFIRMATION`.
+Ocho decisiones de criterio pedagógico profesional, no técnico. Cada una corrió, hasta el 31 de
+agosto de 2026, con un **default provisional razonado pero no confirmado**, versionado
+`PROVISIONAL-HUMAN-P0-0X v0.1`. El estado del conjunto era `OPEN — HUMAN CONFIRMATION PENDING`, con
+una excepción: `HUMAN-P0-05` estaba `OPEN — POTENTIALLY ANSWERED — REQUIRES SOURCE CONFIRMATION` —
+**y la fuente lo confirmó.**
 
 Cubren: el contenido base de los 20 pasos del protocolo, cómo se resume el seguimiento del
 aprendizaje, si producir un apoyo cuenta como aprendizaje, qué hacer en las últimas 24 horas, qué
@@ -535,12 +547,13 @@ corrección para práctico y teórico escrito, y qué es el análisis posterior 
 El detalle completo de cada default está en [`product.md`](product.md) §Reglas provisionales y en
 [`pending-decisions-annex.md`](pending-decisions-annex.md).
 
-### Decisión
+### Decisión — la política que rigió hasta que llegaron las respuestas
 
 **No se resuelven ni se cambian desde este repositorio.** Ningún agente de IA puede cerrarlas: son
-de criterio profesional y requieren la voz de una psicopedagoga real.
+de criterio profesional y requieren la voz de una psicopedagoga real. **Esa voz llegó, y por eso
+este ADR está cerrado** — no porque la regla se haya relajado.
 
-Se aplica exactamente la política del spec fuente:
+Mientras no estuvieron, se aplicó exactamente la política del spec fuente:
 
 1. Cada default se identifica en `product.md` como **"default provisional, pendiente de confirmación
    profesional"**, con su ID canónico y su versión.
@@ -556,6 +569,11 @@ Se aplica exactamente la política del spec fuente:
 `ExamProtocol` / `ProtocolVersion` / `ProtocolStep` se modelan como **configuración versionada**, no
 como código ni como enum, para que la definición pedagógica pueda cambiar sin migrar el dominio
 central. Esto está reflejado en [`data-model.md`](data-model.md).
+
+**Y esto es lo que se cobró el 31 de agosto.** Las respuestas de la profesional cambiaron el
+contenido de cuatro de las ocho decisiones respecto del default del equipo. Con el protocolo como
+configuración, eso es **cargar otra versión**; hardcodeado, habría sido migrar el dominio para
+cambiar una regla pedagógica. Ver [ADR-025](#adr-025).
 
 ---
 
@@ -726,6 +744,16 @@ la Fase 0.**
 **Bloquea:** cualquier representación visible de readiness en Fase B5.
 **Relacionado:** `C01-029` (readiness scoped), `C01-025`…`C01-028`.
 **Toca:** `data-model.md`.
+
+> ⚠️ **[ADR-025](#adr-025) no lo desbloquea, y conviene decir por qué.** Al cerrarse las ocho
+> `HUMAN-P0` es tentador dar readiness por resuelta: no lo está. Lo que este ADR discute es **quién
+> es el owner canónico del dato** —entidad separada, `status` de `ExamPreparation`, o ambos—, y eso
+> es una contradicción **estructural** del spec, no una pregunta pedagógica. La profesional no fue
+> consultada sobre esto ni podría haberlo sido. **Sigue `PENDING`.**
+>
+> Lo que sí aportan las respuestas es **insumo para los umbrales** cuando esta contradicción se
+> resuelva: qué cuenta como señal de aprendizaje (`HUMAN-P0-05`) y qué es el núcleo mínimo con menos
+> de 24 horas (`HUMAN-P0-04`) son entradas directas de `C01-029`.
 
 ### Contexto
 
@@ -1583,3 +1611,113 @@ determinista** detrás. **La v1 construye el validador y las reglas; el LLM no.*
 
 No modela al estudiante, no predice, no aprende y no pondera riesgo. Ordena por **costo de no
 actuar** con reglas escritas y legibles. Cuando `C01-006` se cierre, esto se reemplaza o se envuelve.
+
+---
+
+<a id="adr-025"></a>
+## ADR-025 — Las ocho `HUMAN-P0`, respondidas por la psicopedagoga
+
+**Estado:** ✅ **`ACCEPTED`** · 31 ago 2026 · **respondidas por la psicopedagoga real (Emi)**
+**Resuelve:** [ADR-007](#adr-007). **Cierra el bloqueo de contenido de la Fase B5.**
+**Relacionado:** `C01-031`…`C01-038` (las ocho), y por consecuencia `C01-013`, `C01-016`, `C01-019`,
+`C01-021`, `C01-022`, `C01-027`, `C01-029`, `C01-037`.
+**Fuente literal:** [`human-p0-source.md`](human-p0-source.md) — transcripción de la hoja de
+respuestas. **Esa es la fuente; este ADR es su lectura.**
+**Toca:** `product.md`, `data-model.md`, `pending-decisions-annex.md`, `roadmap.md`, `AGENTS.md`,
+`CLAUDE.md`.
+
+### Contexto
+
+[ADR-007](#adr-007) dejó las ocho decisiones psicopedagógicas corriendo con **defaults provisionales
+escritos por el equipo**, con una sola regla: *ningún agente de IA puede cerrarlas; las cierra una
+psicopedagoga real*. Ese es exactamente el mecanismo que se ejecutó: se le mandó un cuestionario con
+tres opciones por decisión, y volvió con las ocho marcadas y observaciones escritas.
+
+**Las ocho respuestas están dadas. Ninguna se respondió "depende"**, aunque el cuestionario ofrecía
+esa salida explícitamente.
+
+> ⚠️ **Procedencia, dicha entera.** La hoja es la **respuesta escrita previa** a la reunión de cierre
+> que el propio cuestionario anunciaba (*"lo resolvemos juntos el lunes a las 16"*). Es la voz de la
+> profesional y alcanza para cerrar lo que marcó. Los **residuos** que este ADR deja abiertos son, en
+> buena medida, el temario de esa conversación: si algo de ahí contradice esta lectura, **se
+> supersede este ADR**, no se lo edita.
+
+### Decisión
+
+**Las ocho dejan de ser defaults provisionales del equipo y pasan a ser criterio profesional
+confirmado, `HUMAN-P0-0X v1.0`.** El rótulo interno cambia: donde el código y el contenido decían
+*"asunción provisional, pendiente de confirmación"*, ahora dicen *"criterio profesional confirmado
+v1.0"* — **salvo en los residuos listados abajo, que siguen rotulados como abiertos.**
+
+| # | Qué se confirmó | Contra el default anterior |
+|---|---|---|
+| **01** · Los 20 pasos | La secuencia `PE-PSY-01…20` **se confirma como base**, sin cambiar ningún paso. **Pero los pasos 9 a 18 no son un recorrido lineal ni rígido:** el orden es variable, modificable y transversal, y **una misma acción puede repetirse varias veces sobre el mismo tema** | **Amplía.** El default confirmaba la matriz y la granularidad por paso; **no** decía que el tramo central fuera reentrante |
+| **02** · Registro del aprendizaje | **Modelo mixto:** escala breve para el día a día **+ dimensiones separadas cuando hay desempeño observable** | **Ratifica** el híbrido, y responde lo que faltaba: la escala breve **es aceptable** y se queda |
+| **03** · Apoyos y recuperación | Producir un apoyo y recuperar sin ayuda son **dos resultados separados dentro del mismo paso**, y **según el caso uno puede no aplicar** | **Corrige.** El default subordinaba el apoyo a "opcional y contextual"; ahora es un resultado propio, y la técnica se usa **sólo cuando cumple una función concreta** |
+| **04** · Núcleo de menos de 24 h | **Siete componentes:** situación real y logística · contenidos críticos · una prueba breve sin ayuda · priorización · práctica parecida al examen · corrección de los errores importantes · descanso y estrategia | **Reemplaza.** El default era *"logística + **una única** actividad cognitiva + descanso"*. El núcleo real es más rico y **conserva el diagnóstico y la corrección** |
+| **05** · Señal de aprendizaje | **Confirmada**, y nombrada: **evidencia de trabajo ≠ evidencia de aprendizaje.** Un cronograma, una foto, un checklist, una ficha o un resumen prueban que hubo actividad, **no** que hubo aprendizaje | **Ratifica y bautiza.** Sale del estado `POTENTIALLY ANSWERED — REQUIRES SOURCE CONFIRMATION`: **la fuente confirmó** |
+| **06** · Revisión humana | **Selectiva y proporcional.** Comparar contra la pauta cuando existe; **la persona entra por la situación del estudiante, no por el tipo de entrega** | **Redefine.** El default hablaba de *"respuesta abierta, ambigua o de alto impacto"*. La profesional dio otros disparadores — ver abajo |
+| **07** · Práctico vs. teórico | Se conservan las dos familias de criterios, **y la pauta de la cátedra manda cuando existe** | **Ratifica y jerarquiza.** La precedencia de la pauta deja de ser una nota: es *"lo que va a determinar qué se espera del estudiante en ese examen"* |
+| **08** · Postmortem | Separar **preparación, desempeño, estrategia y contexto**; registrar aprendizajes; **uno o más ajustes cuando correspondan, sin cantidad fija**; y **registrar también lo que funcionó y debe mantenerse** | **Ratifica y agrega.** Mata el *"exactamente dos cambios"* de la intervención #32: era un ejemplo, no una regla. Lo nuevo es **conservar lo que funcionó** |
+
+### Las tres respuestas que cambian el producto, no sólo el contenido
+
+**1. El tramo 9–18 es reentrante, y el modelo de datos hoy no lo admite.**
+[`data-model.md`](data-model.md) §10 tiene `protocol_step.sequence INTEGER NOT NULL`,
+`exam_preparation.current_step_id` (un puntero único) y, sobre todo,
+`protocol_step_completion UNIQUE (exam_preparation_id, protocol_step_id)`: **un paso se completa una
+vez y no vuelve.** La respuesta 1 dice literalmente lo contrario para el tramo de estudio,
+recuperación, revisión y práctica. **Esto es una brecha estructural, no una preferencia de copy**, y
+la Fase B5 no puede construirse contra el schema actual sin resolverla. Queda anotada en
+`data-model.md` §10 y §12.
+
+**2. La revisión humana se dispara por la persona, no por el artefacto.** Los tres casos que la
+profesional nombró son *"un error reiterativo que requiere identificar qué está haciendo mal y
+corregir la forma/método"*, *"no logra avanzar a pesar de las devoluciones"* y *"factores más
+subjetivos: frustración, inseguridad, desmotivación, ansiedad frente al examen"*. **Ninguno es una
+propiedad de la entrega**: los tres son **patrones a lo largo del tiempo**. Consecuencia: `HUMAN-P0-06`
+no se implementa sólo en `validation_method` de `Evidence` (`C01-016`) — **alimenta el Risk Engine y
+el circuito de Intervención de la Fase B6** (`C01-021`, `C01-022`). Y su cierre es explícito: *"ya no
+se trata de verificar si una respuesta está bien o mal, sino de comprender qué le está pasando a ese
+estudiante"*. Eso es un `Operator`, no un reviewer.
+
+**3. La pauta de la cátedra manda, y no hay dónde guardarla.** La respuesta 7 la vuelve la referencia
+determinante de la corrección, y el ADL de [`data-model.md`](data-model.md) §7 **no tiene entidad ni
+campo para la pauta o criterio de evaluación de una cátedra**. Además, el ingestor de la
+[Fase B2b.1](roadmap.md#fase-b2b--ingesta-del-academic-data-layer--en-curso) **no puede declarar
+`institution` ni `instructor` como fuente** ([ADR-023](#adr-023)): una pauta cargada por el
+estudiante entra `student` / `unverified`, y así debe mostrarse. **No se inventa el campo acá:** se
+registra la ausencia y se resuelve al construir B5, junto con `C01-027`.
+
+### Lo que sigue abierto — y por qué no lo cierra este ADR
+
+Ninguno de estos residuos lo puede cerrar un agente. Siguen bajo la regla de
+[`AGENTS.md`](../AGENTS.md) §1.1: **se preguntan, no se aproximan.**
+
+| Residuo | De dónde sale | Dónde vive |
+|---|---|---|
+| **Obligatoriedad paso a paso.** La respuesta confirma la secuencia y su orden; **no dice cuáles de los 20 son obligatorios** en cada caso | La pregunta 1 pedía *"los pasos que cambiarías"*, y la respuesta fue *"no modificaría los pasos en si"* | `C01-031` · `protocol_step.is_required` |
+| **Cómo se reconcilian las dimensiones.** La profesional nombra **contacto, recuperación, aplicación y corrección** (+ confianza aparte). El modelo tiene **exposure, practice, domain, confidence, recency**. No son el mismo conjunto: *corrección* no tiene eje propio y *recuperación* y *aplicación* están colapsadas en `domain` | Pregunta 2 | `C01-019`, gate `H` · `product.md` §6 |
+| **Si la recuperación también puede no aplicar.** La opción marcada dice *"uno puede no aplicar"* sin decir cuál; la observación sólo justifica omitir **la ficha** | Pregunta 3 | `C01-033` |
+| **Si los siete componentes de H24 son obligatorios o priorizables.** La respuesta 1 dice que el recorrido no es rígido y la 4 enumera siete piezas; falta el orden de sacrificio cuando no entran todas | Preguntas 1 y 4 | `C01-034` |
+| **Qué tareas "exigen comprensión" por sí mismas.** La excepción está declarada (*"salvo que la tarea misma exija comprensión"*), su alcance por disciplina no | Pregunta 5 | `C01-035` |
+| **Cuántas repeticiones, y qué cuenta como "reiterativo".** El disparador de revisión humana es un error que se repite; el umbral es una decisión de operación | Pregunta 6 | `C01-036`, `C01-021` |
+| **Peso relativo de cada criterio** de corrección, y qué pasa cuando la pauta de la cátedra **contradice** las familias generales | Pregunta 7 | `C01-037` |
+| **Momento del postmortem** — antes o después de conocer la nota | Pregunta 8 | `C01-038` |
+
+### Consecuencias
+
+1. **[ADR-007](#adr-007) queda resuelto.** Su consecuencia arquitectónica —protocolo como
+   **configuración versionada**, nunca código ni enum— **no cambia**: sigue siendo la razón por la
+   que estas respuestas se pueden aplicar sin migrar el dominio.
+2. **La Fase B5 se desbloquea en contenido.** Sigue bloqueada en **readiness** por
+   [ADR-011](#adr-011), que es una contradicción **estructural** del spec (`CR-UX08-01`) y **no** una
+   pregunta pedagógica: estas respuestas no la tocan.
+3. **El rótulo cambia de sentido.** `protocol_step.provisional_default_id` /
+   `provisional_version` dejan de rotular *"asunción del equipo"* para rotular *"criterio profesional
+   v1.0"*. **Lo provisional ahora son los residuos**, y son menos.
+4. **Nada de lo ya construido se invalida.** Ninguna de las ocho toca el loop diario ya persistido
+   (`Action`, `Commitment`, `Evidence`, `Reflection`): tocan el **protocolo de examen**, que todavía
+   no tiene tablas. Llegaron **antes** de construir B5, que es exactamente cuando servían.
+5. **Se versiona la fuente literal** en [`human-p0-source.md`](human-p0-source.md). Toda paráfrasis
+   —esta incluida— **pierde** contra ese archivo.

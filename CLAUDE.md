@@ -20,8 +20,9 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
 
 ## Las seis reglas
 
-1. **No inventes reglas de negocio.** Hay 51 decisiones abiertas. Si falta una regla, registrala como
-   ADR `PENDING` y **preguntá**.
+1. **No inventes reglas de negocio.** Hay 43 decisiones abiertas; las 8 psicopedagógicas están
+   respondidas ([ADR-025](docs/decisions.md#adr-025)) pero **con residuos**. Si falta una regla,
+   registrala como ADR `PENDING` y **preguntá**.
 2. **No resuelvas una decisión `PENDING`.** La cierra una persona.
 3. **Datos reales: bloqueo absoluto** hasta que [ADR-006](docs/decisions.md#adr-006) esté resuelto.
    **Que ADR-005 esté aceptado no cambia esto:** el backend se construye sobre datos sintéticos.
@@ -66,6 +67,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Tocar estructura | [`docs/architecture.md`](docs/architecture.md) |
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
+| Escribir contenido del protocolo de examen | [`docs/human-p0-source.md`](docs/human-p0-source.md) — **la voz de la psicopedagoga, literal** |
 | Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) |
 | El spec original completo | `docs/product-spec-source.md` — **no se edita** |
 
@@ -92,6 +94,14 @@ esperan a la Fase B5 porque no hay tablas de examen.
 
 **Trabajo adelantado.** B2b va **1 / 3** con la ingesta asistida del ADL. En B4 ya existen el ADE
 v1 determinista, el reloj del lifecycle y la materialización transaccional de recomendaciones.
+
+✅ **Las 8 decisiones psicopedagógicas están respondidas** (31 ago 2026,
+[ADR-025](docs/decisions.md#adr-025)). [ADR-007](docs/decisions.md#adr-007) queda cerrado y **el
+contenido de la Fase B5 se desbloquea**; su *readiness* no
+([ADR-011](docs/decisions.md#adr-011), estructural). Antes de escribir la primera migración de examen
+hay **tres requisitos de schema nuevos**: el tramo 9–18 del protocolo es **reentrante** y hoy un paso
+se completa una sola vez, la **pauta de la cátedra** no tiene dónde guardarse, y el **núcleo de 24 h
+tiene siete componentes**. Ver `roadmap.md` → Fase B5.
 
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
