@@ -1,4 +1,4 @@
-import { commitmentTransitions } from "@/lib/domain/state-machines";
+import { canTransition, commitmentTransitions } from "@/lib/domain/state-machines";
 import type { CommitmentState } from "@/lib/domain/types";
 import type { PublicadorDeEventos } from "./eventos";
 import {
@@ -24,7 +24,34 @@ export interface Compromiso extends EntidadConEstado<CommitmentState> {
   actionId: string;
 }
 
-export type RepositorioDeCompromisos = RepositorioTransicionable<CommitmentState, Compromiso>;
+/** Datos del compromiso nuevo. El original nunca se edita más allá del estado. */
+export interface AcuerdoNuevo {
+  startAt: string;
+  timezone: string;
+  plannedMinutes: number;
+  /** Idempotencia del lado del servidor (I8). */
+  claveDeIdempotencia?: string;
+}
+
+export interface RepositorioDeCompromisos
+  extends RepositorioTransicionable<CommitmentState, Compromiso> {
+  /**
+   * Marca el original y crea el sucesor **atómicamente**, o no hace nada.
+   * `null` ⇒ el original ya no estaba en `esperado`: otro se adelantó.
+   */
+  renegociarAtomico(
+    institutionId: string,
+    originalId: string,
+    esperado: CommitmentState,
+    acuerdo: AcuerdoNuevo,
+  ): Promise<Compromiso | null>;
+  /** Crea el rescate **sólo si** el rescatado sigue `MISSED`. `null` si no. */
+  crearRescateAtomico(
+    institutionId: string,
+    rescatadoId: string,
+    acuerdo: AcuerdoNuevo,
+  ): Promise<Compromiso | null>;
+}
 export type { ResultadoDeTransicion };
 
 const MARCA_DE_TIEMPO: Partial<Record<CommitmentState, string>> = {
@@ -65,4 +92,98 @@ export async function transicionar(
     actorId,
     ahora,
   );
+}
+
+export type ResultadoDeAcuerdo =
+  | { estado: "OK"; compromiso: Compromiso }
+  | { estado: "NO_ENCONTRADO" }
+  | { estado: "NO_RENEGOCIABLE"; desde: CommitmentState }
+  | { estado: "NO_INCUMPLIDO"; desde: CommitmentState }
+  | { estado: "CONFLICTO" };
+
+/**
+ * Renegociar **crea una fila nueva**; el original queda `RENEGOTIATED` con la
+ * nueva apuntándolo (`I2`).
+ *
+ * **El original no se edita.** Su fecha, su hora y sus minutos quedan como
+ * fueron acordados: es el registro de lo que se prometió, y reescribirlo
+ * borraría que hubo una renegociación.
+ *
+ * Quién puede renegociar lo decide la máquina, acá, en TypeScript — `STARTED`
+ * no puede, porque renegociar es válido sólo **antes** del vencimiento. La
+ * función de base no sabe nada de eso: sólo garantiza que las dos escrituras
+ * ocurran juntas.
+ */
+export async function renegociar(
+  deps: { repo: RepositorioDeCompromisos; eventos: PublicadorDeEventos },
+  institutionId: string,
+  originalId: string,
+  acuerdo: AcuerdoNuevo,
+  actorId: string | null = null,
+): Promise<ResultadoDeAcuerdo> {
+  const original = await deps.repo.porId(institutionId, originalId);
+  if (!original) return { estado: "NO_ENCONTRADO" };
+
+  if (!canTransition(commitmentTransitions, original.state, "RENEGOTIATED")) {
+    return { estado: "NO_RENEGOCIABLE", desde: original.state };
+  }
+
+  const nuevo = await deps.repo.renegociarAtomico(
+    institutionId,
+    originalId,
+    original.state,
+    acuerdo,
+  );
+  if (!nuevo) return { estado: "CONFLICTO" };
+
+  await deps.eventos.publicar({
+    nombre: "CommitmentRenegotiated",
+    institutionId,
+    actorId,
+    sujetoTipo: "commitment",
+    sujetoId: originalId,
+    causa: `${original.state}->RENEGOTIATED`,
+    // El sucesor va en el payload y no en columnas del hecho: el hecho es que
+    // se renegoció; cuál es el sucesor es contenido de ese hecho.
+    payload: { sucesorId: nuevo.id },
+  });
+
+  return { estado: "OK", compromiso: nuevo };
+}
+
+/**
+ * Un rescate **sólo** puede apuntar a un `MISSED` (`I3`), y **el incumplido no
+ * se toca**: sigue `MISSED` para siempre.
+ *
+ * Es *No Cortar* (`AGENTS.md` §2.4). Un `Commitment` `MISSED` nunca se edita
+ * para parecer cumplido; el rescate es otro objeto, con su propia fecha y su
+ * propio acuerdo, que apunta al incumplimiento sin borrarlo.
+ */
+export async function rescatar(
+  deps: { repo: RepositorioDeCompromisos; eventos: PublicadorDeEventos },
+  institutionId: string,
+  rescatadoId: string,
+  acuerdo: AcuerdoNuevo,
+  actorId: string | null = null,
+): Promise<ResultadoDeAcuerdo> {
+  const rescatado = await deps.repo.porId(institutionId, rescatadoId);
+  if (!rescatado) return { estado: "NO_ENCONTRADO" };
+
+  if (rescatado.state !== "MISSED") {
+    return { estado: "NO_INCUMPLIDO", desde: rescatado.state };
+  }
+
+  const rescate = await deps.repo.crearRescateAtomico(institutionId, rescatadoId, acuerdo);
+  if (!rescate) return { estado: "CONFLICTO" };
+
+  await deps.eventos.publicar({
+    nombre: "CommitmentRescueCreated",
+    institutionId,
+    actorId,
+    sujetoTipo: "commitment",
+    sujetoId: rescate.id,
+    causa: `rescata:${rescatadoId}`,
+  });
+
+  return { estado: "OK", compromiso: rescate };
 }

@@ -1462,7 +1462,7 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **1 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **2 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1472,7 +1472,7 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | # | Etapa |
 |---|---|
 | B2.1 | ✅ **COMPLETA** — `Action` + `ActionRecommendation` + máquina de estados |
-| B2.2 | `Commitment` + renegociación + rescate + idempotencia |
+| B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
 | B2.3 | `Evidence` + resubmission + storage + revisión real |
 | B2.4 | `Reflection` configurable `OPTIONAL`/`REQUIRED` |
 | B2.5 | Reemplazo de `lib/fixtures/` por llamadas reales — **sin tocar las pantallas** |
@@ -1481,6 +1481,43 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
 
 **Contratos a cerrar:** `C01-007`…`C01-016`, `C01-051`.
+
+#### ✅ Etapa B2.2 — Renegociación y rescate · COMPLETA · 30 de agosto de 2026
+
+Los tres invariantes más delicados del producto, probados contra Postgres.
+
+| Invariante | Resultado |
+|---|---|
+| `I2` — renegociar **crea una fila nueva**; el original queda `RENEGOTIATED` | ✅ y **la fecha y los minutos del original no se tocan** |
+| `I3` — un rescate sólo apunta a un `MISSED` | ✅ y **el incumplido sigue `MISSED`** |
+| `I8` — la misma clave no crea dos entidades | ✅ |
+| `lint` · `build` · `test` | ✅ verde · verde · **434 tests en 23 archivos**, **54 verificaciones** contra Postgres |
+
+**La tensión que había que resolver antes de escribir nada.** `data-model.md` §11 pide
+**transacción** para `I2` e `I3`; ADR-005 prohíbe lógica de negocio en la base. La salida está en la
+propia separación:
+
+| Qué | Dónde | Por qué |
+|---|---|---|
+| **Qué estados se pueden renegociar** | Service, TypeScript, `commitmentTransitions` | Es la regla |
+| **Que las dos escrituras ocurran juntas** | Función de base | Es atomicidad, que §6 asigna explícitamente a la base |
+| El `WHERE state = …` de adentro | Función de base | Es el mismo compare-and-swap del Repository: control de concurrencia, no regla |
+
+**La prueba de que la regla no quedó en la base:** si mañana `commitmentTransitions` admite
+renegociar desde un estado nuevo, **las funciones SQL no cambian**.
+
+**`STARTED` no se renegocia**, y lo decide el Service: renegociar es válido sólo **antes** del
+vencimiento. El test verifica que ni siquiera llega a la base.
+
+**Y lo que más importa:** rescatar un `MISSED` crea otro objeto y **no toca el incumplimiento**.
+Verificado en las dos capas. Es *No Cortar* — el incumplido sigue incumplido para siempre, y el
+rescate lo apunta sin borrarlo.
+
+**Renegociar dos veces en carrera produce un solo sucesor.** Sin el compare-and-swap dentro de la
+transacción, dos requests concurrentes dejan al estudiante con dos compromisos nuevos para el mismo
+original.
+
+---
 
 #### ✅ Etapa B2.1 — `Action` · COMPLETA · 30 de agosto de 2026
 

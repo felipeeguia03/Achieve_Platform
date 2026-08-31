@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  renegociar,
+  rescatar,
   transicionar,
   type Compromiso,
   type RepositorioDeCompromisos,
@@ -25,7 +27,26 @@ function repoFalso(inicial: Compromiso, opciones: { seLoLlevanOtro?: boolean } =
   let fila: Compromiso | null = { ...inicial };
   const escrituras: Array<{ esperado: CommitmentState; nuevo: CommitmentState; marcas?: object }> = [];
 
+  const acuerdos: Array<{ tipo: string; esperado?: string }> = [];
+  const creado: Compromiso = { ...inicial, id: "c-2" };
+
   const repo: RepositorioDeCompromisos = {
+    async renegociarAtomico(inst, originalId, esperado) {
+      acuerdos.push({ tipo: "renegociar", esperado });
+      if (opciones.seLoLlevanOtro) return null;
+      if (!fila || fila.institutionId !== inst || fila.id !== originalId) return null;
+      if (fila.state !== esperado) return null;
+      fila = { ...fila, state: "RENEGOTIATED" };
+      return creado;
+    },
+    async crearRescateAtomico(inst, rescatadoId) {
+      acuerdos.push({ tipo: "rescatar" });
+      if (opciones.seLoLlevanOtro) return null;
+      if (!fila || fila.institutionId !== inst || fila.id !== rescatadoId) return null;
+      // El incumplido NO se toca: sigue MISSED.
+      if (fila.state !== "MISSED") return null;
+      return creado;
+    },
     async porId(institutionId, id) {
       if (!fila || fila.institutionId !== institutionId || fila.id !== id) return null;
       return { ...fila };
@@ -45,7 +66,7 @@ function repoFalso(inicial: Compromiso, opciones: { seLoLlevanOtro?: boolean } =
       publicados.push(e);
     },
   };
-  return { deps: { repo, eventos }, repo, eventos, escrituras, publicados, actual: () => fila };
+  return { deps: { repo, eventos }, repo, eventos, escrituras, publicados, acuerdos, creado, actual: () => fila };
 }
 
 const BASE: Compromiso = {
@@ -187,5 +208,70 @@ describe("B1.5 · cada transición deja su hecho en `product_event`", () => {
     const { deps, publicados } = repoFalso(BASE);
     await transicionar(deps, "inst-A", "c-1", "DUE", "actor-9");
     expect(publicados[0].payload ?? {}).toEqual({});
+  });
+});
+
+const ACUERDO = { startAt: "2026-09-02T19:00:00.000Z", timezone: "America/Argentina/Cordoba", plannedMinutes: 70 };
+
+describe("B2.2 · I2 · renegociar crea una fila nueva", () => {
+  it("el original queda RENEGOTIATED y devuelve el sucesor", async () => {
+    const { deps, actual, publicados } = repoFalso(BASE);
+    const r = await renegociar(deps, "inst-A", "c-1", ACUERDO, "actor-1");
+
+    expect(r.estado).toBe("OK");
+    expect(actual()?.state).toBe("RENEGOTIATED");
+    expect(publicados[0].nombre).toBe("CommitmentRenegotiated");
+    expect(publicados[0].payload).toMatchObject({ sucesorId: "c-2" });
+  });
+
+  /**
+   * `STARTED` no admite `RENEGOTIATED` en la máquina: renegociar es válido sólo
+   * ANTES del vencimiento. La decisión la toma el Service, en TypeScript.
+   */
+  it("un compromiso ya empezado no se renegocia, y no llega a la base", async () => {
+    const { deps, acuerdos, publicados } = repoFalso({ ...BASE, state: "STARTED" });
+    const r = await renegociar(deps, "inst-A", "c-1", ACUERDO);
+    expect(r).toEqual({ estado: "NO_RENEGOCIABLE", desde: "STARTED" });
+    expect(acuerdos).toEqual([]);
+    expect(publicados).toEqual([]);
+  });
+
+  it("el estado esperado viaja a la operación atómica", async () => {
+    const { deps, acuerdos } = repoFalso(BASE);
+    await renegociar(deps, "inst-A", "c-1", ACUERDO);
+    expect(acuerdos[0]).toEqual({ tipo: "renegociar", esperado: "CONFIRMED" });
+  });
+
+  it("si otro se adelantó es CONFLICTO, y no publica", async () => {
+    const { deps, publicados } = repoFalso(BASE, { seLoLlevanOtro: true });
+    expect((await renegociar(deps, "inst-A", "c-1", ACUERDO)).estado).toBe("CONFLICTO");
+    expect(publicados).toEqual([]);
+  });
+});
+
+describe("B2.2 · I3 · un rescate sólo apunta a un MISSED", () => {
+  it("rescatar un MISSED crea el objeto y NO edita el incumplimiento", async () => {
+    const { deps, actual, publicados } = repoFalso({ ...BASE, state: "MISSED" });
+    const r = await rescatar(deps, "inst-A", "c-1", ACUERDO, "actor-1");
+
+    expect(r.estado).toBe("OK");
+    // No Cortar: el incumplido sigue incumplido.
+    expect(actual()?.state).toBe("MISSED");
+    expect(publicados[0].nombre).toBe("CommitmentRescueCreated");
+  });
+
+  it("no se rescata algo que no está incumplido", async () => {
+    for (const desde of ["CONFIRMED", "DUE", "COMPLETED", "CLOSED"] as const) {
+      const { deps, acuerdos } = repoFalso({ ...BASE, state: desde });
+      const r = await rescatar(deps, "inst-A", "c-1", ACUERDO);
+      expect(r, desde).toEqual({ estado: "NO_INCUMPLIDO", desde });
+      expect(acuerdos, desde).toEqual([]);
+    }
+  });
+
+  it("otra institución no puede rescatar nada", async () => {
+    const { deps, acuerdos } = repoFalso({ ...BASE, state: "MISSED" });
+    expect((await rescatar(deps, "inst-B", "c-1", ACUERDO)).estado).toBe("NO_ENCONTRADO");
+    expect(acuerdos).toEqual([]);
   });
 });

@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { CommitmentState } from "@/lib/domain/types";
+import type { AcuerdoNuevo } from "../servicios/compromiso";
 import type { Compromiso, RepositorioDeCompromisos } from "../servicios/compromiso";
 import { clienteDeServicio } from "../supabase";
 
@@ -89,10 +90,53 @@ async function cambiarEstadoSi(
 }
 
 /**
+ * Renegociación y rescate pasan por funciones de base porque **necesitan que
+ * dos escrituras ocurran juntas** (I2, I3). Lo que decide sigue en el Service:
+ * estas llamadas ya vienen con la transición validada.
+ */
+async function renegociarAtomico(
+  institutionId: string,
+  originalId: string,
+  esperado: CommitmentState,
+  acuerdo: AcuerdoNuevo,
+): Promise<Compromiso | null> {
+  const { data, error } = await clienteDeServicio().rpc("renegociar_compromiso", {
+    p_institution_id: institutionId,
+    p_original_id: originalId,
+    p_estado_esperado: esperado,
+    p_start_at: acuerdo.startAt,
+    p_timezone: acuerdo.timezone,
+    p_planned_minutes: acuerdo.plannedMinutes,
+    p_idempotency_key: acuerdo.claveDeIdempotencia ?? null,
+  });
+  if (error) throw new Error(`No se pudo renegociar: ${error.message}`);
+  const filas = (data ?? []) as Record<string, unknown>[];
+  return filas.length > 0 ? aDominio(filas[0]) : null;
+}
+
+async function crearRescateAtomico(
+  institutionId: string,
+  rescatadoId: string,
+  acuerdo: AcuerdoNuevo,
+): Promise<Compromiso | null> {
+  const { data, error } = await clienteDeServicio().rpc("crear_rescate", {
+    p_institution_id: institutionId,
+    p_rescatado_id: rescatadoId,
+    p_start_at: acuerdo.startAt,
+    p_timezone: acuerdo.timezone,
+    p_planned_minutes: acuerdo.plannedMinutes,
+    p_idempotency_key: acuerdo.claveDeIdempotencia ?? null,
+  });
+  if (error) throw new Error(`No se pudo crear el rescate: ${error.message}`);
+  const filas = (data ?? []) as Record<string, unknown>[];
+  return filas.length > 0 ? aDominio(filas[0]) : null;
+}
+
+/**
  * La implementación concreta, tipada contra el contrato que declara el Service.
  * Si el Service cambia lo que necesita, esto deja de compilar acá y no en una
  * request.
  */
 export const compromisosReal: RepositorioDeCompromisos & {
   porClaveDeIdempotencia: typeof porClaveDeIdempotencia;
-} = { porId, cambiarEstadoSi, porClaveDeIdempotencia };
+} = { porId, cambiarEstadoSi, porClaveDeIdempotencia, renegociarAtomico, crearRescateAtomico };

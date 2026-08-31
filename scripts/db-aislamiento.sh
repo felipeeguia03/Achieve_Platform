@@ -56,6 +56,51 @@ else
   ok "la segunda con la misma clave se rechaza en la base"
 fi
 
+echo "→ I2. Renegociar CREA una fila nueva; el original no se edita"
+corre "update commitment set state='CONFIRMED', missed_at=null where id='a8000000-0000-0000-0000-000000000001';"
+orig_antes=$(q "select start_at||'|'||planned_minutes from commitment where id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')
+nuevo=$(q "select id from public.renegociar_compromiso('$A','a8000000-0000-0000-0000-000000000001','CONFIRMED', now() + interval '2 days','America/Argentina/Cordoba',70);" | tr -d '[:space:]')
+[ -n "$nuevo" ] && ok "creó el sucesor" || mal "no creó sucesor"
+[ "$(q "select state from commitment where id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "RENEGOTIATED" ] \
+  && ok "el original quedó RENEGOTIATED" || mal "el original no quedó RENEGOTIATED"
+[ "$(q "select renegotiated_from_id from commitment where id='$nuevo';" | tr -d '[:space:]')" = "a8000000-0000-0000-0000-000000000001" ] \
+  && ok "el sucesor apunta al original" || mal "el sucesor no apunta al original"
+orig_despues=$(q "select start_at||'|'||planned_minutes from commitment where id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')
+[ "$orig_antes" = "$orig_despues" ] && ok "la fecha y los minutos del original NO se tocaron" || mal "el original se editó"
+
+echo "→ I2b. Renegociar dos veces en carrera produce UN solo sucesor"
+corre "update commitment set state='CONFIRMED' where id='a8000000-0000-0000-0000-000000000001';"
+n1=$(q "select count(*) from public.renegociar_compromiso('$A','a8000000-0000-0000-0000-000000000001','CONFIRMED',now(),'UTC',40);" | tr -d '[:space:]')
+n2=$(q "select count(*) from public.renegociar_compromiso('$A','a8000000-0000-0000-0000-000000000001','CONFIRMED',now(),'UTC',40);" | tr -d '[:space:]')
+[ "$((n1 + n2))" = "1" ] && ok "una sola ganó ($n1/$n2)" || mal "produjo $((n1+n2)) sucesores"
+
+echo "→ I3. Un rescate SÓLO apunta a un MISSED"
+corre "update commitment set state='CONFIRMED', missed_at=null where id='a8000000-0000-0000-0000-000000000001';"
+r=$(q "select count(*) from public.crear_rescate('$A','a8000000-0000-0000-0000-000000000001',now(),'UTC',40);" | tr -d '[:space:]')
+[ "$r" = "0" ] && ok "rescatar un CONFIRMED no crea nada" || mal "creó rescate de un CONFIRMED"
+corre "update commitment set state='MISSED', missed_at=now() where id='a8000000-0000-0000-0000-000000000001';"
+resc=$(q "select id from public.crear_rescate('$A','a8000000-0000-0000-0000-000000000001',now(),'UTC',40);" | tr -d '[:space:]')
+[ -n "$resc" ] && ok "rescatar un MISSED sí crea el objeto de rescate" || mal "no creó el rescate"
+[ "$(q "select state from commitment where id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "MISSED" ] \
+  && ok "el incumplido SIGUE MISSED: el rescate no lo edita (No Cortar)" || mal "el rescate editó el incumplimiento"
+
+echo "→ I3b. Un compromiso no es rescate y renegociación a la vez"
+if corre "update commitment set renegotiated_from_id='a8000000-0000-0000-0000-000000000001' where id='$resc';"; then
+  mal "aceptó ser las dos cosas"
+else
+  ok "el CHECK lo impide"
+fi
+
+echo "→ I8. La misma clave de idempotencia no crea dos rescates"
+corre "update commitment set state='MISSED' where id='a8000000-0000-0000-0000-000000000001';"
+q "select count(*) from public.crear_rescate('$A','a8000000-0000-0000-0000-000000000001',now(),'UTC',40,'k-resc');" >/dev/null
+if corre "select count(*) from public.crear_rescate('$A','a8000000-0000-0000-0000-000000000001',now(),'UTC',40,'k-resc');"; then
+  mal "aceptó dos veces la misma clave"
+else
+  ok "la segunda con la misma clave se rechaza"
+fi
+q "delete from commitment where id <> 'a8000000-0000-0000-0000-000000000001';" >/dev/null
+
 echo "→ I6. Una sola ActionRecommendation primaria por Action"
 corre "insert into action_recommendation (action_id,reason_primary,priority,is_primary) values ('a7000000-0000-0000-0000-000000000001','porque sí',1,true);"
 if corre "insert into action_recommendation (action_id,reason_primary,priority,is_primary) values ('a7000000-0000-0000-0000-000000000001','otra',2,true);"; then
