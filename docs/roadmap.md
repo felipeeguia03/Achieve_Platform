@@ -1683,6 +1683,20 @@ decidir.
 
 ---
 
+> ## 🟢 Modo MVP — 30 de agosto de 2026
+>
+> [ADR-024](decisions.md#adr-024): **se construye todo sobre datos sintéticos**, para un MVP interno
+> demostrable a inversores. Lo que frenaba el roadmap era casi siempre *procesar dato real*, no
+> *construir*, así que casi nada estaba realmente bloqueado.
+>
+> **Lo único que sigue en pie:** ningún flujo procesa datos de una persona real. Para este MVP **no
+> estorba** —todo es sintético— y protege el objetivo: una demo con datos de un estudiante real es un
+> pasivo, no una función.
+>
+> **La deuda no desaparece, se aplaza y queda escrita:** [ADR-006](decisions.md#adr-006) con
+> asesoría legal, `C01-042`, las 3 vulnerabilidades `high` de §3.1, `C01-030` y la identidad de
+> docente de [ADR-023](decisions.md#adr-023). **Todas antes de que entre una sola persona real.**
+
 ## Fase B3 — Progreso, Bitácora y eventos
 
 **Estado:** 🔒 B2.
@@ -1807,12 +1821,12 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-005` aceptado (Bloque A) | 1 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
 | Fase B2 — Dominio de ejecución | 🔒 BLOQUEADA | — |
-| Fase B3 — Progreso y eventos | 🔒 BLOQUEADA | — |
-| Fase B4 — ADE v1 | 🔒 BLOQUEADA | — |
-| Fase B5 — Modo Examen real | 🔒 BLOQUEADA | — |
-| Fase B6 — Risk e Intervención | 🔒 BLOQUEADA | — |
-| Fase B7 — Privacidad | 🔒 BLOQUEADA | — |
-| Fase B8 — Piloto | 🔒 BLOQUEADA | — |
+| Fase B3 — Progreso y eventos | 🟢 DESBLOQUEADA por [ADR-024](decisions.md#adr-024) | 0 / — |
+| Fase B4 — ADE v1 | 🟡 EN CURSO — v1 determinista ([ADR-004](decisions.md#adr-004)) | — |
+| Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA por [ADR-024](decisions.md#adr-024) | 0 / — |
+| Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |
+| Fase B7 — Privacidad | 🔒 **BLOQUEADA por [ADR-006](decisions.md#adr-006)** — es la fase que lo cierra | — |
+| Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
 **Estado de los 51 contratos `C01`: 51 `OPEN`, 0 `CLOSED`.** Ver
 [`pending-decisions-annex.md`](pending-decisions-annex.md).

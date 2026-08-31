@@ -50,7 +50,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-001](#adr-001) | Adoptar Spec Driven Development | `ACCEPTED` | — |
 | [ADR-002](#adr-002) | Scaffold nuevo reusando solo la capa de UI | `ACCEPTED` | — |
 | [ADR-003](#adr-003) | Convergencia Operador ↔ coach de Dashboard_Achieve | `PENDING` | Fase B6 |
-| [ADR-004](#adr-004) | Diseño del pipeline del Academic Decision Engine | `PENDING` | Fase B4 |
+| [ADR-004](#adr-004) | Diseño del pipeline del ADE | ✅ `ACCEPTED` *(v1 provisional, alcance MVP)* | — |
 | [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | ✅ `ACCEPTED` *(sólo el ítem 5 `DEFERRED`)* | `B3` |
 | [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | `PENDING` | Toda fase con datos reales |
 | [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | `PENDING` | Contenido de Fase B5 |
@@ -70,6 +70,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-021](#adr-021) | Qué es, en Achieve, el «trabajo pendiente que caduca» | `ACCEPTED` | — |
 | [ADR-022](#adr-022) | `C-04` elevado: el vacío argumenta, con tercera cláusula condicional | `ACCEPTED` | — |
 | [ADR-023](#adr-023) | La ingesta del ADL se construye antes que el ADE, y empieza asistida | `ACCEPTED` | — |
+| [ADR-024](#adr-024) | Modo MVP: se construye todo sobre datos sintéticos | `ACCEPTED` | — |
 
 ---
 
@@ -234,76 +235,6 @@ contexto vivo ni la convergencia de roles/modelos.
 ---
 
 <a id="adr-004"></a>
-## ADR-004 — Diseño del pipeline del Academic Decision Engine
-
-**Estado:** `PENDING — esperando decisión del producto`
-**Bloquea:** Fase B4 (ADE real). No bloquea el Track A, que usa salidas de ADE prefijadas.
-**Relacionado:** `C01-006` (ADE y `ActionRecommendation`), `C01-021` (Risk Engine), `C01-022`.
-**Toca:** `architecture.md`, `data-model.md`, `roadmap.md`.
-
-### Contexto
-
-El ADE es el componente que responde "¿qué acción conviene hacer ahora?". Todo el producto está
-construido alrededor de él, y **su lógica no está diseñada**. El contrato `C01-006` sigue `OPEN`.
-
-Lo que el spec sí congela, y que cualquier diseño debe respetar:
-
-- **Salida mínima** (Parte I §9.2): materia + tema/objetivo + acción concreta + tiempo estimado +
-  recurso/fuente + evidencia esperada + razón de la recomendación.
-- **La UI nunca rankea.** `TodayView`, Materia, Overview de examen y Bitácora son proyecciones que
-  releen una recomendación principal ya elegida por el ADE. Si el ADE devuelve varias
-  recomendaciones sin una principal, eso es un **error de contrato**, no un caso a resolver en el
-  frontend.
-- **Cuatro ramas de salida obligatorias:** `NEW` (recomendación vigente), `NONE` (ausencia
-  autoritativa), `ERROR` (fallo, con reintento) y `PENDING` (resultado todavía no disponible). Están
-  modeladas en los fixtures `FX-ADE-*`.
-- `academic_context_blocker` (`C01-050`) es **semánticamente distinto** de `NONE`: el primero es
-  falta de contexto académico, el segundo es una ausencia que el ADE ya confirmó.
-- El objetivo de optimización provisional (§9.3) es "maximizar avance sostenible del semestre y
-  preparación suficiente de evaluaciones, sujeto a disponibilidad real y sin abandonar la
-  construcción de autonomía".
-
-### Propuesta existente — NO CONFIRMADA
-
-El anexo de decisiones pendientes registra una propuesta de arquitectura identificada el 28 de agosto
-de 2026, en estado **`OPEN — PROPUESTA EN EVALUACIÓN, NO CONFIRMADA`**:
-
-> Contexto académico verificado → paso actual del protocolo → reglas de elegibilidad/prioridad → un
-> LLM genera una `ActionRecommendation` estructurada (JSON con `objective`, `verb`, `scope`,
-> `conditions`, `estimated_minutes`, `resource_id`, `expected_evidence`, `completion_criterion`,
-> `reason`, `confidence`, `requires_human_review`) → validador determinista (el recurso existe, el
-> tema pertenece al examen, la duración entra en la disponibilidad, no duplica una acción, no afirma
-> dominio/progreso/readiness inexistente) → publicación automática o revisión humana según confianza.
-
-**Esta propuesta no es el spec final y no debe implementarse como si lo fuera.** Su gate material es
-`H` — antes de mover a high-fidelity cualquier pantalla que dependa de una recomendación real.
-
-### Qué falta decidir
-
-1. ¿Se adopta el pipeline propuesto, se adopta uno rule-based primero, o un híbrido?
-2. Si hay LLM: qué contexto estructurado exacto recibe, qué schema devuelve, y qué reglas ejecuta el
-   validador determinista antes de publicar.
-3. Umbral de `confidence` que dispara revisión humana en lugar de publicación automática.
-4. Cómo se relaciona con el Risk Engine (`C01-021`), que el spec permite que sea rule-based en v1.
-
-### Recomendación técnica (no vinculante)
-
-Empezar **rule-based y determinista** para el golden path de una carrera piloto, con el mismo
-contrato de salida que tendría la versión con LLM. Eso permite construir todo lo que consume al ADE
-(que es casi todo el producto) sin depender de esta decisión, y cambiar el motor después sin tocar
-a los consumidores. El validador determinista de la propuesta es valioso **exista o no el LLM**:
-es el que impide que el sistema afirme dominio o progreso inexistente.
-
-### Consecuencias mientras siga `PENDING`
-
-- El Track A entero funciona: consume salidas de ADE prefijadas como fixtures.
-- El Track B puede construir el **contrato** de `ActionRecommendation` (Fase B2/B3) sin construir el
-  motor, siempre que el contrato admita las cuatro ramas `NEW/NONE/ERROR/PENDING`.
-- Fase B4 está bloqueada.
-
----
-
-<a id="adr-005"></a>
 ## ADR-005 — Motor de base de datos, auth y persistencia
 
 **Estado:** ✅ **`ACCEPTED`** · Bloque A el 30 ago 2026; **ítems 4 y 6 del Bloque B cerrados el mismo día**
@@ -1562,3 +1493,91 @@ ADL. [ADR-006](#adr-006) habla de estudiantes, pero **un docente también es una
 **Regla operativa mientras `C01-006` no lo cubra:** el ingestor **no carga identidad de docente**.
 `instructor` queda fuera de la ingesta asistida. Si el material la trae, se omite — *omitir, no
 inventar*, y acá además *omitir, no recolectar*.
+
+---
+
+## ADR-024 — Modo MVP: se construye todo sobre datos sintéticos
+
+**Estado:** `ACCEPTED` · 30 ago 2026 · **decidido por el owner**
+**Objetivo:** un MVP interno demostrable a inversores.
+
+### Decisión
+
+**Se levanta el bloqueo de construcción de todas las fases.** Lo que frenaba el roadmap era, casi
+siempre, *procesar dato real* — no *construir*. Un producto completo sobre datos sintéticos **no
+toca ninguna de esas decisiones**, así que se construye entero: ADE, reloj del lifecycle, progreso,
+modo examen, riesgo.
+
+Las decisiones abiertas que quedaban en el camino se resuelven **como versión provisional de alcance
+MVP**, derivadas de lo que el spec ya congela, y **marcadas como tales**:
+
+| Decisión | Cómo queda |
+|---|---|
+| [ADR-004](#adr-004) — pipeline del ADE | `ACCEPTED (v1 provisional)`. Reglas deterministas. Ver el ADR |
+| ADR-005 ítem 5 — operación | Se construye el reloj del lifecycle; observabilidad y rotación quedan para producción |
+| `C01-*` con gate `H`/`I` | Se implementa una lectura provisional **anotada en el código**, no una decisión de producto |
+
+### Lo único que NO se levanta, y por qué conviene que no se levante
+
+**Ningún flujo procesa datos de una persona real.** [ADR-006](#adr-006) sigue `PENDING`, y para este
+MVP **no estorba**: el owner pidió *"todo testing"*, así que la restricción **no cuesta nada** hoy.
+
+Y protege el objetivo, no lo frena: **una demo a inversores con datos de un estudiante real es un
+pasivo, no una función.** Si algo sale mal, sale mal con el nombre de una persona adentro. Con datos
+sintéticos la demo es igual de convincente y no hay nada que explicar después.
+
+El guard estático que lo verifica se queda. Cuesta cero mientras todo sea sintético, y avisa el día
+que alguien conecte un padrón real sin querer.
+
+### La deuda que este ADR no borra, sólo aplaza
+
+**Nada de esto desaparece por construir el MVP.** Antes de que entre **una sola persona real**:
+
+| Qué | Estado |
+|---|---|
+| [ADR-006](#adr-006) — privacidad y consentimiento, con asesoría legal | `PENDING` · **bloqueo absoluto** |
+| `C01-042` — golden dataset: qué universidad, qué fuentes, legalidad | `OPEN` |
+| `npm audit` — 3 `high` | Sube la mayor de Next: [ADR-008](#adr-008). Ver `roadmap.md` §3.1 |
+| `C01-030` — modelo de usuario institucional | `OPEN`. Sin él no hay endpoints de institución |
+| Identidad de docente en material ingerido | Abierta por [ADR-023](#adr-023) |
+
+**Cada versión provisional queda marcada en el código con el contrato que la reemplaza.** El riesgo
+real de un MVP no es tomar atajos: es olvidarse de cuáles se tomaron.
+
+---
+
+## ADR-004 — Diseño del pipeline del Academic Decision Engine
+
+**Estado:** ✅ **`ACCEPTED (v1 provisional — alcance MVP)`** · 30 ago 2026 · por [ADR-024](#adr-024)
+**Sigue abierto:** `C01-006`. La v1 **no lo cierra**; lo implementa provisionalmente.
+
+### Decisión: v1 determinista, sin LLM
+
+El anexo registra una propuesta con un LLM generando la `ActionRecommendation` y un **validador
+determinista** detrás. **La v1 construye el validador y las reglas; el LLM no.**
+
+**Por qué en ese orden:**
+
+1. **El validador hace falta igual.** En la propuesta, el LLM propone y un validador determinista
+   comprueba que el recurso existe, que el tema pertenece al examen, que la duración entra en la
+   disponibilidad y que **no se afirma dominio, progreso ni readiness inexistente**. Ese validador es
+   trabajo obligatorio en cualquier versión.
+2. **Con las reglas puestas, el LLM es otro generador detrás del mismo validador** — el mismo patrón
+   que la ingesta: primero el núcleo, después la fuente más ambiciosa.
+3. **Para una demo, determinista es mejor.** Una recomendación explicable y reproducible se puede
+   mostrar; una que alucina, no.
+
+### Lo que la v1 respeta, porque el spec ya lo congela
+
+- **Salida mínima** (Parte I §9.2): materia + tema/objetivo + acción concreta + tiempo estimado +
+  recurso/fuente + evidencia esperada + **razón**.
+- **Cuatro ramas obligatorias:** `NEW`, `NONE`, `ERROR`, `PENDING`, ya modeladas en `FX-ADE-*`.
+- **`academic_context_blocker` es distinto de `NONE`:** falta de contexto no es ausencia confirmada.
+- **Exactamente una recomendación principal.** Varias sin principal es **error de contrato**, no un
+  caso a resolver en el frontend.
+- **Ninguna magnitud de máquina visible** (`P-03`): `priority` ordena, **nunca se muestra**.
+
+### Lo que la v1 explícitamente NO hace
+
+No modela al estudiante, no predice, no aprende y no pondera riesgo. Ordena por **costo de no
+actuar** con reglas escritas y legibles. Cuando `C01-006` se cierre, esto se reemplaza o se envuelve.
