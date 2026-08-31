@@ -17,6 +17,48 @@ mal() { echo "   ✗ $1"; fallos=$((fallos+1)); }
 A=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa   # institución A
 B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 
+# `db:verify` es dueño de la base local: la deja vacía de datos de negocio.
+# No es un detalle de implementación —después de correrlo hay que volver a
+# sembrar con `npm run db:demo`— y está escrito acá porque este script y el
+# seed comparten UUID: `aaaaaaaa-…` es la misma institución en los dos, así que
+# no pueden convivir. Con datos de la demo puestos, el `insert` de abajo choca
+# por clave duplicada y el verificador falla sin que haya nada roto.
+#
+# La limpieza va también al principio, y por `trap EXIT`: la corrida que se va
+# por `exit 1` es justo la que dejaba el mundo a medio poner, y así garantizaba
+# que la siguiente también fallara.
+limpiar_mundo() {
+  q "delete from evidence_content; \
+   delete from evidence; \
+   delete from reflection; \
+   delete from action_recommendation; \
+   delete from action_resource; \
+   delete from commitment; \
+   delete from action; \
+   delete from topic_progress; \
+   delete from course_enrollment; \
+   delete from availability; \
+   delete from enrollment; \
+   delete from student; \
+   delete from instructor; \
+   delete from assessment_topic; \
+   delete from assessment; \
+   delete from class_session_topic; \
+   delete from class_session; \
+   delete from class_event_record; \
+   delete from resource; \
+   delete from topic_prerequisite; \
+   delete from topic; \
+   delete from course_offering; \
+   delete from course; \
+   delete from curriculum_plan; \
+   delete from academic_program; \
+   delete from institution_crm_ref; \
+   delete from institution;" >/dev/null 2>&1
+}
+trap limpiar_mundo EXIT
+limpiar_mundo
+
 echo "→ Dos instituciones con datos propios"
 corre "insert into institution (id,name) values ('$A','Inst A'),('$B','Inst B');
  insert into academic_program (id,institution_id,name) values ('a1000000-0000-0000-0000-000000000001','$A','P-A'),('b1000000-0000-0000-0000-000000000001','$B','P-B');
@@ -282,7 +324,7 @@ else
   ok "un DRAFT no puede tener completed_at"
 fi
 
-q "delete from commitment; delete from action; delete from course_enrollment; delete from student; delete from course_offering; delete from course; delete from curriculum_plan; delete from academic_program; delete from institution;" >/dev/null
+limpiar_mundo
 ok "limpiado"
 
 [ "$fallos" -gt 0 ] && { echo; echo "✗ $fallos criterio(s) sin sostener"; exit 1; }

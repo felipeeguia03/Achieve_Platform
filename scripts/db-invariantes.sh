@@ -38,7 +38,30 @@ acepta() {
   fi
 }
 
+# Los fixtures de este script tienen UUID fijo, y la limpieza borra SÓLO esos.
+# Antes borraba las tablas enteras, así que arrasaba con cualquier dato sintético
+# que no fuera suyo —el de `db:demo`, por ejemplo—. Un verificador no puede
+# destruir lo que no creó.
+#
+# El orden respeta las FK: `RESTRICT` obliga a ir de la hoja a la raíz. Lo que
+# crean las comprobaciones —`assessment`, `resource`, `class_session`,
+# `topic_progress`— cae por `CASCADE` desde la cursada y la inscripción.
+limpiar_fixtures() {
+  q "delete from course_enrollment where id='88888888-8888-8888-8888-888888888888'; \
+     delete from student where id='77777777-7777-7777-7777-777777777777'; \
+     delete from course_offering where id='55555555-5555-5555-5555-555555555555'; \
+     delete from course where id='44444444-4444-4444-4444-444444444444'; \
+     delete from curriculum_plan where id='33333333-3333-3333-3333-333333333333'; \
+     delete from academic_program where id='22222222-2222-2222-2222-222222222222'; \
+     delete from institution where id='11111111-1111-1111-1111-111111111111';" >/dev/null 2>&1
+}
+# `trap EXIT` y no una línea al final: la corrida que se iba por `exit 1` era
+# justo la que dejaba sus filas puestas, y con eso garantizaba que la siguiente
+# también fallara. El script se autoenvenenaba.
+trap limpiar_fixtures EXIT
+
 echo "→ Datos sintéticos de prueba"
+limpiar_fixtures  # por si una corrida vieja dejó las suyas
 q "begin; \
    insert into institution (id,name) values ('11111111-1111-1111-1111-111111111111','Institución SYN'); \
    insert into academic_program (id,institution_id,name) values ('22222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111','Programa SYN'); \
@@ -49,7 +72,11 @@ q "begin; \
    insert into student (id,institution_id) values ('77777777-7777-7777-7777-777777777777','11111111-1111-1111-1111-111111111111'); \
    insert into course_enrollment (id,institution_id,student_id,offering_id) values ('88888888-8888-8888-8888-888888888888','11111111-1111-1111-1111-111111111111','77777777-7777-7777-7777-777777777777','55555555-5555-5555-5555-555555555555'); \
    commit;" | tail -1
-if [ "$(q "select count(*) from course_offering;" | tr -d '[:space:]')" != "1" ]; then
+# La precondición mira SUS filas, no el tamaño de la tabla: exigir
+# `count(*) = 1` sobre `course_offering` entera es asumir que nadie más usa la
+# base, y basta una cursada de `db:demo` para que el verificador se caiga sin
+# que haya un solo invariante roto.
+if [ "$(q "select count(*) from course_offering where id='55555555-5555-5555-5555-555555555555';" | tr -d '[:space:]')" != "1" ]; then
   echo "   ✗ el setup no dejó los datos sintéticos"; exit 1
 fi
 echo "   ✓ cargados"
@@ -138,7 +165,7 @@ else
   echo "   ✗ anon leyó: '$visto'"; fallos=$((fallos + 1))
 fi
 
-q "delete from topic_progress; delete from course_enrollment; delete from student; delete from resource; delete from assessment; delete from topic; delete from course_offering; delete from course; delete from curriculum_plan; delete from academic_program; delete from institution;" >/dev/null
+limpiar_fixtures
 echo "   ✓ datos de prueba limpiados"
 
 if [ "$fallos" -gt 0 ]; then echo; echo "✗ $fallos invariante(s) sin sostener"; exit 1; fi

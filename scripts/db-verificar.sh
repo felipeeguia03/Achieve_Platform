@@ -6,7 +6,7 @@
 # deny-by-default de `docs/data-model.md` §6.
 #
 # NO está dentro de `npm test` a propósito: esa suite corre sin Docker, en
-# cualquier máquina. Mezclarlas haría que las 396 dependieran del stack.
+# cualquier máquina. Mezclarlas haría que las 531 dependieran del stack.
 set -euo pipefail
 
 CONTENEDOR="supabase_db_achieve-platform"

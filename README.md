@@ -69,6 +69,12 @@ Copiá [`.env.local.example`](.env.local.example) a `.env.local` con lo que impr
 **`db:verify` no está dentro de `npm test`** a propósito: la suite de 531 corre sin Docker, en
 cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack levantado.
 
+⚠️ **`db:verify` es dueño de la base local y la deja vacía de datos de negocio.** Comparte UUID con
+`db:demo` a propósito —`aaaaaaaa-…` es la misma institución en los dos—, así que **no pueden
+convivir**: después de verificar hay que volver a sembrar con `npm run db:demo`. Las **87
+comprobaciones** limpian lo suyo también al empezar y por `trap EXIT`, para que una corrida que
+falla no arrastre a la siguiente.
+
 ⚠️ **Este entorno corre sólo con datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto para cualquier dato de una persona real — que
 [ADR-005](docs/decisions.md#adr-005) esté aceptado **no** cambia eso.
