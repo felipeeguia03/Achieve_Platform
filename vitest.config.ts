@@ -13,6 +13,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./", import.meta.url)),
+      // Ver tests/dobles/server-only.ts: el paquete real lanza bajo jsdom.
+      "server-only": fileURLToPath(new URL("./tests/dobles/server-only.ts", import.meta.url)),
     },
   },
   test: {

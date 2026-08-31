@@ -77,25 +77,21 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 críticos son alcanzables, el Golden Path se recorre por clic y **el test de comprensión de 10
 segundos se corrió con resultado PASS** (reportado por el owner, 30 ago 2026).
 
-**Fase B0 — Cerrar decisiones.** 🟡 **1 / 5.** [ADR-005](docs/decisions.md#adr-005) quedó
-✅ `ACCEPTED` **alcanzado a su Bloque A** el 30 ago 2026 — Supabase, scoping en Service/Repository
-con RLS deny-by-default, y Controller → Service → Repository. El **Bloque B** (Storage de `Evidence`,
-operación, mapping de `institutionId`) quedó `DEFERRED` con sus fases marcadas.
+**Fase B0 — Cerrar decisiones.** 🟡 **1 / 5.** [ADR-005](docs/decisions.md#adr-005) `ACCEPTED`;
+sólo su **ítem 5** (operación) sigue `DEFERRED`.
 
-**Fase B1 — Fundación.** 🟢 **DESBLOQUEADA para `B1.1`–`B1.5`**, es lo que toca ahora. `B1.6` espera
-el ítem 6 del Bloque B. **Toda la fase corre sobre datos sintéticos:**
-[ADR-006](docs/decisions.md#adr-006) sigue `PENDING` y es bloqueo absoluto desde el primer usuario
-real — aceptar ADR-005 **no** adelantó ese permiso.
+**Fase B1 — Fundación.** ✅ **COMPLETA, 6 / 6.** Supabase local reproducible, capa académica y del
+estudiante, la frontera Controller → Service → Repository, `product_event`/`audit_log` append-only y
+el cliente de autorización del CRM.
 
-**Fase A2 — Shell de aplicación.** ✅ **5 / 5 etapas.** Navegación lateral y topbar, paleta `⌘K`,
-la primitiva `Ausencia`, la comparación con las capturas y la cabecera de panel con sus nueve
-subcopys. **Eran 6:** [ADR-019](docs/decisions.md#adr-019) descartó el dock inferior porque la fuente
-misma lo desaconseja para flujos lineales.
+**Fase B2 — Dominio de ejecución.** 🟡 **2 / 5.** `Action` y `Commitment` con renegociación, rescate
+e idempotencia.
 
-De las **siete diferencias** contra las capturas
-([`design-system-capturas.md`](docs/design-system-capturas.md) §14) hay **seis cerradas**. Queda
-**`D-03`** —los controles segmentados—, bloqueada porque las listas de opciones no existen en los
-view models: fabricarlas sería inventar dominio.
+⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
+`PENDING` y es bloqueo absoluto desde el primer usuario real.
+
+**Verificación de base:** `npm run db:verify` — **58 comprobaciones** contra Postgres que `npm test`
+no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.

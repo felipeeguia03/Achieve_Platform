@@ -51,7 +51,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-002](#adr-002) | Scaffold nuevo reusando solo la capa de UI | `ACCEPTED` | — |
 | [ADR-003](#adr-003) | Convergencia Operador ↔ coach de Dashboard_Achieve | `PENDING` | Fase B6 |
 | [ADR-004](#adr-004) | Diseño del pipeline del Academic Decision Engine | `PENDING` | Fase B4 |
-| [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | ✅ `ACCEPTED` *(Bloque A; Bloque B `DEFERRED`)* | `B1.6`, `B2.3`, `B3` |
+| [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | ✅ `ACCEPTED` *(sólo el ítem 5 `DEFERRED`)* | `B3` |
 | [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | `PENDING` | Toda fase con datos reales |
 | [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | `PENDING` | Contenido de Fase B5 |
 | [ADR-008](#adr-008) | Stack y runtime del frontend | `ACCEPTED` | — |
@@ -305,9 +305,9 @@ es el que impide que el sistema afirme dominio o progreso inexistente.
 <a id="adr-005"></a>
 ## ADR-005 — Motor de base de datos, auth y persistencia
 
-**Estado:** ✅ **`ACCEPTED` — alcance: Bloque A** · 30 ago 2026 · aceptado por el owner
-**Bloque B:** `DEFERRED`. Ver *Alcance de la aceptación*.
-**Bloquea:** ya no bloquea `B1.1`–`B1.5`. `B1.6` sigue esperando el ítem 6 (Bloque B).
+**Estado:** ✅ **`ACCEPTED`** · Bloque A el 30 ago 2026; **ítems 4 y 6 del Bloque B cerrados el mismo día**
+**Sigue `DEFERRED`:** sólo el ítem 5 (operación: Broadcast/outbox, rotación de secretos, observabilidad).
+**Bloquea:** nada de la Fase B1.
 **Relacionado:** `C01-001` (identidad/tenancy/esquema ADL), `C01-030` (autorización, permisos y
 privacidad institucional), `C01-041` (Architecture/API/Data/Integration Spec).
 **Toca:** `architecture.md`, `data-model.md`, `roadmap.md`.
@@ -322,13 +322,42 @@ privacidad institucional), `C01-041` (Architecture/API/Data/Integration Spec).
 3. **Controller → Service → Repository**, con dependencias inyectadas. El runtime físico se puede
    mover después sin tocar dominio.
 
-**Diferido (Bloque B), con su fase bloqueada marcada:**
+**Bloque B — ítems 4 y 6 cerrados el 30 de agosto de 2026 por el owner:**
+
+**Ítem 4 · Storage de `Evidence` — la mitad técnica.** ✅ **Supabase Storage, bucket privado.**
+`evidence_content.storage_ref` guarda **la clave del objeto, no una URL**: una URL guardada vence y
+deja un dato muerto en la base.
+
+**El navegador sube directo, con URL firmada de corta duración que emite el backend.** La firma
+**es** el control de acceso: sin ella no hay subida, y el archivo no consume memoria ni tiempo del
+servidor de aplicación. `R11` habla de tablas de negocio; el storage no es una tabla, y el backend
+sigue decidiendo quién sube y dónde.
+
+> ⚠️ **La otra mitad sigue abierta:** retención y borrado dependen de
+> [ADR-006](#adr-006). El motor no.
+
+**Ítem 6 · `institutionId` — ✅ tabla de correspondencia, con alta manual.**
+
+Plataforma es dueña de su `institution.id`. El UUID que devuelve el CRM es **una identidad externa**
+y se traduce.
+
+**Lo decidió un precedente que ya estaba escrito:** `data-model.md` §6.1 dice que el `studentId` del
+CRM *"es una identidad externa distinta… **nunca reemplaza `student.id`**"*. Ya se había elegido
+esto para la entidad más importante; usar el criterio contrario con instituciones habrían sido dos
+reglas de identidad en el mismo contrato.
+
+Y el propio contrato lo respalda: *"cada uno tiene su propio proyecto Supabase… **nadie toca la base
+del otro**"*. Compartir la clave primaria del tenant es la versión silenciosa de compartir base.
+
+**Una institución desconocida NO se crea sola.** Si el CRM autoriza a un estudiante de una
+institución que Plataforma no tiene mapeada, **la autorización se rechaza** y queda registrada para
+alta manual. Dar de alta una institución es firmar un convenio, no un efecto secundario de un login.
+
+**Sigue `DEFERRED`:**
 
 | # | Qué | Bloquea |
 |---|---|---|
-| 4 | Storage de `Evidence`: motor, permisos, retención, borrado | **`B2.3`** |
 | 5 | Operación: Broadcast/outbox, rotación de secretos, observabilidad | **`B3`** en adelante |
-| 6 | `institutionId`: ¿identidad compartida con CRM o tabla de correspondencia? | **`B1.6`** |
 
 **Lo que esta aceptación NO habilita.** [ADR-006](#adr-006) sigue siendo bloqueo absoluto para
 cualquier dato de una persona real: `B1` corre **sobre datos sintéticos**, y `B1.6` los exige de

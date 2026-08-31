@@ -97,8 +97,47 @@ describe("Track A — reglas verificables estáticamente", () => {
     expect(offenders(/\b(localStorage|sessionStorage|indexedDB|IDBDatabase)\b/)).toEqual([]);
   });
 
+  /**
+   * **Relajado en la B1.6, y acotado a lo que no puede existir.**
+   *
+   * El contrato con el CRM tiene un campo `email`, así que sus contract tests
+   * necesitan un valor con forma de email o no prueban el contrato. Se permiten
+   * **sólo los dominios que RFC 2606 reserva** —`example.com/net/org` y los TLD
+   * `.test`, `.invalid`, `.example`, `.localhost`—: son inasignables por
+   * definición, así que un email ahí **no puede ser de una persona real**.
+   *
+   * Cualquier otro dominio sigue prohibido. Las auto-pruebas de abajo verifican
+   * que la relajación no abrió la puerta.
+   */
+  const DOMINIO_RESERVADO =
+    /@(example\.(com|net|org)|[\w-]+\.(test|invalid|example|localhost))$/i;
+
+  function emailsNoReservados(fuente: string): string[] {
+    return (fuente.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi) ?? []).filter(
+      (e) => !DOMINIO_RESERVADO.test(e),
+    );
+  }
+
   it("cero datos reales: sin emails ni teléfonos con forma de dato real", () => {
-    expect(offenders(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i)).toEqual([]);
+    // Reusa la lista ya cargada y sin comentarios: un segundo recorrido del
+    // árbol sería otra lista que mantener sincronizada.
+    const culpables = files
+      .filter(({ code }) => emailsNoReservados(code).length > 0)
+      .map(({ path }) => path);
+    expect(culpables).toEqual([]);
+  });
+
+  it("la relajación no dejó pasar un dominio real", () => {
+    // Lo que debe seguir siendo delito.
+    expect(emailsNoReservados("ana@uni.edu.ar")).toEqual(["ana@uni.edu.ar"]);
+    expect(emailsNoReservados("felipe@gmail.com")).toEqual(["felipe@gmail.com"]);
+    expect(emailsNoReservados("a@examples.com")).toEqual(["a@examples.com"]);
+    // Un dominio que sólo *empieza* como reservado no cuenta.
+    expect(emailsNoReservados("x@example.com.ar")).toEqual(["x@example.com.ar"]);
+    // Lo que sí se permite, porque RFC 2606 lo hace inasignable.
+    expect(emailsNoReservados("sintetico@example.test")).toEqual([]);
+    expect(emailsNoReservados("a@example.com")).toEqual([]);
+    expect(emailsNoReservados("b@algo.invalid")).toEqual([]);
   });
 });
 

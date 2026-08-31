@@ -1238,11 +1238,8 @@ son todas legales**: tres las puede contestar producto hoy.
 
 ## Fase B1 — Fundación
 
-**Estado:** 🟢 **DESBLOQUEADA para `B1.1`–`B1.5`.** [ADR-005](decisions.md#adr-005) quedó `ACCEPTED`
-alcanzado a su **Bloque A** el 30 de agosto de 2026: Supabase, scoping en Service/Repository con RLS
-deny-by-default, y Controller → Service → Repository.
-
-🔒 **`B1.6` sigue bloqueada** por el ítem 6 del Bloque B (`institutionId` ↔ CRM), `DEFERRED`.
+**Estado:** ✅ **COMPLETA — 6 / 6**, el 30 de agosto de 2026. [ADR-005](decisions.md#adr-005) cerró
+el Bloque A y después los ítems 4 y 6, que eran los que faltaban.
 
 ⚠️ **Toda la fase corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) entra desde el
 momento en que exista **un solo usuario real**, y sigue `PENDING`.
@@ -1257,7 +1254,7 @@ sin acceso del frontend a tablas de negocio.
 | B1.3 | 🟡 **PARCIAL** — auth, `student` y JWT en `/api/*` completos. **El rol institucional no tiene modelo en el doc**: ver abajo |
 | B1.4 | ✅ **COMPLETA** — frontera Controller → Service → Repository, con §9 y los cuatro criterios de aislamiento probados |
 | B1.5 | ✅ **COMPLETA** — `product_event` y `audit_log`, append-only **probado contra el propio backend** |
-| B1.6 | 🔒 Cliente de autorización CRM v1 con contract tests y datos sintéticos; **bloqueada por ADR-005 ítem 6**; uso real gateado por ADR-006 |
+| B1.6 | ✅ **COMPLETA** — cliente de autorización CRM v1 con contract tests y datos sintéticos; uso real gateado por ADR-006 |
 
 #### ✅ Etapa B1.1 — COMPLETA · 30 de agosto de 2026
 
@@ -1447,6 +1444,45 @@ tampoco se cerró ninguna de las dos salidas:**
 
 Un test verifica que **el hecho no viaja dentro del `payload`**: si empezara a viajar ahí, la
 separación existiría en el schema y no en la práctica.
+
+---
+
+#### ✅ Etapa B1.6 — Autorización de padrón · COMPLETA · 30 de agosto de 2026
+
+**Cierra la Fase B1.** Habilitada por ADR-005 ítem 6, cerrado por el owner: **tabla de
+correspondencia, con alta manual.**
+
+| Criterio de Done | Resultado |
+|---|---|
+| El contrato cubre `authorized:true` | ✅ |
+| **Los tres rechazos** — `not_in_roster`, `institution_terminated`, `ambiguous` | ✅ y **viajan sin reinterpretarse** |
+| `400` y `401` | ✅ separados: uno es el body, el otro el secreto. Ninguno es *"tu institución no te habilitó"* |
+| Reintento de red / `5xx` | ✅ misma clase, reintentable |
+| Datos sintéticos | ✅ ninguna llamada sale a un CRM real |
+| `lint` · `build` · `test` | ✅ verde · verde · **450 tests en 24 archivos**, **63 verificaciones** contra Postgres |
+
+**La identidad no se adopta, se traduce.** El `institutionId` del CRM es una identidad externa;
+`institution_crm_ref` la mapea a la de Plataforma. Lo decidió un precedente que ya estaba escrito:
+`data-model.md` §6.1 dice que el `studentId` del CRM *"nunca reemplaza `student.id`"*. Y el propio
+contrato: *"cada uno tiene su propio proyecto Supabase… **nadie toca la base del otro**"*.
+
+**Una institución desconocida no se crea sola.** Si el CRM autoriza a alguien de una institución que
+Plataforma no tiene mapeada, **se rechaza**. Dar de alta una institución es firmar un convenio, no un
+efecto secundario de un login — y por eso el repositorio **no tiene método de alta**: un `crear()`
+ahí sería la puerta por la que la institución termina apareciendo sola.
+
+**Una caída de red no es un "no".** Se distingue `INTEGRACION_CAIDA` de `RECHAZADO`: decirle al
+estudiante que su institución no lo habilitó cuando se cayó una conexión es mentirle sobre su
+situación, y además le esconde que hay que reintentar.
+
+**Dos cosas de herramienta que hubo que resolver bien, no rápido:**
+
+1. **`server-only` lanza bajo `jsdom`**, así que los contract tests no podían cargar el cliente. Se
+   stubeó **sólo en tests**; quitarlo del código de producción habría cambiado el código para
+   acomodar la herramienta y perdido la garantía que da en el build.
+2. **El guard de *cero datos reales* prohibía todo email**, y el contrato tiene un campo `email`. Se
+   acotó a **los dominios que RFC 2606 reserva** —inasignables por definición—, con auto-pruebas de
+   que `ana@uni.edu.ar` y `x@example.com.ar` siguen siendo delito.
 
 ---
 
@@ -1669,7 +1705,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase A2 — Shell de aplicación | ✅ **5 / 5 etapas completas** | 5 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-005` aceptado (Bloque A) | 1 / 5 |
-| Fase B1 — Fundación | 🟢 **DESBLOQUEADA** — `B1.1`–`B1.5`; `B1.6` espera ADR-005 ítem 6 | 0 / 6 |
+| Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
 | Fase B2 — Dominio de ejecución | 🔒 BLOQUEADA | — |
 | Fase B3 — Progreso y eventos | 🔒 BLOQUEADA | — |
 | Fase B4 — ADE v1 | 🔒 BLOQUEADA | — |

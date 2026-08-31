@@ -56,6 +56,22 @@ else
   ok "la segunda con la misma clave se rechaza en la base"
 fi
 
+echo "→ B1.6. La institución del CRM se traduce; no se adopta ni se crea sola"
+CRM=cccccccc-cccc-cccc-cccc-cccccccccccc
+[ "$(q "select coalesce(public.institucion_de_crm('$CRM')::text,'null');" | tr -d '[:space:]')" = "null" ] \
+  && ok "una institución del CRM sin mapear no resuelve a nada" || mal "resolvió algo que no está mapeado"
+corre "insert into institution_crm_ref (institution_id,crm_institution_id,created_by) values ('$A','$CRM','alta manual');"
+[ "$(q "select public.institucion_de_crm('$CRM');" | tr -d '[:space:]')" = "$A" ] \
+  && ok "mapeada, traduce al id de Plataforma" || mal "no tradujo"
+# La PK del tenant es de Plataforma: los dos UUID son distintos a propósito.
+[ "$CRM" != "$A" ] && ok "el id de Plataforma NO es el del CRM" || mal "son el mismo UUID"
+if corre "insert into institution_crm_ref (institution_id,crm_institution_id) values ('$B','$CRM');"; then
+  mal "dos instituciones de Plataforma para la misma del CRM"
+else
+  ok "una institución del CRM mapea a una sola de Plataforma"
+fi
+q "delete from institution_crm_ref;" >/dev/null
+
 echo "→ I2. Renegociar CREA una fila nueva; el original no se edita"
 corre "update commitment set state='CONFIRMED', missed_at=null where id='a8000000-0000-0000-0000-000000000001';"
 orig_antes=$(q "select start_at||'|'||planned_minutes from commitment where id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')
