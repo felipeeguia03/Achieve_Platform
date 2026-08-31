@@ -513,7 +513,10 @@ en una línea`. **No se esconden los que fallan.**
 - [ ] `I-05` El bloqueante está arriba de todo
 - [ ] Recorrido completo con `Tab`
 - [ ] Lector de pantalla sobre la pantalla más compleja
-- [ ] **La pantalla de decisión cumple el contrato de orden de §6.1 en desktop, y no lo pierde a 360 px**
+- [x] **La pantalla de decisión cumple el contrato de orden de §6.1 en desktop, y no lo pierde a 360 px**
+      — medido el 30 ago 2026 en las nueve superficies a **1440×900 y 1280×800**: la CTA primaria
+      termina entre 436 y 741 px, **siempre sobre el pliegue**; a 360 px no hay scroll horizontal.
+      ⚠️ **No automatizado:** es layout, `jsdom` no lo verifica. Se repite si crece el contenido
 
 ---
 

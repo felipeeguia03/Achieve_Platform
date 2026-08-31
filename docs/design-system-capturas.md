@@ -969,13 +969,15 @@ esconden las que fallan.
 
 ### 14.2 Las diferencias, sin esconder ninguna
 
+**Seis de las siete están cerradas.** Queda `D-03`, con su bloqueo escrito en §14.5.
+
 | ID | Diferencia | Evidencia | Dónde se cierra |
 |---|---|---|---|
 | `D-01` ✅ | **Cerrada en A2.4.** Ninguna de las nueve tenía `<h1>`, y cuatro no tienen encabezado alguno (`UX06`, `UX07`, `UX08`, `UX09`) | `grep '<h1'` da 0 en `components/screens/`; el probe de navegador devuelve título `null` en cuatro rutas | ✅ **A2.4** — cada superficie tiene exactamente un `h1`, con guard. Las cuatro sin título propio promueven su eyebrow: título de documento **sin agregar una palabra** |
 | `D-02` ✅ | **Cerrada en A2.6.** Faltaba la subcopy explicativa de panel. Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | ✅ Las nueve las escribió el owner, del JTBD de cada spec. Un test verifica que cada cita sea **textual** |
 | `D-03` ⚠️ | **Cero controles segmentados** en las nueve superficies | `[role=tablist],[role=radiogroup]` da 0 en las nueve, y §10.2 los asigna a `UX05` y `UX07` | ⚠️ **Bloqueada, no diferida.** Ver §14.5 |
 | `D-04` ✅ | **Cerrada por [ADR-022](decisions.md#adr-022).** Los vacíos decían que no hay dato, no qué va a aparecer ni por qué importa | `UX08` mostraba el rótulo *"RECORRIDO TODAVÍA NO DISPONIBLE"* **y nada debajo** | ✅ Los tres vacíos argumentan. La tercera cláusula es condicional: dos de los tres no la llevan |
-| `D-05` ⚠️ | **La columna mide 1120 px y el contenido no la usa.** Una sola columna centrada donde las capturas ponen lista + detalle. Sólo `UX08` tiene dos columnas | Tarjeta de 1088 px con líneas de texto cortas en `UX01`–`UX06` | ⚠️ **Depende de `D-02`/`D-04`.** Ver §14.5 |
+| `D-05` ✅ | **Cerrada al re-medirla: el diagnóstico se dio vuelta.** Decía que la columna de 1120 px no se usaba y que faltaban dos columnas | Re-medido tras la subcopy: `UX02` **desborda**, y las tres superficies más vacías son las que **ya tienen dos columnas** | ✅ Ver §14.5. Lo que sobrevive es contenido faltante en la columna secundaria, no layout |
 | `D-06` ✅ | **Cerrada por [ADR-021](decisions.md#adr-021).** El único badge del menú estaba en Progreso, y la regla dice que el único badge es el del **trabajo pendiente que caduca**. La Bitácora no caduca | Regla 2 de la captura 02: *"un solo badge numérico en todo el menú: el del trabajo pendiente que caduca"* | ✅ Lo que caduca es el **`Commitment`**, y su lugar es `Hoy`. **No se dibuja todavía:** el `1` era un literal sin fuente. Ver §14.3 |
 | `D-07` ✅ | **Cerrada en A2.4.** No había acciones secundarias del objeto arriba a la derecha. Achieve las pone abajo y centradas | `UX01`: *"Ver progreso"* centrado al pie. `UX08`: *"VOLVER A CURSADO"* ídem. §11.9.3 las quiere en píldora de borde fino junto al título | ✅ `AccionDeObjeto` en píldora de borde fino. `CTA-009` se movió en `UX01` |
 
@@ -1002,14 +1004,15 @@ regla pide mientras ninguno se gane el lugar.
 
 ### 14.4 Lectura de conjunto
 
-Las siete diferencias son **de densidad y de estructura, no de lenguaje visual**. Los tokens, la
-tipografía, los hairlines, el racionamiento de color y el shell ya son los de las capturas; lo que
-falta es que **cada pantalla diga qué es y para qué sirve**, y que use el ancho que tiene.
+Las siete diferencias eran **de densidad y de estructura, no de lenguaje visual**. Los tokens, la
+tipografía, los hairlines, el racionamiento de color y el shell ya eran los de las capturas; lo que
+faltaba era que **cada pantalla dijera qué es y para qué sirve**.
 
-Eso fue exactamente `A2.4` y `A2.6`. **`D-02` la cerró el owner** escribiendo las nueve subcopys
-desde el JTBD de cada spec — no la capa visual, que habría inventado reglas de negocio.
+**Seis están cerradas.** `D-02` la cerró el owner escribiendo las nueve subcopys desde el JTBD de
+cada spec —no la capa visual, que habría inventado reglas de negocio—, y `D-04` la cerró
+[ADR-022](decisions.md#adr-022) elevando `C-04`.
 
-### 14.5 Las dos que la A2.4 no cerró, y por qué
+### 14.5 `D-03`, bloqueada — y `D-05`, que cambió de signo al re-medirla
 
 **`D-03` — segmentados.** §10.2 los asigna a *"método de evidencia / tipo de examen, **con lo
 inaplicable visible y atenuado**"*. Ninguna de las dos listas de opciones existe en los view models:
@@ -1020,9 +1023,39 @@ segmentado—, y `UX05` no tiene lista de métodos. Fabricar esas opciones serí
 mismo que el em-dash de la Etapa A2.3 o el conmutador de tema de §12.4: dibujar un mecanismo sin el
 hecho que lo justifica.
 
-**`D-05` — la columna de 1120 px sin usar.** El diagnóstico inicial era de layout y resultó ser de
-contenido: las tarjetas ocupan el ancho, lo que sobra es **espacio vertical vacío** porque cada panel
-dice tres líneas. §11.9.4 pide dos columnas *"cuando hay una lista y un detalle"*, y `UX08`/`UX09` ya
-las tienen. Poner dos columnas donde no hay dos cosas movería el vacío de lugar.
+#### `D-05` — la medición de la A2.5 ya no describe el producto
 
-**Las dos esperan lo mismo que `D-02` y `D-04`: contenido que escribe una persona.**
+`D-05` decía: *"una sola columna centrada donde las capturas ponen lista y detalle"*, con el vacío
+concentrado en las superficies de una columna. **Re-medido el 30 de agosto de 2026**, después de la
+subcopy, a 1440 × 900:
+
+| Superficie | Columnas | Alto del contenido | Espacio libre bajo el pliegue |
+|---|---|---|---|
+| `UX02` | 1 | 870 px | **−50 px — pide scroll** |
+| `UX06` | 1 | 768 px | 52 px |
+| `UX03` | 1 | 691 px | 129 px |
+| `UX09` | **2** | 686 px | 134 px |
+| `UX04` · `UX05` | 1 | 643 px | 177 px |
+| `UX01` | 1 | 636 px | 184 px |
+| `UX07` | **2** | 556 px | 264 px |
+| `UX08` | **2** | 521 px | **299 px** |
+
+**El diagnóstico se dio vuelta.** Las superficies de una columna ya no son las vacías —`UX02`
+pide scroll y `UX06` casi llena—, y **las tres más vacías son justamente las que ya tienen dos
+columnas**. Agregar una segunda columna a las de una haría lo contrario de lo que `D-05` pedía.
+
+**El scroll de `UX02` no rompe nada, y se verificó en vez de suponerse.** Lo único que no puede
+caer bajo el pliegue es la CTA primaria (§6.1, [ADR-015](decisions.md#adr-015)). Medido en las nueve
+superficies, a **1440 × 900 y 1280 × 800**: la CTA termina entre **436 y 741 px**, siempre sobre el
+pliegue, en los dos viewports. Lo que queda abajo en `UX02` son las listas secundarias, que es donde
+corresponde que estén.
+
+> ⚠️ **Esta medición no está automatizada.** Es layout: `jsdom` no la puede verificar, así que se
+> corre con el navegador y se anota acá. Si el contenido de una superficie crece, hay que repetirla.
+
+**`D-05` queda cerrada como estaba escrita, y lo que sobrevive es otra cosa:** la columna secundaria
+de `UX07`/`UX08`/`UX09` es corta y deja el pliegue vacío. Eso **no** se arregla con layout — se
+arregla con lo que esa columna tenga para decir, que hoy son avisos de dominio que vienen del
+fixture. No es una diferencia contra las capturas: es contenido que todavía no existe.
+
+

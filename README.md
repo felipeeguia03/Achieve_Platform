@@ -14,6 +14,10 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
   críticos de sus specs son alcanzables con URL propia, y el Golden Path se recorre por clic de
   punta a punta. **Falta ejecutar el test de comprensión de 10 segundos con personas reales**
   ([guion](docs/guion-focus-group.md)).
+- **Fase A2 — shell de aplicación: completa.** Navegación lateral, topbar con breadcrumb, paleta
+  `⌘K`, la primitiva `Ausencia` y la cabecera de panel. La comparación lado a lado con las capturas
+  está en [`docs/design-system-capturas.md`](docs/design-system-capturas.md) §14: **siete
+  diferencias, seis cerradas**, y la séptima con su bloqueo escrito.
 - **Track B:** backend, auth, persistencia e integraciones reales. Bloqueado por las decisiones
   pendientes, especialmente ADR-005 y ADR-006.
 

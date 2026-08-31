@@ -240,9 +240,15 @@ no de esta etapa: se agregó desde el primer commit para que no haya que retrofi
 4. **`(student)/layout.tsx` solo centra el contenido.** No implementa la proporción 2/3 + 1/3 de
    `design-system.md` §6.2 ni ubica la CTA principal en desktop: eso depende de
    [`design-system-capturas.md`](design-system-capturas.md) §12.7, que sigue `PENDING`.
+   **Resuelto después** por [ADR-015](decisions.md#adr-015); §6.2 quedó implementado en `UX07`,
+   `UX08` y `UX09`, y la CTA principal va a ancho completo al final de la columna.
 5. **`npm audit` reporta 3 vulnerabilidades `high`** en el árbol de dependencias heredado del
    prototipo. No se tocaron: cambiar versiones del stack es una decisión de ADR-008, no de esta
    etapa. **Queda registrado como deuda a evaluar antes de la Fase 0 Done.**
+
+   > ⚠️ **Ese gate no se cumplió, y hay que decirlo.** La Fase 0 se cerró 8/8 sin evaluar esta
+   > deuda. Re-verificado el 30 de agosto de 2026: **siguen siendo 3 `high`** — `next`, el `postcss`
+   > que arrastra, y `sharp` por CVEs heredadas de `libvips`. Ver §3.1.
 
 ---
 
@@ -824,7 +830,12 @@ dos exigen una persona y datos que el Track A no tiene.
 
 ## Fase A2 — Shell de aplicación · ✅ COMPLETA
 
-**Estado:** ✅ **5 / 5 etapas.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock. De las siete diferencias de §14.2 quedan **`D-03`, `D-04` y `D-05`**, las tres esperando la elevación de `C-04` (§12.2, `PENDING`). Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
+**Estado:** ✅ **5 / 5 etapas.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
+
+De las **siete diferencias** contra las capturas (§14.2), **seis cerradas**. Queda **`D-03`**
+—segmentados—, bloqueada porque las listas de opciones no existen en los view models y fabricarlas
+sería inventar dominio. **`D-05` se volvió a medir** después de la subcopy y cambió de signo: ver
+§14.5.
 **Abierta por:** [ADR-018](decisions.md#adr-018), 30 de agosto de 2026.
 
 **Objetivo.** Que Achieve **se parezca al software de `docs/diseño/`**. Las nueve superficies ya
@@ -856,7 +867,7 @@ Lo que muestran las capturas y Achieve hoy no tiene:
 | A2.3 | **Ausencia tipada** ✅ | La primitiva que `design-system.md` §3.2 declaraba faltante. **Reemplaza al dock**, descartado por [ADR-019](decisions.md#adr-019) |
 | A2.4 | **Cabecera de panel** ✅ | `TituloDePanel` y `AccionDeObjeto`. Cierra `D-01` y `D-07`; deja `D-02` con el hueco listo y `D-03`/`D-05` bloqueadas por contenido (§14.5) |
 | A2.5 | **Las nueve dentro del shell + comparación** ✅ | Verificado con guard estático, y la **comparación lado a lado** con las capturas: 7 diferencias reportadas (§14.2) |
-| A2.6 | **Subcopy de panel** ✅ | Las nueve frases, escritas por el owner desde el JTBD de cada spec. Cierra `D-02`; `D-04` (vacíos) sigue abierta |
+| A2.6 | **Subcopy de panel y vacíos** ✅ | Las nueve frases, escritas por el owner desde el JTBD de cada spec. Cierra `D-02` y, con [ADR-022](decisions.md#adr-022), `D-04` |
 
 ### Lo que esta fase NO toca
 
@@ -1128,13 +1139,16 @@ una sola frase de ausencia, y **sólo lleva instrucción el que el estudiante pu
 
 ---
 
-### Done cuando…
+### Done cuando… — ✅ los cinco, 30 de agosto de 2026
 
-- [ ] Las nueve superficies viven dentro del shell, sin haber cambiado su contenido ni sus estados
-- [ ] El recorrido del focus group sigue funcionando de punta a punta
-- [ ] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 sigue en verde
-- [ ] Lint, build y tests en verde
-- [ ] **Comparación lado a lado con las capturas**, con las diferencias reportadas y no escondidas
+- [x] Las nueve superficies viven dentro del shell, sin haber cambiado su contenido ni sus estados
+      — con guard estático desde la A2.5
+- [x] El recorrido del focus group sigue funcionando de punta a punta
+- [x] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 sigue en verde —
+      **`P-09` pasó a `[x]`** en la A2.3; ningún ítem retrocedió
+- [x] Lint, build y tests en verde — **396 tests en 19 archivos**
+- [x] **Comparación lado a lado con las capturas**, con las diferencias reportadas y no escondidas
+      — §14, **siete diferencias, seis cerradas**, la séptima con su bloqueo escrito
 
 ---
 
@@ -1366,3 +1380,25 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 **Estado de los 51 contratos `C01`: 51 `OPEN`, 0 `CLOSED`.** Ver
 [`pending-decisions-annex.md`](pending-decisions-annex.md).
+
+### 3.1 Deuda técnica abierta — `npm audit`
+
+**Re-verificado el 30 de agosto de 2026: 3 vulnerabilidades `high`.**
+
+| Paquete | Por qué está |
+|---|---|
+| `next` (`16.2.6`) | La versión fijada cae dentro del rango afectado |
+| `postcss` | Transitiva de `next` |
+| `sharp` | CVEs heredadas de `libvips` (`GHSA-f88m-g3jw-g9cj`) |
+
+**No se arreglan solas.** `npm audit fix --force` instala `next@16.3.3`, **fuera del rango declarado**
+en `package.json`: subir la versión mayor del framework es una decisión de
+[ADR-008](decisions.md#adr-008), no de una etapa de UI.
+
+**Lo incómodo:** la Etapa 0.1 registró esto como *"deuda a evaluar **antes de la Fase 0 Done**"*, y
+**la Fase 0 se cerró 8/8 sin evaluarla**. El gate estaba escrito y no se cumplió. Queda acá visible
+en vez de enterrado en la narrativa de una etapa vieja.
+
+**Qué mitiga el riesgo hoy, y qué no.** El Track A no tiene red, ni persistencia, ni datos reales, ni
+se despliega: el árbol vulnerable no está expuesto a nadie. **Eso deja de valer en cuanto el Track B
+arranque**, así que esto es un bloqueante real de la Fase B1 y no una nota al pie.

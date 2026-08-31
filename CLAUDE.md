@@ -83,9 +83,10 @@ la primitiva `Ausencia`, la comparación con las capturas y la cabecera de panel
 subcopys. **Eran 6:** [ADR-019](docs/decisions.md#adr-019) descartó el dock inferior porque la fuente
 misma lo desaconseja para flujos lineales.
 
-De las **siete diferencias** contra las capturas ([`design-system-capturas.md`](docs/design-system-capturas.md)
-§14) quedan tres —`D-03` segmentados, `D-04` vacíos que explican, `D-05` densidad—, **las tres
-esperando la elevación de `C-04`** (§12.2, `PENDING`).
+De las **siete diferencias** contra las capturas
+([`design-system-capturas.md`](docs/design-system-capturas.md) §14) hay **seis cerradas**. Queda
+**`D-03`** —los controles segmentados—, bloqueada porque las listas de opciones no existen en los
+view models: fabricarlas sería inventar dominio.
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
@@ -102,6 +103,11 @@ pero ninguna pantalla la renderiza). Ver `docs/roadmap.md`, Etapa 0.3.
   [ADR-006](docs/decisions.md#adr-006).
 
 **Stack:** Next.js 16 · React 19 · Tailwind v4 CSS-first · shadcn vendorizado · Vitest.
+
+⚠️ **`npm audit`: 3 `high` abiertas** (`next`, `postcss`, `sharp`). La Etapa 0.1 las registró como
+deuda a evaluar **antes** del Done de la Fase 0 y **la fase se cerró sin evaluarlas**. Hoy no
+exponen nada —el Track A no tiene red ni deploy—, pero **bloquean la Fase B1**. Arreglarlas sube la
+mayor de Next, o sea [ADR-008](docs/decisions.md#adr-008). Ver `roadmap.md` §3.1.
 
 Superficies: `UX01`–`UX09`. **Las nueve existen** como componente real con ruta propia bajo
 `app/(student)/`. **No existe `UX10`.** Las 18 CTAs son alcanzables y todos sus destinos tienen
