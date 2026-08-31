@@ -228,7 +228,11 @@ if corre "set role service_role; delete from audit_log;"; then
 else
   ok "service_role no puede hacer DELETE de audit_log"
 fi
-if corre "set role service_role; update commitment set state='DUE' where institution_id='$A';"; then
+# Se toca una columna SIN constraint de dominio a propósito. Antes esto movía
+# `state`, y fallaba contra el CHECK de coherencia cuando el compromiso venía
+# MISSED de un test anterior — reportando "la revocación rompió el schema",
+# que era falso. Un test debe fallar por lo que dice que prueba.
+if corre "set role service_role; update commitment set timezone_at_commit='UTC' where institution_id='$A';"; then
   ok "y sigue pudiendo actualizar las tablas normales"
 else
   mal "la revocación se llevó puesto el resto del schema"
@@ -259,6 +263,17 @@ q "update commitment set state='MISSED', missed_at=now() where id='d3000000-0000
 [ "$(q "select state from commitment where id='d4000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "MISSED" ] \
   && ok "el MISSED viejo sigue MISSED: el reloj no lo revive" || mal "el reloj tocó un MISSED"
 corre "delete from commitment;"
+
+echo "→ B4. El alcance de una evaluación se declara, no se infiere"
+corre "insert into assessment (id,offering_id,assessment_type,title,assessment_date,source_type,scope) values ('e5000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','parcial','P1', current_date + 10,'institution','U1 a U2');"
+corre "insert into topic (id,offering_id,name,sequence) values ('e6000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','U1',1);"
+# Con `scope` cargado pero SIN vínculo declarado, el contexto no trae temas.
+temas=$(q "select jsonb_array_length(coalesce((public.contexto_del_ade('$A','a6000000-0000-0000-0000-000000000001')->'proximaEvaluacion'->'temas'),'[]'::jsonb));" | tr -d '[:space:]')
+[ "$temas" = "0" ] && ok "con 'scope' en texto libre, los temas viajan vacíos: no se parsea" || mal "infirió temas de scope"
+corre "insert into assessment_topic (assessment_id,topic_id) values ('e5000000-0000-0000-0000-000000000001','e6000000-0000-0000-0000-000000000001');"
+temas2=$(q "select jsonb_array_length(coalesce((public.contexto_del_ade('$A','a6000000-0000-0000-0000-000000000001')->'proximaEvaluacion'->'temas'),'[]'::jsonb));" | tr -d '[:space:]')
+[ "$temas2" = "1" ] && ok "declarado, sí viaja" || mal "no trajo el tema declarado"
+corre "delete from assessment_topic; delete from assessment where id='e5000000-0000-0000-0000-000000000001'; delete from topic where id='e6000000-0000-0000-0000-000000000001';"
 
 echo "→ Coherencia entre estado y marcas de tiempo"
 if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,completed_at) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'UTC',40,'DRAFT',now());"; then

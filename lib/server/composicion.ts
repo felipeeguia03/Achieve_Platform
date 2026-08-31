@@ -6,6 +6,7 @@ import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
 import { institucionesReal } from "./repositorios/instituciones";
+import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
 import { crearClienteDeCrm } from "./repositorios/crm";
 import {
@@ -17,6 +18,7 @@ import {
   type GuiaDeMateria,
   type ResultadoDeIngesta,
 } from "./servicios/ingesta";
+import { recomendarPara as recomendarPuro, type ResultadoDelMotor } from "./servicios/motor";
 import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 
@@ -80,4 +82,13 @@ export function correrReloj(
     institutionId,
     ahora,
   );
+}
+
+/** El ADE, decidiendo sobre datos persistidos (Fase B4). */
+export function recomendarPara(
+  institutionId: string,
+  courseEnrollmentId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<ResultadoDelMotor> {
+  return recomendarPuro({ repo: motorReal, eventos: eventosReal }, institutionId, courseEnrollmentId, ahora);
 }

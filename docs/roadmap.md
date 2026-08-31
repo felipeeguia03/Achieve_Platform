@@ -1702,6 +1702,36 @@ decidir.
 **Estado:** 🟡 Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**.
 Falta conectarlos a la base y a las pantallas.
 
+#### ✅ El ADE conectado a la base · 30 de agosto de 2026
+
+El Engine lee el ADL, decide y **materializa** la `Action` con su `ActionRecommendation` primaria —
+las dos en una transacción: *media recomendación es peor que ninguna*, porque una Action sin razón no
+se puede mostrar (`P-01`) y una razón sin Action no es nada.
+
+**El ADE no apila.** Si ya hay una Action viva para la cursada, no crea otra: `UX01` muestra **una**
+acción, y dos vivas serían el frontend eligiendo. Verificado corriéndolo dos veces seguidas.
+
+**Seed de demo:** `npm run db:demo` carga *Análisis Matemático II* por el ingestor —cuatro unidades,
+dos evaluaciones, prerequisitos declarados— y deja el mundo listo. Todo sintético.
+
+#### 🔴 Un hallazgo del spec: no había cómo decir qué entra en un parcial
+
+Al conectar el Engine apareció que **`data-model.md` §7 no tiene vínculo evaluación↔tema**. Sólo
+`assessment.scope`, que es **texto libre** (*"U1 a U2"*).
+
+Consecuencia: la regla de **más peso** del ADE —*"entra en la próxima evaluación"*— era
+**inalcanzable**. El contexto traía `temas: []` siempre. **Una regla que nunca se activa es peor que
+no tenerla:** parece que el producto prioriza el examen y en realidad nunca lo hace.
+
+Se agregó `assessment_topic`, **marcada como adición estructural provisional**
+([ADR-024](decisions.md#adr-024)), para revisión junto con `C01-027`. **No se parsea `scope`:**
+convertir *"U1 a U2"* en unidades sería inferir alcance académico desde texto libre. El vínculo se
+declara, igual que los prerequisitos — y si nadie lo declaró, **la regla no se activa**, que es lo
+correcto.
+
+Con el vínculo cargado, la recomendación de la demo pasó de *"Todavía no registraste práctica"* a
+**"Entra en Parcial 1."**, que es la razón que corresponde.
+
 #### ✅ El ADE v1 · [ADR-004](decisions.md#adr-004) `ACCEPTED (v1 provisional)`
 
 Reglas deterministas, sin LLM. El validador y las reglas primero; el LLM después será **otro
