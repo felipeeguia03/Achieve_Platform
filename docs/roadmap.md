@@ -1498,7 +1498,7 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **2 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **3 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1509,7 +1509,7 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 |---|---|
 | B2.1 | ✅ **COMPLETA** — `Action` + `ActionRecommendation` + máquina de estados |
 | B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
-| B2.3 | `Evidence` + resubmission + storage + revisión real |
+| B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
 | B2.4 | `Reflection` configurable `OPTIONAL`/`REQUIRED` |
 | B2.5 | Reemplazo de `lib/fixtures/` por llamadas reales — **sin tocar las pantallas** |
 
@@ -1517,6 +1517,42 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
 
 **Contratos a cerrar:** `C01-007`…`C01-016`, `C01-051`.
+
+#### ✅ Etapa B2.3 — `Evidence`, resubmission y storage · COMPLETA · 30 de agosto de 2026
+
+Habilitada por ADR-005 ítem 4, cerrado por el owner: **Supabase Storage, bucket privado, subida
+directa con URL firmada.**
+
+| Invariante | Resultado |
+|---|---|
+| `I4` — la resubmission **preserva** la anterior | ✅ crea fila nueva; la vieja conserva **estado, contenido y fecha** |
+| `I5` — `UNDER_REVIEW` exige instancia real | ✅ y **un método configurado no alcanza**, con test |
+| Storage privado | ✅ verificado contra el storage real: **leer sin firma da `400`** |
+| `lint` · `build` · `test` | ✅ verde · verde · **459 tests en 25 archivos**, **69 verificaciones** contra Postgres |
+
+**Cómo se leen juntas la máquina e `I4`.** `evidenceOwnerTransitions` tiene
+`RESUBMISSION_REQUESTED → SUBMITTED`, e `I4` dice que una resubmission **crea una Evidence nueva**.
+No se contradicen: **la máquina dice qué se permite, `I4` dice cómo se persiste.** Implementar esa
+arista como un `UPDATE` de la misma fila habría sido lo natural y habría roto `I4` en silencio — la
+entrega anterior desaparecería, y con ella la prueba de qué se entregó primero.
+
+**Un bug propio que encontró el test, no la relectura.** `resubmitir()` validaba con
+`canTransition(…, "SUBMITTED")`, y **`EXPECTED` también admite `SUBMITTED`** — pero eso es la
+*primera* entrega. Con esa validación, resubmitir una evidencia nunca entregada creaba una segunda
+fila para algo que no existía. Ahora exige explícitamente `RESUBMISSION_REQUESTED`.
+
+**La clave del objeto no la elige el cliente.** Se deriva de `institution_id` y `evidence_id`. Si el
+cliente propusiera la ruta, pediría una firma para la carpeta de otra institución y escribiría ahí.
+Hay un test con `../../` que verifica que no se escapa del prefijo.
+
+**El flujo de storage, probado contra el storage real** y no contra un doble: se firma la subida, se
+sube **sin credenciales** usando sólo la firma, **leer sin firma devuelve `400`**, y leer con firma
+funciona.
+
+⚠️ **Retención y borrado siguen en [ADR-006](decisions.md#adr-006).** No se construyó ningún borrado
+de archivos — el mismo criterio que en `audit_log`: hacerlo sería adelantar esa decisión.
+
+---
 
 #### ✅ Etapa B2.2 — Renegociación y rescate · COMPLETA · 30 de agosto de 2026
 

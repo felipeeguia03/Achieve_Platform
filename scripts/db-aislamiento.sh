@@ -130,6 +130,47 @@ corre "insert into action_recommendation (action_id,reason_primary,priority,is_p
 # de contexto que el spec todavía no define. Ver data-model.md §11, fila I6.
 q "delete from action_recommendation;" >/dev/null
 
+echo "→ I4/I5. Evidence: resubmission preserva, y UNDER_REVIEW exige instancia"
+corre "insert into evidence (id,institution_id,action_id,lifecycle_state) values ('e1000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001','RESUBMISSION_REQUESTED');"
+nueva=$(q "select id from public.resubmitir_evidencia('$A','e1000000-0000-0000-0000-000000000001','WEB');" | tr -d '[:space:]')
+[ -n "$nueva" ] && ok "la resubmission creó una evidencia NUEVA" || mal "no creó nada"
+[ "$(q "select count(*) from evidence where id='e1000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "1" ] \
+  && ok "la anterior SIGUE EXISTIENDO" || mal "la anterior desapareció"
+[ "$(q "select lifecycle_state from evidence where id='e1000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "RESUBMISSION_REQUESTED" ] \
+  && ok "la anterior conserva su estado: no se sobrescribió" || mal "la anterior cambió de estado"
+[ "$(q "select supersedes_id from evidence where id='$nueva';" | tr -d '[:space:]')" = "e1000000-0000-0000-0000-000000000001" ] \
+  && ok "la nueva apunta a la anterior" || mal "no apunta"
+[ "$(q "select superseded_by_id from evidence where id='e1000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "$nueva" ] \
+  && ok "y la anterior apunta a la nueva" || mal "el vínculo inverso falta"
+r2=$(q "select count(*) from public.resubmitir_evidencia('$A','e1000000-0000-0000-0000-000000000001','WEB');" | tr -d '[:space:]')
+[ "$r2" = "0" ] && ok "no se resubmite dos veces la misma" || mal "encadenó dos veces"
+
+# I5: UNDER_REVIEW exige una instancia REAL de revisión. Un método configurado
+# no alcanza — es literalmente el invariante que AGENTS.md §2.1 separa.
+if corre "update evidence set lifecycle_state='UNDER_REVIEW' where id='$nueva';"; then
+  mal "UNDER_REVIEW sin review_instance_id"
+else
+  ok "UNDER_REVIEW sin instancia se rechaza (I5)"
+fi
+if corre "update evidence set lifecycle_state='UNDER_REVIEW', review_instance_id=gen_random_uuid() where id='$nueva';"; then
+  ok "con instancia real, sí"
+else
+  mal "rechazó una revisión con instancia"
+fi
+# Un método de validación configurado NO habilita UNDER_REVIEW por sí solo.
+corre "update evidence set lifecycle_state='SUBMITTED', review_instance_id=null, validation_method='humana' where id='$nueva';"
+if corre "update evidence set lifecycle_state='UNDER_REVIEW' where id='$nueva';"; then
+  mal "un método configurado alcanzó para UNDER_REVIEW"
+else
+  ok "un método configurado NO alcanza: hace falta la instancia"
+fi
+
+echo "→ Storage: el bucket de evidencia es privado"
+[ "$(q "select public from storage.buckets where id='evidencia';" | tr -d '[:space:]')" = "f" ] \
+  && ok "bucket privado: sin firma no se lee ni adivinando la URL" || mal "el bucket es público"
+
+q "delete from evidence;" >/dev/null
+
 echo "→ 4. Append-only: el pasado no se reescribe (I12)"
 corre "insert into product_event (event_name,institution_id,subject_type,subject_id,payload) values ('CommitmentCreated','$A','commitment','a8000000-0000-0000-0000-000000000001','{\"k\":1}');"
 corre "insert into audit_log (institution_id,action,target_type,target_id) values ('$A','read','commitment','a8000000-0000-0000-0000-000000000001');"
