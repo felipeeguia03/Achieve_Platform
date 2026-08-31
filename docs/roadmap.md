@@ -1697,6 +1697,48 @@ decidir.
 > asesoría legal, `C01-042`, las 3 vulnerabilidades `high` de §3.1, `C01-030` y la identidad de
 > docente de [ADR-023](decisions.md#adr-023). **Todas antes de que entre una sola persona real.**
 
+## Fase B4 — ADE v1 y el reloj del lifecycle · 🟡 EN CURSO
+
+**Estado:** 🟡 Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**.
+Falta conectarlos a la base y a las pantallas.
+
+#### ✅ El ADE v1 · [ADR-004](decisions.md#adr-004) `ACCEPTED (v1 provisional)`
+
+Reglas deterministas, sin LLM. El validador y las reglas primero; el LLM después será **otro
+generador detrás del mismo validador** — el mismo patrón que la ingesta.
+
+- **Salida mínima completa** (Parte I §9.2), con **razón obligatoria**.
+- **Las cuatro ramas**, y `academic_context_blocker` **distinto** de `NONE` confirmado: colapsarlos
+  diría *"no hay nada que hacer"* cuando falta cargar el cursado.
+- **`priority` ordena y nunca se muestra** (`P-03`). La razón enuncia el hecho, no el cálculo.
+- **«Sin datos no es cero»:** una unidad sin información pesa **más** que una con práctica baja —
+  desconocido no es lo mismo que poco.
+- **Reproducible:** cien corridas con la misma entrada dan la misma recomendación. Sin desempate
+  estable, el estudiante ve otra cosa cada vez que refresca.
+
+#### ✅ El reloj del lifecycle
+
+`product.md` §226: *"la UI **no** declara `MISSED` ni `DUE` por el paso del tiempo. **Lo hace el
+owner del lifecycle**"*. Esto es ese owner, y era **la pieza que faltaba para que el producto se
+mueva solo**.
+
+- **No se saltea `DUE`.** Un `CONFIRMED` muy vencido pasa primero a `DUE`; saltar directo a `MISSED`
+  borraría de la Bitácora que alguna vez llegó su hora.
+- **Pasa por la misma máquina que todo lo demás.** Un camino paralelo que escribiera directo sería
+  el agujero por donde un `MISSED` podría volver.
+- **El estudiante le gana al reloj:** si mueve el compromiso mientras el reloj corre, el
+  compare-and-swap no encuentra el estado y la próxima corrida ve el estado nuevo. No es error.
+- **El actor del evento es el sistema, no una persona.** Nadie apretó nada, y la auditoría no debe
+  decir que lo hizo el estudiante.
+- **Converge:** correrlo muchas veces se detiene.
+
+⚠️ **La ventana de `MISSED` es provisional** ([ADR-024](decisions.md#adr-024)). El spec dice **quién**
+declara `MISSED`, no **cuándo**: eso es **`C01-010`**, `OPEN`. La regla actual —*el bloque acordado
+pasó entero sin empezar*— es una lectura razonable, **sin tolerancia extra a propósito**: cuánto se
+le perdona a alguien es una decisión pedagógica, no una función.
+
+---
+
 ## Fase B3 — Progreso, Bitácora y eventos
 
 **Estado:** 🔒 B2.
@@ -1822,7 +1864,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
 | Fase B2 — Dominio de ejecución | 🔒 BLOQUEADA | — |
 | Fase B3 — Progreso y eventos | 🟢 DESBLOQUEADA por [ADR-024](decisions.md#adr-024) | 0 / — |
-| Fase B4 — ADE v1 | 🟡 EN CURSO — v1 determinista ([ADR-004](decisions.md#adr-004)) | — |
+| Fase B4 — ADE v1 | 🟡 EN CURSO — Engine v1 y reloj del lifecycle construidos | 2 / — |
 | Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA por [ADR-024](decisions.md#adr-024) | 0 / — |
 | Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por [ADR-006](decisions.md#adr-006)** — es la fase que lo cierra | — |

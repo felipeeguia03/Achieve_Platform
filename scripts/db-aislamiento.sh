@@ -235,6 +235,31 @@ else
 fi
 q "delete from product_event; delete from audit_log;" >/dev/null
 
+echo "→ B4. El reloj del lifecycle contra Postgres"
+corre "delete from commitment;"
+corre "insert into commitment (id,institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state) values
+  ('d1000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001', now() + interval '2 hours','UTC',40,'CONFIRMED'),
+  ('d2000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001', now() - interval '10 minutes','UTC',40,'CONFIRMED'),
+  ('d3000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001', now() - interval '2 hours','UTC',40,'DUE'),
+  ('d4000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001', now() - interval '5 days','UTC',40,'MISSED');"
+# Sólo CONFIRMED y DUE son candidatos: el resto no depende del tiempo.
+cands=$(q "select count(*) from commitment where institution_id='$A' and state in ('CONFIRMED','DUE');" | tr -d '[:space:]')
+[ "$cands" = "3" ] && ok "3 candidatos; el MISSED no entra" || mal "candidatos: $cands"
+
+# Lo que haría el reloj, aplicado con el mismo compare-and-swap.
+q "update commitment set state='DUE' where id='d2000000-0000-0000-0000-000000000001' and state='CONFIRMED' and start_at <= now();" >/dev/null
+q "update commitment set state='MISSED', missed_at=now() where id='d3000000-0000-0000-0000-000000000001' and state='DUE' and start_at + (planned_minutes * interval '1 minute') <= now();" >/dev/null
+
+[ "$(q "select state from commitment where id='d1000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "CONFIRMED" ] \
+  && ok "el de dentro de 2 horas sigue CONFIRMED" || mal "venció uno que no correspondía"
+[ "$(q "select state from commitment where id='d2000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "DUE" ] \
+  && ok "el que ya empezó pasó a DUE" || mal "no venció"
+[ "$(q "select state from commitment where id='d3000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "MISSED" ] \
+  && ok "el que pasó su bloque pasó a MISSED" || mal "no se incumplió"
+[ "$(q "select state from commitment where id='d4000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "MISSED" ] \
+  && ok "el MISSED viejo sigue MISSED: el reloj no lo revive" || mal "el reloj tocó un MISSED"
+corre "delete from commitment;"
+
 echo "→ Coherencia entre estado y marcas de tiempo"
 if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,completed_at) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'UTC',40,'DRAFT',now());"; then
   mal "un DRAFT pudo guardar completed_at"

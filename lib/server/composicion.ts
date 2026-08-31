@@ -4,7 +4,9 @@ import { estudiantesReal } from "./repositorios/estudiante";
 import { identidadReal } from "./repositorios/identidad";
 import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
+import { compromisosReal } from "./repositorios/compromiso";
 import { institucionesReal } from "./repositorios/instituciones";
+import { relojReal } from "./repositorios/reloj";
 import { crearClienteDeCrm } from "./repositorios/crm";
 import {
   autorizarPorPadron as autorizarPuro,
@@ -15,6 +17,7 @@ import {
   type GuiaDeMateria,
   type ResultadoDeIngesta,
 } from "./servicios/ingesta";
+import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 
 /**
@@ -60,4 +63,21 @@ export function ingerirMateria(
   actorId: string | null = null,
 ): Promise<ResultadoDeIngesta> {
   return ingerirPuro({ repo: ingestaReal, eventos: eventosReal }, institutionId, guia, actorId);
+}
+
+/**
+ * Corre el reloj del lifecycle para una institución.
+ *
+ * `ahora` entra por parámetro incluso acá: permite correrlo sobre un instante
+ * fijo para una demo o un test de integración sin tocar el reloj de la máquina.
+ */
+export function correrReloj(
+  institutionId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<ResumenDeCorrida> {
+  return correrRelojPuro(
+    { reloj: relojReal, compromisos: compromisosReal, eventos: eventosReal },
+    institutionId,
+    ahora,
+  );
 }
