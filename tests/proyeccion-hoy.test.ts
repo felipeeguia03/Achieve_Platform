@@ -1,0 +1,150 @@
+import { describe, expect, it } from "vitest";
+
+import { proyectarDia, type EstadoDelDia } from "@/lib/server/servicios/proyeccion-hoy";
+
+/**
+ * Etapa B2.5 — `UX01` proyectada desde datos persistidos.
+ *
+ * Lo que se prueba es que **la pantalla no se entera**: el `HoyProps` que sale
+ * de acá tiene la misma forma que el que daba el fixture, y la precedencia la
+ * decide la misma `selectHeroLevel` de siempre.
+ */
+const vacio: EstadoDelDia = {
+  instante: "2026-08-28T15:00:00.000Z",
+  zona: "America/Argentina/Cordoba",
+  accion: null,
+  compromiso: null,
+  rescatePendiente: false,
+  evidencia: "NONE",
+  contextoIncompleto: false,
+  materias: [],
+  bitacoraDisponible: true,
+};
+
+const conAccion: EstadoDelDia = {
+  ...vacio,
+  accion: {
+    status: "RECOMMENDED",
+    objetivo: "Derivadas",
+    contexto: "ANÁLISIS II · UNIDAD 2",
+    razon: "Entra en Parcial 1.",
+    minutosMin: 30,
+    minutosMax: 45,
+    evidenciaEsperada: "Producción de la práctica",
+    queSigue: "queda definido cuándo vas a hacerla.",
+  },
+};
+
+describe("B2.5 · la precedencia es la misma de siempre", () => {
+  it("una Action recomendada da el nivel ACTION_RECOMMENDED", () => {
+    expect(proyectarDia(conAccion).hero.nivel).toBe("ACTION_RECOMMENDED");
+  });
+
+  /**
+   * El orden de la matriz manda: un rescate pendiente gana sobre una
+   * recomendación, aunque las dos estén presentes. Si esto se rompiera, el
+   * estudiante vería "practicá derivadas" con un compromiso incumplido encima.
+   */
+  it("un rescate pendiente gana sobre una recomendación", () => {
+    const r = proyectarDia({ ...conAccion, rescatePendiente: true });
+    expect(r.hero.nivel).toBe("RESCUE_REQUIRED");
+  });
+
+  it("un compromiso MISSED gana sobre una recomendación", () => {
+    const r = proyectarDia({ ...conAccion, compromiso: { state: "MISSED" } });
+    expect(r.hero.nivel).toBe("COMMITMENT_MISSED");
+  });
+
+  it("sin nada, el estado es el de defecto y no hay título", () => {
+    const r = proyectarDia(vacio);
+    expect(r.hero.titulo).toBeNull();
+    expect(r.estadoGeneral).toBe("SIN ACCIONES POR AHORA");
+  });
+});
+
+describe("B2.5 · omitir, no inventar", () => {
+  it("sin estimación, la línea de tiempo no se rellena", () => {
+    const r = proyectarDia({
+      ...conAccion,
+      accion: { ...conAccion.accion!, minutosMin: null, minutosMax: null },
+    });
+    expect(r.hero.tiempoOEstado).toBeNull();
+  });
+
+  it("sin evidencia esperada, no se inventa el requisito", () => {
+    const r = proyectarDia({
+      ...conAccion,
+      accion: { ...conAccion.accion!, evidenciaEsperada: null },
+    });
+    expect(r.hero.evidenciaEsperada).toBeNull();
+  });
+
+  it("sin `queSigue`, la línea entera desaparece", () => {
+    const r = proyectarDia({ ...conAccion, accion: { ...conAccion.accion!, queSigue: null } });
+    expect(r.hero.queSigue).toBeNull();
+  });
+
+  /**
+   * `null` ⇒ la CTA **no se renderiza**, en vez de renderizarse deshabilitada.
+   * Aparición y habilitación son cosas distintas (ADR-015).
+   */
+  it("sin Bitácora disponible, la CTA de progreso no aparece", () => {
+    expect(proyectarDia({ ...vacio, bitacoraDisponible: false }).verProgreso).toBeNull();
+  });
+});
+
+describe("B2.5 · la línea operativa cambia con el estado", () => {
+  it("una Action en curso muestra el estado, no los minutos", () => {
+    const r = proyectarDia({
+      ...conAccion,
+      accion: { ...conAccion.accion!, status: "IN_PROGRESS" },
+    });
+    expect(r.hero.tiempoOEstado).toBe("En curso");
+    expect(r.hero.nivel).toBe("IN_PROGRESS");
+  });
+});
+
+describe("B2.5 · la fecha se formatea en la zona del estudiante", () => {
+  /**
+   * Un compromiso de las 23:00 en Córdoba no puede aparecer como del día
+   * siguiente porque el servidor esté en UTC. La zona viaja con el estudiante.
+   */
+  it("usa la zona del estudiante, no la del servidor", () => {
+    const nocheEnCordoba = { ...vacio, instante: "2026-08-29T02:00:00.000Z" };
+    // 02:00 UTC es todavía el 28 en Córdoba (UTC-3).
+    expect(proyectarDia(nocheEnCordoba).fecha).toContain("28");
+    expect(proyectarDia({ ...nocheEnCordoba, zona: "UTC" }).fecha).toContain("29");
+  });
+
+  it("sale en español y sin puntos", () => {
+    const f = proyectarDia(vacio).fecha;
+    expect(f).toMatch(/ago/);
+    expect(f).not.toContain(".");
+  });
+
+  it("sin avance registrado, la materia no dice «hace 0 días»", () => {
+    const r = proyectarDia({
+      ...vacio,
+      materias: [{ nombre: "M", estado: "Bajo control", tono: "neutral", ultimoAvanceEn: null }],
+    });
+    expect(r.materias[0].ultimoAvance).toBeNull();
+  });
+});
+
+describe("B2.5 · la forma es la que la pantalla espera", () => {
+  /**
+   * El contrato con la pantalla es `HoyProps`. Si esta proyección devolviera
+   * una forma distinta, la frontera de la Fase 0 no habría servido de nada.
+   */
+  it("devuelve exactamente las claves de `HoyProps`", () => {
+    expect(Object.keys(proyectarDia(conAccion)).sort()).toEqual(
+      ["estadoGeneral", "fecha", "hero", "materias", "verProgreso"].sort(),
+    );
+  });
+
+  it("el hero trae las claves de `HeroProjection`", () => {
+    expect(Object.keys(proyectarDia(conAccion).hero).sort()).toEqual(
+      ["chip", "contexto", "evidenciaEsperada", "nivel", "queSigue", "razon", "tiempoOEstado", "titulo", "variante"].sort(),
+    );
+  });
+});

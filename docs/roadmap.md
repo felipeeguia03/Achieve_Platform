@@ -1498,7 +1498,7 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **4 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **5 / 5** — `B2.4` parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1511,12 +1511,42 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
 | B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
 | B2.4 | 🟡 **PARCIAL** — la regla se hace cumplir; **la configuración la bloquea `C01-051`** |
-| B2.5 | Reemplazo de `lib/fixtures/` por llamadas reales — **sin tocar las pantallas** |
+| B2.5 | 🟡 **`UX01` conectada** — datos reales, **cero cambios en `components/screens/`** |
 
 **Done cuando:** los 12 invariantes de [`data-model.md`](data-model.md) §11 tienen test; el mismo
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
 
 **Contratos a cerrar:** `C01-007`…`C01-016`, `C01-051`.
+
+#### 🟡 Etapa B2.5 — `UX01` desde la base · 30 de agosto de 2026
+
+**La frontera aguantó.** `UX01` muestra datos persistidos y **`components/screens/` no se tocó**:
+cero líneas. Era lo que la separación de la Fase 0 venía preparando desde el primer commit.
+
+| Qué | Cómo |
+|---|---|
+| La pantalla recibe lo mismo | `GET /api/hoy` devuelve **el mismo `HoyProps`** que daba el fixture. Hay test de que las claves coinciden |
+| La precedencia no se duplicó | La misma `selectHeroLevel` de `lib/domain/`, con sus nueve niveles |
+| El catálogo sintético **no se retiró** | Con `?escenario=` sigue proyectando fixtures: es el guion del focus group y el mapa de estados críticos |
+| `lint` · `build` · `test` | ✅ verde · verde · **531 tests en 32 archivos** |
+
+**El idioma no lo decide la base.** El primer intento formateaba la fecha en SQL y salía *"Sun 30
+Aug"*. El formato es **presentación**, y se movió a la proyección — que además permite usar **la zona
+del estudiante**: un compromiso de las 23:00 en Córdoba no puede aparecer como del día siguiente
+porque el servidor esté en UTC. Con test.
+
+**Mientras carga no se dibuja el fixture.** Mostrar un estado que no es el del estudiante y
+reemplazarlo un segundo después es peor que esperar (`P-12`: nada salta al cargar).
+
+**Un guard con falso positivo, corregido.** El de *"sólo el composition root ata implementaciones
+concretas"* buscaba `Real` **en cualquier lado** y marcó como violación una variable local llamada
+`setReal`. La regla es *"no importes una implementación concreta"*: ahora mira **los `import`**, con
+auto-prueba. **Un guard que castiga un nombre de variable enseña a nombrar mal.**
+
+**Faltan las otras ocho superficies.** Siguen el mismo patrón —endpoint que devuelve el view model,
+ruta que elige entre fixture y API— y son mecánicas.
+
+---
 
 #### 🟡 Etapa B2.4 — `Reflection` · PARCIAL · 30 de agosto de 2026
 

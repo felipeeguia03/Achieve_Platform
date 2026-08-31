@@ -113,10 +113,22 @@ describe("§3.2 · cada capa en su lugar", () => {
    * una búsqueda.
    */
   it("sólo el composition root ata implementaciones concretas", () => {
+    // **Se miran los `import`, no el archivo entero.** La regla es "no importes
+    // una implementación concreta fuera del composition root"; buscar `Real` en
+    // cualquier lado marcaba como violación una variable local llamada
+    // `setReal`. Un guard que castiga un nombre de variable enseña a nombrar mal.
     const culpables = [...fuentes("app"), ...fuentes("lib/server/servicios")]
-      .filter((f) => /Real\b/.test(codigo(f)))
+      .filter((f) => /^import\s[^;]*\b\w+Real\b/m.test(codigo(f)))
       .map((f) => `${f}: eso va en lib/server/composicion.ts`);
     expect(culpables).toEqual([]);
+  });
+
+  it("el guard de implementaciones concretas mira imports, no identificadores", () => {
+    // Auto-prueba de la corrección de arriba.
+    const conImport = 'import { hoyReal } from "./repositorios/hoy";';
+    const soloVariable = "const [real, setReal] = useState(null);";
+    expect(/^import\s[^;]*\b\w+Real\b/m.test(conImport)).toBe(true);
+    expect(/^import\s[^;]*\b\w+Real\b/m.test(soloVariable)).toBe(false);
   });
 
   /**

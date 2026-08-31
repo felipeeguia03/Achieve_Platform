@@ -5,6 +5,7 @@ import { identidadReal } from "./repositorios/identidad";
 import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
+import { hoyReal } from "./repositorios/hoy";
 import { institucionesReal } from "./repositorios/instituciones";
 import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
@@ -19,6 +20,8 @@ import {
   type ResultadoDeIngesta,
 } from "./servicios/ingesta";
 import { recomendarPara as recomendarPuro, type ResultadoDelMotor } from "./servicios/motor";
+import { proyectarDia } from "./servicios/proyeccion-hoy";
+import type { HoyProps } from "@/lib/domain/view-models";
 import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 
@@ -91,4 +94,20 @@ export function recomendarPara(
   ahora: string = new Date().toISOString(),
 ): Promise<ResultadoDelMotor> {
   return recomendarPuro({ repo: motorReal, eventos: eventosReal }, institutionId, courseEnrollmentId, ahora);
+}
+
+/**
+ * `UX01` desde datos persistidos (Etapa B2.5).
+ *
+ * Devuelve el **mismo `HoyProps`** que daba el fixture. La pantalla no se
+ * entera de que cambió el mundo debajo, que era exactamente el punto de la
+ * frontera.
+ */
+export async function diaDe(
+  institutionId: string,
+  studentId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<HoyProps | null> {
+  const estado = await hoyReal.estadoDelDia(institutionId, studentId, ahora);
+  return estado ? proyectarDia(estado) : null;
 }
