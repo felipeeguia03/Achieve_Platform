@@ -117,6 +117,46 @@ else
 fi
 q "delete from commitment where id <> 'a8000000-0000-0000-0000-000000000001';" >/dev/null
 
+echo "→ B2b. Ingesta del ADL: procedencia obligatoria y nada se eleva a oficial"
+GUIA_U='[{"codigo":"U1","nombre":"Unidad 1","orden":1},{"codigo":"U2","nombre":"Unidad 2","orden":2}]'
+GUIA_P='[{"unidad":"Unidad 2","requiere":"Unidad 1"}]'
+GUIA_E='[{"tipo":"parcial","titulo":"Parcial 1","fecha":"2026-09-15","modalidad":"practico"},{"tipo":"final","titulo":"Final","modalidad":"oral"}]'
+res=$(q "select cursada_id||'|'||unidades||'|'||evaluaciones from public.ingerir_materia('$A','public_web','https://facultad.example/programa.pdf',now(),0.6,'SYN-9','Materia SYN','2026-2',null,'$GUIA_U'::jsonb,'$GUIA_P'::jsonb,'$GUIA_E'::jsonb);" | tr -d '[:space:]')
+cursada=$(echo "$res" | cut -d'|' -f1)
+[ "$(echo "$res" | cut -d'|' -f2)" = "2" ] && ok "cargó las 2 unidades" || mal "unidades: $res"
+[ "$(echo "$res" | cut -d'|' -f3)" = "2" ] && ok "cargó las 2 evaluaciones" || mal "evaluaciones: $res"
+
+# I9: lo ingerido NUNCA se presenta como oficial.
+noOficial=$(q "select count(*) from assessment where offering_id='$cursada' and verification_status<>'unverified';" | tr -d '[:space:]')
+[ "$noOficial" = "0" ] && ok "todo entró 'unverified': el ingestor no eleva nada (I9)" || mal "$noOficial fila(s) no unverified"
+[ "$(q "select count(*) from assessment where offering_id='$cursada' and source_type='public_web' and source_ref is not null;" | tr -d '[:space:]')" = "2" ] \
+  && ok "cada evaluación conserva de dónde salió" || mal "falta procedencia"
+
+# La fecha desconocida NO se estima: el final quedó sin fecha.
+[ "$(q "select count(*) from assessment where offering_id='$cursada' and assessment_date is null;" | tr -d '[:space:]')" = "1" ] \
+  && ok "la evaluación sin fecha quedó sin fecha, no estimada" || mal "estimó una fecha"
+
+# 'oral' se almacena aunque quede fuera de P0.
+[ "$(q "select count(*) from assessment where offering_id='$cursada' and modality='oral';" | tr -d '[:space:]')" = "1" ] \
+  && ok "'oral' se almacena aunque quede fuera de P0 (C01-047)" || mal "perdió la modalidad oral"
+
+# Prerequisito EXPLÍCITO, no derivado del orden.
+[ "$(q "select count(*) from topic_prerequisite tp join topic t on t.id=tp.topic_id where t.offering_id='$cursada';" | tr -d '[:space:]')" = "1" ] \
+  && ok "el prerequisito declarado se cargó, y sólo ese" || mal "prerequisitos mal"
+
+echo "→ B2b. Re-ingerir el mismo material NO duplica el programa"
+q "select 1 from public.ingerir_materia('$A','public_web','https://facultad.example/programa.pdf',now(),0.6,'SYN-9','Materia SYN','2026-2',null,'$GUIA_U'::jsonb,'$GUIA_P'::jsonb,'$GUIA_E'::jsonb);" >/dev/null
+[ "$(q "select count(*) from topic where offering_id='$cursada';" | tr -d '[:space:]')" = "2" ] \
+  && ok "sigue habiendo 2 unidades, no 4" || mal "duplicó el programa"
+[ "$(q "select count(*) from course_offering where course_id=(select id from course where code='SYN-9');" | tr -d '[:space:]')" = "1" ] \
+  && ok "y una sola cursada" || mal "duplicó la cursada"
+
+echo "→ B2b. El ingestor no carga identidad de docente (ADR-023)"
+[ "$(q "select count(*) from instructor;" | tr -d '[:space:]')" = "0" ] \
+  && ok "ninguna fila de instructor" || mal "cargó un docente"
+
+q "delete from assessment; delete from topic_prerequisite; delete from topic; delete from course_offering where course_id in (select id from course where code='SYN-9'); delete from course where code='SYN-9';" >/dev/null
+
 echo "→ I6. Una sola ActionRecommendation primaria por Action"
 corre "insert into action_recommendation (action_id,reason_primary,priority,is_primary) values ('a7000000-0000-0000-0000-000000000001','porque sí',1,true);"
 if corre "insert into action_recommendation (action_id,reason_primary,priority,is_primary) values ('a7000000-0000-0000-0000-000000000001','otra',2,true);"; then

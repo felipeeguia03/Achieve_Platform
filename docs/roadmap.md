@@ -1645,6 +1645,44 @@ que eso.
 
 ---
 
+## Fase B2b — Ingesta del Academic Data Layer · 🟡 EN CURSO
+
+**Estado:** 🟡 **1 / 3.** Abierta por [ADR-023](decisions.md#adr-023) el 30 de agosto de 2026, a
+pedido del owner.
+
+**Por qué existe.** Al mirar la B2.5 apareció que **el producto no se mueve solo**: faltan dos
+productores —el reloj del lifecycle (ADR-005 ítem 5) y el ADE ([ADR-004](decisions.md#adr-004))—. El
+owner pidió construir el Engine, y lo que describió era **la ingesta del ADL, no el ADE**: el
+glosario los separa, y el ADE decide **sobre** el ADL, así que sin ADL poblado no tiene sobre qué
+decidir.
+
+| # | Etapa |
+|---|---|
+| B2b.1 | ✅ **Ingesta asistida**: una guía estructurada → ADL, con procedencia obligatoria |
+| B2b.2 | Corroboración: la operación explícita que **sí** puede elevar un `verification_status` |
+| B2b.3 | Otra fuente para el mismo ingestor — scraping. **Requiere `C01-042`** |
+
+**Done cuando:** una materia real está cargada con su procedencia, y el ADE tiene sobre qué decidir.
+
+#### ✅ Etapa B2b.1 — Ingesta asistida · COMPLETA · 30 de agosto de 2026
+
+| Regla | Cómo se sostiene |
+|---|---|
+| **Procedencia obligatoria** | El tipo no compila sin `fuente`. Y una fuente **sin referencia concreta se rechaza**: *"lo dijo alguien"* no se puede volver a mirar, así que no se puede corroborar nunca |
+| **Todo entra `unverified`** (`I9`) | `verification_status` **no es parámetro de nada**. No es que el ingestor no deba elevarlo: **no tiene por dónde** |
+| **El ingestor no declara autoridad** | El tipo `Fuente` no admite `institution` ni `instructor` — sólo `student`, `community`, `public_web`, `inference` |
+| **El orden no es un prerequisito** | Se cargan sólo los **declarados**. Que la Unidad 2 vaya después de la 1 no dice que la necesite |
+| **Re-ingerir no duplica** | Reemplazo por cursada. Sin esto, cargar dos veces el mismo PDF duplica el programa entero |
+| **Sin identidad de docente** | ADR-023: un programa suele traer el nombre del profesor, y un docente es una persona real |
+| `lint` · `build` · `test` | ✅ verde · verde · **482 tests en 27 archivos**, **79 verificaciones** contra Postgres |
+
+**Una fecha desconocida no se estima**, y hay test: la evaluación sin fecha queda sin fecha.
+**`oral` se almacena** aunque quede fuera de P0 (`C01-047`).
+
+**Lo que esta etapa no hace:** no recomienda nada. Estructura conocimiento; decidir es el ADE.
+
+---
+
 ## Fase B3 — Progreso, Bitácora y eventos
 
 **Estado:** 🔒 B2.

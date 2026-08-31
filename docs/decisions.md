@@ -69,6 +69,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-020](#adr-020) | Cuántas clases de ausencia distingue Achieve, y con qué palabras | `PENDING` | [ADR-019](#adr-019) |
 | [ADR-021](#adr-021) | Qué es, en Achieve, el «trabajo pendiente que caduca» | `ACCEPTED` | — |
 | [ADR-022](#adr-022) | `C-04` elevado: el vacío argumenta, con tercera cláusula condicional | `ACCEPTED` | — |
+| [ADR-023](#adr-023) | La ingesta del ADL se construye antes que el ADE, y empieza asistida | `ACCEPTED` | — |
 
 ---
 
@@ -1504,3 +1505,60 @@ lo que `C-07` pide justamente para que una regla que cambia se corrija en un lug
   —el ADE respondió que no hay recomendación—, no una carga pendiente, y el copy no debe dejar creer
   que algo está por llegar.
 - `D-04` de §14.2 queda cerrada.
+
+---
+
+## ADR-023 — La ingesta del ADL se construye antes que el ADE, y empieza asistida
+
+**Estado:** `ACCEPTED` · 30 ago 2026 · **decidido por el owner**
+**Abre:** Fase B2b — Ingesta del Academic Data Layer.
+**No cierra:** [ADR-004](#adr-004) (el ADE) ni `C01-042` (golden dataset y legalidad), que siguen `OPEN`.
+
+### Contexto
+
+La Etapa B2.5 iba a reemplazar los fixtures por llamadas reales y al mirarla apareció que **el
+producto no se mueve solo**: faltan dos productores.
+
+| Falta | Qué produciría | Estado |
+|---|---|---|
+| **El reloj del lifecycle** | `CONFIRMED → DUE → MISSED` por paso del tiempo | ADR-005 ítem 5, `DEFERRED` |
+| **El ADE** | Las `Action` con estado `RECOMMENDED`, y `ACADEMIC_CONTEXT_INCOMPLETE` | [ADR-004](#adr-004), `PENDING` |
+
+`product.md` §226 es explícito: *"la UI **no** declara `MISSED` ni `DUE` por el paso del tiempo. Lo
+hace el owner del lifecycle."*
+
+El owner pidió construir el Engine. **Lo que describió no era el ADE sino la ingesta del ADL** — el
+glosario los separa: el **ADL** contesta *"¿qué sabemos de esta realidad universitaria?"*; el **ADE**,
+*"¿qué conviene hacer ahora?"*. El ADE decide **sobre** el ADL, así que sin ADL poblado no tiene
+sobre qué decidir.
+
+### Decisión
+
+**1. Se construye primero la ingesta del ADL**, como fase propia. No requiere [ADR-004](#adr-004).
+
+**2. Empieza asistida, no con scraping.** Una persona aporta el material —programa, cronograma,
+fecha de un parcial— y el sistema lo estructura. Un scraper es **otra fuente para el mismo
+ingestor**, no otro sistema: cuando `C01-042` defina universidad y fuentes legales, se enchufa una
+entrada más sin tocar lo construido.
+
+**3. Toda fila ingerida lleva procedencia obligatoria y entra `unverified`.** Es `I9` aplicado:
+*"ninguna capa eleva un `verification_status`"*. Lo que trae el ingestor **nunca se presenta como
+oficial**; corroborar es una operación explícita de alguien con autoridad, y no la hace el ingestor.
+
+El schema ya lo anticipaba: `source_type` incluye `public_web` e `inference`, y la primitiva `Dato`
+con provenance por dato existe desde la Etapa 0.6. **No hay que inventar nada estructural.**
+
+### Lo que esto NO decide
+
+- **`C01-042` sigue `OPEN`:** qué universidad, qué carrera y qué fuentes son legalmente utilizables.
+  La ingesta se construye y se prueba **sobre una materia sintética**.
+- **[ADR-004](#adr-004) sigue `PENDING`.** Esta fase no recomienda nada: estructura conocimiento.
+
+### Un dato personal que apareció al analizarlo, y no estaba en ningún contrato
+
+**Un programa de materia suele traer el nombre del docente**, y `instructor.name` es una columna del
+ADL. [ADR-006](#adr-006) habla de estudiantes, pero **un docente también es una persona real**.
+
+**Regla operativa mientras `C01-006` no lo cubra:** el ingestor **no carga identidad de docente**.
+`instructor` queda fuera de la ingesta asistida. Si el material la trae, se omite — *omitir, no
+inventar*, y acá además *omitir, no recolectar*.

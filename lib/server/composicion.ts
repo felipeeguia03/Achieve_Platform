@@ -2,12 +2,19 @@ import "server-only";
 
 import { estudiantesReal } from "./repositorios/estudiante";
 import { identidadReal } from "./repositorios/identidad";
+import { eventosReal } from "./repositorios/eventos";
+import { ingestaReal } from "./repositorios/ingesta";
 import { institucionesReal } from "./repositorios/instituciones";
 import { crearClienteDeCrm } from "./repositorios/crm";
 import {
   autorizarPorPadron as autorizarPuro,
   type ResultadoDeAutorizacion,
 } from "./servicios/autorizacion";
+import {
+  ingerirMateria as ingerirPuro,
+  type GuiaDeMateria,
+  type ResultadoDeIngesta,
+} from "./servicios/ingesta";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 
 /**
@@ -38,4 +45,19 @@ export function autorizarPorPadron(input: {
   platformStudentId: string;
 }): Promise<ResultadoDeAutorizacion> {
   return autorizarPuro({ crm: crearClienteDeCrm(), instituciones: institucionesReal }, input);
+}
+
+/**
+ * Ingesta del Academic Data Layer (Fase B2b).
+ *
+ * ⚠️ Sobre **datos de una universidad real** sigue pendiente `C01-042` —qué
+ * institución, qué carrera y qué fuentes son legalmente utilizables—. La pieza
+ * funciona hoy sobre material sintético.
+ */
+export function ingerirMateria(
+  institutionId: string,
+  guia: GuiaDeMateria,
+  actorId: string | null = null,
+): Promise<ResultadoDeIngesta> {
+  return ingerirPuro({ repo: ingestaReal, eventos: eventosReal }, institutionId, guia, actorId);
 }
