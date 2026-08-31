@@ -1253,7 +1253,7 @@ sin acceso del frontend a tablas de negocio.
 | # | Etapa |
 |---|---|
 | B1.1 | ✅ **COMPLETA** — proyecto Supabase propio, migración de bootstrap y entorno local reproducible |
-| B1.2 | Schema de la capa académica ([`data-model.md`](data-model.md) §7) |
+| B1.2 | ✅ **COMPLETA** — schema de la capa académica ([`data-model.md`](data-model.md) §7), 13 tablas |
 | B1.3 | Auth + `student` + `institution`; JWT en `/api/*`; RLS deny-by-default |
 | B1.4 | Frontera Controller → Service → Repository; máquinas de estado, scoping e idempotencia en Service |
 | B1.5 | `product_event` y `audit_log` append-only |
@@ -1288,6 +1288,44 @@ tabla lo engancha explícitamente; no hay magia que lo aplique sola.
 que todas fallaran en una máquina sin él.
 
 ⚠️ **Todo corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue `PENDING`.
+
+---
+
+#### ✅ Etapa B1.2 — Capa académica · COMPLETA · 30 de agosto de 2026
+
+Las **13 tablas** de `data-model.md` §7, implementadas **literalmente**: constraints y `CHECK` salen
+del documento sin reinterpretarlos.
+
+| Criterio | Resultado |
+|---|---|
+| 13 tablas de §7 | ✅ |
+| RLS deny-by-default | ✅ en las 13, y `tablas_sin_rls()` lo verifica |
+| Constraints que rechazan | ✅ **10 invariantes probados** con `npm run db:verify` |
+| Reproducible | ✅ `db:reset` reconstruye desde cero y queda conforme |
+
+**Un `CHECK` escrito no es un `CHECK` que funciona**, así que `scripts/db-invariantes.sh` intenta
+insertar lo que el spec declara imposible y falla si la base lo acepta: un `topic` que no cuelga de
+nada, un tema prerequisito de sí mismo, un `source_type` inventado, un `confidence` fuera de `[0,1]`,
+una `modality` que no existe.
+
+Y comprueba lo simétrico, que es donde se cuelan los errores: **`modality='oral'` se acepta** —el
+spec dice que se *almacena* aunque quede fuera de P0 (`C01-047`)—, una `assessment` **sin fecha** se
+acepta porque una fecha desconocida no se estima, y `rights_status` arranca en **`unknown`** y no en
+`allowed`: no se presume permiso sobre material de terceros.
+
+**Dos cosas que la migración agrega y §7 no escribe**, ambas ancladas en §6: el `ENABLE ROW LEVEL
+SECURITY` de las 13, y los **índices sobre las claves foráneas** — Postgres no los crea solo, y sin
+ellos cada borrado del padre escanea la tabla hija entera.
+
+**Lo que no lleva, y no es olvido:** `updated_at`. En este diseño la capa académica no se edita en
+sitio —una corrección crea una fila nueva, ver `class_event_record.supersedes_id`—, así que la
+convención de §6 aplica a §8 y §9, que es donde el documento sí lo escribe.
+
+**Un error propio que vale registrar.** El script de invariantes daba los 10 en verde con el schema
+roto y luego 3 en rojo con el schema sano: primero grepeaba la palabra `ERROR` en la salida de
+`psql` en vez de mirar el código de salida, y después el helper devolvía `0` en caso de éxito
+mientras se llamaba `falla`. **Un test que miente es peor que no tenerlo**, y las dos veces lo delató
+que el resultado fuera implausible, no que fallara.
 
 ---
 

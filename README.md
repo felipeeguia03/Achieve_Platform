@@ -58,7 +58,7 @@ locales son **54420–54429** para que los dos stacks puedan correr al mismo tie
 ```bash
 npm run db:start     # levanta el stack local (necesita Docker corriendo)
 npm run db:reset     # tira abajo y re-aplica todas las migraciones desde cero
-npm run db:verify    # comprueba migraciones y el deny-by-default de §6
+npm run db:verify    # migraciones, deny-by-default de §6 y los 10 invariantes de §7
 npm run db:studio    # http://127.0.0.1:54423
 npm run db:stop
 ```
