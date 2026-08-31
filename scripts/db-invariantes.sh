@@ -46,6 +46,8 @@ q "begin; \
    insert into course (id,curriculum_plan_id,code,name) values ('44444444-4444-4444-4444-444444444444','33333333-3333-3333-3333-333333333333','SYN-001','Materia SYN'); \
    insert into course_offering (id,course_id,term) values ('55555555-5555-5555-5555-555555555555','44444444-4444-4444-4444-444444444444','2026-2'); \
    insert into topic (id,course_id,name) values ('66666666-6666-6666-6666-666666666666','44444444-4444-4444-4444-444444444444','Unidad SYN'); \
+   insert into student (id,institution_id) values ('77777777-7777-7777-7777-777777777777','11111111-1111-1111-1111-111111111111'); \
+   insert into course_enrollment (id,institution_id,student_id,offering_id) values ('88888888-8888-8888-8888-888888888888','11111111-1111-1111-1111-111111111111','77777777-7777-7777-7777-777777777777','55555555-5555-5555-5555-555555555555'); \
    commit;" | tail -1
 if [ "$(q "select count(*) from course_offering;" | tr -d '[:space:]')" != "1" ]; then
   echo "   ✗ el setup no dejó los datos sintéticos"; exit 1
@@ -85,6 +87,44 @@ else
   echo "   ✗ rights_status no arranca en 'unknown'"; fallos=$((fallos + 1))
 fi
 
+echo "→ §8 · «Sin datos no es cero» (el invariante que más se rompe)"
+rechaza "domain_state='not_evaluated' CON un número guardado" \
+  "insert into topic_progress (institution_id,course_enrollment_id,topic_id,domain_state,domain_value) values ('11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888888','66666666-6666-6666-6666-666666666666','not_evaluated',0);"
+rechaza "domain_state='value' SIN número" \
+  "insert into topic_progress (institution_id,course_enrollment_id,topic_id,domain_state) values ('11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888888','66666666-6666-6666-6666-666666666666','value');"
+acepta "un dominio realmente 0, declarado como valor" \
+  "insert into topic_progress (institution_id,course_enrollment_id,topic_id,domain_state,domain_value) values ('11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888888','66666666-6666-6666-6666-666666666666','value',0);"
+
+echo "→ §8 · La confianza siempre lleva su fecha"
+rechaza "confidence_state='value' sin confidence_declared_at" \
+  "update topic_progress set confidence_state='value', confidence_value=1 where course_enrollment_id='88888888-8888-8888-8888-888888888888';"
+acepta "confianza con su fecha" \
+  "update topic_progress set confidence_state='value', confidence_value=1, confidence_declared_at=now() where course_enrollment_id='88888888-8888-8888-8888-888888888888';"
+
+echo "→ §8 · No hay score agregado, y no se puede agregar por descuido"
+if [ "$(q "select count(*) from information_schema.columns where table_name='topic_progress' and (column_name like '%score%' or column_name like '%overall%' or column_name='progress');" | tr -d '[:space:]')" = "0" ]; then
+  echo "   ✓ ninguna columna de score agregado (DD5, P-03)"
+else
+  echo "   ✗ apareció una columna de score agregado"; fallos=$((fallos + 1))
+fi
+
+echo "→ §8 · updated_at se toca solo (set_updated_at de la B1.1)"
+antes=$(q "select updated_at from topic_progress where course_enrollment_id='88888888-8888-8888-8888-888888888888';" | tr -d '[:space:]')
+q "update topic_progress set recency_at=now() where course_enrollment_id='88888888-8888-8888-8888-888888888888';" >/dev/null
+despues=$(q "select updated_at from topic_progress where course_enrollment_id='88888888-8888-8888-8888-888888888888';" | tr -d '[:space:]')
+if [ "$antes" != "$despues" ]; then
+  echo "   ✓ el trigger lo actualizó sin que lo pidiera el UPDATE"
+else
+  echo "   ✗ updated_at no cambió"; fallos=$((fallos + 1))
+fi
+
+echo "→ §8 · Borrar la identidad de auth no borra al estudiante"
+if [ "$(q "select count(*) from pg_constraint c join pg_class t on t.oid=c.conrelid where t.relname='student' and c.conname='student_auth_user_id_fkey' and c.confdeltype='n';" | tr -d '[:space:]')" = "1" ]; then
+  echo "   ✓ ON DELETE SET NULL, no CASCADE"
+else
+  echo "   ✗ la FK a auth.users no es SET NULL"; fallos=$((fallos + 1))
+fi
+
 echo "→ Aislamiento: RLS niega al rol anónimo"
 # Dos formas legítimas de negar, y las dos cuentan: sin GRANT, Postgres corta
 # antes de RLS; con GRANT, RLS sin política devuelve cero filas. Lo que se
@@ -98,7 +138,7 @@ else
   echo "   ✗ anon leyó: '$visto'"; fallos=$((fallos + 1))
 fi
 
-q "delete from resource; delete from assessment; delete from topic; delete from course_offering; delete from course; delete from curriculum_plan; delete from academic_program; delete from institution;" >/dev/null
+q "delete from topic_progress; delete from course_enrollment; delete from student; delete from resource; delete from assessment; delete from topic; delete from course_offering; delete from course; delete from curriculum_plan; delete from academic_program; delete from institution;" >/dev/null
 echo "   ✓ datos de prueba limpiados"
 
 if [ "$fallos" -gt 0 ]; then echo; echo "✗ $fallos invariante(s) sin sostener"; exit 1; fi

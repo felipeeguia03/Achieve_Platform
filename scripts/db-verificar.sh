@@ -34,8 +34,24 @@ else
   echo "   ✓ ninguna tabla de 'public' sin RLS"
 fi
 
+echo "→ Privilegios de tabla (B1.3)"
+sin_servicio=$(q "select coalesce(string_agg(nombre, ', '), '') from public.tablas_sin_acceso_de_servicio();")
+if [ -n "$sin_servicio" ]; then
+  echo "   ✗ el backend no puede leer: $sin_servicio"; fallos=$((fallos + 1))
+else
+  echo "   ✓ service_role llega a todas las tablas"
+fi
+expuestas=$(q "select coalesce(string_agg(nombre || ':' || rol, ', '), '') from public.tablas_expuestas_al_cliente();")
+if [ -n "$expuestas" ]; then
+  echo "   ✗ tablas de negocio alcanzables por el cliente: $expuestas"
+  echo "     El frontend nunca lee ni escribe tablas de negocio (architecture.md §3.2)."
+  fallos=$((fallos + 1))
+else
+  echo "   ✓ anon/authenticated no alcanzan ninguna tabla de negocio"
+fi
+
 echo "→ Convenciones de §6 disponibles"
-for fn in set_updated_at tablas_sin_rls; do
+for fn in set_updated_at tablas_sin_rls tablas_sin_acceso_de_servicio tablas_expuestas_al_cliente; do
   if [ "$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname='$fn';")" = "1" ]; then
     echo "   ✓ $fn()"
   else

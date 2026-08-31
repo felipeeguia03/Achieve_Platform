@@ -76,6 +76,9 @@ cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack le
 
 ```
 lib/domain/      tipos, máquinas de estado, precedencia y view models · PURO
+lib/server/      backend: http (borde) · servicios (dominio) · repositorios (SQL)
+app/api/         Controller: valida JWT, llama a un Service, traduce a HTTP
+supabase/        migraciones y entorno local reproducible
 lib/content/     el copy, con ID tipado (regla C-07)
 lib/navigation/  grafo del Golden Path + registro canónico de las 18 CTAs
 lib/fixtures/    el catálogo de escenarios sintéticos

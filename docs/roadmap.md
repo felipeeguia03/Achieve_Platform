@@ -1254,7 +1254,7 @@ sin acceso del frontend a tablas de negocio.
 |---|---|
 | B1.1 | ✅ **COMPLETA** — proyecto Supabase propio, migración de bootstrap y entorno local reproducible |
 | B1.2 | ✅ **COMPLETA** — schema de la capa académica ([`data-model.md`](data-model.md) §7), 13 tablas |
-| B1.3 | Auth + `student` + `institution`; JWT en `/api/*`; RLS deny-by-default |
+| B1.3 | 🟡 **PARCIAL** — auth, `student` y JWT en `/api/*` completos. **El rol institucional no tiene modelo en el doc**: ver abajo |
 | B1.4 | Frontera Controller → Service → Repository; máquinas de estado, scoping e idempotencia en Service |
 | B1.5 | `product_event` y `audit_log` append-only |
 | B1.6 | 🔒 Cliente de autorización CRM v1 con contract tests y datos sintéticos; **bloqueada por ADR-005 ítem 6**; uso real gateado por ADR-006 |
@@ -1326,6 +1326,50 @@ roto y luego 3 en rojo con el schema sano: primero grepeaba la palabra `ERROR` e
 `psql` en vez de mirar el código de salida, y después el helper devolvía `0` en caso de éxito
 mientras se llamaba `falla`. **Un test que miente es peor que no tenerlo**, y las dos veces lo delató
 que el resultado fuera implausible, no que fallara.
+
+---
+
+#### 🟡 Etapa B1.3 — Auth y capa del estudiante · PARCIAL · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Las 5 tablas de §8 | ✅ |
+| `student.auth_user_id` ligado al proveedor | ✅ **FK real a `auth.users`**, habilitada por ADR-005 |
+| JWT en `/api/*` | ✅ verificado de punta a punta: **401 / 401 / 401 / 200 / 403** |
+| RLS deny-by-default | ✅ en las 18 tablas |
+| Rol `institution` | 🔴 **no se pudo hacer: no existe el modelo.** Ver abajo |
+| `lint` · `build` · `test` | ✅ verde · verde · **400 tests en 20 archivos** |
+
+**Los invariantes que ahora hace cumplir la base, no la prosa.** `topic_progress` guarda cinco
+dimensiones con su estado, y hasta hoy nada impedía guardar `domain_state='not_evaluated'` **con un
+`0` al lado** — que es literalmente *"sin datos es cero"*, el invariante que `AGENTS.md` §2 marca
+como el que más se rompe. Cuatro `CHECK` nuevos lo vuelven imposible, y un quinto exige que **la
+confianza lleve su fecha**: sin cuándo no es confianza, es un número.
+
+**Un defecto encontrado al probar, no al escribir.** `/api/sesion` devolvía **500** con *"permission
+denied for table student"*: las migraciones no daban `GRANT` a `service_role`. Se declara explícito
+en vez de heredarlo del proveedor —un privilegio que nadie revisó falla el día que cambia el
+default— y quedó **simétricamente verificable**: `tablas_sin_acceso_de_servicio()` comprueba que el
+backend **puede** entrar, y `tablas_expuestas_al_cliente()` que `anon`/`authenticated` **no**.
+Sin la segunda, un `GRANT` de más pasa inadvertido.
+
+**Una corrección de capa.** `tokenDelHeader` estaba en el Service, que es el lugar equivocado: §3.2
+dice que un Service *"no lee headers"*. Se movió a `lib/server/http.ts`. El síntoma fue que el test
+no podía importarlo por `server-only`, pero el problema no era el test.
+
+#### 🔴 El rol institucional no tiene modelo — hallazgo de la B1.3
+
+`data-model.md` **no define ninguna tabla de usuario institucional**: no hay `operator`, no hay
+`institution_user`, no hay columna de rol. El único rastro es `owner_operator_id UUID NOT NULL` en
+§10, **sin `REFERENCES`**: un UUID que no apunta a ninguna tabla.
+
+**No se inventó.** Crear una tabla de identidad institucional sería definir quién puede ver datos de
+un estudiante, que es exactamente lo que `C01-030` (autorización, permisos y privacidad
+institucional) tiene `OPEN` y lo que [ADR-006](decisions.md#adr-006) gatea.
+
+Así que la B1.3 entrega **el rol `student` completo** y deja el institucional registrado. No bloquea
+`B1.4` ni `B1.5`; sí bloquea cualquier endpoint institucional, y hay que cerrarlo antes de la
+Fase B6, que [ADR-012](decisions.md#adr-012) ya había diferido.
 
 ---
 
