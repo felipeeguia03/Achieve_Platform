@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { CommitmentState } from "@/lib/domain/types";
+import type { Compromiso, RepositorioDeCompromisos } from "../servicios/compromiso";
 import { clienteDeServicio } from "../supabase";
 
 /**
@@ -8,13 +9,6 @@ import { clienteDeServicio } from "../supabase";
  * **No decide permisos ni transiciones** — sólo persiste, con el guard atómico
  * que la decisión de arriba necesita para no perderse en una carrera.
  */
-export interface Compromiso {
-  id: string;
-  institutionId: string;
-  actionId: string;
-  state: CommitmentState;
-}
-
 const COLUMNAS = "id, institution_id, action_id, state";
 
 function aDominio(fila: Record<string, unknown>): Compromiso {
@@ -34,7 +28,7 @@ function aDominio(fila: Record<string, unknown>): Compromiso {
  * un `console.log` mal puesto para que se filtre. Parte I §29 pide segregación,
  * no verificación posterior.
  */
-export async function porId(institutionId: string, id: string): Promise<Compromiso | null> {
+async function porId(institutionId: string, id: string): Promise<Compromiso | null> {
   const { data, error } = await clienteDeServicio()
     .from("commitment")
     .select(COLUMNAS)
@@ -47,7 +41,7 @@ export async function porId(institutionId: string, id: string): Promise<Compromi
 }
 
 /** Busca por clave de idempotencia. Ver `servicios/compromiso.ts`. */
-export async function porClaveDeIdempotencia(
+async function porClaveDeIdempotencia(
   institutionId: string,
   clave: string,
 ): Promise<Compromiso | null> {
@@ -74,7 +68,7 @@ export async function porClaveDeIdempotencia(
  * comprueban contra el mismo estado viejo y los dos escriben. La transición
  * prohibida no aparece en el código, aparece en la base.
  */
-export async function cambiarEstadoSi(
+async function cambiarEstadoSi(
   institutionId: string,
   id: string,
   esperado: CommitmentState,
@@ -93,3 +87,12 @@ export async function cambiarEstadoSi(
   if (error) throw new Error(`No se pudo actualizar commitment: ${error.message}`);
   return data ? aDominio(data) : null;
 }
+
+/**
+ * La implementación concreta, tipada contra el contrato que declara el Service.
+ * Si el Service cambia lo que necesita, esto deja de compilar acá y no en una
+ * request.
+ */
+export const compromisosReal: RepositorioDeCompromisos & {
+  porClaveDeIdempotencia: typeof porClaveDeIdempotencia;
+} = { porId, cambiarEstadoSi, porClaveDeIdempotencia };

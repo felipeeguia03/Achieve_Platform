@@ -1460,16 +1460,18 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ---
 
-## Fase B2 — Dominio de ejecución
+## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🔒 B1.
+**Estado:** 🟡 **1 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
+`PENDING`.
 
 **Objetivo.** El loop diario completo con persistencia real: `Action`, `Commitment`, `Evidence`,
 `Reflection`.
 
 | # | Etapa |
 |---|---|
-| B2.1 | `Action` + `ActionRecommendation` + máquina de estados |
+| B2.1 | ✅ **COMPLETA** — `Action` + `ActionRecommendation` + máquina de estados |
 | B2.2 | `Commitment` + renegociación + rescate + idempotencia |
 | B2.3 | `Evidence` + resubmission + storage + revisión real |
 | B2.4 | `Reflection` configurable `OPTIONAL`/`REQUIRED` |
@@ -1479,6 +1481,32 @@ la autorización CRM, el mapping institucional de `C01-039`.
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
 
 **Contratos a cerrar:** `C01-007`…`C01-016`, `C01-051`.
+
+#### ✅ Etapa B2.1 — `Action` · COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Máquina de estados de `Action` | ✅ la misma `actionTransitions` de `lib/domain/`; un test recorre **todos** los pares prohibidos |
+| **Aceptar una Action NO crea un Commitment** | ✅ con test que verifica que no aparece nada de `commitment` |
+| `I6` — una sola recomendación primaria | ✅ probado contra la base |
+| `lint` · `build` · `test` | ✅ verde · verde · **427 tests en 24 archivos**, y **46 verificaciones** contra Postgres |
+
+**La secuencia de transición se extrajo en vez de duplicarse.** `Action` y `Commitment` hacen
+exactamente lo mismo —leer con scoping, validar contra la máquina, escribir con compare-and-swap,
+publicar el hecho— y sólo difieren en la tabla y en qué columnas extra tocan. Dos copias divergirían
+**en el orden**, que es donde están los errores: publicar antes de escribir, o escribir sin comparar.
+Vive en `lib/server/servicios/transiciones.ts`; el refactor pasó los tests de `Commitment` sin
+tocarlos.
+
+**`BLOCKED` explica, o no ocurre.** Bloquear sin razón se rechaza antes de tocar la base: `P-01` pide
+que la interfaz explique la regla, y un estado bloqueado sin motivo deja al estudiante con una
+pantalla y nada que hacer. **Y salir de `BLOCKED` limpia la razón** — conservarla haría que `UX03`
+mostrara un bloqueo que ya no existe.
+
+**Hasta dónde llega `I6`, dicho en el test.** El índice parcial garantiza *"como máximo una primaria
+por `action_id`"*, no *"una por contexto"*: eso necesita una identidad canónica de contexto que el
+spec todavía no define. El propio `data-model.md` §11 lo aclara en su fila, y el test no promete más
+que eso.
 
 ---
 

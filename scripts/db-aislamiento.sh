@@ -56,6 +56,19 @@ else
   ok "la segunda con la misma clave se rechaza en la base"
 fi
 
+echo "→ I6. Una sola ActionRecommendation primaria por Action"
+corre "insert into action_recommendation (action_id,reason_primary,priority,is_primary) values ('a7000000-0000-0000-0000-000000000001','porque sí',1,true);"
+if corre "insert into action_recommendation (action_id,reason_primary,priority,is_primary) values ('a7000000-0000-0000-0000-000000000001','otra',2,true);"; then
+  mal "aceptó dos recomendaciones primarias para la misma Action"
+else
+  ok "la segunda primaria se rechaza (índice único parcial)"
+fi
+corre "insert into action_recommendation (action_id,reason_primary,priority,is_primary) values ('a7000000-0000-0000-0000-000000000001','secundaria',3,false);" \
+  && ok "las no primarias conviven sin límite" || mal "rechazó una no primaria"
+# I6 sólo llega hasta acá: "una por CONTEXTO" necesita una identidad canónica
+# de contexto que el spec todavía no define. Ver data-model.md §11, fila I6.
+q "delete from action_recommendation;" >/dev/null
+
 echo "→ 4. Append-only: el pasado no se reescribe (I12)"
 corre "insert into product_event (event_name,institution_id,subject_type,subject_id,payload) values ('CommitmentCreated','$A','commitment','a8000000-0000-0000-0000-000000000001','{\"k\":1}');"
 corre "insert into audit_log (institution_id,action,target_type,target_id) values ('$A','read','commitment','a8000000-0000-0000-0000-000000000001');"
