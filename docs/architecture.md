@@ -2,17 +2,15 @@
 
 **Documento:** `docs/architecture.md`
 **Rol:** owner canónico de la arquitectura del repositorio.
-**Última actualización:** 29 de agosto de 2026
+**Última actualización:** 31 de agosto de 2026
 
 > ⚠️ **Estado de este documento.** La arquitectura del **Track A** está **decidida y aprobada**
-> ([ADR-008](decisions.md#adr-008), 28 ago 2026). Para el **Track B** se recibió un diseño objetivo
-> concreto —Supabase gestionado detrás de un backend TypeScript en tres capas— y un contrato vigente
-> de autorización con el CRM. Se registran acá como insumos autoritativos para decidir, pero
-> [ADR-005](decisions.md#adr-005) está ✅ `ACCEPTED` **alcanzado a su Bloque A** (30 ago 2026): Supabase,
-> el scoping en dos capas y la separación Controller → Service → Repository quedaron ratificados.
-> Storage de `Evidence`, operación y el mapping de `institutionId` siguen `DEFERRED`. Lo que sigue
-> sin habilitarse es cualquier dato real, que depende de [ADR-006](decisions.md#adr-006):
-> y ningún flujo con personas reales se habilita mientras [ADR-006](decisions.md#adr-006) siga abierto.
+> ([ADR-008](decisions.md#adr-008), 28 ago 2026). La arquitectura del **Track B** también está
+> ratificada e implementada sobre datos sintéticos: Supabase detrás de un backend TypeScript en tres
+> capas, scoping institucional, Storage privado de `Evidence` y mapping manual de `institutionId`.
+> [ADR-005](decisions.md#adr-005) está `ACCEPTED`; sólo la operación/runtime de producción sigue
+> `DEFERRED`. Ningún flujo con personas reales se habilita mientras
+> [ADR-006](decisions.md#adr-006) siga abierto.
 
 ---
 
@@ -210,11 +208,12 @@ de presentación.
 
 ---
 
-## 3. Arquitectura del Track B — diseño objetivo pendiente de aceptación
+## 3. Arquitectura del Track B — baseline implementada
 
-> **Todo lo que sigue define el diseño objetivo recibido, no una autorización para implementarlo.**
-> Requiere [ADR-005](decisions.md#adr-005) `ACCEPTED`. La política de privacidad, consentimiento,
-> retención y visibilidad de datos reales sigue bloqueada por [ADR-006](decisions.md#adr-006).
+> **Todo lo que sigue define la arquitectura vigente del MVP sintético.**
+> [ADR-005](decisions.md#adr-005) está `ACCEPTED` y B1 la implementó. La política de privacidad,
+> consentimiento, retención y visibilidad de datos reales sigue bloqueada por
+> [ADR-006](decisions.md#adr-006).
 
 ### 3.1 Requisitos que cualquier opción debe cumplir
 
@@ -453,7 +452,7 @@ sobre eventos de dominio y sobre el endpoint vigente de CRM.
 Explícitamente fuera de alcance de este documento hasta que se resuelvan sus ADRs:
 
 - ✅ Proveedor, aislamiento y capas → [ADR-005](decisions.md#adr-005) Bloque A, `ACCEPTED`. **Operación y runtime de producción siguen `DEFERRED`** (Bloque B, ítem 5)
-- Pipeline del ADE → [ADR-004](decisions.md#adr-004)
+- ✅ Pipeline del ADE v1 determinista → [ADR-004](decisions.md#adr-004), `ACCEPTED (v1 provisional)`
 - Runtime de producción del Track B → ADR-005 Bloque B, ítem 5, `DEFERRED`
 - Convergencia con Dashboard_Achieve → [ADR-003](decisions.md#adr-003)
 - Política de privacidad, retención y consentimiento → [ADR-006](decisions.md#adr-006)

@@ -2,9 +2,13 @@
 
 **Documento:** `docs/guion-focus-group.md`
 **Rol:** owner canónico del recorrido de sesión y del test de comprensión de 10 segundos.
-**Última actualización:** 30 de agosto de 2026
+**Última actualización:** 31 de agosto de 2026
 **Deriva de:** `product-spec-source.md` §VI.1–§VI.9. Las preguntas y las respuestas esperadas **están
 escritas en las specs**; acá se ordenan para conducir una sesión.
+
+> **Estado:** el owner reportó `PASS` el 30 de agosto de 2026 y con ese resultado se cerró la Fase
+> 0. No quedaron registradas las observaciones por participante y estación; la planilla de §3 sigue
+> siendo la plantilla canónica para conservarlas en una próxima sesión.
 
 ---
 

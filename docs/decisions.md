@@ -2,7 +2,7 @@
 
 **Documento:** `docs/decisions.md`
 **Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
-**Última actualización:** 29 de agosto de 2026
+**Última actualización:** 31 de agosto de 2026
 
 ---
 
@@ -1443,7 +1443,8 @@ lo que `C-07` pide justamente para que una regla que cambia se corrija en un lug
 
 **Estado:** `ACCEPTED` · 30 ago 2026 · **decidido por el owner**
 **Abre:** Fase B2b — Ingesta del Academic Data Layer.
-**No cierra:** [ADR-004](#adr-004) (el ADE) ni `C01-042` (golden dataset y legalidad), que siguen `OPEN`.
+**No cerró en ese momento:** [ADR-004](#adr-004) (el ADE) ni `C01-042` (golden dataset y legalidad).
+Después, ADR-004 quedó `ACCEPTED (v1 provisional)`; `C01-042` sigue `OPEN`.
 
 ### Contexto
 
@@ -1452,8 +1453,8 @@ producto no se mueve solo**: faltan dos productores.
 
 | Falta | Qué produciría | Estado |
 |---|---|---|
-| **El reloj del lifecycle** | `CONFIRMED → DUE → MISSED` por paso del tiempo | ADR-005 ítem 5, `DEFERRED` |
-| **El ADE** | Las `Action` con estado `RECOMMENDED`, y `ACADEMIC_CONTEXT_INCOMPLETE` | [ADR-004](#adr-004), `PENDING` |
+| **El reloj del lifecycle** | `CONFIRMED → DUE → MISSED` por paso del tiempo | ✅ Construido bajo [ADR-024](#adr-024), con ventana provisional por `C01-010` |
+| **El ADE** | Las `Action` con estado `RECOMMENDED`, y `ACADEMIC_CONTEXT_INCOMPLETE` | ✅ [ADR-004](#adr-004), `ACCEPTED (v1 provisional)` |
 
 `product.md` §226 es explícito: *"la UI **no** declara `MISSED` ni `DUE` por el paso del tiempo. Lo
 hace el owner del lifecycle."*
@@ -1483,7 +1484,8 @@ con provenance por dato existe desde la Etapa 0.6. **No hay que inventar nada es
 
 - **`C01-042` sigue `OPEN`:** qué universidad, qué carrera y qué fuentes son legalmente utilizables.
   La ingesta se construye y se prueba **sobre una materia sintética**.
-- **[ADR-004](#adr-004) sigue `PENDING`.** Esta fase no recomienda nada: estructura conocimiento.
+- **[ADR-004](#adr-004) quedó `ACCEPTED (v1 provisional)` después de esta decisión.** La ingesta
+  sigue sin recomendar nada: estructura conocimiento para que el ADE decida sobre él.
 
 ### Un dato personal que apareció al analizarlo, y no estaba en ningún contrato
 

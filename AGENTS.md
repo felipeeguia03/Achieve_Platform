@@ -266,14 +266,14 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Fase 0 — Cerrar el Track A.** 🟡 **8 / 8 etapas completas.**
+**Fase actual: Track B, Fase B2 — Dominio de ejecución.** 🟡 **3 etapas completas y 2 parciales.**
 
-Las nueve superficies existen, todos los estados críticos son alcanzables, el Golden Path se recorre
-por clic y el guion del focus group está escrito en
-[`docs/guion-focus-group.md`](docs/guion-focus-group.md).
-
-**Falta una sola cosa para cerrar la fase: ejecutar el test de comprensión de 10 segundos con
-personas reales.** Eso no lo puede hacer un agente.
+Track A y la Fase A2 están cerrados. Las nueve superficies existen, todos los estados críticos son
+alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner. B1 está
+completa (6/6). En B2, `Action`, `Commitment` y `Evidence` están completas; `Reflection` sigue
+parcial por `C01-051`, y sólo `UX01` lee hoy de Postgres. Las otras ocho superficies todavía se
+proyectan desde fixtures. B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle
+se construyeron por adelantado en B4.
 
 Dónde vive cada cosa hoy:
 
@@ -283,16 +283,17 @@ Dónde vive cada cosa hoy:
 | `lib/content/` | El copy con ID tipado (regla `C-07`) |
 | `lib/navigation/` | El grafo del Golden Path y el registro de las 18 CTAs. **No importa `lib/fixtures/`** |
 | `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |
-| `components/screens/` | Las 6 superficies, con props tipadas |
+| `components/screens/` | Las 9 superficies, con props tipadas |
 | `app/(student)/` | Una URL por superficie; la ruta lee el escenario y lo proyecta |
 
 Dos tracks con costos muy distintos:
 
 - **Track A** — experiencia clickeable con fixtures, sin backend, para focus groups.
-  **Sin bloqueos.** Cerrar la Fase 0 cierra el track: las vistas de Operador e Institución se
-  difirieron al Track B ([ADR-012](docs/decisions.md#adr-012)).
-- **Track B** — backend, auth, persistencia, ADE real. **Bloqueado** por
-  [ADR-005](docs/decisions.md#adr-005) y [ADR-006](docs/decisions.md#adr-006).
+  **Cerrado.** La Fase 0 quedó completa; las vistas de Operador e Institución se difirieron al
+  Track B ([ADR-012](docs/decisions.md#adr-012)).
+- **Track B** — backend, auth, persistencia y ADE. Avanza bajo [ADR-024](docs/decisions.md#adr-024)
+  exclusivamente con datos sintéticos. [ADR-006](docs/decisions.md#adr-006) sigue siendo bloqueo
+  absoluto para cualquier dato de una persona real.
 
 **Stack decidido:** Next.js 16 App Router, React 19, Tailwind v4 CSS-first, shadcn vendorizado,
 Vitest ([ADR-008](docs/decisions.md#adr-008)).
@@ -342,7 +343,7 @@ Mapeo canónico: `WF-S10 → UX08`, `WF-S11 → UX09`. **No existe `UX10`.**
   lo que hace barato el Track B.
 - **Las máquinas de estado son tablas de transición explícitas**, no `if` encadenados. Las
   transiciones prohibidas tienen test.
-- **Diseño objetivo de Track B, condicionado a que ADR-005 pase a `ACCEPTED`:** Controller →
+- **Arquitectura implementada de Track B, ratificada por ADR-005:** Controller →
   Service → Repository; el frontend habla por `/api/*` y no accede a tablas de negocio. Las reglas
   viven en Service y el acceso a Postgres en Repository. Supabase del lado cliente se limita a Auth
   y Realtime Broadcast: nunca `supabase.from(...)` ni Postgres Changes sobre datos de negocio;

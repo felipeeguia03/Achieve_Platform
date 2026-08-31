@@ -11,18 +11,19 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
 
 - **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. **Las 8 etapas
   de la Fase 0 están completas.** Las nueve superficies `UX01`–`UX09` existen, todos los estados
-  críticos de sus specs son alcanzables con URL propia, y el Golden Path se recorre por clic de
-  punta a punta, y **el test de comprensión de 10 segundos se corrió con resultado PASS**
+  críticos de sus specs son alcanzables con URL propia, el Golden Path se recorre por clic de
+  punta a punta y **el test de comprensión de 10 segundos se corrió con resultado PASS**
   ([guion](docs/guion-focus-group.md)). **La Fase 0 está cerrada.**
 - **Fase A2 — shell de aplicación: completa.** Navegación lateral, topbar con breadcrumb, paleta
   `⌘K`, la primitiva `Ausencia` y la cabecera de panel. La comparación lado a lado con las capturas
   está en [`docs/design-system-capturas.md`](docs/design-system-capturas.md) §14: **siete
   diferencias, seis cerradas**, y la séptima con su bloqueo escrito.
-- **Track B:** backend, auth, persistencia e integraciones reales. **[ADR-005](docs/decisions.md#adr-005)
-  quedó `ACCEPTED` alcanzado a su Bloque A** (Supabase, scoping en dos capas, Controller → Service →
-  Repository), así que las etapas `B1.1`–`B1.5` de la Fase B1 están desbloqueadas **sobre datos
-  sintéticos**. Cualquier flujo que toque un dato de una persona real sigue bloqueado por
-  [ADR-006](docs/decisions.md#adr-006).
+- **Track B:** el MVP persistente avanza **sólo con datos sintéticos**. La Fase B1 está completa
+  (6/6). La Fase B2 está en curso: `Action`, `Commitment` y `Evidence` están completas;
+  `Reflection` sigue parcial por `C01-051`, y `UX01` ya lee de Postgres mientras las otras ocho
+  superficies conservan fixtures. La ingesta asistida del ADL, el ADE v1 determinista y el reloj
+  del lifecycle también están construidos. Cualquier flujo que toque un dato de una persona real
+  sigue bloqueado por [ADR-006](docs/decisions.md#adr-006).
 
 ## Cómo correrlo
 
@@ -65,7 +66,7 @@ npm run db:stop
 
 Copiá [`.env.local.example`](.env.local.example) a `.env.local` con lo que imprime `db:start`.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de 396 corre sin Docker, en
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de 531 corre sin Docker, en
 cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack levantado.
 
 ⚠️ **Este entorno corre sólo con datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
@@ -89,9 +90,9 @@ components/ui/   registro shadcn vendorizado · NO se edita
 
 El destino de cada CTA sale del registro canónico, no de un recorrido escrito a mano.
 
-**Las pantallas nunca importan un fixture.** Esa frontera es la que hace barato el Track B: cuando
-el backend exista, cambia lo que hay adentro de `lib/fixtures/` y la capa de presentación no se
-toca. Hay un test estático que lo verifica.
+**Las pantallas nunca importan un fixture.** Esa frontera ya permitió conectar `UX01` al backend
+sin tocar `components/screens/`; las otras ocho superficies mantienen el catálogo sintético hasta
+que tengan su proyección persistente. Hay un test estático que lo verifica.
 
 ## Antes de tocar UI
 
@@ -111,8 +112,8 @@ El contrato de layout que sí viaja es
 | Documento | Importancia |
 |---|---|
 | [`docs/product.md`](docs/product.md) | Glosario, roles, lifecycles, invariantes y scope del producto. |
-| [`docs/architecture.md`](docs/architecture.md) | Arquitectura de Track A y diseño objetivo del backend de Track B. |
-| [`docs/data-model.md`](docs/data-model.md) | Entidades, relaciones, máquinas de estado y schema propuesto. |
+| [`docs/architecture.md`](docs/architecture.md) | Arquitectura de Track A y baseline implementada del backend de Track B. |
+| [`docs/data-model.md`](docs/data-model.md) | Entidades, relaciones, máquinas de estado y schema implementado/provisional. |
 | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) | Contrato HTTP vigente entre Plataforma y CRM; hoy sólo autorización de padrón. |
 | [`docs/decisions.md`](docs/decisions.md) | ADRs aceptados y pendientes; determina qué se puede implementar. |
 | [`docs/roadmap.md`](docs/roadmap.md) | Orden de trabajo, gates y estado de cada fase. |
@@ -129,6 +130,7 @@ Los documentos `*-source.md` son referencias normativas de origen y no se editan
 - CRM y Plataforma no comparten base: se integran únicamente por HTTP versionado.
 
 El proveedor, el aislamiento y las capas quedaron ratificados por
-[ADR-005](docs/decisions.md#adr-005) (Bloque A). **Storage de `Evidence`, operación y el mapping de
-`institutionId` siguen `DEFERRED`**, y ningún flujo puede procesar datos reales mientras
-[ADR-006](docs/decisions.md#adr-006) siga `PENDING`.
+[ADR-005](docs/decisions.md#adr-005). El Storage privado de `Evidence` y el mapping manual de
+`institutionId` ya están implementados; sólo la operación/runtime de producción sigue `DEFERRED`.
+Ningún flujo puede procesar datos reales mientras [ADR-006](docs/decisions.md#adr-006) siga
+`PENDING`.

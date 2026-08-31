@@ -2,7 +2,7 @@
 
 **Documento:** `docs/roadmap.md`
 **Rol:** owner canónico del plan por fases y del estado de avance.
-**Última actualización:** 30 de agosto de 2026
+**Última actualización:** 31 de agosto de 2026
 
 ---
 
@@ -67,18 +67,18 @@ TRACK A ─── no depende de ninguna decisión abierta ───────�
                                                                               │
 TRACK B ─── cada fase tiene su gate ──────────────────────────────────────────┘
 
-  Fase B0 · Cerrar decisiones          → resuelve ADR-005, ADR-006, ADR-004, ADR-003
+  Fase B0 · Cerrar decisiones          🟡 3/5 · pendientes ADR-003 y ADR-006
        ↓
-  Fase B1 · Fundación                  🔒 ADR-005 · ADR-006 (si hay usuario real)
+  Fase B1 · Fundación                  ✅ 6/6 · datos sintéticos
        ↓
-  Fase B2 · Dominio de ejecución       🔒 B1
+  Fase B2 · Dominio de ejecución       🟡 3 completas · 2 parciales
        ↓
   Fase B3 · Progreso + eventos         🔒 B2
        ↓
   ┌────┴─────────────────────────┐
   ↓                              ↓
-  Fase B4 · ADE v1               Fase B5 · Modo Examen real
-  🔒 ADR-004                     🔒 ADR-007 (contenido) · ADR-011 (readiness)
+  Fase B4 · ADE v1 🟡            Fase B5 · Modo Examen real
+  Engine + reloj + base ✅        🔒 ADR-007 (contenido) · ADR-011 (readiness)
   └────┬─────────────────────────┘
        ↓
   Fase B6 · Risk + Intervención + Operador   🔒 ADR-003
@@ -829,11 +829,10 @@ dos exigen una persona y datos que el Track A no tiene.
       fallos reportados y no escondidos — **30 ago 2026.** Dos ítems **no corridos**: lector de
       pantalla y `A-01` con datos sucios reales
 - [x] Lint, build y tests en verde — **337 tests**
-- [ ] El test de comprensión de 10 segundos ejecutado **con personas reales, en desktop**
-      ([ADR-014](decisions.md#adr-014)), sin pérdida de información a 360 px
-      → ⏳ **lo único que falta.** El guion está listo en
-      [`guion-focus-group.md`](guion-focus-group.md); ejecutarlo requiere personas y no lo puede
-      hacer un agente
+- [x] El test de comprensión de 10 segundos ejecutado **con personas reales, en desktop**
+      ([ADR-014](decisions.md#adr-014)), sin pérdida de información a 360 px — **PASS reportado por
+      el owner el 30 ago 2026.** Las observaciones por estación no quedaron registradas; sólo consta
+      el resultado agregado.
 
 ---
 
@@ -1180,7 +1179,7 @@ anticipada. Es la contraparte del estado `UNDER_REVIEW` que el estudiante **sí*
 
 ---
 
-# TRACK B — MVP real
+# TRACK B — MVP persistente, sintético hasta B7
 
 > ⚠️ Ninguna fase del Track B empieza sin que su gate esté resuelto. La regla de
 > [ADR-006](decisions.md#adr-006) es absoluta: **ninguna fase que procese datos de una persona real
@@ -1197,11 +1196,11 @@ no cambian por sí solos el estado de los ADRs ni habilitan datos reales.
 
 | Decisión | ADR | Quién decide |
 |---|---|---|
-| ✅ Backend, auth, persistencia | [ADR-005](decisions.md#adr-005) — **`ACCEPTED` (Bloque A)** 30 ago 2026 | Producto + CTO |
-| Pipeline del ADE | [ADR-004](decisions.md#adr-004) | Producto |
+| ✅ Backend, auth, persistencia | [ADR-005](decisions.md#adr-005) — **`ACCEPTED`**, sólo operación/runtime `DEFERRED` | Producto + CTO |
+| ✅ Pipeline del ADE | [ADR-004](decisions.md#adr-004) — **`ACCEPTED (v1 provisional)`** | Producto |
 | Convergencia con Dashboard_Achieve | [ADR-003](decisions.md#adr-003) | Producto + CTO |
 | Privacidad y consentimiento | [ADR-006](decisions.md#adr-006) | Producto + asesoría legal |
-| Respuestas `DD1`–`DD10` | [ADR-010](decisions.md#adr-010) | Producto |
+| ✅ Respuestas `DD1`–`DD10` | [ADR-010](decisions.md#adr-010) — **`ACCEPTED`**, `DD4` `DEFERRED` | Producto |
 
 **Done cuando:** cada ADR está `ACCEPTED` o explícitamente `DEFERRED` con su fase bloqueada marcada.
 
@@ -1226,9 +1225,9 @@ son todas legales**: tres las puede contestar producto hoy.
 | Orden | Qué | Por qué |
 |---|---|---|
 | 1.º ✅ | Aceptar **`ADR-005` Bloque A**, con Bloque B `DEFERRED` — **hecho el 30 ago 2026** | Desbloqueó `B1.1`–`B1.5` sin comprometer lo no diseñado |
-| 2.º ⬅️ | Arrancar **B1 sobre datos sintéticos** | **Es lo que toca ahora.** El trabajo de fundación no espera al abogado |
+| 2.º ✅ | Completar **B1 sobre datos sintéticos** — **hecho el 30 ago 2026** | El trabajo de fundación no esperó al abogado |
 | 3.º | **`ADR-006`** con asesoría, en paralelo desde ya | Es el de plazo más largo y **debe cerrar antes del primer usuario real** |
-| 4.º | `ADR-003` y `ADR-004` | Bloquean B6 y B4: hay tiempo |
+| 4.º 🟡 | `ADR-003` y `ADR-004` | `ADR-004` quedó aceptado para el MVP; `ADR-003` sigue bloqueando Operador en B6 |
 
 > ⚠️ **Lo que esta secuencia no relaja.** `ADR-006` sigue siendo bloqueo absoluto para cualquier dato
 > de una persona real. Arrancar B1 antes **no** adelanta ese permiso: lo separa de un trabajo que
@@ -1251,7 +1250,7 @@ sin acceso del frontend a tablas de negocio.
 |---|---|
 | B1.1 | ✅ **COMPLETA** — proyecto Supabase propio, migración de bootstrap y entorno local reproducible |
 | B1.2 | ✅ **COMPLETA** — schema de la capa académica ([`data-model.md`](data-model.md) §7), 13 tablas |
-| B1.3 | 🟡 **PARCIAL** — auth, `student` y JWT en `/api/*` completos. **El rol institucional no tiene modelo en el doc**: ver abajo |
+| B1.3 | ✅ **COMPLETA EN SU ALCANCE** — auth, `student` y JWT en `/api/*`; el rol institucional quedó explícitamente diferido a B6 |
 | B1.4 | ✅ **COMPLETA** — frontera Controller → Service → Repository, con §9 y los cuatro criterios de aislamiento probados |
 | B1.5 | ✅ **COMPLETA** — `product_event` y `audit_log`, append-only **probado contra el propio backend** |
 | B1.6 | ✅ **COMPLETA** — cliente de autorización CRM v1 con contract tests y datos sintéticos; uso real gateado por ADR-006 |
@@ -1281,8 +1280,8 @@ auditoría, no dominio— y va ahí porque tiene que valer **sin importar qué c
 escribió**: en el Repository, un método que se olvide produce un timestamp falso en silencio. Cada
 tabla lo engancha explícitamente; no hay magia que lo aplique sola.
 
-**`db:verify` queda fuera de `npm test`.** La suite de 396 corre sin Docker; atarla al stack haría
-que todas fallaran en una máquina sin él.
+**`db:verify` queda fuera de `npm test`.** La suite tenía 396 tests en este hito y hoy tiene 531;
+corre sin Docker. Atarla al stack haría que todos fallaran en una máquina sin él.
 
 ⚠️ **Todo corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue `PENDING`.
 
@@ -1326,7 +1325,7 @@ que el resultado fuera implausible, no que fallara.
 
 ---
 
-#### 🟡 Etapa B1.3 — Auth y capa del estudiante · PARCIAL · 30 de agosto de 2026
+#### ✅ Etapa B1.3 — Auth y capa del estudiante · COMPLETA EN SU ALCANCE · 30 de agosto de 2026
 
 | Criterio | Resultado |
 |---|---|
@@ -1498,7 +1497,7 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **5 / 5** — `B2.4` parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **3 completas / 5; 2 parciales** — `B2.4` parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1511,7 +1510,7 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
 | B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
 | B2.4 | 🟡 **PARCIAL** — la regla se hace cumplir; **la configuración la bloquea `C01-051`** |
-| B2.5 | 🟡 **`UX01` conectada** — datos reales, **cero cambios en `components/screens/`** |
+| B2.5 | 🟡 **`UX01` conectada** — datos persistidos sintéticos, **cero cambios en `components/screens/`** |
 
 **Done cuando:** los 12 invariantes de [`data-model.md`](data-model.md) §11 tienen test; el mismo
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
@@ -1528,7 +1527,7 @@ cero líneas. Era lo que la separación de la Fase 0 venía preparando desde el 
 | La pantalla recibe lo mismo | `GET /api/hoy` devuelve **el mismo `HoyProps`** que daba el fixture. Hay test de que las claves coinciden |
 | La precedencia no se duplicó | La misma `selectHeroLevel` de `lib/domain/`, con sus nueve niveles |
 | El catálogo sintético **no se retiró** | Con `?escenario=` sigue proyectando fixtures: es el guion del focus group y el mapa de estados críticos |
-| `lint` · `build` · `test` | ✅ verde · verde · **531 tests en 32 archivos** |
+| `lint` · `build` · `test` | ✅ verde · verde · **531 tests en 31 archivos** |
 
 **El idioma no lo decide la base.** El primer intento formateaba la fecha en SQL y salía *"Sun 30
 Aug"*. El formato es **presentación**, y se movió a la proyección — que además permite usar **la zona
@@ -1692,7 +1691,9 @@ decidir.
 | B2b.2 | Corroboración: la operación explícita que **sí** puede elevar un `verification_status` |
 | B2b.3 | Otra fuente para el mismo ingestor — scraping. **Requiere `C01-042`** |
 
-**Done cuando:** una materia real está cargada con su procedencia, y el ADE tiene sobre qué decidir.
+**Done del MVP sintético cuando:** una materia sintética representativa está cargada con su
+procedencia y el ADE tiene sobre qué decidir. Cargar una materia real requiere cerrar
+[ADR-006](decisions.md#adr-006) y `C01-042`.
 
 #### ✅ Etapa B2b.1 — Ingesta asistida · COMPLETA · 30 de agosto de 2026
 
@@ -1729,8 +1730,9 @@ decidir.
 
 ## Fase B4 — ADE v1 y el reloj del lifecycle · 🟡 EN CURSO
 
-**Estado:** 🟡 Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**.
-Falta conectarlos a la base y a las pantallas.
+**Estado:** 🟡 Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**. El ADE
+ya materializa recomendaciones en la base y `UX01` proyecta estado persistido. Falta integrar el
+reloj a una ejecución operativa y completar la conexión de las otras ocho superficies.
 
 #### ✅ El ADE conectado a la base · 30 de agosto de 2026
 
@@ -1814,9 +1816,11 @@ duplicarlos como cuatro avances independientes.
 
 ---
 
-## Fase B4 — Academic Decision Engine v1
+## Fase B4 — Academic Decision Engine v1 · avance detallado arriba
 
-**Estado:** 🔒 [ADR-004](decisions.md#adr-004).
+**Estado:** 🟡 EN CURSO. [ADR-004](decisions.md#adr-004) está `ACCEPTED (v1 provisional)`; el Engine
+puro y su materialización en Postgres están construidos. Ver la sección «ADE v1 y el reloj del
+lifecycle».
 
 **Objetivo.** Un ADE real que emita `ActionRecommendation` con las cuatro ramas
 `NEW` / `NONE` / `ERROR` / `PENDING`.
@@ -1889,13 +1893,11 @@ desvío, riesgo y recuperación.
 
 | Decisión abierta | Bloquea |
 |---|---|
-| [ADR-005](decisions.md#adr-005) Backend | **Todo el Track B desde B1** |
 | [ADR-006](decisions.md#adr-006) Privacidad | **Cualquier fase con datos reales.** Absoluto |
-| [ADR-004](decisions.md#adr-004) ADE | Fase B4 |
 | [ADR-003](decisions.md#adr-003) Convergencia | Fase B6 |
 | [ADR-007](decisions.md#adr-007) HUMAN-P0 | Contenido de Fase B5 |
 | [ADR-011](decisions.md#adr-011) Readiness | Readiness visible en B5 |
-| [ADR-016](decisions.md#adr-016) Entrada a `UX07` | Golden Path recorrible (0.8) |
+| [ADR-020](decisions.md#adr-020) Clases de ausencia | Control segmentado bloqueado en `UX05`/`UX07` |
 
 ✅ **Resueltos el 28 de agosto de 2026,** y por eso ya no aparecen arriba:
 [ADR-008](decisions.md#adr-008) (stack), [ADR-009](decisions.md#adr-009) (nomenclatura `DD`),
@@ -1906,7 +1908,8 @@ desvío, riesgo y recuperación.
 ✅ **Resuelto el 29 de agosto de 2026:** [ADR-014](decisions.md#adr-014) (desktop-first; el contrato
 del primer viewport pasa a orden semántico, con 360 px como piso móvil).
 
-> **Nada bloquea la Fase 0. Está lista para arrancar.**
+> **La Fase 0 está cerrada.** `ADR-016` sigue pendiente como deuda del registro canónico, pero el
+> recorrido de focus group declara la navegación del facilitador y ya no bloquea el cierre.
 
 **Único pendiente que no bloquea nada de la Fase 0:** `DD4` (vocabulario del oficio), en `DEFERRED`.
 Se revisa junto con el glosario de [`product.md`](product.md) §3.
@@ -1920,11 +1923,12 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase 0 — Cerrar Track A | ✅ **COMPLETA** — 8/8 etapas y el test de 10 segundos corrido | 8 / 8 |
 | Fase A2 — Shell de aplicación | ✅ **5 / 5 etapas completas** | 5 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
-| Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-005` aceptado (Bloque A) | 1 / 5 |
+| Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
-| Fase B2 — Dominio de ejecución | 🔒 BLOQUEADA | — |
-| Fase B3 — Progreso y eventos | 🟢 DESBLOQUEADA por [ADR-024](decisions.md#adr-024) | 0 / — |
-| Fase B4 — ADE v1 | 🟡 EN CURSO — Engine v1 y reloj del lifecycle construidos | 2 / — |
+| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 3 completas, 2 parciales | 3 / 5 |
+| Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
+| Fase B3 — Progreso y eventos | 🔒 Depende del cierre de B2 | 0 / — |
+| Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |
 | Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA por [ADR-024](decisions.md#adr-024) | 0 / — |
 | Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por [ADR-006](decisions.md#adr-006)** — es la fase que lo cierra | — |
@@ -1951,6 +1955,7 @@ en `package.json`: subir la versión mayor del framework es una decisión de
 **la Fase 0 se cerró 8/8 sin evaluarla**. El gate estaba escrito y no se cumplió. Queda acá visible
 en vez de enterrado en la narrativa de una etapa vieja.
 
-**Qué mitiga el riesgo hoy, y qué no.** El Track A no tiene red, ni persistencia, ni datos reales, ni
-se despliega: el árbol vulnerable no está expuesto a nadie. **Eso deja de valer en cuanto el Track B
-arranque**, así que esto es un bloqueante real de la Fase B1 y no una nota al pie.
+**Qué mitiga el riesgo hoy, y qué no.** El MVP actual usa persistencia local con datos sintéticos y
+no está desplegado, así que el árbol vulnerable no está expuesto a usuarios. Eso deja de valer al
+desplegar o incorporar una sola persona real: la deuda debe resolverse antes de producción y no es
+una nota al pie.

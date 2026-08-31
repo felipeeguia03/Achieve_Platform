@@ -2,14 +2,15 @@
 
 **Documento:** `docs/data-model.md`
 **Rol:** owner canónico de entidades, relaciones, máquinas de estado y schema.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 31 de agosto de 2026
 
 > ⚠️ **Estado.** Las **entidades, relaciones y máquinas de estado** (§1–§5) están heredadas del spec
-> fuente y son firmes. El **schema SQL** (§6–§10) es un **diseño propuesto** que asume Postgres; no se
-> ejecutaba ninguna migración hasta que [ADR-005](decisions.md#adr-005) estuviera `ACCEPTED`. **Lo
-> está desde el 30 de agosto de 2026** (Bloque A: Supabase, scoping en dos capas, Controller →
-> Service → Repository), así que las migraciones de `B1.1`–`B1.2` quedan habilitadas **sobre datos
-> sintéticos**. Cualquier dato de una persona real sigue bloqueado por
+> fuente y son firmes. El **schema SQL** (§6–§10) es la baseline implementada en Postgres, con las
+> adiciones provisionales rotuladas; no se ejecutaba ninguna migración hasta que
+> [ADR-005](decisions.md#adr-005) estuviera `ACCEPTED`. **Lo
+> está desde el 30 de agosto de 2026** y B1/B2 ya implementaron las capas académica, estudiante y
+> ejecución, además de eventos, ingesta asistida, Storage y materialización del ADE. Todo corre
+> **sobre datos sintéticos**. Cualquier dato de una persona real sigue bloqueado por
 > [ADR-006](decisions.md#adr-006).
 >
 > Se usa SQL estándar de Postgres, portable entre las alternativas probables. Donde algo es
@@ -403,6 +404,14 @@ CREATE TABLE assessment (
   verification_status TEXT NOT NULL DEFAULT 'unverified'
                         CHECK (verification_status IN
                           ('unverified','corroborated','official','disputed'))
+);
+
+-- Adición estructural provisional de ADR-024, para revisión junto con C01-027.
+-- `scope` sigue siendo texto libre: el alcance académico se declara, nunca se infiere.
+CREATE TABLE assessment_topic (
+  assessment_id UUID NOT NULL REFERENCES assessment(id) ON DELETE CASCADE,
+  topic_id      UUID NOT NULL REFERENCES topic(id) ON DELETE CASCADE,
+  PRIMARY KEY (assessment_id, topic_id)
 );
 
 -- Reportes de clase del estudiante. Versionados: una corrección NO sobrescribe.
@@ -882,11 +891,13 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 
 ---
 
-## 13. Track A — el mismo modelo, sin base de datos
+## 13. Convivencia Track A / Track B
 
 En el Track A estos tipos viven en `lib/domain/` como TypeScript puro y los escenarios en
-`lib/fixtures/`. **Los tipos son los mismos.** Cuando llegue el Track B, el backend los implementa y
-`lib/fixtures/` se reemplaza por llamadas reales sin tocar las pantallas.
+`lib/fixtures/`. **Los tipos son los mismos.** Track B ya implementa el backend y `UX01` puede
+proyectar datos persistidos sin tocar `components/screens/`. Los fixtures no se eliminaron: siguen
+siendo el catálogo del focus group y de estados críticos mientras las otras ocho superficies se
+conectan con el mismo patrón.
 
 ```ts
 // lib/domain/types.ts — compartido entre Track A y Track B
