@@ -3,6 +3,13 @@
 /docs/design-system-source.html
 /docs/diseño/
 
+# Supabase local — claves y estado de la instancia de desarrollo.
+# `supabase/config.toml` y `supabase/migrations/` SÍ se versionan: son el
+# entorno reproducible. Lo que no viaja son las claves generadas por instancia.
+/supabase/.branches
+/supabase/.temp
+/supabase/seed.sql
+
 # Dependencias y artefactos de build
 /node_modules
 /.next
@@ -15,5 +22,8 @@ next-env.d.ts
 # Entorno y sistema
 .env*
 !.env.example
+# Los `.example` son plantillas sin secretos: viajan, y son la documentación
+# ejecutable de qué variables hace falta definir.
+!*.example
 .DS_Store
 npm-debug.log*

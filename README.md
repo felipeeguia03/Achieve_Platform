@@ -49,6 +49,29 @@ como piso obligatorio de la variante móvil ([ADR-014](docs/decisions.md#adr-014
 primaria por pantalla y por estado. Las tres primeras se verifican con un test estático
 (`tests/track-a-rules.test.ts`).
 
+## Base de datos local (Track B, Etapa B1.1)
+
+**Proyecto Supabase propio, separado de Dashboard_Achieve.** El spec prohíbe base compartida con el
+CRM ([Parte II §18.1](docs/architecture.md)); compartir proveedor no relaja esa regla. Los puertos
+locales son **54420–54429** para que los dos stacks puedan correr al mismo tiempo.
+
+```bash
+npm run db:start     # levanta el stack local (necesita Docker corriendo)
+npm run db:reset     # tira abajo y re-aplica todas las migraciones desde cero
+npm run db:verify    # comprueba migraciones y el deny-by-default de §6
+npm run db:studio    # http://127.0.0.1:54423
+npm run db:stop
+```
+
+Copiá [`.env.local.example`](.env.local.example) a `.env.local` con lo que imprime `db:start`.
+
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de 396 corre sin Docker, en
+cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack levantado.
+
+⚠️ **Este entorno corre sólo con datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
+`PENDING` y es bloqueo absoluto para cualquier dato de una persona real — que
+[ADR-005](docs/decisions.md#adr-005) esté aceptado **no** cambia eso.
+
 ## Cómo está organizado el código
 
 ```

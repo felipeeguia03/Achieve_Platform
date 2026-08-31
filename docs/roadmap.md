@@ -1252,12 +1252,44 @@ sin acceso del frontend a tablas de negocio.
 
 | # | Etapa |
 |---|---|
-| B1.1 | Proyecto Supabase + migraciones iniciales + entorno local reproducible ✅ *desbloqueada* |
+| B1.1 | ✅ **COMPLETA** — proyecto Supabase propio, migración de bootstrap y entorno local reproducible |
 | B1.2 | Schema de la capa académica ([`data-model.md`](data-model.md) §7) |
 | B1.3 | Auth + `student` + `institution`; JWT en `/api/*`; RLS deny-by-default |
 | B1.4 | Frontera Controller → Service → Repository; máquinas de estado, scoping e idempotencia en Service |
 | B1.5 | `product_event` y `audit_log` append-only |
 | B1.6 | 🔒 Cliente de autorización CRM v1 con contract tests y datos sintéticos; **bloqueada por ADR-005 ítem 6**; uso real gateado por ADR-006 |
+
+#### ✅ Etapa B1.1 — COMPLETA · 30 de agosto de 2026
+
+**Proyecto Supabase propio**, decidido por el owner: separado de Dashboard_Achieve. El spec prohíbe
+base compartida con el CRM (Parte II §18.1) y **compartir proveedor no relaja esa regla** — es la
+pendiente que [ADR-005](decisions.md#adr-005) dejó anotada al ratificar Supabase.
+
+| Criterio | Resultado |
+|---|---|
+| Proyecto propio, aislado | ✅ `project_id = achieve-platform`, **puertos 54420–54429** para que los dos stacks locales convivan |
+| Migración inicial | ✅ `20260830000000_bootstrap.sql` — las convenciones de `data-model.md` §6 como código, **sin tablas de dominio** (eso es B1.2) |
+| Entorno reproducible | ✅ **verificado con `db:reset`**: se tira abajo y se reconstruye desde cero, y queda conforme |
+| Verificación | ✅ `npm run db:verify` |
+
+**Lo que la migración hace, y por qué no es sólo scaffolding.** `data-model.md` §6 dice *"todas las
+tablas quedan con RLS deny-by-default"*. Eso era una afirmación que había que confiar. Ahora
+`tablas_sin_rls()` la vuelve **comprobable**, y `db:verify` falla si alguna tabla de `public` se
+queda sin RLS. **Probado contra su regresión:** con una tabla sin RLS devuelve 1; al habilitarla,
+0.
+
+**Una decisión que conviene mirar:** `updated_at` va en un **trigger**, no en el Repository. No
+contradice la regla de ADR-005 de no poner reglas de negocio en la base —esto es plomería de
+auditoría, no dominio— y va ahí porque tiene que valer **sin importar qué camino de código
+escribió**: en el Repository, un método que se olvide produce un timestamp falso en silencio. Cada
+tabla lo engancha explícitamente; no hay magia que lo aplique sola.
+
+**`db:verify` queda fuera de `npm test`.** La suite de 396 corre sin Docker; atarla al stack haría
+que todas fallaran en una máquina sin él.
+
+⚠️ **Todo corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue `PENDING`.
+
+---
 
 **Done cuando:** un test de aislamiento demuestra que un tenant **no puede** leer datos de otro; las
 transiciones prohibidas fallan en Service incluso bajo concurrencia; ningún código cliente accede a
