@@ -73,7 +73,7 @@ TRACK B ─── cada fase tiene su gate ────────────�
        ↓
   Fase B2 · Dominio de ejecución       🟡 3 completas · 2 parciales
        ↓
-  Fase B3 · Progreso + eventos         🔒 B2
+  Fase B3 · Progreso + eventos         🔒 B2 · progress_entry ya migrada
        ↓
   ┌────┴─────────────────────────┐
   ↓                              ↓
@@ -1497,7 +1497,8 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **3 completas / 6; 2 parciales y `B2.6` en curso** — `B2.4` parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **4 completas / 6; 2 parciales** — `B2.6` cerró el 31 de agosto de 2026 con las cinco
+superficies leyendo de la base. `B2.4` sigue parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1511,7 +1512,7 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
 | B2.4 | 🟡 **PARCIAL** — la regla se hace cumplir; **la configuración la bloquea `C01-051`** |
 | B2.5 | 🟡 **`UX01` conectada** — datos persistidos sintéticos, **cero cambios en `components/screens/`** |
-| B2.6 | 🔵 **EN CURSO** — `UX02`–`UX06` desde la base, con sesión real y `Ausencia`. Decisiones aprobadas el 31 ago 2026 |
+| B2.6 | ✅ **COMPLETA** — `UX02`–`UX06` desde la base, con sesión real y `Ausencia` |
 
 **Done cuando:** los 12 invariantes de [`data-model.md`](data-model.md) §11 tienen test; el mismo
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
@@ -1548,15 +1549,22 @@ ocho ni eran mecánicas**. Ver abajo.
 
 ---
 
-#### 🔵 Etapa B2.6 — Las superficies restantes desde la base
+#### ✅ Etapa B2.6 — Las superficies restantes desde la base · COMPLETA · 31 de agosto de 2026
 
 **Decisiones de diseño — ✅ aprobadas por el owner el 31 de agosto de 2026.**
 
 **1. El alcance real son cinco superficies, no ocho.** `UX07`–`UX09` proyectan `ExamPreparation` y
 `ExamProtocol`, y la base tiene **cero tablas de examen**: son de la [Fase B5](#fase-b5--modo-examen-real),
-que además depende de [ADR-007](decisions.md#adr-007) (contenido) y [ADR-011](decisions.md#adr-011)
-(readiness), los dos `PENDING`. Conectarlas acá sería resolver dos decisiones abiertas de
-contrabando. **La etapa cubre `UX02`–`UX06`**, y el roadmap deja de prometer ocho.
+que además dependía de [ADR-007](decisions.md#adr-007) (contenido) y
+[ADR-011](decisions.md#adr-011) (readiness), los dos `PENDING` cuando se escribió esto. Conectarlas
+acá sería resolver dos decisiones abiertas de contrabando. **La etapa cubre `UX02`–`UX06`**, y el
+roadmap deja de prometer ocho.
+
+> **Actualización del 31 ago 2026 — la decisión no cambia.** [ADR-025](decisions.md#adr-025) cerró
+> `ADR-007`, así que hoy queda una sola bloqueante (`ADR-011`, readiness) en vez de dos. **`UX07`–`UX09`
+> siguen fuera de esta etapa igual**, y por el motivo principal, que nunca fue un ADR: **la base no
+> tiene tablas de examen**. Se conectan en la Fase B5, que además ahora tiene tres requisitos nuevos
+> de schema — ver esa fase.
 
 **2. El navegador se autentica con Supabase Auth y `Authorization: Bearer`.** No es una decisión
 nueva: es la que [ADR-005](decisions.md#adr-005) y `AGENTS.md` §6 ya ratificaron —*Supabase del lado
@@ -1592,6 +1600,57 @@ default. Si eso no alcanza al implementarla, `UX05` sale del alcance y se dice a
 
 **Done cuando:** las cinco proyectan datos persistidos con sesión real; ninguna dibuja un fixture sin
 `?escenario=` explícito; `components/screens/` sigue sin tocarse; `lint`, `build` y `test` en verde.
+
+---
+
+##### El cierre de la etapa
+
+| Qué prometía el Done | Cómo quedó |
+|---|---|
+| Las cinco proyectan datos persistidos con sesión real | ✅ `UX02`–`UX06`, cada una con **una** función de lectura y su ruta `/api/*`. Verificado en el navegador: `/progreso` muestra el cambio confirmado, el bloque de conservadas y la Bitácora del ciclo, sin errores de consola, a 1440 y a 360 px |
+| Ninguna dibuja un fixture sin `?escenario=` | ✅ guard estático sobre las nueve páginas — y **fue el guard el que obligó a mover `UX06` de lista** cuando se conectó |
+| `components/screens/` sigue sin tocarse | 🟡 **una excepción más**, declarada abajo |
+| `lint` · `build` · `test` | ✅ verde · verde · **613 tests en 34 archivos**, y **118 comprobaciones** contra Postgres |
+
+**`UX06` exigió crear una tabla, y por eso la etapa casi la deja afuera.** El primer recorte fue
+sacarla: proyecta `ProgressEntry` y la base no tenía la tabla, así que parecía el mismo caso que
+`UX07`–`UX09`. **No lo era.** `data-model.md` §10 ya declaraba `progress_entry` entera —columnas,
+`changed_dimensions`, `explicit_no_change`— y su invariante `I10`; lo que faltaba era la migración,
+no la decisión. Las tablas de examen, en cambio, dependen de tres requisitos de schema que
+[ADR-025](decisions.md#adr-025) recién destapó.
+
+Lo que **no** se hizo, y es lo que separa esta etapa de la Fase B3: nadie escribe `progress_entry`.
+No hay Service de `ProgressUpdated`, `entry_kind` **no lleva `CHECK`** —cerrar su vocabulario es
+`C01-018`— y la proyección **se niega a mostrar magnitudes** que el owner no haya escrito como texto,
+porque `C01-019` sigue `OPEN`. Con la tabla vacía, `UX06` dice *"todavía no hay un cambio de progreso
+confirmado"*, que es la única lectura honesta.
+
+**La Bitácora sale de `product_event`.** `data-model.md` §12 dice que no tiene tabla propia: es
+composición de lectura. Reconstruirla desde las columnas de estado **no alcanza** —`evidence` no
+guarda `validated_at`, así que *"la validaron"* no tendría instante y habría que inventarle uno—, y
+`product_event` es el único registro con fecha, actor y causa, además de append-only.
+
+**Y no dice *"la cátedra la validó"*.** El fixture del Track A sí lo decía, porque un escenario
+**declara** su mundo. En la base, `evidence` no guarda `source_type` ni `verification_status`: quién
+validó no es un dato que exista. La entrada dice *"La validaron"* y su procedencia queda en *"Fuente
+o estado no disponible"*. Es la misma regla que ya había cazado el recurso de `UX03`: **ninguna capa
+eleva la verificación** (`I9`).
+
+**Tercer cambio autorizado en `components/screens/`.** La Bitácora usaba el título de la entrada como
+key de React. Con fixtures nunca colisionó —los títulos de un ciclo eran únicos—; con datos reales,
+una resubmission emite dos veces *"Presentaste evidencia"* en el mismo ciclo y React reutiliza el
+nodo equivocado. La key ahora lleva la posición. Es un bug que **sólo aparece cuando los datos dejan
+de estar curados**, que es exactamente lo que esta etapa vino a probar.
+
+**Una duplicación que ya iba por la tercera copia.** `fechaCorta` estaba dos veces, con el mismo
+comentario, en `proyeccion-hoy` y `proyeccion-materia`; `UX06` necesitaba ésa y `haceCuanto`. Las
+cuatro funciones de formato viven ahora en `lib/server/servicios/tiempo.ts`. **El formato es
+presentación, no base:** es la lección de la `B2.5`, y ahora está en un solo lugar.
+
+**Lo que el mundo vacío enseñó.** La primera corrida contra la base sin evidencia mostraba la misma
+frase en el chip, en el detalle y en el aviso. Tres líneas idénticas no son tres datos. Ahora el chip
+dice el estado, el detalle dice qué falta y el aviso habla del progreso — y hay un test que exige que
+las tres sean distintas.
 
 ---
 
@@ -1779,8 +1838,8 @@ procedencia y el ADE tiene sobre qué decidir. Cargar una materia real requiere 
 ## Fase B4 — ADE v1 y el reloj del lifecycle · 🟡 EN CURSO
 
 **Estado:** 🟡 Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**. El ADE
-ya materializa recomendaciones en la base y `UX01` proyecta estado persistido. Falta integrar el
-reloj a una ejecución operativa y completar la conexión de `UX02`–`UX06` (Etapa B2.6).
+ya materializa recomendaciones en la base y las seis superficies del loop diario proyectan estado
+persistido (Etapa B2.6, completa). Falta integrar el reloj a una ejecución operativa.
 
 #### ✅ El ADE conectado a la base · 30 de agosto de 2026
 
@@ -1851,10 +1910,21 @@ le perdona a alguien es una decisión pedagógica, no una función.
 
 ## Fase B3 — Progreso, Bitácora y eventos
 
-**Estado:** 🔒 B2.
+**Estado:** 🔒 B2. **Con parte de la estructura ya construida:** la Etapa B2.6 migró
+`progress_entry` (`data-model.md` §10) con `I10`, y `estado_de_progreso()` ya compone la Bitácora
+desde `product_event`.
 
-**Objetivo.** `TopicProgress` con las cinco dimensiones separadas, `ProgressEntry`, Bitácora y el
-Product Event Model completo.
+**Lo que esta fase todavía debe traer, y que la B2.6 deliberadamente no hizo:**
+
+| # | Qué falta | Por qué no se hizo antes |
+|---|---|---|
+| 1 | **Quién emite el `ProgressUpdated`, con qué causalidad y qué payload** | `C01-018`, `OPEN`, gate `I`. Hoy **nadie escribe `progress_entry`** |
+| 2 | **Qué magnitud es mostrable** | `C01-019`, gate `H`. La proyección sólo muestra lo que el owner escribió como texto; un número crudo sale como *"cambió"* |
+| 3 | **El vocabulario de `entry_kind`** | Un `CHECK` lo habría cerrado desde el schema |
+| 4 | **El Product Event Model completo** | Los hechos sin copy aprobada hoy **se omiten** de la Bitácora en vez de mostrarse con su enum |
+
+**Objetivo.** `TopicProgress` con las cinco dimensiones separadas, `ProgressEntry` **escrita por un
+Service real**, Bitácora y el Product Event Model completo.
 
 **Done cuando:** una dimensión solo se muestra como cambiada con un `ProgressUpdated` real; los tres
 estados de no-cambio son distinguibles; la Bitácora agrupa los eventos del mismo ciclo sin
@@ -2004,7 +2074,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
-| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 3 completas, 2 parciales, `B2.6` abierta | 3 / 6 |
+| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 4 completas, 2 parciales (`B2.4` por `C01-051`, `B2.5` con `UX01`) | 4 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | 🔒 Depende del cierre de B2 | 0 / — |
 | Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |

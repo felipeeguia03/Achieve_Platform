@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { proyectarDia, type EstadoDelDia } from "@/lib/server/servicios/proyeccion-hoy";
@@ -125,9 +127,49 @@ describe("B2.5 · la fecha se formatea en la zona del estudiante", () => {
   it("sin avance registrado, la materia no dice «hace 0 días»", () => {
     const r = proyectarDia({
       ...vacio,
-      materias: [{ nombre: "M", estado: "Bajo control", tono: "neutral", ultimoAvanceEn: null }],
+      materias: [{ nombre: "M", estado: null, tono: "neutral", ultimoAvanceEn: null }],
     });
     expect(r.materias[0].ultimoAvance).toBeNull();
+  });
+});
+
+/**
+ * Etapa B2.6 — el defecto que la `B2.5` dejó, y que este test impide que vuelva.
+ *
+ * `estado_del_dia` devolvía `'Bajo control'` **literal en SQL** para toda
+ * materia. Con fixtures eso era dato del escenario; con datos persistidos era
+ * exactamente el copy que `product.md` §13 prohíbe: *«"Bajo control" sin lectura
+ * confiable del Risk Engine»*. El Risk Engine es la Fase B6.
+ */
+describe("B2.6 · la materia no afirma un estado que nadie evaluó", () => {
+  it("sin lectura de estado, la línea se omite en vez de rellenarse", () => {
+    const r = proyectarDia({
+      ...vacio,
+      materias: [{ nombre: "Análisis II", estado: null, tono: "neutral", ultimoAvanceEn: null }],
+    });
+    expect(r.materias[0].estado).toBeNull();
+  });
+
+  it("cuando exista una lectura real, se muestra tal cual", () => {
+    // El día que el Risk Engine emita una señal, la proyección la pasa sin
+    // tocarla: lo que cambia es que haya fuente, no la forma.
+    const r = proyectarDia({
+      ...vacio,
+      materias: [{ nombre: "Análisis II", estado: "Necesita atención", tono: "urgencia", ultimoAvanceEn: null }],
+    });
+    expect(r.materias[0].estado).toBe("Necesita atención");
+    expect(r.materias[0].tono).toBe("urgencia");
+  });
+
+  it("la migración no dejó la afirmación en el SQL", () => {
+    // Se mira la función vigente, que es la que corre. Un `grep` sobre todas
+    // las migraciones marcaría la vieja, que quedó en la historia a propósito.
+    const sql = readFileSync(
+      resolve(process.cwd(), "supabase/migrations/20260831000000_estado_sin_afirmacion.sql"),
+      "utf8",
+    );
+    const cuerpo = sql.replace(/^\s*--.*$/gm, "");
+    expect(cuerpo).not.toContain("'Bajo control'");
   });
 });
 

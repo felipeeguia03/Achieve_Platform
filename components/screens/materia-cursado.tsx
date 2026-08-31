@@ -81,7 +81,8 @@ export function MateriaCursado({
       />
 
       <EstadoGeneral>
-        <EstadoChip tone={chip.tono}>{chip.texto}</EstadoChip>
+        {/* Sin lectura de estado no se dibuja un chip: ver `MateriaProps.chip`. */}
+        {chip && <EstadoChip tone={chip.tono}>{chip.texto}</EstadoChip>}
         {ultimoAvance && (
           <span style={{ marginLeft: 8, fontWeight: 400, color: "var(--muted-foreground)" }}>
             {ultimoAvance}

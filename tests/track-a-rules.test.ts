@@ -89,8 +89,44 @@ describe("Track A — reglas verificables estáticamente", () => {
     expect(files.length).toBeGreaterThan(0);
   });
 
-  it("cero red: sin fetch, XMLHttpRequest ni WebSocket", () => {
-    expect(offenders(/\b(fetch\(|XMLHttpRequest|WebSocket|EventSource)\b/)).toEqual([]);
+  /**
+   * **Reescrito en la Etapa B2.6, porque estaba mal de dos maneras a la vez —
+   * y las dos se tapaban entre sí.**
+   *
+   * 1. **El regex no cazaba `fetch("…")`.** `fetch\(` seguido de `\b` exige que
+   *    después del paréntesis venga un carácter de palabra, y `"` no lo es. Sólo
+   *    detectaba `fetch(variable)`. Por eso la `B2.5` cerró "en verde" con un
+   *    `fetch("/api/hoy")` dentro de `app/`: **el guard nunca lo vio.** Tampoco
+   *    veía el `fetch(\`…\`)` del cliente del CRM, de la `B1.6`.
+   * 2. **El alcance ya no era cierto.** Desde que existe el Track B, la red es
+   *    parte del producto: `lib/client/` la usa contra `/api/*` y
+   *    `lib/server/repositorios/` contra el CRM.
+   *
+   * Arreglar sólo el regex habría reprobado a los dos módulos que deben usar red;
+   * ampliar sólo el alcance habría dejado un guard que no caza nada. Lo que sigue
+   * siendo verdad es más chico y más útil: **la presentación, el dominio y las
+   * rutas no hablan por red.** Una pantalla que hace `fetch` decide de dónde
+   * salen sus datos, y eso es exactamente lo que la frontera de la Fase 0 existe
+   * para impedir. La red vive en dos módulos y se los nombra.
+   */
+  const RED = /\b(fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/;
+  const CON_RED_PERMITIDA = ["lib/client/", "lib/server/repositorios/"];
+
+  it("el regex de red caza las tres formas de llamar a fetch", () => {
+    // Auto-prueba de la corrección de arriba. La primera es la que se escapaba.
+    expect(RED.test('fetch("/api/hoy")')).toBe(true);
+    expect(RED.test("fetch(`${base}/x`)")).toBe(true);
+    expect(RED.test("fetch(ruta, { headers })")).toBe(true);
+    expect(RED.test("new WebSocket(url)")).toBe(true);
+    // Y no se dispara con algo que sólo empieza igual.
+    expect(RED.test("prefetchAlgo(x)")).toBe(false);
+  });
+
+  it("cero red: la presentación, el dominio y las rutas no hablan por red", () => {
+    const culpables = offenders(RED)
+      .filter((f) => !CON_RED_PERMITIDA.some((capa) => f.startsWith(capa)))
+      .filter((f) => !f.startsWith("tests/"));
+    expect(culpables).toEqual([]);
   });
 
   it("cero persistencia: sin localStorage, sessionStorage ni IndexedDB", () => {

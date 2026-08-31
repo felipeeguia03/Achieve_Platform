@@ -107,7 +107,21 @@ export interface HeroProjection {
 
 export interface MateriaResumen {
   nombre: string;
-  estado: string;
+  /**
+   * El estado general de la materia. **`null` ⇒ no hay lectura y la línea no se
+   * dibuja** (Etapa B2.6).
+   *
+   * Un estado de materia es una lectura de riesgo, y el Risk Engine es la Fase
+   * B6. La `B2.5` lo resolvió devolviendo `'Bajo control'` fijo desde SQL para
+   * toda materia: eso es exactamente el copy que
+   * [`product.md`](../../docs/product.md) §13 prohíbe —*"Bajo control" sin
+   * lectura confiable del Risk Engine*—, y con datos persistidos la pantalla se
+   * lo estaba afirmando al estudiante sin que nadie lo hubiera evaluado.
+   *
+   * En el Track A sigue siendo un `string`: ahí el estado **es dato del
+   * escenario**, y un fixture que simula una lectura no afirma nada sobre nadie.
+   */
+  estado: string | null;
   /** `null` ⇒ "Sin avance registrado", que no es lo mismo que "hace 0 días". */
   ultimoAvance: string | null;
   tono: "neutral" | "urgencia";
@@ -153,8 +167,15 @@ export interface MateriaProps {
   materia: string;
   /** `null` ⇒ no hay examen registrado; se omite la línea. */
   examen: string | null;
-  /** El chip de estado general de la materia. */
-  chip: Chip;
+  /**
+   * El chip de estado general de la materia. **`null` ⇒ no se renderiza**, en
+   * vez de renderizarse con una afirmación sin fuente (Etapa B2.6).
+   *
+   * Mismo motivo que `MateriaResumen.estado`: sin Risk Engine (Fase B6) nadie
+   * evaluó esta materia, y *"Bajo control"* o *"Necesita atención"* serían
+   * juicios que el sistema no puede sostener.
+   */
+  chip: Chip | null;
   ultimoAvance: string | null;
   hero: HeroProjection;
   catedraYVos: { catedra: ColumnaFuente; vos: ColumnaFuente } | null;

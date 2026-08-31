@@ -278,14 +278,19 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Track B, Fase B2 — Dominio de ejecución.** 🟡 **3 etapas completas y 2 parciales.**
+**Fase actual: Track B, Fase B2 — Dominio de ejecución.** 🟡 **4 etapas completas y 2 parciales.**
 
 Track A y la Fase A2 están cerrados. Las nueve superficies existen, todos los estados críticos son
 alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner. B1 está
 completa (6/6). En B2, `Action`, `Commitment` y `Evidence` están completas; `Reflection` sigue
-parcial por `C01-051`, y sólo `UX01` lee hoy de Postgres. `UX02`–`UX06` todavía se proyectan desde
-fixtures y las conecta la Etapa B2.6; `UX07`–`UX09` esperan a la Fase B5. B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle
-se construyeron por adelantado en B4.
+parcial por `C01-051`. La Etapa B2.6 **cerró**: `UX01`–`UX06` leen de Postgres con sesión real, y el
+catálogo sintético sigue disponible bajo `?escenario=` explícito. `UX07`–`UX09` esperan a la Fase B5.
+B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle se construyeron por
+adelantado en B4.
+
+⚠️ `progress_entry` está migrada pero **ningún Service la escribe**: el `ProgressUpdated` productivo
+es la Fase B3 (`C01-018`). Con la tabla vacía `UX06` dice *"todavía no hay un cambio de progreso
+confirmado"*, y eso es lo correcto — no se siembra una fila para llenar la pantalla.
 
 Dónde vive cada cosa hoy:
 

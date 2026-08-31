@@ -343,6 +343,84 @@ export const copy = {
   "PROGRESO.FUENTE_PREFIJO": "Fuente:",
   "PROGRESO.BITACORA": "Bitácora",
   "PROGRESO.QUE_SIGUE": "Qué sigue",
+
+  /**
+   * Los tres avisos de `UX06`, y por qué son tres frases y no una.
+   *
+   * `VI.6` §7.1 separa *"todavía sin cambio confirmado"* —espera, o resultado
+   * que no llegó— de *"no cambió"*, que es una afirmación que alguien hizo. La
+   * tercera es la que ni siquiera tiene con qué mirar. Colapsarlas convierte
+   * una espera en un veredicto.
+   */
+  "PROGRESO.PENDIENTE": "Todavía no hay un cambio de progreso confirmado.",
+  "PROGRESO.SIN_EVIDENCIA": "Sin evidencia registrada",
+  "PROGRESO.SIN_ENTREGA": "Todavía no entregaste nada en esta unidad.",
+  "PROGRESO.SIN_INFORMACION_AVANCE": "Sin información suficiente para mostrar un avance.",
+  "PROGRESO.NO_CAMBIO": "El resultado confirma que ninguna dimensión cambió.",
+  /** El hecho, cuando la magnitud no es mostrable. Ver `C01-019`. */
+  "PROGRESO.CAMBIO_SIN_MAGNITUD": "cambió",
+  "PROGRESO.CONSERVA": "conserva su estado",
+  "PROGRESO.FUENTE_EVIDENCIA_VALIDADA": "Evidencia validada",
+
+  // ── Carga · lo que NO es un vacío de dominio (Etapa B2.6) ─────────────────
+  /**
+   * Estos cuatro no están en la lista de `VACIOS` de `tests/vacios.test.tsx`, y
+   * es a propósito: **un fallo de carga no es una ausencia de dominio**.
+   *
+   * `HOY.VACIO` dice *"hoy no hay una acción recomendada"* — una afirmación
+   * sobre el mundo, que sólo se puede hacer cuando el ADE contestó. Usarla
+   * cuando en realidad no se pudo preguntar es inventar: la pantalla estaría
+   * afirmando algo que no sabe. Por eso el copy de acá dice qué pasó y qué
+   * hacer, y **nunca** habla del estado académico del estudiante.
+   */
+  "CARGA.SIN_SESION.TITULO": "No pudimos identificarte",
+  "CARGA.SIN_SESION.CUERPO":
+    "Tu sesión no está activa, así que no podemos mostrarte tu día. No es que no tengas nada: es que todavía no sabemos quién sos.",
+  "CARGA.SIN_PADRON.TITULO": "Tu cuenta todavía no está habilitada",
+  "CARGA.SIN_PADRON.CUERPO":
+    "Te reconocemos, pero tu institución todavía no te habilitó en el padrón. Cuando lo haga, acá vas a ver tu día.",
+  "CARGA.ERROR.TITULO": "No pudimos cargar esto",
+  "CARGA.ERROR.CUERPO":
+    "Falló la conexión con el servidor, así que no sabemos en qué estado estás. Lo que veas al reintentar es lo real.",
+  "CTA.CARGA.REINTENTAR": "REINTENTAR",
+
+  // ── Las cinco dimensiones, y las tres formas de no tener dato ─────────────
+  /**
+   * Los nombres salen de `product.md` §6 y son **vocabulario canónico del
+   * dominio**, no copy libre: renombrar una dimensión acá la renombraría en
+   * todo el producto. Hasta la Etapa B2.6 vivían inline en los fixtures, que
+   * es donde no se los podía reusar.
+   *
+   * Los tres valores de ausencia son los que `design-system.md` §4.1 declara
+   * distintos entre sí: **"no evaluado" ≠ "sin información" ≠ `0`**. Se
+   * escriben separados justamente para que nadie los colapse en uno.
+   */
+  "DIMENSION.RECORRIDO": "Recorrido",
+  "DIMENSION.PRACTICA": "Práctica",
+  "DIMENSION.DOMINIO": "Dominio",
+  "DIMENSION.CONFIANZA": "Confianza",
+  "DIMENSION.RECENCIA": "Recencia",
+  /** Existe el eje y nadie lo midió. **No es "bajo".** */
+  "DIMENSION.NO_EVALUADO": "no evaluado",
+  /** No hay datos suficientes para decir nada. **No es `0`.** */
+  "DIMENSION.SIN_INFORMACION": "sin información",
+
+  // ── UX02 desde la base (Etapa B2.6) ───────────────────────────────────────
+  /**
+   * El aviso que reemplaza a la síntesis que no se puede hacer todavía.
+   *
+   * `VI.2` §8.6 lo autoriza con todas las letras: *"si no existe semántica
+   * aprobada para mostrar una dimensión, **omite la síntesis** o muestra un
+   * hecho comprensible; nunca expone un valor interno bruto"*. `topic_progress`
+   * guarda `NUMERIC` sin unidad ni escala —eso es `C01-019`, gate `H`—, así que
+   * el número no se muestra y la fila dice qué falta, no cuánto hay.
+   */
+  "MATERIA.SIN_SEMANTICA": "Todavía no podemos resumir esta dimensión.",
+
+  // ── Provenance (`product.md` §7) ──────────────────────────────────────────
+  /** Falta la fuente o falta el estado de verificación: no se afirma ninguno. */
+  "PROVENANCE.NO_DISPONIBLE": "Fuente o estado de verificación no disponible",
+  "PROVENANCE.DISPUTADO": "Dato en revisión · hay versiones distintas",
 } as const;
 
 export type CopyId = keyof typeof copy;

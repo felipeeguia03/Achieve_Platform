@@ -6,6 +6,11 @@ import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
 import { hoyReal } from "./repositorios/hoy";
+import { materiaReal } from "./repositorios/materia";
+import { accionLecturaReal } from "./repositorios/accion-lectura";
+import { compromisoLecturaReal } from "./repositorios/compromiso-lectura";
+import { evidenciaLecturaReal } from "./repositorios/evidencia-lectura";
+import { progresoLecturaReal } from "./repositorios/progreso-lectura";
 import { institucionesReal } from "./repositorios/instituciones";
 import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
@@ -21,7 +26,19 @@ import {
 } from "./servicios/ingesta";
 import { recomendarPara as recomendarPuro, type ResultadoDelMotor } from "./servicios/motor";
 import { proyectarDia } from "./servicios/proyeccion-hoy";
-import type { HoyProps } from "@/lib/domain/view-models";
+import { proyectarMateria } from "./servicios/proyeccion-materia";
+import { proyectarAccion } from "./servicios/proyeccion-accion";
+import { proyectarCompromiso } from "./servicios/proyeccion-compromiso";
+import { proyectarEvidencia } from "./servicios/proyeccion-evidencia";
+import { proyectarProgreso } from "./servicios/proyeccion-progreso";
+import type {
+  CompromisoProps,
+  EvidenciaProps,
+  HoyProps,
+  MateriaProps,
+  ProgresoProps,
+  ProximaAccionProps,
+} from "@/lib/domain/view-models";
 import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 
@@ -110,4 +127,84 @@ export async function diaDe(
 ): Promise<HoyProps | null> {
   const estado = await hoyReal.estadoDelDia(institutionId, studentId, ahora);
   return estado ? proyectarDia(estado) : null;
+}
+
+/**
+ * `UX02` desde datos persistidos (Etapa B2.6).
+ *
+ * `courseEnrollmentId` es opcional porque `/materia` no lleva id en la URL:
+ * sin él, la función de base elige la cursada de la Action viva. Ponerle un id
+ * a la ruta toca el registro canónico de CTAs, que es contrato — queda
+ * declarado como costura en el roadmap, no resuelto de contrabando.
+ */
+export async function materiaDe(
+  institutionId: string,
+  studentId: string,
+  courseEnrollmentId: string | null = null,
+  ahora: string = new Date().toISOString(),
+): Promise<MateriaProps | null> {
+  const estado = await materiaReal.estadoDeMateria(institutionId, studentId, ahora, courseEnrollmentId);
+  return estado ? proyectarMateria(estado) : null;
+}
+
+/** `UX03` desde datos persistidos (Etapa B2.6). */
+export async function accionDe(
+  institutionId: string,
+  studentId: string,
+  actionId: string | null = null,
+  ahora: string = new Date().toISOString(),
+): Promise<ProximaAccionProps | null> {
+  const estado = await accionLecturaReal.estadoDeAccion(institutionId, studentId, ahora, actionId);
+  return estado ? proyectarAccion(estado) : null;
+}
+
+/** `UX04` desde datos persistidos (Etapa B2.6). */
+export async function compromisoDe(
+  institutionId: string,
+  studentId: string,
+  commitmentId: string | null = null,
+  ahora: string = new Date().toISOString(),
+): Promise<CompromisoProps | null> {
+  const estado = await compromisoLecturaReal.estadoDeCompromiso(institutionId, studentId, ahora, commitmentId);
+  return estado ? proyectarCompromiso(estado) : null;
+}
+
+/**
+ * `UX05` desde datos persistidos (Etapa B2.6).
+ *
+ * ⚠️ `reflexionRequerida` **no tiene default de producto**: `C01-051` está
+ * `OPEN` y elegir uno acá lo cerraría desde el código. El `false` es el valor
+ * con el que hoy se llama, no una decisión sobre cuándo una Reflection es
+ * obligatoria.
+ */
+export async function evidenciaDe(
+  institutionId: string,
+  studentId: string,
+  evidenceId: string | null = null,
+  reflexionRequerida = false,
+  ahora: string = new Date().toISOString(),
+): Promise<EvidenciaProps | null> {
+  const estado = await evidenciaLecturaReal.estadoDeEvidencia(
+    institutionId, studentId, ahora, evidenceId, reflexionRequerida,
+  );
+  return estado ? proyectarEvidencia(estado) : null;
+}
+
+/**
+ * `UX06` desde datos persistidos (Etapa B2.6).
+ *
+ * ⚠️ **Nadie escribe `progress_entry` todavía.** El `ProgressUpdated` productivo
+ * —quién lo emite, con qué causalidad y con qué payload— es la Fase B3 y
+ * `C01-018`. Hasta entonces la pantalla proyecta lo que haya en la tabla, que
+ * con datos sintéticos es lo que siembre la demo, y sin filas dice *"todavía no
+ * hay un cambio confirmado"*: la única lectura honesta.
+ */
+export async function progresoDe(
+  institutionId: string,
+  studentId: string,
+  evidenceId: string | null = null,
+  ahora: string = new Date().toISOString(),
+): Promise<ProgresoProps | null> {
+  const estado = await progresoLecturaReal.estadoDeProgreso(institutionId, studentId, ahora, evidenceId);
+  return estado ? proyectarProgreso(estado) : null;
 }

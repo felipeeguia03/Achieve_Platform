@@ -706,6 +706,13 @@ CREATE TABLE reflection (
 
 ## 10. Schema — progreso, examen, riesgo y eventos
 
+> **Estado de migración — 31 de agosto de 2026.** `progress_entry` **existe en la base** desde
+> `20260831050000_progress_entry.sql` (Etapa B2.6): `UX06` no podía proyectar un resultado de
+> progreso sin ella. Lo que se migró es esta declaración más su invariante `I10` como `CHECK`; **el
+> `ProgressUpdated` productivo sigue siendo la Fase B3** —nadie escribe estas filas todavía— y
+> `entry_kind` **no lleva `CHECK`** porque cerrar su vocabulario es `C01-018`, `OPEN`. Las tablas de
+> examen y riesgo de esta sección siguen sin migrar.
+
 ```sql
 -- ProgressEntry: bundle derivado. Materialización OPCIONAL para la Bitácora.
 CREATE TABLE progress_entry (
@@ -925,7 +932,7 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 | Columna `risk_score` numérico visible | La explicabilidad es obligatoria; un score opaco no es salida válida |
 | Entidad `Review` productiva | El spec usa `review_instance_ref`; no inventa una entidad `Review` |
 | Entidad `RecommendationFeedback` | No aprobada; queda como contrato pendiente |
-| Tabla `Activity` / `TimelineItem` | La Bitácora es composición de lectura sobre objetos existentes |
+| Tabla `Activity` / `TimelineItem` | La Bitácora es composición de lectura sobre objetos existentes. **Desde la B2.6 esa composición es concreta:** `estado_de_progreso()` la arma desde `product_event`, que es el único registro de hechos con instante propio, actor y causa —y append-only (`I12`)—. Reconstruirla desde las columnas de estado no alcanza: `evidence` no tiene `validated_at`, así que *"la validaron"* no tendría fecha |
 | Estados `RESCUE_REQUIRED` / `RESCUE_MATERIALIZED` | Son **condiciones derivadas**, no estados persistidos |
 | Enum de estado por `ProtocolStep` | El spec no lo congela: solo hay un hecho de completion |
 | Tabla `student_model` | `C01-043` sigue `OPEN`: mencionado, no especificado |

@@ -140,14 +140,17 @@ function MateriasQueue({
         style={{ fontSize: "var(--text-body)" }}
       >
         <span style={{ color: "var(--foreground)" }}>{actual.nombre}</span>
-        <span
-          style={{
-            color: actual.tono === "urgencia" ? "var(--urgencia-texto)" : "var(--muted-foreground)",
-            fontSize: "var(--text-label)",
-          }}
-        >
-          {actual.estado}
-        </span>
+        {/* Sin lectura de estado la línea desaparece: ver `MateriaResumen.estado`. */}
+        {actual.estado && (
+          <span
+            style={{
+              color: actual.tono === "urgencia" ? "var(--urgencia-texto)" : "var(--muted-foreground)",
+              fontSize: "var(--text-label)",
+            }}
+          >
+            {actual.estado}
+          </span>
+        )}
       </button>
       {/* Sin avance no es "hace 0 días": es una ausencia, y se ve distinta. */}
       <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>

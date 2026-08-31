@@ -1,6 +1,7 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
 import { t } from "@/lib/content/es-AR";
 import type { HoyProps, MateriaResumen } from "@/lib/domain/view-models";
+import { fechaCorta } from "./tiempo";
 
 /**
  * `UX01` proyectada desde datos persistidos — Etapa B2.5.
@@ -41,23 +42,6 @@ export interface EstadoDelDia {
   contextoIncompleto: boolean;
   materias: Array<Omit<MateriaResumen, "ultimoAvance"> & { ultimoAvanceEn: string | null }>;
   bitacoraDisponible: boolean;
-}
-
-/**
- * *"vie 28 ago"*. En la zona del estudiante, no en la del servidor: un
- * compromiso de las 23:00 en Córdoba no puede aparecer como del día siguiente
- * porque el servidor esté en UTC.
- */
-function fechaCorta(instante: string, zona: string): string {
-  return new Intl.DateTimeFormat("es-AR", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    timeZone: zona,
-  })
-    .format(new Date(instante))
-    // `Intl` da "lun, 31 ago"; el formato del producto es "lun 31 ago".
-    .replace(/[.,]/g, "");
 }
 
 export interface RepositorioDeHoy {

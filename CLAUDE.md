@@ -87,10 +87,16 @@ segundos se corrió con resultado PASS** (reportado por el owner, 30 ago 2026).
 estudiante, la frontera Controller → Service → Repository, `product_event`/`audit_log` append-only y
 el cliente de autorización del CRM.
 
-**Fase B2 — Dominio de ejecución.** 🟡 **EN CURSO: 3 completas, 2 parciales.** `Action`,
+**Fase B2 — Dominio de ejecución.** 🟡 **EN CURSO: 4 completas, 2 parciales.** `Action`,
 `Commitment` y `Evidence` están completas; `Reflection` está bloqueada en su configuración por
-`C01-051`, y `B2.5` conectó `UX01` a la base. La Etapa B2.6 conecta `UX02`–`UX06`; `UX07`–`UX09`
-esperan a la Fase B5 porque no hay tablas de examen.
+`C01-051`. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Postgres con sesión real, cada una con una
+función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` esperan a la Fase B5
+porque no hay tablas de examen.
+
+⚠️ **`progress_entry` existe pero nadie la escribe.** La B2.6 la migró —`data-model.md` §10 ya la
+declaraba— para que `UX06` pudiera proyectar un resultado de progreso. El `ProgressUpdated`
+productivo es la Fase B3 (`C01-018`), y con la tabla vacía la pantalla dice *"todavía no hay un
+cambio de progreso confirmado"*, que es lo correcto.
 
 **Trabajo adelantado.** B2b va **1 / 3** con la ingesta asistida del ADL. En B4 ya existen el ADE
 v1 determinista, el reloj del lifecycle y la materialización transaccional de recomendaciones.
@@ -106,7 +112,7 @@ tiene siete componentes**. Ver `roadmap.md` → Fase B5.
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
 
-**Verificación de base:** `npm run db:verify` — **87 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **118 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →

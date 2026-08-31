@@ -43,7 +43,7 @@ q "insert into resource (offering_id,topic_id,resource_type,title,source_type,ri
    select '$OFF', t.id, 'apunte', 'Guía de ' || t.name, 'instructor', 'unknown'
      from topic t where t.offering_id='$OFF';" >/dev/null
 
-echo "→ Alcance del Parcial 1: U1 y U2 (declarado, no inferido de `scope`)"
+echo '→ Alcance del Parcial 1: U1 y U2 (declarado, no inferido de scope)'
 q "insert into assessment_topic (assessment_id, topic_id)
    select a.id, t.id from assessment a, topic t
     where a.offering_id='$OFF' and a.title='Parcial 1'

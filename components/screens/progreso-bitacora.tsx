@@ -101,8 +101,15 @@ export function ProgresoBitacora({
           {bitacora.map((grupo) => (
             <div key={grupo.ciclo} data-ciclo={grupo.ciclo} className="hairline-t pt-2">
               <p style={{ fontSize: "var(--text-label)", fontWeight: 600 }}>{grupo.ciclo}</p>
-              {grupo.entradas.map((e) => (
-                <div key={e.titulo} style={{ padding: "4px 0" }}>
+              {/*
+                La key lleva la posición además del título: con datos reales, un
+                mismo ciclo puede registrar dos veces el mismo hecho —una
+                resubmission vuelve a emitir "Presentaste evidencia"— y dos keys
+                iguales hacen que React reutilice el nodo equivocado. Con
+                fixtures no pasaba: los títulos de un ciclo eran únicos.
+              */}
+              {grupo.entradas.map((e, i) => (
+                <div key={`${i}-${e.titulo}`} style={{ padding: "4px 0" }}>
                   <span style={{ fontSize: "var(--text-body)" }}>{e.titulo}</span>
                   <ReglaDeNegocio>{e.detalle}</ReglaDeNegocio>
                   <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>

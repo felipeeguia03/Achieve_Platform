@@ -57,10 +57,67 @@ describe("§3.2 · sólo el Repository toca la base", () => {
     expect(culpables).toEqual([]);
   });
 
-  it("el cliente con `service_role` se construye en un solo lugar", () => {
+  /**
+   * **Corregido en la B2.6: el guard mira la CLAVE, no la llamada.**
+   *
+   * La versión anterior marcaba cualquier `createClient(` fuera de
+   * `lib/server/supabase.ts`, y con eso reprobó a `lib/client/supabase-navegador.ts`
+   * —que construye el cliente **de Auth del navegador, con la clave `anon`**, que
+   * es justamente lo que ADR-005 y `AGENTS.md` §6 mandan hacer—.
+   *
+   * La regla nunca fue *"nadie llama a `createClient`"*: es **`service_role` vive
+   * en un solo archivo del servidor**. Es el mismo error que el guard de `setReal`
+   * cometía con los identificadores: castigaba la forma en vez de la regla, y un
+   * guard así enseña a esquivarlo en vez de a cumplirlo.
+   */
+  it("la clave `service_role` se usa en un solo lugar", () => {
     const culpables = [...fuentes("app"), ...fuentes("components"), ...fuentes("lib")]
       .filter((f) => f !== "lib/server/supabase.ts")
-      .filter((f) => /createClient\(/.test(codigo(f)));
+      .filter((f) => /SERVICE_ROLE|service_role/.test(codigo(f)))
+      .map((f) => `${f}: la clave de servicio sale de lib/server/supabase.ts`);
+    expect(culpables).toEqual([]);
+  });
+
+  /**
+   * Lo que el guard viejo sí protegía —que los clientes no se construyan en
+   * cualquier lado— se conserva, pero con la lista explícita de los dos lugares
+   * legítimos. Son dos porque son dos fronteras distintas: `service_role` contra
+   * la base, y `anon` contra Auth. Un tercero es un lugar más donde revisar qué
+   * clave se usó.
+   */
+  it("un cliente de Supabase se construye en exactamente dos lugares", () => {
+    const PERMITIDOS = ["lib/server/supabase.ts", "lib/client/supabase-navegador.ts"];
+    const culpables = [...fuentes("app"), ...fuentes("components"), ...fuentes("lib")]
+      .filter((f) => !PERMITIDOS.includes(f))
+      .filter((f) => /createClient\(/.test(codigo(f)))
+      .map((f) => `${f}: el cliente se pide a lib/server/ o a lib/client/, no se arma acá`);
+    expect(culpables).toEqual([]);
+  });
+
+  /**
+   * La otra mitad de la frontera del navegador (Etapa B2.6). `server-only` hace
+   * fallar el build si un componente de cliente importa el módulo del servidor,
+   * pero eso protege **una** dirección. Esto protege la otra: que en
+   * `lib/client/` no aparezca una variable de entorno que sea un secreto.
+   *
+   * `NEXT_PUBLIC_*` viaja al navegador por definición y `NODE_ENV` lo pone el
+   * framework. Cualquier otra sí es un secreto, y leerla acá la filtra en el
+   * render del servidor sin que nada avise.
+   */
+  it("`lib/client/` sólo lee variables de entorno públicas", () => {
+    const culpables = fuentes("lib/client").flatMap((f) => {
+      const usadas = [...codigo(f).matchAll(/process\.env\.([A-Z0-9_]+)/g)].map((m) => m[1]);
+      return usadas
+        .filter((v) => !v.startsWith("NEXT_PUBLIC_") && v !== "NODE_ENV")
+        .map((v) => `${f}: ${v} no es pública`);
+    });
+    expect(culpables).toEqual([]);
+  });
+
+  it("`lib/client/` no importa nada del servidor", () => {
+    const culpables = fuentes("lib/client")
+      .filter((f) => /from\s+"(@\/lib\/server|server-only)|from\s+"\.\.\/server/.test(codigo(f)))
+      .map((f) => `${f}: el navegador habla por /api/*, no importa el backend`);
     expect(culpables).toEqual([]);
   });
 
