@@ -95,6 +95,15 @@ TRACK B ─── cada fase tiene su gate ────────────�
 
 ## Fase 0 — Cerrar el Track A
 
+> ✅ **Test de comprensión de 10 segundos: corrido, con resultado PASS.** Reportado por el owner el
+> 30 de agosto de 2026. Con esto **la Fase 0 queda cerrada**: era el último criterio de Done y el
+> único que un agente no podía ejecutar.
+>
+> ⚠️ **Las observaciones por pantalla no están registradas acá.** Este documento sólo asienta el
+> resultado que reportó el owner; nadie más lo presenció. El guion de
+> [`guion-focus-group.md`](guion-focus-group.md) tiene una fila por pantalla — si esas respuestas se
+> quieren conservar como evidencia, hay que volcarlas antes de que se pierdan.
+
 **Objetivo.** Las nueve superficies `UX01`–`UX09` existen como componentes reales con el sistema
 visual final, recorribles por el Golden Path, con todos los estados críticos de sus specs
 representados como escenarios sintéticos. Apto para focus groups.
@@ -1196,6 +1205,35 @@ no cambian por sí solos el estado de los ADRs ni habilitan datos reales.
 
 **Done cuando:** cada ADR está `ACCEPTED` o explícitamente `DEFERRED` con su fase bloqueada marcada.
 
+### Los cuatro no se deciden en el mismo orden — 30 de agosto de 2026
+
+Al preparar las decisiones apareció que **la secuencia importa más que el conjunto**:
+
+**1. `ADR-006` no bloquea el arranque de B1.** El encabezado de la Fase B1 dice que entra *"desde el
+momento en que exista **un solo usuario real**"*, y `B1.6` exige explícitamente datos sintéticos.
+`B1.1`–`B1.5` corren enteras sin tocar un dato de una persona.
+
+**2. `ADR-005` no hace falta cerrarlo entero.** Sus seis ítems se separan en un **Bloque A** —tres
+ratificaciones de un diseño que ya existe— y un **Bloque B** —tres cosas todavía por diseñar—.
+Verificado contra este roadmap: `B1.1`–`B1.5` no tocan Storage de `Evidence` (aparece en `B2.3`) ni
+Broadcast, y sólo `B1.6` necesita el mapping de `institutionId`.
+
+**3. `ADR-006` tiene el plazo más largo** porque necesita asesoría legal, y **sus cinco preguntas no
+son todas legales**: tres las puede contestar producto hoy.
+
+**Secuencia recomendada, no vinculante:**
+
+| Orden | Qué | Por qué |
+|---|---|---|
+| 1.º | Aceptar **`ADR-005` Bloque A**, con Bloque B `DEFERRED` | Desbloquea `B1.1`–`B1.5` sin comprometer lo no diseñado. No depende de nadie externo |
+| 2.º | Arrancar **B1 sobre datos sintéticos**, en paralelo | El trabajo de fundación no espera al abogado |
+| 3.º | **`ADR-006`** con asesoría, en paralelo desde ya | Es el de plazo más largo y **debe cerrar antes del primer usuario real** |
+| 4.º | `ADR-003` y `ADR-004` | Bloquean B6 y B4: hay tiempo |
+
+> ⚠️ **Lo que esta secuencia no relaja.** `ADR-006` sigue siendo bloqueo absoluto para cualquier dato
+> de una persona real. Arrancar B1 antes **no** adelanta ese permiso: lo separa de un trabajo que
+> genuinamente no lo necesita.
+
 ---
 
 ## Fase B1 — Fundación
@@ -1365,7 +1403,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | 🟡 **8 / 8 etapas · falta el test con personas reales** | 8 / 8 |
+| Fase 0 — Cerrar Track A | ✅ **COMPLETA** — 8/8 etapas y el test de 10 segundos corrido | 8 / 8 |
 | Fase A2 — Shell de aplicación | ✅ **5 / 5 etapas completas** | 5 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |

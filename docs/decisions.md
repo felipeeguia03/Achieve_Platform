@@ -354,16 +354,38 @@ El mismo paquete aportó el contrato vigente de autorización CRM, documentado e
 `C01-041` en un artefacto parcial y reduce `C01-039`, pero no resuelve Storage/permisos de Evidence,
 operación/runtime ni los flujos futuros de `C01-040`.
 
-### Qué falta decidir
+### Qué falta decidir — **y no hace falta decidirlo todo junto**
 
-1. Ratificar o rechazar formalmente Supabase como motor/proveedor de auth.
-2. Ratificar el scoping institucional en Service/Repository con RLS deny-by-default como defensa en
-   profundidad, y definir cómo se prueba/monitorea.
-3. Ratificar la separación Controller → Service → Repository y el runtime/deploy físico del backend.
-4. Cerrar Storage de `Evidence` (fotos, PDFs, audio), permisos, retención y borrado junto con ADR-006.
-5. Definir operación de Broadcast/outbox, rotación de secretos y observabilidad.
-6. Definir si `institutionId` de CRM es también la identidad de Plataforma o requiere una tabla de
-   correspondencia; el contrato actual no lo especifica.
+Los seis ítems no tienen el mismo peso ni bloquean lo mismo. **La Fase B1 sólo necesita los tres
+primeros**, que son *ratificaciones* de un diseño que ya existe; los otros tres son *diseño
+todavía por hacer* y bloquean fases posteriores.
+
+Verificado contra `roadmap.md`: `B1.1`–`B1.5` no tocan Storage de `Evidence` —eso aparece recién en
+**`B2.3`**— ni Broadcast. Sólo `B1.6` necesita el ítem 6.
+
+#### Bloque A — lo que B1 necesita. Son ratificaciones, no diseño
+
+| # | Qué se ratifica | Opciones reales | Recomendación *(no vinculante)* |
+|---|---|---|---|
+| 1 | **Supabase** como Postgres + Auth | (a) Supabase · (b) Postgres gestionado + auth propia · (c) otro BaaS | **(a).** El equipo ya lo opera en producción con 29 migraciones; RLS nativo encaja con el aislamiento institucional que exige Parte I §29 |
+| 2 | **Scoping en Service/Repository + RLS deny-by-default** como defensa en profundidad | (a) las dos capas · (b) sólo RLS · (c) sólo Service | **(a).** (b) mete reglas de negocio en la base, que el propio diseño prohíbe; (c) deja la API autoexpuesta sin cierre |
+| 3 | **Controller → Service → Repository**, y dónde corre | (a) capas + runtime junto al frontend · (b) capas + servicio aparte · (c) sin capas | **(a) o (b);** lo que no es opción es (c). El runtime se puede mover después sin tocar dominio |
+
+**Coste de equivocarse en el Bloque A: bajo.** `data-model.md` escribe el schema en **SQL estándar de
+Postgres** y marca qué es específico del proveedor, así que (1) es reversible con trabajo acotado.
+
+#### Bloque B — se puede diferir sin frenar B1
+
+| # | Qué falta | Qué bloquea | Por qué puede esperar |
+|---|---|---|---|
+| 4 | **Storage de `Evidence`:** motor, permisos, retención, borrado | `B2.3` | La *retención y el borrado* dependen de [ADR-006](#adr-006), que tiene el plazo más largo. El *motor* no |
+| 5 | **Operación:** Broadcast/outbox, rotación de secretos, observabilidad | `B3` en adelante | Es operación, no dominio. No cambia el schema |
+| 6 | **`institutionId`: ¿identidad compartida con CRM o tabla de correspondencia?** | `B1.6` | `B1.1`–`B1.5` no lo tocan. Depende de `C01-039` y de [ADR-003](#adr-003) |
+
+> **Recomendación de secuencia (no vinculante):** aceptar **ADR-005 alcanzado al Bloque A**, con el
+> Bloque B declarado `DEFERRED` y su fase bloqueada marcada. Eso desbloquea `B1.1`–`B1.5` sin
+> comprometer nada de lo que todavía no está diseñado, y es lo que el propio criterio de Done de la
+> Fase B0 admite: *"`ACCEPTED` **o explícitamente `DEFERRED`** con su fase bloqueada marcada"*.
 
 ### Insumos relevantes, NO decisión
 
@@ -410,13 +432,78 @@ Comprehension Testing: `NOT AUTHORIZED`", "no se autorizan estudiantes".
 
 ### Qué falta decidir
 
-1. **Base legal y consentimiento.** Qué se le pide al estudiante, cómo, y qué pasa si lo revoca.
-2. **Qué ve la institución.** El spec congela "agregado por defecto; detalle individual sólo cuando
-   está autorizado y es necesario para intervenir", y prohíbe exponer chats, reflexiones íntimas o
-   evidencia cruda por defecto. Falta la implementación concreta de esa regla.
-3. **Retención y borrado.** Cuánto tiempo se conserva una `Evidence`, una `Reflection`, un mensaje.
-4. **Derechos sobre el material académico** (`rights_status`): qué se almacena y qué solo se enlaza.
-5. **Golden dataset:** qué universidad/carrera, y qué fuentes se pueden usar legalmente.
+Las cinco preguntas, con opciones. **Tres las puede contestar producto hoy; dos necesitan asesoría
+legal**, y esa separación es la que permite avanzar en paralelo en vez de esperar a un solo bloque.
+
+> ⚠️ **Este ADR no da asesoramiento legal y no cita normativa como si fuera un hecho verificado.**
+> Donde abajo se nombra la ley argentina de protección de datos personales (**25.326**) o su
+> autoridad de aplicación (**AAIP**), es para que asesoría legal **confirme o corrija** el marco
+> aplicable y su estado vigente — incluida cualquier reforma posterior. Nada de esto se implementa
+> sobre la palabra de este documento.
+
+#### 1. Base legal y consentimiento — **necesita asesoría legal**
+
+| Opción | Qué implica | Coste |
+|---|---|---|
+| (a) **Consentimiento del estudiante**, otorgado en el producto | El estudiante es el titular y decide. Revocable | Hay que diseñar el flujo de revocación y qué pasa con lo ya producido |
+| (b) **Convenio institucional**, la universidad aporta la base | Menos fricción de alta | El estudiante no eligió. Choca con *"agregado por defecto"* si la institución asume que puede ver todo |
+| (c) **Las dos**: convenio para el padrón, consentimiento para lo que el estudiante produce | Separa *estar habilitado* de *entregar tu trabajo* | Dos artefactos que mantener |
+
+**Recomendación (no vinculante): (c).** Es la que ya está implícita en el producto — el padrón se
+autoriza por CRM (`platform-integration-contract.md`) y la `Evidence` la produce el estudiante.
+
+**Preguntas para asesoría, no para producto:** qué base legal aplica a cada mitad; **si hay
+estudiantes menores de edad** y qué cambia; qué exige la revocación sobre datos ya derivados.
+
+#### 2. Qué ve la institución — **producto puede decidirlo hoy**
+
+El spec ya congela la regla: *"agregado por defecto; detalle individual sólo cuando está autorizado y
+es necesario para intervenir"*, y prohíbe exponer chats, reflexiones o evidencia cruda por defecto.
+**Falta la implementación, no la regla.**
+
+| Qué definir | Opciones |
+|---|---|
+| **Umbral de agregación** | (a) `n` mínimo por cohorte antes de mostrar cualquier métrica · (b) sin umbral |
+| **Cómo se autoriza el detalle** | (a) el estudiante lo habilita · (b) lo habilita una intervención registrada · (c) rol institucional con `audit_log` |
+| **Qué nunca se expone** | `Reflection`, contenido crudo de `Evidence`, mensajes — **con o sin autorización** |
+
+**Recomendación (no vinculante):** umbral `n` mínimo, detalle por intervención registrada y
+auditada, y una lista corta de campos **jamás exponibles** escrita en `data-model.md` como
+constraint, no como convención.
+
+#### 3. Retención y borrado — **producto decide, asesoría confirma plazos**
+
+| Objeto | Opciones de retención |
+|---|---|
+| `Evidence` (archivo) | (a) mientras dure el cursado · (b) N ciclos · (c) hasta que el estudiante lo borre |
+| `Reflection` | (a) igual que Evidence · (b) más corta: es lo más íntimo del producto |
+| `product_event` / `audit_log` | **Append-only.** El borrado de un dato personal **no** puede borrar el rastro de auditoría — hay que decidir cómo se concilia |
+
+**El punto difícil, y hay que nombrarlo:** `B1.5` exige `audit_log` **append-only**, y un derecho de
+supresión empuja en la dirección contraria. La salida habitual es **borrar el contenido y conservar
+el hecho** (quién, cuándo, sobre qué objeto), pero eso es exactamente lo que asesoría tiene que
+validar antes de que se escriba el schema.
+
+#### 4. Derechos sobre el material académico (`rights_status`) — **producto decide**
+
+| Opción | Qué implica |
+|---|---|
+| (a) **Sólo se enlaza** el material de cátedra; nunca se copia | Cero riesgo de derechos. Depende de que el enlace siga vivo |
+| (b) **Se almacena** con `rights_status` declarado | Sobrevive al enlace roto. Hay que sostener el estado |
+| (c) Mixto: se enlaza lo de terceros, se almacena lo que produce el estudiante | — |
+
+**Recomendación (no vinculante): (c).** Es coherente con lo que el producto ya hace: la `Evidence` es
+del estudiante; el recurso de cátedra es de la cátedra. `UX09` ya dice *"RECURSO CONFIGURADO"* y no
+lo copia.
+
+#### 5. Golden dataset — **bloqueado por 1, y es el de plazo más largo**
+
+`C01-042` está gateado *"antes de piloto institucional"*. **No se puede elegir universidad y carrera
+antes de saber con qué base legal se piden los datos**, así que esta pregunta **depende de la 1** y
+no se puede adelantar.
+
+Lo que sí se puede hacer sin decidir nada: **seguir con el catálogo sintético**, que es lo que el
+Track A ya usa y lo que `B1.6` exige explícitamente para los contract tests del CRM.
 
 ### Regla operativa mientras siga `PENDING`
 

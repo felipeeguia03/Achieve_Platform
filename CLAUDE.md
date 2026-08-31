@@ -72,11 +72,14 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-**Fase 0 — Cerrar el Track A.** 🟡 **8 / 8 etapas completas.** Las nueve superficies existen, todos
-los estados críticos son alcanzables y el Golden Path se recorre por clic.
+**Fase 0 — Cerrar el Track A.** ✅ **COMPLETA.** Las nueve superficies existen, todos los estados
+críticos son alcanzables, el Golden Path se recorre por clic y **el test de comprensión de 10
+segundos se corrió con resultado PASS** (reportado por el owner, 30 ago 2026).
 
-**Falta ejecutar el test de comprensión de 10 segundos con personas reales.** El guion está en
-[`docs/guion-focus-group.md`](docs/guion-focus-group.md); correrlo no lo puede hacer un agente.
+**Fase B0 — Cerrar decisiones.** Es lo que sigue, y **no se decide todo junto.** `ADR-005` se puede
+aceptar alcanzado a su **Bloque A** —tres ratificaciones— y eso desbloquea `B1.1`–`B1.5`;
+[ADR-006](docs/decisions.md#adr-006) **no** bloquea el arranque de B1, sólo el primer usuario real.
+Secuencia recomendada en `roadmap.md`, Fase B0.
 
 **Fase A2 — Shell de aplicación.** ✅ **5 / 5 etapas.** Navegación lateral y topbar, paleta `⌘K`,
 la primitiva `Ausencia`, la comparación con las capturas y la cabecera de panel con sus nueve
@@ -113,8 +116,8 @@ Superficies: `UX01`–`UX09`. **Las nueve existen** como componente real con rut
 `app/(student)/`. **No existe `UX10`.** Las 18 CTAs son alcanzables y todos sus destinos tienen
 pantalla.
 
-**Ningún ADR bloquea la Fase 0.** [ADR-016](docs/decisions.md#adr-016) está `PENDING` pero solo
-afecta al recorrido por clic de la 0.8: ninguna de las 18 CTAs lleva a `UX07`.
+[ADR-016](docs/decisions.md#adr-016) sigue `PENDING`, pero sólo afecta al recorrido por clic:
+ninguna de las 18 CTAs lleva a `UX07`, que se alcanza por navegación del menú.
 
 Para ver cualquier estado crítico sin panel de debug: `?escenario=<ID>` en **cualquiera** de las
 nueve rutas.

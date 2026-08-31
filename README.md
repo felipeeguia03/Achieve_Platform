@@ -12,8 +12,8 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
 - **Track A:** experiencia clickeable con datos sintéticos, sin red ni persistencia. **Las 8 etapas
   de la Fase 0 están completas.** Las nueve superficies `UX01`–`UX09` existen, todos los estados
   críticos de sus specs son alcanzables con URL propia, y el Golden Path se recorre por clic de
-  punta a punta. **Falta ejecutar el test de comprensión de 10 segundos con personas reales**
-  ([guion](docs/guion-focus-group.md)).
+  punta a punta, y **el test de comprensión de 10 segundos se corrió con resultado PASS**
+  ([guion](docs/guion-focus-group.md)). **La Fase 0 está cerrada.**
 - **Fase A2 — shell de aplicación: completa.** Navegación lateral, topbar con breadcrumb, paleta
   `⌘K`, la primitiva `Ausencia` y la cabecera de panel. La comparación lado a lado con las capturas
   está en [`docs/design-system-capturas.md`](docs/design-system-capturas.md) §14: **siete
