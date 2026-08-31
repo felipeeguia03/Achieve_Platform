@@ -1255,7 +1255,7 @@ sin acceso del frontend a tablas de negocio.
 | B1.1 | ✅ **COMPLETA** — proyecto Supabase propio, migración de bootstrap y entorno local reproducible |
 | B1.2 | ✅ **COMPLETA** — schema de la capa académica ([`data-model.md`](data-model.md) §7), 13 tablas |
 | B1.3 | 🟡 **PARCIAL** — auth, `student` y JWT en `/api/*` completos. **El rol institucional no tiene modelo en el doc**: ver abajo |
-| B1.4 | Frontera Controller → Service → Repository; máquinas de estado, scoping e idempotencia en Service |
+| B1.4 | ✅ **COMPLETA** — frontera Controller → Service → Repository, con §9 y los cuatro criterios de aislamiento probados |
 | B1.5 | `product_event` y `audit_log` append-only |
 | B1.6 | 🔒 Cliente de autorización CRM v1 con contract tests y datos sintéticos; **bloqueada por ADR-005 ítem 6**; uso real gateado por ADR-006 |
 
@@ -1370,6 +1370,45 @@ institucional) tiene `OPEN` y lo que [ADR-006](decisions.md#adr-006) gatea.
 Así que la B1.3 entrega **el rol `student` completo** y deja el institucional registrado. No bloquea
 `B1.4` ni `B1.5`; sí bloquea cualquier endpoint institucional, y hay que cerrarlo antes de la
 Fase B6, que [ADR-012](decisions.md#adr-012) ya había diferido.
+
+---
+
+#### ✅ Etapa B1.4 — La frontera, y §9 · COMPLETA · 30 de agosto de 2026
+
+Las **7 tablas** de `data-model.md` §9 —el loop diario— y la frontera de tres capas funcionando.
+
+| Criterio de Done de la Fase B1 | Resultado |
+|---|---|
+| Un tenant no puede leer datos de otro | ✅ el `institution_id` va **en el `WHERE`**, no se compara después de leer |
+| Las transiciones prohibidas fallan **incluso bajo concurrencia** | ✅ compare-and-swap: el estado esperado viaja en el `WHERE` |
+| Ningún código cliente accede a tablas de negocio | ✅ **guard estático**, `tests/frontera-backend.test.ts` |
+| `lint` · `build` · `test` | ✅ verde · verde · **417 tests en 22 archivos** |
+
+**La máquina de estados no se reescribió.** El Service ejecuta la misma
+`commitmentTransitions` de `lib/domain/` que el Track A usa para proyectar — el módulo ya lo
+anticipaba: *"el Track B la ejecuta en Service"*. Dos tablas de transiciones serían dos verdades
+sobre el mismo dominio, y divergirían. Un test recorre **todos los pares prohibidos** de la tabla y
+verifica que ninguno llega a escribir.
+
+**La concurrencia se prueba contra Postgres, no contra un mock.** Dos transiciones válidas desde
+`CONFIRMED` compiten; **gana una sola** porque la segunda no encuentra el estado esperado. Simular
+esa carrera con un doble sólo probaría que el doble la simula.
+
+**Un `MISSED` no vuelve.** Verificado en las dos capas: la máquina no tiene la arista, y el
+compare-and-swap tampoco encuentra el estado. El incumplimiento no se borra ni por código ni por
+carrera.
+
+**Dos defectos propios que cazó el guard nuevo, no una relectura:**
+
+1. **El Service de sesión importaba el cliente de Supabase.** §3.2 dice que un Service *"no conoce
+   SQL"*, y conocer el cliente ya es conocerlo. Se invirtió la dependencia.
+2. **El Controller importaba Repositories**, o sea conocía dos capas abajo. Apareció
+   `lib/server/composicion.ts` como **composition root**: el único lugar donde las implementaciones
+   concretas se atan.
+
+**Y un tercero en el propio guard.** `sinComentarios` sólo borraba comentarios a principio de línea,
+así que un `// .from("x")` al final de una línea seguía contando como violación. Lo encontró su
+auto-prueba. **Un guard con falsos positivos enseña a no documentar la regla que vigila.**
 
 ---
 

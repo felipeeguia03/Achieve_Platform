@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { tokenDelHeader } from "@/lib/server/http";
-import { resolverSesion } from "@/lib/server/servicios/sesion";
+import { resolverSesion } from "@/lib/server/composicion";
 
 /**
  * `GET /api/sesion` — Controller. Etapa B1.3.

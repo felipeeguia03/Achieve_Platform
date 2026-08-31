@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { EstudianteDeSesion, RepositorioDeEstudiantes } from "../servicios/sesion";
 import { clienteDeServicio } from "../supabase";
 
 /**
@@ -7,12 +8,6 @@ import { clienteDeServicio } from "../supabase";
  * ([`architecture.md`](../../../docs/architecture.md) §3.2). No decide permisos
  * ni transiciones: traduce filas a objetos de dominio y nada más.
  */
-export interface EstudianteDeSesion {
-  id: string;
-  institutionId: string;
-  timezone: string;
-}
-
 /**
  * Busca el estudiante ligado a una identidad de auth.
  *
@@ -24,7 +19,7 @@ export interface EstudianteDeSesion {
  * **No selecciona `whatsapp`.** Es dato personal gateado por ADR-006, y la
  * forma más barata de no filtrarlo es no leerlo.
  */
-export async function porIdentidadDeAuth(authUserId: string): Promise<EstudianteDeSesion | null> {
+async function porIdentidadDeAuth(authUserId: string): Promise<EstudianteDeSesion | null> {
   const { data, error } = await clienteDeServicio()
     .from("student")
     .select("id, institution_id, timezone")
@@ -36,3 +31,5 @@ export async function porIdentidadDeAuth(authUserId: string): Promise<Estudiante
 
   return { id: data.id, institutionId: data.institution_id, timezone: data.timezone };
 }
+
+export const estudiantesReal: RepositorioDeEstudiantes = { porIdentidadDeAuth };

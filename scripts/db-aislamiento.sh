@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Achieve Platform · Etapa B1.4 — los tres criterios de Done de la Fase B1 que
+# sólo se pueden demostrar contra una base real:
+#
+#   1. Un tenant no puede leer datos de otro.
+#   2. Las transiciones prohibidas fallan incluso bajo concurrencia.
+#   3. La idempotencia está en el servidor, no en el frontend.
+set -uo pipefail
+C="supabase_db_achieve-platform"
+docker exec "$C" true 2>/dev/null || { echo "✗ stack apagado: npm run db:start"; exit 1; }
+q() { docker exec -i "$C" psql -U postgres -d postgres -tAX -c "$1" 2>&1; }
+corre() { docker exec -i "$C" psql -U postgres -d postgres -tAX -v ON_ERROR_STOP=1 -c "$1" >/dev/null 2>&1; }
+fallos=0
+ok() { echo "   ✓ $1"; }
+mal() { echo "   ✗ $1"; fallos=$((fallos+1)); }
+
+A=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa   # institución A
+B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
+
+echo "→ Dos instituciones con datos propios"
+corre "insert into institution (id,name) values ('$A','Inst A'),('$B','Inst B');
+ insert into academic_program (id,institution_id,name) values ('a1000000-0000-0000-0000-000000000001','$A','P-A'),('b1000000-0000-0000-0000-000000000001','$B','P-B');
+ insert into curriculum_plan (id,program_id,version) values ('a2000000-0000-0000-0000-000000000001','a1000000-0000-0000-0000-000000000001','v1'),('b2000000-0000-0000-0000-000000000001','b1000000-0000-0000-0000-000000000001','v1');
+ insert into course (id,curriculum_plan_id,code,name) values ('a3000000-0000-0000-0000-000000000001','a2000000-0000-0000-0000-000000000001','A1','CA'),('b3000000-0000-0000-0000-000000000001','b2000000-0000-0000-0000-000000000001','B1','CB');
+ insert into course_offering (id,course_id,term) values ('a4000000-0000-0000-0000-000000000001','a3000000-0000-0000-0000-000000000001','2026'),('b4000000-0000-0000-0000-000000000001','b3000000-0000-0000-0000-000000000001','2026');
+ insert into student (id,institution_id) values ('a5000000-0000-0000-0000-000000000001','$A'),('b5000000-0000-0000-0000-000000000001','$B');
+ insert into course_enrollment (id,institution_id,student_id,offering_id) values ('a6000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001'),('b6000000-0000-0000-0000-000000000001','$B','b5000000-0000-0000-0000-000000000001','b4000000-0000-0000-0000-000000000001');
+ insert into action (id,institution_id,course_enrollment_id,objective,verb,scope) values ('a7000000-0000-0000-0000-000000000001','$A','a6000000-0000-0000-0000-000000000001','obj','resolver','u1'),('b7000000-0000-0000-0000-000000000001','$B','b6000000-0000-0000-0000-000000000001','obj','resolver','u1');
+ insert into commitment (id,institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state) values ('a8000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001',now(),'America/Argentina/Cordoba',40,'CONFIRMED');" \
+ && ok "cargadas" || { mal "no se pudieron cargar"; exit 1; }
+
+echo "→ 1. Aislamiento: el scoping va en el WHERE, no después de leer"
+visto=$(q "select count(*) from commitment where institution_id='$B' and id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')
+[ "$visto" = "0" ] && ok "B no alcanza el commitment de A" || mal "B vio $visto fila(s) de A"
+
+echo "→ 2. Transición prohibida: MISSED nunca vuelve a COMPLETED"
+corre "update commitment set state='MISSED', missed_at=now() where id='a8000000-0000-0000-0000-000000000001';"
+# El guard atómico del Repository: el estado esperado va en el WHERE.
+filas=$(q "with u as (update commitment set state='COMPLETED' where id='a8000000-0000-0000-0000-000000000001' and institution_id='$A' and state='CONFIRMED' returning 1) select count(*) from u;" | tr -d '[:space:]')
+[ "$filas" = "0" ] && ok "el compare-and-swap no encuentra el estado esperado" || mal "actualizó $filas fila(s)"
+estado=$(q "select state from commitment where id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')
+[ "$estado" = "MISSED" ] && ok "sigue MISSED: el incumplimiento no se borró" || mal "quedó en $estado"
+
+echo "→ 2b. Concurrencia: dos transiciones válidas, una sola gana"
+corre "update commitment set state='CONFIRMED', missed_at=null where id='a8000000-0000-0000-0000-000000000001';"
+# Las dos leyeron CONFIRMED y escriben distinto. Compare-and-swap: gana una.
+r1=$(q "with u as (update commitment set state='DUE' where id='a8000000-0000-0000-0000-000000000001' and state='CONFIRMED' returning 1) select count(*) from u;" | tr -d '[:space:]')
+r2=$(q "with u as (update commitment set state='RENEGOTIATED' where id='a8000000-0000-0000-0000-000000000001' and state='CONFIRMED' returning 1) select count(*) from u;" | tr -d '[:space:]')
+[ "$((r1 + r2))" = "1" ] && ok "una escribió ($r1/$r2); la otra no encontró el estado" || mal "escribieron $((r1+r2))"
+
+echo "→ 3. Idempotencia en el servidor, no en el frontend"
+corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,idempotency_key) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'America/Argentina/Cordoba',40,'clave-repetida');"
+if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,idempotency_key) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'America/Argentina/Cordoba',40,'clave-repetida');"; then
+  mal "la base aceptó dos veces la misma clave"
+else
+  ok "la segunda con la misma clave se rechaza en la base"
+fi
+
+echo "→ Coherencia entre estado y marcas de tiempo"
+if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,completed_at) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'UTC',40,'DRAFT',now());"; then
+  mal "un DRAFT pudo guardar completed_at"
+else
+  ok "un DRAFT no puede tener completed_at"
+fi
+
+q "delete from commitment; delete from action; delete from course_enrollment; delete from student; delete from course_offering; delete from course; delete from curriculum_plan; delete from academic_program; delete from institution;" >/dev/null
+ok "limpiado"
+
+[ "$fallos" -gt 0 ] && { echo; echo "✗ $fallos criterio(s) sin sostener"; exit 1; }
+echo; echo "✓ aislamiento, transiciones, concurrencia e idempotencia"
