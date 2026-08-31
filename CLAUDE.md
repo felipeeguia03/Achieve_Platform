@@ -87,7 +87,8 @@ el cliente de autorización del CRM.
 
 **Fase B2 — Dominio de ejecución.** 🟡 **EN CURSO: 3 completas, 2 parciales.** `Action`,
 `Commitment` y `Evidence` están completas; `Reflection` está bloqueada en su configuración por
-`C01-051`, y `B2.5` conectó `UX01` a la base pero todavía faltan las otras ocho superficies.
+`C01-051`, y `B2.5` conectó `UX01` a la base. La Etapa B2.6 conecta `UX02`–`UX06`; `UX07`–`UX09`
+esperan a la Fase B5 porque no hay tablas de examen.
 
 **Trabajo adelantado.** B2b va **1 / 3** con la ingesta asistida del ADL. En B4 ya existen el ADE
 v1 determinista, el reloj del lifecycle y la materialización transaccional de recomendaciones.

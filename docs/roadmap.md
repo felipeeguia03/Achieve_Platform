@@ -1497,7 +1497,7 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **3 completas / 5; 2 parciales** — `B2.4` parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **3 completas / 6; 2 parciales y `B2.6` en curso** — `B2.4` parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1511,6 +1511,7 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
 | B2.4 | 🟡 **PARCIAL** — la regla se hace cumplir; **la configuración la bloquea `C01-051`** |
 | B2.5 | 🟡 **`UX01` conectada** — datos persistidos sintéticos, **cero cambios en `components/screens/`** |
+| B2.6 | 🔵 **EN CURSO** — `UX02`–`UX06` desde la base, con sesión real y `Ausencia`. Decisiones aprobadas el 31 ago 2026 |
 
 **Done cuando:** los 12 invariantes de [`data-model.md`](data-model.md) §11 tienen test; el mismo
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
@@ -1542,8 +1543,55 @@ concretas"* buscaba `Real` **en cualquier lado** y marcó como violación una va
 `setReal`. La regla es *"no importes una implementación concreta"*: ahora mira **los `import`**, con
 auto-prueba. **Un guard que castiga un nombre de variable enseña a nombrar mal.**
 
-**Faltan las otras ocho superficies.** Siguen el mismo patrón —endpoint que devuelve el view model,
-ruta que elige entre fixture y API— y son mecánicas.
+**Faltan las otras superficies**, y al preparar la etapa que las conecta apareció que **no eran
+ocho ni eran mecánicas**. Ver abajo.
+
+---
+
+#### 🔵 Etapa B2.6 — Las superficies restantes desde la base
+
+**Decisiones de diseño — ✅ aprobadas por el owner el 31 de agosto de 2026.**
+
+**1. El alcance real son cinco superficies, no ocho.** `UX07`–`UX09` proyectan `ExamPreparation` y
+`ExamProtocol`, y la base tiene **cero tablas de examen**: son de la [Fase B5](#fase-b5--modo-examen-real),
+que además depende de [ADR-007](decisions.md#adr-007) (contenido) y [ADR-011](decisions.md#adr-011)
+(readiness), los dos `PENDING`. Conectarlas acá sería resolver dos decisiones abiertas de
+contrabando. **La etapa cubre `UX02`–`UX06`**, y el roadmap deja de prometer ocho.
+
+**2. El navegador se autentica con Supabase Auth y `Authorization: Bearer`.** No es una decisión
+nueva: es la que [ADR-005](decisions.md#adr-005) y `AGENTS.md` §6 ya ratificaron —*Supabase del lado
+cliente se limita a Auth; nunca `supabase.from(...)`*—. **Lo que se corrige es que no estaba
+implementada:** hoy `app/(student)/hoy/page.tsx` hace `fetch("/api/hoy")` **sin header de
+autorización**, el endpoint responde `401` y la ruta cae al fixture. Verificado contra el server
+corriendo. Como el spec no tiene pantalla de login —y **no se inventa una**—, la sesión sintética se
+da de alta fuera de las nueve superficies.
+
+**3. Sin sesión o con la API caída, la superficie muestra `Ausencia`, no el fixture.** El fallback
+silencioso de hoy le muestra al estudiante un día que no es el suyo y lo hace **indistinguible de uno
+real**. Contradice dos invariantes que el propio repo declara: *omitir, no inventar* y *la UI
+proyecta, nunca decide*. La primitiva es la que se construyó en la [Etapa A2.3](#etapas), que existía
+exactamente para esto. **El catálogo sintético no se retira:** sigue disponible bajo `?escenario=`
+explícito, que es el guion del focus group.
+
+**4. Una RPC por superficie**, como `estado_del_dia`. El argumento es el mismo que lo justificó en la
+`B2.5`: varias lecturas por pantalla dan una foto inconsistente entre sí. El costo aceptado es más
+SQL versionado en migraciones.
+
+| # | Superficie | Función de lectura |
+|---|---|---|
+| 1 | `UX02` — Materia | `estado_de_materia()` |
+| 2 | `UX03` — Próxima acción | `estado_de_accion()` |
+| 3 | `UX04` — Compromiso | `estado_de_compromiso()` |
+| 4 | `UX05` — Evidencia | `estado_de_evidencia()` |
+| 5 | `UX06` — Progreso | `estado_de_progreso()` |
+
+⚠️ **`UX05` toca `C01-051`** (`OPEN`, gate `H`): muestra el requisito de `Reflection`, cuya
+configuración no está cerrada. Se sostiene el criterio de la `B2.4` —**el requisito entra por
+parámetro, no se lee de una tabla de configuración que nadie decidió**— y la superficie no inventa un
+default. Si eso no alcanza al implementarla, `UX05` sale del alcance y se dice acá.
+
+**Done cuando:** las cinco proyectan datos persistidos con sesión real; ninguna dibuja un fixture sin
+`?escenario=` explícito; `components/screens/` sigue sin tocarse; `lint`, `build` y `test` en verde.
 
 ---
 
@@ -1732,7 +1780,7 @@ procedencia y el ADE tiene sobre qué decidir. Cargar una materia real requiere 
 
 **Estado:** 🟡 Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**. El ADE
 ya materializa recomendaciones en la base y `UX01` proyecta estado persistido. Falta integrar el
-reloj a una ejecución operativa y completar la conexión de las otras ocho superficies.
+reloj a una ejecución operativa y completar la conexión de `UX02`–`UX06` (Etapa B2.6).
 
 #### ✅ El ADE conectado a la base · 30 de agosto de 2026
 
@@ -1925,7 +1973,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
-| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 3 completas, 2 parciales | 3 / 5 |
+| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 3 completas, 2 parciales, `B2.6` abierta | 3 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | 🔒 Depende del cierre de B2 | 0 / — |
 | Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |

@@ -97,8 +97,9 @@ components/ui/   registro shadcn vendorizado · NO se edita
 El destino de cada CTA sale del registro canónico, no de un recorrido escrito a mano.
 
 **Las pantallas nunca importan un fixture.** Esa frontera ya permitió conectar `UX01` al backend
-sin tocar `components/screens/`; las otras ocho superficies mantienen el catálogo sintético hasta
-que tengan su proyección persistente. Hay un test estático que lo verifica.
+sin tocar `components/screens/`; `UX02`–`UX06` mantienen el catálogo sintético hasta que tengan su
+proyección persistente, y `UX07`–`UX09` esperan a la Fase B5 porque proyectan entidades de examen que
+todavía no existen en la base. Hay un test estático que lo verifica.
 
 ## Antes de tocar UI
 

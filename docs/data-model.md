@@ -896,8 +896,9 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 En el Track A estos tipos viven en `lib/domain/` como TypeScript puro y los escenarios en
 `lib/fixtures/`. **Los tipos son los mismos.** Track B ya implementa el backend y `UX01` puede
 proyectar datos persistidos sin tocar `components/screens/`. Los fixtures no se eliminaron: siguen
-siendo el catálogo del focus group y de estados críticos mientras las otras ocho superficies se
-conectan con el mismo patrón.
+siendo el catálogo del focus group y de estados críticos mientras `UX02`–`UX06` se conectan con el
+mismo patrón. `UX07`–`UX09` no se conectan hasta la Fase B5: proyectan `ExamPreparation` y
+`ExamProtocol`, que todavía no existen como tablas.
 
 ```ts
 // lib/domain/types.ts — compartido entre Track A y Track B

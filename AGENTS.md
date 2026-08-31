@@ -271,8 +271,8 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 Track A y la Fase A2 están cerrados. Las nueve superficies existen, todos los estados críticos son
 alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner. B1 está
 completa (6/6). En B2, `Action`, `Commitment` y `Evidence` están completas; `Reflection` sigue
-parcial por `C01-051`, y sólo `UX01` lee hoy de Postgres. Las otras ocho superficies todavía se
-proyectan desde fixtures. B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle
+parcial por `C01-051`, y sólo `UX01` lee hoy de Postgres. `UX02`–`UX06` todavía se proyectan desde
+fixtures y las conecta la Etapa B2.6; `UX07`–`UX09` esperan a la Fase B5. B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle
 se construyeron por adelantado en B4.
 
 Dónde vive cada cosa hoy:
