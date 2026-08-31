@@ -1498,7 +1498,7 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **3 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **4 / 5.** `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1510,13 +1510,39 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | B2.1 | ✅ **COMPLETA** — `Action` + `ActionRecommendation` + máquina de estados |
 | B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
 | B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
-| B2.4 | `Reflection` configurable `OPTIONAL`/`REQUIRED` |
+| B2.4 | 🟡 **PARCIAL** — la regla se hace cumplir; **la configuración la bloquea `C01-051`** |
 | B2.5 | Reemplazo de `lib/fixtures/` por llamadas reales — **sin tocar las pantallas** |
 
 **Done cuando:** los 12 invariantes de [`data-model.md`](data-model.md) §11 tienen test; el mismo
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
 
 **Contratos a cerrar:** `C01-007`…`C01-016`, `C01-051`.
+
+#### 🟡 Etapa B2.4 — `Reflection` · PARCIAL · 30 de agosto de 2026
+
+**Se implementó lo que está cerrado. La configuración no se inventó.**
+
+`product.md` §407 dice, textual: *"Obligatoriedad de `Reflection`: configurable `OPTIONAL`/`REQUIRED`
+por Action o paso. **La configuración exacta no está cerrada**"* — es **`C01-051`, `OPEN`, gate `H`**.
+El propio anexo advierte: *"antes de mover cualquier pantalla a high-fidelity, revisá si toca una
+fila con gate `H` (hoy: `C01-008`, `C01-019`, `C01-051`) y conseguí la respuesta real primero"*.
+
+**Lo abierto es dónde vive el flag y quién lo pone**, no qué hace. Así que el Service **recibe el
+requisito por parámetro**: no hay tabla de configuración, ni default, ni lectura de nada. Elegir uno
+habría cerrado `C01-051` desde el código.
+
+| Qué | Estado |
+|---|---|
+| La Reflection es un **objeto separado**, no se fusiona ni se infiere | ✅ |
+| Requerida y ausente **bloquea el envío**, y sólo eso | ✅ con test de que no emite juicio sobre la Evidence ni el dominio |
+| Una Reflection **vacía no es una Reflection** | ✅ un objeto en blanco aparecería en la Bitácora como si el estudiante hubiera reflexionado |
+| **Dónde se configura `OPTIONAL`/`REQUIRED`** | 🔴 **`C01-051`, lo cierra una persona** |
+| `lint` · `build` · `test` | ✅ verde · verde · **469 tests en 26 archivos** |
+
+**`0` minutos es un dato, no un vacío** — el mismo invariante que `topic_progress` ya sostiene en la
+base. Tiene test, porque es el que más fácil se rompe al validar "campos completos".
+
+---
 
 #### ✅ Etapa B2.3 — `Evidence`, resubmission y storage · COMPLETA · 30 de agosto de 2026
 
