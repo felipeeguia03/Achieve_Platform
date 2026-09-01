@@ -227,6 +227,12 @@ datos de una persona real mientras [ADR-006](decisions.md#adr-006) siga sin dict
 
 ### 2.2 Lo que la Fase B6 necesita del contrato v2 — 1 de septiembre de 2026
 
+> **Hay candidato.** El CTO respondió con un contrato candidato el 1 de septiembre de 2026, y la
+> Plataforma lo revisó y corrigió: [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md).
+> Ese documento es ahora el owner de los tres flujos, con su matriz de diferencias y su plan de
+> migración. Esta sección queda como el **requerimiento** que lo originó. **Ninguno de los dos está
+> implementado**, y §1 de este documento sigue siendo el único contrato vigente.
+
 **Esto no es una propuesta de contrato: es la lista de lo que Achieve no puede saber solo.** El
 dominio de riesgo e intervención está construido ([ADR-032](decisions.md#adr-032)) y **no está
 esperando a este documento**. Endpoint, payload, nombres de campo, autenticación y SLA **los define

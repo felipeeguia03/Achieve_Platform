@@ -75,6 +75,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-026](#adr-026) | Obligatoriedad de `Reflection`: dónde vive y qué la hace válida | ✅ `ACCEPTED` | — |
 | [ADR-027](#adr-027) | Los ocho eventos de transición entran al Product Event Model | ✅ `ACCEPTED` | — |
 | [ADR-033](#adr-033) | La frontera de superficies, corregida en la dirección del spec | ✅ `ACCEPTED` *(corrige cláusulas de [ADR-012](#adr-012) y [ADR-032](#adr-032))* | — |
+| [ADR-034](#adr-034) | `C01-022` cerrada: la necesidad de una persona la declara la Plataforma | ✅ `ACCEPTED` *(corrige la máquina de [ADR-032](#adr-032); reabre el ítem 5 de [ADR-005](#adr-005))* | — |
 
 ---
 
@@ -2580,3 +2581,147 @@ Tres artefactos quedan marcados, y **ninguno se toca en este commit**:
   `platform-integration-contract.md` §2.2.
 - `POST /api/service/v1/authorize`, la autorización de estudiantes y `platformStudentId` quedan
   **intactos**. Son de estudiantes, no de operadores, y no se mezclan con Risk ni con Intervención.
+
+---
+
+<a id="adr-034"></a>
+## ADR-034 — `C01-022` cerrada: la necesidad de una persona la declara la Plataforma, no quien la mira
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** `C01-022` — la semántica de las transiciones del closed-loop.
+**Corrige la máquina que fijó:** [ADR-032](#adr-032) *(no se edita; ver "Qué cláusula corrige")*.
+**Depende de:** [ADR-033](#adr-033), que puso al operador del lado del CRM.
+**Reabre como dependencia obligatoria:** el ítem 5 de [ADR-005](#adr-005) (outbox y observabilidad),
+que estaba `DEFERRED`.
+**No cierra:** `C01-021`, `C01-044`, `C01-039`, `C01-036`, ni [ADR-006](#adr-006).
+**Toca:** `product.md` §5.5, `data-model.md` §10, `roadmap.md`,
+[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md).
+
+### Contexto — la máquina no se podía recorrer
+
+[ADR-033](#adr-033) sacó al operador de la Plataforma. Al contrastar el contrato candidato del CTO
+contra el código apareció un bloqueo duro: la secuencia que ese contrato propone **no se puede
+ejecutar**.
+
+La máquina de [ADR-032](#adr-032) era `OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED`, y
+`abrir_intervencion()` frena si la señal no está en `INTERVENTION_REQUIRED`. Para que el CRM pudiera
+abrir una intervención, la Plataforma tenía que escribir antes `ACKNOWLEDGED` — un estado que
+significa *"alguien tomó conocimiento"* cuando **todavía nadie vio nada**.
+
+El error de origen es de la B6, y es identificable: la máquina se dibujó cuando se suponía que la
+cola de operador viviría acá. Con el operador adentro, *"alguien la miró"* era un paso real del
+recorrido. Con el operador afuera, ese paso **no tiene quién lo produzca** y quedó como un peaje sin
+cobrador.
+
+### Decisión — Opción A
+
+**1 · Se habilita `OPEN → INTERVENTION_REQUIRED`.** La necesidad de intervención humana **la produce
+la Plataforma a partir de su configuración**, particularmente `risk_rule.modo`. No depende de que
+alguien la haya visto, y no depende del CRM.
+
+**2 · El transporte no es estado de dominio.** Que el webhook se haya enviado, entregado o
+reintentado **no mueve `risk_signal`**. Ese estado vive en el outbox. `ACKNOWLEDGED` **no** significa
+*"evento enviado al CRM"*, y no se lo reutiliza para eso.
+
+**3 · Hacerse cargo es un hecho de la intervención, no de la señal.** Lo asserta el CRM con el
+comando `acknowledge`, y **no es paso previo** para determinar que la señal requiere intervención.
+
+**4 · La señal se queda en `INTERVENTION_REQUIRED` mientras la obligación humana esté abierta.** Al
+cerrar, en **una sola transacción**: se registra el outcome, se cierra la intervención y la señal
+pasa a `RESOLVED`.
+
+**5 · `EXPIRED` sale sólo de `OPEN`.** Una señal que ya pide una persona no se vence sola —era la
+regla 3 de ADR-032 y **se endurece**: al desaparecer `ACKNOWLEDGED` del recorrido vivo, la única
+puerta que queda hacia `EXPIRED` es `OPEN`.
+
+La máquina resultante:
+
+```
+OPEN ──────────────► INTERVENTION_REQUIRED ──► RESOLVED
+ │                                          ↘  ESCALATED
+ └──► EXPIRED
+
+ACKNOWLEDGED  ·  legacy (ver abajo)
+```
+
+### `ACKNOWLEDGED`: qué se audita y qué NO hay que construir
+
+El owner pidió auditar cuál es la representación técnica mínima para que el reconocimiento del
+operador quede registrado **sin mover la señal**. El resultado de la auditoría es que **ya existe, y
+no hay que construir nada**:
+
+| Pieza | Dónde está | Desde |
+|---|---|---|
+| El estado `acknowledged` de la intervención | `intervention.status` | B6 |
+| El momento en que se hizo cargo | `intervention.acknowledged_at` | B6 |
+| La transición, con su máquina | `interventionTransitions`, `open → acknowledged` | B6 |
+| El evento | `InterventionAcknowledged`, nivel `TRANSICION` | B6 |
+
+El reconocimiento **siempre estuvo del lado correcto**. Lo que sobraba era su duplicado en
+`risk_signal`.
+
+**`ACKNOWLEDGED` queda `legacy` y no se borra.** Ni el valor del `CHECK`, ni la columna
+`risk_signal.acknowledged_at`, ni el evento `RiskSignalAcknowledged`, ni las filas que lo tengan. Una
+fila histórica **conserva su significado original** —*"alguien tomó conocimiento"*— y conserva sus
+salidas, para que una señal vieja pueda terminar su recorrido. Lo único que cambia es que **ninguna
+señal nueva entra ahí**.
+
+> Es la misma regla con la que la B5 apagó `EP-SPEC v0.1` con un `UPDATE` y no un `DELETE`, y con la
+> que ADR-033 prohibió redefinir `owner_verified` en el lugar. **Reinterpretar un valor existente es
+> reescribir lo que pasó.**
+
+### Las decisiones del contrato v1
+
+Se detallan en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md). En resumen:
+
+| Asunto | Decisión |
+|---|---|
+| **Severidad** | El enum queda fijado tal como está en el schema: `bajo`, `atencion`, `riesgo`, `intervencion`. **`C01-021` no bloquea el vocabulario**; sigue bloqueando qué regla asigna cuál |
+| **Causa** | `cause` obligatorio. Su **texto legible es obligatorio**; `cause.code` puede ser `NULL` cuando no haya `risk_rule_id`. **No se inventa una regla para completar un código** |
+| **Institución** | `institutionId` **sale del payload v1**. El CRM resuelve la institución por `platformStudentId`, cuya relación creó `/authorize`. No se comparan UUID de instituciones por inferencia (`C01-001`) |
+| **Playbook** | `playbookRef` **fuera de v1** hasta `C01-044`. La tabla local no se toca |
+| **`crmCaseId`** | **Se acepta.** Requiere ampliación de schema **no destructiva**. No se descarta en silencio |
+| **Timestamps** | `occurredAt` es la hora **declarada por el CRM** y se conserva para auditoría. La hora canónica de la transición es la del servidor de la Plataforma. **El CRM no puede backdatear el lifecycle** |
+| **Owner** | En v1, quien reconoce y cierra **debe ser el mismo `ownerOperatorId` que abrió**. Una diferencia es rechazo explícito. La reasignación necesita un comando propio |
+| **Cierre** | `outcome` y `humanMinutes` (entero `>= 0`) **obligatorios**. `note` opcional, y **bloqueada para datos reales por B7**: no es un canal lateral para evidencia |
+| **Flujo C** | La fuente es `estado_del_dia()`, no `estado_de_materia()`. Salen `subjects[].status` y `nextAction.dueAt` |
+
+### El outbox deja de ser opcional
+
+El flujo A es **push**, y push sin outbox durable es pérdida silenciosa de señales. El ítem 5 de
+[ADR-005](#adr-005) —Broadcast/outbox, rotación de secretos, observabilidad— estaba `DEFERRED` y
+**pasa a ser dependencia obligatoria** de la integración: persistencia transaccional del evento,
+reintentos, backoff, idempotencia, observabilidad, rotación de secretos y estados de entrega.
+
+**El outbox no toca `risk_signal`.** Que un evento esté pendiente, entregado o agotado es estado de
+transporte, y confundirlo con estado de dominio es exactamente lo que la decisión 2 prohíbe.
+
+### Qué cláusula corrige de ADR-032
+
+[ADR-032](#adr-032) **no se edita.** Sigue `ACCEPTED`, y sus otras siete decisiones siguen vigentes
+sin cambios.
+
+| Cláusula | Cómo queda |
+|---|---|
+| *"`RESOLVED` sólo se alcanza desde `INTERVENTION_REQUIRED`, y sólo con una intervención con outcome"* | **Intacta.** Es la que más importa y no se toca |
+| *"`EXPIRED` sale sólo de `OPEN` y `ACKNOWLEDGED`"* | **Corregida y endurecida:** sale sólo de `OPEN` |
+| La máquina `OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED` | **Corregida:** `OPEN → INTERVENTION_REQUIRED`. `ACKNOWLEDGED` queda legacy |
+| *"El disparador no es una severidad: es que la señal misma esté en `INTERVENTION_REQUIRED`"* | **Intacta**, y ahora además es coherente: ese estado lo declara `risk_rule.modo`, no un umbral |
+
+### Lo que NO cierra
+
+- **`C01-021`** · qué regla produce qué señal y con qué severidad. El enum quedó fijo; el asignador no
+  existe, y sigue el guard estático que rompe si alguien lo agrega.
+- **`C01-044`** · playbooks y SLA. Sigue siendo propuesta que `playbookRef` sea del CRM.
+- **`C01-039`** · `human_assignment` y el directorio.
+- **`C01-036`** · qué es un error *"reiterativo"*. **De la psicopedagoga.**
+- **[ADR-006](#adr-006)** · ningún dato real circula por ninguno de los tres flujos.
+- **`assessments[]` del flujo C** — hallazgo nuevo de esta revisión: **ninguna proyección canónica
+  produce hoy la lista de evaluaciones a través de todas las materias**. Ver el §4 del contrato v0.2.
+
+### Estado de implementación
+
+⚠️ **Esta decisión no está implementada.** El schema y el código siguen exactamente como los dejó
+`b450b8e`: la máquina vigente en `lib/domain/state-machines.ts` es todavía la de ADR-032. El plan de
+migración no destructivo está en el §7 del contrato v0.2, y **su ejecución no está autorizada
+todavía**.

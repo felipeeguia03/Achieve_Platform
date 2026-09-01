@@ -2458,13 +2458,23 @@ hubiera fabricado una sesión para poder mostrar una cola, hoy habría que borra
 intervención → outcome; ninguna señal queda sin outcome registrado. **Cuatro de seis eslabones están
 garantizados por construcción**; playbook y SLA esperan a `C01-044`.
 
-**Los tres flujos que faltan** ([`platform-integration-contract.md`](platform-integration-contract.md) §2.2):
+**Los tres flujos que faltan.** El CTO respondió con un contrato candidato y la Plataforma lo corrigió:
+[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), con su matriz de diferencias
+y su plan de migración no destructivo. **Nada de eso está implementado.**
 
-| # | Flujo | Dirección |
-|---|---|---|
-| A | Señal que requiere intervención humana | Plataforma → CRM |
-| B | **Comandos de intervención y outcome** | CRM → Plataforma. **No existe en el contrato actual**, y sin él el circuito no puede cerrarse |
-| C | Lectura de contexto académico | CRM → Plataforma |
+| # | Flujo | Dirección | Estado |
+|---|---|---|---|
+| A | Señal que requiere intervención humana | Plataforma → CRM | Push con webhook firmado. **Exige outbox** |
+| B | Comandos de intervención y outcome | CRM → Plataforma | Los tres comandos mapean 1:1 a funciones que ya existen |
+| C | Lectura de contexto académico | CRM → Plataforma | Desde `estado_del_dia()`. `assessments[]` sin fuente canónica |
+
+**`C01-022` quedó cerrada** por [ADR-034](decisions.md#adr-034): la necesidad de una persona la
+declara la Plataforma desde `risk_rule.modo`, se habilita `OPEN → INTERVENTION_REQUIRED` y
+`ACKNOWLEDGED` pasa a legacy. **Decidida, todavía no implementada.**
+
+⚠️ **El ítem 5 de [ADR-005](decisions.md#adr-005) —outbox y observabilidad— vuelve a estar en el
+camino crítico.** Estaba `DEFERRED`; el flujo A es push, y push sin outbox durable pierde señales en
+silencio.
 
 **Contratos a cerrar:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`. **Ninguno se cerró en
 esta fase**, y ninguno lo cierra un agente.
