@@ -23,12 +23,20 @@ export interface Accion extends EntidadConEstado<ActionStatus> {
 export type RepositorioDeAcciones = RepositorioTransicionable<ActionStatus, Accion>;
 
 /** `BLOCKED` sin razón es un estado que no explica nada (`P-01`). */
+/**
+ * `EVIDENCE_PENDING` → `ActionEvidencePending`. Exportado para que el guard del
+ * Product Event Model pueda **derivar** los nombres emitibles de la máquina de
+ * estados en vez de mantener una lista escrita a mano, que envejece sin avisar.
+ */
+export function nombreDeEventoDeAction(hacia: ActionStatus): string {
+  return `Action${hacia.charAt(0)}${hacia.slice(1).toLowerCase().replace(/_(.)/g, (_, c) => c.toUpperCase())}`;
+}
+
 const CONFIG = {
   entidad: "Action",
   transiciones: actionTransitions,
   sujetoTipo: "action",
-  nombreDeEvento: (hacia: ActionStatus) =>
-    `Action${hacia.charAt(0)}${hacia.slice(1).toLowerCase().replace(/_(.)/g, (_, c) => c.toUpperCase())}`,
+  nombreDeEvento: (hacia: ActionStatus) => nombreDeEventoDeAction(hacia),
 } as const;
 
 export async function transicionar(

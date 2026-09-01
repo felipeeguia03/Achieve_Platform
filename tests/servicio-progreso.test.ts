@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
+import type { PublicadorDeEventos } from "@/lib/server/servicios/eventos";
 import {
   DIMENSIONES,
   nombreDelEvento,
@@ -34,7 +35,7 @@ function repoFalso(duplicado = false) {
       return { entryId: "entry-1", duplicado };
     },
   };
-  const publicar = vi.fn(async () => {});
+  const publicar = vi.fn<PublicadorDeEventos["publicar"]>(async () => {});
   return { deps: { repo, eventos: { publicar } }, escrituras, publicar };
 }
 

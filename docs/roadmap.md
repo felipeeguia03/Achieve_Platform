@@ -2014,8 +2014,45 @@ duplicarlos como cuatro avances independientes.
 | # | Etapa |
 |---|---|
 | B3.1 | ✅ **COMPLETA** — el resultado de progreso **se escribe**, y nadie lo infiere |
-| B3.2 | ⬜ El Product Event Model completo y la Bitácora sobre él |
+| B3.2 | 🔵 **EN CURSO** — el Product Event Model, declarado y verificado contra lo que el código emite |
 | B3.3 | ⬜ `TopicProgress` con sus cinco dimensiones desde el ADL |
+
+---
+
+#### 🔵 Etapa B3.2 — El Product Event Model, declarado
+
+**Decisiones de diseño — escritas antes de codear.**
+
+**1. El catálogo P0 existe y está en el spec.** `C01-023` dice *"artifact ausente"*, y es cierto que
+no hay un documento de Product Event Model — pero `product-spec-source.md` §16 **sí tiene la
+instrumentación P0**: 23 eventos con su uso. Se transcribe como registro ejecutable, igual que la
+Etapa 0.3 hizo con las 18 CTAs, y **con la misma regla**: el spec es el owner canónico y esto es la
+transcripción, no una segunda fuente.
+
+**2. Lo que el código emite y no está en el catálogo se declara, no se borra ni se esconde.** El
+spec es explícito —*"evento nuevo para cada interacción: no está aprobado en Product Event Model"*—
+y hoy el backend emite un evento por **cada transición de estado**: `CommitmentConfirmed`,
+`EvidenceSufficient`, `ActionCommitted` y una docena más que el P0 no lista. No se borran —son
+hechos reales y `product_event` es append-only— pero **dejan de estar invisibles**: se registran como
+extensiones declaradas, con el motivo, y quedan como insumo de `C01-023`.
+
+**3. El guard corre en las dos direcciones.** Todo evento que el código pueda emitir tiene que estar
+declarado; y todo evento declarado como *emitido* tiene que tener quién lo emita. Un catálogo que se
+desincroniza del código en silencio es peor que no tenerlo. Los nombres se derivan de las máquinas de
+estado, no de una lista escrita a mano que envejece.
+
+**4. El P0 no instrumentado se declara con su fase.** De los 23, la mayoría corresponde a superficies
+que todavía no existen —`ExamPreparationActivated`, `RiskSignalCreated`, `InterventionResolved`—.
+Marcarlos *pendientes con su fase* convierte el catálogo en un mapa de cobertura; dejarlos sin marcar
+lo convierte en una lista de deseos.
+
+**5. La Bitácora se define desde el catálogo, no al revés.** Qué hechos se le muestran al estudiante
+es una propiedad declarada de cada evento, y hay guard de que todo evento marcado como visible tenga
+copy aprobada — y de que ninguna copy exista para un evento que no lo está.
+
+**Done cuando:** los 23 del P0 están transcriptos con su uso textual, verificado contra el spec; todo
+evento emitible está declarado; ningún evento declarado como emitido carece de emisor; y la copy de
+la Bitácora coincide exactamente con los eventos marcados como visibles.
 
 ---
 

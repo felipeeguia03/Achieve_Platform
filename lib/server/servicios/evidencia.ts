@@ -60,6 +60,11 @@ export type ResultadoDeEvidencia =
   | { estado: "FALTA_INSTANCIA_DE_REVISION" }
   | { estado: "CONFLICTO" };
 
+/** `RESUBMISSION_REQUESTED` → `EvidenceResubmissionRequested`. Ver el guard. */
+export function nombreDeEventoDeEvidence(hacia: EvidenceState): string {
+  return `Evidence${hacia.charAt(0)}${hacia.slice(1).toLowerCase().replace(/_(.)/g, (_, c) => c.toUpperCase())}`;
+}
+
 export async function transicionar(
   deps: { repo: RepositorioDeEvidencias; eventos: PublicadorDeEventos },
   institutionId: string,
@@ -89,7 +94,7 @@ export async function transicionar(
   if (!guardado) return { estado: "CONFLICTO" };
 
   await deps.eventos.publicar({
-    nombre: `Evidence${hacia.charAt(0)}${hacia.slice(1).toLowerCase().replace(/_(.)/g, (_, c) => c.toUpperCase())}`,
+    nombre: nombreDeEventoDeEvidence(hacia),
     institutionId,
     actorId,
     sujetoTipo: "evidence",

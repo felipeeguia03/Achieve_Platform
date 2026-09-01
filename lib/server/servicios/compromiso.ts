@@ -66,6 +66,11 @@ const MARCA_DE_TIEMPO: Partial<Record<CommitmentState, string>> = {
  * `institutionId` **no viene del cliente**: lo resuelve la sesión desde la
  * base. Aceptarlo del request sería regalar el aislamiento de Parte I §29.
  */
+/** `MISSED` → `CommitmentMissed`. Exportado por el guard del Product Event Model. */
+export function nombreDeEventoDeCommitment(hacia: CommitmentState): string {
+  return `Commitment${hacia.charAt(0)}${hacia.slice(1).toLowerCase()}`;
+}
+
 export async function transicionar(
   deps: { repo: RepositorioDeCompromisos; eventos: PublicadorDeEventos },
   institutionId: string,
@@ -80,7 +85,7 @@ export async function transicionar(
       entidad: "Commitment",
       transiciones: commitmentTransitions,
       sujetoTipo: "commitment",
-      nombreDeEvento: (h) => `Commitment${h.charAt(0)}${h.slice(1).toLowerCase()}`,
+      nombreDeEvento: nombreDeEventoDeCommitment,
       columnasPara: (h, cuando) => {
         const col = MARCA_DE_TIEMPO[h];
         return col ? { [col]: cuando.toISOString() } : {};

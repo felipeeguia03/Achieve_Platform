@@ -123,7 +123,11 @@ export function validar(entrada: ResultadoDeProgresoEntrante): ResultadoDelRegis
  * rotulado como vocabulario del Product Event Model —objetivo de la Fase B3—,
  * no como regla de negocio.
  */
-export function nombreDelEvento(entrada: ResultadoDeProgresoEntrante): string {
+export const NOMBRES_DE_EVENTO = ["ProgressUpdated", "ProgressNoChangeConfirmed"] as const;
+
+export function nombreDelEvento(
+  entrada: ResultadoDeProgresoEntrante,
+): (typeof NOMBRES_DE_EVENTO)[number] {
   return entrada.cambios.length > 0 ? "ProgressUpdated" : "ProgressNoChangeConfirmed";
 }
 

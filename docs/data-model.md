@@ -875,6 +875,12 @@ CREATE TABLE intervention_outcome (
 );
 
 -- Product Event Model. Append-only.
+--
+-- ⚠️ `event_name` NO lleva enum, y el catálogo no vive en el schema: está en
+-- `lib/domain/product-events.ts`, transcripto de `product-spec-source.md` §16
+-- (23 eventos P0) más las extensiones que el backend emite y §16 no lista. Un
+-- CHECK acá cerraría C01-023 desde la base, y además pelearía con el append-only:
+-- una fila vieja con un nombre retirado dejaría de poder escribirse de nuevo.
 CREATE TABLE product_event (
   id             BIGSERIAL PRIMARY KEY,
   event_name     TEXT NOT NULL,
