@@ -1,17 +1,25 @@
 import { t } from "@/lib/content/es-AR";
+import type { RequisitoDeReflexion } from "./reflexion";
 import type { EstadoEvidencia, EvidenciaProps } from "@/lib/domain/view-models";
 
 /**
  * `UX05` proyectada desde datos persistidos — Etapa B2.6.
  *
- * ## `C01-051` no se cierra desde acá
+ * ## El requisito de `Reflection` — `ADR-026`
  *
- * Si una `Reflection` es obligatoria o no es **configuración que nadie decidió**
- * (`C01-051`, `OPEN`, gate `H`). La Etapa B2.4 resolvió esto en el Service de
- * escritura —*el requisito entra por parámetro, no hay tabla de configuración ni
- * default*— y esta proyección sostiene el mismo criterio: `reflexionRequerida`
- * llega de afuera. Elegir un default acá cerraría `C01-051` desde el código, que
- * es exactamente lo que el anexo de decisiones existe para impedir.
+ * Viene de `action.reflection_requirement`, congelado al crear la Action, y es
+ * **ternario**. La diferencia que el booleano anterior borraba:
+ *
+ * | Requisito | Se ofrece la `CTA-016` | Bloquea el submit |
+ * |---|---|---|
+ * | `NO_CONFIGURADA` | no | no |
+ * | `OPTIONAL` | **sí** | no |
+ * | `REQUIRED` | sí | **sólo ese submit** |
+ *
+ * `OPTIONAL` no es *"no hay Reflection"*: la `CTA-016` aparece cuando está
+ * **configurada** —así lo dice su condición en el registro canónico— y omitirla
+ * es válido. Con el booleano, `false` no ofrecía nada, así que la Reflection
+ * opcional no existía en la UI.
  *
  * ## Lo que el lifecycle sí decide
  *
@@ -35,7 +43,7 @@ export interface EstadoDeEvidencia {
   objetivo: string;
   evidenciaEsperada: string | null;
   criterioCierre: string | null;
-  reflexionRequerida: boolean;
+  requisitoDeReflexion: RequisitoDeReflexion;
   reflexionPresente: boolean;
   adjuntoPrevio: string | null;
   esResubmission: boolean;
@@ -50,7 +58,6 @@ export interface RepositorioDeEvidencia {
     studentId: string,
     ahora: string,
     evidenceId?: string | null,
-    reflexionRequerida?: boolean,
   ): Promise<EstadoDeEvidencia | null>;
 }
 
@@ -111,17 +118,26 @@ export function proyectarEvidencia(e: EstadoDeEvidencia): EvidenciaProps {
     nombreAdjuntoDemo: "",
     estadoVisible: VISIBLE[e.lifecycle] ?? null,
     aviso: e.esResubmission ? e.razonResubmission : null,
-    // ⚠️ `C01-051`: el requisito llega por parámetro. Si nadie lo declaró, no se
-    // ofrece una Reflection obligatoria que nadie configuró.
-    reflection: e.reflexionRequerida
-      ? { titulo: t("CTA.AGREGAR_REFLEXION"), requerida: true }
-      : null,
+    // `ADR-026`: se ofrece cuando está **configurada** —igual que la condición
+    // de aparición de la `CTA-016`—, y `requerida` sólo marca si además bloquea.
+    reflection:
+      e.requisitoDeReflexion === "NO_CONFIGURADA"
+        ? null
+        : {
+            titulo: t("CTA.AGREGAR_REFLEXION"),
+            requerida: e.requisitoDeReflexion === "REQUIRED",
+          },
     ctaPrimaria: ctaDe(e, estado),
     adjuntoPrevio: e.adjuntoPrevio,
   };
 }
 
-/** Expuesto para el test: la Reflection bloquea el envío y **nada más**. */
+/**
+ * Expuesto para el test: la Reflection bloquea el envío y **nada más**.
+ *
+ * Sólo `REQUIRED` bloquea. `OPTIONAL` se ofrece y se puede omitir — que es lo
+ * que *opcional* quiere decir.
+ */
 export function envioBloqueadoPorReflexion(e: EstadoDeEvidencia): boolean {
-  return e.reflexionRequerida && !e.reflexionPresente;
+  return e.requisitoDeReflexion === "REQUIRED" && !e.reflexionPresente;
 }

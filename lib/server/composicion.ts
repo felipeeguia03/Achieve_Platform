@@ -172,21 +172,19 @@ export async function compromisoDe(
 /**
  * `UX05` desde datos persistidos (Etapa B2.6).
  *
- * ⚠️ `reflexionRequerida` **no tiene default de producto**: `C01-051` está
- * `OPEN` y elegir uno acá lo cerraría desde el código. El `false` es el valor
- * con el que hoy se llama, no una decisión sobre cuándo una Reflection es
- * obligatoria.
+ * El requisito de `Reflection` ya no entra por acá: lo trae la Action, congelado
+ * al crearla ([ADR-026](../../docs/decisions.md#adr-026)). Mientras `C01-051`
+ * estuvo `OPEN` este parámetro existía para **no** elegir un default desde el
+ * código; con la decisión tomada, un parámetro que el caller pudiera cambiar
+ * sería una puerta trasera a una regla de negocio ya cerrada.
  */
 export async function evidenciaDe(
   institutionId: string,
   studentId: string,
   evidenceId: string | null = null,
-  reflexionRequerida = false,
   ahora: string = new Date().toISOString(),
 ): Promise<EvidenciaProps | null> {
-  const estado = await evidenciaLecturaReal.estadoDeEvidencia(
-    institutionId, studentId, ahora, evidenceId, reflexionRequerida,
-  );
+  const estado = await evidenciaLecturaReal.estadoDeEvidencia(institutionId, studentId, ahora, evidenceId);
   return estado ? proyectarEvidencia(estado) : null;
 }
 

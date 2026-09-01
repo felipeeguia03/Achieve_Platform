@@ -20,9 +20,10 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
 
 ## Las seis reglas
 
-1. **No inventes reglas de negocio.** Hay 43 decisiones abiertas; las 8 psicopedagógicas están
-   respondidas ([ADR-025](docs/decisions.md#adr-025)) pero **con residuos**. Si falta una regla,
-   registrala como ADR `PENDING` y **preguntá**.
+1. **No inventes reglas de negocio.** Hay 42 decisiones abiertas; las 8 psicopedagógicas
+   ([ADR-025](docs/decisions.md#adr-025)) y la obligatoriedad de `Reflection`
+   ([ADR-026](docs/decisions.md#adr-026)) están respondidas, pero **con residuos**. Si falta una
+   regla, registrala como ADR `PENDING` y **preguntá**.
 2. **No resuelvas una decisión `PENDING`.** La cierra una persona.
 3. **Datos reales: bloqueo absoluto** hasta que [ADR-006](docs/decisions.md#adr-006) esté resuelto.
    **Que ADR-005 esté aceptado no cambia esto:** el backend se construye sobre datos sintéticos.
@@ -87,9 +88,11 @@ segundos se corrió con resultado PASS** (reportado por el owner, 30 ago 2026).
 estudiante, la frontera Controller → Service → Repository, `product_event`/`audit_log` append-only y
 el cliente de autorización del CRM.
 
-**Fase B2 — Dominio de ejecución.** 🟡 **EN CURSO: 5 completas de 6.** `Action`,
-`Commitment` y `Evidence` están completas; **sólo `Reflection` sigue parcial**, bloqueada en su
-configuración por `C01-051`. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Postgres con sesión real, cada una con una
+**Fase B2 — Dominio de ejecución.** ✅ **COMPLETA, 6 / 6** — 1 de septiembre de 2026. `Action`,
+`Commitment`, `Evidence` y `Reflection`, esta última cuando el owner cerró `C01-051`
+([ADR-026](docs/decisions.md#adr-026)): el requisito vive en la Action, **congelado al crearla**, y
+es ternario —`NO_CONFIGURADA` no ofrece nada, `OPTIONAL` ofrece y no bloquea, `REQUIRED` bloquea sólo
+el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Postgres con sesión real, cada una con una
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` esperan a la Fase B5
 porque no hay tablas de examen.
 
@@ -112,7 +115,7 @@ tiene siete componentes**. Ver `roadmap.md` → Fase B5.
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
 
-**Verificación de base:** `npm run db:verify` — **118 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **120 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de

@@ -183,7 +183,7 @@ const evidencia: EstadoDeEvidencia = {
   objetivo: "Resolver la guía de integrales",
   evidenciaEsperada: "7 ejercicios",
   criterioCierre: "están completos",
-  reflexionRequerida: false,
+  requisitoDeReflexion: "NO_CONFIGURADA",
   reflexionPresente: false,
   adjuntoPrevio: null,
   esResubmission: false,
@@ -192,14 +192,30 @@ const evidencia: EstadoDeEvidencia = {
   tardia: false,
 };
 
-describe("B2.6 · UX05 no cierra `C01-051` ni confunde el lifecycle", () => {
-  it("sin requisito declarado no se ofrece una Reflection obligatoria", () => {
-    // El default no se elige acá: `C01-051` sigue abierto.
+describe("B2.4 · ADR-026 · los tres estados del requisito de Reflection", () => {
+  /**
+   * La distinción que el booleano borraba. `OPTIONAL` **no es** *"no hay
+   * Reflection"*: es que se ofrece y omitirla es válido. Con el modelo anterior,
+   * `false` no ofrecía nada y la Reflection opcional no existía en la UI.
+   */
+  it("`NO_CONFIGURADA` no ofrece nada", () => {
     expect(proyectarEvidencia(evidencia).reflection).toBeNull();
   });
 
+  it("`OPTIONAL` **se ofrece**, y no bloquea el envío", () => {
+    const p = proyectarEvidencia({ ...evidencia, requisitoDeReflexion: "OPTIONAL" });
+    expect(p.reflection).toEqual({ titulo: expect.any(String), requerida: false });
+    expect(p.ctaPrimaria?.habilitada).toBe(true);
+  });
+
+  it("`OPTIONAL` y `NO_CONFIGURADA` no se ven igual", () => {
+    const opcional = proyectarEvidencia({ ...evidencia, requisitoDeReflexion: "OPTIONAL" });
+    const sinConfigurar = proyectarEvidencia(evidencia);
+    expect(opcional.reflection).not.toEqual(sinConfigurar.reflection);
+  });
+
   it("una Reflection requerida y ausente bloquea el envío, y sólo eso", () => {
-    const p = proyectarEvidencia({ ...evidencia, reflexionRequerida: true });
+    const p = proyectarEvidencia({ ...evidencia, requisitoDeReflexion: "REQUIRED" });
     expect(p.ctaPrimaria?.habilitada).toBe(false);
     // No emite ningún juicio sobre la evidencia ni sobre el dominio.
     expect(p.estadoVisible).toBe("Todavía no entregaste esta evidencia");
@@ -207,9 +223,23 @@ describe("B2.6 · UX05 no cierra `C01-051` ni confunde el lifecycle", () => {
   });
 
   it("con la Reflection presente, el envío se habilita", () => {
-    const p = proyectarEvidencia({ ...evidencia, reflexionRequerida: true, reflexionPresente: true });
+    const p = proyectarEvidencia({
+      ...evidencia,
+      requisitoDeReflexion: "REQUIRED",
+      reflexionPresente: true,
+    });
     expect(p.ctaPrimaria?.habilitada).toBe(true);
   });
+
+  it("ni `OPTIONAL` ni `NO_CONFIGURADA` bloquean nunca el envío", () => {
+    for (const requisito of ["NO_CONFIGURADA", "OPTIONAL"] as const) {
+      const p = proyectarEvidencia({ ...evidencia, requisitoDeReflexion: requisito });
+      expect(p.ctaPrimaria?.habilitada, requisito).toBe(true);
+    }
+  });
+});
+
+describe("B2.6 · UX05 no confunde el lifecycle", () => {
 
   it("el enum del lifecycle nunca sale como copy visible", () => {
     for (const estado of ["SUBMITTED", "UNDER_REVIEW", "SUFFICIENT", "VALIDATED"]) {

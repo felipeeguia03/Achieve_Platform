@@ -72,6 +72,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-023](#adr-023) | La ingesta del ADL se construye antes que el ADE, y empieza asistida | `ACCEPTED` | — |
 | [ADR-024](#adr-024) | Modo MVP: se construye todo sobre datos sintéticos | `ACCEPTED` | — |
 | [ADR-025](#adr-025) | Las ocho `HUMAN-P0`, respondidas por la psicopedagoga | ✅ `ACCEPTED` | — |
+| [ADR-026](#adr-026) | Obligatoriedad de `Reflection`: dónde vive y qué la hace válida | ✅ `ACCEPTED` | — |
 
 ---
 
@@ -1721,3 +1722,86 @@ Ninguno de estos residuos lo puede cerrar un agente. Siguen bajo la regla de
    no tiene tablas. Llegaron **antes** de construir B5, que es exactamente cuando servían.
 5. **Se versiona la fuente literal** en [`human-p0-source.md`](human-p0-source.md). Toda paráfrasis
    —esta incluida— **pierde** contra ese archivo.
+
+---
+
+## ADR-026 — Obligatoriedad de `Reflection`: dónde vive, quién la pone y qué la hace válida
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** `C01-051` (gate `H`) — **con un residuo pedagógico declarado abajo.**
+**Relacionado:** `C01-012` (Evidence content), `C01-017` (privacidad y retención de
+Evidence/Reflection — **no lo toca**), `C01-027`, [ADR-025](#adr-025).
+**Toca:** `product.md` §7, `data-model.md` §9, `pending-decisions-annex.md`, `roadmap.md`.
+
+### Qué estaba realmente abierto
+
+Menos de lo que parecía. El spec fuente ya congela tres cosas, y esta decisión **no las reabre**:
+
+- **`CO-06`:** *"objeto separado de Evidence […] `OPTIONAL`: omitir no bloquea; `REQUIRED`:
+  ausencia/invalidación impide **sólo el submit dependiente** y muestra fallback; **nunca se
+  infiere**"*.
+- **Parte III §7:** *"`REQUIRED`: **la configuración versionada** identifica ámbito, criterio mínimo
+  y destino. Una Reflection válida es precondición del submit específicamente configurado, **no de
+  todo el recorrido**"*.
+- **`CTA-016`:** su condición de aparición es *"Reflection **configurada** y visible"* — no
+  *"requerida"*.
+
+Lo abierto eran tres preguntas concretas: **dónde vive el flag**, **quién lo pone** y **qué hace
+válida** a una Reflection.
+
+### Decisión
+
+**1. El requisito vive en la configuración versionada del contenido, nunca en una tabla de
+preferencias.** Dos lugares y ningún tercero: el paso del protocolo (`protocol_step`, cuando la Fase
+B5 lo migre) y la Action. **Un flag global mutable queda descartado explícitamente:** cambiarlo
+mañana reescribiría retroactivamente si la entrega de la semana pasada era válida. Es el mismo
+argumento con el que `commitment.timezone_at_commit` se congela y con el que un `MISSED` no se edita.
+
+**2. Se congela en la instancia al crearla.** `action.reflection_requirement` guarda el valor vigente
+**en el momento en que la Action se crea**, y no cambia después. El estudiante acordó con las reglas
+de ese día.
+
+**3. El default del MVP es `OPTIONAL` en el loop diario.** `REQUIRED` sólo donde el contenido
+versionado lo declare. Tres razones, y las tres salen de fuentes que ya existen:
+
+- **`HUMAN-P0-02 v1.0`** ([ADR-025](#adr-025)) eligió un registro breve *"que no le coma el tiempo al
+  estudiante"*. Una reflexión obligatoria en cada entrega es exactamente eso.
+- **`HUMAN-P0-05 v1.0`** separó **evidencia de trabajo** de **evidencia de aprendizaje**. Una
+  Reflection es autorreporte: bloquear el submit de la Evidence —lo más fuerte que el sistema
+  recoge— por la ausencia de lo más débil pone el gate del lado equivocado.
+- **Obligar ensucia el dato.** Una reflexión escrita para destrabar un botón entra a la Bitácora
+  **idéntica** a una real. La Etapa B2.4 ya había cazado la versión chica de esto: *"un objeto en
+  blanco aparecería en la Bitácora como si el estudiante hubiera reflexionado"*.
+
+Y es la dirección **reversible**: pasar de `OPTIONAL` a `REQUIRED` es trivial; al revés se arrastran
+meses de relleno que no se puede separar de lo genuino.
+
+**4. Válida = no vacía, salvo criterio declarado.** Ya implementado en la B2.4: una Reflection sin
+ningún dato no es una Reflection. Si la configuración declara un criterio mínimo, ése manda.
+
+### El estado que faltaba: son tres, no dos
+
+`OPTIONAL` **no es** *"no hay Reflection"*. El registro canónico de CTAs ya lo modelaba
+—`CTA-016.aparece` mira `reflectionConfigurada`, no `reflectionRequerida`— y **la capa de servidor lo
+había colapsado a un booleano**: con `false` no se ofrecía nada, así que la Reflection opcional no
+existía en la UI. El requisito pasa a ser ternario:
+
+| Valor | La CTA-016 se ofrece | Bloquea el submit dependiente |
+|---|---|---|
+| `NO_CONFIGURADA` | no | no |
+| `OPTIONAL` | **sí** | no |
+| `REQUIRED` | sí | sí, y **sólo** ese submit |
+
+### Lo que esta decisión NO cierra
+
+**En qué pasos del protocolo de examen la reflexión debe ser obligatoria es criterio pedagógico**, y
+lo responde la misma profesional que respondió las ocho `HUMAN-P0`. Roza dos residuos que
+[ADR-025](#adr-025) dejó abiertos: cuáles de los 20 pasos son obligatorios (`C01-031`) y el momento
+del análisis posterior (`C01-038`).
+
+Por eso `C01-051` queda **`ANSWERED — RESIDUO ABIERTO`**, no `CLOSED`: la **forma** está decidida
+—dónde vive, quién lo pone, cómo se congela, qué es válida— y el **cuándo** pedagógico no. La forma
+es lo que bloqueaba el código; el cuándo bloquea contenido que todavía no existe.
+
+Tampoco toca **privacidad ni retención** de la Reflection: eso es `C01-017`, sigue `OPEN`, y el
+propio anexo advierte que son cosas distintas.

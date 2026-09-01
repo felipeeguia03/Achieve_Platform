@@ -9,18 +9,28 @@
  *   nada más. `CTA-007` lo dice: *"contenido válido **+ Reflection requerida
  *   válida**"*.
  *
- * ### Qué NO está cerrado, y por eso no se inventa
+ * ### Dónde vive el requisito — cerrado por `ADR-026`
  *
- * **`C01-051` está `OPEN` con gate `H`** —lo cierra una persona—:
- * *"Obligatoriedad de `Reflection`: configurable `OPTIONAL`/`REQUIRED` por
- * Action o paso. **La configuración exacta no está cerrada.**"*
+ * `C01-051` estuvo `OPEN` con gate `H` hasta el 1 de septiembre de 2026, y
+ * mientras lo estuvo este Service recibió el requisito **por parámetro**: no
+ * había dónde leerlo sin inventar la decisión. Ahora vive en
+ * `action.reflection_requirement`, **congelado al crear la Action** — un
+ * requisito que cambia después reescribiría si una entrega vieja era válida.
  *
- * O sea: **dónde vive el flag y quién lo pone** es la decisión abierta. Este
- * Service recibe el requisito **por parámetro** y hace cumplir la regla; no
- * hay tabla de configuración, ni default, ni lectura de nada. Elegir uno sería
- * cerrar `C01-051` desde el código.
+ * El Service sigue recibiéndolo por parámetro, y eso no es una herencia: es la
+ * frontera. Quien lee la Action es el Repository; el Service **hace cumplir la
+ * regla**, no busca la configuración.
+ *
+ * ### Son tres estados, no dos
+ *
+ * `OPTIONAL` **no es** *"no hay Reflection"*: es que se ofrece la `CTA-016` y
+ * omitirla es válido. `NO_CONFIGURADA` es que nadie configuró nada y no se
+ * ofrece. El registro canónico de CTAs ya los distinguía —`CTA-016.aparece`
+ * mira `reflectionConfigurada`, no `reflectionRequerida`—; el booleano de la
+ * B2.4 los había colapsado, y por eso la Reflection opcional no existía en la
+ * UI.
  */
-export type RequisitoDeReflexion = "OPTIONAL" | "REQUIRED";
+export type RequisitoDeReflexion = "NO_CONFIGURADA" | "OPTIONAL" | "REQUIRED";
 
 /** Lo mínimo que hace válida a una Reflection. Ver `C01-051` para el resto. */
 export interface ReflexionEntregada {
@@ -51,9 +61,11 @@ export function chequearParaEnviar(
   requisito: RequisitoDeReflexion,
   reflexion: ReflexionEntregada | null,
 ): ChequeoDeReflexion {
-  if (requisito === "OPTIONAL") {
-    // Opcional y ausente: se envía. Opcional y presente pero vacía **también**
-    // se rechaza: si el estudiante escribió algo, se guarda algo.
+  if (requisito !== "REQUIRED") {
+    // Sin obligación y ausente: se envía. Presente pero vacía **también** se
+    // rechaza, y por el mismo motivo de siempre: si el estudiante escribió
+    // algo, se guarda algo; si no escribió nada, no se guarda un objeto en
+    // blanco que la Bitácora muestra como si hubiera reflexionado.
     if (!reflexion) return { estado: "OK" };
   } else if (!reflexion) {
     return { estado: "FALTA_REFLEXION_REQUERIDA" };

@@ -23,7 +23,7 @@ Si el código y `docs/` discrepan, **el código es el defectuoso**.
 
 ### 1.1 No inventes reglas de negocio
 
-Este proyecto tiene **43 decisiones de negocio abiertas** (de `C01-001` a `C01-051`). Las **8
+Este proyecto tiene **42 decisiones de negocio abiertas** (de `C01-001` a `C01-051`). Las **8
 decisiones psicopedagógicas** (`HUMAN-P0-01`…`08`) **fueron respondidas** por la psicopedagoga real
 el 31 de agosto de 2026: se construye contra su criterio confirmado `v1.0`, **citándolo**, y sus
 residuos siguen abiertos. Todas están en
@@ -278,12 +278,13 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Track B, Fase B2 — Dominio de ejecución.** 🟡 **5 etapas completas de 6.**
+**Fase actual: Track B, Fase B2 — Dominio de ejecución.** ✅ **COMPLETA, 6 / 6** (1 sep 2026). La
+próxima con trabajo disponible es la **B3**, que quedó desbloqueada.
 
 Track A y la Fase A2 están cerrados. Las nueve superficies existen, todos los estados críticos son
 alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner. B1 está
 completa (6/6). En B2, `Action`, `Commitment` y `Evidence` están completas; `Reflection` sigue
-parcial por `C01-051` —la única que queda—. La Etapa B2.6 **cerró**: `UX01`–`UX06` leen de Postgres con sesión real, y el
+cerró el 1 de septiembre con [ADR-026](docs/decisions.md#adr-026), que decidió `C01-051`. La Etapa B2.6 **cerró**: `UX01`–`UX06` leen de Postgres con sesión real, y el
 catálogo sintético sigue disponible bajo `?escenario=` explícito. `UX07`–`UX09` esperan a la Fase B5.
 B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle se construyeron por
 adelantado en B4.

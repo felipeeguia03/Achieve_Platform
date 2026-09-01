@@ -73,7 +73,7 @@ TRACK B ─── cada fase tiene su gate ────────────�
        ↓
   Fase B2 · Dominio de ejecución       🟡 3 completas · 2 parciales
        ↓
-  Fase B3 · Progreso + eventos         🔒 B2 · progress_entry ya migrada
+  Fase B3 · Progreso + eventos         🟢 B2 ✅ · progress_entry ya migrada
        ↓
   ┌────┴─────────────────────────┐
   ↓                              ↓
@@ -1497,10 +1497,9 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **5 completas / 6** — sólo `B2.4` sigue parcial, y la bloquea `C01-051`, que es una
-decisión humana. `B2.5` pasó a ✅ el 1 de septiembre de 2026: su alcance era `UX01` desde la base y
-estaba cumplido; lo que la dejaba en amarillo era el trabajo de las otras superficies, que hizo la
-`B2.6`. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** ✅ **6 / 6 — el 1 de septiembre de 2026.** `B2.4` cerró cuando el owner decidió
+`C01-051` ([ADR-026](decisions.md#adr-026)); `B2.5` pasó a ✅ el mismo día —su alcance era `UX01`
+desde la base y estaba cumplido; lo que la dejaba en amarillo era el trabajo que hizo la `B2.6`—. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1512,7 +1511,7 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | B2.1 | ✅ **COMPLETA** — `Action` + `ActionRecommendation` + máquina de estados |
 | B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
 | B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
-| B2.4 | 🟡 **PARCIAL** — la regla se hace cumplir; **la configuración la bloquea `C01-051`** |
+| B2.4 | ✅ **COMPLETA** — `Reflection`, con su configuración cerrada por [ADR-026](decisions.md#adr-026) |
 | B2.5 | ✅ **COMPLETA** — `UX01` desde la base. Estuvo 🟡 hasta que la `B2.6` conectó las demás |
 | B2.6 | ✅ **COMPLETA** — `UX02`–`UX06` desde la base, con sesión real y `Ausencia` |
 
@@ -1687,7 +1686,15 @@ las tres sean distintas.
 
 ---
 
-#### 🟡 Etapa B2.4 — `Reflection` · PARCIAL · 30 de agosto de 2026
+#### ✅ Etapa B2.4 — `Reflection` · COMPLETA · 1 de septiembre de 2026
+
+> **Cerró cuando el owner decidió, no cuando el código se cansó de esperar.**
+> Estuvo `PARCIAL` desde el 30 de agosto: la regla se hacía cumplir y **la
+> configuración no se inventó**. [ADR-026](decisions.md#adr-026) la decidió el 1
+> de septiembre y el requisito pasó a vivir donde corresponde. Lo que sigue
+> abierto —en qué pasos del protocolo la reflexión es obligatoria— es criterio
+> pedagógico y va con la psicopedagoga, junto con los residuos de
+> [ADR-025](decisions.md#adr-025).
 
 **Se implementó lo que está cerrado. La configuración no se inventó.**
 
@@ -1707,6 +1714,38 @@ habría cerrado `C01-051` desde el código.
 | Una Reflection **vacía no es una Reflection** | ✅ un objeto en blanco aparecería en la Bitácora como si el estudiante hubiera reflexionado |
 | **Dónde se configura `OPTIONAL`/`REQUIRED`** | 🔴 **`C01-051`, lo cierra una persona** |
 | `lint` · `build` · `test` | ✅ verde · verde · **469 tests en 26 archivos** |
+
+##### El cierre · 1 de septiembre de 2026 · [ADR-026](decisions.md#adr-026)
+
+| Qué se decidió | Cómo quedó implementado |
+|---|---|
+| El requisito vive en la **configuración versionada del contenido**, nunca en una tabla de preferencias | `action.reflection_requirement`, y el paso del protocolo cuando la B5 lo migre |
+| Se **congela en la instancia** al crearla | Lo escribe `materializar_recomendacion`; si mañana cambia la política, las Actions ya creadas conservan la regla con la que el estudiante se comprometió |
+| El **default del loop diario es `OPTIONAL`** | El ADE lo pone al crear la Action. El default de **columna** es `NO_CONFIGURADA`: ninguna Action histórica empieza a ofrecer algo que nadie configuró |
+| **Válida = no vacía**, salvo criterio declarado | Ya estaba, desde la parte de agosto |
+| `lint` · `build` · `test` · `db:verify` | ✅ · ✅ · **632 tests en 35 archivos** · **120 comprobaciones** |
+
+**Eran tres estados y el backend modelaba dos.** El registro canónico de CTAs ya los distinguía
+—`CTA-016.aparece` mira `reflectionConfigurada`, no `reflectionRequerida`—, pero la capa de servidor
+usaba un booleano: con `false` no se ofrecía nada. **La Reflection opcional no existía en la UI**, y
+nadie lo había visto porque el único valor con el que se llamaba era `false`. El tipo es ternario
+ahora, y hay un test de que `OPTIONAL` y `NO_CONFIGURADA` **no se ven igual**.
+
+**El parámetro se fue, y eso es parte de la decisión.** Mientras `C01-051` estaba abierto, que el
+requisito entrara por parámetro era la forma de no elegir un default desde el código. Con la decisión
+tomada, un parámetro que el caller pueda cambiar es una puerta trasera a una regla de negocio
+cerrada: `evidenciaDe` ya no lo acepta y la función de base lo lee de la Action.
+
+**Una migración aplicada no se edita.** El primer intento cambió `20260831040000_estado_de_evidencia.sql`
+en el lugar; `db:reset` desde cero falló, porque esa migración pasaba a referir una columna que en ese
+punto de la historia todavía no existía. La forma correcta —la que el repo ya usaba en
+`estado_sin_afirmacion.sql`— es reemplazar la función **desde una migración nueva**. Con `DROP` y no
+sólo `CREATE OR REPLACE`: cambió la firma, y un replace habría dejado dos sobrecargas conviviendo.
+
+**Y una trampa de Postgres que costó un rato.** La comprobación de que el ADE congela el requisito
+hacía `select … from materializar_recomendacion(…) m join action a on a.id = m.action_id`, y volvía
+vacía: **dentro de una misma sentencia, el resto del plan ya tomó su snapshot y no ve la fila que la
+función acaba de insertar.** Ahora son dos sentencias.
 
 **`0` minutos es un dato, no un vacío** — el mismo invariante que `topic_progress` ya sostiene en la
 base. Tiene test, porque es el que más fácil se rompe al validar "campos completos".
@@ -1943,7 +1982,8 @@ le perdona a alguien es una decisión pedagógica, no una función.
 
 ## Fase B3 — Progreso, Bitácora y eventos
 
-**Estado:** 🔒 B2. **Con parte de la estructura ya construida:** la Etapa B2.6 migró
+**Estado:** 🟢 **DESBLOQUEADA** — la Fase B2 cerró 6/6 el 1 de septiembre de 2026. **Con parte de la
+estructura ya construida:** la Etapa B2.6 migró
 `progress_entry` (`data-model.md` §10) con `I10`, y `estado_de_progreso()` ya compone la Bitácora
 desde `product_event`.
 
@@ -2107,17 +2147,18 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
-| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 5 completas; sólo `B2.4` parcial, por `C01-051`. Done auditado: 11 de 12 invariantes con test, `I7` es de B5 | 5 / 6 |
+| Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: 11 de 12 invariantes con test, `I7` es de B5 | 6 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
-| Fase B3 — Progreso y eventos | 🔒 Depende del cierre de B2 | 0 / — |
+| Fase B3 — Progreso y eventos | 🟢 **DESBLOQUEADA** — B2 cerró el 1 sep 2026. La estructura de `progress_entry` ya existe; falta el `ProgressUpdated` productivo (`C01-018`) | 0 / — |
 | Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |
 | Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA, y ahora **con contenido real**: [ADR-025](decisions.md#adr-025) cerró las ocho `HUMAN-P0`. Readiness sigue bloqueada por [ADR-011](decisions.md#adr-011) | 0 / — |
 | Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por [ADR-006](decisions.md#adr-006)** — es la fase que lo cierra | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
-**Estado de los 51 contratos `C01`: 43 `OPEN`, 8 `ANSWERED — RESIDUO ABIERTO`, 0 `CLOSED`.** Las
-ocho respondidas son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026. Ver
+**Estado de los 51 contratos `C01`: 42 `OPEN`, 9 `ANSWERED — RESIDUO ABIERTO`, 0 `CLOSED`.** Ocho
+son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena es `C01-051`
+([ADR-026](decisions.md#adr-026)), el 1 de septiembre. Ver
 [`pending-decisions-annex.md`](pending-decisions-annex.md).
 
 ### 3.1 Deuda técnica abierta — `npm audit`

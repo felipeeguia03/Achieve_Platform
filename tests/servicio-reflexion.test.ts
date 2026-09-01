@@ -27,6 +27,10 @@ describe("B2.4 · si es requerida, bloquea el envío", () => {
   it("OPTIONAL y ausente deja enviar", () => {
     expect(chequearParaEnviar("OPTIONAL", null)).toEqual({ estado: "OK" });
   });
+
+  it("`NO_CONFIGURADA` tampoco bloquea: nadie pidió una Reflection (ADR-026)", () => {
+    expect(chequearParaEnviar("NO_CONFIGURADA", null)).toEqual({ estado: "OK" });
+  });
 });
 
 describe("B2.4 · una Reflection vacía no es una Reflection", () => {

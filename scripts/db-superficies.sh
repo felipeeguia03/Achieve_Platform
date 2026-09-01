@@ -59,14 +59,21 @@ q "
   insert into academic_program (id,institution_id,name) values ('b4000000-0000-0000-0000-000000000001','$INS','Ing');
   insert into curriculum_plan (id,program_id,version) values ('b5000000-0000-0000-0000-000000000001','b4000000-0000-0000-0000-000000000001','2026');
   insert into course (id,curriculum_plan_id,code,name) values ('b6000000-0000-0000-0000-000000000001','b5000000-0000-0000-0000-000000000001','AM2','Análisis II');
-  insert into course_offering (id,course_id,term) values ('b7000000-0000-0000-0000-000000000001','b6000000-0000-0000-0000-000000000001','2026-2');
+  insert into course_offering (id,course_id,term) values
+    ('b7000000-0000-0000-0000-000000000001','b6000000-0000-0000-0000-000000000001','2026-2'),
+    ('b7000000-0000-0000-0000-000000000002','b6000000-0000-0000-0000-000000000001','2027-1');
   insert into topic (id,offering_id,code,name,sequence) values
     ('b8000000-0000-0000-0000-000000000001','b7000000-0000-0000-0000-000000000001','U1','Límites',1),
     ('b8000000-0000-0000-0000-000000000002','b7000000-0000-0000-0000-000000000001','U2','Series',2);
   insert into assessment (id,offering_id,assessment_type,title,modality,source_type)
     values ('b9000000-0000-0000-0000-000000000001','b7000000-0000-0000-0000-000000000001','parcial','Parcial 1','practico','institution');
   insert into student (id,institution_id) values ('$EST','$INS');
-  insert into course_enrollment (id,institution_id,student_id,offering_id) values ('$CE','$INS','$EST','b7000000-0000-0000-0000-000000000001');
+  insert into course_enrollment (id,institution_id,student_id,offering_id) values
+    ('$CE','$INS','$EST','b7000000-0000-0000-0000-000000000001'),
+    -- Una segunda cursada sin Action viva: el ADE no apila sobre la primera, así
+    -- que para verlo materializar hace falta una cursada libre. Va sobre otra
+    -- oferta porque `course_enrollment` es UNIQUE (student_id, offering_id).
+    ('b3333333-0000-0000-0000-000000000002','$INS','$EST','b7000000-0000-0000-0000-000000000002');
   insert into topic_progress (institution_id,course_enrollment_id,topic_id,practice_state,practice_value,recency_at)
     values ('$INS','$CE','b8000000-0000-0000-0000-000000000001','value',12,now() - interval '2 days');
   insert into action (id,institution_id,course_enrollment_id,topic_id,objective,verb,scope,status,estimated_minutes_min,estimated_minutes_max,expected_evidence)
@@ -128,10 +135,29 @@ igual "proyecta la vigente, no la reemplazada" \
   "$(q "select public.estado_de_evidencia('$INS','$EST',now())->>'evidenciaId';")" "bc000000-0000-0000-0000-000000000002"
 igual "y la reconoce como resubmission" \
   "$(q "select public.estado_de_evidencia('$INS','$EST',now())->>'esResubmission';")" "true"
-igual "el requisito de Reflection entra por parámetro (C01-051)" \
-  "$(q "select public.estado_de_evidencia('$INS','$EST',now(),null,true)->>'reflexionRequerida';")" "true"
-igual "y no hay ninguna tabla de configuración detrás" \
-  "$(q "select public.estado_de_evidencia('$INS','$EST',now())->>'reflexionRequerida';")" "false"
+# `ADR-026`: el requisito vive en la Action y se **congela** al crearla. Ya no
+# entra por parámetro — si entrara, el caller podría cambiar una regla de negocio
+# cerrada. Y son tres valores: `NO_CONFIGURADA` no es `OPTIONAL`.
+igual "el requisito sale de la Action, no de un parámetro" \
+  "$(q "select public.estado_de_evidencia('$INS','$EST',now())->>'requisitoDeReflexion';")" "NO_CONFIGURADA"
+q "update action set reflection_requirement='REQUIRED' where id='ba000000-0000-0000-0000-000000000001';" >/dev/null 2>&1
+igual "y cambia con la Action que la origina" \
+  "$(q "select public.estado_de_evidencia('$INS','$EST',now())->>'requisitoDeReflexion';")" "REQUIRED"
+igual "un valor fuera de los tres es rechazado" \
+  "$(q "update action set reflection_requirement='A_VECES' where id='ba000000-0000-0000-0000-000000000001';" | grep -c 'reflection_requirement')" "1"
+q "update action set reflection_requirement='OPTIONAL' where id='ba000000-0000-0000-0000-000000000001';" >/dev/null 2>&1
+
+echo "→ ADR-026 · el ADE congela el default del loop diario"
+# En **dos** sentencias, y no en un `JOIN` sobre la función: dentro de una misma
+# sentencia, el resto del plan ya tomó su snapshot y **no ve la fila que la
+# función acaba de insertar**. El JOIN devolvía vacío y parecía que el ADE no
+# escribía el requisito.
+NUEVA=$(q "select action_id from public.materializar_recomendacion(
+             '$INS','b3333333-0000-0000-0000-000000000002','b8000000-0000-0000-0000-000000000002',
+             'Repasar series','repasar','unidad 2',30,45,null,'3 ejercicios','están completos',
+             'Entra en Parcial 1.',10);" | tr -d '[:space:]')
+igual "una Action creada por el ADE nace OPTIONAL" \
+  "$(q "select reflection_requirement from action where id='$NUEVA';")" "OPTIONAL"
 
 echo "→ estado_de_progreso · VALIDATED no produce progreso por sí solo"
 q "update evidence set lifecycle_state='VALIDATED' where id='bc000000-0000-0000-0000-000000000002';" >/dev/null 2>&1

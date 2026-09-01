@@ -680,6 +680,12 @@ CREATE TABLE evidence_content (
   sort_order    INTEGER NOT NULL DEFAULT 0
 );
 
+-- ⚠️ El REQUISITO de Reflection no vive acá: vive en `action.reflection_requirement`
+-- (y en el paso del protocolo, Fase B5), congelado al crear la instancia
+-- (ADR-026). Una configuración que cambia después reescribiría si una entrega
+-- vieja era válida. Los tres valores son NO_CONFIGURADA / OPTIONAL / REQUIRED:
+-- la primera no ofrece la CTA-016, la segunda sí y omitirla es válido.
+
 -- Reflection: objeto SEPARADO de Evidence. No se fusiona ni infiere.
 CREATE TABLE reflection (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
