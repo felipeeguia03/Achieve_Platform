@@ -299,7 +299,7 @@ Dónde vive cada cosa hoy:
 |---|---|
 | `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, y los view models de `UX01`–`UX06`. **Puro:** sin React, sin I/O |
 | `lib/content/` | El copy con ID tipado (regla `C-07`) |
-| `lib/navigation/` | El grafo del Golden Path y el registro de las 18 CTAs. **No importa `lib/fixtures/`** |
+| `lib/navigation/` | El grafo del Golden Path y el registro de las 19 CTAs. **No importa `lib/fixtures/`** |
 | `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |
 | `components/screens/` | Las 9 superficies, con props tipadas |
 | `app/(student)/` | Una URL por superficie; la ruta lee el escenario y lo proyecta |

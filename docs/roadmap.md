@@ -999,6 +999,10 @@ Verde en 378 tests, mal en la pantalla. **Lo encontró abrir el navegador**, que
 lo que sirve. Se corrigió y se agregó el guard que faltaba: si una llamada proyecta `ausencia`,
 proyecta también `tono` — son las dos mitades de *qué clase de cosa es este valor*.
 
+> ✅ **Cerrado el 1 de septiembre de 2026.** [ADR-020](decisions.md#adr-020): un no-cambio declarado
+> **es un dato, no una ausencia**, y se muestra con su fuente. Lo que sigue abajo es cómo estaba
+> cuando la etapa se cerró.
+
 **Lo que quedó abierto y no se cerró solo:** [ADR-020](decisions.md#adr-020) `PENDING`. Un fixture
 declaraba *"tres estados de no-cambio, distinguibles entre sí"* y **dos de los tres se ven igual**.
 Distinguirlos exige decidir si un no-cambio declarado es una ausencia o un dato — que es dominio, no
@@ -2113,7 +2117,6 @@ desvío, riesgo y recuperación.
 | [ADR-006](decisions.md#adr-006) Privacidad | **Cualquier fase con datos reales.** Absoluto |
 | [ADR-003](decisions.md#adr-003) Convergencia | Fase B6 |
 | [ADR-011](decisions.md#adr-011) Readiness | Readiness visible en B5 |
-| [ADR-020](decisions.md#adr-020) Clases de ausencia | Control segmentado bloqueado en `UX05`/`UX07` |
 
 ✅ **Resueltos el 28 de agosto de 2026,** y por eso ya no aparecen arriba:
 [ADR-008](decisions.md#adr-008) (stack), [ADR-009](decisions.md#adr-009) (nomenclatura `DD`),
@@ -2123,6 +2126,11 @@ desvío, riesgo y recuperación.
 
 ✅ **Resuelto el 29 de agosto de 2026:** [ADR-014](decisions.md#adr-014) (desktop-first; el contrato
 del primer viewport pasa a orden semántico, con 360 px como piso móvil).
+
+✅ **Resueltos el 1 de septiembre de 2026:** [ADR-026](decisions.md#adr-026) (obligatoriedad de
+`Reflection`, que cerró `C01-051` y la Etapa B2.4), [ADR-016](decisions.md#adr-016) (**se agrega
+`CTA-019`**: el registro pasa a 19 y `UX07` deja de alcanzarse sólo por el menú) y
+[ADR-020](decisions.md#adr-020) (**un no-cambio declarado es un dato, no una ausencia**).
 
 ✅ **Resuelto el 31 de agosto de 2026:** [ADR-007](decisions.md#adr-007) — **las ocho decisiones
 `HUMAN-P0` fueron respondidas por la psicopedagoga real.** Ver [ADR-025](decisions.md#adr-025) y la

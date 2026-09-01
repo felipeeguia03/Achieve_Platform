@@ -87,7 +87,7 @@ lib/server/      backend: http (borde) · servicios (dominio) · repositorios (S
 app/api/         Controller: valida JWT, llama a un Service, traduce a HTTP
 supabase/        migraciones y entorno local reproducible
 lib/content/     el copy, con ID tipado (regla C-07)
-lib/navigation/  grafo del Golden Path + registro canónico de las 18 CTAs
+lib/navigation/  grafo del Golden Path + registro canónico de las 19 CTAs
 lib/fixtures/    el catálogo de escenarios sintéticos
 app/(student)/   una URL por superficie; la ruta lee el escenario y lo proyecta
 components/screens/   las superficies, con props tipadas

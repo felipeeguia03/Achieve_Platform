@@ -495,8 +495,10 @@ en una línea`. **No se esconden los que fallan.**
 - [ ] `P-08` Las dos fuentes de verdad son visibles; las ediciones locales están marcadas
 - [x] `P-09` Vacío, no-cargado, sin-asignar y cero se ven distinto — **A2.3**, con matiz declarado:
       *sin-asignar* y *cero* se dibujan y se testean sin depender del color; *vacío* omite la fila
-      entera (*omitir, no inventar*); *no cargado* es `N/A` bajo cero red. Falta separar dos clases
-      de ausencia que hoy comparten tratamiento: [ADR-020](decisions.md#adr-020) `PENDING`
+      entera (*omitir, no inventar*); *no cargado* es `N/A` bajo cero red. **Cerrado del todo el 1 de
+      septiembre de 2026:** las dos clases que compartían tratamiento se separaron por
+      [ADR-020](decisions.md#adr-020) — un no-cambio **declarado** dejó de ser una ausencia y se
+      muestra como dato, con su fuente
 - [ ] `A-01` Con datos sucios reales, ninguna celda quedó ilegible
 
 ### Bloque 5 — Visual

@@ -391,6 +391,28 @@ describe("B2.6 · UX06 sólo lista lo que `changed_dimensions` declara", () => {
     expect(new Set([valor("Recorrido"), valor("Dominio"), valor("Confianza")]).size).toBe(3);
   });
 
+  /**
+   * `ADR-020`. Se distinguen **por forma, no por copy**: alguien que lee la
+   * pantalla en blanco y negro tiene que ver que una fila es un dato y la otra
+   * una ausencia. Antes las dos llevaban `SIN_ASIGNAR` y se veían idénticas,
+   * mientras el fixture prometía lo contrario.
+   */
+  it("un no-cambio declarado es un dato, no una ausencia", () => {
+    const filas = proyectarProgreso(conCambio(["practice"])).sinCambioConfirmado;
+    const fila = (label: string) => filas.find((f) => f.label === label)!;
+    expect(fila("Recorrido").ausencia).toBeUndefined();
+    expect(fila("Dominio").ausencia).toBe("SIN_ASIGNAR");
+  });
+
+  it("el no-cambio declarado lleva su fuente; una ausencia sola, no", () => {
+    // Con resultado autoritativo hay algo que citar.
+    expect(proyectarProgreso(conCambio(["practice"])).fuenteSinCambio).toBe(
+      "resultado de progreso confirmado",
+    );
+    // Sin resultado, el bloque son puras ausencias: no hay fuente que nombrar.
+    expect(proyectarProgreso(progreso).fuenteSinCambio).toBeNull();
+  });
+
   it("sin resultado autoritativo, una dimensión medida no «conserva» nada", () => {
     // Nadie comparó: que exista un número no autoriza a afirmar continuidad.
     const filas = proyectarProgreso(progreso).sinCambioConfirmado;

@@ -19,9 +19,11 @@
  *    dos aristas canónicas de una vez: `CTA-005` sale de `UX04` y `CTA-006`
  *    llega a `UX05`. No se inventa una transición — se atraviesa un nodo que no
  *    tiene superficie.
- * 2. **Ninguna CTA lleva a `UX07`** ([ADR-016](../../docs/decisions.md), que
- *    sigue `PENDING`). Esa estación se alcanza por **navegación del
- *    facilitador**, y está marcada como tal. No se agregó `CTA-019`.
+ * 2. ~~Ninguna CTA lleva a `UX07`.~~ **Cerrada el 1 de septiembre de 2026** por
+ *    [ADR-016](../../docs/decisions.md#adr-016): la entrada manual
+ *    `UX02 → UX07` que el spec describe en `§VI.7` §9 era un olvido del
+ *    registro, y ahora es `CTA-019`. La estación se alcanza **por clic**, y el
+ *    recorrido dejó de necesitar al facilitador.
  */
 
 import type { CtaId } from "./cta-registry";
@@ -107,13 +109,9 @@ export const recorridoFocusGroup: readonly Estacion[] = [
     ruta: "/examen/activar",
     escenario: null,
     pregunta: "¿Qué examen activo y qué implica?",
-    llegada: {
-      tipo: "facilitador",
-      motivo:
-        "Ninguna de las 18 CTAs del registro canónico lleva a UX07, aunque VI.7 §9 " +
-        "describe una entrada manual desde Materia/Cursado. ADR-016 sigue PENDING y " +
-        "no se inventó una CTA-019.",
-    },
+    // `CTA-019`: la entrada manual desde la materia (ADR-016). Antes era el
+    // único paso del recorrido que no tenía contrato detrás.
+    llegada: { tipo: "cta", cta: "CTA-019" },
   },
   {
     nodo: "UX08",

@@ -344,8 +344,18 @@ export interface ProgresoProps {
   /**
    * Los estados de no-cambio, que son distinguibles entre sí: "conserva su
    * estado" ≠ "no evaluado" ≠ "no disponible" ≠ `0` (AGENTS.md §2.5).
+   *
+   * **Desde [ADR-020] no comparten tratamiento.** Un no-cambio declarado por el
+   * owner es un **dato presente** —alguien miró y confirmó— y va sin `ausencia`;
+   * "no evaluado" y "sin información" son ausencias tipadas y la llevan. La
+   * distinción se ve sin color, que es lo que `P-09` exige.
    */
   sinCambioConfirmado: FilaDato[];
+  /**
+   * De dónde sale el no-cambio, cuando lo declaró el owner. `null` ⇒ el bloque
+   * sólo tiene ausencias, y una ausencia no tiene fuente que citar.
+   */
+  fuenteSinCambio: string | null;
   queSigue: string | null;
   aviso: string | null;
   /**

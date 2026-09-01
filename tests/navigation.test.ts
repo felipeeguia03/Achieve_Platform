@@ -47,9 +47,12 @@ describe("Las nueve superficies", () => {
 });
 
 describe("Registro canónico de CTAs", () => {
-  it("son exactamente 18, de CTA-001 a CTA-018", () => {
-    expect(ctaIds).toHaveLength(18);
-    for (let n = 1; n <= 18; n++) {
+  it("son exactamente 19, de CTA-001 a CTA-019", () => {
+    // Eran 18 hasta el 1 de septiembre de 2026. `CTA-019` es la corrección
+    // aprobada por ADR-016: el spec describía la entrada manual `UX02 → UX07` y
+    // el registro no la tenía.
+    expect(ctaIds).toHaveLength(19);
+    for (let n = 1; n <= 19; n++) {
       expect(ctaIds).toContain(`CTA-${String(n).padStart(3, "0")}` as CtaId);
     }
   });
@@ -80,16 +83,40 @@ describe("Registro canónico de CTAs", () => {
     }
   });
 
+  /**
+   * `CTA-019` **no está en el spec, y no puede estarlo**: es la corrección que
+   * ADR-016 aprobó, y `product-spec-source.md` no se edita (`AGENTS.md` §1.1).
+   * Se la excluye acá y se la verifica contra el ADR en el test siguiente, que
+   * es su fuente.
+   */
+  const CORRECCIONES: CtaId[] = ["CTA-019"];
+
   it("la condición y los escenarios de aceptación son los del spec", () => {
     // El spec es explícito: ningún otro artifact mantiene copia normativa.
     // Si alguien edita una condición acá y no en el spec, esto rompe.
-    for (const id of ctaIds) {
+    for (const id of ctaIds.filter((x) => !CORRECCIONES.includes(x))) {
       const cta = ctaRegistry[id];
       expect(spec, `${id} no está en el spec`).toContain(id);
       expect(spec, `la condición de ${id} no coincide con el spec`).toContain(cta.condicion);
       for (const sc of cta.escenarios) {
         expect(spec, `${id} cita ${sc}, que no está en el spec`).toContain(sc);
       }
+    }
+  });
+
+  /**
+   * Una fila que no viene del spec tiene que venir de algún lado. Si mañana
+   * alguien agrega otra sin ADR, este test la caza.
+   */
+  it("toda CTA que no está en el spec la respalda un ADR aceptado", () => {
+    const adrs = readFileSync(resolve(process.cwd(), "docs/decisions.md"), "utf8");
+    for (const id of CORRECCIONES) {
+      expect(ctaIds).toContain(id);
+      expect(adrs, `${id} no aparece en decisions.md`).toContain(id);
+      // Y el ADR que la introduce tiene que estar aceptado, no pendiente.
+      const adr016 = adrs.slice(adrs.indexOf("## ADR-016"), adrs.indexOf("## ADR-017"));
+      expect(adr016).toContain(id);
+      expect(adr016).toContain("ACCEPTED");
     }
   });
 
@@ -178,8 +205,8 @@ function alcanzaAlgunEscenario(id: CtaId): boolean {
 describe("Alcance: toda CTA tiene un escenario que la alcanza", () => {
   const exigibles = ctaIds.filter((id) => !(id in bloqueadasPorEtapa));
 
-  it("las 18 CTAs son exigibles: ninguna superficie de origen falta ya", () => {
-    expect(exigibles).toHaveLength(18);
+  it("las 19 CTAs son exigibles: ninguna superficie de origen falta ya", () => {
+    expect(exigibles).toHaveLength(19);
     expect(Object.keys(bloqueadasPorEtapa)).toHaveLength(0);
   });
 

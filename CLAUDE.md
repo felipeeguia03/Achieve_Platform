@@ -123,14 +123,14 @@ cierre de la B2 —los 12 invariantes de `data-model.md` §11— contra el propi
 test, `I7` no puede tenerlo porque `exam_preparation` no está migrada, y un guard rompe el día que se
 migre.
 
-La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
+La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 19 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
 **Ninguna pantalla importa un fixture** y **`lib/navigation/` no importa `lib/fixtures/`**; hay tests
 estáticos que lo verifican.
 
-✅ **El recorrido del focus group es recorrible extremo a extremo.** Conserva dos costuras
-declaradas: `UX05` cruza el nodo `ejecución`, que no tiene pantalla, y `UX07` requiere navegación
-del facilitador porque ninguna CTA canónica llega ahí ([ADR-016](docs/decisions.md#adr-016)).
+✅ **El recorrido del focus group es recorrible extremo a extremo, y ahora entero por clic.**
+Conserva **una** costura declarada: `UX05` cruza el nodo `ejecución`, que no tiene pantalla. La de
+`UX07` se cerró con `CTA-019` ([ADR-016](docs/decisions.md#adr-016)).
 
 - **Track A** (clickeable, fixtures, sin backend): **sin bloqueos.** Cerrar la Fase 0 cierra el
   track — Operador e Institución se difirieron ([ADR-012](docs/decisions.md#adr-012)).
@@ -146,19 +146,21 @@ resolverse antes de producción o de incorporar una sola persona real. Arreglarl
 de Next y debe registrarse bajo [ADR-008](docs/decisions.md#adr-008). Ver `roadmap.md` §3.1.
 
 Superficies: `UX01`–`UX09`. **Las nueve existen** como componente real con ruta propia bajo
-`app/(student)/`. **No existe `UX10`.** Las 18 CTAs son alcanzables y todos sus destinos tienen
+`app/(student)/`. **No existe `UX10`.** Las 19 CTAs son alcanzables y todos sus destinos tienen
 pantalla.
 
-[ADR-016](docs/decisions.md#adr-016) sigue `PENDING`, pero sólo afecta al recorrido por clic:
-ninguna de las 18 CTAs lleva a `UX07`, que se alcanza por navegación del menú.
+El registro canónico tiene **19 CTAs**: `CTA-019` (`UX02 → UX07`) se agregó el 1 de septiembre de
+2026 por [ADR-016](docs/decisions.md#adr-016). Es la única fila que no transcribe la tabla del spec
+—es una corrección aprobada— y hay un test que exige que toda CTA fuera del spec tenga un ADR
+`ACCEPTED` detrás.
 
 Para ver cualquier estado crítico sin panel de debug: `?escenario=<ID>` en **cualquiera** de las
 nueve rutas.
 
 El recorrido de focus group vive en `lib/navigation/focus-group.ts`, **aparte del registro
-canónico**: es el guion de una sesión, no un contrato. Atraviesa dos costuras sin taparlas — `UX05`
-se alcanza cruzando `ejecución`, que no tiene pantalla, y `UX07` por navegación del facilitador
-porque ninguna CTA lleva ahí ([ADR-016](docs/decisions.md#adr-016), `PENDING`).
+canónico**: es el guion de una sesión, no un contrato. Queda **una** costura, dicha de frente:
+`UX05` se alcanza cruzando `ejecución`, que no tiene pantalla. La otra se cerró — `UX07` ya se
+alcanza por clic con `CTA-019` ([ADR-016](docs/decisions.md#adr-016)).
 
 ---
 

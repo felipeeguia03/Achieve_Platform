@@ -74,6 +74,12 @@ function escenario(
         assessmentElegible: opciones.elegible ?? false,
         confirmacionExplicita: opciones.elegible ?? false,
       }),
+      // El mismo mundo, visto desde la materia: si hay una evaluación elegible,
+      // desde `UX02` se puede entrar a prepararla (`CTA-019`, ADR-016). No es un
+      // contexto nuevo — es la otra superficie del mismo hecho.
+      ...(opciones.elegible
+        ? { UX02: contexto({ courseVisible: true, assessmentElegible: true }) }
+        : {}),
     },
     ux07,
   };

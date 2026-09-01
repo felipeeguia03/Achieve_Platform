@@ -26,13 +26,16 @@ describe("El menú deriva del grafo", () => {
     }
   });
 
-  it("el menú no duplica ninguna CTA del registro canónico", () => {
-    // La navegación lateral es orientación, no una acción de dominio.
+  it("ninguna superficie del menú depende sólo del menú para existir", () => {
+    // La navegación lateral es orientación, no una acción de dominio: cada
+    // destino tiene que ser alcanzable **también** por una CTA con contrato.
+    //
+    // `UX07` era la excepción —ninguna CTA llegaba (ADR-016)— y el menú tapaba
+    // el hueco. Desde el 1 de septiembre de 2026 lo alcanza `CTA-019`, así que
+    // ya no queda ninguno.
     const destinosDeCta = new Set(ctaIds.map((id) => ctaRegistry[id].destino));
     const soloPorMenu = menu.filter((m) => !destinosDeCta.has(m.nodo));
-    // UX07 es justamente el que ninguna CTA alcanza (ADR-016): el menú lo cubre
-    // sin inventar una CTA-019.
-    expect(soloPorMenu.map((m) => m.nodo)).toEqual(["UX07"]);
+    expect(soloPorMenu.map((m) => m.nodo)).toEqual([]);
   });
 
   it("un contador sólo aparece si tiene número", () => {

@@ -82,17 +82,23 @@ describe("Cada paso está respaldado, o dice que no lo está", () => {
     }
   });
 
-  it("un paso sin CTA que lo respalde queda marcado como del facilitador", () => {
+  /**
+   * Hasta el 1 de septiembre de 2026 había exactamente un paso así, y era
+   * `UX07`: ninguna CTA llegaba. ADR-016 lo cerró agregando `CTA-019`, y el
+   * recorrido dejó de necesitar que la persona que conduce la sesión navegue a
+   * mano.
+   */
+  it("ninguna estación queda a cargo del facilitador", () => {
     const delFacilitador = recorridoFocusGroup.filter((e) => e.llegada.tipo === "facilitador");
-    expect(delFacilitador).toHaveLength(1);
-    expect(delFacilitador[0].nodo).toBe("UX07");
+    expect(delFacilitador).toEqual([]);
   });
 
-  it("no se inventó ninguna CTA para tapar el hueco de UX07", () => {
-    // El registro canónico sigue teniendo 18, y ninguna llega a UX07.
-    expect(ctaIds).toHaveLength(18);
+  it("UX07 se alcanza por `CTA-019`, la corrección que aprobó ADR-016", () => {
     const lleganAUX07 = ctaIds.filter((id) => ctaRegistry[id].destino === "UX07");
-    expect(lleganAUX07).toEqual([]);
+    expect(lleganAUX07).toEqual(["CTA-019"]);
+    expect(ctaRegistry["CTA-019"].origen).toEqual(["UX02"]);
+    // Navegar no activa nada: eso sigue siendo `CTA-011`, con confirmación.
+    expect(ctaRegistry["CTA-019"].resultadoAutoritativo).toContain("navegación");
   });
 });
 
@@ -122,24 +128,12 @@ describe("La cadena se recorre entera", () => {
     expect(siguienteUrl("/inexistente", null)).toBeNull();
   });
 
-  it("ninguna CTA encadena hacia la estación del facilitador", () => {
-    // Encadenarla sería crear en los hechos la CTA-019 que ADR-016 deja sin
-    // decidir: el botón de UX02 llevaría a UX07 sin contrato que lo respalde.
-    for (let i = 0; i < recorridoFocusGroup.length - 1; i++) {
-      const actual = recorridoFocusGroup[i];
-      const siguiente = recorridoFocusGroup[i + 1];
-      if (siguiente.llegada.tipo !== "facilitador") continue;
-      expect(
-        siguienteUrl(actual.ruta, actual.escenario),
-        `${actual.ruta} no debe encadenar a ${siguiente.nodo}`,
-      ).toBeNull();
-    }
-  });
-
-  it("la estación del facilitador sí encadena hacia adelante", () => {
-    // El hueco es para llegar a UX07, no para salir de ahí: CTA-011 existe.
-    const facilitador = recorridoFocusGroup.find((e) => e.llegada.tipo === "facilitador")!;
-    expect(siguienteUrl(facilitador.ruta, facilitador.escenario)).not.toBeNull();
+  it("UX07 encadena hacia adelante, y ahora también hacia atrás", () => {
+    // Antes el hueco era para **llegar** a UX07 —salir siempre se pudo, con
+    // CTA-011—. Con `CTA-019` la estación quedó encadenada de los dos lados.
+    const ux07 = recorridoFocusGroup.find((e) => e.nodo === "UX07")!;
+    expect(siguienteUrl(ux07.ruta, ux07.escenario)).not.toBeNull();
+    expect(ux07.llegada.tipo).toBe("cta");
   });
 
   it("la URL de una estación lleva su escenario sólo cuando lo tiene", () => {
@@ -189,10 +183,15 @@ describe("El guion del facilitador", () => {
     expect(pass.length).toBeGreaterThanOrEqual(8);
   });
 
-  it("dice de frente las dos costuras del recorrido", () => {
+  it("dice de frente la costura que queda, y que la otra se cerró", () => {
+    // Queda una: `UX05` se alcanza cruzando un nodo sin pantalla.
     expect(guion).toContain("`ejecución` no tiene pantalla");
+    // Y la de `UX07` se cerró: el guion lo dice en vez de borrar el párrafo,
+    // porque quien conduzca la sesión con la versión vieja en la mano tiene que
+    // entender por qué ya no escribe la URL a mano.
     expect(guion).toContain("ADR-016");
-    expect(guion).toContain("navegación del facilitador");
+    expect(guion).toContain("CTA-019");
+    expect(guion).not.toContain("⚠️ **navegación del facilitador**");
   });
 
   it("declara el reset y por qué es determinista", () => {

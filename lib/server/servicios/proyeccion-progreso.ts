@@ -181,6 +181,19 @@ function cambioConfirmadoDe(e: EstadoDeProgreso): FilaDato[] {
  * El bloque separado que exige `PROG-P1-04` / `REG-P1-01`: las dimensiones
  * autoritativas **conservadas**, que no son las que cambiaron ni un relleno.
  *
+ * ## Un no-cambio declarado **no es una ausencia** — `ADR-020`
+ *
+ * Decidido por el owner el 1 de septiembre de 2026. *"Conserva su estado"* es
+ * información positiva: **alguien miró y confirmó que no cambió**. *"No
+ * evaluado"* es la ausencia de esa mirada. Hasta hoy las dos filas compartían
+ * `SIN_ASIGNAR` y se veían idénticas, mientras el fixture prometía que eran
+ * *"distinguibles entre sí"*.
+ *
+ * Así que el no-cambio sube a **dato presente**, con su fuente, y la itálica
+ * atenuada queda para lo que de verdad falta. Se distinguen **sin color** —una
+ * fila tiene tratamiento de dato y la otra de ausencia—, que es lo que `P-09`
+ * pide y lo que la prueba de imprimir en blanco y negro verifica.
+ *
  * Sin un resultado autoritativo detrás, una dimensión medida **se omite**: que
  * exista un número no autoriza a decir *"conserva su estado"*, porque nadie
  * comparó nada. Las ausencias sí se muestran siempre, y **distinguidas**: "no
@@ -194,17 +207,21 @@ function sinCambioDe(e: EstadoDeProgreso): FilaDato[] {
   const hayResultado = e.resultado !== null;
   const filas: FilaDato[] = [];
 
-  const ausencia = (estado: EstadoDimension): FilaDato["valor"] | null => {
-    if (estado === "value") return hayResultado ? t("PROGRESO.CONSERVA") : null;
-    if (estado === "not_evaluated") return t("DIMENSION.NO_EVALUADO");
-    return t("DIMENSION.SIN_INFORMACION");
-  };
-
   const agregar = (clave: string, label: ClaveDeCopy, estado: EstadoDimension) => {
     if (cambiadas.includes(clave)) return;
-    const valor = ausencia(estado);
-    if (valor === null) return;
-    filas.push({ label: t(label), valor, ausencia: "SIN_ASIGNAR" });
+
+    if (estado === "value") {
+      // Un no-cambio confirmado por el owner: **dato**, no ausencia (`ADR-020`).
+      if (!hayResultado) return;
+      filas.push({ label: t(label), valor: t("PROGRESO.CONSERVA") });
+      return;
+    }
+
+    filas.push({
+      label: t(label),
+      valor: estado === "not_evaluated" ? t("DIMENSION.NO_EVALUADO") : t("DIMENSION.SIN_INFORMACION"),
+      ausencia: "SIN_ASIGNAR",
+    });
   };
 
   agregar("exposure", "DIMENSION.RECORRIDO", d.recorrido);
@@ -321,6 +338,10 @@ export function proyectarProgreso(e: EstadoDeProgreso): ProgresoProps {
     cambioConfirmado: cambioConfirmadoDe(e),
     fuenteCambio: fuenteDe(e),
     sinCambioConfirmado: sinCambioDe(e),
+    // `ADR-020`: si alguna fila de ese bloque es un no-cambio **declarado**, se
+    // dice de dónde sale. Una afirmación sobre un dato lleva su fuente (`P-08`);
+    // una ausencia no tiene fuente que citar.
+    fuenteSinCambio: hayNoCambioDeclarado(e) ? t("PROGRESO.FUENTE_RESULTADO") : null,
     // Lo que sigue es una Action que el ADE **ya emitió**. Esta pantalla no
     // prioriza ni genera ninguna (`VI.6` §5).
     queSigue: e.siguiente?.objetivo ?? null,
@@ -330,4 +351,14 @@ export function proyectarProgreso(e: EstadoDeProgreso): ProgresoProps {
     // es peor que ninguna.
     ctaPrimaria: e.siguiente ? { texto: t("CTA.VER_SIGUIENTE_ACCION"), habilitada: true } : null,
   };
+}
+
+/**
+ * ¿Alguna dimensión conservada viene de un resultado autoritativo?
+ *
+ * Es lo que distingue *"nadie tocó esto"* de *"alguien miró y no cambió"*, y lo
+ * único que autoriza a citar una fuente en el bloque de no-cambio (`ADR-020`).
+ */
+function hayNoCambioDeclarado(e: EstadoDeProgreso): boolean {
+  return sinCambioDe(e).some((f) => f.valor === t("PROGRESO.CONSERVA"));
 }

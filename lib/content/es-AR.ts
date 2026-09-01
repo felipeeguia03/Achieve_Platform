@@ -361,6 +361,8 @@ export const copy = {
   "PROGRESO.CAMBIO_SIN_MAGNITUD": "cambió",
   "PROGRESO.CONSERVA": "conserva su estado",
   "PROGRESO.FUENTE_EVIDENCIA_VALIDADA": "Evidencia validada",
+  /** La fuente de un no-cambio **declarado**. `ADR-020`: es un dato, no un vacío. */
+  "PROGRESO.FUENTE_RESULTADO": "resultado de progreso confirmado",
 
   // ── Carga · lo que NO es un vacío de dominio (Etapa B2.6) ─────────────────
   /**

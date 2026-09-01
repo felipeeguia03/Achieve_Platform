@@ -629,6 +629,7 @@ const progresoBase: ProgresoProps = {
   cambioConfirmado: [],
   fuenteCambio: null,
   sinCambioConfirmado: [],
+  fuenteSinCambio: null,
   queSigue: null,
   aviso: null,
   bitacora: null,
@@ -648,7 +649,9 @@ const progresoBase: ProgresoProps = {
  * Lo que sí se distingue es *"alta · declarada ayer"*: un dato presente.
  */
 const NO_CAMBIO: FilaDato[] = [
-  { label: "Recorrido", valor: "conserva su estado", ausencia: "SIN_ASIGNAR" },
+  // `ADR-020`, 1 sep 2026: **dato**, no ausencia. Alguien miró y confirmó.
+  { label: "Recorrido", valor: "conserva su estado" },
+  // Ausencia real: el eje existe y nadie lo midió.
   { label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" },
   { label: "Confianza", valor: "alta · declarada ayer" },
 ];
@@ -662,6 +665,7 @@ export const FX_LOCAL_PROG_SIN_CAMBIO_EXPLICITO = esc(
       estado: "SIN_CAMBIO_EXPLICITO",
       aviso: "Todavía no hay un cambio de progreso confirmado.",
       sinCambioConfirmado: NO_CAMBIO,
+      fuenteSinCambio: "resultado de progreso confirmado",
     },
   },
   ["C01-018", "SC-PROG-01"],
@@ -714,6 +718,7 @@ export const FX_LOCAL_PROG_BITACORA = esc(
       cambioConfirmado: [{ label: "Práctica", valor: "12 → 19 ejercicios" }],
       fuenteCambio: "Evidence validada",
       sinCambioConfirmado: NO_CAMBIO,
+      fuenteSinCambio: "resultado de progreso confirmado",
       bitacora: [
         {
           ciclo: "Ciclo del 28 de agosto",

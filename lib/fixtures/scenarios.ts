@@ -368,11 +368,15 @@ export const FX_LOCAL_PROG_VALIDATED: Escenario = {
       { label: "Recencia", valor: "hoy" },
     ],
     fuenteCambio: "Evidence validada",
+    // `ADR-020`: el no-cambio **declarado** es un dato y va sin `ausencia`; la
+    // dimensión que nadie midió sí es una ausencia. Antes compartían
+    // tratamiento y el escenario prometía que eran distinguibles.
     sinCambioConfirmado: [
-      { label: "Recorrido", valor: "conserva su estado", ausencia: "SIN_ASIGNAR" },
+      { label: "Recorrido", valor: "conserva su estado" },
       { label: "Dominio", valor: "no evaluado", ausencia: "SIN_ASIGNAR" },
       { label: "Confianza", valor: "alta · declarada ayer" },
     ],
+    fuenteSinCambio: "resultado de progreso confirmado",
     queSigue: "Reforzar cambio de variables.",
     aviso: null,
     bitacora: null,

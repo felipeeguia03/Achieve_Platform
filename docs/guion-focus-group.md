@@ -63,11 +63,11 @@ Diez estaciones. Cada una avanza con **su CTA principal**, salvo donde se indica
 | 5 | `UX05` Evidencia | `/evidencia` | `CTA-005` **Empezar** → atraviesa *ejecución* → `CTA-006` |
 | 6 | `UX06` Progreso | `/progreso` | `CTA-007` **Enviar evidencia** |
 | 7 | `UX02` Materia | `/materia` | `CTA-010` **Ver siguiente acción** |
-| 8 | `UX07` Activación de Examen | `/examen/activar` | ⚠️ **navegación del facilitador** |
+| 8 | `UX07` Activación de Examen | `/examen/activar` | `CTA-019` **Preparar el examen** |
 | 9 | `UX08` Modo Examen | `/examen/overview?escenario=FX-LOCAL-OV-HANDOFF-DISPONIBLE` | `CTA-011` **Activar preparación** |
 | 10 | `UX09` Paso de Protocolo | `/examen/paso` | `CTA-012` **Abrir paso actual** |
 
-### Las dos costuras, dichas de frente
+### La costura que queda, dicha de frente
 
 **Estación 5.** El spec rutea `UX04 → ejecución → UX05`, y **`ejecución` no tiene pantalla**. El
 recorrido atraviesa los dos contratos de una vez. No se inventó una transición: se cruza un nodo que
@@ -78,12 +78,13 @@ no tiene superficie.
 propósito —el botón dice qué va a pasar antes de que se pueda hacer— y es un buen momento para
 observar si el participante entiende **qué le falta** sin que nadie se lo diga.
 
-**Estación 8.** **Ninguna de las 18 CTAs del registro canónico lleva a `UX07`**, aunque `VI.7` §9
-describe una entrada manual desde Materia/Cursado. Es [ADR-016](decisions.md#adr-016), que sigue
-`PENDING`. **El facilitador escribe la URL.** No se agregó una `CTA-019` para tapar el hueco.
+**Estación 8 — ya no es una costura.** Hasta el 1 de septiembre de 2026 ninguna CTA llevaba a
+`UX07` y el facilitador escribía la URL a mano. [ADR-016](decisions.md#adr-016) cerró esa brecha:
+`VI.7` §9 describía la entrada manual desde Materia/Cursado y el registro no la tenía, así que se
+agregó **`CTA-019`**. El recorrido entero se hace **por clic**.
 
-> Si un participante pregunta cómo se llega a Modo Examen, **esa es información valiosa**: anotarla.
-> Es exactamente la pregunta que ADR-016 necesita para cerrarse.
+> Sigue valiendo la pena anotar si alguien pregunta **cómo** se llega a Modo Examen: ahora hay un
+> camino, y lo que importa es si se encuentra solo.
 
 ---
 
@@ -245,8 +246,9 @@ Una fila por participante y estación.
    se explica sola.
 2. **Toda confusión entre enviar y demostrar** es un hallazgo de producto, no de diseño visual. La
    cadena *preparar → enviar → suficiencia → validación → dominio* es el invariante central.
-3. **Si alguien pregunta cómo llegar a Modo Examen**, anotarlo: es el insumo de
-   [ADR-016](decisions.md#adr-016).
+3. **Si alguien no encuentra cómo llegar a Modo Examen**, anotarlo: desde
+   [ADR-016](decisions.md#adr-016) el camino existe —`CTA-019`, desde la materia—, así que no
+   encontrarlo ya no es una brecha del registro sino de la pantalla.
 
 ---
 

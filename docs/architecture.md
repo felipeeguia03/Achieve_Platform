@@ -139,7 +139,7 @@ Achieve_Platform/
 │   ├── utils.ts                 ← cn() · REUSADO
 │   ├── domain/                  ← tipos y máquinas de estado (puras, sin I/O)
 │   ├── content/                 ← el copy, con ID tipado (regla C-07)
-│   ├── navigation/              ← grafo del Golden Path + registro de las 18 CTAs
+│   ├── navigation/              ← grafo del Golden Path + registro de las 19 CTAs
 │   └── fixtures/                ← catálogo de escenarios sintéticos
 │
 └── hooks/
@@ -157,7 +157,7 @@ Achieve_Platform/
 ┌───────────────────────────────┴──────────────────────────────────┐
 │  lib/navigation/              Golden Path                         │
 │  Grafo de transiciones con dos clases de arista —canónica y de    │
-│  retorno seguro—, ambas hacia nodos reales. Registro de las 18    │
+│  retorno seguro—, ambas hacia nodos reales. Registro de las 19    │
 │  CTAs con su condición de aparición, habilitación y destino.      │
 │  NO importa lib/fixtures/: la dirección es fixtures → navigation.  │
 └───────────────────────────────┬──────────────────────────────────┘

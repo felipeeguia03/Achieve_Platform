@@ -62,11 +62,11 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-013](#adr-013) | Contenido duplicado en `pending-decisions-annex.md` | `ACCEPTED` | — |
 | [ADR-014](#adr-014) | Desktop-first y contrato del primer viewport | `ACCEPTED` | — |
 | [ADR-015](#adr-015) | Dónde vive la CTA principal en desktop | `ACCEPTED` | — |
-| [ADR-016](#adr-016) | Ninguna CTA del registro lleva a `UX07` | `PENDING` | Golden Path recorrible (0.8) |
+| [ADR-016](#adr-016) | Ninguna CTA del registro lleva a `UX07` | ✅ `ACCEPTED` *(Opción A: se agrega `CTA-019`)* | — |
 | [ADR-017](#adr-017) | Las dos CTAs ambiguas de `product.md` §10.2 | `ACCEPTED` | — |
 | [ADR-018](#adr-018) | El lenguaje visual sale de las capturas, y hay que mirarlas | `ACCEPTED` | — |
 | [ADR-019](#adr-019) | El dock inferior no se construye; `Ausencia` ocupa su etapa | `ACCEPTED` | [ADR-018](#adr-018) |
-| [ADR-020](#adr-020) | Cuántas clases de ausencia distingue Achieve, y con qué palabras | `PENDING` | [ADR-019](#adr-019) |
+| [ADR-020](#adr-020) | Cuántas clases de ausencia distingue Achieve, y con qué palabras | ✅ `ACCEPTED` *(un no-cambio declarado es un dato)* | — |
 | [ADR-021](#adr-021) | Qué es, en Achieve, el «trabajo pendiente que caduca» | `ACCEPTED` | — |
 | [ADR-022](#adr-022) | `C-04` elevado: el vacío argumenta, con tercera cláusula condicional | `ACCEPTED` | — |
 | [ADR-023](#adr-023) | La ingesta del ADL se construye antes que el ADE, y empieza asistida | `ACCEPTED` | — |
@@ -1002,7 +1002,7 @@ contrato de layout.
 <a id="adr-016"></a>
 ## ADR-016 — Ninguna CTA del registro canónico lleva a `UX07`
 
-**Estado:** `PENDING — esperando decisión del producto`
+**Estado:** ✅ `ACCEPTED` · **Opción A** · 1 de septiembre de 2026 · **decidido por el owner**
 **Toca:** `product-spec-source.md` Parte III §5 (registro canónico), `product.md` §10.3.
 **Detectado en:** Etapa 0.4, al construir `UX07`.
 **No bloquea:** la Etapa 0.4. `UX07` se construye igual, con ruta propia.
@@ -1037,18 +1037,46 @@ agregar una `CTA-019` sería inventar una regla de negocio que ninguna fuente re
 | B | La entrada manual no es una CTA sino una affordance de `UX02` no registrada | Deja `UX02` con una navegación sin contrato observable |
 | C | `UX07` se alcanza **sólo** por recomendación automática, y §9 describe un flujo futuro | Deja sin implementar la entrada manual, que §9 y §13 detallan largo |
 
-### Recomendación
+### Decisión — Opción A
 
-**Opción A.** §9 y §13 describen la entrada manual con suficiente detalle —selección entre
-`Assessments` del mismo `CourseEnrollment`, revisión, confirmación— como para que la ausencia parezca
-un olvido del registro y no una decisión. Pero **la decisión no es de un agente**.
+**La ausencia era un olvido del registro, no una decisión.** §9 y §13 describen la entrada manual con
+demasiado detalle —selección entre `Assessments` del mismo `CourseEnrollment`, revisión,
+confirmación— como para que se la haya omitido a propósito. Se agrega `CTA-019`:
 
-### Mientras tanto
+| Campo | Valor |
+|---|---|
+| Origen | `UX02` |
+| Condición | Assessment existente y elegible en la misma cursada |
+| Acción | preparar el examen |
+| Destino | `UX07` |
+| Resultado autoritativo | **ninguno; navegación** |
+| Fallback | permanecer en la materia |
+| Estado de error | mostrar Modo Examen no disponible; no presumir preparación |
 
-`UX07` se construye con ruta propia (`/examen/activar`) y **no se agrega `CTA-019`**. El registro
-sigue teniendo 18. `UX07` queda alcanzable por URL y por el catálogo de escenarios, no por clic desde
-`UX02`. Es el mismo tipo de hueco que la Etapa 0.3 ya registró para `UX05` y `UX06`, y se resuelve
-junto con ellos antes de la Etapa 0.8.
+**Navegar no activa nada.** Llegar a `UX07` no crea `ExamPreparation` ni la pone `ACTIVE`: eso sigue
+siendo `CTA-011`, con confirmación explícita del estudiante. La distinción importa porque es la que
+impide que una CTA de navegación se convierta en una mutación encubierta.
+
+**Aparece sólo si hay evaluación elegible**, y si no la hay **no se renderiza** —ni siquiera
+deshabilitada—: el estudiante no puede crear una `Assessment` desde `UX02`, porque dar de alta una
+evaluación no registrada **no se implementa** (Etapa 0.4). Una CTA deshabilitada que nadie puede
+habilitar es peor que ninguna.
+
+**`product-spec-source.md` no se edita** (`AGENTS.md` §1.1). La corrección vive en este ADR, en
+`product.md` §10.3 y en el registro ejecutable, que la marca como la única fila que no transcribe la
+tabla del spec. Hay un test que exige que toda CTA fuera del spec esté respaldada por un ADR
+`ACCEPTED`.
+
+### Lo que se destrabó
+
+**El recorrido del focus group ya no necesita al facilitador.** `UX07` era la única estación sin CTA
+que la respaldara, y el guion marcaba ese paso como navegación de la persona que conduce la sesión.
+Ahora se llega por clic desde la materia, que es de donde el spec decía que se llegaba. De las dos
+costuras declaradas del recorrido queda **una**: `UX05`, que se alcanza cruzando `ejecución`, un nodo
+sin pantalla.
+
+Y **ninguna superficie del menú depende ya sólo del menú**: la navegación lateral vuelve a ser
+orientación y no el único camino a una pantalla.
 
 ---
 
@@ -1279,8 +1307,8 @@ tratamientos observados en columnas contiguas de la misma tabla), sí está decl
 
 ## ADR-020 — Cuántas clases de ausencia distingue Achieve, y con qué palabras
 
-**Estado:** `PENDING` · abierta el 30 ago 2026 · **la cierra una persona**
-**Bloquea:** nada. La Etapa A2.3 entregó la primitiva; esto refina qué dato usa cuál.
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Bloquea:** nada. La Etapa A2.3 entregó la primitiva; esto refinó qué dato usa cuál.
 **Sale de:** [ADR-019](#adr-019), al migrar el booleano `ausente` a tipos.
 
 ### Contexto
@@ -1314,14 +1342,38 @@ invariante *"sin datos no es cero"* separa justamente esas dos cosas, y hoy la i
    Esa lectura cerraría la decisión sin agregar tratamiento visual, pero **cambia lo que la pantalla
    afirma**, y eso es dominio.
 
-### Por qué no lo cierra un agente
+### Por qué no lo cerró un agente
 
 La pregunta 3 decide **qué afirma el producto** sobre un dato, no cómo se pinta. `AGENTS.md` §1.5 es
 explícito: qué dice la pantalla lo manda la spec, no las capturas. Y ninguna spec `VI.*` define
 *"conserva su estado"*.
 
-**Mientras siga abierta:** las dos filas comparten `SIN_ASIGNAR`, que es el comportamiento que ya
-tenían. No se degradó nada; se dejó de afirmar que estaban distinguidas cuando no lo estaban.
+### Decisión — un no-cambio declarado **no es una ausencia**
+
+**Es un dato.** Alguien miró y confirmó que la dimensión no cambió: eso es información positiva, y se
+muestra como dato presente, con su fuente. *"No evaluado"* y *"sin información"* siguen siendo
+ausencias tipadas, con su itálica atenuada.
+
+Tres consecuencias, y las tres importan:
+
+1. **No hace falta un cuarto tratamiento visual.** `design-system-capturas.md` §1.6 observó tres y
+   los tres están asignados; inventar uno más habría sido dibujar sin captura que lo respalde. La
+   distinción sale de algo que ya existe: **dato** contra **ausencia**.
+2. **Se ve sin color.** Una fila tiene tratamiento de dato y la otra de ausencia, así que imprimir en
+   blanco y negro no pierde la diferencia. Es lo que `P-09` exige y lo que la Etapa 0.7 verificó con
+   `grayscale(1)`.
+3. **El no-cambio lleva su fuente.** Una afirmación sobre un dato la lleva (`P-08`); una ausencia no
+   tiene fuente que citar, y por eso `fuenteSinCambio` es `null` cuando el bloque son puras
+   ausencias. La distinción es verificable, no estética.
+
+**El vocabulario canónico no cambia.** `design-system.md` §4.1 sigue nombrando *"no evaluado"* ≠ *"no
+disponible"* ≠ `0` **para las ausencias**. *"Conserva su estado"* deja de ser candidato a esa lista
+porque ya no es una de ellas.
+
+**Lo que esta decisión cambia y hay que decir de frente:** la pantalla ahora **afirma** algo que
+antes atenuaba. Si el owner del progreso declara un no-cambio, el estudiante lo lee como un hecho
+—porque lo es—. Eso descansa en que `progress_entry.explicit_no_change` sólo lo escribe el owner del
+dato, que es justamente lo que `I10` garantiza.
 
 ---
 

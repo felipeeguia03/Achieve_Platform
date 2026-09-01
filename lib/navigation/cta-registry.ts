@@ -1,11 +1,23 @@
 /**
- * Registro canónico de CTAs — `CTA-001` … `CTA-018`.
+ * Registro canónico de CTAs — `CTA-001` … `CTA-019`.
  *
  * Owner canónico: `docs/product-spec-source.md` Parte III §5, que es explícito:
  * *"Ningún otro artifact mantiene una copia normativa de este registro."* Este
  * archivo es la **transcripción ejecutable** de esa tabla, no una segunda
  * fuente: cada fila conserva sus siete campos de contrato observable más el
  * octavo de trazabilidad.
+ *
+ * ── La única fila que NO viene de esa tabla ─────────────────────────────────
+ *
+ * **`CTA-019` es una corrección aprobada del registro**, no una transcripción:
+ * [ADR-016](../../docs/decisions.md#adr-016), decidido por el owner el 1 de
+ * septiembre de 2026. El spec describe en `§VI.7` §9 y §13 una entrada manual
+ * `UX02 → UX07` —elegir entre `Assessments` de la misma cursada, revisar,
+ * confirmar— que **ninguna de las 18 filas cubría**. La ausencia era un olvido
+ * del registro, no una decisión, y así se cerró.
+ *
+ * `product-spec-source.md` **no se edita** (`AGENTS.md` §1.1): la corrección
+ * vive en el ADR y en `product.md` §10.3.
  *
  * ── Aparición y habilitación son dos cosas distintas ────────────────────────
  *
@@ -38,7 +50,9 @@ import type { ContextoCTA } from "./context";
 export type CtaId =
   | "CTA-001" | "CTA-002" | "CTA-003" | "CTA-004" | "CTA-005" | "CTA-006"
   | "CTA-007" | "CTA-008" | "CTA-009" | "CTA-010" | "CTA-011" | "CTA-012"
-  | "CTA-013" | "CTA-014" | "CTA-015" | "CTA-016" | "CTA-017" | "CTA-018";
+  | "CTA-013" | "CTA-014" | "CTA-015" | "CTA-016" | "CTA-017" | "CTA-018"
+  /** Corrección aprobada del registro. Ver ADR-016. */
+  | "CTA-019";
 
 export interface Cta {
   id: CtaId;
@@ -353,6 +367,34 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     // Habilitación: la propuesta es válida, y eso se completa en el formulario.
     aparece: (c) => c.renegociacionElegible,
     habilitada: (c) => c.propuestaRenegociacionValida,
+  },
+
+  /**
+   * `UX02 → UX07`. **La entrada manual a Modo Examen** — [ADR-016](../../docs/decisions.md#adr-016).
+   *
+   * Aparición y habilitación se separan igual que en el resto, y acá la
+   * distinción importa: la CTA aparece cuando la materia **tiene una evaluación
+   * elegible**; si no la tiene, no se renderiza, porque el estudiante no puede
+   * crear una `Assessment` desde `UX02` —dar de alta una evaluación no
+   * registrada **no se implementa** (Etapa 0.4)—.
+   *
+   * **No activa nada.** Llegar a `UX07` no crea `ExamPreparation` ni la pone
+   * `ACTIVE`: eso lo hace `CTA-011`, con confirmación explícita del estudiante,
+   * y esta CTA sólo lo lleva a la pantalla donde decide.
+   */
+  "CTA-019": {
+    id: "CTA-019",
+    origen: ["UX02"],
+    condicion: "Assessment existente y elegible en la misma cursada",
+    accionSolicitada: "preparar el examen",
+    destino: "UX07",
+    // Navegar no produce ningún hecho. El alta de la preparación es CTA-011.
+    resultadoAutoritativo: "ninguno; navegación",
+    fallback: { nodo: "UX02", descripcion: "permanecer en la materia" },
+    estadoError: "mostrar Modo Examen no disponible; no presumir preparación",
+    escenarios: ["SC-EX-01"],
+    aparece: (c) => c.assessmentElegible,
+    habilitada: () => true,
   },
 } as const;
 

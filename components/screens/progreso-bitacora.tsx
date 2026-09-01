@@ -34,6 +34,7 @@ export function ProgresoBitacora({
   cambioConfirmado,
   fuenteCambio,
   sinCambioConfirmado,
+  fuenteSinCambio,
   queSigue,
   aviso,
   bitacora,
@@ -88,6 +89,22 @@ export function ProgresoBitacora({
           {sinCambioConfirmado.map((f) => (
             <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
           ))}
+          {/*
+            ADR-020: un no-cambio declarado es un dato, y un dato lleva su
+            fuente (`P-08`). Una ausencia no tiene fuente que citar, y por eso
+            esta línea sólo aparece cuando alguien efectivamente miró.
+          */}
+          {fuenteSinCambio && (
+            <p
+              style={{
+                fontSize: "var(--text-meta)",
+                color: "var(--muted-foreground)",
+                marginTop: 6,
+              }}
+            >
+              {t("PROGRESO.FUENTE_PREFIJO")} {fuenteSinCambio}
+            </p>
+          )}
         </div>
       )}
 
