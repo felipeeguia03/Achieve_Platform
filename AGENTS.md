@@ -291,10 +291,14 @@ En el Track B, hoy:
   propia, y ninguna cae al fixture en silencio. El catálogo sintético sigue disponible bajo
   `?escenario=`. `UX07`–`UX09` se conectaron en la Fase B5.
 - **Modo Examen existe.** El protocolo es **configuración versionada**: sus pasos se cargan con
-  `INSERT`, nunca se hardcodean. Y hoy corre `EP-SPEC v0.1`, que es **una asunción del equipo** —el
-  texto de los 20 `PE-PSY` nunca se transcribió— rotulada como tal en la pantalla
-  ([ADR-030](docs/decisions.md#adr-030)). ⚠️ **Readiness no se calcula:** sin card, sin score, sin
+  `INSERT`, nunca se hardcodean. Hoy corre `HUMAN-ROADMAP v1.0`, **los veinte pasos con el texto
+  literal de la psicopedagoga** ([ADR-031](docs/decisions.md#adr-031)), rotulado en pantalla como
+  *vigencia todavía sin confirmar*. ⚠️ **Readiness no se calcula:** sin card, sin score, sin
   porcentaje, y **nunca "paso 5 de 12"**.
+- **La fuente pedagógica no se corrige.** Ni la redacción ni los tipeos: `docs/*-source.md` existen
+  para que quien los lea encuentre lo que la profesional escribió. Y **lo que la fuente no define no
+  se completa** — evidencia esperada, criterio de cierre y obligatoriedad de los veinte pasos entraron
+  vacíos. Hay tests que rompen en las dos direcciones.
 - **Repetir un paso no es retroceder.** Cada vuelta es un hecho más
   ([ADR-028](docs/decisions.md#adr-028)); el copy dice *"volviste sobre"*, nunca *"repetiste"*.
 - **El loop diario está persistido entero** — `Action`, `Commitment`, `Evidence` y `Reflection`,

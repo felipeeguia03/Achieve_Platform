@@ -12,6 +12,7 @@ import type {
 } from "@/lib/domain/view-models";
 import { provenanceVisible, type SourceType, type VerificationStatus } from "@/lib/content/provenance";
 import { fechaDeCalendario, haceCuanto } from "./tiempo";
+import { fuenteDeContenido } from "./proyeccion-paso";
 
 /**
  * `UX08` proyectada desde datos persistidos (Etapa B5.5).
@@ -55,7 +56,12 @@ export interface EstadoDePreparacion {
   modalidad: string | null;
   fuenteEvaluacion: SourceType | null;
   verificacionEvaluacion: VerificationStatus | null;
-  protocolo: { version: string; alcance: string; contenido: string | null } | null;
+  protocolo: {
+    version: string;
+    alcance: string;
+    contenido: string | null;
+    contenidoVersion: string | null;
+  } | null;
   pasos: PasoDePreparacion[];
   accion: { status: string; objetivo: string | null } | null;
   compromiso: { state: string; inicioEn: string | null } | null;
@@ -233,10 +239,10 @@ export function proyectarPreparacion(e: EstadoDePreparacion): OverviewExamenProp
   // profesional, y el estudiante tiene derecho a saber cuál está mirando.
   const secundarios: string[] = [];
   if (e.protocolo) {
+    // Misma frase que `UX09`, y por eso sale de la misma función: dos
+    // superficies que rotulan distinto el mismo contenido son dos verdades.
     secundarios.push(
-      e.protocolo.contenido === "EP-SPEC"
-        ? `Protocolo ${e.protocolo.version} · contenido provisional del equipo, todavía sin confirmación profesional.`
-        : `Protocolo ${e.protocolo.version}.`,
+      `Protocolo ${e.protocolo.version} · ${fuenteDeContenido(e.protocolo.contenido, e.protocolo.contenidoVersion)}`,
     );
   }
   if (e.ultimoProgresoEn) {

@@ -70,7 +70,9 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Tocar estructura | [`docs/architecture.md`](docs/architecture.md) |
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
-| Escribir contenido del protocolo de examen | [`docs/human-p0-source.md`](docs/human-p0-source.md) — **la voz de la psicopedagoga, literal** |
+| Escribir contenido del protocolo de examen | [`docs/roadmap-modo-examen-source.md`](docs/roadmap-modo-examen-source.md) — **los 20 pasos, su voz literal**. Y [`human-p0-source.md`](docs/human-p0-source.md) para las ocho reglas |
+| Buscar evidencia esperada de un paso | [`docs/cuadro-problemas-source.md`](docs/cuadro-problemas-source.md) — **propuesto, no cargado**: tiene preguntas abiertas de la autora |
+| Nombrar algo como lo nombra el oficio | [`docs/indice-psicopedagogico-source.md`](docs/indice-psicopedagogico-source.md) |
 | Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) — §2.1 tiene la propuesta de contrato v2 |
 | Preparar la consulta legal | [`docs/legal-package.md`](docs/legal-package.md) |
 | Cerrar los residuos psicopedagógicos | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) |
@@ -111,9 +113,12 @@ migración aplicada no se edita:
   perdió: se volvió configurable en `protocol_step.is_reentrant`.
 - [ADR-029](docs/decisions.md#adr-029) — **la pauta de la cátedra tiene entidad propia**, con
   Provenance completa. Cargada por el estudiante entra `student`/`unverified` y **no se eleva**.
-- [ADR-030](docs/decisions.md#adr-030) — **el protocolo corre con contenido provisional y lo dice en
-  sus columnas.** El texto de los 20 pasos `PE-PSY` **nunca se transcribió al repositorio**: corre
-  `EP-SPEC v0.1`, y la pantalla lo declara.
+- [ADR-030](docs/decisions.md#adr-030) — **el protocolo corre con contenido rotulado.** Arrancó con
+  `EP-SPEC v0.1` porque el texto de los 20 pasos no estaba en el repositorio.
+- [ADR-031](docs/decisions.md#adr-031) — **los veinte pasos entraron con el texto de la
+  psicopedagoga**, el mismo día. `HUMAN-ROADMAP v1.0`, verbatim, con `source_text` atado a
+  [`roadmap-modo-examen-source.md`](docs/roadmap-modo-examen-source.md) por test. `EP-SPEC v0.1`
+  quedó **apagado, no borrado**.
 
 ⚠️ **Antes de tocar Modo Examen:** readiness **no se calcula**. La tabla existe (ADR-011) y nadie la
 escribe: los umbrales son `C01-029`. Sin card, sin score, sin porcentaje. Y **no se muestra "paso 5 de
@@ -176,16 +181,25 @@ v1 determinista, el reloj del lifecycle y la materialización transaccional de r
 ✅ **Las 8 decisiones psicopedagógicas están respondidas** (31 ago 2026,
 [ADR-025](docs/decisions.md#adr-025)), y sus tres consecuencias de schema se cerraron con la Fase B5.
 
-⚠️ **Lo que ADR-025 desbloqueó fue el criterio, no el texto.** El contenido de los 20 pasos
-`PE-PSY` **no está en el repositorio**: vive en el PDF del cuestionario. Escribirlo desde los 12
-`EP-01…EP-12` del spec sería inventar criterio pedagógico. Hasta que se transcriba corre
-`EP-SPEC v0.1` rotulado como provisional ([ADR-030](docs/decisions.md#adr-030)), y cargar los 20 es
-un `INSERT`, no una migración.
+✅ **Y el 1 de septiembre llegó el texto de los veinte pasos** — el *Roadmap Modo Examen*, de la misma
+profesional. Está en [`roadmap-modo-examen-source.md`](docs/roadmap-modo-examen-source.md) y corre
+como `HUMAN-ROADMAP v1.0`.
+
+⚠️ **La fuente no se corrige, ni los tipeos.** *"a desarrollae"*, *"icnorporando"*, *"Siemrpe"*: hay
+un test que rompe si alguien los "arregla". Y **lo que la fuente no define no se completa** — los
+veinte tienen `expected_artifact` y `criterion` en `NULL` y `requirement` en `NO_CONFIGURADA`. El
+[cuadro de acciones](docs/cuadro-problemas-source.md) propone evidencias y **no se carga**: conserva
+preguntas de la propia autora.
+
+⚠️ **Su vigencia todavía no está confirmada.** El rótulo dice *"texto de la psicopedagoga · vigencia
+todavía sin confirmar"*, y son tres estados distintos —del equipo, sin confirmar, confirmado—: no se
+colapsan. La pregunta está arriba de todo en la
+[agenda](docs/agenda-cierre-psicopedagoga.md).
 
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
 
-**Verificación de base:** `npm run db:verify` — **165 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **175 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de

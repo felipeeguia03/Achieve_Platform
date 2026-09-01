@@ -2228,8 +2228,107 @@ con el patrón que [ADR-026](#adr-026) ya fijó para `Reflection`: `NO_CONFIGURA
 `OBLIGATORIO`. Los siete del núcleo H24 quedan `NO_CONFIGURADA` porque `C01-034` pregunta si son
 obligatorios o priorizables, y en qué orden se sacrifican cuando no entran todos.
 
+### Lo que esta decisión NO cerraba, y se cerró el mismo día
+
+**La transcripción de los 20 `PE-PSY`.** Apareció horas después: el documento con los veinte pasos
+desarrollados existía, se llama *Roadmap Modo Examen* y no había llegado al repositorio. Ver
+[ADR-031](#adr-031). `EP-SPEC v0.1` **no se borró**: quedó apagado, y esta decisión sigue siendo la
+que explica por qué el rótulo de procedencia existe.
+
+
+---
+
+<a id="adr-031"></a>
+## ADR-031 — Los veinte pasos entran con el texto de la psicopedagoga
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** el hueco de contenido que [ADR-030](#adr-030) declaró abierto. Avanza `C01-027`.
+**Toca:** el protocolo vigente, `product.md` §8, `data-model.md` §10.
+**Fuente:** [`roadmap-modo-examen-source.md`](roadmap-modo-examen-source.md), transcripción literal.
+
+### Contexto
+
+ADR-030 se tomó sobre un hecho: **el texto de los veinte pasos `PE-PSY` no estaba en el repositorio.**
+`HUMAN-P0-01 v1.0` confirmaba la secuencia como base y nadie había transcripto el contenido, así que
+el protocolo corría con `EP-SPEC v0.1` —los doce del spec— rotulado como asunción del equipo.
+
+**El documento apareció.** Se llama *Roadmap Modo Examen*, es de la misma profesional, y no trae sólo
+la secuencia: trae **los veinte pasos desarrollados** y agrupados en cinco fases —diagnóstico,
+planificación, estudio activo, revisión y práctica—.
+
+### Decisión
+
+Se carga como **una versión nueva del protocolo**, `HUMAN-ROADMAP v1.0`, y `EP-SPEC v0.1` **se apaga
+sin borrarse**. Las preparaciones que ya arrancaron contra la versión vieja conservan su recorrido:
+cambiar la versión vigente no reescribe historia, y para eso el protocolo es configuración versionada.
+
+**Qué se cargó, y qué no:**
+
+| Campo | Qué entró | Por qué |
+|---|---|---|
+| `source_text` | El párrafo **verbatim** de cada paso | Columna nueva. Existe para que la trazabilidad sea verificable y no una promesa |
+| `label` · `explanation` | Un **corte determinista** de ese texto: hasta el primer punto o los primeros dos puntos, lo que llegue antes | **Ningún título lo escribió un agente.** Hay test que reconstruye `source_text` desde las dos columnas y lo busca en el documento fuente |
+| `step_type` | La fase del documento —`DIAGNOSTICO`, `PLANIFICACION`, `ESTUDIO_ACTIVO`, `REVISION`, `PRACTICA`— | La agrupación está en la fuente; no se inventó una taxonomía |
+| `expected_artifact` | **NULL** | El Roadmap dice qué hacer, no qué se entrega |
+| `criterion` | **NULL** | Ninguno de los veinte declara cuándo cierra |
+| `requirement` | **`NO_CONFIGURADA`** | `C01-031`, abierto |
+
+**Los errores tipográficos de la autora se conservan** —*"a desarrollae"*, *"icnorporando"*,
+*"Siemrpe"*—, y hay un test que rompe si alguien los "arregla". Corregirle la redacción a la fuente se
+siente como cortesía y es exactamente lo que este repositorio prohíbe: quien la lea dentro de tres
+meses tiene que encontrar lo que ella escribió.
+
+### El tramo reentrante: 9–18, y por qué no 14–15
+
+Leer sólo el Roadmap sugiere marcar **14 y 15**, que son los que describen volver sobre algo con todas
+las letras — *"volver a trabajar específicamente aquello que falló"*, *"volver sobre contenidos
+anteriores evitando que cada tema se estudie una sola vez"*.
+
+**Se carga 9–18**, y la razón es que hay una fuente más específica: `HUMAN-P0-01 v1.0` es la respuesta
+escrita de la profesional **a una pregunta sobre esta misma matriz numerada**, y dice *"entre los
+puntos 9 al 18 el recorrido no es lineal ni rígido… Incluso algunas de estas acciones pueden darse
+varias veces sobre un mismo tema"*.
+
+**Y los números cierran.** *"Estudio, recuperación, revisión y práctica"* son, en este documento,
+`ESTUDIO ACTIVO` (9–15), `REVISION` (16) y `PRACTICA` hasta el simulacro (17–18). El 19 —últimas 24
+horas— y el 20 —durante el examen— no pertenecen a esa etapa, y por eso el tramo termina en 18 y no en
+20. Esa coincidencia es además **la mejor evidencia de que la numeración de este documento es la de
+`PE-PSY-01…20`** que el cuestionario nombraba.
+
+### Un rótulo nuevo: ni del equipo, ni confirmado
+
+La procedencia del contenido tenía dos estados y ahora tiene **tres**, porque apareció el del medio:
+
+| Rótulo | Qué significa | Qué se muestra |
+|---|---|---|
+| `EP-SPEC` | Asunción del equipo | *"Contenido provisional del equipo, todavía sin confirmación profesional."* |
+| `HUMAN-ROADMAP` `v1.0-sin-confirmar` | **Su texto, sin confirmación escrita de vigencia** | *"Texto de la psicopedagoga · vigencia todavía sin confirmar."* |
+| `HUMAN-P0-0X` `v1.0` | Criterio profesional confirmado | *"Criterio profesional confirmado · …"* |
+
+Colapsar el del medio con *"confirmado"* le daría al estudiante una garantía que nadie dio; colapsarlo
+con *"provisional del equipo"* le sacaría el crédito a la profesional que lo escribió. **No son lo
+mismo y no se muestran igual.**
+
+### Qué falta, y es de una persona
+
+Una confirmación escrita, en dos frases, que ya está en la
+[agenda de cierre](agenda-cierre-psicopedagoga.md):
+
+1. ¿Este documento es **la versión vigente** de los veinte pasos?
+2. ¿Se repite **todo el tramo 9–18**, como dice tu respuesta del cuestionario, o sólo los pasos 14 y
+   15?
+
+Cuando llegue, es cambiar `v1.0-sin-confirmar` por `v1.0`. Si la respuesta al punto 2 es "sólo 14 y
+15", es un `UPDATE` de dos filas y una versión nueva — **no una migración de dominio**.
+
 ### Lo que esta decisión NO cierra
 
-**La transcripción de los 20 `PE-PSY`.** Es trabajo de una persona con el PDF a la vista, y hasta que
-esté, el protocolo completo que ve un estudiante es una asunción del equipo — declarada como tal en
-pantalla, no escondida.
+`C01-027` sigue abierto en su parte de **evidencia esperada y criterio de cierre por paso**. El
+[cuadro de problemas y acciones](cuadro-problemas-source.md) de la misma profesional propone
+evidencias concretas y **no se carga**: no está mapeado uno a uno con estos veinte, y conserva
+preguntas suyas sin resolver —`(intervención??)`, `(asistencia??)`, `(checklist predeterminado?)`—.
+**Un campo con un signo de pregunta de quien lo escribió no es criterio confirmado.**
+
+Y sigue abierto todo lo que ya estaba: los umbrales de readiness (`C01-029`), quién escribe
+`current_step_id`, la ventana de recomendación (`C01-024`) y la obligatoriedad de los pasos
+(`C01-031`).

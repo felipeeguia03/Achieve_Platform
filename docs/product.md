@@ -449,9 +449,17 @@ provisional**. La propia fuente prohíbe hardcodearlos. Por eso:
 - No se deriva el paso actual desde la posición en una lista.
 - Cambiar la versión de un default **no reescribe historia**.
 
-**Esto ya se cobró.** Las respuestas del 31 de agosto cambiaron el contenido de cuatro de las ocho
-reglas. Con el protocolo como configuración, eso es cargar otra versión; hardcodeado, habría sido
-migrar el dominio para cambiar una regla pedagógica.
+**Esto ya se cobró dos veces.** Las respuestas del 31 de agosto cambiaron el contenido de cuatro de
+las ocho reglas. Y el 1 de septiembre entraron **los veinte pasos reales**
+([ADR-031](decisions.md#adr-031)), que reemplazaron a los doce provisionales: fue un `INSERT` y un
+`UPDATE is_current`, con la versión vieja **apagada y conservada** para las preparaciones que ya
+corrían contra ella. Hardcodeado, cada una de las dos habría sido migrar el dominio para cambiar una
+regla pedagógica.
+
+> **El protocolo vigente es `HUMAN-ROADMAP v1.0`**, transcripto literal en
+> [`roadmap-modo-examen-source.md`](roadmap-modo-examen-source.md) — con los tipeos de la autora
+> intactos y un test que rompe si alguien los corrige. Lo que la fuente **no** define
+> —evidencia esperada, criterio de cierre, obligatoriedad— entró vacío, no completado.
 
 ### 8.2 El tramo 9–18 es reentrante — ✅ y el modelo ya lo admite
 
@@ -492,7 +500,9 @@ reglas visibles del producto **sí** siguen corriendo sobre un default no cerrad
 | Obligatoriedad de `Reflection` | **Tres estados**, no dos: `NO_CONFIGURADA` no ofrece nada, `OPTIONAL` ofrece la `CTA-016` y omitirla es válido, `REQUIRED` bloquea **sólo el submit dependiente**. Vive en la Action y en el paso del protocolo, **congelado al crearlos**; el default del loop diario es `OPTIONAL` | ✅ [ADR-026](decisions.md#adr-026) · residuo: en qué pasos del protocolo es obligatoria |
 | Secuencia y criterio de cierre del Exam Protocol | **La secuencia dejó de estar abierta** (`HUMAN-P0-01 v1.0`) y **el tramo reentrante ya tiene modelo** ([ADR-028](decisions.md#adr-028)). Sigue abierto **el criterio de cierre** | `C01-027` |
 | Dónde vive la **pauta de la cátedra** | ✅ **`assessment_criterion`, con Provenance completa.** Cargada por el estudiante entra `student`/`unverified` y no se eleva. Sigue abierto qué pasa cuando **contradice** las familias generales | ✅ [ADR-029](decisions.md#adr-029) · residuo: `C01-037` |
-| **El texto de los 20 pasos `PE-PSY`** | La secuencia está confirmada; **el contenido de cada paso nunca se transcribió al repositorio.** Corre `EP-SPEC v0.1` —los 12 del spec— rotulado como provisional en pantalla | ✅ [ADR-030](decisions.md#adr-030) · falta la transcripción |
+| **El texto de los 20 pasos `PE-PSY`** | ✅ **Cargado el 1 de septiembre** desde el *Roadmap Modo Examen* de la psicopedagoga, verbatim y con test que lo ata a la fuente. Falta **su confirmación escrita de vigencia**, y hasta que llegue el rótulo dice *"vigencia todavía sin confirmar"* | ✅ [ADR-031](decisions.md#adr-031) |
+| **Qué pasos del protocolo se repiten** | Cargados **9–18**, por `HUMAN-P0-01 v1.0`. Leyendo sólo el Roadmap saldrían 14 y 15: la respuesta del cuestionario es más específica porque contesta por número de paso | [ADR-031](decisions.md#adr-031) · falta confirmación |
+| **Evidencia esperada de cada paso** | El Roadmap dice qué hacer, no qué se entrega. El [cuadro de acciones](cuadro-problemas-source.md) de la misma profesional lo propone y **no se carga**: no está mapeado uno a uno y conserva preguntas suyas sin resolver | `C01-027` |
 | **Cuáles pasos son obligatorios** | `protocol_step.requirement` es ternario y todos están en `NO_CONFIGURADA`. El booleano anterior afirmaba que los 20 eran obligatorios | `C01-031`, `C01-034` |
 | `TopicProgress` y resumen de materia | Semántica técnica pendiente, **más la reconciliación de vocabularios** que abre `HUMAN-P0-02` — ver §6 | `C01-019` (gate `H`) |
 | Contenido ejecutable de Action y Resource | Pendiente | `C01-008` (gate `H`) |

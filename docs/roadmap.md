@@ -2349,19 +2349,22 @@ congeladas en la base.
 de la máquina de transiciones—, y `preparation_readiness` es la fuente canónica. La segunda verdad no
 quedó desalentada: quedó imposible de escribir.
 
-### El hueco que apareció al ir a cargar el contenido
+### El hueco que apareció al cargar el contenido, y que se cerró el mismo día
 
 `HUMAN-P0-01 v1.0` confirma la secuencia `PE-PSY-01…20` **como base**, y al ir a cargarla apareció
-esto: **el texto de esos 20 pasos no está en el repositorio.** Vive en el PDF del cuestionario y nunca
-se transcribió.
+esto: **el texto de esos 20 pasos no estaba en el repositorio.** Lo que ADR-025 había desbloqueado era
+**el criterio**, no el contenido, y escribir los 20 desde los 12 del spec habría sido inventar
+criterio pedagógico. Por eso arrancó con `EP-SPEC v0.1` rotulado como provisional
+([ADR-030](decisions.md#adr-030)).
 
-O sea que lo que ADR-025 desbloqueó fue **el criterio**, no el contenido. Escribir los 20 desde los
-12 `EP-01…EP-12` del spec habría sido inventar criterio pedagógico. Así que corre `EP-SPEC v0.1`
-**rotulado como provisional en sus propias columnas**, y las superficies lo dicen en pantalla:
-*"contenido provisional del equipo, todavía sin confirmación profesional"*.
+**Horas después apareció el documento.** Se llama *Roadmap Modo Examen*, es de la misma profesional, y
+trae los veinte pasos desarrollados y agrupados en cinco fases. Está transcripto literal en
+[`roadmap-modo-examen-source.md`](roadmap-modo-examen-source.md) y cargado como
+`HUMAN-ROADMAP v1.0` ([ADR-031](decisions.md#adr-031)).
 
-Cargar los 20 el día que se transcriban es un `INSERT` y un `UPDATE is_current`. **Es la segunda vez
-que la decisión de tratar el protocolo como configuración versionada se paga sola.**
+**`EP-SPEC v0.1` no se borró: se apagó.** Las preparaciones que ya arrancaban contra esa versión
+conservan su recorrido. Cambiar el protocolo entero fue un `INSERT` y un `UPDATE is_current` — **es la
+segunda vez en un día que tratarlo como configuración versionada se paga sola.**
 
 ### Etapas
 
@@ -2372,6 +2375,7 @@ que la decisión de tratar el protocolo como configuración versionada se paga s
 | **B5.3** · El lifecycle | `examPreparationTransitions` sobre la maquinaria compartida de `Action` y `Commitment`, y `completar_paso_de_protocolo`, que asigna el ordinal **dentro de la transacción** |
 | **B5.4** · Las tres lecturas | `estado_de_activacion`, `estado_de_preparacion` y `estado_de_paso`: una por superficie, como las seis de la B2.6 |
 | **B5.5** · Las superficies conectadas | `UX07` escribe (`CTA-011` activa antes de navegar), `UX08` y `UX09` proyectan. Ninguna cae al fixture en silencio |
+| **B5.6** · Los veinte pasos, con su texto | `HUMAN-ROADMAP v1.0` verbatim, con `source_text` atado al documento fuente por test. Lo que la fuente no define —evidencia, criterio de cierre, obligatoriedad— **entró vacío, no completado** |
 
 ### Lo que estas superficies siguen sin decir, y es la decisión
 
@@ -2459,7 +2463,7 @@ desvío, riesgo y recuperación.
 | **Las tres `high` de `npm audit`** ([ADR-008](decisions.md#adr-008)) | Cualquier despliegue | CTO — [brief](brief-adr-008-seguridad.md) |
 | **Los ocho residuos psicopedagógicos** ([ADR-025](decisions.md#adr-025)) | Intervención automática sobre personas reales | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
 | **El contrato de integración v2** | Fases B6 y B8 | CTO — [propuesta](platform-integration-contract.md) §2.1 |
-| **La transcripción de los 20 pasos `PE-PSY`** | Que el protocolo que ve un estudiante deje de ser una asunción del equipo. **No bloquea código:** corre `EP-SPEC v0.1` rotulado como provisional ([ADR-030](decisions.md#adr-030)) | Producto, con el PDF del cuestionario a la vista |
+| **La confirmación de vigencia del Roadmap** | Que el protocolo deje de rotularse *"vigencia sin confirmar"*. **Dos frases**, y no bloquea código: los veinte pasos ya corren con su texto ([ADR-031](decisions.md#adr-031)) | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md), arriba de todo |
 
 ### ✅ La contradicción del Product Event Model, resuelta — [ADR-027](decisions.md#adr-027)
 
@@ -2496,7 +2500,8 @@ lo que falta es el dictamen. Las preguntas están en [`legal-package.md`](legal-
 (**la completion de un paso es un hecho**, no un estado: se cayó el `UNIQUE` y cada vuelta lleva su
 tema), [ADR-029](decisions.md#adr-029) (**la pauta de la cátedra tiene entidad propia**, con
 Provenance, para guardarla sin declararla oficial) y [ADR-030](decisions.md#adr-030) (**el protocolo
-corre con contenido provisional y lo dice en sus columnas**).
+corre con contenido provisional y lo dice en sus columnas**) y [ADR-031](decisions.md#adr-031) (**los
+veinte pasos entran con el texto de la psicopedagoga**, verbatim y atado a su fuente por test).
 
 ✅ **Resuelto el 31 de agosto de 2026:** [ADR-007](decisions.md#adr-007) — **las ocho decisiones
 `HUMAN-P0` fueron respondidas por la psicopedagoga real.** Ver [ADR-025](decisions.md#adr-025) y la
@@ -2504,9 +2509,9 @@ fuente literal en [`human-p0-source.md`](human-p0-source.md). **El criterio de l
 estar bloqueado.** Su readiness también, desde el 1 de septiembre: ver
 [ADR-011](decisions.md#adr-011).
 
-> ⚠️ **Lo que se desbloqueó fue el criterio, no el texto.** Al ir a cargar el protocolo apareció que
-> **el contenido de los 20 pasos `PE-PSY` nunca se transcribió al repositorio**: la hoja confirma la
-> secuencia, y el texto de cada paso vive en el PDF. Ver [ADR-030](decisions.md#adr-030).
+> ⚠️ **Lo que se desbloqueó fue el criterio, no el texto** — y el texto llegó después, el mismo día:
+> el *Roadmap Modo Examen* de la misma profesional, con los veinte pasos desarrollados. Ver
+> [ADR-030](decisions.md#adr-030) (el hueco) y [ADR-031](decisions.md#adr-031) (la carga).
 
 > **La Fase 0 está cerrada.** `ADR-016` sigue pendiente como deuda del registro canónico, pero el
 > recorrido de focus group declara la navegación del facilitador y ya no bloquea el cierre.
@@ -2529,7 +2534,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | ✅ **COMPLETA** — el resultado se escribe con sus invariantes, el Product Event Model está declarado con guards en tres direcciones, y `UX02`/`UX06` comparten una sola fuente histórica. Quién emite el progreso sigue siendo `C01-018` | 3 / 3 |
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
-| Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**. Falta la **transcripción de los 20 pasos `PE-PSY`**, que es de una persona | 5 / 5 |
+| Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6 — Risk e Intervención | 🟢 **DESBLOQUEADA** — [ADR-003](decisions.md#adr-003) repartió: Achieve es canónico, Dashboard consume. Falta el contrato v2, que lleva el CTO | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |

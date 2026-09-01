@@ -30,9 +30,9 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
   - **B4 — ADE v1 y el reloj.** El validador determinista rechaza toda recomendación que afirme
     dominio, progreso o readiness inexistente, **antes de materializar**; el reloj corre por
     `POST /api/reloj` con secreto de servicio.
-  - **B5 — Modo Examen real.** La capa de examen, el protocolo como configuración versionada y
-    **las nueve superficies del estudiante leyendo de Postgres**. Readiness sigue sin calcularse:
-    los umbrales son `C01-029`.
+  - **B5 — Modo Examen real.** La capa de examen, **los veinte pasos del protocolo con el texto
+    literal de la psicopedagoga** y las nueve superficies del estudiante leyendo de Postgres.
+    Readiness sigue sin calcularse: los umbrales son `C01-029`.
 
   La ingesta asistida del ADL también está
   construidos. Cualquier flujo que toque un dato de una persona real sigue bloqueado por

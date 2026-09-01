@@ -817,8 +817,14 @@ CREATE TABLE protocol_step (
   -- `HUMAN-P0-01 v1.0`, literal: los pasos 9 a 18 se repiten. Es un dato del
   -- paso, no un comentario: la reentrancia se consulta, no se recuerda.
   is_reentrant       BOOLEAN NOT NULL DEFAULT FALSE,
-  -- Procedencia del contenido pedagógico. `EP-SPEC`/`v0.1` = asunción del
-  -- equipo; `HUMAN-P0-0X`/`v1.0` = criterio profesional confirmado (ADR-030).
+  -- El texto verbatim de la fuente profesional. `label` y `explanation` son un
+  -- corte determinista de acá, y un test lo reconstruye contra el documento:
+  -- ningún título del protocolo lo escribió un agente (ADR-031).
+  source_text        TEXT,
+  -- Procedencia del contenido pedagógico, en tres estados y no dos:
+  --   `EP-SPEC`/`v0.1`                    → asunción del equipo (ADR-030)
+  --   `HUMAN-ROADMAP`/`v1.0-sin-confirmar` → su texto, vigencia sin confirmar (ADR-031)
+  --   `HUMAN-P0-0X`/`v1.0`                → criterio profesional confirmado
   provisional_default_id TEXT,
   provisional_version    TEXT,
   UNIQUE (exam_protocol_id, canonical_id),
@@ -1095,7 +1101,8 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 | Tabla `student_model` | `C01-043` sigue `OPEN`: mencionado, no especificado |
 | ~~**Pauta o criterio de evaluación de la cátedra**~~ | ✅ **`assessment_criterion`, desde la Fase B5** ([ADR-029](decisions.md#adr-029)). Con Provenance completa: cargada por el estudiante entra `student`/`unverified` y **no se eleva** (`I9`). Sigue abierto `C01-037`: qué pasa cuando la pauta contradice las familias generales |
 | ~~**Repetición de un `ProtocolStep`**~~ | ✅ **Resuelta por [ADR-028](decisions.md#adr-028):** se cayó el `UNIQUE`, cada vuelta es una fila con su `occurrence` y su `topic_id`. La garantía vieja no se perdió, se volvió configurable: `protocol_step.is_reentrant` |
-| **El contenido de los 20 pasos `PE-PSY`** | `HUMAN-P0-01 v1.0` confirma la **secuencia**; el **texto de cada paso nunca se transcribió al repositorio**. Hasta que esté, corre `EP-SPEC v0.1` —los 12 del spec— rotulado como provisional en sus propias columnas ([ADR-030](decisions.md#adr-030)) |
+| ~~**El contenido de los 20 pasos `PE-PSY`**~~ | ✅ **Cargado como `HUMAN-ROADMAP v1.0`** ([ADR-031](decisions.md#adr-031)), verbatim y con `source_text` atado al documento fuente por test. `EP-SPEC v0.1` quedó **apagado, no borrado** |
+| **Evidencia esperada y criterio de cierre por paso** | El Roadmap no los define y no se completaron: los veinte tienen `expected_artifact` y `criterion` en `NULL`. `C01-027` |
 
 ---
 

@@ -260,14 +260,40 @@ echo "→ B5 · estado_de_preparacion · el recorrido sale del protocolo, sin po
 q "update exam_preparation set status='ACTIVE',
      exam_protocol_id=(select protocol_id from public.protocolo_vigente(assessment_id))
    where id='bf000000-0000-0000-0000-000000000001';" >/dev/null 2>&1
-igual "los 12 pasos del protocolo llegan a la superficie" \
-  "$(q "select jsonb_array_length(public.estado_de_preparacion('$INS','$EST',now())->'pasos');")" "12"
+igual "los 20 pasos del protocolo llegan a la superficie" \
+  "$(q "select jsonb_array_length(public.estado_de_preparacion('$INS','$EST',now())->'pasos');")" "20"
 igual "ninguno viene marcado como actual: nadie escribió current_step_id" \
   "$(q "select bool_or((p->>'esActual')::boolean) from jsonb_array_elements(public.estado_de_preparacion('$INS','$EST',now())->'pasos') p;")" "f"
 igual "readiness sale nulo, y es la decisión (ADR-011 · C01-029)" \
   "$(q "select coalesce(public.estado_de_preparacion('$INS','$EST',now())->>'readiness','NULO');")" "NULO"
-igual "el contenido se rotula como provisional del equipo" \
-  "$(q "select public.estado_de_preparacion('$INS','$EST',now())->'protocolo'->>'contenido';")" "EP-SPEC"
+igual "el contenido se rotula con su fuente profesional" \
+  "$(q "select public.estado_de_preparacion('$INS','$EST',now())->'protocolo'->>'contenido';")" "HUMAN-ROADMAP"
+# La versión es lo único que distingue "texto de la psicopedagoga con vigencia
+# sin confirmar" de "criterio confirmado". Sin ella los dos se rotularían igual.
+igual "y la vigencia se declara sin confirmar (ADR-031)" \
+  "$(q "select public.estado_de_preparacion('$INS','$EST',now())->'protocolo'->>'contenidoVersion';")" "v1.0-sin-confirmar"
+
+echo "→ B5.6 · el protocolo viejo se apaga, no se borra"
+igual "EP-SPEC v0.1 sigue existiendo" \
+  "$(q "select count(*) from exam_protocol where version='EP-SPEC v0.1';")" "2"
+igual "y ya no es el vigente" \
+  "$(q "select bool_or(is_current) from exam_protocol where version='EP-SPEC v0.1';")" "f"
+igual "sus 12 pasos siguen ahí: una preparación vieja conserva su recorrido" \
+  "$(q "select count(*) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.version='EP-SPEC v0.1' and p.modality='practico';")" "12"
+igual "hay UNA sola versión vigente por modalidad y alcance" \
+  "$(q "select count(*) from exam_protocol where is_current and alcance='COMPLETO' and modality='practico';")" "1"
+
+echo "→ B5.6 · los veinte pasos, con lo que la fuente no define sin completar"
+igual "ninguno declara evidencia esperada" \
+  "$(q "select count(*) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.version='HUMAN-ROADMAP v1.0' and s.expected_artifact is not null;")" "0"
+igual "ninguno declara criterio de cierre" \
+  "$(q "select count(*) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.version='HUMAN-ROADMAP v1.0' and s.criterion is not null;")" "0"
+igual "ninguno se declara obligatorio: C01-031 sigue abierto" \
+  "$(q "select bool_and(s.requirement='NO_CONFIGURADA') from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.version='HUMAN-ROADMAP v1.0';")" "t"
+igual "el tramo reentrante es 9 a 18 (HUMAN-P0-01 v1.0)" \
+  "$(q "select string_agg(s.sequence::text,',' order by s.sequence) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.version='HUMAN-ROADMAP v1.0' and p.modality='practico' and s.is_reentrant;")" "9,10,11,12,13,14,15,16,17,18"
+igual "cada paso conserva su texto verbatim" \
+  "$(q "select bool_and(s.source_text is not null and s.source_text like s.label || '%') from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.version='HUMAN-ROADMAP v1.0';")" "t"
 
 echo "→ B5 · ADR-028 · las vueltas llegan a la superficie con su tema"
 PASO_RE=$(q "select id from protocol_step where exam_protocol_id=(select exam_protocol_id from exam_preparation where id='bf000000-0000-0000-0000-000000000001') and is_reentrant order by sequence limit 1;" | tr -d '[:space:]')

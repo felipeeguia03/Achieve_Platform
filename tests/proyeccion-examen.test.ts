@@ -132,7 +132,7 @@ const PREPARACION: EstadoDePreparacion = {
   modalidad: "practico",
   fuenteEvaluacion: "instructor",
   verificacionEvaluacion: "official",
-  protocolo: { version: "EP-SPEC v0.1", alcance: "COMPLETO", contenido: "EP-SPEC" },
+  protocolo: { version: "EP-SPEC v0.1", alcance: "COMPLETO", contenido: "EP-SPEC", contenidoVersion: "v0.1" },
   pasos: [
     { id: "p1", canonicalId: "EP-01", label: "Cerrar contrato", requisito: "NO_CONFIGURADA", reentrante: false, vueltas: 1, ultimaEn: "2026-08-30T12:00:00.000Z", esActual: false },
     { id: "p2", canonicalId: "EP-06", label: "Primera prueba sin red", requisito: "NO_CONFIGURADA", reentrante: true, vueltas: 3, ultimaEn: "2026-08-31T12:00:00.000Z", esActual: false },
@@ -224,10 +224,29 @@ describe("B5 · `UX08` y el recorrido reentrante", () => {
     expect(p.secundarios.join(" ")).toContain("provisional");
   });
 
+  it("el texto de la psicopedagoga no se rotula ni como del equipo ni como confirmado", () => {
+    // El estado del medio, que es el que corre hoy: es su texto, y todavía no
+    // confirmó por escrito que sea la versión vigente (ADR-031).
+    const p = proyectarPreparacion({
+      ...PREPARACION,
+      protocolo: {
+        version: "HUMAN-ROADMAP v1.0",
+        alcance: "COMPLETO",
+        contenido: "HUMAN-ROADMAP",
+        contenidoVersion: "v1.0-sin-confirmar",
+      },
+    });
+    const linea = p.secundarios.join(" ");
+    expect(linea).toContain("Texto de la psicopedagoga");
+    expect(linea).toContain("vigencia todavía sin confirmar");
+    expect(linea).not.toContain("provisional del equipo");
+    expect(linea).not.toContain("confirmado ·");
+  });
+
   it("un contenido confirmado no arrastra el descargo del provisional", () => {
     const p = proyectarPreparacion({
       ...PREPARACION,
-      protocolo: { version: "HUMAN-P0-01 v1.0", alcance: "COMPLETO", contenido: "HUMAN-P0-01" },
+      protocolo: { version: "HUMAN-P0-01 v1.0", alcance: "COMPLETO", contenido: "HUMAN-P0-01", contenidoVersion: "v1.0" },
     });
     expect(p.secundarios.join(" ")).not.toContain("provisional");
   });

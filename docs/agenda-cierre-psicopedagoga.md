@@ -35,6 +35,50 @@ después**, cada una queda como:
 
 ---
 
+## Antes que las ocho: dos frases sobre el Roadmap ⭐
+
+**Es lo más corto de la lista y lo que más destraba.** El 1 de septiembre llegó tu documento *Roadmap
+Modo Examen*, con los veinte pasos desarrollados. Se cargó tal cual —sin corregir una palabra, ni
+siquiera los tipeos— y **está corriendo**, pero rotulado en la pantalla del estudiante como *"texto de
+la psicopedagoga · vigencia todavía sin confirmar"*, porque no tenemos tu confirmación escrita.
+
+> **1. ¿Ese documento es la versión vigente de los veinte pasos, y podemos usar esos textos como
+> fuente profesional del producto?**
+>
+> **2. En tu respuesta del cuestionario dijiste que «entre los puntos 9 al 18 el recorrido no es
+> lineal ni rígido». Cargamos los diez como repetibles. ¿Es así, o sólo se repiten el 14 —corregir y
+> volver a demostrar— y el 15 —repasos distribuidos—?**
+
+La segunda importa porque **el sistema ya distingue las dos cosas**: un paso marcado como repetible
+admite volver sobre él las veces que haga falta, y uno que no, se completa una sola vez. Hoy están
+los diez. Si la respuesta es "sólo 14 y 15", se cambia en dos filas.
+
+Un sí a la primera convierte el rótulo en *"criterio profesional confirmado"* y es todo lo que hace
+falta. Ver [ADR-031](decisions.md#adr-031) y la transcripción en
+[`roadmap-modo-examen-source.md`](roadmap-modo-examen-source.md).
+
+### Y una tercera, sobre el cuadro de acciones
+
+Tu *Cuadro de Problemas y Acciones Concretas* propone, para cada problema, una **evidencia concreta**
+— que es justamente lo que al Roadmap le falta. **No lo cargamos**, por dos razones que preferimos
+decirte antes de que las descubras vos:
+
+1. No sabemos **qué acción corresponde a qué paso** de los veinte, y asignarlo nosotros sería
+   inventar.
+2. El cuadro conserva **tus propias preguntas sin resolver**: `(intervención??)`, `(asistencia??)`,
+   `(acompañamiento durante el paso??)`, `(checklist predeterminado?)`, `(espacio de consulta y
+   ajuste?)`. Un campo con un signo de pregunta de quien lo escribió no es criterio cerrado.
+
+> **3. ¿Querés que trabajemos ese cuadro como la evidencia esperada de cada paso? Si sí, necesitamos
+> el mapeo acción → paso, y una respuesta a los cinco signos de pregunta que quedaron.**
+
+Y un aviso, porque toca una regla del producto: una de las filas propone *"porcentaje de logro por
+tema"* como evidencia. **Hoy el producto no muestra porcentajes de preparación**, porque el umbral que
+los haría significar algo es una de las cosas que faltan decidir. No es una contradicción tuya con
+nosotros: es que el orden correcto es fijar el umbral primero.
+
+---
+
 ## Los ocho
 
 ### 1. `HUMAN-P0-01` — ¿Cuáles de los 20 pasos son obligatorios?
@@ -42,6 +86,10 @@ después**, cada una queda como:
 Confirmaste la secuencia `PE-PSY-01…20` como base y que **el tramo 9–18 no es lineal**: el orden es
 variable y **una misma acción puede repetirse varias veces** sobre el mismo tema. Lo que no quedó
 dicho es **cuáles son obligatorios**.
+
+> Desde el 1 de septiembre los veinte están cargados con tu texto, y **los veinte figuran como "sin
+> configurar"** en obligatoriedad: el sistema no supone que todos lo sean. Esta pregunta es la que
+> convierte eso en un dato.
 
 ⚠️ **Impacto técnico directo:** el schema actual permite completar un paso **una sola vez**, y tu
 respuesta ya dijo que eso es incorrecto. La corrección está pendiente y depende de esta conversación.

@@ -75,6 +75,27 @@ function bloque(titulo: string, valor: string | null, ausencia: string): BloqueD
   return { titulo, valor, ausencia };
 }
 
+/**
+ * De dónde salió el contenido del paso. **Tres estados, no dos.**
+ *
+ * La versión de dos —del equipo o confirmado— alcanzaba mientras el único
+ * contenido real era `EP-SPEC v0.1`. Con el Roadmap de la psicopedagoga cargado
+ * apareció el estado del medio, y es el más importante de nombrar bien: **es su
+ * texto, y todavía no confirmó por escrito que sea la versión vigente**
+ * ([ADR-031](../../../docs/decisions.md#adr-031)). Colapsarlo con "confirmado"
+ * le daría al estudiante una garantía que nadie dio; colapsarlo con
+ * "provisional del equipo" le sacaría el crédito a la profesional que lo
+ * escribió. No son lo mismo y no se muestran igual.
+ */
+export function fuenteDeContenido(id: string | null, version: string | null): string {
+  if (id === "EP-SPEC") return "Contenido provisional del equipo, todavía sin confirmación profesional.";
+  if (id === null) return "Fuente del contenido no disponible.";
+  if (version?.includes("sin-confirmar")) {
+    return "Texto de la psicopedagoga · vigencia todavía sin confirmar.";
+  }
+  return `Criterio profesional confirmado · ${id} ${version ?? ""}`.trim();
+}
+
 const ESTADO_DOMINANTE: Record<NivelPaso, string> = {
   1: "ACCIÓN EN CURSO",
   2: "EVIDENCIA PENDIENTE",
@@ -184,12 +205,7 @@ export function proyectarPaso(e: EstadoDePaso): PasoProtocoloProps {
     despues: null,
     secundarios,
     // La procedencia del contenido, dicha en la pantalla y sin oficializarla.
-    fuenteDelContenido:
-      e.contenido === "EP-SPEC"
-        ? "Contenido provisional del equipo, todavía sin confirmación profesional."
-        : e.contenido
-          ? `Criterio profesional confirmado · ${e.contenido} ${e.contenidoVersion ?? ""}`.trim()
-          : "Fuente del contenido no disponible.",
+    fuenteDelContenido: fuenteDeContenido(e.contenido, e.contenidoVersion),
     ctaRetorno: "VOLVER AL OVERVIEW",
   };
 }
