@@ -61,6 +61,7 @@ export function MateriaCursado({
   hero,
   catedraYVos,
   unidades,
+  actividadReciente,
   dimensiones,
   aviso,
   capturaDeClase,
@@ -165,6 +166,31 @@ export function MateriaCursado({
           <Eyebrow>{t("MATERIA.UNIDADES")}</Eyebrow>
           {unidades.map((u) => (
             <Fila key={u.label} label={u.label} value={u.valor} ausencia={u.ausencia} tono={u.tono} />
+          ))}
+        </div>
+      )}
+
+      {/*
+        Actividad reciente (`VI.2` §8.7) — Etapa B3.3.
+
+        **La misma forma que la Bitácora de `UX06`, y a propósito.** `VI.6` §8.3
+        dice que es "una preview de la misma verdad derivada" y que no existe una
+        segunda fuente histórica: si se viera distinta, parecería otra cosa. Lo
+        único que cambia es cuántas entradas entran — el corte lo hace la base.
+
+        `null` ⇒ no pasó nada todavía y la sección **no se dibuja vacía**.
+      */}
+      {actividadReciente && (
+        <div data-actividad>
+          <Eyebrow>{t("MATERIA.ACTIVIDAD")}</Eyebrow>
+          {actividadReciente.map((e, i) => (
+            <div key={`${i}-${e.titulo}`} style={{ padding: "4px 0" }}>
+              <span style={{ fontSize: "var(--text-body)" }}>{e.titulo}</span>
+              <ReglaDeNegocio>{e.detalle}</ReglaDeNegocio>
+              <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+                {e.provenance ?? t("PROVENANCE.NO_DISPONIBLE")}
+              </p>
+            </div>
           ))}
         </div>
       )}

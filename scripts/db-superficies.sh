@@ -228,6 +228,18 @@ igual "y el texto del owner viaja tal cual, sin reformatear" \
 igual "el resultado se reconoce ligado a la evidencia que el owner señaló" \
   "$(q "select public.estado_de_progreso('$INS','$EST',now())->'resultado'->>'esDeEstaEvidencia';")" "true"
 
+echo "→ B3.3 · UX02 y UX06 cuentan la misma historia"
+igual "la materia trae su actividad reciente" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now())->'actividadReciente') > 0;")" "t"
+# `VI.2`: 2–3 entradas. El corte lo hace la base, no la pantalla.
+igual "y como mucho tres entradas" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now())->'actividadReciente') <= 3;")" "t"
+# La misma fuente: el hecho más reciente de la materia es el más reciente del
+# historial. Si divergieran, la preview y la Bitácora contarían días distintos.
+igual "el hecho más reciente es el mismo en las dos superficies" \
+  "$(q "select (public.estado_de_materia('$INS','$EST',now())->'actividadReciente'->0->>'evento') =
+          (select h.event_name from public.hechos_de_cursada('$INS','$CE',1) h);")" "t"
+
 echo "→ Aislamiento: las cinco funciones lo respetan (I11)"
 for f in estado_de_materia estado_de_accion estado_de_compromiso estado_de_evidencia estado_de_progreso; do
   igual "$f no cruza institución" \

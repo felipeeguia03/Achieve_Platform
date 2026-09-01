@@ -61,10 +61,27 @@ describe("Bloque 2 · Contenido", () => {
       ["Evidence", /\b(adjunto formal|archivo entregado)\b/i],
       ["Reflection", /\b(diario|comentario)\b/i],
     ];
+    /**
+     * La única excepción, y no es una concesión: **`VI.2` §8.7 llama a la
+     * sección "Actividad reciente"**, y es el nombre de un historial de hechos,
+     * no otro nombre para una `Action`. El guard sigue cazando cualquier otro
+     * uso de la palabra; esta clave se exceptúa por su nombre exacto y con el
+     * spec como respaldo, verificado abajo.
+     */
+    const DEL_SPEC = new Set(["MATERIA.ACTIVIDAD"]);
+
     for (const [concepto, patron] of derivas) {
-      const grietas = textos.filter(([, texto]) => patron.test(texto));
+      const grietas = textos.filter(
+        ([id, texto]) => patron.test(texto) && !DEL_SPEC.has(id),
+      );
       expect(grietas.map(([id]) => id), `deriva de ${concepto}`).toEqual([]);
     }
+  });
+
+  it("una excepción de vocabulario existe porque el spec la nombra así", () => {
+    // Sin esto, "está en el spec" sería una afirmación de un comentario.
+    const spec = readFileSync(resolve(process.cwd(), "docs/product-spec-source.md"), "utf8");
+    expect(spec).toContain("Actividad reciente");
   });
 
   it("`C-03` — ningún placeholder genérico", () => {

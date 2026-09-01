@@ -46,6 +46,8 @@ const materiaBase: MateriaProps = {
   catedraYVos: null,
   unidades: [],
   dimensiones: [],
+  // La base no declara actividad: los escenarios que la necesitan la agregan.
+  actividadReciente: null,
   aviso: null,
   capturaDeClase: "Pasó algo en clase",
 };
@@ -123,7 +125,13 @@ export const FX_LOCAL_MAT_CONTEXTO_INCOMPLETO = esc(
         chip: null,
       },
       aviso: "No pudimos confirmar tu comisión en esta materia.",
-      capturaDeClase: null,
+      // `VI.2` §8.7: preview de 2–3 entradas, la misma verdad que la Bitácora.
+    actividadReciente: [
+      { titulo: "Presentaste evidencia", detalle: "20:29", provenance: "Reportado por vos · sin verificar" },
+      { titulo: "Empezaste", detalle: "19:41", provenance: "Reportado por vos · sin verificar" },
+      { titulo: "Te comprometiste", detalle: "17:37", provenance: "Reportado por vos · sin verificar" },
+    ],
+    capturaDeClase: null,
     },
   },
   ["C01-003", "SC-DAY-05"],

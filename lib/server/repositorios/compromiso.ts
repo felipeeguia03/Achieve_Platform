@@ -10,13 +10,14 @@ import { clienteDeServicio } from "../supabase";
  * **No decide permisos ni transiciones** — sólo persiste, con el guard atómico
  * que la decisión de arriba necesita para no perderse en una carrera.
  */
-const COLUMNAS = "id, institution_id, action_id, state";
+const COLUMNAS = "id, institution_id, action_id, state, rescues_commitment_id";
 
 function aDominio(fila: Record<string, unknown>): Compromiso {
   return {
     id: fila.id as string,
     institutionId: fila.institution_id as string,
     actionId: fila.action_id as string,
+    rescuesCommitmentId: (fila.rescues_commitment_id as string | null) ?? null,
     state: fila.state as CommitmentState,
   };
 }

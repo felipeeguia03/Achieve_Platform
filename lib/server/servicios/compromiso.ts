@@ -22,6 +22,14 @@ import {
  */
 export interface Compromiso extends EntidadConEstado<CommitmentState> {
   actionId: string;
+  /**
+   * A qué `MISSED` rescata, si rescata a alguno.
+   *
+   * Lo necesita `RescueSucceeded`: sin esto, completar un rescate y completar
+   * un compromiso cualquiera son indistinguibles desde el Service, y el hecho
+   * que el producto quiere medir —la recuperación— no se puede registrar.
+   */
+  rescuesCommitmentId: string | null;
 }
 
 /** Datos del compromiso nuevo. El original nunca se edita más allá del estado. */
@@ -79,7 +87,7 @@ export async function transicionar(
   actorId: string | null = null,
   ahora: () => Date = () => new Date(),
 ) {
-  return transicionarEntidad(
+  const resultado = await transicionarEntidad(
     deps,
     {
       entidad: "Commitment",
@@ -97,6 +105,34 @@ export async function transicionar(
     actorId,
     ahora,
   );
+
+  /**
+   * `RescueSucceeded` — uno de los 23 del Product Event Model (§16), y hasta la
+   * Etapa B3.3 **nadie lo emitía**: existía `CommitmentRescueCreated`, que dice
+   * que el rescate se creó, y nada que dijera si funcionó. El P0 lo define como
+   * *"retorno después de incumplimiento"*, y un rescate que llega a `COMPLETED`
+   * es exactamente eso.
+   *
+   * **Se emite además de `CommitmentCompleted`, no en su lugar.** Son dos hechos
+   * distintos que ocurren juntos: el compromiso se cerró, y con eso el
+   * estudiante recuperó lo que había incumplido. Fundirlos perdería el que el
+   * producto quiere medir.
+   *
+   * Y va después de que la transición ganó: un evento de algo que perdió la
+   * carrera sería un hecho que no ocurrió.
+   */
+  if (resultado.estado === "OK" && hacia === "COMPLETED" && resultado.entidad.rescuesCommitmentId) {
+    await deps.eventos.publicar({
+      nombre: "RescueSucceeded",
+      institutionId,
+      actorId,
+      sujetoTipo: "commitment",
+      sujetoId: resultado.entidad.id,
+      causa: `rescata:${resultado.entidad.rescuesCommitmentId}`,
+    });
+  }
+
+  return resultado;
 }
 
 export type ResultadoDeAcuerdo =

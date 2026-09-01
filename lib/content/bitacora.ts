@@ -28,6 +28,12 @@ const EVENTOS: Record<string, string> = {
   CommitmentMissed: "Compromiso incumplido",
   CommitmentRenegotiated: "Renegociaste el compromiso",
   CommitmentRescueCreated: "Creaste un rescate",
+  /**
+   * El hecho que el producto quiere medir: la recuperación. Y **no dice que el
+   * incumplimiento se borró** — el `MISSED` original sigue ahí, que es el
+   * invariante `I3`.
+   */
+  RescueSucceeded: "Recuperaste lo que habías incumplido",
 
   // El ciclo de la evidencia. Los siete estados ya tienen copy en `UX05`; acá
   // son hechos ocurridos, así que van en pasado y con sujeto.

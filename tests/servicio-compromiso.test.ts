@@ -74,6 +74,7 @@ const BASE: Compromiso = {
   institutionId: "inst-A",
   actionId: "a-1",
   state: "CONFIRMED",
+  rescuesCommitmentId: null,
 };
 
 describe("B1.4 · el Service ejecuta la máquina de estados del dominio", () => {
@@ -273,5 +274,47 @@ describe("B2.2 · I3 · un rescate sólo apunta a un MISSED", () => {
     const { deps, acuerdos } = repoFalso({ ...BASE, state: "MISSED" });
     expect((await rescatar(deps, "inst-B", "c-1", ACUERDO)).estado).toBe("NO_ENCONTRADO");
     expect(acuerdos).toEqual([]);
+  });
+});
+
+
+describe("B3.3 · RescueSucceeded, el hecho que faltaba del P0", () => {
+  /**
+   * Hasta esta etapa existía `CommitmentRescueCreated` —el rescate se creó— y
+   * **nada que dijera si funcionó**. §16 define `RescueSucceeded` como *"retorno
+   * después de incumplimiento"*, y eso es justamente lo que el producto quiere
+   * medir: la recuperación, no la intención de recuperarse.
+   */
+  it("completar un rescate lo emite, **además** de CommitmentCompleted", async () => {
+    const { deps, publicados } = repoFalso({ ...BASE, state: "STARTED", rescuesCommitmentId: "c-missed" });
+    const r = await transicionar(deps, "inst-A", "c-1", "COMPLETED");
+
+    expect(r.estado).toBe("OK");
+    const nombres = publicados.map((e) => e.nombre);
+    // Dos hechos distintos que ocurren juntos, no uno con dos nombres.
+    expect(nombres).toEqual(["CommitmentCompleted", "RescueSucceeded"]);
+  });
+
+  it("y dice a qué incumplimiento rescata, sin tocarlo", async () => {
+    const { deps, publicados } = repoFalso({ ...BASE, state: "STARTED", rescuesCommitmentId: "c-missed" });
+    await transicionar(deps, "inst-A", "c-1", "COMPLETED");
+    const rescate = publicados.find((e) => e.nombre === "RescueSucceeded")!;
+    // `I3`: el MISSED original conserva su estado. El evento lo referencia, no
+    // lo modifica.
+    expect(rescate.causa).toBe("rescata:c-missed");
+    expect(rescate.sujetoId).toBe("c-1");
+  });
+
+  it("completar un compromiso que no rescata nada NO lo emite", async () => {
+    const { deps, publicados } = repoFalso({ ...BASE, state: "STARTED" });
+    await transicionar(deps, "inst-A", "c-1", "COMPLETED");
+    expect(publicados.map((e) => e.nombre)).toEqual(["CommitmentCompleted"]);
+  });
+
+  it("un rescate que no llega a COMPLETED tampoco lo emite", async () => {
+    // Empezar un rescate no es recuperarse.
+    const { deps, publicados } = repoFalso({ ...BASE, state: "DUE", rescuesCommitmentId: "c-missed" });
+    await transicionar(deps, "inst-A", "c-1", "STARTED");
+    expect(publicados.map((e) => e.nombre)).toEqual(["CommitmentStarted"]);
   });
 });

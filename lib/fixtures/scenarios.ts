@@ -109,6 +109,12 @@ export const FX_DAY_BASE: Escenario = {
     ],
     dimensiones: [],
     aviso: null,
+    // `VI.2` §8.7: preview de 2–3 entradas, la misma verdad que la Bitácora.
+    actividadReciente: [
+      { titulo: "Presentaste evidencia", detalle: "20:29", provenance: "Reportado por vos · sin verificar" },
+      { titulo: "Empezaste", detalle: "19:41", provenance: "Reportado por vos · sin verificar" },
+      { titulo: "Te comprometiste", detalle: "17:37", provenance: "Reportado por vos · sin verificar" },
+    ],
     capturaDeClase: "Pasó algo en clase",
   },
 

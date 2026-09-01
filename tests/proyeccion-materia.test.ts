@@ -26,6 +26,7 @@ const base: EstadoDeMateria = {
   ultimoAvanceEn: null,
   unidades: [],
   dimensiones: null,
+  actividadReciente: [],
 };
 
 const conAccion: EstadoDeMateria = {
@@ -159,6 +160,7 @@ describe("B2.6 · la forma es la que la pantalla espera", () => {
   it("devuelve exactamente las claves de `MateriaProps`", () => {
     expect(Object.keys(proyectarMateria(conProgreso)).sort()).toEqual(
       [
+        "actividadReciente",
         "aviso",
         "capturaDeClase",
         "catedraYVos",

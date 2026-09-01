@@ -147,10 +147,12 @@ export const catalogoP0: Readonly<Record<string, EventoDeProducto>> = {
   },
   RescueSucceeded: {
     uso: "Retorno después de incumplimiento.",
-    // El backend emite `CommitmentRescueCreated` al **crear** el rescate. Que el
-    // rescate haya tenido éxito es otro hecho, y posterior. Ver `EXTENSIONES`.
-    instrumentacion: pendiente("B3.3 · el éxito del rescate es otro hecho"),
-    enBitacora: false,
+    // Etapa B3.3. Se emite cuando el compromiso que rescata a un `MISSED` llega
+    // a `COMPLETED` — **además** de `CommitmentCompleted`, porque son dos hechos
+    // distintos que ocurren juntos. `CommitmentRescueCreated` sigue existiendo y
+    // dice otra cosa: que el rescate se creó, no que funcionó.
+    instrumentacion: emitido,
+    enBitacora: true,
   },
   AssessmentTaken: {
     uso: "Alumno rindió.",

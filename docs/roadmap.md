@@ -2003,6 +2003,13 @@ desde `product_event`.
 **Objetivo.** `TopicProgress` con las cinco dimensiones separadas, `ProgressEntry` **escrita por un
 Service real**, Bitácora y el Product Event Model completo.
 
+> ✅ **La fase cerró 3/3 el 1 de septiembre de 2026**, con una parte del objetivo **explícitamente no
+> hecha**: mostrar las cinco dimensiones con sus valores es `C01-019`, gate `H`, y sigue `OPEN`. Las
+> dimensiones están separadas en el schema y en la proyección desde la B2.6; lo que falta es la
+> semántica para mostrarlas, y eso lo responde una persona. El resto del objetivo está: la
+> `ProgressEntry` la escribe un Service real, la Bitácora existe sobre una sola fuente y el Product
+> Event Model está declarado con su cobertura.
+
 **Done cuando:** una dimensión solo se muestra como cambiada con un `ProgressUpdated` real; los tres
 estados de no-cambio son distinguibles; la Bitácora agrupa los eventos del mismo ciclo sin
 duplicarlos como cuatro avances independientes.
@@ -2015,11 +2022,82 @@ duplicarlos como cuatro avances independientes.
 |---|---|
 | B3.1 | ✅ **COMPLETA** — el resultado de progreso **se escribe**, y nadie lo infiere |
 | B3.2 | 🔵 **EN CURSO** — el Product Event Model, declarado y verificado contra lo que el código emite |
-| B3.3 | ⬜ `TopicProgress` con sus cinco dimensiones desde el ADL |
+| B3.3 | ✅ **COMPLETA** — la misma verdad histórica, en las dos superficies |
 
 ---
 
-#### 🔵 Etapa B3.2 — El Product Event Model, declarado
+#### ✅ Etapa B3.3 — La misma verdad histórica, en las dos superficies · COMPLETA · 1 de septiembre de 2026
+
+**El alcance cambió, y conviene decir por qué.** Esta etapa se había anotado como *"`TopicProgress`
+con sus cinco dimensiones desde el ADL"*. Al preparar el trabajo, eso resultó **no construible hoy**,
+y por dos motivos que no son de esfuerzo:
+
+1. **Mostrar las dimensiones medidas es `C01-019`**, gate `H`, `OPEN`. `UX02` ya las proyecta como
+   ausencias tipadas justamente porque el número existe y la unidad no.
+2. **Derivar `recorrido` o `recencia` de la actividad sería exactamente lo que la B3.1 prohibió:**
+   una dimensión de progreso derivada de una Evidence. El guard de esa etapa lo rompería, y tendría
+   razón.
+
+Lo que sí falta, es construible y cierra la fase es otra cosa: **`UX02` no tiene Actividad
+reciente**, que `VI.2` §8.7 describe y la Fase 0 nunca construyó.
+
+**Decisiones de diseño — escritas antes de codear.**
+
+**1. Una sola fuente histórica, y verificada.** `VI.6` §8.3 es explícito: *"Bitácora es el historial
+completo de la misma verdad derivada. **No existe una segunda fuente histórica.** Ambas consumen
+`ProgressEntry` o el mismo bundle derivado de eventos"*. Así que la preview de `UX02` y la Bitácora
+de `UX06` salen de **la misma función de base**, no de dos consultas parecidas. Va con guard: dos
+consultas con la misma intención divergen, y la que se usa menos es la que envejece.
+
+**2. La preview usa la forma de la Bitácora, no una nueva.** Las capturas no tienen patrón de lista
+de actividad, y el repositorio ya construyó uno en `UX06` que pasó el focus group. Es la misma
+verdad: que se vea igual no es ahorro, es coherencia. **`components/screens/` se toca**, y esta etapa
+es la que lo autoriza.
+
+**3. Dos o tres entradas, y el corte lo hace la base.** `VI.2` fija *"Actividad reciente muestra 2–3
+entradas"*. El límite viaja como parámetro de la función de lectura: traer cincuenta y cortar en la
+pantalla es pedirle a la red y a Postgres un trabajo que se tira.
+
+**4. `RescueSucceeded` se empieza a emitir.** Es uno de los 23 del P0 y la Etapa B3.2 lo dejó
+declarado como no instrumentado: hoy existe `CommitmentRescueCreated` —crear el rescate— y **nadie
+registra si funcionó**. Un rescate que llega a `COMPLETED` es el *"retorno después de
+incumplimiento"* que §16 nombra, y es justamente lo que el producto quiere medir. Se emite **además**
+de `CommitmentCompleted`: son dos hechos distintos que ocurren juntos, no uno con dos nombres.
+
+**Done cuando:** la preview y la Bitácora salen de la misma función de base, con guard; `UX02`
+muestra a lo sumo 3 entradas con su procedencia; `RescueSucceeded` se emite y aparece en las dos
+superficies; y `lint`, `build`, `test` y `db:verify` en verde.
+
+##### El cierre
+
+| Qué prometía el Done | Cómo quedó |
+|---|---|
+| Una sola función de base, con guard | ✅ `hechos_de_cursada()`. El guard recorre **la última versión de cada función** del schema y falla si alguna consulta `product_event` por su cuenta |
+| A lo sumo 3 entradas, con procedencia | ✅ el corte lo hace la base; verificado contra Postgres y en el navegador |
+| `RescueSucceeded` emitido | ✅ al completar un rescate, **además** de `CommitmentCompleted`, con la referencia al incumplido que rescata |
+| `lint` · `build` · `test` · `db:verify` | ✅ · ✅ · **674 tests en 40 archivos** · 134 comprobaciones |
+
+**La traducción también es una sola.** No alcanzaba con compartir el `SELECT`: si cada proyección
+tradujera el hecho por su cuenta, `UX02` y `UX06` dirían frases distintas del mismo evento. Vive en
+`lib/server/servicios/hechos.ts`, y hay guard de que ninguna otra proyección importe `tituloDeHecho`.
+
+**El guard tuvo que aprender que las migraciones viejas no se editan.** Su primera versión miraba
+todas las definiciones del schema y cazó la versión **anterior** de `estado_de_progreso` —la que
+componía la Bitácora sola, y que el repositorio conserva a propósito—. Auditar el pasado no sirve:
+ese SQL ya no corre en ninguna base. Ahora se queda con la última definición de cada función.
+
+**Y una comprobación que escribí mal y saqué.** La de `RescueSucceeded` contra Postgres verificaba
+que existiera una función, no que el evento se emitiera: habría pasado en verde para siempre. La
+regla vive en el Service, así que se prueba ahí, con cuatro casos —incluido *"empezar un rescate no
+es recuperarse"*.
+
+**`C-02` tuvo su primera excepción, y con respaldo.** El guard de vocabulario prohíbe *"actividad"*
+como sinónimo de `Action`; `VI.2` §8.7 llama a la sección **"Actividad reciente"**. La excepción es
+por clave exacta, y un test verifica que la frase esté en el spec — si no estuviera, sería deriva.
+
+---
+
+#### ✅ Etapa B3.2 — El Product Event Model, declarado · COMPLETA · 1 de septiembre de 2026
 
 **Decisiones de diseño — escritas antes de codear.**
 

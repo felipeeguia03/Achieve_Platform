@@ -23,7 +23,9 @@ function mundo(iniciales: Array<CompromisoConReloj>, opciones: { pierde?: boolea
   const compromisos = {
     async porId(_inst: string, id: string): Promise<Compromiso | null> {
       const f = filas.get(id);
-      return f ? { id, institutionId: "inst-A", actionId: "a-1", state: f.state } : null;
+      return f
+        ? { id, institutionId: "inst-A", actionId: "a-1", state: f.state, rescuesCommitmentId: null }
+        : null;
     },
     async cambiarEstadoSi(_i: string, id: string, esperado: CommitmentState, nuevo: CommitmentState) {
       if (opciones.pierde) return null;

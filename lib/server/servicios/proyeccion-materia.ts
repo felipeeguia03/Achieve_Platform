@@ -1,5 +1,6 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
 import { t } from "@/lib/content/es-AR";
+import { aEntradaVisible, type HechoPersistido } from "./hechos";
 import { fechaCorta, haceCuanto } from "./tiempo";
 import type { FilaDato, MateriaProps } from "@/lib/domain/view-models";
 
@@ -77,6 +78,8 @@ export interface EstadoDeMateria {
   ultimoAvanceEn: string | null;
   unidades: UnidadPersistida[];
   dimensiones: DimensionesPersistidas | null;
+  /** Los últimos hechos de la cursada. Los arma `hechos_de_cursada()`. */
+  actividadReciente: HechoPersistido[];
 }
 
 export interface RepositorioDeMateria {
@@ -170,6 +173,18 @@ function unidadesDe(e: EstadoDeMateria): FilaDato[] {
   });
 }
 
+/**
+ * Las últimas entradas, ya traducidas. `null` ⇒ **no pasó nada todavía**, y la
+ * sección no se dibuja vacía: un encabezado sobre una lista sin filas es peor
+ * que no tener la sección.
+ */
+function actividadDe(e: EstadoDeMateria): MateriaProps["actividadReciente"] {
+  const entradas = e.actividadReciente
+    .map((h) => aEntradaVisible(h, e.zona))
+    .filter((x) => x !== null);
+  return entradas.length > 0 ? entradas : null;
+}
+
 export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
   const { nivel, variante } = selectHeroLevel(aEntradaDeHero(e));
   const dimensiones = dimensionesDe(e);
@@ -220,6 +235,10 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     catedraYVos: null,
     unidades: unidadesDe(e),
     dimensiones,
+    // La misma traducción que la Bitácora, y por eso la misma función: si cada
+    // superficie tradujera por su cuenta, la preview y el historial dirían cosas
+    // distintas del mismo hecho.
+    actividadReciente: actividadDe(e),
     // El aviso explica una ausencia; no la disfraza.
     aviso: e.contextoIncompleto
       ? null // el hero ya lo dice: no se repite el mismo hecho dos veces

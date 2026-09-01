@@ -186,6 +186,19 @@ export interface MateriaProps {
    * distintos, y la vista **no genera una Action** a partir de la brecha.
    */
   dimensiones: readonly FilaDato[];
+  /**
+   * Actividad reciente — `VI.2` §8.7: *"una preview cronológica de eventos
+   * relevantes de esta materia"*, de **2–3 entradas**.
+   *
+   * Es la **misma verdad** que la Bitácora de `UX06`, no un resumen aparte:
+   * `VI.6` §8.3 dice que *"no existe una segunda fuente histórica"*. Por eso
+   * comparte tipo, traducción y forma con ella; lo único distinto es cuántas
+   * entradas se muestran.
+   *
+   * `null` ⇒ todavía no pasó nada en esta materia, y la sección **no se
+   * renderiza vacía**.
+   */
+  actividadReciente: readonly EntradaDeBitacora[] | null;
   /** Aviso de estado vacío, incompleto o de error. `null` ⇒ se omite. */
   aviso: string | null;
   /**

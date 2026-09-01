@@ -1,5 +1,3 @@
-import { tituloDeHecho } from "@/lib/content/bitacora";
-import { provenanceVisible } from "@/lib/content/provenance";
 import { t } from "@/lib/content/es-AR";
 import type {
   EntradaDeBitacora,
@@ -8,6 +6,7 @@ import type {
   ProgresoProps,
   Tono,
 } from "@/lib/domain/view-models";
+import { aEntradaVisible } from "./hechos";
 import { fechaLarga, haceCuanto, horaCorta } from "./tiempo";
 
 /**
@@ -283,17 +282,7 @@ function bitacoraDe(e: EstadoDeProgreso): ProgresoProps["bitacora"] {
   const ciclos = e.bitacora
     .map((c) => {
       const entradas: EntradaDeBitacora[] = c.entradas
-        .map((h) => {
-          const titulo = tituloDeHecho(h.evento);
-          if (!titulo) return null;
-          return {
-            titulo,
-            detalle: horaCorta(h.en, e.zona),
-            provenance: h.porElEstudiante
-              ? provenanceVisible("student", "unverified")
-              : null,
-          };
-        })
+        .map((h) => aEntradaVisible(h, e.zona))
         .filter((x): x is EntradaDeBitacora => x !== null);
 
       return { ciclo: `Ciclo del ${fechaLarga(c.desde, e.zona)}`, entradas };

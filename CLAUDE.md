@@ -119,7 +119,7 @@ tiene siete componentes**. Ver `roadmap.md` → Fase B5.
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
 
-**Verificación de base:** `npm run db:verify` — **131 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **134 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de
