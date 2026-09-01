@@ -152,6 +152,66 @@ Se listan solo para que tengan el mapa completo. **No hay que construir nada de 
   **exponer la Plataforma** como una **API de servicio** (autenticada con token de servicio, no con token de
   alumno). Se acordará el contrato cuando toque.
 
+## 2.1 Contrato v2 — propuesta · [ADR-003](decisions.md#adr-003), 1 de septiembre de 2026
+
+> **Es una propuesta para el CTO, no un contrato acordado.** ADR-003 decidió el reparto de
+> responsabilidades; el versionado del contrato lo lleva el CTO, con OpenAPI y/o esquemas de eventos
+> versionados, compatibilidad explícita y registro de cambios.
+
+### Qué decidió ADR-003, y qué implica para el contrato
+
+| Quién | Rol |
+|---|---|
+| **Achieve Plataforma** | **Fuente canónica** de compromisos, evidencias, lifecycle, readiness e intervenciones |
+| **Dashboard_Achieve** | **Superficie operativa** que consume esos contratos |
+
+Los dos codebases **siguen separados**; lo que converge es el dominio. La consecuencia directa para
+el contrato: **Dashboard no escribe dominio de Achieve**. Lee, muestra y opera; los hechos los
+produce Achieve.
+
+### La tabla de reconciliación, completa
+
+Las filas que ADR-003 dejaba *"a confirmar"* quedaron resueltas. **La fila que importa es la de
+`Checkpoint`**, que parecía ser `Commitment` + `Evidence` fusionados y **no lo es**:
+
+| Concepto | Definición canónica | En Dashboard hoy | Estado |
+|---|---|---|---|
+| `Commitment` | **Obligación concreta acordada con el estudiante** | — | Canónico en Achieve |
+| `Checkpoint` | **Momento planificado de revisión o control** | `checkpoints` | Concepto propio de Dashboard |
+| `Evidence` | **Prueba presentada para demostrar el cumplimiento** | — | Canónico en Achieve |
+| `CheckpointResult` | **Resultado de revisar uno o más compromisos y evidencias** | `checkpoint_validations` (parcial) | A construir |
+| Operador | Persona que acompaña | `coaches` | Mismo rol — confirmar permisos |
+| Estudiante | Titular de los datos | `users` | Mismo |
+| `human_assignment` | A qué operador está asignado | `users.coach_id` | Mismo |
+| `Intervention` | Acción del operador con playbook, SLA y outcome | `coach_notes` / `activities` | **Parcial:** una nota no tiene SLA ni outcome |
+| `ProgressEntry` / Bitácora | Historial derivado de hechos | `achieve_daily_logs` | **Parcial:** el log es diario; la Bitácora se agrupa por ciclo |
+| — | — | `challenges`, `streaks`, `payments`, `leads` | **Sin equivalente**, y no se importan: rachas y puntos son gamificación, que el spec de Achieve excluye |
+
+**Un `Checkpoint` puede** revisar un compromiso, solicitar una evidencia y producir un resultado —
+pero son entidades distintas con lifecycle propio. Fusionarlas borraría el primer eslabón de
+*enviar no es suficiencia, suficiencia no es validación, validación no es dominio*.
+
+### Los tres flujos de v2
+
+| # | Flujo | Dirección | Estado |
+|---|---|---|---|
+| 1 | **Autorización de padrón** | Plataforma → CRM | ✅ **v1, vigente.** §1 de este documento |
+| 2 | **Actividad** | Plataforma → CRM | ⬜ a definir. Webhooks firmados (HMAC), idempotentes por `event_id` |
+| 3 | **Contexto vivo** | CRM → Plataforma | ⬜ a definir. API de servicio, token de servicio |
+
+**Propuesta para el flujo 2 — actividad.** Que transporte **los eventos del Product Event Model que
+ya existen**, no un formato nuevo: el catálogo está declarado en `lib/domain/product-events.ts` con
+sus niveles ([ADR-027](decisions.md#adr-027)). Sugerencia concreta: **sólo los de nivel `NEGOCIO`**.
+Los de `TRANSICION` son trazabilidad interna del lifecycle y empujarlos al CRM sería exportar ruido.
+
+**Propuesta para el flujo 3 — contexto vivo.** Que devuelva **la misma proyección que ya consume
+`UX02`**, que es exactamente *"materias, evaluaciones, próxima acción"*: `estado_de_materia()` ya la
+compone en una sola lectura consistente. Construir una segunda vista para el operador crearía dos
+verdades sobre el mismo estudiante — el mismo error que `VI.6` §8.3 prohíbe para el historial.
+
+⚠️ **Ninguno de los dos se implementa hasta que el CTO versione el contrato.** Y ninguno transporta
+datos de una persona real mientras [ADR-006](decisions.md#adr-006) siga sin dictamen legal.
+
 ## 3. Checklist para la Plataforma (lo de HOY)
 
 - [ ] Guardar `PLATFORM_SHARED_SECRET` en variables de entorno (nunca hardcodear).

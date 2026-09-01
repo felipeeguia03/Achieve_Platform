@@ -49,15 +49,15 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 |---|---|---|---|
 | [ADR-001](#adr-001) | Adoptar Spec Driven Development | `ACCEPTED` | — |
 | [ADR-002](#adr-002) | Scaffold nuevo reusando solo la capa de UI | `ACCEPTED` | — |
-| [ADR-003](#adr-003) | Convergencia Operador ↔ coach de Dashboard_Achieve | `PENDING` | Fase B6 |
+| [ADR-003](#adr-003) | Convergencia Operador ↔ coach de Dashboard_Achieve | ✅ `ACCEPTED` *(se integra el dominio, no los frontends)* | — |
 | [ADR-004](#adr-004) | Diseño del pipeline del ADE | ✅ `ACCEPTED` *(v1 provisional, alcance MVP)* | — |
 | [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | ✅ `ACCEPTED` *(sólo el ítem 5 `DEFERRED`)* | `B3` |
-| [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | `PENDING` | Toda fase con datos reales |
+| [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | 🟡 `PROVISIONAL — LEGAL CONFIRMATION REQUIRED` | **Toda fase con datos reales: el gate sigue cerrado** |
 | [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | ✅ `ACCEPTED` *(resuelto por [ADR-025](#adr-025))* | — |
 | [ADR-008](#adr-008) | Stack y runtime del frontend | `ACCEPTED` | — |
 | [ADR-009](#adr-009) | Colisión de namespace `D1–D25` vs `D1–D10` | `ACCEPTED` | — |
 | [ADR-010](#adr-010) | Respuestas DD1–DD10 de traducción al dominio | `ACCEPTED` *(DD4 `DEFERRED`)* | — |
-| [ADR-011](#adr-011) | Owner canónico de `PreparationReadiness` (CR-UX08-01) | `PENDING` | Readiness visible en Fase B5 |
+| [ADR-011](#adr-011) | Owner canónico de `PreparationReadiness` (CR-UX08-01) | ✅ `ACCEPTED` *(la entidad separada es canónica)* | — |
 | [ADR-012](#adr-012) | Alcance de Track A: Operador e Institución se difieren | `ACCEPTED` | — |
 | [ADR-013](#adr-013) | Contenido duplicado en `pending-decisions-annex.md` | `ACCEPTED` | — |
 | [ADR-014](#adr-014) | Desktop-first y contrato del primer viewport | `ACCEPTED` | — |
@@ -73,6 +73,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-024](#adr-024) | Modo MVP: se construye todo sobre datos sintéticos | `ACCEPTED` | — |
 | [ADR-025](#adr-025) | Las ocho `HUMAN-P0`, respondidas por la psicopedagoga | ✅ `ACCEPTED` | — |
 | [ADR-026](#adr-026) | Obligatoriedad de `Reflection`: dónde vive y qué la hace válida | ✅ `ACCEPTED` | — |
+| [ADR-027](#adr-027) | Los ocho eventos de transición entran al Product Event Model | ✅ `ACCEPTED` | — |
 
 ---
 
@@ -168,8 +169,9 @@ gobernanza **quedan fuera del repositorio**, como referencia de lectura en su ca
 <a id="adr-003"></a>
 ## ADR-003 — Convergencia Operador ↔ coach de Dashboard_Achieve
 
-**Estado:** `PENDING — esperando decisión del producto`
-**Bloquea:** Fase B6 (Operador real). *(Antes bloqueaba también la Fase A1, que
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Desbloquea:** la Fase B6 (Operador real) en su parte de dominio. La ejecución del contrato v2 la
+lleva el CTO. *(Antes bloqueaba también la Fase A1, que
 [ADR-012](#adr-012) difirió al Track B.)*
 **Relacionado:** `C01-039` (CRM–Plataforma, `human_assignment`), `C01-022`, `C01-044`.
 **Toca:** `product.md` (glosario y roles), `data-model.md`, `roadmap.md`.
@@ -218,7 +220,52 @@ contexto vivo ni la convergencia de roles/modelos.
 | ProgressEntry / Bitácora | `achieve_daily_logs` | A confirmar |
 | — | `challenges`, `streaks`, `payments`, `leads` | Sin equivalente en Plataforma |
 
-### Decisión requerida antes de
+### Decisión — se integra el dominio, no los frontends
+
+**Los dos codebases pueden seguir separados** en el corto y mediano plazo. Lo que **no** puede seguir
+separado es el modelo: no deben evolucionar como dos productos con conceptos incompatibles.
+
+| Quién | Qué es |
+|---|---|
+| **Achieve Plataforma** | **La fuente canónica** de compromisos, evidencias, lifecycle, readiness e intervenciones |
+| **Dashboard_Achieve** | Una **superficie operativa** que consume esos contratos |
+
+**El CTO versiona el contrato** con OpenAPI y/o esquemas de eventos versionados, con compatibilidad
+explícita y registro de cambios. **No hace falta fusionar los codebases ahora.**
+
+#### La terminología, resuelta — y `Checkpoint` no era lo que parecía
+
+El hallazgo que abrió este ADR era que `checkpoints` de Dashboard *"parecía Commitment + Evidence
+fusionados"*. **No lo es.** Son cuatro conceptos distintos, y confundirlos habría fusionado en uno
+las dos cosas que el producto entero existe para separar:
+
+| Concepto | Definición |
+|---|---|
+| `Commitment` | **Obligación concreta acordada con el estudiante** |
+| `Checkpoint` | **Momento planificado de revisión o control** |
+| `Evidence` | **Prueba presentada para demostrar el cumplimiento** |
+| `CheckpointResult` | **Resultado de revisar uno o más compromisos y evidencias** |
+
+Un `Checkpoint` **puede** revisar un compromiso, **puede** solicitar una evidencia y **puede**
+producir un resultado — pero son entidades diferentes, con lifecycle propio. Que un momento de
+revisión mire un compromiso no lo convierte en ese compromiso.
+
+**Por qué importa tanto esta fila.** El invariante central de Achieve es *enviar no es suficiencia,
+suficiencia no es validación, validación no es dominio*. Un objeto que fuera `Commitment` y
+`Evidence` a la vez borraría el primer eslabón de esa cadena, y con él la distinción entre
+comprometerse y cumplir.
+
+#### Lo que queda por preparar
+
+1. **La tabla de reconciliación completa** — con las filas que este ADR marcaba *"a confirmar"*:
+   `Intervention` ↔ `coach_notes`/`activities`, `ProgressEntry` ↔ `achieve_daily_logs`, y los que no
+   tienen equivalente (`challenges`, `streaks`, `payments`, `leads`).
+2. **La propuesta de contrato v2**, que hoy sólo cubre autorización de padrón (v1): faltan actividad
+   y contexto vivo, con endpoint, payload y SLA.
+
+Las dos quedan en [`platform-integration-contract.md`](platform-integration-contract.md).
+
+### Por qué se decidió ahora y no después
 
 - **Antes de construir la fase de Operador** en el roadmap de Achieve Plataforma, hay que comparar
   la terminología con Dashboard_Achieve para no bautizar las mismas cosas con nombres distintos y
@@ -408,8 +455,11 @@ porque un documento adjunto no reemplaza la aceptación explícita exigida por l
 <a id="adr-006"></a>
 ## ADR-006 — Privacidad y consentimiento de datos reales
 
-**Estado:** `PENDING — esperando decisión del producto` · **PRIORIDAD MÁXIMA**
-**Bloquea:** **cualquier fase que toque datos reales de estudiantes.** Bloqueo absoluto.
+**Estado:** 🟡 `PROVISIONAL — LEGAL CONFIRMATION REQUIRED` · 1 de septiembre de 2026 ·
+**decidido por el owner, sujeto a validación legal** · **PRIORIDAD MÁXIMA**
+**Bloquea:** **cualquier fase que toque datos reales de estudiantes.** Bloqueo absoluto, **y sigue
+en pie**: las decisiones de abajo son de producto y **no levantan el gate**. Lo levanta el dictamen
+legal más la autorización institucional.
 **Relacionado:** `C01-042` (golden dataset, adquisición y legalidad, gate `P`), `C01-017`
 (privacidad y retención de Evidence/Reflection), `C01-030`, `C01-046` (métricas institucionales).
 **Toca:** `product.md`, `architecture.md`, `data-model.md`, `roadmap.md`.
@@ -502,7 +552,71 @@ no se puede adelantar.
 Lo que sí se puede hacer sin decidir nada: **seguir con el catálogo sintético**, que es lo que el
 Track A ya usa y lo que `B1.6` exige explícitamente para los contract tests del CRM.
 
-### Regla operativa mientras siga `PENDING`
+### Decisiones de producto — `PROVISIONAL`, 1 de septiembre de 2026
+
+> ⚠️ **Cada una de estas decisiones está sujeta a validación legal y ninguna habilita datos reales.**
+> Se registran ahora para que el producto pueda seguir construyéndose contra un criterio explícito en
+> vez de contra el vacío, y para que el paquete legal tenga algo concreto que confirmar o corregir.
+> Las preguntas para asesoría están en [`legal-package.md`](legal-package.md).
+
+#### 1. Visibilidad institucional
+
+- La institución ve **por defecto información agregada** por cohorte, carrera, comisión y materia.
+- **No ve** evidencia cruda, reflexiones, conversaciones ni perfiles individuales.
+- Un **caso individual identificable** se habilita únicamente:
+  - con **consentimiento explícito, informado, específico y revocable** del estudiante;
+  - para una **finalidad y un plazo determinados**;
+  - o bajo otra base legal **expresamente validada** por asesoría jurídica.
+- **Que la institución pague no implica acceso a la información individual.** Es la regla que el
+  propio spec fuente ya declaraba, y acá queda como decisión y no como advertencia.
+- Achieve accede a los datos individuales **estrictamente necesarios** para prestar el acompañamiento
+  contratado, con permisos por rol y **trazabilidad de accesos**.
+- Los agregados institucionales aplican un **umbral mínimo de anonimato**. ⚠️ **El número exacto lo
+  confirma asesoría legal** — sin él, un agregado de una comisión chica identifica personas.
+
+#### 2. Retención y borrado
+
+| Qué | Plazo provisional |
+|---|---|
+| **Evidencias crudas** | hasta **90 días** después de cerrar el compromiso, examen o intervención al que pertenecen |
+| **Reflexiones y contenido personal** | mientras el servicio esté activo, y hasta **12 meses** desde la última actividad |
+| **Historial estructurado de progreso y Bitácora** | hasta **24 meses**, preferentemente **pseudonimizado** |
+| **Métricas realmente anónimas y agregadas** | sin plazo |
+
+- Ante una **solicitud de eliminación**: borrado operativo en **30 días**, eliminación de backups en
+  **90 días**.
+- **Única excepción:** lo que deba conservarse por obligaciones legales, contables o defensa ante
+  reclamos.
+
+⚠️ **Estos plazos se revisan y confirman legalmente antes de tocar un dato real.**
+
+#### 3. Material académico
+
+- **La propiedad no cambia:** sigue siendo del estudiante, docente o institución que corresponda.
+- Achieve recibe una **licencia limitada, no exclusiva y temporal** para almacenar, procesar y
+  mostrar el material **con el fin de prestar el servicio**.
+- **Subir material no autoriza** su venta, publicación, reutilización en otros cursos ni
+  entrenamiento de modelos.
+- **Nada entra al golden dataset sin una autorización separada, expresa y documentada.**
+- **Quien sube declara que tiene derecho a usarlo.** Es un dato del acto de subir, no una presunción.
+
+#### 4. Golden dataset y asesoría
+
+**Hasta que haya dictamen legal y autorización institucional, todo el desarrollo y el QA siguen
+exclusivamente con datos sintéticos.** Sin excepción y sin "una prueba chica".
+
+Como **primera opción a explorar** se considera **Ingeniería UCC**. Explorar no es usar: no se toca
+ni un programa, apunte, evidencia o dato real hasta tener las seis cosas:
+
+1. autorización **escrita** de la institución;
+2. **base legal** definida;
+3. **acuerdo de tratamiento y responsabilidades**;
+4. **inventario** de los materiales permitidos;
+5. reglas de **anonimización, retención y eliminación**;
+6. confirmación expresa de **para qué puede usarse**: evaluación, entrenamiento, o únicamente
+   testing.
+
+### Regla operativa mientras el gate siga cerrado
 
 > **Ninguna fase del roadmap que procese datos de una persona real puede comenzar.** Esto incluye el
 > primer login de un estudiante real, no solo el piloto institucional. Los focus groups del Track A
@@ -741,8 +855,9 @@ la Fase 0.**
 <a id="adr-011"></a>
 ## ADR-011 — Owner canónico de `PreparationReadiness` (CR-UX08-01)
 
-**Estado:** `PENDING — heredado del spec fuente como Change Request abierto`
-**Bloquea:** cualquier representación visible de readiness en Fase B5.
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** `CR-UX08-01`, la contradicción estructural que el spec fuente registraba sin resolver.
+**Desbloquea:** la representación visible de readiness en la Fase B5.
 **Relacionado:** `C01-029` (readiness scoped), `C01-025`…`C01-028`.
 **Toca:** `data-model.md`.
 
@@ -776,7 +891,40 @@ ni cuál es la fuente canónica.
 Entidad/campo canónico, owner, relación entre el lifecycle y readiness, mapping, transición e
 historia.
 
-### Consecuencia mientras siga `PENDING`
+### Decisión — `PreparationReadiness` es la fuente canónica
+
+**Hay una sola verdad sobre readiness, y vive en `PreparationReadiness`.** `ExamPreparation` sigue
+siendo la entidad que representa la preparación general del examen, pero **no mantiene una segunda
+verdad independiente** sobre si el estudiante está listo.
+
+| Pieza | Qué le toca |
+|---|---|
+| **`PreparationReadiness`** | El estado —`BUILDING`, `READY_BY_PROTOCOL`, `NOT_READY`— **más sus señales, su explicación, la versión de la regla que lo calculó, la fecha de cálculo y los overrides autorizados** |
+| **`ExamPreparation`** | Referencia el readiness vigente, o lo expone como **proyección de lectura** por rendimiento |
+| Campos duplicados que hoy existan en `ExamPreparation` | **Derivados y no escribibles por separado** |
+
+**Toda modificación entra por la fuente canónica**, y después se actualizan las proyecciones. Nunca
+al revés: una proyección que se puede escribir es una segunda fuente con otro nombre.
+
+**Y una regla de producto que va con la decisión:** el producto **no presenta readiness como certeza
+predictiva de aprobación**. Lo que comunica es *"preparación según el protocolo de Achieve"*.
+`READY_BY_PROTOCOL` significa que el protocolo se cumplió, no que el examen se va a aprobar — y la
+diferencia es exactamente la que separa un acompañante de una promesa que el producto no puede
+sostener.
+
+**Por qué esta forma y no la otra.** El campo dentro de `ExamPreparation` habría sido más corto de
+escribir y no tiene dónde poner lo que hace que readiness sea legible: **la explicación, las señales
+que lo produjeron y la versión de la regla**. Un estado sin su explicación es un veredicto, y este
+producto no emite veredictos sobre personas.
+
+### Qué falta para ejecutarla
+
+La decisión está tomada; **la implementación es de la Fase B5**, que todavía no tiene tablas de
+examen. Cuando se escriba esa migración, esta decisión es la que manda. Los umbrales —qué cuenta como
+señal suficiente— tienen insumo de [ADR-025](#adr-025): `HUMAN-P0-05` define qué es señal de
+aprendizaje y `HUMAN-P0-04` qué es el núcleo mínimo con menos de 24 horas.
+
+### Lo que estuvo vigente mientras el ADR estuvo abierto
 
 Sin card de readiness, sin score, sin cálculo. Se puede mostrar el `status` recibido de
 `ExamPreparation` y los lifecycles operativos. `READY_BY_PROTOCOL` nunca se presenta como predicción
@@ -1857,3 +2005,55 @@ es lo que bloqueaba el código; el cuándo bloquea contenido que todavía no exi
 
 Tampoco toca **privacidad ni retención** de la Reflection: eso es `C01-017`, sigue `OPEN`, y el
 propio anexo advierte que son cosas distintas.
+
+
+---
+
+## ADR-027 — Los ocho eventos de transición entran al Product Event Model
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** la contradicción que la Etapa B3.2 destapó entre `product.md` §11 y el backend.
+**Relacionado:** `C01-023` (Product Event Model), que sigue `OPEN` en lo demás.
+**Toca:** `product.md` §11, `lib/domain/product-events.ts`, la Bitácora y sus tests.
+
+### El problema
+
+`product.md` §11 declaraba textualmente que **no existen** `CommitmentDue`, `CommitmentCompleted`,
+`CommitmentClosed`, `EvidenceUnderReview`, `EvidenceSufficient`, `EvidenceInsufficient`,
+`EvidenceResubmissionRequested` ni `RescueCreated`. **El backend los emite** desde B1/B2: la
+maquinaria compartida de transiciones publica un evento por cada estado al que se llega.
+
+O sea: un catálogo normativo decía que ocho hechos no existían mientras estaban almacenados de forma
+append-only y **sostenían experiencias visibles para el estudiante**.
+
+### Decisión
+
+**Los ocho entran al modelo oficial**, como **eventos de transición de dominio**.
+
+El razonamiento del owner, textual: *"no quiero mantener un catálogo normativo que diga que 'no
+existen' mientras el backend los emite, están almacenados de manera append-only y sostienen
+experiencias visibles para el estudiante"*.
+
+**Y el catálogo pasa a clasificar por nivel**, para que aprobarlos no signifique mezclar cosas de
+naturaleza distinta:
+
+| Nivel | Qué es | Ejemplos |
+|---|---|---|
+| **`NEGOCIO`** | Los hechos que el producto existe para producir y medir | `ActionRecommended`, `ProgressUpdated`, `RescueSucceeded` |
+| **`TRANSICION`** | El objeto cambió de estado. Trazabilidad del lifecycle | `CommitmentDue`, `EvidenceSufficient` |
+| **`TELEMETRIA`** | Uso e interacción. **Ninguno instrumentado hoy** | `CourseViewed` |
+
+**Compatibilidad:** los eventos históricos **conservan su nombre**. Ninguno se renombra sin un plan
+de migración — `product_event` es append-only, y renombrar dejaría filas viejas que ningún consumidor
+sabe leer.
+
+### Lo que esta decisión NO cierra
+
+`C01-023` sigue `OPEN`. Lo que se resolvió es la contradicción entre el catálogo y el código, no el
+Product Event Model completo: **falta el naming de telemetría**, y siguen sin instrumentarse 14 de
+los eventos del P0 —los de examen, riesgo, intervención y consentimiento—, cada uno esperando la fase
+que los produce.
+
+Y quedan **dos nombres que el P0 usa y el código no**: `CommitmentCreated`, que el backend emite como
+`CommitmentConfirmed` —por el estado al que transiciona—, y que no se renombra por la misma regla de
+compatibilidad.

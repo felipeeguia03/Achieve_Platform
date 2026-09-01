@@ -32,10 +32,14 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
   La ingesta asistida del ADL, el ADE v1 determinista y el reloj del lifecycle también están
   construidos. Cualquier flujo que toque un dato de una persona real sigue bloqueado por
   [ADR-006](docs/decisions.md#adr-006).
-- **Lo que queda topa con una decisión humana**, salvo la Fase B4 —integrar el reloj a una ejecución
-  operativa—. Ver el [mapa de bloqueos](docs/roadmap.md) y las tres decisiones abiertas:
-  [ADR-003](docs/decisions.md#adr-003), [ADR-006](docs/decisions.md#adr-006) y
-  [ADR-011](docs/decisions.md#adr-011).
+- **El 1 de septiembre de 2026 el owner cerró tres decisiones y dejó una provisional:**
+  [ADR-011](docs/decisions.md#adr-011) (readiness: `PreparationReadiness` es canónica),
+  [ADR-003](docs/decisions.md#adr-003) (se integra el dominio, no los frontends),
+  [ADR-027](docs/decisions.md#adr-027) (los eventos de transición entran al modelo) y
+  [ADR-006](docs/decisions.md#adr-006) en `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`.
+- **Con eso hay tres frentes con trabajo:** B4, **B5 · Modo Examen —desbloqueada del todo—** y B6.
+  Lo único que sigue prohibido es tocar un dato real: **eso lo levanta el dictamen legal, no una
+  decisión de producto.** El [mapa de bloqueos](docs/roadmap.md) dice quién cierra cada cosa.
 
 ## Cómo correrlo
 
@@ -137,6 +141,9 @@ El contrato de layout que sí viaja es
 | [`docs/decisions.md`](docs/decisions.md) | ADRs aceptados y pendientes; determina qué se puede implementar. |
 | [`docs/roadmap.md`](docs/roadmap.md) | Orden de trabajo, gates y estado de cada fase. |
 | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Registro de los 51 contratos de negocio: **42 abiertos** y 9 respondidos — las 8 psicopedagógicas y `C01-051`. |
+| [`docs/legal-package.md`](docs/legal-package.md) | Las preguntas para asesoría jurídica, con el contexto para responderlas. |
+| [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) | Los ocho residuos de `ADR-025`, como agenda de la reunión de cierre. |
+| [`docs/brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md) | El brief del CTO para las tres vulnerabilidades `high`. |
 | [`docs/human-p0-source.md`](docs/human-p0-source.md) | Las ocho respuestas psicopedagógicas, transcriptas literalmente. **Manda sobre cualquier paráfrasis.** |
 
 Los documentos `*-source.md` son referencias normativas de origen y no se editan.

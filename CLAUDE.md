@@ -25,8 +25,10 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
    ([ADR-026](docs/decisions.md#adr-026)) están respondidas, pero **con residuos**. Si falta una
    regla, registrala como ADR `PENDING` y **preguntá**.
 2. **No resuelvas una decisión `PENDING`.** La cierra una persona.
-3. **Datos reales: bloqueo absoluto** hasta que [ADR-006](docs/decisions.md#adr-006) esté resuelto.
-   **Que ADR-005 esté aceptado no cambia esto:** el backend se construye sobre datos sintéticos.
+3. **Datos reales: bloqueo absoluto** hasta que [ADR-006](docs/decisions.md#adr-006) tenga
+   **dictamen legal**. Sus decisiones de producto ya están tomadas (1 sep 2026), pero en estado
+   `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`: **eso no levanta el gate.** El backend se construye
+   sobre datos sintéticos, sin excepciones ni "una prueba chica".
 4. **Una etapa por vez, completa.** Readiness → decisiones aprobadas → implementar → verificar →
    commit → docs actualizados.
 5. **Antes de tocar UI, abrí las capturas de `docs/diseño/`.** Achieve es desktop-first y su
@@ -69,7 +71,10 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
 | Escribir contenido del protocolo de examen | [`docs/human-p0-source.md`](docs/human-p0-source.md) — **la voz de la psicopedagoga, literal** |
-| Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) |
+| Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) — §2.1 tiene la propuesta de contrato v2 |
+| Preparar la consulta legal | [`docs/legal-package.md`](docs/legal-package.md) |
+| Cerrar los residuos psicopedagógicos | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) |
+| Resolver las vulnerabilidades `high` | [`docs/brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md) |
 | El spec original completo | `docs/product-spec-source.md` — **no se edita** |
 
 ---
@@ -115,13 +120,23 @@ qué causalidad— sigue `OPEN`. **Ninguna ruta de `Evidence` escribe progreso**
 estático que cubre los cuatro caminos, la maquinaria de transiciones y los triggers del schema:
 `VALIDATED` no produce `ProgressUpdated`, y es el error más barato de cometer.
 
-🔴 **Contradicción abierta.** `product.md` §11 declara que ocho nombres de evento *"no existen"* y el
-backend los emite —uno por cada transición de estado—. No bloquea ninguna fase, la decide una persona
-dentro de `C01-023`, y está escrita en `product.md` §11 con sus dos opciones.
+✅ **Resuelta por [ADR-027](docs/decisions.md#adr-027):** los ocho eventos que `product.md` §11
+declaraba inexistentes **entraron al modelo** como nivel `TRANSICION`. El catálogo clasifica en
+`NEGOCIO` · `TRANSICION` · `TELEMETRIA`, y los nombres históricos no se cambian: `product_event` es
+append-only.
 
-**➡️ La próxima con trabajo disponible es la Fase B4:** falta integrar el reloj del lifecycle a una
-ejecución operativa. Todo lo demás espera una decisión humana — ver el mapa de bloqueos del
-`roadmap.md`.
+**➡️ Lo que sigue, tras las decisiones del 1 de septiembre.** El owner cerró
+[ADR-011](docs/decisions.md#adr-011), [ADR-003](docs/decisions.md#adr-003) y
+[ADR-027](docs/decisions.md#adr-027), y dejó [ADR-006](docs/decisions.md#adr-006) en `PROVISIONAL`.
+Con eso hay **tres frentes con trabajo real**:
+
+- **Fase B4** — integrar el reloj del lifecycle a una ejecución operativa.
+- **Fase B5 · Modo Examen** — desbloqueada **del todo**: contenido por ADR-025 y readiness por
+  ADR-011. Es la fase grande que queda, con tres requisitos de schema nuevos.
+- **Fase B6 · Risk e Intervención** — ADR-003 repartió: Achieve es canónico, Dashboard consume.
+
+Lo que **no** se puede hacer sigue siendo lo mismo: tocar un dato real. El mapa de bloqueos del
+`roadmap.md` ahora dice **quién** cierra cada cosa.
 
 **Trabajo adelantado.** B2b va **1 / 3** con la ingesta asistida del ADL. En B4 ya existen el ADE
 v1 determinista, el reloj del lifecycle y la materialización transaccional de recomendaciones.

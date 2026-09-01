@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   catalogoP0,
+  eventosDeNivel,
   EXTENSIONES,
   eventosDeBitacora,
   eventosDeclarados,
@@ -154,5 +155,57 @@ describe("B3.2 · la Bitácora se define desde el catálogo", () => {
     }
     expect(EXTENSIONES.AcademicDataIngested.enBitacora).toBe(false);
     expect(EXTENSIONES.CommitmentDue.enBitacora, "lo dispara el reloj, no la persona").toBe(false);
+  });
+});
+
+
+describe("B3.2 · ADR-027 · los niveles no se mezclan", () => {
+  /**
+   * Aprobar los ocho eventos de transición **no los volvió hechos de negocio**.
+   * Esa es la mitad de ADR-027: un cambio de estado es trazabilidad del
+   * lifecycle; que el estudiante haya recuperado un compromiso incumplido es
+   * otra cosa. Si los niveles se confunden, el catálogo vuelve a ser una lista.
+   */
+  it("todo evento declara su nivel", () => {
+    for (const [nombre, e] of Object.entries(catalogoP0)) {
+      expect(["NEGOCIO", "TRANSICION", "TELEMETRIA"], nombre).toContain(e.nivel);
+    }
+    for (const [nombre, e] of Object.entries(EXTENSIONES)) {
+      expect(["NEGOCIO", "TRANSICION", "TELEMETRIA"], nombre).toContain(e.nivel);
+    }
+  });
+
+  it("los ocho que ADR-027 aprobó son de transición, no de negocio", () => {
+    const losOcho = [
+      "CommitmentDue",
+      "CommitmentCompleted",
+      "CommitmentClosed",
+      "EvidenceUnderReview",
+      "EvidenceSufficient",
+      "EvidenceInsufficient",
+      "EvidenceResubmissionRequested",
+      "CommitmentConfirmed",
+    ];
+    for (const nombre of losOcho) {
+      expect(EXTENSIONES[nombre], `${nombre} dejó de estar declarado`).toBeDefined();
+      expect(EXTENSIONES[nombre].nivel, nombre).toBe("TRANSICION");
+    }
+  });
+
+  it("ningún evento de telemetría está instrumentado todavía", () => {
+    // ADR-027: su naming sigue pendiente dentro de `C01-023`. Instrumentar uno
+    // antes de nombrarlo bien es como se termina con un evento por interacción.
+    for (const nombre of eventosDeNivel("TELEMETRIA")) {
+      const e = catalogoP0[nombre] ?? EXTENSIONES[nombre];
+      const instrumentado =
+        "instrumentacion" in e && e.instrumentacion.estado === "EMITIDO";
+      expect(instrumentado, `${nombre} está instrumentado sin naming aprobado`).toBe(false);
+    }
+  });
+
+  it("la Bitácora no muestra telemetría", () => {
+    for (const nombre of eventosDeNivel("TELEMETRIA")) {
+      expect(eventosDeBitacora(), nombre).not.toContain(nombre);
+    }
   });
 });

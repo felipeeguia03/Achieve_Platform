@@ -78,10 +78,10 @@ TRACK B ─── cada fase tiene su gate ────────────�
   ┌────┴─────────────────────────┐
   ↓                              ↓
   Fase B4 · ADE v1 🟡            Fase B5 · Modo Examen real
-  Engine + reloj + base ✅        ✅ contenido (ADR-025) · 🔒 ADR-011 (readiness)
+  Engine + reloj + base ✅        ✅ contenido (ADR-025) · ✅ readiness (ADR-011)
   └────┬─────────────────────────┘
        ↓
-  Fase B6 · Risk + Intervención + Operador   🔒 ADR-003
+  Fase B6 · Risk + Intervención + Operador   🟢 ADR-003 ✅
   (absorbe las 5 vistas que iban en la Fase A1)
        ↓
   Fase B7 · Privacidad y golden dataset      🔒 ADR-006  ← BLOQUEO ABSOLUTO
@@ -2235,9 +2235,11 @@ las cuatro ramas son observables.
 
 **Estado:** 🟢 **Contenido desbloqueado el 31 de agosto de 2026** por
 [ADR-025](decisions.md#adr-025): las ocho `HUMAN-P0` están respondidas por la psicopedagoga real. La
-estructura nunca estuvo bloqueada. **Readiness sigue 🔒** por
-[ADR-011](decisions.md#adr-011) — es una contradicción estructural del spec (`CR-UX08-01`), no una
-pregunta pedagógica, y estas respuestas no la tocan.
+estructura nunca estuvo bloqueada. **Y readiness se desbloqueó el 1 de septiembre de 2026:**
+[ADR-011](decisions.md#adr-011) decidió que **`PreparationReadiness` es la fuente canónica** —con su
+estado, sus señales, su explicación, la versión de la regla que lo calculó y sus overrides— y que
+`ExamPreparation` **no mantiene una segunda verdad**. La fase ya no tiene decisiones abiertas: queda
+sólo el trabajo, más los tres requisitos de schema que ADR-025 destapó.
 
 **Objetivo.** `ExamPreparation` real con `ExamProtocol` como configuración versionada.
 
@@ -2317,27 +2319,21 @@ desvío, riesgo y recuperación.
 
 ## 2. Mapa de bloqueos
 
-| Decisión abierta | Bloquea |
-|---|---|
-| [ADR-006](decisions.md#adr-006) Privacidad | **Cualquier fase con datos reales.** Absoluto |
-| [ADR-003](decisions.md#adr-003) Convergencia | Fase B6 |
-| [ADR-011](decisions.md#adr-011) Readiness | Readiness visible en B5 |
+| Qué sigue abierto | Bloquea | Quién lo cierra |
+|---|---|---|
+| **El dictamen legal** de [ADR-006](decisions.md#adr-006) | **Cualquier fase con datos reales.** Absoluto | Asesoría jurídica — [paquete de preguntas](legal-package.md) |
+| **La autorización institucional** del golden dataset (`C01-042`) | Fase B8 · piloto | Producto + la institución |
+| **Las tres `high` de `npm audit`** ([ADR-008](decisions.md#adr-008)) | Cualquier despliegue | CTO — [brief](brief-adr-008-seguridad.md) |
+| **Los ocho residuos psicopedagógicos** ([ADR-025](decisions.md#adr-025)) | Intervención automática sobre personas reales | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
+| **El contrato de integración v2** | Fases B6 y B8 | CTO — [propuesta](platform-integration-contract.md) §2.1 |
 
-### 🔴 Una contradicción abierta entre el código y `product.md` — 1 sep 2026
+### ✅ La contradicción del Product Event Model, resuelta — [ADR-027](decisions.md#adr-027)
 
-No bloquea ninguna fase, y por eso es fácil que se quede así. **`product.md` §11 declara que ocho
-nombres de evento "no existen", y el backend los emite** —`CommitmentDue`, `CommitmentCompleted`,
-`EvidenceSufficient` y cinco más—: la maquinaria de transiciones emite uno por cada estado al que se
-llega. Lo destapó el catálogo de la Etapa B3.2.
-
-No se resolvió por código porque **`product_event` es append-only** —dejar de emitirlos no borra los
-que ya están— y porque **cuatro sostienen la Bitácora**: *"En revisión"*, *"Cumplió el criterio"*,
-*"Necesita cambios"* y *"Te pidieron volver a entregarla"* salen de ahí.
-
-**Lo decide una persona, dentro de `C01-023`:** aprobarlos como parte del modelo, o separarlos en un
-registro de transiciones distinto del Product Event Model. Las dos opciones están escritas en
-`product.md` §11. Mientras tanto quedan declarados en `lib/domain/product-events.ts` y ninguno se
-agrega sin pasar por ahí.
+`product.md` §11 declaraba que ocho nombres de evento *"no existen"* y el backend los emitía. **Los
+ocho entraron al modelo** como eventos de nivel `TRANSICION`, y el catálogo pasó a clasificar por
+nivel —`NEGOCIO`, `TRANSICION`, `TELEMETRIA`— para que aprobarlos no significara mezclarlos con los
+hechos que el producto existe para medir. Los nombres históricos **no se cambian**: `product_event`
+es append-only, y renombrar dejaría filas que ningún consumidor sabe leer.
 
 ✅ **Resueltos el 28 de agosto de 2026,** y por eso ya no aparecen arriba:
 [ADR-008](decisions.md#adr-008) (stack), [ADR-009](decisions.md#adr-009) (nomenclatura `DD`),
@@ -2350,14 +2346,23 @@ del primer viewport pasa a orden semántico, con 360 px como piso móvil).
 
 ✅ **Resueltos el 1 de septiembre de 2026:** [ADR-026](decisions.md#adr-026) (obligatoriedad de
 `Reflection`, que cerró `C01-051` y la Etapa B2.4), [ADR-016](decisions.md#adr-016) (**se agrega
-`CTA-019`**: el registro pasa a 19 y `UX07` deja de alcanzarse sólo por el menú) y
-[ADR-020](decisions.md#adr-020) (**un no-cambio declarado es un dato, no una ausencia**).
+`CTA-019`**: el registro pasa a 19 y `UX07` deja de alcanzarse sólo por el menú),
+[ADR-020](decisions.md#adr-020) (**un no-cambio declarado es un dato, no una ausencia**),
+[ADR-011](decisions.md#adr-011) (**`PreparationReadiness` es la fuente canónica** de readiness),
+[ADR-003](decisions.md#adr-003) (**se integra el dominio, no los frontends**; Achieve es canónico y
+Dashboard consume) y [ADR-027](decisions.md#adr-027) (**los ocho eventos de transición entran al
+Product Event Model**, clasificados por nivel).
+
+🟡 **Y [ADR-006](decisions.md#adr-006) pasó a `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`:** las
+decisiones de producto están tomadas —visibilidad institucional, retención, material académico— y
+**el gate sigue cerrado**. Lo que se destrabó es que el producto dejó de construir contra el vacío;
+lo que falta es el dictamen. Las preguntas están en [`legal-package.md`](legal-package.md).
 
 ✅ **Resuelto el 31 de agosto de 2026:** [ADR-007](decisions.md#adr-007) — **las ocho decisiones
 `HUMAN-P0` fueron respondidas por la psicopedagoga real.** Ver [ADR-025](decisions.md#adr-025) y la
 fuente literal en [`human-p0-source.md`](human-p0-source.md). **El contenido de la Fase B5 deja de
-estar bloqueado.** Su readiness **no**: [ADR-011](decisions.md#adr-011) es una contradicción
-estructural del spec y sigue `PENDING`.
+estar bloqueado.** Su readiness también, desde el 1 de septiembre: ver
+[ADR-011](decisions.md#adr-011).
 
 > **La Fase 0 está cerrada.** `ADR-016` sigue pendiente como deuda del registro canónico, pero el
 > recorrido de focus group declara la navegación del facilitador y ya no bloquea el cierre.
@@ -2380,9 +2385,9 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | 🟡 **EN CURSO** — `B3.1` completa: el resultado se escribe con sus invariantes y `UX06` lo proyecta. Quién lo emite sigue siendo `C01-018` | 1 / 3 |
 | Fase B4 — ADE v1 | 🟡 **EN CURSO — es la única con trabajo disponible que no espera a una persona.** Engine, reloj y materialización construidos; falta integrar el reloj a una ejecución operativa | 3 / — |
-| Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA, y ahora **con contenido real**: [ADR-025](decisions.md#adr-025) cerró las ocho `HUMAN-P0`. Readiness sigue bloqueada por [ADR-011](decisions.md#adr-011) | 0 / — |
-| Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |
-| Fase B7 — Privacidad | 🔒 **BLOQUEADA por [ADR-006](decisions.md#adr-006)** — es la fase que lo cierra | — |
+| Fase B5 — Modo Examen real | 🟢 **DESBLOQUEADA DEL TODO** — contenido por [ADR-025](decisions.md#adr-025) y readiness por [ADR-011](decisions.md#adr-011). **Es la fase grande que queda** | 0 / — |
+| Fase B6 — Risk e Intervención | 🟢 **DESBLOQUEADA** — [ADR-003](decisions.md#adr-003) repartió: Achieve es canónico, Dashboard consume. Falta el contrato v2, que lleva el CTO | 0 / — |
+| Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
 **Estado de los 51 contratos `C01`: 42 `OPEN`, 9 `ANSWERED — RESIDUO ABIERTO`, 0 `CLOSED`.** Ocho

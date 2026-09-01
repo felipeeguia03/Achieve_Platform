@@ -625,26 +625,36 @@ institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`
 `RescueCreated` ni `HumanFollowupRequested`. Si la telemetría necesita observar upload, error o
 funnel, su naming queda pendiente y **no reemplaza** a los eventos de dominio.
 
-> ### 🔴 Brecha abierta — el backend emite ocho de esos nombres
+> ### ✅ Resuelto — [ADR-027](decisions.md#adr-027), 1 de septiembre de 2026
 >
-> **Detectada el 1 de septiembre de 2026**, al declarar el catálogo en la Etapa B3.2. La maquinaria
-> compartida de transiciones emite un evento **por cada estado al que se llega**, así que
-> `CommitmentDue`, `CommitmentCompleted`, `CommitmentClosed`, `EvidenceUnderReview`,
-> `EvidenceSufficient`, `EvidenceInsufficient`, `EvidenceResubmissionRequested` y
-> `CommitmentRescueCreated` **existen en `product_event`** — y esta sección dice que no existen.
+> **Los ocho entraron al modelo.** La lista de arriba decía que no existían `CommitmentDue`,
+> `CommitmentCompleted`, `CommitmentClosed`, `EvidenceUnderReview`, `EvidenceSufficient`,
+> `EvidenceInsufficient`, `EvidenceResubmissionRequested` ni `CommitmentRescueCreated` — y el backend
+> los emitía desde B1/B2, uno por cada transición de estado.
 >
-> No se resolvió por código, y por dos motivos:
+> No se podía sostener un catálogo normativo que negara ocho hechos **almacenados de forma
+> append-only y que sostienen experiencias visibles para el estudiante**: *"En revisión"*, *"Cumplió
+> el criterio"*, *"Necesita cambios"* y *"Te pidieron volver a entregarla"* salen de ahí.
 >
-> 1. **`product_event` es append-only (`I12`).** Dejar de emitirlos no borra los que ya están, y
->    borrarlos sería reescribir el pasado.
-> 2. **Cuatro de ellos sostienen la Bitácora hoy.** *"En revisión"*, *"Cumplió el criterio"*,
->    *"Necesita cambios"* y *"Te pidieron volver a entregarla"* son hechos que el estudiante necesita
->    ver, y salen de esos eventos.
->
-> **Lo decide una persona, y es parte de `C01-023`.** Las opciones son: aprobarlos como parte del
-> modelo —con lo que esta lista deja de decir *"no existen"*—, o separarlos en un registro de
-> transiciones distinto del Product Event Model. Mientras tanto están **declarados como extensiones**
-> en `lib/domain/product-events.ts`, cada uno con su motivo, y ninguno se agrega sin pasar por ahí.
+> **Son eventos de `TRANSICION`, no de negocio**, y esa clasificación es la mitad de la decisión.
+
+## 11.1 Los tres niveles del modelo — `ADR-027`
+
+Aprobar los eventos de transición no significa mezclarlos con los de negocio. El catálogo ejecutable
+—`lib/domain/product-events.ts`— clasifica cada hecho, y hay guard de que ninguno quede sin nivel:
+
+| Nivel | Qué es | Ejemplos |
+|---|---|---|
+| **`NEGOCIO`** | Lo que el producto existe para producir y medir | `ActionRecommended`, `ProgressUpdated`, `RescueSucceeded`, `ProgressNoChangeConfirmed` |
+| **`TRANSICION`** | El objeto cambió de estado. Trazabilidad del lifecycle | `CommitmentDue`, `EvidenceSufficient`, `ActionReplaced` |
+| **`TELEMETRIA`** | Uso e interacción. **Ninguno instrumentado**, y su naming sigue pendiente (`C01-023`) | `CourseViewed` |
+
+**Los nombres históricos no se cambian.** `product_event` es append-only: renombrar dejaría filas
+viejas que ningún consumidor sabe leer. Por eso `CommitmentCreated` de §16 sigue emitiéndose como
+`CommitmentConfirmed`, y cualquier renombre futuro necesita un plan de migración.
+
+**Lo que sigue abierto en `C01-023`:** el naming de telemetría, y la instrumentación de los 14
+eventos del P0 que esperan la fase que los produce —examen, riesgo, intervención, consentimiento—.
 
 ---
 

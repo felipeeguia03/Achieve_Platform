@@ -113,6 +113,9 @@ Achieve_Platform/
 │   ├── decisions.md             ← ADRs
 │   ├── domain-translation-dd1-dd10.md  ← respuestas DD1–DD10
 │   ├── pending-decisions-annex.md   ← las 51 C01: 42 abiertas, 9 respondidas (vivo)
+│   ├── legal-package.md             ← las preguntas para asesoría jurídica
+│   ├── agenda-cierre-psicopedagoga.md ← los 8 residuos de ADR-025
+│   ├── brief-adr-008-seguridad.md   ← el brief del CTO para las 3 `high`
 │   ├── human-p0-source.md           ← respuestas de la psicopedagoga, literales
 │   ├── product-spec-source.md       ← spec maestro (referencia, no se edita)
 │   └── design-system-source.md     ← manual de diseño (referencia, no se edita)
