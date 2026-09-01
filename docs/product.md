@@ -588,6 +588,12 @@ habilitar"*.
 Eventos aprobados. Los nombres son provisionales; lo obligatorio es preservar **actor, timestamp,
 institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`C01-023`, `OPEN`).
 
+> **El catálogo ejecutable vive en `lib/domain/product-events.ts`** desde la Etapa B3.2, con **la
+> cobertura real**: cuáles se emiten hoy, cuáles esperan a qué fase y cuáles se le muestran al
+> estudiante en la Bitácora. De los 23 se emiten 9 — los ocho del loop diario más `RescueSucceeded`,
+> instrumentado en la B3.3. Hay guard en las dos direcciones: ningún evento emitible queda sin
+> declarar, y ninguno declarado como emitido se queda sin emisor.
+
 | Evento | Cuándo |
 |---|---|
 | `StudentRegistered` | Cuenta creada |
@@ -618,6 +624,27 @@ institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`
 `EvidenceSufficient`, `EvidenceInsufficient`, `EvidenceResubmissionRequested`, `EvidenceDeleted`,
 `RescueCreated` ni `HumanFollowupRequested`. Si la telemetría necesita observar upload, error o
 funnel, su naming queda pendiente y **no reemplaza** a los eventos de dominio.
+
+> ### 🔴 Brecha abierta — el backend emite ocho de esos nombres
+>
+> **Detectada el 1 de septiembre de 2026**, al declarar el catálogo en la Etapa B3.2. La maquinaria
+> compartida de transiciones emite un evento **por cada estado al que se llega**, así que
+> `CommitmentDue`, `CommitmentCompleted`, `CommitmentClosed`, `EvidenceUnderReview`,
+> `EvidenceSufficient`, `EvidenceInsufficient`, `EvidenceResubmissionRequested` y
+> `CommitmentRescueCreated` **existen en `product_event`** — y esta sección dice que no existen.
+>
+> No se resolvió por código, y por dos motivos:
+>
+> 1. **`product_event` es append-only (`I12`).** Dejar de emitirlos no borra los que ya están, y
+>    borrarlos sería reescribir el pasado.
+> 2. **Cuatro de ellos sostienen la Bitácora hoy.** *"En revisión"*, *"Cumplió el criterio"*,
+>    *"Necesita cambios"* y *"Te pidieron volver a entregarla"* son hechos que el estudiante necesita
+>    ver, y salen de esos eventos.
+>
+> **Lo decide una persona, y es parte de `C01-023`.** Las opciones son: aprobarlos como parte del
+> modelo —con lo que esta lista deja de decir *"no existen"*—, o separarlos en un registro de
+> transiciones distinto del Product Event Model. Mientras tanto están **declarados como extensiones**
+> en `lib/domain/product-events.ts`, cada uno con su motivo, y ninguno se agrega sin pasar por ahí.
 
 ---
 

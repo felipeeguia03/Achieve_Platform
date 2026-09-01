@@ -112,7 +112,7 @@ Achieve_Platform/
 │   ├── roadmap.md               ← fases y etapas
 │   ├── decisions.md             ← ADRs
 │   ├── domain-translation-dd1-dd10.md  ← respuestas DD1–DD10
-│   ├── pending-decisions-annex.md   ← las 51 C01: 43 abiertas, 8 respondidas (vivo)
+│   ├── pending-decisions-annex.md   ← las 51 C01: 42 abiertas, 9 respondidas (vivo)
 │   ├── human-p0-source.md           ← respuestas de la psicopedagoga, literales
 │   ├── product-spec-source.md       ← spec maestro (referencia, no se edita)
 │   └── design-system-source.md     ← manual de diseño (referencia, no se edita)
@@ -343,7 +343,50 @@ capa de servicio propia. Desplaza dos aspectos de la propuesta anterior:
 Proveedor, aislamiento y capas quedaron ratificados por ADR-005 (Bloque A). Sigue sin ratificar:
 Storage y operación. Hasta entonces se conserva como diseño objetivo y no se crean migraciones.
 
-### 3.9 Frontera Plataforma ↔ CRM
+### 3.9 El código que hoy la implementa
+
+Actualizado el 1 de septiembre de 2026, con las fases B1, B2 y B3 completas. **§3.2 describe el
+diseño; esto dice dónde vive**, que es lo que hacía falta para no tener que deducirlo del `grep`.
+
+```text
+app/
+├── (student)/            ← las nueve superficies. Piden a /api/* con Bearer y
+│                            dibujan `Ausencia` si la carga falla: nunca el fixture
+└── api/                  ← Controller. Valida sesión, llama a UN Service, traduce a HTTP
+    ├── hoy · materia · accion · compromiso · evidencia · progreso
+    └── sesion            ← alta de la sesión sintética, fuera de las nueve
+
+lib/
+├── client/               ← el cliente de /api/*: token, tipo suma de respuesta, hook
+├── domain/               ← PURO. Tipos, máquinas de estado, precedencia,
+│   ├── product-events.ts    el Product Event Model (§16) con su cobertura
+│   └── view-models.ts       lo que cada pantalla recibe
+└── server/
+    ├── composicion.ts    ← composition root: EL único lugar que ata implementaciones
+    ├── servicios/        ← reglas, transacciones, eventos. No leen headers ni SQL
+    │   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
+    │   ├── hechos.ts        la traducción de un hecho a entrada visible. UNA, para UX02 y UX06
+    │   ├── tiempo.ts        formato en la zona del estudiante. El formato es presentación
+    │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar
+    └── repositorios/     ← única capa que toca Postgres. No decide permisos ni transiciones
+
+supabase/migrations/      ← 24 migraciones. Una aplicada NO se edita: se reemplaza
+                             la función desde una nueva
+scripts/                  ← db:verify — 134 comprobaciones que npm test no puede hacer
+```
+
+**Una lectura, una función de base.** Cada superficie tiene la suya —`estado_del_dia`,
+`estado_de_materia`, `estado_de_accion`, `estado_de_compromiso`, `estado_de_evidencia`,
+`estado_de_progreso`— porque varias lecturas por pantalla dan una foto inconsistente entre sí. El
+historial es la excepción a la regla de *una por superficie*, y a propósito: `hechos_de_cursada()` la
+comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda fuente histórica**.
+
+**Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment` y `Evidence`;
+`registrar_progreso`; `materializar_recomendacion` del ADE; e `ingerir_materia` del ADL. Todas
+publican su hecho en `product_event` **después** de que la escritura ganó — un evento de algo que
+perdió la carrera sería un hecho que no ocurrió.
+
+### 3.10 Frontera Plataforma ↔ CRM
 
 Congelada por el spec (Parte II §18.1), independientemente de qué opción se elija:
 
@@ -379,7 +422,7 @@ con datos reales** mientras ADR-006 siga `PENDING`.
 Cómo interactúa esto con la convergencia hacia Dashboard_Achieve es exactamente
 [ADR-003](decisions.md#adr-003).
 
-### 3.10 WhatsApp
+### 3.11 WhatsApp
 
 **WhatsApp es un canal, no la base de datos del producto.** Puede recibir foto, archivo, texto o
 audio como Evidence, pero esa Evidence se **normaliza dentro de Plataforma**: misma entidad, mismo

@@ -232,7 +232,7 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/roadmap.md`](docs/roadmap.md) | Fases, etapas, bloqueos, estado | Antes de empezar cualquier trabajo |
 | [`docs/decisions.md`](docs/decisions.md) | ADRs numerados | **Siempre.** Para saber qué está bloqueado |
 | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) | Las respuestas `DD1`–`DD10` que el manual de diseño exige | Antes de aplicar un principio del manual |
-| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` — 43 abiertas, 8 respondidas | Cuando dudes si algo está decidido |
+| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` — **42 abiertas**, 9 respondidas | Cuando dudes si algo está decidido |
 | [`docs/human-p0-source.md`](docs/human-p0-source.md) | **Fuente literal** de las 8 respuestas psicopedagógicas | Antes de escribir contenido del protocolo de examen |
 | [`docs/design-system-capturas.md`](docs/design-system-capturas.md) | Extracción visual anonimizada + §12, las decisiones de diseño abiertas | Antes de tocar layout, espaciado o la posición de una CTA |
 | **`docs/diseño/*.png`** | **Las 34 capturas: la fuente del lenguaje visual.** No versionadas ([ADR-006](docs/decisions.md#adr-006)) | **Siempre, antes de tocar UI.** Ver §1.5 |
@@ -278,20 +278,28 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Track B, Fase B2 — Dominio de ejecución.** ✅ **COMPLETA, 6 / 6** (1 sep 2026). La
-próxima con trabajo disponible es la **B3**, que quedó desbloqueada.
+**Fases B1, B2 y B3: ✅ completas** (1 sep 2026). **La próxima con trabajo disponible es la B4**, a
+la que le falta integrar el reloj del lifecycle a una ejecución operativa; todo lo demás topa con una
+decisión humana.
 
-Track A y la Fase A2 están cerrados. Las nueve superficies existen, todos los estados críticos son
-alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner. B1 está
-completa (6/6). En B2, `Action`, `Commitment` y `Evidence` están completas; `Reflection` sigue
-cerró el 1 de septiembre con [ADR-026](docs/decisions.md#adr-026), que decidió `C01-051`. La Etapa B2.6 **cerró**: `UX01`–`UX06` leen de Postgres con sesión real, y el
-catálogo sintético sigue disponible bajo `?escenario=` explícito. `UX07`–`UX09` esperan a la Fase B5.
-B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle se construyeron por
-adelantado en B4.
+Track A y la Fase A2 están cerrados: las nueve superficies existen, todos los estados críticos son
+alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner.
 
-⚠️ `progress_entry` está migrada pero **ningún Service la escribe**: el `ProgressUpdated` productivo
-es la Fase B3 (`C01-018`). Con la tabla vacía `UX06` dice *"todavía no hay un cambio de progreso
-confirmado"*, y eso es lo correcto — no se siembra una fila para llenar la pantalla.
+En el Track B, hoy:
+
+- **`UX01`–`UX06` leen de Postgres** con sesión real, cada una con una función de lectura propia, y
+  ninguna cae al fixture en silencio. El catálogo sintético sigue disponible bajo `?escenario=`.
+  `UX07`–`UX09` esperan a la Fase B5: no hay tablas de examen.
+- **El loop diario está persistido entero** — `Action`, `Commitment`, `Evidence` y `Reflection`,
+  esta última desde que [ADR-026](docs/decisions.md#adr-026) decidió `C01-051`.
+- **El progreso se escribe con sus invariantes** y `UX06` lo proyecta. ⚠️ **El Service recibe el
+  resultado; no decide que hubo progreso:** `C01-018` sigue `OPEN`. Ninguna ruta de `Evidence`
+  escribe progreso, con guard.
+- **El Product Event Model está declarado** en `lib/domain/product-events.ts`: 23 eventos P0 del
+  spec §16 más 18 extensiones que el backend emite y el P0 no lista. Antes de agregar un evento,
+  declaralo ahí.
+- **B2b va 1/3**, y el ADE v1, su materialización y el reloj del lifecycle se construyeron por
+  adelantado en B4.
 
 Dónde vive cada cosa hoy:
 

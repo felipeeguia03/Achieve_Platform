@@ -589,6 +589,9 @@ storage. La 0.8 decide cuáles entran en el recorrido limpio.
 darle ruta a `UX07`, el test rompió hasta sacarla de la lista de bloqueadas y hacerla alcanzable.
 Quedan 2 bloqueadas: `CTA-012` (0.5) y `CTA-013` (0.5).
 
+> ✅ **Cerrado el 1 de septiembre de 2026** por [ADR-016](decisions.md#adr-016), opción A: se agregó
+> `CTA-019` (`UX02 → UX07`) y el registro pasó a 19. Lo que sigue es cómo estaba en la Etapa 0.4.
+
 **Hallazgo registrado como [ADR-016](decisions.md#adr-016) `PENDING`:** **ninguna de las 18 CTAs del
 registro canónico lleva a `UX07`**, pero `VI.7` §9 describe en detalle una entrada manual *"desde
 Materia/Cursado"*. O falta una CTA en el registro, o la entrada manual es una affordance sin
@@ -794,7 +797,8 @@ no un contrato de producto.
 1. **`UX05`** — el spec la rutea `UX04 → ejecución → UX05` y `ejecución` **no tiene pantalla**. El
    recorrido recorre los dos contratos de una vez (`CTA-005` sale, `CTA-006` llega) y la estación lo
    **declara**. No se inventó una transición.
-2. **`UX07`** — ninguna CTA lleva ahí ([ADR-016](decisions.md#adr-016), `PENDING`). Esa estación se
+2. **`UX07`** — ninguna CTA lleva ahí ([ADR-016](decisions.md#adr-016), `PENDING` **cuando se
+   escribió esto; cerrado el 1 sep 2026 con `CTA-019`**). Esa estación se
    alcanza por **navegación del facilitador**, marcada como tal. **No se agregó `CTA-019`.**
 
 **Tres defectos que encontró el propio recorrido:**
@@ -1629,7 +1633,8 @@ SQL versionado en migraciones.
 | 4 | `UX05` — Evidencia | `estado_de_evidencia()` |
 | 5 | `UX06` — Progreso | `estado_de_progreso()` |
 
-⚠️ **`UX05` toca `C01-051`** (`OPEN`, gate `H`): muestra el requisito de `Reflection`, cuya
+⚠️ **`UX05` toca `C01-051`** (`OPEN` **cuando se escribió esto; respondido el 1 sep 2026 por
+[ADR-026](decisions.md#adr-026)**, gate `H`): muestra el requisito de `Reflection`, cuya
 configuración no está cerrada. Se sostiene el criterio de la `B2.4` —**el requisito entra por
 parámetro, no se lee de una tabla de configuración que nadie decidió**— y la superficie no inventa un
 default. Si eso no alcanza al implementarla, `UX05` sale del alcance y se dice acá.
@@ -2318,6 +2323,22 @@ desvío, riesgo y recuperación.
 | [ADR-003](decisions.md#adr-003) Convergencia | Fase B6 |
 | [ADR-011](decisions.md#adr-011) Readiness | Readiness visible en B5 |
 
+### 🔴 Una contradicción abierta entre el código y `product.md` — 1 sep 2026
+
+No bloquea ninguna fase, y por eso es fácil que se quede así. **`product.md` §11 declara que ocho
+nombres de evento "no existen", y el backend los emite** —`CommitmentDue`, `CommitmentCompleted`,
+`EvidenceSufficient` y cinco más—: la maquinaria de transiciones emite uno por cada estado al que se
+llega. Lo destapó el catálogo de la Etapa B3.2.
+
+No se resolvió por código porque **`product_event` es append-only** —dejar de emitirlos no borra los
+que ya están— y porque **cuatro sostienen la Bitácora**: *"En revisión"*, *"Cumplió el criterio"*,
+*"Necesita cambios"* y *"Te pidieron volver a entregarla"* salen de ahí.
+
+**Lo decide una persona, dentro de `C01-023`:** aprobarlos como parte del modelo, o separarlos en un
+registro de transiciones distinto del Product Event Model. Las dos opciones están escritas en
+`product.md` §11. Mientras tanto quedan declarados en `lib/domain/product-events.ts` y ninguno se
+agrega sin pasar por ahí.
+
 ✅ **Resueltos el 28 de agosto de 2026,** y por eso ya no aparecen arriba:
 [ADR-008](decisions.md#adr-008) (stack), [ADR-009](decisions.md#adr-009) (nomenclatura `DD`),
 [ADR-010](decisions.md#adr-010) (`DD1`–`DD10`, salvo `DD4` `DEFERRED`),
@@ -2358,7 +2379,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: 11 de 12 invariantes con test, `I7` es de B5 | 6 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | 🟡 **EN CURSO** — `B3.1` completa: el resultado se escribe con sus invariantes y `UX06` lo proyecta. Quién lo emite sigue siendo `C01-018` | 1 / 3 |
-| Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |
+| Fase B4 — ADE v1 | 🟡 **EN CURSO — es la única con trabajo disponible que no espera a una persona.** Engine, reloj y materialización construidos; falta integrar el reloj a una ejecución operativa | 3 / — |
 | Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA, y ahora **con contenido real**: [ADR-025](decisions.md#adr-025) cerró las ocho `HUMAN-P0`. Readiness sigue bloqueada por [ADR-011](decisions.md#adr-011) | 0 / — |
 | Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por [ADR-006](decisions.md#adr-006)** — es la fase que lo cierra | — |

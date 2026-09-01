@@ -178,6 +178,18 @@ export const catalogoP0: Readonly<Record<string, EventoDeProducto>> = {
  * (`I12`) y varios sostienen la Bitácora. Lo que cambia es que dejan de ser
  * invisibles: quedan acá, con el motivo, como insumo de `C01-023` — que es
  * justamente el contrato que falta cerrar.
+ *
+ * ## 🔴 Y ocho de estos nombres `product.md` §11 los declara inexistentes
+ *
+ * Textual: *"no existen `CommitmentDrafted`, `CommitmentDue`,
+ * `CommitmentCompleted`, … `EvidenceUnderReview`, `EvidenceSufficient`,
+ * `EvidenceInsufficient`, `EvidenceResubmissionRequested`, … `RescueCreated`"*.
+ * El backend los emite igual, desde antes de que este catálogo existiera.
+ *
+ * **La contradicción la resuelve una persona**, no este archivo: o se aprueban
+ * como parte del modelo, o se separan en un registro de transiciones distinto.
+ * Está escrita en `product.md` §11 con las dos opciones. Acá quedan declaradas
+ * para que ninguna se agregue en silencio mientras tanto.
  */
 export const EXTENSIONES: Readonly<Record<string, { porQue: string; enBitacora: boolean }>> = {
   CommitmentConfirmed: {

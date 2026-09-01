@@ -550,6 +550,12 @@ CREATE TABLE action (
   blocked_reason       TEXT,
   replaced_by_id       UUID REFERENCES action(id) ON DELETE SET NULL,
 
+  -- ADR-026. Se CONGELA al crear la Action: un requisito que cambia después
+  -- reescribiría si una entrega vieja era válida. NO_CONFIGURADA no es OPTIONAL
+  -- — la primera no ofrece la CTA-016, la segunda sí y omitirla es válido.
+  reflection_requirement TEXT NOT NULL DEFAULT 'NO_CONFIGURADA'
+                         CHECK (reflection_requirement IN ('NO_CONFIGURADA','OPTIONAL','REQUIRED')),
+
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -738,7 +744,11 @@ CREATE TABLE progress_entry (
   -- Distingue "no cambió" (confirmado) de "todavía no llegó" (pendiente).
   explicit_no_change   BOOLEAN NOT NULL DEFAULT FALSE,
   no_change_reason     TEXT,
-  causal_evidence_id   UUID REFERENCES evidence(id) ON DELETE SET NULL
+  causal_evidence_id   UUID REFERENCES evidence(id) ON DELETE SET NULL,
+  -- `I8` para el progreso (Etapa B3.1): un reintento de red no puede duplicar el
+  -- avance de un estudiante. Índice único PARCIAL — una entrada sin clave sigue
+  -- siendo válida.
+  idempotency_key      TEXT
 );
 
 -- ExamProtocol como CONFIGURACIÓN VERSIONADA (ADR-007). Nunca hardcodeado.
@@ -908,6 +918,25 @@ CREATE TABLE audit_log (
   occurred_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
+
+---
+
+## 10.1 Las funciones de base, y qué decide cada una
+
+Actualizado el 1 de septiembre de 2026. **Ninguna implementa una regla de negocio**: componen una
+lectura consistente o escriben una transacción que no puede quedar a medias. Las reglas viven en los
+Services (§3.2 de [`architecture.md`](architecture.md)).
+
+| Función | Qué hace | Por qué es una función y no varias consultas |
+|---|---|---|
+| `estado_del_dia` · `estado_de_materia` · `estado_de_accion` · `estado_de_compromiso` · `estado_de_evidencia` · `estado_de_progreso` | Una lectura por superficie | Varias lecturas por pantalla dan una foto **inconsistente entre sí** |
+| `hechos_de_cursada` | El historial de una cursada | **La única fuente histórica.** `UX02` pide 3 entradas y `UX06` todas; `VI.6` §8.3 prohíbe una segunda |
+| `registrar_progreso` | Escribe `progress_entry` + `topic_progress` + sus valores | Media escritura deja la Bitácora afirmando un cambio que las dimensiones no reflejan |
+| `materializar_recomendacion` | Crea la `Action` y su `ActionRecommendation` primaria | Nacen juntas o no nacen: media recomendación es peor que ninguna |
+| `ingerir_materia` | Carga una materia entera del ADL con su procedencia | Un programa a medias no es un programa |
+
+**Ninguna es un trigger.** §11 lo dice y hay guard: el único trigger del schema es el de
+`updated_at`. Una regla de negocio en un trigger es invisible desde el código de aplicación.
 
 ---
 

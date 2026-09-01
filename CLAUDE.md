@@ -96,14 +96,32 @@ el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Post
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` esperan a la Fase B5
 porque no hay tablas de examen.
 
-**Fase B3 — Progreso, Bitácora y eventos.** 🟡 **1 / 3.** La Etapa B3.1 cerró: `progress_entry` **se
-escribe** con sus invariantes —`I10` en el Service y en la base, `I8` con el duplicado declarado, y
-todo en una transacción con `topic_progress`—, y `UX06` proyecta lo registrado.
+**Fase B3 — Progreso, Bitácora y eventos.** ✅ **COMPLETA, 3 / 3** — 1 de septiembre de 2026.
+
+- **El resultado de progreso se escribe** con sus invariantes: `I10` en el Service y en la base, `I8`
+  con el duplicado declarado, y todo en una transacción con `topic_progress`.
+- **El Product Event Model está declarado** en `lib/domain/product-events.ts`: los 23 eventos P0 del
+  spec §16 con su uso textual, más 18 extensiones que el backend emite y el P0 no lista. De los 23 se
+  emiten 9. **Antes de agregar un evento nuevo, declaralo ahí:** hay guard en las dos direcciones.
+- **Una sola fuente histórica.** La Bitácora de `UX06` y la Actividad reciente de `UX02` salen de
+  `hechos_de_cursada()` y comparten la traducción: `VI.6` §8.3 dice que no existe una segunda, y hay
+  guard de las dos cosas.
+
+Con una parte del objetivo **explícitamente no hecha**: mostrar las cinco dimensiones con sus valores
+es `C01-019`, gate `H`, y lo responde una persona.
 
 ⚠️ **El Service recibe el resultado; no decide que hubo progreso.** `C01-018` —quién lo emite y con
 qué causalidad— sigue `OPEN`. **Ninguna ruta de `Evidence` escribe progreso**, y hay un guard
 estático que cubre los cuatro caminos, la maquinaria de transiciones y los triggers del schema:
 `VALIDATED` no produce `ProgressUpdated`, y es el error más barato de cometer.
+
+🔴 **Contradicción abierta.** `product.md` §11 declara que ocho nombres de evento *"no existen"* y el
+backend los emite —uno por cada transición de estado—. No bloquea ninguna fase, la decide una persona
+dentro de `C01-023`, y está escrita en `product.md` §11 con sus dos opciones.
+
+**➡️ La próxima con trabajo disponible es la Fase B4:** falta integrar el reloj del lifecycle a una
+ejecución operativa. Todo lo demás espera una decisión humana — ver el mapa de bloqueos del
+`roadmap.md`.
 
 **Trabajo adelantado.** B2b va **1 / 3** con la ingesta asistida del ADL. En B4 ya existen el ADE
 v1 determinista, el reloj del lifecycle y la materialización transaccional de recomendaciones.

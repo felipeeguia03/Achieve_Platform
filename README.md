@@ -18,12 +18,24 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
   `⌘K`, la primitiva `Ausencia` y la cabecera de panel. La comparación lado a lado con las capturas
   está en [`docs/design-system-capturas.md`](docs/design-system-capturas.md) §14: **siete
   diferencias, seis cerradas**, y la séptima con su bloqueo escrito.
-- **Track B:** el MVP persistente avanza **sólo con datos sintéticos**. La Fase B1 está completa
-  (6/6). La Fase B2 está en curso: `Action`, `Commitment` y `Evidence` están completas;
-  `Reflection` sigue parcial por `C01-051`, y `UX01` ya lee de Postgres mientras las otras ocho
-  superficies conservan fixtures. La ingesta asistida del ADL, el ADE v1 determinista y el reloj
-  del lifecycle también están construidos. Cualquier flujo que toque un dato de una persona real
-  sigue bloqueado por [ADR-006](docs/decisions.md#adr-006).
+- **Track B:** el MVP persistente avanza **sólo con datos sintéticos**. **Las fases B1, B2 y B3
+  están completas** (1 sep 2026):
+  - **B1 — Fundación.** Supabase local reproducible, capa académica y del estudiante, la frontera
+    Controller → Service → Repository, `product_event` y `audit_log` append-only.
+  - **B2 — Dominio de ejecución.** El loop diario persistido —`Action`, `Commitment`, `Evidence`,
+    `Reflection`— y **`UX01`–`UX06` leyendo de Postgres** con sesión real. `UX07`–`UX09` esperan a
+    la Fase B5 porque no hay tablas de examen.
+  - **B3 — Progreso, Bitácora y eventos.** El resultado de progreso se escribe con sus invariantes,
+    el Product Event Model está declarado con su cobertura, y la Bitácora de `UX06` y la Actividad
+    reciente de `UX02` salen de **una sola fuente histórica**.
+
+  La ingesta asistida del ADL, el ADE v1 determinista y el reloj del lifecycle también están
+  construidos. Cualquier flujo que toque un dato de una persona real sigue bloqueado por
+  [ADR-006](docs/decisions.md#adr-006).
+- **Lo que queda topa con una decisión humana**, salvo la Fase B4 —integrar el reloj a una ejecución
+  operativa—. Ver el [mapa de bloqueos](docs/roadmap.md) y las tres decisiones abiertas:
+  [ADR-003](docs/decisions.md#adr-003), [ADR-006](docs/decisions.md#adr-006) y
+  [ADR-011](docs/decisions.md#adr-011).
 
 ## Cómo correrlo
 
@@ -124,7 +136,7 @@ El contrato de layout que sí viaja es
 | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) | Contrato HTTP vigente entre Plataforma y CRM; hoy sólo autorización de padrón. |
 | [`docs/decisions.md`](docs/decisions.md) | ADRs aceptados y pendientes; determina qué se puede implementar. |
 | [`docs/roadmap.md`](docs/roadmap.md) | Orden de trabajo, gates y estado de cada fase. |
-| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Registro de los 51 contratos de negocio: 43 abiertos y 8 respondidos por la psicopedagoga. |
+| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Registro de los 51 contratos de negocio: **42 abiertos** y 9 respondidos — las 8 psicopedagógicas y `C01-051`. |
 | [`docs/human-p0-source.md`](docs/human-p0-source.md) | Las ocho respuestas psicopedagógicas, transcriptas literalmente. **Manda sobre cualquier paráfrasis.** |
 
 Los documentos `*-source.md` son referencias normativas de origen y no se editan.
