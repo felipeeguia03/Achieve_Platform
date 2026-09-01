@@ -28,7 +28,11 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # por `exit 1` es justo la que dejaba el mundo a medio poner, y así garantizaba
 # que la siguiente también fallara.
 limpiar_mundo() {
-  q "delete from protocol_step_completion; \
+  q "delete from intervention_outcome; \
+   delete from intervention; \
+   delete from risk_signal; \
+   delete from playbook; \
+   delete from protocol_step_completion; \
    delete from protocol_artifact; \
    delete from preparation_readiness; \
    delete from exam_preparation; \
@@ -387,6 +391,116 @@ else
   ok "readiness exige explicación y versión de regla"
 fi
 corre "delete from protocol_step_completion; delete from exam_preparation; delete from assessment_criterion; delete from assessment where id in ('e7000000-0000-0000-0000-000000000001','e9000000-0000-0000-0000-000000000001'); delete from topic where id='ea000000-0000-0000-0000-000000000001';"
+
+echo "→ B6. I11. Una señal no cruza institución"
+if corre "select public.registrar_senal('$B','a5000000-0000-0000-0000-000000000001',null,'error_reiterado','riesgo','x',null,null,null,null,null);"; then
+  mal "se pudo crear una señal para un estudiante de otra institución"
+else
+  ok "el estudiante de A no recibe señales de B"
+fi
+
+echo "→ B6. Explicabilidad: una señal sin causa no entra ni a la base"
+if corre "insert into risk_signal (institution_id,student_id,signal_type,severity,reason) values ('$A','a5000000-0000-0000-0000-000000000001','error_reiterado','riesgo','   ');"; then
+  mal "entró una señal con la causa en blanco"
+else
+  ok "reason en blanco se rechaza: nunca un score opaco como única salida"
+fi
+
+echo "→ B6. I8. Reintentar una detección no crea dos señales del mismo hecho"
+S1=$(q "select signal_id from public.registrar_senal('$A','a5000000-0000-0000-0000-000000000001',null,'error_reiterado','riesgo','tres entregas con el mismo error',null,null,null,null,'k-riesgo-1');" | tr -d '[:space:]')
+S2=$(q "select signal_id || '|' || duplicado from public.registrar_senal('$A','a5000000-0000-0000-0000-000000000001',null,'error_reiterado','riesgo','tres entregas con el mismo error',null,null,null,null,'k-riesgo-1');" | tr -d '[:space:]')
+[ "$S2" = "$S1|true" ] && ok "la misma clave devuelve la señal anterior" || mal "duplicó la señal: $S2"
+
+echo "→ B6. Una intervención sólo nace de una señal que la está pidiendo"
+if corre "select public.abrir_intervencion('$A','$S1','a5000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',false,null,null,null);"; then
+  mal "se abrió una intervención sobre una señal OPEN"
+else
+  ok "una señal OPEN no admite intervención: se saltearía el reconocimiento"
+fi
+corre "update risk_signal set status='ACKNOWLEDGED', acknowledged_at=now() where id='$S1';"
+corre "update risk_signal set status='INTERVENTION_REQUIRED' where id='$S1';"
+I1=$(q "select intervention_id from public.abrir_intervencion('$A','$S1','a5000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',false,null,null,null);" | tr -d '[:space:]')
+[ -n "$I1" ] && ok "con la señal pidiendo intervención, se abre" || mal "no se pudo abrir"
+igualdad=$(q "select owner_verified::text from intervention where id='$I1';" | tr -d '[:space:]')
+[ "$igualdad" = "false" ] && ok "y el dueño queda sin verificar: no hay directorio (C01-039)" || mal "dio el dueño por verificado"
+
+echo "→ B6. El Done: no se puede cerrar una intervención sin resultado"
+if corre "select public.cerrar_intervencion('$A','$I1','recuperado',null,'a5000000-0000-0000-0000-000000000001',null);"; then
+  mal "se cerró una intervención que nadie reconoció"
+else
+  ok "una intervención sin reconocer no se cierra"
+fi
+corre "update intervention set status='acknowledged', acknowledged_at=now() where id='$I1';"
+corre "select public.cerrar_intervencion('$A','$I1','recuperado','se recuperó','a5000000-0000-0000-0000-000000000001',25);"
+estado=$(q "select i.status || '|' || o.outcome || '|' || coalesce(i.human_minutes::text,'-') from intervention i join intervention_outcome o on o.intervention_id=i.id where i.id='$I1';" | tr -d '[:space:]')
+[ "$estado" = "closed|recuperado|25" ] && ok "cerrar y registrar el outcome es UNA escritura" || mal "quedó a medias: $estado"
+
+echo "→ B6. Cerrar dos veces no pisa el resultado registrado"
+segunda=$(q "select ya_estaba::text from public.cerrar_intervencion('$A','$I1','falso_positivo',null,'a5000000-0000-0000-0000-000000000001',null);" | tr -d '[:space:]')
+[ "$segunda" = "true" ] && ok "el reintento devuelve lo de antes" || mal "el reintento no se detectó"
+[ "$(q "select outcome from intervention_outcome where intervention_id='$I1';" | tr -d '[:space:]')" = "recuperado" ] \
+  && ok "y el outcome original sigue intacto" || mal "se pisó el outcome"
+
+echo "→ B6. El dashboard no es el final: RESOLVED exige una intervención con outcome"
+S3=$(q "select signal_id from public.registrar_senal('$A','a5000000-0000-0000-0000-000000000001',null,'factores_subjetivos','atencion','ansiedad frente al examen',null,null,null,null,null);" | tr -d '[:space:]')
+corre "update risk_signal set status='INTERVENTION_REQUIRED' where id='$S3';"
+sin=$(q "select resuelta || '|' || coalesce(motivo,'') from public.resolver_senal('$A','$S3');" | tr -d '[:space:]')
+[ "${sin%%|*}" = "false" ] && ok "sin outcome no se resuelve: $sin" || mal "se resolvió sin outcome"
+con=$(q "select resuelta::text from public.resolver_senal('$A','$S1');" | tr -d '[:space:]')
+[ "$con" = "true" ] && ok "con outcome sí" || mal "no resolvió una señal con outcome"
+[ "$(q "select status from risk_signal where id='$S1';" | tr -d '[:space:]')" = "RESOLVED" ] \
+  && ok "y la señal quedó RESOLVED con su fecha" || mal "no quedó resuelta"
+
+echo "→ B6. Una regla sin umbral no puede correr sola"
+if corre "update risk_rule set modo='AUTOMATICA' where canonical_id='HP0-06-1';"; then
+  mal "una regla sin umbral pasó a AUTOMATICA"
+else
+  ok "automatica_exige_umbral: sin C01-036 no hay regla automática"
+fi
+
+echo "→ B6. El circuito se audita, no se declara"
+circ=$(q "select (public.circuito_de_senales('$A')->>'cerradasSinOutcome') || '|' || (public.circuito_de_senales('$A')->>'resueltasSinOutcome') || '|' || (public.circuito_de_senales('$A')->'faltan'->>'playbooks');" | tr -d '[:space:]')
+[ "$circ" = "0|0|C01-044" ] && ok "cero cerradas sin outcome, y el circuito nombra lo que falta" || mal "el circuito reporta $circ"
+
+echo "→ B6. La auditoría es append-only, como el registro de hechos (I12)"
+corre "insert into audit_log (institution_id,actor_id,action,target_type,target_id,after_value) values ('$A',null,'risk_signal.create','risk_signal','$S1','{}'::jsonb);"
+# **Con el rol del backend, no con el superusuario.** `psql -U postgres` puede
+# todo, así que probar el append-only sin `set role` no prueba nada: mediría los
+# permisos del dueño de la base, que no son los que usa la aplicación.
+if corre "set role service_role; update audit_log set action='otra' where institution_id='$A';"; then
+  mal "service_role pudo reescribir la auditoría"
+else
+  ok "service_role no puede editar audit_log: la auditoría es append-only"
+fi
+if corre "set role service_role; delete from audit_log where institution_id='$A';"; then
+  mal "service_role pudo borrar auditoría"
+else
+  ok "ni borrarla"
+fi
+echo "→ B6. El reloj expira lo que dejó de ser relevante, y sólo eso"
+corre "delete from intervention_outcome; delete from intervention; delete from risk_signal;"
+corre "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status,valid_until) values
+  ('d5000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','vencida y abierta','OPEN', now() - interval '1 day'),
+  ('d6000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','vencida y reconocida','ACKNOWLEDGED', now() - interval '1 day'),
+  ('d7000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','riesgo','vencida pero pide una persona','INTERVENTION_REQUIRED', now() - interval '1 day'),
+  ('d8000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','todavía vigente','OPEN', now() + interval '1 day'),
+  ('d9000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','sin vencimiento','OPEN', null);"
+# La misma consulta que hace el Repository del reloj.
+cand=$(q "select string_agg(reason, ' / ' order by reason) from risk_signal
+          where institution_id='$A' and status in ('OPEN','ACKNOWLEDGED')
+            and valid_until is not null and valid_until < now();")
+[ "$cand" = "vencida y abierta / vencida y reconocida" ] \
+  && ok "sólo OPEN y ACKNOWLEDGED vencidas entran" || mal "candidatas: $cand"
+# La que ya pidió una persona **no** entra: expirarla borraría una obligación
+# humana pendiente, y el Done dice que ninguna señal queda sin outcome.
+[ "$(q "select status from risk_signal where id='d7000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "INTERVENTION_REQUIRED" ] \
+  && ok "la que pide una persona no se expira sola" || mal "expiró una señal con intervención pendiente"
+# Y una expirada conserva su causa histórica (product.md §5.5).
+corre "update risk_signal set status='EXPIRED', expired_at=now() where id='d5000000-0000-0000-0000-000000000001';"
+[ "$(q "select reason from risk_signal where id='d5000000-0000-0000-0000-000000000001';")" = "vencida y abierta" ] \
+  && ok "y al expirar guarda su causa histórica" || mal "se perdió la causa"
+
+corre "delete from intervention_outcome; delete from intervention; delete from risk_signal;"
 
 echo "→ Coherencia entre estado y marcas de tiempo"
 if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,completed_at) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'UTC',40,'DRAFT',now());"; then

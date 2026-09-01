@@ -2332,3 +2332,109 @@ preguntas suyas sin resolver —`(intervención??)`, `(asistencia??)`, `(checkli
 Y sigue abierto todo lo que ya estaba: los umbrales de readiness (`C01-029`), quién escribe
 `current_step_id`, la ventana de recomendación (`C01-024`) y la obligatoriedad de los pasos
 (`C01-031`).
+
+---
+
+<a id="adr-032"></a>
+## ADR-032 — El circuito de riesgo se cierra por construcción, y lo que falta se declara
+
+**Estado:** ✅ `ACCEPTED` · 2 de septiembre de 2026 · **decidido por el owner**
+**Ejecuta:** la parte de dominio de la Fase B6, desbloqueada por [ADR-003](#adr-003).
+**No cierra:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`, `C01-036`.
+**Toca:** `data-model.md` §10, `product.md` §5.5, `roadmap.md`.
+
+### Contexto
+
+El Done de la Fase B6 es una sola frase: *"toda señal relevante cierra su circuito causa → owner →
+playbook → SLA → intervención → outcome; ninguna señal queda sin outcome registrado"*.
+
+De esos seis eslabones, **tres están decididos y tres no**:
+
+| Eslabón | Estado |
+|---|---|
+| **causa** | ✅ Decidido. El spec lo exige dos veces: *"nunca un score opaco como única salida"* |
+| **owner** | 🟡 La columna está; **quién es un operador viene del CRM** (`C01-039`, contrato v2) |
+| **playbook** | ❌ `C01-044`, gate `P`, textual: *"no se inventan valores"* |
+| **SLA** | ❌ Parte del playbook |
+| **intervención** | ✅ Decidido: entidad, estados y lifecycle |
+| **outcome** | ✅ Vocabulario congelado en `data-model.md` §10 |
+
+La tentación obvia era esperar a tener los seis. La otra era inventar los tres que faltan para poder
+mostrar un circuito completo.
+
+### Decisión — se construye el mecanismo, no las reglas
+
+**Lo que hay que hacer imposible se hace imposible ahora**; lo que falta decidir **se declara y se
+cuenta**, en vez de completarse con un default.
+
+**1 · Cerrar sin resultado no es un camino que exista.** `cerrar_intervencion()` escribe el estado y
+el outcome **en una sola transacción**. No hay forma de dejar una intervención cerrada sin resultado,
+porque no hay función que lo permita.
+
+**2 · `RESOLVED` sólo se alcanza desde `INTERVENTION_REQUIRED`, y sólo con una intervención con
+outcome.** Es la traducción literal de *"el dashboard no es el final del Risk Engine"*: una señal que
+se pudiera marcar resuelta sin que nadie la trabajara **es** el tablero en verde con nada detrás.
+
+**3 · `EXPIRED` sale sólo de `OPEN` y `ACKNOWLEDGED`.** Una señal que ya pidió una persona no se
+vence sola: hacerlo borraría una obligación humana pendiente. El spec autoriza expirar *"si deja de
+ser relevante"*, y una que espera a alguien no dejó de serlo.
+
+**4 · Lo que falta se cuenta.** `circuito_de_senales()` devuelve dónde está roto el circuito y
+**nombra el contrato que lo cierra**: hoy responde `playbooks: C01-044` y `reglasSinUmbral: C01-036`.
+Un Done que se revisa a mano se marca cumplido sin revisar — mismo criterio que
+`tests/invariantes.test.ts`.
+
+**5 · Ninguna regla corre sola.** Las tres situaciones de `HUMAN-P0-06 v1.0` entran como
+**configuración versionada** —igual que el protocolo de examen— con `threshold_config` en `NULL`, y
+un `CHECK` impide que una regla sin umbral pase a modo `AUTOMATICA`. **No existe evaluador**, y hay un
+guard estático que rompe si alguien lo agrega.
+
+**6 · `modo = 'HUMANA'` en las tres, porque lo dijo ella.** *"En esos casos si considero importante la
+intervención de una persona"*. La pregunta del spec §32 —*"¿qué `RiskSignals` disparan intervención
+automática, humana o sólo observación?"*— queda contestada **para esas tres** y abierta para el resto.
+
+**7 · El operador entra por un puerto, no por un contrato inventado.**
+`DirectorioDeOperadores.verificar()` tiene **una pregunta y tres respuestas**; hoy la única
+implementación devuelve `SIN_DIRECTORIO`. No hay endpoint, ni payload, ni campos del CRM: eso es del
+CTO.
+
+> **`SIN_DIRECTORIO` no bloquea, `DESCONOCIDO` sí.** Un operador que el CRM rechaza es un error que
+> hay que frenar; uno que no se puede consultar es una integración que falta. Colapsarlos haría que el
+> día que el contrato v2 llegue no se pudiera distinguir un rechazo real de la ausencia del canal —y
+> mientras tanto, dejaría el dominio de la fase parado detrás del trabajo de otra persona.
+>
+> La intervención se abre igual, queda `owner_verified = false`, y el circuito lo cuenta y nombra
+> `C01-039 · contrato v2`.
+
+**8 · `audit_log` deja de ser decorativa.** Existía desde la B1.5, append-only, y **nadie la
+escribía**. Esta fase es la primera que el spec nombra explícitamente —*"registrar cambios de caminos,
+`RiskSignals`, `Evidence`, intervenciones y accesos críticos"*—, y toda escritura de riesgo e
+intervención pasa por el `Auditor`.
+
+> **No reemplaza a `product_event`, y las dos existen a propósito.** El evento dice *qué le pasó al
+> estudiante* y alimenta Bitácora y métricas; la auditoría dice *quién tocó qué y cómo estaba antes*,
+> y existe para responderle a una institución. Un mismo hecho genera los dos.
+
+### En `UX01`, el riesgo es un modificador y nada más
+
+`VI.1` §3.3: `HIGH_RISK` *"no gana automáticamente el Hero"* y *"no puede interrumpir `IN_PROGRESS` ni
+`EVIDENCE_PENDING` sólo por severidad"*. Lo implementado es exactamente lo que esa sección autoriza:
+**cambiar el estado general a *"Necesita recuperación"***, y nada más.
+
+La señal **ni siquiera entra a `HeroInput`** —hay un guard estático que lo verifica—, y el disparador
+**no es una severidad**: es que la señal misma esté en `INTERVENTION_REQUIRED`. Elegir una severidad
+sería fijar el umbral por el que a un estudiante se le dice que está en problemas, y eso es
+`C01-021`.
+
+### Lo que esta decisión NO cierra
+
+- **`C01-021`** · qué regla produce qué señal, con qué severidad y sobre qué sujeto.
+- **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"*. **Es de la psicopedagoga.**
+- **`C01-044`** · los 4–6 playbooks del piloto y sus SLA. Gate `P`.
+- **`C01-039` y `C01-040`** · el directorio de operadores, la asignación y los webhooks. **Contrato
+  v2, del CTO.**
+- **`C01-022`** · qué outcome cierra formalmente y cuál escala.
+- **Las cinco superficies de operador** (`WF-O01`…`WF-O04`, `WF-I01`). No se construyeron: **no hay
+  sesión de operador**, y fabricar una sería inventar el esquema de autenticación que el contrato v2
+  tiene que definir. Es el mismo criterio con el que la Fase B5 no inventó el escritor de
+  `current_step_id`.

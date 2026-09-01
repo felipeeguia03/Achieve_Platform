@@ -950,6 +950,44 @@ CREATE TABLE preparation_readiness (
         OR (overridden_by IS NOT NULL AND override_reason IS NOT NULL AND overridden_at IS NOT NULL))
 );
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Capa de riesgo e intervención — migrada en la Fase B6 (2 de septiembre de 2026).
+--
+-- El schema real. Lo que se agregó respecto de la versión anterior de §10 es lo
+-- que el **circuito cerrado** necesita para poder verificarse: las marcas de
+-- cada transición, la regla que produjo la señal, y `owner_verified`.
+--
+-- Ver [ADR-032](decisions.md#adr-032).
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- El catálogo de reglas, como CONFIGURACIÓN VERSIONADA — mismo patrón que
+-- `exam_protocol`. Las tres situaciones de `HUMAN-P0-06 v1.0` entran con su
+-- texto y **con sus umbrales sin fijar**.
+CREATE TABLE risk_rule (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  canonical_id TEXT NOT NULL,
+  version      TEXT NOT NULL,
+  signal_type  TEXT NOT NULL,
+  label        TEXT NOT NULL,
+  source_text  TEXT,                    -- verbatim de la fuente profesional
+  -- ⚠️ NULL ⇒ `C01-036` sin responder. **Es de la psicopedagoga.**
+  threshold_config JSONB,
+  -- NULL ⇒ nadie le asignó severidad. **No es `bajo`.**
+  suggested_severity TEXT CHECK (suggested_severity IS NULL
+    OR suggested_severity IN ('bajo','atencion','riesgo','intervencion')),
+  modo TEXT NOT NULL DEFAULT 'NO_CONFIGURADO'
+    CHECK (modo IN ('NO_CONFIGURADO','OBSERVACION','AUTOMATICA','HUMANA')),
+  is_current   BOOLEAN NOT NULL DEFAULT FALSE,
+  provisional_default_id TEXT,
+  provisional_version    TEXT,
+  UNIQUE (canonical_id, version),
+  -- **Sin umbral no hay regla automática.** Es lo que impide que el Risk Engine
+  -- empiece a decidir sobre personas antes de que alguien fije el criterio.
+  CONSTRAINT automatica_exige_umbral
+    CHECK (modo <> 'AUTOMATICA' OR threshold_config IS NOT NULL)
+);
+CREATE UNIQUE INDEX risk_rule_una_vigente ON risk_rule (canonical_id) WHERE is_current;
+
 CREATE TABLE risk_signal (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   institution_id       UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
@@ -957,44 +995,79 @@ CREATE TABLE risk_signal (
   course_enrollment_id UUID REFERENCES course_enrollment(id) ON DELETE CASCADE,
   signal_type          TEXT NOT NULL,
   severity             TEXT NOT NULL CHECK (severity IN ('bajo','atencion','riesgo','intervencion')),
-  -- Explicabilidad obligatoria: nunca un score opaco como única salida.
-  reason               TEXT NOT NULL,
+  -- Explicabilidad obligatoria: nunca un score opaco como única salida. El
+  -- `CHECK` es lo que hace que no dependa de que alguien se acuerde.
+  reason               TEXT NOT NULL CHECK (length(btrim(reason)) > 0),
   source_ref           TEXT,
+  -- Qué regla la produjo. Cambiar los umbrales no reescribe las señales viejas.
+  risk_rule_id         UUID REFERENCES risk_rule(id) ON DELETE SET NULL,
+  rule_version         TEXT,
   status               TEXT NOT NULL DEFAULT 'OPEN'
                          CHECK (status IN ('OPEN','ACKNOWLEDGED','INTERVENTION_REQUIRED',
                                            'RESOLVED','ESCALATED','EXPIRED')),
   valid_until          TIMESTAMPTZ,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  acknowledged_at      TIMESTAMPTZ,
+  resolved_at          TIMESTAMPTZ,
+  escalated_at         TIMESTAMPTZ,
+  expired_at           TIMESTAMPTZ,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  idempotency_key      TEXT,            -- `I8`: una detección reintentada no duplica
+  CONSTRAINT senal_resuelta_tiene_fecha CHECK (status <> 'RESOLVED' OR resolved_at IS NOT NULL),
+  CONSTRAINT senal_expirada_tiene_fecha CHECK (status <> 'EXPIRED' OR expired_at IS NOT NULL)
 );
 
+-- ⚠️ **Se crea vacía y se queda vacía.** `C01-044`, gate `P`: *"no se inventan
+-- valores"*. El SLA vive acá porque es parte del playbook.
 CREATE TABLE playbook (
-  id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  trigger  TEXT NOT NULL,
-  objective TEXT NOT NULL,
-  version  TEXT NOT NULL,
-  steps    JSONB NOT NULL DEFAULT '[]',
-  escalation TEXT
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES institution(id) ON DELETE RESTRICT,
+  trigger        TEXT NOT NULL,
+  objective      TEXT NOT NULL,
+  version        TEXT NOT NULL,
+  steps          JSONB NOT NULL DEFAULT '[]',
+  escalation     TEXT,
+  sla_minutes    INTEGER CHECK (sla_minutes IS NULL OR sla_minutes > 0),
+  is_current     BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (trigger, version)
 );
 
 CREATE TABLE intervention (
-  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
-  risk_signal_id UUID REFERENCES risk_signal(id) ON DELETE SET NULL,
-  student_id     UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id    UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  risk_signal_id    UUID REFERENCES risk_signal(id) ON DELETE SET NULL,
+  student_id        UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+  -- **Sin FK a propósito**: la identidad del operador vive en el CRM
+  -- (`C01-039`) y llega con el contrato v2. Mismo criterio que tenía
+  -- `action.exam_preparation_id` antes de que existiera su tabla.
   owner_operator_id UUID NOT NULL,
-  playbook_id    UUID REFERENCES playbook(id) ON DELETE SET NULL,
-  sla_at         TIMESTAMPTZ,
-  status         TEXT NOT NULL DEFAULT 'open'
-                   CHECK (status IN ('open','acknowledged','closed')),
-  human_minutes  INTEGER,
-  started_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  -- FALSE mientras no exista directorio con quien confirmarlo. Sin esta
+  -- columna, un dueño no verificado sería indistinguible de uno verificado.
+  owner_verified    BOOLEAN NOT NULL DEFAULT FALSE,
+  playbook_id       UUID REFERENCES playbook(id) ON DELETE SET NULL,
+  sla_at            TIMESTAMPTZ,
+  status            TEXT NOT NULL DEFAULT 'open'
+                      CHECK (status IN ('open','acknowledged','closed')),
+  human_minutes     INTEGER CHECK (human_minutes IS NULL OR human_minutes >= 0),
+  started_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  acknowledged_at   TIMESTAMPTZ,
+  closed_at         TIMESTAMPTZ,
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  idempotency_key   TEXT,
+  CONSTRAINT intervencion_cerrada_tiene_fecha CHECK (status <> 'closed' OR closed_at IS NOT NULL)
 );
 
+-- PK compartida: **una intervención tiene como mucho un resultado**. Que una
+-- intervención cerrada no pueda no tenerlo no lo garantiza un CHECK entre
+-- tablas: lo garantiza `cerrar_intervencion()`, que escribe las dos cosas en
+-- una transacción.
 CREATE TABLE intervention_outcome (
   intervention_id UUID PRIMARY KEY REFERENCES intervention(id) ON DELETE CASCADE,
   outcome         TEXT NOT NULL CHECK (outcome IN
                     ('recuperado','replanificado','sin_respuesta','escalado','falso_positivo')),
   note            TEXT,
+  recorded_by     UUID,
   recorded_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -1050,6 +1123,11 @@ Services (§3.2 de [`architecture.md`](architecture.md)).
 | `ingerir_materia` | Carga una materia entera del ADL con su procedencia | Un programa a medias no es un programa |
 | `completar_paso_de_protocolo` | Agrega una vuelta al paso, con su ordinal | **El número de vuelta se asigna dentro de la transacción**: contarlo en el cliente da dos vueltas número 3 con dos pestañas abiertas |
 | `protocolo_vigente` | El protocolo de una evaluación, por modalidad | Una igualdad, no un fallback: sin protocolo para la modalidad devuelve **cero filas**, y eso es la respuesta (`C01-047`) |
+| `registrar_senal` | Persiste una señal **que su owner ya produjo** | `I8`: avisar dos veces que un estudiante está en problemas es ruido en la cola de alguien que decide con eso |
+| `abrir_intervencion` | Abre el caso con dueño, y con el SLA del playbook si lo hay | La señal tiene que estar pidiendo intervención: leerla y después insertar deja la ventana para que otro la resuelva en el medio |
+| `cerrar_intervencion` | Cierra **y registra el outcome** | Media escritura deja una intervención cerrada sin resultado, que es lo único que rompe el Done de la B6 |
+| `resolver_senal` | `RESOLVED`, **sólo con una intervención con outcome** | La condición mira dos tablas y tiene que verlas en la misma transacción |
+| `circuito_de_senales` | **Audita el Done**: dónde está roto el circuito | Un criterio de cierre que se revisa a mano se marca cumplido sin revisar |
 
 **Ninguna es un trigger.** §11 lo dice y hay guard: el único trigger del schema es el de
 `updated_at`. Una regla de negocio en un trigger es invisible desde el código de aplicación.

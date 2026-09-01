@@ -15,12 +15,16 @@ import {
   commitmentTransitions,
   evidenceOwnerTransitions,
   examPreparationTransitions,
+  interventionTransitions,
+  riskSignalTransitions,
 } from "@/lib/domain/state-machines";
 import { nombreDeEventoDeAction } from "@/lib/server/servicios/accion";
 import { NOMBRES_DE_EVENTO } from "@/lib/server/servicios/progreso";
 import { nombreDeEventoDeCommitment } from "@/lib/server/servicios/compromiso";
 import { nombreDeEventoDeEvidence } from "@/lib/server/servicios/evidencia";
 import { nombreDeEventoDePreparacion } from "@/lib/server/servicios/preparacion";
+import { nombreDeEventoDeSenal } from "@/lib/server/servicios/riesgo";
+import { nombreDeEventoDeIntervencion } from "@/lib/server/servicios/intervencion";
 
 /**
  * Etapa B3.2 — el Product Event Model, declarado y verificado.
@@ -56,6 +60,8 @@ function emitibles(): string[] {
     ...destinos(commitmentTransitions).map(nombreDeEventoDeCommitment),
     ...destinos(evidenceOwnerTransitions).map(nombreDeEventoDeEvidence),
     ...destinos(examPreparationTransitions).map(nombreDeEventoDePreparacion),
+    ...destinos(riskSignalTransitions).map(nombreDeEventoDeSenal),
+    ...destinos(interventionTransitions).map(nombreDeEventoDeIntervencion),
   ];
   // Los que se publican con nombre literal, fuera de la maquinaria compartida.
   // **Se leen del código**, no de una lista acá: una lista a mano no se entera

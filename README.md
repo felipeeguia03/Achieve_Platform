@@ -34,6 +34,11 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
     literal de la psicopedagoga** y las nueve superficies del estudiante leyendo de Postgres.
     Readiness sigue sin calcularse: los umbrales son `C01-029`.
 
+  - **B6 — Risk e Intervención (dominio).** El circuito cerrado *causa → owner → playbook → SLA →
+    intervención → outcome* **garantizado por construcción**: no existe forma de cerrar una
+    intervención sin resultado. Sin motor que produzca señales y sin playbooks, que son decisiones
+    humanas abiertas.
+
   La ingesta asistida del ADL también está
   construidos. Cualquier flujo que toque un dato de una persona real sigue bloqueado por
   [ADR-006](docs/decisions.md#adr-006).

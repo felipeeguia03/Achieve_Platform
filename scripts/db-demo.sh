@@ -12,7 +12,8 @@ INST=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 EST=a5000000-0000-0000-0000-000000000001
 
 echo "→ Limpiando"
-q "delete from protocol_step_completion; delete from protocol_artifact;
+q "delete from intervention_outcome; delete from intervention; delete from risk_signal;
+   delete from protocol_step_completion; delete from protocol_artifact;
    delete from preparation_readiness; delete from exam_preparation; delete from assessment_criterion;
    delete from action_recommendation; delete from action_resource; delete from action;
    delete from topic_progress; delete from course_enrollment; delete from availability;
@@ -75,6 +76,18 @@ q "insert into assessment_criterion (institution_id,assessment_id,criterion_text
                   ('Elección del método',2),
                   ('Resolver variaciones del ejercicio',3)) as c(txt,n)
     where a.offering_id='$OFF' and a.title='Parcial 1';" >/dev/null
+
+echo "→ Una señal de riesgo, con su causa (Fase B6)"
+# **Sembrada a mano, y a propósito.** No hay motor que la produzca: `C01-021`
+# sigue abierto y las tres reglas de `HUMAN-P0-06 v1.0` están cargadas **sin
+# umbral** (`C01-036`). Esta señal existe para que el mundo demo muestre cómo se
+# ve una, no porque el sistema la haya detectado.
+q "insert into risk_signal (id,institution_id,student_id,course_enrollment_id,signal_type,severity,reason,risk_rule_id,rule_version,status)
+   select 'af000000-0000-0000-0000-000000000002','$INST','$EST','a6000000-0000-0000-0000-000000000001',
+          r.signal_type,'atencion',
+          'Tres entregas seguidas con el mismo error de procedimiento en integrales.',
+          r.id, r.version, 'OPEN'
+     from risk_rule r where r.canonical_id='HP0-06-1';" >/dev/null
 
 echo
 echo "✓ Mundo listo. Cursada: a6000000-0000-0000-0000-000000000001"

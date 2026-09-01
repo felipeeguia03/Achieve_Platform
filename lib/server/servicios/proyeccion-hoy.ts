@@ -42,6 +42,22 @@ export interface EstadoDelDia {
   contextoIncompleto: boolean;
   materias: Array<Omit<MateriaResumen, "ultimoAvance"> & { ultimoAvanceEn: string | null }>;
   bitacoraDisponible: boolean;
+  /**
+   * La señal de riesgo viva más severa, con su explicación — Fase B6.
+   *
+   * **Viaja fuera de `HeroInput` a propósito.** `VI.1` §3.3: el riesgo es un
+   * estado **modificador, no reemplazante**; *"no gana automáticamente el
+   * Hero"* y *"no puede interrumpir `IN_PROGRESS` ni `EVIDENCE_PENDING` sólo
+   * por severidad"*. Si entrara a la matriz de precedencia, la primera
+   * refactorización lo convertiría en un nivel más.
+   */
+  riesgo?: {
+    severidad: "bajo" | "atencion" | "riesgo" | "intervencion";
+    /** *"Explicación útil"* (§4.1). Nunca un score. */
+    razon: string;
+    /** La señal misma dice que necesita una persona. **No es un umbral local.** */
+    necesitaPersona: boolean;
+  } | null;
 }
 
 export interface RepositorioDeHoy {
@@ -85,6 +101,20 @@ const ESTADO: Record<string, string> = {
 export function proyectarDia(e: EstadoDelDia): HoyProps {
   const { nivel, variante } = selectHeroLevel(aEntradaDeHero(e));
 
+  /**
+   * Lo único que el riesgo puede cambiar acá — Fase B6.
+   *
+   * `VI.1` §3.3 lo autoriza con todas las letras: *"cambiar el estado general a
+   * Necesita recuperación"*. **No toca el Hero, ni la CTA, ni el orden de las
+   * materias**, y `aEntradaDeHero` ni siquiera lo recibe.
+   *
+   * El disparador es que **la señal esté pidiendo una persona**, no una
+   * severidad: qué severidad cambia el estado general es `C01-021`, abierto, y
+   * elegir una acá sería inventar el umbral por el que a un estudiante se le
+   * dice que está en problemas.
+   */
+  const necesitaRecuperacion = e.riesgo?.necesitaPersona === true;
+
   // La línea operativa: tiempo si lo hay, estado si la Action ya arrancó.
   const tiempoOEstado =
     e.accion?.status === "IN_PROGRESS"
@@ -95,7 +125,12 @@ export function proyectarDia(e: EstadoDelDia): HoyProps {
 
   return {
     fecha: fechaCorta(e.instante, e.zona),
-    estadoGeneral: ESTADO[nivel] ?? ESTADO.NO_ACTION,
+    // Reusa la clave de `RESCUE_REQUIRED`: el spec le da a los dos casos la
+    // misma frase —*"Necesita recuperación"*—, y dos claves con el mismo texto
+    // son dos lugares donde arreglar el próximo cambio de copy.
+    estadoGeneral: necesitaRecuperacion
+      ? ESTADO.RESCUE_REQUIRED
+      : (ESTADO[nivel] ?? ESTADO.NO_ACTION),
     hero: {
       nivel,
       variante,

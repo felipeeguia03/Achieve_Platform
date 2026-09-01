@@ -5,6 +5,9 @@ import {
 import type { PublicadorDeEventos } from "./eventos";
 import type { RepositorioDeCompromisos } from "./compromiso";
 import { transicionar } from "./compromiso";
+import type { Auditor } from "./auditoria";
+import type { RepositorioDeSenales } from "./riesgo";
+import { transicionar as transicionarSenal } from "./riesgo";
 
 /**
  * El owner del lifecycle, ejecutando — Fase B4 / [ADR-024](../../../docs/decisions.md#adr-024).
@@ -18,11 +21,30 @@ import { transicionar } from "./compromiso";
 export interface RepositorioDeReloj {
   /** Los que dependen del tiempo. Sólo `CONFIRMED` y `DUE`: el resto no se mueve. */
   candidatosPorTiempo(institutionId: string, limite: number): Promise<CompromisoConReloj[]>;
+  /**
+   * Señales vencidas — Fase B6.
+   *
+   * `product.md` §5.5: *"una señal puede expirar si deja de ser relevante; se
+   * guarda la causa histórica"*. **El reloj no decide cuándo deja de ser
+   * relevante**: eso lo declaró quien la creó, en `valid_until`. Acá sólo se
+   * ejecuta ese vencimiento, igual que un `CONFIRMED` que pasa a `DUE`.
+   *
+   * Sólo `OPEN` y `ACKNOWLEDGED`. Una señal que ya pidió una persona **no
+   * expira sola**: hacerlo borraría una obligación humana pendiente, y el Done
+   * de la fase dice que ninguna señal queda sin outcome.
+   */
+  senalesVencidas(
+    institutionId: string,
+    ahora: string,
+    limite: number,
+  ): Promise<Array<{ id: string; status: "OPEN" | "ACKNOWLEDGED" }>>;
 }
 
 export interface ResumenDeCorrida {
   vencidos: number;
   incumplidos: number;
+  /** Señales que dejaron de ser relevantes (Fase B6). */
+  senalesExpiradas: number;
   /** Perdieron una carrera contra otra escritura. No es error: se reintenta. */
   conflictos: number;
 }
@@ -32,6 +54,8 @@ export async function correrReloj(
     reloj: RepositorioDeReloj;
     compromisos: RepositorioDeCompromisos;
     eventos: PublicadorDeEventos;
+    senales: RepositorioDeSenales;
+    auditor: Auditor;
   },
   institutionId: string,
   ahora: string,
@@ -40,7 +64,12 @@ export async function correrReloj(
   const candidatos = await deps.reloj.candidatosPorTiempo(institutionId, limite);
   const pendientes = transicionesPorTiempo(candidatos, ahora);
 
-  const resumen: ResumenDeCorrida = { vencidos: 0, incumplidos: 0, conflictos: 0 };
+  const resumen: ResumenDeCorrida = {
+    vencidos: 0,
+    incumplidos: 0,
+    senalesExpiradas: 0,
+    conflictos: 0,
+  };
 
   for (const t of pendientes) {
     const r = await transicionar(
@@ -65,6 +94,25 @@ export async function correrReloj(
     // `TRANSICION_PROHIBIDA` y `NO_ENCONTRADO` no se cuentan como error: el
     // reloj lee una foto y el mundo sigue moviéndose entre la lectura y la
     // escritura. Es lo esperado, no una falla.
+  }
+
+  // ── Las señales que dejaron de ser relevantes ──────────────────────────────
+  //
+  // Por la misma vía que todo lo demás: `transicionar()` de `riesgo.ts`, con su
+  // máquina, su compare-and-swap y su evento. Un `UPDATE` directo acá se
+  // saltearía la regla de que una señal en `INTERVENTION_REQUIRED` no expira.
+  for (const s of await deps.reloj.senalesVencidas(institutionId, ahora, limite)) {
+    const r = await transicionarSenal(
+      { repo: deps.senales, eventos: deps.eventos, auditor: deps.auditor },
+      institutionId,
+      s.id,
+      "EXPIRED",
+      // Sistema, no persona: nadie decidió que dejara de importar.
+      null,
+      () => new Date(ahora),
+    );
+    if (r.estado === "OK") resumen.senalesExpiradas++;
+    else if (r.estado === "CONFLICTO") resumen.conflictos++;
   }
 
   return resumen;

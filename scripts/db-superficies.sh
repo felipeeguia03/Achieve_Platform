@@ -37,6 +37,9 @@ limpiar() {
      delete from evidence_content where evidence_id in (select id from evidence where institution_id in ('$INS','$OTRA'));
      delete from evidence where institution_id in ('$INS','$OTRA');
      delete from commitment where institution_id in ('$INS','$OTRA');
+     delete from intervention_outcome where intervention_id in (select id from intervention where institution_id in ('$INS','$OTRA'));
+     delete from intervention where institution_id in ('$INS','$OTRA');
+     delete from risk_signal where institution_id in ('$INS','$OTRA');
      delete from protocol_step_completion where institution_id in ('$INS','$OTRA');
      delete from protocol_artifact where institution_id in ('$INS','$OTRA');
      delete from preparation_readiness where institution_id in ('$INS','$OTRA');
@@ -317,6 +320,33 @@ igual "y la corrección de errores" \
   "$(q "select count(*) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.alcance='NUCLEO_H24' and s.step_type='correccion';")" "1"
 igual "ninguno se declara obligatorio: C01-034 sigue abierto" \
   "$(q "select bool_and(s.requirement='NO_CONFIGURADA') from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.alcance='NUCLEO_H24';")" "t"
+
+echo "→ B6 · el riesgo llega a UX01 como modificador, no como reemplazo"
+igual "sin señales, la clave viaja nula y la pantalla no cambia" \
+  "$(q "select coalesce(public.estado_del_dia('$INS','$EST',now())->>'riesgo','NULO');")" "NULO"
+q "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status)
+   values ('c1000000-0000-0000-0000-000000000001','$INS','$EST','factores_subjetivos','atencion','ansiedad frente al examen','OPEN');" >/dev/null 2>&1
+igual "una señal viva viaja con su explicación, no con un score" \
+  "$(q "select public.estado_del_dia('$INS','$EST',now())->'riesgo'->>'razon';")" "ansiedadfrentealexamen"
+igual "y todavía no pide una persona" \
+  "$(q "select public.estado_del_dia('$INS','$EST',now())->'riesgo'->>'necesitaPersona';")" "false"
+q "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status)
+   values ('c2000000-0000-0000-0000-000000000001','$INS','$EST','error_reiterado','riesgo','el mismo error de método tres veces','INTERVENTION_REQUIRED');" >/dev/null 2>&1
+# Gana la que pide una persona, no la más nueva ni la más severa por sí sola.
+igual "la que pide una persona gana el lugar" \
+  "$(q "select public.estado_del_dia('$INS','$EST',now())->'riesgo'->>'necesitaPersona';")" "true"
+igual "y es la suya, con su explicación" \
+  "$(q "select public.estado_del_dia('$INS','$EST',now())->'riesgo'->>'razon';")" "elmismoerrordemétodotresveces"
+q "update risk_signal set status='RESOLVED', resolved_at=now() where institution_id='$INS';" >/dev/null 2>&1
+igual "una señal resuelta deja de viajar: no es memoria, es estado vivo" \
+  "$(q "select coalesce(public.estado_del_dia('$INS','$EST',now())->>'riesgo','NULO');")" "NULO"
+q "delete from risk_signal where institution_id='$INS';" >/dev/null 2>&1
+
+echo "→ B6 · el circuito nombra lo que le falta"
+igual "sin playbooks cargados, lo declara (C01-044)" \
+  "$(q "select public.circuito_de_senales('$INS')->'faltan'->>'playbooks';")" "C01-044"
+igual "y sin umbrales, también (C01-036)" \
+  "$(q "select public.circuito_de_senales('$INS')->'faltan'->>'reglasSinUmbral';")" "C01-036"
 
 echo "→ Aislamiento: las ocho funciones lo respetan (I11)"
 for f in estado_de_materia estado_de_accion estado_de_compromiso estado_de_evidencia estado_de_progreso estado_de_activacion estado_de_preparacion; do

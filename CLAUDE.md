@@ -73,7 +73,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Escribir contenido del protocolo de examen | [`docs/roadmap-modo-examen-source.md`](docs/roadmap-modo-examen-source.md) — **los 20 pasos, su voz literal**. Y [`human-p0-source.md`](docs/human-p0-source.md) para las ocho reglas |
 | Buscar evidencia esperada de un paso | [`docs/cuadro-problemas-source.md`](docs/cuadro-problemas-source.md) — **propuesto, no cargado**: tiene preguntas abiertas de la autora |
 | Nombrar algo como lo nombra el oficio | [`docs/indice-psicopedagogico-source.md`](docs/indice-psicopedagogico-source.md) |
-| Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) — §2.1 tiene la propuesta de contrato v2 |
+| Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) — §2.1 la propuesta de contrato v2, §2.2 **lo que la Fase B6 necesita de él** |
 | Preparar la consulta legal | [`docs/legal-package.md`](docs/legal-package.md) |
 | Cerrar los residuos psicopedagógicos | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) |
 | Resolver las vulnerabilidades `high` | [`docs/brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md) |
@@ -102,6 +102,23 @@ es ternario —`NO_CONFIGURADA` no ofrece nada, `OPTIONAL` ofrece y no bloquea, 
 el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Postgres con sesión real, cada una con una
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` se conectaron en la
 Fase B5.
+
+**Fase B6 — Risk e Intervención.** 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026
+([ADR-032](docs/decisions.md#adr-032)). El **circuito cerrado se garantiza por construcción**: cerrar
+una intervención sin resultado no es un camino que exista, y `RESOLVED` sólo se alcanza con una
+intervención que registró outcome. `circuito_de_senales()` **audita el Done** y nombra el contrato que
+falta en vez de dar el circuito por cerrado. `audit_log`, que existía desde la B1.5 y nadie escribía,
+por fin se escribe.
+
+⚠️ **Antes de tocar riesgo:** **no existe motor que produzca señales, y no es un olvido.** `C01-021`
+está `OPEN` y `C01-036` —cuántas repeticiones hacen a un error *"reiterativo"*— **es de la
+psicopedagoga**. Las tres reglas de `HUMAN-P0-06 v1.0` están cargadas como configuración **sin
+umbral**, un `CHECK` impide que corran solas, y **hay un guard estático que rompe si alguien agrega un
+evaluador**. Los playbooks tampoco existen: `C01-044` dice *"no se inventan valores"*.
+
+⚠️ **El riesgo en `UX01` es un modificador, no un reemplazo.** Cambia el estado general y **nada
+más**: no gana el Hero, no interrumpe `IN_PROGRESS`, no reordena materias y no inventa una CTA. Ni
+siquiera entra a `HeroInput`, y hay guard.
 
 **Fase B5 — Modo Examen real.** ✅ **COMPLETA, 5 / 5** — 1 de septiembre de 2026. **Las nueve
 superficies del estudiante leen de Postgres**; `UX07`–`UX09` eran las tres últimas que proyectaban
@@ -169,8 +186,9 @@ Con eso quedó **un frente con trabajo real**, y dos que se cerraron el mismo d�
   la tercera corrida converge.
 - ~~Fase B5~~ ✅ **COMPLETA** el 1 de septiembre: la capa de examen, el protocolo como configuración
   versionada y las tres superficies conectadas. **La que queda es la B6.**
-- **Fase B6 · Risk e Intervención** — ADR-003 repartió: Achieve es canónico, Dashboard consume. **Es
-  la fase grande que queda.**
+- ~~Fase B6~~ 🟡 **DOMINIO COMPLETO** el 2 de septiembre. Lo que queda de la fase **no es código
+  nuestro**: `C01-021` y `C01-036` (los umbrales), `C01-044` (playbooks y SLA), y el **contrato v2**
+  del CTO, que es lo único que bloquea las cinco superficies de operador.
 
 Lo que **no** se puede hacer sigue siendo lo mismo: tocar un dato real. El mapa de bloqueos del
 `roadmap.md` ahora dice **quién** cierra cada cosa.
@@ -199,7 +217,7 @@ colapsan. La pregunta está arriba de todo en la
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
 
-**Verificación de base:** `npm run db:verify` — **175 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **203 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de
@@ -218,8 +236,8 @@ Conserva **una** costura declarada: `UX05` cruza el nodo `ejecución`, que no ti
 
 - **Track A** (clickeable, fixtures, sin backend): **sin bloqueos.** Cerrar la Fase 0 cierra el
   track — Operador e Institución se difirieron ([ADR-012](docs/decisions.md#adr-012)).
-- **Track B** (backend persistente): B1 a B5 completas sobre datos sintéticos. Todo lo que toque un
-  dato real sigue bloqueado por [ADR-006](docs/decisions.md#adr-006).
+- **Track B** (backend persistente): B1 a B5 completas y el dominio de B6, sobre datos sintéticos.
+  Todo lo que toque un dato real sigue bloqueado por [ADR-006](docs/decisions.md#adr-006).
 
 **Stack:** Next.js 16 · React 19 · Tailwind v4 CSS-first · shadcn vendorizado · Vitest.
 

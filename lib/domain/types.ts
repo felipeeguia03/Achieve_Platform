@@ -70,6 +70,32 @@ export type RiskSignalStatus =
   | "ESCALATED"
   | "EXPIRED";
 
+/**
+ * La escala de severidad, cerrada por `data-model.md` §10.
+ *
+ * **Es un dato, no un cálculo.** Qué severidad le corresponde a cada situación
+ * es `C01-021`, y las tres reglas de `HUMAN-P0-06 v1.0` entraron **sin
+ * severidad asignada**: nadie se la puso, y ausente no es `bajo`.
+ */
+export type SeveridadDeRiesgo = "bajo" | "atencion" | "riesgo" | "intervencion";
+
+export type InterventionStatus = "open" | "acknowledged" | "closed";
+
+/**
+ * Los cinco resultados que cierran una intervención (`data-model.md` §10).
+ *
+ * ⚠️ **Cuál de los cinco cierra el circuito formalmente y cuál lo escala sigue
+ * siendo `C01-044`** — el spec §32 lo pregunta textual: *"¿Qué outcomes cierran
+ * formalmente una intervención?"*. El vocabulario está congelado; su semántica
+ * operativa, no.
+ */
+export type ResultadoDeIntervencion =
+  | "recuperado"
+  | "replanificado"
+  | "sin_respuesta"
+  | "escalado"
+  | "falso_positivo";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Provenance · data-model.md §4
 //

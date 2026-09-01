@@ -190,19 +190,26 @@ export const catalogoP0: Readonly<Record<string, EventoDeProducto>> = {
   RiskSignalCreated: {
     uso: "Señal generada.",
     nivel: "NEGOCIO",
-    instrumentacion: pendiente("B6 · no hay Risk Engine"),
+    // ⚠️ **Se emite, y no lo emite un motor.** La señal la produce su owner y
+    // el Service la persiste: `C01-021` —qué regla dispara qué señal— sigue
+    // `OPEN`, y las tres situaciones de `HUMAN-P0-06 v1.0` están cargadas como
+    // configuración **sin umbral** (`C01-036`). Que este evento exista no
+    // significa que algo esté vigilando a nadie.
+    instrumentacion: emitido,
     enBitacora: false,
   },
   InterventionStarted: {
     uso: "Humano/automático intervino.",
     nivel: "NEGOCIO",
-    instrumentacion: pendiente("B6 · y el Operador depende de ADR-003"),
+    instrumentacion: emitido,
     enBitacora: false,
   },
   InterventionResolved: {
     uso: "Outcome registrado.",
     nivel: "NEGOCIO",
-    instrumentacion: pendiente("B6 · y el Operador depende de ADR-003"),
+    // El final del Risk Engine. Se emite **sólo con el outcome escrito**: el
+    // cierre y el resultado son una sola transacción.
+    instrumentacion: emitido,
     enBitacora: false,
   },
   RescueSucceeded: {
@@ -270,6 +277,48 @@ export const EXTENSIONES: Readonly<
   // compartida emite un hecho **por cada estado al que se llega**. Entran como
   // `TRANSICION` por el mismo criterio de ADR-027: son movimientos del
   // lifecycle, no los hechos que el producto existe para medir.
+  // ── Lifecycle de `RiskSignal` e `Intervention` · Fase B6 ───────────────────
+  //
+  // §16 nombra la creación de la señal y las dos puntas de la intervención. Los
+  // estados intermedios existen porque las máquinas de `product.md` §5.5 y del
+  // Golden Path D los dibujan, y la maquinaria compartida emite un hecho por
+  // cada estado al que se llega. `TRANSICION`, por el criterio de ADR-027.
+  //
+  // **Ninguno va a la Bitácora.** `VI.6` §6: la Bitácora es memoria privada del
+  // estudiante, no un log del sistema — y el circuito de riesgo es operativo.
+  // Lo que el estudiante ve de todo esto es la explicación de su señal y sus
+  // propias intervenciones relevantes (matriz de visibilidad §4.1), no cada
+  // movimiento interno de la cola de un operador.
+  RiskSignalAcknowledged: {
+    porQue: "Alguien tomó conocimiento de la señal. §16 sólo nombra su creación",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  RiskSignalInterventionRequired: {
+    porQue: "La señal pasó a necesitar una persona: es el gatillo del Golden Path D",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  RiskSignalResolved: {
+    porQue: "Cierre de la señal. Sólo se alcanza con una intervención con outcome",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  RiskSignalEscalated: {
+    porQue: "La bifurcación que dibuja §5.5 cuando la intervención no recuperó",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  RiskSignalExpired: {
+    porQue: "Dejó de ser relevante. Lo dispara el reloj, no una persona",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  InterventionAcknowledged: {
+    porQue: "El operador se hizo cargo. Sin esto, 'cerrada' no distingue trabajada de despachada",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
   ExamPreparationBlocked: {
     porQue: "Destino declarado en la máquina de §5.4; §16 sólo nombra la activación",
     nivel: "TRANSICION",

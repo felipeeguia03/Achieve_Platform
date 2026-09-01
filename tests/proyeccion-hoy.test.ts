@@ -190,3 +190,90 @@ describe("B2.5 · la forma es la que la pantalla espera", () => {
     );
   });
 });
+
+
+describe("B6 · el riesgo modifica el estado, y nada más", () => {
+  /**
+   * `VI.1` §3.3 es la fila que este bloque protege: `HIGH_RISK` es un estado
+   * **modificador, no reemplazante**. *"No gana automáticamente el Hero"* y
+   * *"no puede interrumpir `IN_PROGRESS` ni `EVIDENCE_PENDING` sólo por
+   * severidad"*.
+   *
+   * Es la clase de regla que se rompe sola en la primera refactorización, y por
+   * eso el riesgo ni siquiera entra a `HeroInput`.
+   */
+  const riesgoAlto = {
+    severidad: "intervencion" as const,
+    razon: "tres entregas seguidas con el mismo error de método",
+    necesitaPersona: true,
+  };
+
+  it("cambia el estado general a «necesita recuperación»", () => {
+    const p = proyectarDia({ ...vacio, riesgo: riesgoAlto });
+    expect(p.estadoGeneral).toBe("NECESITA RECUPERACIÓN");
+  });
+
+  it("no interrumpe una Action en curso: el Hero sigue siendo el trabajo", () => {
+    const enCurso: EstadoDelDia = {
+      ...conAccion,
+      accion: { ...conAccion.accion!, status: "IN_PROGRESS" },
+      riesgo: riesgoAlto,
+    };
+    const p = proyectarDia(enCurso);
+    expect(p.hero.nivel).toBe("IN_PROGRESS");
+    expect(p.hero.titulo).toBe("Derivadas");
+  });
+
+  it("no interrumpe una evidencia pendiente", () => {
+    const p = proyectarDia({
+      ...conAccion,
+      accion: { ...conAccion.accion!, status: "EVIDENCE_PENDING" },
+      riesgo: riesgoAlto,
+    });
+    expect(p.hero.nivel).toBe("EVIDENCE_PENDING");
+  });
+
+  it("una señal viva que todavía no pide una persona no cambia nada", () => {
+    // Qué severidad cambia el estado general es `C01-021`, abierto. Lo que la
+    // proyección mira es si **la señal misma** dice que necesita una persona.
+    const sinPersona = { ...riesgoAlto, necesitaPersona: false };
+    expect(proyectarDia({ ...vacio, riesgo: sinPersona }).estadoGeneral).toBe(
+      proyectarDia(vacio).estadoGeneral,
+    );
+  });
+
+  it("no inventa una acción ni una CTA por riesgo", () => {
+    // *"Riesgo alto sin Action/Commitment/Rescue → Hero = fallback honesto…
+    // RiskSignal no inventa una acción"* (`VI.1` §3.4).
+    const p = proyectarDia({ ...vacio, riesgo: riesgoAlto });
+    expect(p.hero.titulo).toBeNull();
+    expect(p.hero.razon).toBeNull();
+    expect(p.materias).toEqual([]);
+  });
+
+  it("no reordena materias por riesgo", () => {
+    const conMaterias: EstadoDelDia = {
+      ...vacio,
+      materias: [
+        { nombre: "Análisis II", estado: null, ultimoAvanceEn: null, tono: "neutral" },
+        { nombre: "Álgebra", estado: null, ultimoAvanceEn: null, tono: "neutral" },
+      ],
+    };
+    const sin = proyectarDia(conMaterias).materias.map((m) => m.nombre);
+    const con = proyectarDia({ ...conMaterias, riesgo: riesgoAlto }).materias.map((m) => m.nombre);
+    expect(con).toEqual(sin);
+  });
+
+  it("el riesgo no entra a la matriz de precedencia", () => {
+    // El guard estructural: si alguien lo mete en `HeroInput`, esto rompe.
+    const fuente = readFileSync(
+      resolve(process.cwd(), "lib/server/servicios/proyeccion-hoy.ts"),
+      "utf8",
+    );
+    const entrada = fuente.slice(
+      fuente.indexOf("function aEntradaDeHero"),
+      fuente.indexOf("const ESTADO"),
+    );
+    expect(entrada).not.toContain("riesgo");
+  });
+});

@@ -30,4 +30,27 @@ export const relojReal: RepositorioDeReloj = {
       plannedMinutes: Number(f.planned_minutes),
     }));
   },
+
+  /**
+   * El filtro por estado va en el `WHERE` y no en el código: traer una señal en
+   * `INTERVENTION_REQUIRED` para después descartarla es pasear la posibilidad
+   * de expirarla por error.
+   */
+  async senalesVencidas(institutionId, ahora, limite) {
+    const { data, error } = await clienteDeServicio()
+      .from("risk_signal")
+      .select("id, status")
+      .eq("institution_id", institutionId)
+      .in("status", ["OPEN", "ACKNOWLEDGED"])
+      .not("valid_until", "is", null)
+      .lt("valid_until", ahora)
+      .order("valid_until", { ascending: true })
+      .limit(limite);
+
+    if (error) throw new Error(`No se pudieron leer señales vencidas: ${error.message}`);
+    return (data ?? []).map((f) => ({
+      id: f.id as string,
+      status: f.status as "OPEN" | "ACKNOWLEDGED",
+    }));
+  },
 };

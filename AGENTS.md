@@ -299,6 +299,11 @@ En el Track B, hoy:
   para que quien los lea encuentre lo que la profesional escribió. Y **lo que la fuente no define no
   se completa** — evidencia esperada, criterio de cierre y obligatoriedad de los veinte pasos entraron
   vacíos. Hay tests que rompen en las dos direcciones.
+- **Riesgo e intervención existen, y ningún motor los dispara.** `C01-021` y `C01-036` están
+  abiertos: las tres reglas de `HUMAN-P0-06 v1.0` son configuración **sin umbral** y hay guard
+  estático contra agregar un evaluador. Los playbooks tampoco: `C01-044` dice *"no se inventan
+  valores"*. ⚠️ **Una señal sin causa no existe** —`CHECK` en la base—, **cerrar una intervención sin
+  outcome no es un camino posible**, y el riesgo en `UX01` **sólo cambia el estado general**.
 - **Repetir un paso no es retroceder.** Cada vuelta es un hecho más
   ([ADR-028](docs/decisions.md#adr-028)); el copy dice *"volviste sobre"*, nunca *"repetiste"*.
 - **El loop diario está persistido entero** — `Action`, `Commitment`, `Evidence` y `Reflection`,

@@ -81,7 +81,7 @@ TRACK B ─── cada fase tiene su gate ────────────�
   validador + reloj corriendo     las 9 superficies leen de Postgres
   └────┬─────────────────────────┘
        ↓
-  Fase B6 · Risk + Intervención + Operador   🟢 ADR-003 ✅
+  Fase B6 · Risk + Intervención + Operador   🟡 dominio ✅ · operador 🔒 v2
   (absorbe las 5 vistas que iban en la Fase A1)
        ↓
   Fase B7 · Privacidad y golden dataset      🔒 ADR-006  ← BLOQUEO ABSOLUTO
@@ -2404,26 +2404,51 @@ abiertos `C01-029` (umbrales de readiness), `C01-031` y `C01-034` (obligatorieda
 
 ## Fase B6 — Risk Engine, Intervención y Operador
 
-**Estado:** 🔒 [ADR-003](decisions.md#adr-003).
+**Estado:** 🟡 **DOMINIO COMPLETO — 2 de septiembre de 2026.** Desbloqueada por
+[ADR-003](decisions.md#adr-003) y ejecutada según [ADR-032](decisions.md#adr-032). Lo que falta **no
+es código nuestro**: son tres decisiones humanas y un contrato que lleva el CTO.
 
 **Objetivo.** `RiskSignal` rule-based explicable, `Intervention` con playbook/SLA/outcome, y la
 consola operativa P0.
 
-**Insumo nuevo — 31 ago 2026.** `HUMAN-P0-06 v1.0` ([ADR-025](decisions.md#adr-025)) dice cuándo hace
-falta una persona, y **los tres disparadores que dio la profesional son señales de riesgo, no
-propiedades de una entrega**: un error que se repite y exige corregir el método, no avanzar a pesar
-de las devoluciones, y factores subjetivos —frustración, inseguridad, desmotivación, ansiedad frente
-al examen—. Su cierre es literal: *"ya no se trata de verificar si una respuesta está bien o mal,
-sino de comprender qué le está pasando a ese estudiante"*. **Eso es un `Operator`, no un reviewer**,
-y por eso `HUMAN-P0-06` alimenta esta fase y no sólo `C01-016`.
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `risk_rule` | Las tres situaciones de `HUMAN-P0-06 v1.0` como **configuración versionada**, con su texto y **sin umbral**. Un `CHECK` impide que una regla sin umbral pase a modo automático |
+| `risk_signal` | Con **causa obligatoria en la base** —`CHECK` sobre `reason`, no una convención—, la regla que la produjo y sus marcas de transición |
+| `intervention` | Con dueño obligatorio y `owner_verified`, que distingue *verificado* de *no se pudo consultar* |
+| `intervention_outcome` | PK compartida: **como mucho un resultado por intervención** |
+| Los cuatro escritores | `registrar_senal`, `abrir_intervencion`, `cerrar_intervencion`, `resolver_senal` |
+| `circuito_de_senales()` | **Audita el Done** y **nombra el contrato que falta** en vez de dar el circuito por cerrado |
+| El puerto `DirectorioDeOperadores` | Aísla la integración con el CRM **sin inventar su contrato** |
+| `audit_log`, por fin escrita | Existía desde la B1.5 y nadie la usaba. Toda escritura de riesgo pasa por el `Auditor` |
+| El reloj, ampliado | Expira las señales vencidas — **sólo `OPEN` y `ACKNOWLEDGED`** |
+| `UX01` | El riesgo como **modificador**: cambia el estado general y nada más |
+
+**Done, verificado y no declarado:** `circuito_de_senales()` devuelve `cerradasSinOutcome: 0` y
+`resueltasSinOutcome: 0` **por construcción** —no hay función que permita lo contrario—, y hay 25
+comprobaciones contra Postgres que lo prueban.
+
+### Lo que NO se construyó, y por qué
+
+| Qué | Por qué |
+|---|---|
+| **Un motor que produzca señales** | `C01-021` (qué regla, qué severidad, qué sujeto) y `C01-036` (cuántas repeticiones hacen a un error *"reiterativo"*, **que es de la psicopedagoga**). Hay un guard estático que rompe si alguien agrega un evaluador |
+| **Los playbooks y sus SLA** | `C01-044`, gate `P`, textual: *"no se inventan valores"*. La tabla está vacía y el circuito lo declara |
+| **Las cinco superficies de operador** (`WF-O01`…`WF-O04`, `WF-I01`) | **No hay sesión de operador**, y fabricar una sería inventar el esquema de autenticación que el contrato v2 tiene que definir. Mismo criterio con el que la B5 no inventó el escritor de `current_step_id` |
+| **Cualquier endpoint HTTP de riesgo** | Un endpoint con JWT de estudiante expondría operaciones de operador; uno con secreto de servicio inventaría cómo se autentica un operador |
 
 **Absorbe la ex-Fase A1:** las cinco superficies `WF-O01`…`WF-O04` y `WF-I01`, diferidas por
-[ADR-012](decisions.md#adr-012).
+[ADR-012](decisions.md#adr-012). **Siguen sin construirse**, ahora por el contrato v2 y no por
+ADR-003.
 
 **Done cuando:** toda señal relevante cierra su circuito causa → owner → playbook → SLA →
-intervención → outcome; ninguna señal queda sin outcome registrado.
+intervención → outcome; ninguna señal queda sin outcome registrado. **Cuatro de seis eslabones están
+garantizados por construcción**; playbook y SLA esperan a `C01-044`.
 
-**Contratos a cerrar:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`.
+**Contratos a cerrar:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`. **Ninguno se cerró en
+esta fase**, y ninguno lo cierra un agente.
 
 ---
 
@@ -2462,7 +2487,9 @@ desvío, riesgo y recuperación.
 | **La autorización institucional** del golden dataset (`C01-042`) | Fase B8 · piloto | Producto + la institución |
 | **Las tres `high` de `npm audit`** ([ADR-008](decisions.md#adr-008)) | Cualquier despliegue | CTO — [brief](brief-adr-008-seguridad.md) |
 | **Los ocho residuos psicopedagógicos** ([ADR-025](decisions.md#adr-025)) | Intervención automática sobre personas reales | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
-| **El contrato de integración v2** | Fases B6 y B8 | CTO — [propuesta](platform-integration-contract.md) §2.1 |
+| **El contrato de integración v2** | Las **cinco superficies de operador** y la verificación del dueño de una intervención. **No bloquea el dominio de B6**, que ya está | CTO — [propuesta](platform-integration-contract.md) §2.1 |
+| **Los umbrales del Risk Engine** (`C01-021`, `C01-036`) | Que alguna señal se produzca sola. Hoy se registran señales que su owner ya produjo | Producto + la psicopedagoga — `C01-036` está en su [agenda](agenda-cierre-psicopedagoga.md) |
+| **Los 4–6 playbooks del piloto y sus SLA** (`C01-044`) | Los dos eslabones del circuito que faltan. La tabla está vacía **a propósito** | Product Operations |
 | **La confirmación de vigencia del Roadmap** | Que el protocolo deje de rotularse *"vigencia sin confirmar"*. **Dos frases**, y no bloquea código: los veinte pasos ya corren con su texto ([ADR-031](decisions.md#adr-031)) | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md), arriba de todo |
 
 ### ✅ La contradicción del Product Event Model, resuelta — [ADR-027](decisions.md#adr-027)
@@ -2535,7 +2562,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B3 — Progreso y eventos | ✅ **COMPLETA** — el resultado se escribe con sus invariantes, el Product Event Model está declarado con guards en tres direcciones, y `UX02`/`UX06` comparten una sola fuente histórica. Quién emite el progreso sigue siendo `C01-018` | 3 / 3 |
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
-| Fase B6 — Risk e Intervención | 🟢 **DESBLOQUEADA** — [ADR-003](decisions.md#adr-003) repartió: Achieve es canónico, Dashboard consume. Falta el contrato v2, que lleva el CTO | 0 / — |
+| Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. **Falta lo que no es código nuestro:** `C01-021`, `C01-036`, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 

@@ -212,6 +212,49 @@ verdades sobre el mismo estudiante — el mismo error que `VI.6` §8.3 prohíbe 
 ⚠️ **Ninguno de los dos se implementa hasta que el CTO versione el contrato.** Y ninguno transporta
 datos de una persona real mientras [ADR-006](decisions.md#adr-006) siga sin dictamen legal.
 
+### 2.2 Lo que la Fase B6 necesita del contrato v2 — 2 de septiembre de 2026
+
+**Esto no es una propuesta de contrato: es la lista de lo que Achieve no puede saber solo.** El
+dominio de riesgo e intervención está construido ([ADR-032](decisions.md#adr-032)) y **no está
+esperando a este documento**; lo que espera son dos cosas concretas.
+
+#### 1 · Una pregunta, y quién la contesta
+
+Achieve necesita poder preguntar **una sola cosa** antes de asignarle un caso a alguien:
+
+> *¿Este operador existe y puede tomar casos en esta institución?*
+
+Del lado de Achieve eso ya es un puerto —`DirectorioDeOperadores.verificar()`— con **tres respuestas
+posibles**, y hoy sólo se da una:
+
+| Respuesta | Qué significa | Qué hace Achieve |
+|---|---|---|
+| `CONOCIDO` | El CRM lo confirma | `owner_verified = true` |
+| `DESCONOCIDO` | El CRM responde y no lo conoce | **Frena.** No se abre la intervención |
+| `SIN_DIRECTORIO` | No hay a quién preguntarle | Abre igual, con `owner_verified = false`, y el circuito lo cuenta |
+
+**Endpoint, payload, autenticación y SLA los define el CTO.** Achieve no los propone acá a propósito:
+inventarlos ahora obligaría a rehacerlos después, y es exactamente lo que ADR-003 quiso evitar cuando
+dijo que el contrato lo versiona el CTO.
+
+> **`DESCONOCIDO` y `SIN_DIRECTORIO` no son lo mismo, y el contrato tiene que poder distinguirlos.**
+> Un operador rechazado es un error que hay que frenar; un canal caído es una integración que falta.
+> Si el contrato colapsa los dos en un error genérico, Achieve tendrá que elegir uno de los dos
+> comportamientos sin información.
+
+#### 2 · Qué gatea hoy la falta de este contrato
+
+| Bloqueado | Por qué |
+|---|---|
+| Las cinco superficies de operador (`WF-O01`…`WF-O04`, `WF-I01`) | **No hay sesión de operador.** Fabricar una sería inventar el esquema de autenticación que este contrato tiene que definir |
+| Cualquier endpoint HTTP de riesgo o intervención | Uno con JWT de estudiante expondría operaciones de operador; uno con secreto de servicio inventaría cómo se autentica una persona |
+| `human_assignment` — qué estudiantes ve cada operador | `C01-039`. La matriz de visibilidad (§4.1 de `product.md`) dice *"sus asignados"*, y quién es asignado a quién vive en el CRM |
+
+**Lo que NO está bloqueado, y conviene decirlo:** el circuito cerrado entero —señal con causa,
+intervención con dueño, outcome obligatorio para cerrar, auditoría— ya corre y está probado contra
+Postgres. Cuando el contrato llegue, se implementa el puerto y se cambia **una línea** en el
+composition root.
+
 ## 3. Checklist para la Plataforma (lo de HOY)
 
 - [ ] Guardar `PLATFORM_SHARED_SECRET` en variables de entorno (nunca hardcodear).

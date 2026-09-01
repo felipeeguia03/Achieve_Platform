@@ -15,6 +15,8 @@ import type {
   CommitmentState,
   EvidenceState,
   ExamPreparationStatus,
+  InterventionStatus,
+  RiskSignalStatus,
 } from "./types";
 
 export const actionTransitions: Readonly<Record<ActionStatus, readonly ActionStatus[]>> = {
@@ -114,6 +116,64 @@ export const examPreparationTransitions: Readonly<
   EXAM_TAKEN: ["CLOSED"],
   CLOSED: [],
   ABANDONED: [],
+} as const;
+
+/**
+ * `RiskSignal` — Fase B6.
+ *
+ * Sale del diagrama de `product.md` §5.5, que es lineal:
+ *
+ * ```
+ * OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED → RESOLVED
+ *                                            ↘ ESCALATED
+ * ```
+ *
+ * **`RESOLVED` sólo se alcanza desde `INTERVENTION_REQUIRED`, y eso es el Done
+ * de la fase, no una restricción de más.** El spec: *"el dashboard no es el
+ * final del Risk Engine. El final es una señal resuelta, escalada o
+ * explícitamente cerrada con resultado"*. Si `ACKNOWLEDGED → RESOLVED`
+ * existiera, una señal podría marcarse resuelta sin que nadie la trabajara, que
+ * es exactamente el tablero en verde con nada detrás.
+ *
+ * **`EXPIRED` es la salida de las que dejaron de ser relevantes** —*"una señal
+ * puede expirar si deja de ser relevante; se guarda la causa histórica"*— y
+ * llega **sólo desde `OPEN` y `ACKNOWLEDGED`**. Dejar expirar una que ya pidió
+ * una persona borraría una obligación humana pendiente, y el Done dice que
+ * ninguna señal queda sin outcome.
+ *
+ * `ESCALATED` queda sin salida declarada: el spec dibuja la bifurcación y no el
+ * retorno. Qué pasa después de escalar es `C01-022` y `C01-044`.
+ */
+export const riskSignalTransitions: Readonly<
+  Record<RiskSignalStatus, readonly RiskSignalStatus[]>
+> = {
+  OPEN: ["ACKNOWLEDGED", "EXPIRED"],
+  ACKNOWLEDGED: ["INTERVENTION_REQUIRED", "EXPIRED"],
+  INTERVENTION_REQUIRED: ["RESOLVED", "ESCALATED"],
+  RESOLVED: [],
+  ESCALATED: [],
+  EXPIRED: [],
+} as const;
+
+/**
+ * `Intervention` — Fase B6.
+ *
+ * `data-model.md` §10 declara los tres estados y **ninguna tabla de
+ * transiciones**, así que se toma el orden del Golden Path D del spec:
+ * *selecciona caso → contexto → intervención → resultado*. Reconocer no es
+ * decorativo: es el momento en que una persona se hace cargo, y sin él
+ * "cerrada" no distingue una intervención trabajada de una despachada.
+ *
+ * `closed` es terminal. Reabrir una intervención cerrada sería editar un hecho
+ * con su outcome ya registrado — *No Cortar*, la misma regla que impide tocar
+ * un `Commitment` `MISSED`.
+ */
+export const interventionTransitions: Readonly<
+  Record<InterventionStatus, readonly InterventionStatus[]>
+> = {
+  open: ["acknowledged"],
+  acknowledged: ["closed"],
+  closed: [],
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

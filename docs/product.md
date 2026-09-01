@@ -283,13 +283,48 @@ sin los nodos que dejaron de pertenecer a esta entidad.
 
 ```
 OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED → RESOLVED
-                                            ↘ ESCALATED
+  ↓         ↓                               ↘ ESCALATED
+EXPIRED   EXPIRED
 ```
-
-Una señal puede expirar si deja de ser relevante; se guarda la causa histórica.
 
 **Closed-loop obligatorio (Parte I §8.6):** toda señal relevante tiene causa → owner → playbook →
 SLA → intervención → outcome. *El dashboard no es el final del Risk Engine.*
+
+✅ **Implementado en la Fase B6** ([ADR-032](decisions.md#adr-032)), con tres reglas que salen del
+diagrama y que no son restricciones de más:
+
+- **`RESOLVED` sólo se alcanza desde `INTERVENTION_REQUIRED`, y sólo con una intervención que
+  registró outcome.** Una señal que se pudiera marcar resuelta sin que nadie la trabajara **es** el
+  tablero en verde con nada detrás.
+- **`EXPIRED` sale sólo de `OPEN` y `ACKNOWLEDGED`.** Una señal puede expirar si deja de ser
+  relevante y se guarda la causa histórica; una que **ya pidió una persona** no dejó de serlo, y
+  vencerla borraría una obligación humana pendiente. Lo ejecuta el reloj del lifecycle, sobre el
+  `valid_until` que declaró quien la creó.
+- **`RESOLVED`, `ESCALATED` y `EXPIRED` son terminales.** Qué pasa después de escalar es `C01-022`.
+
+⚠️ **Nada produce señales automáticamente.** `C01-021` sigue `OPEN` y las tres situaciones de
+`HUMAN-P0-06 v1.0` están cargadas como configuración **sin umbral** (`C01-036`, y lo cierra la
+psicopedagoga). El Service **persiste una señal que su owner ya produjo**; no hay evaluador, y hay un
+guard estático que rompe si alguien lo agrega.
+
+### 5.5.1 Intervention
+
+```
+open → acknowledged → closed
+```
+
+`data-model.md` §10 declara los tres estados y **no** su tabla de transiciones; el orden sale del
+Golden Path D del spec —*selecciona caso → contexto → intervención → resultado*—. Reconocer no es
+decorativo: es el momento en que una persona se hace cargo, y sin él *"cerrada"* no distingue una
+intervención trabajada de una despachada.
+
+**Cerrar y registrar el resultado son una sola escritura.** No existe camino que deje una intervención
+cerrada sin outcome. `closed` es terminal: reabrirla sería editar un hecho con su resultado ya
+registrado — la misma regla de *No Cortar* que impide tocar un `Commitment` `MISSED`.
+
+⚠️ **Playbook y SLA quedan en `null` y el circuito lo declara.** `C01-044` es explícito —*"no se
+inventan valores"*— y su gate es antes del piloto. Un playbook inventado sería una instrucción
+escrita por un agente sobre qué hacer con un estudiante que está mal.
 
 ### 5.6 ProtocolStep
 

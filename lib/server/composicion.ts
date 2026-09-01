@@ -15,6 +15,9 @@ import { progresoEscrituraReal } from "./repositorios/progreso";
 import { institucionesReal } from "./repositorios/instituciones";
 import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
+import { senalesReal } from "./repositorios/riesgo";
+import { intervencionesReal } from "./repositorios/intervencion";
+import { auditorReal } from "./repositorios/auditoria";
 import { preparacionesReal } from "./repositorios/preparacion";
 import {
   activacionLecturaReal,
@@ -41,6 +44,24 @@ import { proyectarProgreso } from "./servicios/proyeccion-progreso";
 import { proyectarActivacion } from "./servicios/proyeccion-activacion";
 import { proyectarPreparacion } from "./servicios/proyeccion-preparacion";
 import { proyectarPaso } from "./servicios/proyeccion-paso";
+import { directorioNoDisponible } from "./servicios/operadores";
+import {
+  registrarSenal as registrarSenalPuro,
+  resolver as resolverSenalPuro,
+  transicionar as transicionarSenalPuro,
+  type ResultadoDeResolucion,
+  type ResultadoDeSenal,
+  type SenalDetectada,
+} from "./servicios/riesgo";
+import {
+  abrir as abrirIntervencionPuro,
+  cerrar as cerrarIntervencionPuro,
+  reconocer as reconocerIntervencionPuro,
+  type AperturaDeIntervencion,
+  type CierreDeIntervencion,
+  type ResultadoDeApertura,
+  type ResultadoDeCierre,
+} from "./servicios/intervencion";
 import {
   activar as activarPuro,
   completarPaso as completarPasoPuro,
@@ -123,7 +144,13 @@ export function correrReloj(
   ahora: string = new Date().toISOString(),
 ): Promise<ResumenDeCorrida> {
   return correrRelojPuro(
-    { reloj: relojReal, compromisos: compromisosReal, eventos: eventosReal },
+    {
+      reloj: relojReal,
+      compromisos: compromisosReal,
+      eventos: eventosReal,
+      senales: senalesReal,
+      auditor: auditorReal,
+    },
     institutionId,
     ahora,
   );
@@ -336,4 +363,76 @@ export function completarPasoDeProtocolo(
   entrada: PasoCompletado,
 ): Promise<ResultadoDeCompletion> {
   return completarPasoPuro({ repo: preparacionesReal, eventos: eventosReal }, entrada);
+}
+
+// ── Fase B6 · Riesgo e intervención ──────────────────────────────────────────
+//
+// **El directorio de operadores es un puerto sin implementación real**, y es lo
+// único de esta fase que espera al contrato v2 del CTO (`C01-039`). Cuando
+// exista, se cambia `directorioNoDisponible` por el cliente del CRM **acá y en
+// ningún otro lado**, que es para lo que este archivo existe.
+
+const riesgo = { repo: senalesReal, eventos: eventosReal, auditor: auditorReal };
+const intervenciones = {
+  repo: intervencionesReal,
+  eventos: eventosReal,
+  auditor: auditorReal,
+  operadores: directorioNoDisponible,
+};
+
+/**
+ * Registra una señal de riesgo **que su owner ya produjo**.
+ *
+ * ⚠️ **Esto no decide que un estudiante está en riesgo.** No existe función que
+ * mire el mundo y produzca señales: `C01-021` sigue `OPEN`, y las tres
+ * situaciones de `HUMAN-P0-06 v1.0` están cargadas como configuración **con sus
+ * umbrales sin fijar** (`C01-036`, y los fija la psicopedagoga). Mismo reparto
+ * que con el progreso en la B3.
+ */
+export function registrarSenalDeRiesgo(entrada: SenalDetectada): Promise<ResultadoDeSenal> {
+  return registrarSenalPuro(riesgo, entrada);
+}
+
+/** Mueve una señal de estado. `RESOLVED` no entra por acá: tiene condición. */
+export function transicionarSenal(
+  institutionId: string,
+  id: string,
+  hacia: Exclude<import("@/lib/domain/types").RiskSignalStatus, "RESOLVED">,
+  actorId: string | null = null,
+) {
+  return transicionarSenalPuro(riesgo, institutionId, id, hacia, actorId);
+}
+
+/** `RESOLVED`, **sólo si hubo una intervención con outcome**. */
+export function resolverSenal(
+  institutionId: string,
+  id: string,
+  actorId: string | null = null,
+): Promise<ResultadoDeResolucion> {
+  return resolverSenalPuro(riesgo, institutionId, id, actorId);
+}
+
+/**
+ * Abre una intervención con dueño.
+ *
+ * Hoy el dueño **no se puede verificar**: no hay directorio de operadores. La
+ * intervención se abre igual y queda marcada `ownerVerified: false`, y
+ * `circuito_de_senales()` lo cuenta y nombra el bloqueo (`C01-039`).
+ */
+export function abrirIntervencion(
+  entrada: AperturaDeIntervencion,
+): Promise<ResultadoDeApertura> {
+  return abrirIntervencionPuro(intervenciones, entrada);
+}
+
+/** `open → acknowledged`: el momento en que una persona se hace cargo. */
+export function reconocerIntervencion(institutionId: string, id: string, actorId: string) {
+  return reconocerIntervencionPuro(intervenciones, institutionId, id, actorId);
+}
+
+/** `acknowledged → closed`, **con su outcome, en una sola escritura**. */
+export function cerrarIntervencion(
+  entrada: CierreDeIntervencion,
+): Promise<ResultadoDeCierre> {
+  return cerrarIntervencionPuro(intervenciones, entrada);
 }

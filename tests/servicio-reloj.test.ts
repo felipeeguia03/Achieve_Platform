@@ -19,6 +19,11 @@ function mundo(iniciales: Array<CompromisoConReloj>, opciones: { pierde?: boolea
     async candidatosPorTiempo() {
       return iniciales.map((c) => ({ ...c, state: filas.get(c.id)!.state }));
     },
+    // Las señales tienen su propio test (`tests/servicio-riesgo.test.ts`): acá
+    // el doble devuelve vacío para no mezclar dos lifecycles en un mismo caso.
+    async senalesVencidas() {
+      return [];
+    },
   };
   const compromisos = {
     async porId(_inst: string, id: string): Promise<Compromiso | null> {
@@ -39,7 +44,15 @@ function mundo(iniciales: Array<CompromisoConReloj>, opciones: { pierde?: boolea
   } as RepositorioDeCompromisos;
   const eventos: PublicadorDeEventos = { async publicar(e) { publicados.push(e); } };
 
-  return { deps: { reloj, compromisos, eventos }, filas, publicados };
+  const senales = {
+    async porId() { return null; },
+    async cambiarEstadoSi() { return null; },
+    async registrar() { return { id: "s-0", duplicado: false }; },
+    async resolver() { return { resuelta: false, motivo: null }; },
+  };
+  const auditor = { async registrar() {} };
+
+  return { deps: { reloj, compromisos, eventos, senales, auditor }, filas, publicados };
 }
 
 const confirmado: CompromisoConReloj = {
@@ -129,7 +142,7 @@ describe("B4 · el reloj converge y no se repite", () => {
     expect(filas.get("c-1")!.state).toBe("MISSED");
 
     // Converge: un MISSED no lo toca nadie, y menos el reloj.
-    expect(await correrReloj(deps, "inst-A", AHORA)).toEqual({ vencidos: 0, incumplidos: 0, conflictos: 0 });
+    expect(await correrReloj(deps, "inst-A", AHORA)).toEqual({ vencidos: 0, incumplidos: 0, senalesExpiradas: 0, conflictos: 0 });
     expect(publicados).toHaveLength(2);
   });
 
@@ -139,5 +152,75 @@ describe("B4 · el reloj converge y no se repite", () => {
       await correrReloj(deps, "inst-A", "2026-08-30T19:30:00.000Z");
     }
     expect(filas.get("c-1")!.state).toBe("DUE");
+  });
+});
+
+
+describe("B6 · el reloj también expira las señales que dejaron de importar", () => {
+  /**
+   * `product.md` §5.5: *"una señal puede expirar si deja de ser relevante; se
+   * guarda la causa histórica"*. **El reloj no decide cuándo deja de ser
+   * relevante** — eso lo declaró quien la creó, en `valid_until`—; sólo ejecuta
+   * ese vencimiento, por la misma vía que un `CONFIRMED` que pasa a `DUE`.
+   */
+  function conSenales(estados: Array<{ id: string; status: "OPEN" | "ACKNOWLEDGED" }>) {
+    const filas = new Map(estados.map((s) => [s.id, s.status as string]));
+    const publicados: EventoDeProducto[] = [];
+    const reloj: RepositorioDeReloj = {
+      async candidatosPorTiempo() { return []; },
+      async senalesVencidas() { return estados; },
+    };
+    const senales = {
+      async porId(_i: string, id: string) {
+        const st = filas.get(id);
+        return st
+          ? { id, institutionId: "inst-A", state: st as never, studentId: "e-1", severity: "bajo" as const, reason: "x" }
+          : null;
+      },
+      async cambiarEstadoSi(_i: string, id: string, esperado: string, nuevo: string) {
+        if (filas.get(id) !== esperado) return null;
+        filas.set(id, nuevo);
+        return { id, institutionId: "inst-A", state: nuevo as never, studentId: "e-1", severity: "bajo" as const, reason: "x" };
+      },
+      async registrar() { return { id: "x", duplicado: false }; },
+      async resolver() { return { resuelta: false, motivo: null }; },
+    };
+    const compromisos = {
+      async porId() { return null; },
+      async cambiarEstadoSi() { return null; },
+      async renegociarAtomico() { return null; },
+      async crearRescateAtomico() { return null; },
+    } as unknown as RepositorioDeCompromisos;
+    const eventos: PublicadorDeEventos = { async publicar(e) { publicados.push(e); } };
+    const auditor = { async registrar() {} };
+    return { deps: { reloj, compromisos, eventos, senales, auditor }, filas, publicados };
+  }
+
+  it("expira las vencidas y las cuenta aparte de los compromisos", async () => {
+    const m = conSenales([
+      { id: "s-1", status: "OPEN" },
+      { id: "s-2", status: "ACKNOWLEDGED" },
+    ]);
+    const r = await correrReloj(m.deps, "inst-A", AHORA);
+    expect(r).toMatchObject({ vencidos: 0, incumplidos: 0, senalesExpiradas: 2 });
+    expect(m.filas.get("s-1")).toBe("EXPIRED");
+    expect(m.filas.get("s-2")).toBe("EXPIRED");
+  });
+
+  it("el actor del evento es el sistema: nadie decidió que dejara de importar", async () => {
+    const m = conSenales([{ id: "s-1", status: "OPEN" }]);
+    await correrReloj(m.deps, "inst-A", AHORA);
+    expect(m.publicados.map((e) => e.nombre)).toEqual(["RiskSignalExpired"]);
+    expect(m.publicados[0].actorId).toBeNull();
+  });
+
+  it("pasa por la máquina: una que ya pide una persona no se expira aunque venga en la lista", async () => {
+    // El Repository ya la filtra, y aun así el camino pasa por `transicionar`:
+    // dos defensas, porque expirarla borraría una obligación humana pendiente.
+    const m = conSenales([{ id: "s-1", status: "INTERVENTION_REQUIRED" as never }]);
+    const r = await correrReloj(m.deps, "inst-A", AHORA);
+    expect(r.senalesExpiradas).toBe(0);
+    expect(m.filas.get("s-1")).toBe("INTERVENTION_REQUIRED");
+    expect(m.publicados).toEqual([]);
   });
 });

@@ -348,7 +348,7 @@ Storage y operación. Hasta entonces se conserva como diseño objetivo y no se c
 
 ### 3.9 El código que hoy la implementa
 
-Actualizado el 1 de septiembre de 2026, con las fases B1 a B5 completas. **§3.2 describe el
+Actualizado el 2 de septiembre de 2026, con las fases B1 a B5 completas y el dominio de la B6. **§3.2 describe el
 diseño; esto dice dónde vive**, que es lo que hacía falta para no tener que deducirlo del `grep`.
 
 ```text
@@ -359,7 +359,8 @@ app/
     ├── hoy · materia · accion · compromiso · evidencia · progreso
     ├── examen/           ← Modo Examen. `activacion` GET+POST (leer y activar son
     │                        el mismo hecho antes y después), `paso` GET+POST
-    ├── reloj             ← POST. Secreto de SERVICIO, no JWT: no lo dispara una persona
+    ├── reloj             ← POST. Secreto de SERVICIO, no JWT: no lo dispara una persona.
+    │                        Además de los compromisos, expira las señales vencidas
     └── sesion            ← alta de la sesión sintética, fuera de las nueve
 
 lib/
@@ -370,15 +371,19 @@ lib/
 └── server/
     ├── composicion.ts    ← composition root: EL único lugar que ata implementaciones
     ├── servicios/        ← reglas, transacciones, eventos. No leen headers ni SQL
+    │   ├── operadores.ts    PUERTO al directorio del CRM. Sin implementación real:
+    │   │                    es lo único de la B6 que espera al contrato v2
+    │   ├── auditoria.ts     PUERTO de `audit_log`. Distinto de `product_event`:
+    │   │                    uno dice qué le pasó al estudiante, el otro quién tocó qué
     │   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
     │   ├── hechos.ts        la traducción de un hecho a entrada visible. UNA, para UX02 y UX06
     │   ├── tiempo.ts        formato en la zona del estudiante. El formato es presentación
     │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar
     └── repositorios/     ← única capa que toca Postgres. No decide permisos ni transiciones
 
-supabase/migrations/      ← 28 migraciones. Una aplicada NO se edita: se reemplaza
+supabase/migrations/      ← 33 migraciones. Una aplicada NO se edita: se reemplaza
                              la función desde una nueva
-scripts/                  ← db:verify — 165 comprobaciones que npm test no puede hacer
+scripts/                  ← db:verify — 203 comprobaciones que npm test no puede hacer
 ```
 
 **Una lectura, una función de base.** Las nueve superficies tienen la suya —`estado_del_dia`,
@@ -392,13 +397,14 @@ comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda 
 un compromiso vencido pase a `DUE` y después a `MISSED` sin que nadie apriete nada. **Con qué
 frecuencia se lo llama es operación**, y [ADR-005](decisions.md#adr-005) la dejó `DEFERRED`.
 
-**Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment`, `Evidence` y
-`ExamPreparation`; `registrar_progreso`; `completar_paso_de_protocolo`;
-`materializar_recomendacion` del ADE; e `ingerir_materia` del ADL. Todas publican su hecho en
+**Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment`, `Evidence`,
+`ExamPreparation`, `RiskSignal` e `Intervention`; `registrar_progreso`;
+`completar_paso_de_protocolo`; `registrar_senal`, `abrir_intervencion`, `cerrar_intervencion` y
+`resolver_senal`; `materializar_recomendacion` del ADE; e `ingerir_materia` del ADL. Todas publican su hecho en
 `product_event` **después** de que la escritura ganó — un evento de algo que perdió la carrera sería
 un hecho que no ocurrió.
 
-**Cuatro entidades comparten `transiciones.ts`**, y es a propósito: `ExamPreparation` entró en la
+**Seis entidades comparten `transiciones.ts`**, y es a propósito: `ExamPreparation` entró en la
 Fase B5 sin escribir una quinta copia de *leer con scoping → validar contra la máquina →
 compare-and-swap → publicar*. Las copias divergen en el orden, que es justo donde están los errores.
 
