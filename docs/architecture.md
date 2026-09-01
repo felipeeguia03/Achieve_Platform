@@ -348,7 +348,7 @@ Storage y operación. Hasta entonces se conserva como diseño objetivo y no se c
 
 ### 3.9 El código que hoy la implementa
 
-Actualizado el 1 de septiembre de 2026, con las fases B1, B2 y B3 completas. **§3.2 describe el
+Actualizado el 1 de septiembre de 2026, con las fases B1 a B5 completas. **§3.2 describe el
 diseño; esto dice dónde vive**, que es lo que hacía falta para no tener que deducirlo del `grep`.
 
 ```text
@@ -357,6 +357,8 @@ app/
 │                            dibujan `Ausencia` si la carga falla: nunca el fixture
 └── api/                  ← Controller. Valida sesión, llama a UN Service, traduce a HTTP
     ├── hoy · materia · accion · compromiso · evidencia · progreso
+    ├── examen/           ← Modo Examen. `activacion` GET+POST (leer y activar son
+    │                        el mismo hecho antes y después), `paso` GET+POST
     ├── reloj             ← POST. Secreto de SERVICIO, no JWT: no lo dispara una persona
     └── sesion            ← alta de la sesión sintética, fuera de las nueve
 
@@ -374,14 +376,15 @@ lib/
     │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar
     └── repositorios/     ← única capa que toca Postgres. No decide permisos ni transiciones
 
-supabase/migrations/      ← 24 migraciones. Una aplicada NO se edita: se reemplaza
+supabase/migrations/      ← 28 migraciones. Una aplicada NO se edita: se reemplaza
                              la función desde una nueva
-scripts/                  ← db:verify — 134 comprobaciones que npm test no puede hacer
+scripts/                  ← db:verify — 165 comprobaciones que npm test no puede hacer
 ```
 
-**Una lectura, una función de base.** Cada superficie tiene la suya —`estado_del_dia`,
+**Una lectura, una función de base.** Las nueve superficies tienen la suya —`estado_del_dia`,
 `estado_de_materia`, `estado_de_accion`, `estado_de_compromiso`, `estado_de_evidencia`,
-`estado_de_progreso`— porque varias lecturas por pantalla dan una foto inconsistente entre sí. El
+`estado_de_progreso`, `estado_de_activacion`, `estado_de_preparacion` y `estado_de_paso`— porque
+varias lecturas por pantalla dan una foto inconsistente entre sí. El
 historial es la excepción a la regla de *una por superficie*, y a propósito: `hechos_de_cursada()` la
 comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda fuente histórica**.
 
@@ -389,10 +392,15 @@ comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda 
 un compromiso vencido pase a `DUE` y después a `MISSED` sin que nadie apriete nada. **Con qué
 frecuencia se lo llama es operación**, y [ADR-005](decisions.md#adr-005) la dejó `DEFERRED`.
 
-**Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment` y `Evidence`;
-`registrar_progreso`; `materializar_recomendacion` del ADE; e `ingerir_materia` del ADL. Todas
-publican su hecho en `product_event` **después** de que la escritura ganó — un evento de algo que
-perdió la carrera sería un hecho que no ocurrió.
+**Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment`, `Evidence` y
+`ExamPreparation`; `registrar_progreso`; `completar_paso_de_protocolo`;
+`materializar_recomendacion` del ADE; e `ingerir_materia` del ADL. Todas publican su hecho en
+`product_event` **después** de que la escritura ganó — un evento de algo que perdió la carrera sería
+un hecho que no ocurrió.
+
+**Cuatro entidades comparten `transiciones.ts`**, y es a propósito: `ExamPreparation` entró en la
+Fase B5 sin escribir una quinta copia de *leer con scoping → validar contra la máquina →
+compare-and-swap → publicar*. Las copias divergen en el orden, que es justo donde están los errores.
 
 ### 3.10 Frontera Plataforma ↔ CRM
 

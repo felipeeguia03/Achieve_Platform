@@ -71,14 +71,14 @@ TRACK B ─── cada fase tiene su gate ────────────�
        ↓
   Fase B1 · Fundación                  ✅ 6/6 · datos sintéticos
        ↓
-  Fase B2 · Dominio de ejecución       🟡 3 completas · 2 parciales
+  Fase B2 · Dominio de ejecución       ✅ 6/6
        ↓
-  Fase B3 · Progreso + eventos         🟢 B2 ✅ · progress_entry ya migrada
+  Fase B3 · Progreso + eventos         ✅ 3/3
        ↓
   ┌────┴─────────────────────────┐
   ↓                              ↓
-  Fase B4 · ADE v1 🟡            Fase B5 · Modo Examen real
-  Engine + reloj + base ✅        ✅ contenido (ADR-025) · ✅ readiness (ADR-011)
+  Fase B4 · ADE v1 ✅            Fase B5 · Modo Examen real ✅
+  validador + reloj corriendo     las 9 superficies leen de Postgres
   └────┬─────────────────────────┘
        ↓
   Fase B6 · Risk + Intervención + Operador   🟢 ADR-003 ✅
@@ -1503,7 +1503,7 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ---
 
-## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
+## Fase B2 — Dominio de ejecución · ✅ COMPLETA
 
 **Estado:** ✅ **6 / 6 — el 1 de septiembre de 2026.** `B2.4` cerró cuando el owner decidió
 `C01-051` ([ADR-026](decisions.md#adr-026)); `B2.5` pasó a ✅ el mismo día —su alcance era `UX01`
@@ -1916,11 +1916,15 @@ procedencia y el ADE tiene sobre qué decidir. Cargar una materia real requiere 
 > asesoría legal, `C01-042`, las 3 vulnerabilidades `high` de §3.1, `C01-030` y la identidad de
 > docente de [ADR-023](decisions.md#adr-023). **Todas antes de que entre una sola persona real.**
 
-## Fase B4 — ADE v1 y el reloj del lifecycle · 🟡 EN CURSO
+## Fase B4 — ADE v1 y el reloj del lifecycle · ✅ COMPLETA
 
-**Estado:** 🟡 Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**. El ADE
-ya materializa recomendaciones en la base y las seis superficies del loop diario proyectan estado
-persistido (Etapa B2.6, completa). Falta integrar el reloj a una ejecución operativa.
+> Esta sección es **el registro de cómo se construyó**. El cierre de la fase, con el validador
+> determinista y el reloj corriendo por endpoint, está más abajo en
+> [Fase B4 — Academic Decision Engine v1](#fase-b4--academic-decision-engine-v1--completa).
+
+**Estado:** ✅ Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**. El ADE
+materializa recomendaciones en la base y las seis superficies del loop diario proyectan estado
+persistido (Etapa B2.6). La ejecución operativa del reloj entró en la B4.2.
 
 #### ✅ El ADE conectado a la base · 30 de agosto de 2026
 
@@ -1989,9 +1993,9 @@ le perdona a alguien es una decisión pedagógica, no una función.
 
 ---
 
-## Fase B3 — Progreso, Bitácora y eventos
+## Fase B3 — Progreso, Bitácora y eventos · ✅ COMPLETA
 
-**Estado:** 🟢 **DESBLOQUEADA** — la Fase B2 cerró 6/6 el 1 de septiembre de 2026. **Con parte de la
+**Estado:** ✅ **3 / 3 — el 1 de septiembre de 2026.** La Fase B2 cerró 6/6 el mismo día. **Con parte de la
 estructura ya construida:** la Etapa B2.6 migró
 `progress_entry` (`data-model.md` §10) con `I10`, y `estado_de_progreso()` ya compone la Bitácora
 desde `product_event`.
@@ -2322,35 +2326,75 @@ hora.
 
 ## Fase B5 — Modo Examen real
 
-**Estado:** 🟢 **Contenido desbloqueado el 31 de agosto de 2026** por
-[ADR-025](decisions.md#adr-025): las ocho `HUMAN-P0` están respondidas por la psicopedagoga real. La
-estructura nunca estuvo bloqueada. **Y readiness se desbloqueó el 1 de septiembre de 2026:**
-[ADR-011](decisions.md#adr-011) decidió que **`PreparationReadiness` es la fuente canónica** —con su
-estado, sus señales, su explicación, la versión de la regla que lo calculó y sus overrides— y que
-`ExamPreparation` **no mantiene una segunda verdad**. La fase ya no tiene decisiones abiertas: queda
-sólo el trabajo, más los tres requisitos de schema que ADR-025 destapó.
+**Estado:** ✅ **COMPLETA — 1 de septiembre de 2026.**
 
-**Objetivo.** `ExamPreparation` real con `ExamProtocol` como configuración versionada.
+Con esto **las nueve superficies del estudiante leen de Postgres**. `UX07`, `UX08` y `UX09` eran las
+tres últimas que proyectaban fixtures, y la lista de superficies sin conectar quedó vacía.
 
-**Regla:** los pasos son configuración, nunca código. El contenido **ya no es una asunción del
-equipo**: se carga como `HUMAN-P0-0X v1.0` y se cita. Lo único que se sigue rotulando como abierto
-son los **residuos** que ADR-025 lista.
+### Lo que había que resolver antes de la primera migración, resuelto
 
-### Lo que hay que resolver antes de escribir la primera migración
+Las respuestas de [ADR-025](decisions.md#adr-025) trajeron tres requisitos que el schema de §10 no
+satisfacía. **Ninguno era de copy**, y los tres se cerraron con el owner antes de escribir una línea
+de SQL — porque una migración aplicada no se edita, y las tres afirmaciones habrían quedado
+congeladas en la base.
 
-Las respuestas trajeron tres requisitos que **el schema actual no satisface**. No son copy:
-
-| # | Qué | Dónde pega |
+| # | Qué decía el schema | Qué se decidió |
 |---|---|---|
-| 1 | **El tramo 9–18 es reentrante.** El estudiante vuelve sobre un tema, corrige y recupera de nuevo, varias veces. Hoy `protocol_step_completion` tiene `UNIQUE (exam_preparation_id, protocol_step_id)`: **un paso se completa una vez y no vuelve** | `data-model.md` §10 · `C01-026`, `C01-028` |
-| 2 | **La pauta de la cátedra manda** en la corrección, y **el ADL no tiene dónde guardarla**. Cargada por el estudiante entra `student`/`unverified` — el ingestor no puede declarar `institution` ni `instructor` ([ADR-023](decisions.md#adr-023)) | `data-model.md` §7 y §12 · `C01-027` |
-| 3 | **El núcleo H24 tiene siete componentes**, no uno. Incluye diagnóstico (*una prueba breve sin ayuda*) y **corrección de errores**, que el default anterior no contemplaba | Contenido del protocolo · `C01-034` |
+| 1 | `UNIQUE (exam_preparation_id, protocol_step_id)` — un paso se completa una vez y no vuelve | [ADR-028](decisions.md#adr-028) — **la completion es un hecho**: cada vuelta es una fila con su `occurrence` y **su tema**. La garantía vieja no se perdió: se volvió configurable en `protocol_step.is_reentrant` |
+| 2 | La pauta de la cátedra no tenía dónde vivir | [ADR-029](decisions.md#adr-029) — **`assessment_criterion` con Provenance completa**. Es la única forma de guardarla y a la vez negarse a decir que es oficial |
+| 3 | El núcleo H24 era un componente y `HUMAN-P0-04 v1.0` le da siete | [ADR-030](decisions.md#adr-030) — entra como **versión de protocolo propia**, transcripta literal, sin inventar a qué paso de los 20 corresponde cada componente |
 
-**Y una regla de producto que ya es firme:** repetir un paso **no es retroceder**. Ninguna superficie
-lo presenta como incumplimiento ni como pérdida de progreso ([`product.md`](product.md) §8.2).
+**Y una cuarta que no requirió decisión porque ya estaba tomada:** [ADR-011](decisions.md#adr-011).
+`ExamPreparation` **perdió** `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` —del `CHECK`, del tipo y
+de la máquina de transiciones—, y `preparation_readiness` es la fuente canónica. La segunda verdad no
+quedó desalentada: quedó imposible de escribir.
 
-**Contratos a cerrar:** `C01-005`, `C01-024`…`C01-029`. Los residuos de `C01-031`…`C01-038` **no los
-cierra esta fase**: los cierra la misma persona que respondió las ocho.
+### El hueco que apareció al ir a cargar el contenido
+
+`HUMAN-P0-01 v1.0` confirma la secuencia `PE-PSY-01…20` **como base**, y al ir a cargarla apareció
+esto: **el texto de esos 20 pasos no está en el repositorio.** Vive en el PDF del cuestionario y nunca
+se transcribió.
+
+O sea que lo que ADR-025 desbloqueó fue **el criterio**, no el contenido. Escribir los 20 desde los
+12 `EP-01…EP-12` del spec habría sido inventar criterio pedagógico. Así que corre `EP-SPEC v0.1`
+**rotulado como provisional en sus propias columnas**, y las superficies lo dicen en pantalla:
+*"contenido provisional del equipo, todavía sin confirmación profesional"*.
+
+Cargar los 20 el día que se transcriban es un `INSERT` y un `UPDATE is_current`. **Es la segunda vez
+que la decisión de tratar el protocolo como configuración versionada se paga sola.**
+
+### Etapas
+
+| Etapa | Qué entró |
+|---|---|
+| **B5.1** · La capa de examen | Siete tablas con RLS, índices y las tres correcciones de arriba. `action.exam_preparation_id` recibió su FK, que esperaba desde la B1.4 |
+| **B5.2** · El contenido, cargado y rotulado | `EP-SPEC v0.1` (12 pasos, provisional, por modalidad) y `HUMAN-P0-04 v1.0` (los 7 del núcleo de 24 h, criterio confirmado, transcripto literal) |
+| **B5.3** · El lifecycle | `examPreparationTransitions` sobre la maquinaria compartida de `Action` y `Commitment`, y `completar_paso_de_protocolo`, que asigna el ordinal **dentro de la transacción** |
+| **B5.4** · Las tres lecturas | `estado_de_activacion`, `estado_de_preparacion` y `estado_de_paso`: una por superficie, como las seis de la B2.6 |
+| **B5.5** · Las superficies conectadas | `UX07` escribe (`CTA-011` activa antes de navegar), `UX08` y `UX09` proyectan. Ninguna cae al fixture en silencio |
+
+### Lo que estas superficies siguen sin decir, y es la decisión
+
+- **Readiness.** Sin card, sin score, sin porcentaje. La tabla existe y **nadie la escribe**: los
+  umbrales son `C01-029`. Lo que sale es el `status` recibido con su descargo al lado.
+- **"Paso 5 de 12".** Prohibido por [`product.md`](product.md) §8.1, y desde `HUMAN-P0-01 v1.0`
+  además **falso**: en el tramo reentrante no existe "el siguiente".
+- **El paso actual.** `current_step_id` lo escribe el owner del protocolo y hoy nadie lo escribe.
+  `UX08` dice *"todavía no hay un paso para abrir"* en vez de elegir uno por posición en la lista.
+- **La ventana de recomendación.** `C01-024` sigue abierto: sin una preparación en `RECOMMENDED`,
+  `UX07` dice que no hay recomendación en vez de inventarse un umbral de días.
+
+### Un bug que apareció por el camino, y era viejo
+
+La fecha del examen salía **un día antes** en cualquier zona al oeste de UTC: `assessment_date` es un
+`DATE` y se estaba formateando como instante en la zona del estudiante, así que un Parcial del 15
+aparecía como del 14. **Ya estaba en `UX02` desde la Etapa B2.6**, y su test no lo vio porque
+comprobaba sólo el mes. Corregido en las tres superficies con `fechaDeCalendario`, y con un test que
+ahora compara el día.
+
+**Contratos:** `C01-026` y `C01-028` avanzan con ADR-028; `C01-027` con ADR-029 y ADR-030. Siguen
+abiertos `C01-029` (umbrales de readiness), `C01-031` y `C01-034` (obligatoriedad de los pasos),
+`C01-037` (peso de los criterios) y `C01-024` (la ventana). **Los cierra su owner, no esta fase.**
 
 ---
 
@@ -2415,6 +2459,7 @@ desvío, riesgo y recuperación.
 | **Las tres `high` de `npm audit`** ([ADR-008](decisions.md#adr-008)) | Cualquier despliegue | CTO — [brief](brief-adr-008-seguridad.md) |
 | **Los ocho residuos psicopedagógicos** ([ADR-025](decisions.md#adr-025)) | Intervención automática sobre personas reales | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
 | **El contrato de integración v2** | Fases B6 y B8 | CTO — [propuesta](platform-integration-contract.md) §2.1 |
+| **La transcripción de los 20 pasos `PE-PSY`** | Que el protocolo que ve un estudiante deje de ser una asunción del equipo. **No bloquea código:** corre `EP-SPEC v0.1` rotulado como provisional ([ADR-030](decisions.md#adr-030)) | Producto, con el PDF del cuestionario a la vista |
 
 ### ✅ La contradicción del Product Event Model, resuelta — [ADR-027](decisions.md#adr-027)
 
@@ -2447,11 +2492,21 @@ decisiones de producto están tomadas —visibilidad institucional, retención, 
 **el gate sigue cerrado**. Lo que se destrabó es que el producto dejó de construir contra el vacío;
 lo que falta es el dictamen. Las preguntas están en [`legal-package.md`](legal-package.md).
 
+✅ **Resueltos el 1 de septiembre de 2026, cerrando la Fase B5:** [ADR-028](decisions.md#adr-028)
+(**la completion de un paso es un hecho**, no un estado: se cayó el `UNIQUE` y cada vuelta lleva su
+tema), [ADR-029](decisions.md#adr-029) (**la pauta de la cátedra tiene entidad propia**, con
+Provenance, para guardarla sin declararla oficial) y [ADR-030](decisions.md#adr-030) (**el protocolo
+corre con contenido provisional y lo dice en sus columnas**).
+
 ✅ **Resuelto el 31 de agosto de 2026:** [ADR-007](decisions.md#adr-007) — **las ocho decisiones
 `HUMAN-P0` fueron respondidas por la psicopedagoga real.** Ver [ADR-025](decisions.md#adr-025) y la
-fuente literal en [`human-p0-source.md`](human-p0-source.md). **El contenido de la Fase B5 deja de
+fuente literal en [`human-p0-source.md`](human-p0-source.md). **El criterio de la Fase B5 deja de
 estar bloqueado.** Su readiness también, desde el 1 de septiembre: ver
 [ADR-011](decisions.md#adr-011).
+
+> ⚠️ **Lo que se desbloqueó fue el criterio, no el texto.** Al ir a cargar el protocolo apareció que
+> **el contenido de los 20 pasos `PE-PSY` nunca se transcribió al repositorio**: la hoja confirma la
+> secuencia, y el texto de cada paso vive en el PDF. Ver [ADR-030](decisions.md#adr-030).
 
 > **La Fase 0 está cerrada.** `ADR-016` sigue pendiente como deuda del registro canónico, pero el
 > recorrido de focus group declara la navegación del facilitador y ya no bloquea el cierre.
@@ -2470,11 +2525,11 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
-| Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: 11 de 12 invariantes con test, `I7` es de B5 | 6 / 6 |
+| Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: **los 12 invariantes tienen test** desde que la B5 migró `exam_preparation` e `I7` dejó de estar pendiente | 6 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
-| Fase B3 — Progreso y eventos | 🟡 **EN CURSO** — `B3.1` completa: el resultado se escribe con sus invariantes y `UX06` lo proyecta. Quién lo emite sigue siendo `C01-018` | 1 / 3 |
+| Fase B3 — Progreso y eventos | ✅ **COMPLETA** — el resultado se escribe con sus invariantes, el Product Event Model está declarado con guards en tres direcciones, y `UX02`/`UX06` comparten una sola fuente histórica. Quién emite el progreso sigue siendo `C01-018` | 3 / 3 |
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
-| Fase B5 — Modo Examen real | 🟢 **DESBLOQUEADA DEL TODO** — contenido por [ADR-025](decisions.md#adr-025) y readiness por [ADR-011](decisions.md#adr-011). **Es la fase grande que queda** | 0 / — |
+| Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**. Falta la **transcripción de los 20 pasos `PE-PSY`**, que es de una persona | 5 / 5 |
 | Fase B6 — Risk e Intervención | 🟢 **DESBLOQUEADA** — [ADR-003](decisions.md#adr-003) repartió: Achieve es canónico, Dashboard consume. Falta el contrato v2, que lleva el CTO | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |

@@ -18,18 +18,23 @@ debe implementar esos documentos y no reinterpretarlos. Antes de modificar el pr
   `⌘K`, la primitiva `Ausencia` y la cabecera de panel. La comparación lado a lado con las capturas
   está en [`docs/design-system-capturas.md`](docs/design-system-capturas.md) §14: **siete
   diferencias, seis cerradas**, y la séptima con su bloqueo escrito.
-- **Track B:** el MVP persistente avanza **sólo con datos sintéticos**. **Las fases B1, B2 y B3
-  están completas** (1 sep 2026):
+- **Track B:** el MVP persistente avanza **sólo con datos sintéticos**. **Las fases B1 a B5 están
+  completas** (1 sep 2026):
   - **B1 — Fundación.** Supabase local reproducible, capa académica y del estudiante, la frontera
     Controller → Service → Repository, `product_event` y `audit_log` append-only.
   - **B2 — Dominio de ejecución.** El loop diario persistido —`Action`, `Commitment`, `Evidence`,
-    `Reflection`— y **`UX01`–`UX06` leyendo de Postgres** con sesión real. `UX07`–`UX09` esperan a
-    la Fase B5 porque no hay tablas de examen.
+    `Reflection`— leyendo de Postgres con sesión real.
   - **B3 — Progreso, Bitácora y eventos.** El resultado de progreso se escribe con sus invariantes,
     el Product Event Model está declarado con su cobertura, y la Bitácora de `UX06` y la Actividad
     reciente de `UX02` salen de **una sola fuente histórica**.
+  - **B4 — ADE v1 y el reloj.** El validador determinista rechaza toda recomendación que afirme
+    dominio, progreso o readiness inexistente, **antes de materializar**; el reloj corre por
+    `POST /api/reloj` con secreto de servicio.
+  - **B5 — Modo Examen real.** La capa de examen, el protocolo como configuración versionada y
+    **las nueve superficies del estudiante leyendo de Postgres**. Readiness sigue sin calcularse:
+    los umbrales son `C01-029`.
 
-  La ingesta asistida del ADL, el ADE v1 determinista y el reloj del lifecycle también están
+  La ingesta asistida del ADL también está
   construidos. Cualquier flujo que toque un dato de una persona real sigue bloqueado por
   [ADR-006](docs/decisions.md#adr-006).
 - **El 1 de septiembre de 2026 el owner cerró tres decisiones y dejó una provisional:**
@@ -112,10 +117,9 @@ components/ui/   registro shadcn vendorizado · NO se edita
 
 El destino de cada CTA sale del registro canónico, no de un recorrido escrito a mano.
 
-**Las pantallas nunca importan un fixture.** Esa frontera ya permitió conectar `UX01` al backend
-sin tocar `components/screens/`; `UX02`–`UX06` mantienen el catálogo sintético hasta que tengan su
-proyección persistente, y `UX07`–`UX09` esperan a la Fase B5 porque proyectan entidades de examen que
-todavía no existen en la base. Hay un test estático que lo verifica.
+**Las pantallas nunca importan un fixture.** Esa frontera permitió conectar las nueve superficies al
+backend **sin tocar `components/screens/`**: cada página pide a `/api/*` y, con `?escenario=`,
+proyecta el catálogo sintético. Hay un test estático que lo verifica en las dos direcciones.
 
 ## Antes de tocar UI
 

@@ -162,13 +162,22 @@ const evidenceOwnerTransitions: Record<EvidenceState, EvidenceState[]> = {
 
 ```ts
 type ExamPreparationStatus =
-  | 'RECOMMENDED' | 'ACTIVE' | 'BUILDING' | 'READY_BY_PROTOCOL'
-  | 'NOT_READY' | 'BLOCKED' | 'EXAM_TAKEN' | 'CLOSED' | 'ABANDONED';
+  | 'RECOMMENDED' | 'ACTIVE' | 'BLOCKED'
+  | 'EXAM_TAKEN' | 'CLOSED' | 'ABANDONED';
+
+type PreparationReadinessState = 'NOT_READY' | 'BUILDING' | 'READY_BY_PROTOCOL';
 ```
 
-⚠️ Los valores `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` **colisionan** con la entidad separada
-`PreparationReadiness`. Esa contradicción es [ADR-011](decisions.md#adr-011) (`CR-UX08-01`), y hasta
-resolverla **no se implementa `PreparationReadiness` como tabla**.
+✅ **`CR-UX08-01`, cerrada por [ADR-011](decisions.md#adr-011) e implementada en la Fase B5.**
+`BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` **salieron del lifecycle**: son estados de
+`PreparationReadiness`, que es su única fuente. `ExamPreparation` referencia el readiness vigente por
+`readiness_id` y **no mantiene una segunda verdad**.
+
+Y la tabla de transiciones, que este documento no traía: sale de la máquina de
+[`product.md`](product.md) §5.4 quitándole los tres nodos de readiness, con lo que la cadena central
+se cierra en `ACTIVE → EXAM_TAKEN`. **No es un atajo nuevo**: es el mismo camino sin los nodos que
+dejaron de pertenecer a esta entidad. `BLOCKED` queda **sin salida declarada** —el diagrama no dibuja
+el retorno y `C01-025` sigue `OPEN`—, y deny-by-default: lo que nadie declaró, no se puede.
 
 ### 3.5 RiskSignal
 
@@ -751,23 +760,48 @@ CREATE TABLE progress_entry (
   idempotency_key      TEXT
 );
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Capa de examen — migrada en la Fase B5 (1 de septiembre de 2026).
+--
+-- Lo que sigue es el schema **real**, con las tres correcciones que el owner
+-- cerró antes de escribir la primera migración. Las tres estaban anotadas acá
+-- como brechas abiertas, y ninguna era de copy:
+--
+--   · ADR-028 — la completion de un paso es un hecho: se cayó el `UNIQUE`.
+--   · ADR-029 — la pauta de la cátedra tiene entidad propia, con Provenance.
+--   · ADR-030 — el contenido se carga rotulado, y `is_required` pasó a ternario.
+--
+-- Y ADR-011, que ya estaba decidida: readiness vive en `preparation_readiness`
+-- y `exam_preparation.status` perdió sus tres estados.
+-- ─────────────────────────────────────────────────────────────────────────────
+
 -- ExamProtocol como CONFIGURACIÓN VERSIONADA (ADR-007). Nunca hardcodeado.
 CREATE TABLE exam_protocol (
   id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  modality TEXT NOT NULL CHECK (modality IN ('practico','teorico_escrito')),
+  -- NULL ⇒ aplica a cualquier modalidad. El núcleo de 24 h no distingue
+  -- práctico de teórico en la fuente, y forzarle una modalidad sería inventar.
+  modality TEXT CHECK (modality IN ('practico','teorico_escrito')),
+  -- `NUCLEO_H24` es una versión aparte, no un paso del protocolo completo:
+  -- `HUMAN-P0-04 v1.0` le da siete componentes con su propio criterio de cierre.
+  alcance  TEXT NOT NULL DEFAULT 'COMPLETO'
+             CHECK (alcance IN ('COMPLETO','NUCLEO_H24')),
   version  TEXT NOT NULL,
   is_current BOOLEAN NOT NULL DEFAULT FALSE,
-  UNIQUE (modality, version)
+  CONSTRAINT protocolo_completo_tiene_modalidad
+    CHECK (alcance <> 'COMPLETO' OR modality IS NOT NULL),
+  UNIQUE NULLS NOT DISTINCT (modality, alcance, version)
 );
+-- Dos vigentes para la misma modalidad y alcance serían dos protocolos
+-- corriendo a la vez sobre el mismo estudiante.
+CREATE UNIQUE INDEX exam_protocol_una_vigente
+  ON exam_protocol (COALESCE(modality, ''), alcance) WHERE is_current;
 
 CREATE TABLE protocol_step (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   exam_protocol_id   UUID NOT NULL REFERENCES exam_protocol(id) ON DELETE CASCADE,
-  canonical_id       TEXT NOT NULL,       -- p.ej. 'PE-PSY-06'
-  -- ⚠️ BRECHA ABIERTA (ADR-025 / HUMAN-P0-01 v1.0): `sequence` asume un recorrido
-  -- lineal. La psicopedagoga confirmó que los pasos 9 a 18 NO lo son: el orden es
-  -- variable, modificable y transversal. Este campo ordena la LISTA, y no puede
-  -- usarse para derivar "el siguiente paso" en ese tramo.
+  canonical_id       TEXT NOT NULL,       -- p.ej. 'EP-06', 'H24-3'
+  -- Ordena la LISTA. **No deriva "el siguiente paso"**: `HUMAN-P0-01 v1.0` dice
+  -- que en el tramo reentrante el orden es variable, modificable y transversal.
   sequence           INTEGER NOT NULL,
   step_type          TEXT NOT NULL,
   label              TEXT NOT NULL,
@@ -775,16 +809,43 @@ CREATE TABLE protocol_step (
   explanation        TEXT,
   expected_artifact  TEXT,
   criterion          TEXT,
-  -- ⚠️ `C01-031` SIGUE ABIERTO: la respuesta profesional confirmó la secuencia y no
-  -- cambió ningún paso, pero NO declaró cuáles de los 20 son obligatorios.
-  is_required        BOOLEAN NOT NULL DEFAULT TRUE,
-  -- Rotula la procedencia del contenido pedagógico. Desde ADR-025 ya no rotula una
-  -- asunción del equipo sino CRITERIO PROFESIONAL CONFIRMADO: 'HUMAN-P0-01' / 'v1.0'.
-  -- Los defaults 'PROVISIONAL-HUMAN-P0-0X v0.1' quedan sólo en contenido histórico,
-  -- que no se reescribe.
-  provisional_default_id TEXT,            -- 'HUMAN-P0-01'
-  provisional_version    TEXT,            -- 'v1.0'
-  UNIQUE (exam_protocol_id, canonical_id)
+  -- Era `is_required BOOLEAN NOT NULL DEFAULT TRUE`, que **afirma** que los 20
+  -- pasos son obligatorios — y `C01-031` es exactamente esa pregunta, abierta.
+  -- Ternario, con el patrón de ADR-026: la ausencia tiene su propio valor.
+  requirement        TEXT NOT NULL DEFAULT 'NO_CONFIGURADA'
+                       CHECK (requirement IN ('NO_CONFIGURADA','OPCIONAL','OBLIGATORIO')),
+  -- `HUMAN-P0-01 v1.0`, literal: los pasos 9 a 18 se repiten. Es un dato del
+  -- paso, no un comentario: la reentrancia se consulta, no se recuerda.
+  is_reentrant       BOOLEAN NOT NULL DEFAULT FALSE,
+  -- Procedencia del contenido pedagógico. `EP-SPEC`/`v0.1` = asunción del
+  -- equipo; `HUMAN-P0-0X`/`v1.0` = criterio profesional confirmado (ADR-030).
+  provisional_default_id TEXT,
+  provisional_version    TEXT,
+  UNIQUE (exam_protocol_id, canonical_id),
+  UNIQUE (exam_protocol_id, sequence)
+);
+
+-- La pauta de la cátedra — ADR-029. `HUMAN-P0-07 v1.0` la vuelve la referencia
+-- determinante de la corrección, y el ADL no tenía dónde guardarla.
+--
+-- Lleva Provenance completa **y por eso se puede guardar sin mentir**: cargada
+-- por el estudiante entra `student`/`unverified` y la superficie la muestra como
+-- lo que el estudiante cargó. Sólo `institution`/`instructor` la presenta como
+-- criterio de cátedra. `I9` no se toca.
+CREATE TABLE assessment_criterion (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  assessment_id  UUID NOT NULL REFERENCES assessment(id) ON DELETE CASCADE,
+  criterion_text TEXT NOT NULL,
+  sequence       INTEGER,
+  -- `C01-037`, abierto. Un NULL **no se lee como "pesa poco"**.
+  weight         NUMERIC(4,3) CHECK (weight IS NULL OR weight BETWEEN 0 AND 1),
+  source_type    TEXT NOT NULL,
+  source_ref     TEXT,
+  observed_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  verification_status TEXT NOT NULL DEFAULT 'unverified',
+  rights_status  TEXT NOT NULL DEFAULT 'unknown',
+  uploaded_by    UUID
 );
 
 CREATE TABLE exam_preparation (
@@ -794,14 +855,20 @@ CREATE TABLE exam_preparation (
   student_id           UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
   course_enrollment_id UUID NOT NULL REFERENCES course_enrollment(id) ON DELETE CASCADE,
   exam_protocol_id     UUID REFERENCES exam_protocol(id) ON DELETE SET NULL,
+  -- **Sin los tres estados de readiness** (ADR-011): eran la segunda verdad.
   status               TEXT NOT NULL DEFAULT 'RECOMMENDED'
-                         CHECK (status IN ('RECOMMENDED','ACTIVE','BUILDING','READY_BY_PROTOCOL',
-                                           'NOT_READY','BLOCKED','EXAM_TAKEN','CLOSED','ABANDONED')),
-  -- ⚠️ Un único puntero. Compatible con el tramo reentrante 9-18 sólo si se lo lee
-  -- como "dónde está ahora", nunca como "hasta dónde llegó". Ver ADR-025.
+                         CHECK (status IN ('RECOMMENDED','ACTIVE','BLOCKED',
+                                           'EXAM_TAKEN','CLOSED','ABANDONED')),
+  -- "Dónde está ahora", **nunca** "hasta dónde llegó". Con el tramo reentrante
+  -- la segunda lectura es directamente falsa. Hoy **nadie lo escribe**, y por
+  -- eso las superficies dicen "todavía no hay un paso para abrir".
   current_step_id      UUID REFERENCES protocol_step(id) ON DELETE SET NULL,
+  -- En la migración real entra por `ALTER`: las dos tablas se referencian.
+  readiness_id         UUID REFERENCES preparation_readiness(id) ON DELETE SET NULL,
   activated_at         TIMESTAMPTZ,
-  -- Impide dos preparaciones para el mismo estudiante y evaluación.
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- `I7`. Hasta la Fase B5 el invariante no tenía dónde probarse.
   UNIQUE (student_id, assessment_id)
 );
 
@@ -809,31 +876,72 @@ ALTER TABLE action
   ADD CONSTRAINT action_exam_preparation_fk
   FOREIGN KEY (exam_preparation_id) REFERENCES exam_preparation(id) ON DELETE SET NULL;
 
--- Completion como HECHO, no como enum de estado por paso.
+-- ✅ Completion como HECHO — ADR-028.
 --
--- 🔴 BRECHA ESTRUCTURAL ABIERTA — ADR-025 / HUMAN-P0-01 v1.0.
--- Este UNIQUE dice "un paso se completa una vez y no vuelve". La psicopedagoga
--- confirmó lo contrario para el tramo 9-18: el estudiante avanza, vuelve sobre un
--- tema, recupera, detecta un error, corrige, practica y vuelve a recuperar, y esas
--- acciones "pueden darse varias veces sobre un mismo tema".
--- La Fase B5 NO se construye contra este schema sin resolverlo. NO se cambia acá:
--- cómo se modela la repetición (¿varias completions con `occurrence`? ¿completion
--- por tema y no por paso?) toca `C01-026` y `C01-028`, que siguen OPEN.
+-- Acá estaba `UNIQUE (exam_preparation_id, protocol_step_id)`, que decía "un
+-- paso se completa una vez y no vuelve". `HUMAN-P0-01 v1.0` dice lo contrario, y
+-- `product.md` §5.6 ya decía desde el principio que la completion es *"un hecho
+-- factual"* y no un enum de estado: **el `UNIQUE` era lo único que sostenía la
+-- lectura de estado**.
+--
+-- El tema es parte del hecho. La fuente no dice "varias veces": dice "varias
+-- veces sobre un mismo tema".
 CREATE TABLE protocol_step_completion (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id      UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
   exam_preparation_id UUID NOT NULL REFERENCES exam_preparation(id) ON DELETE CASCADE,
   protocol_step_id    UUID NOT NULL REFERENCES protocol_step(id) ON DELETE CASCADE,
+  -- NULL ⇒ no se trabajó sobre un tema en particular. **No es "todos"**.
+  topic_id            UUID REFERENCES topic(id) ON DELETE SET NULL,
+  -- 1, 2, 3… por (preparación, paso, tema). Lo asigna el escritor transaccional:
+  -- contarlo en el cliente es una condición de carrera.
+  occurrence          INTEGER NOT NULL CHECK (occurrence >= 1),
   completed_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   confirmed_by        UUID NOT NULL,
-  UNIQUE (exam_preparation_id, protocol_step_id)
+  idempotency_key     TEXT,
+  UNIQUE NULLS NOT DISTINCT (exam_preparation_id, protocol_step_id, topic_id, occurrence)
 );
+CREATE UNIQUE INDEX protocol_step_completion_idempotencia
+  ON protocol_step_completion (exam_preparation_id, idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
 
 CREATE TABLE protocol_artifact (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id   UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
   protocol_step_id UUID NOT NULL REFERENCES protocol_step(id) ON DELETE CASCADE,
   exam_preparation_id UUID NOT NULL REFERENCES exam_preparation(id) ON DELETE CASCADE,
   artifact_type    TEXT NOT NULL,
-  evidence_id      UUID REFERENCES evidence(id) ON DELETE SET NULL
+  evidence_id      UUID REFERENCES evidence(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- PreparationReadiness — la fuente canónica (ADR-011).
+--
+-- Con su explicación, sus señales y la versión de la regla que lo calculó. Un
+-- estado sin explicación es un veredicto, y este producto no emite veredictos
+-- sobre personas: `explanation` y `rule_version` son NOT NULL.
+--
+-- ⚠️ **Nadie la escribe todavía.** Los umbrales son `C01-029`, abierto.
+CREATE TABLE preparation_readiness (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id      UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  exam_preparation_id UUID NOT NULL REFERENCES exam_preparation(id) ON DELETE CASCADE,
+  state               TEXT NOT NULL
+                        CHECK (state IN ('NOT_READY','BUILDING','READY_BY_PROTOCOL')),
+  required_steps      JSONB NOT NULL DEFAULT '[]',
+  evidence_status     TEXT,
+  autonomous_practice BOOLEAN,
+  simulation          BOOLEAN,
+  critical_gaps       JSONB NOT NULL DEFAULT '[]',
+  explanation         TEXT NOT NULL,
+  rule_version        TEXT NOT NULL,
+  calculated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  overridden_by       UUID,
+  override_reason     TEXT,
+  overridden_at       TIMESTAMPTZ,
+  CONSTRAINT override_completo_o_ausente
+    CHECK ((overridden_by IS NULL AND override_reason IS NULL AND overridden_at IS NULL)
+        OR (overridden_by IS NOT NULL AND override_reason IS NOT NULL AND overridden_at IS NOT NULL))
 );
 
 CREATE TABLE risk_signal (
@@ -929,11 +1037,13 @@ Services (§3.2 de [`architecture.md`](architecture.md)).
 
 | Función | Qué hace | Por qué es una función y no varias consultas |
 |---|---|---|
-| `estado_del_dia` · `estado_de_materia` · `estado_de_accion` · `estado_de_compromiso` · `estado_de_evidencia` · `estado_de_progreso` | Una lectura por superficie | Varias lecturas por pantalla dan una foto **inconsistente entre sí** |
+| `estado_del_dia` · `estado_de_materia` · `estado_de_accion` · `estado_de_compromiso` · `estado_de_evidencia` · `estado_de_progreso` · `estado_de_activacion` · `estado_de_preparacion` · `estado_de_paso` | Una lectura por superficie. **Las nueve del estudiante, desde la Fase B5** | Varias lecturas por pantalla dan una foto **inconsistente entre sí** |
 | `hechos_de_cursada` | El historial de una cursada | **La única fuente histórica.** `UX02` pide 3 entradas y `UX06` todas; `VI.6` §8.3 prohíbe una segunda |
 | `registrar_progreso` | Escribe `progress_entry` + `topic_progress` + sus valores | Media escritura deja la Bitácora afirmando un cambio que las dimensiones no reflejan |
 | `materializar_recomendacion` | Crea la `Action` y su `ActionRecommendation` primaria | Nacen juntas o no nacen: media recomendación es peor que ninguna |
 | `ingerir_materia` | Carga una materia entera del ADL con su procedencia | Un programa a medias no es un programa |
+| `completar_paso_de_protocolo` | Agrega una vuelta al paso, con su ordinal | **El número de vuelta se asigna dentro de la transacción**: contarlo en el cliente da dos vueltas número 3 con dos pestañas abiertas |
+| `protocolo_vigente` | El protocolo de una evaluación, por modalidad | Una igualdad, no un fallback: sin protocolo para la modalidad devuelve **cero filas**, y eso es la respuesta (`C01-047`) |
 
 **Ninguna es un trigger.** §11 lo dice y hay guard: el único trigger del schema es el de
 `updated_at`. Una regla de negocio en un trigger es invisible desde el código de aplicación.
@@ -948,8 +1058,9 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 
 > **Dónde se audita — 1 de septiembre de 2026.** `tests/invariantes.test.ts` mantiene la tabla de qué
 > prueba cada invariante y **se compara contra esta sección**: si acá aparece un `I13` y nadie lo
-> prueba, ese test rompe. Hoy hay once con test; **`I7` no lo tiene porque `exam_preparation` no está
-> migrada** (Fase B5), y un guard rompe el día que se migre.
+> prueba, ese test rompe. **Desde la Fase B5 los doce tienen test.** `I7` era el único pendiente, y lo
+> era porque `exam_preparation` no estaba migrada; el guard rompió el día que la migración entró, que
+> es exactamente para lo que estaba escrito.
 
 | # | Invariante | Implementación |
 |---|---|---|
@@ -973,7 +1084,7 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 | Ausencia | Razón |
 |---|---|
 | Tabla `today_view` | `TodayView` es una **proyección efímera** sin identidad persistida (Parte VI §11.1) |
-| Tabla `preparation_readiness` | [ADR-011](decisions.md#adr-011): su owner canónico está en disputa |
+| ~~Tabla `preparation_readiness`~~ | ✅ **Existe desde la Fase B5.** [ADR-011](decisions.md#adr-011) la declaró fuente canónica. **Nadie la escribe todavía:** los umbrales son `C01-029` |
 | Columna `overall_progress` / `percentage` | No existe porcentaje universal de materia aprendida |
 | Columna `risk_score` numérico visible | La explicabilidad es obligatoria; un score opaco no es salida válida |
 | Entidad `Review` productiva | El spec usa `review_instance_ref`; no inventa una entidad `Review` |
@@ -982,8 +1093,9 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 | Estados `RESCUE_REQUIRED` / `RESCUE_MATERIALIZED` | Son **condiciones derivadas**, no estados persistidos |
 | Enum de estado por `ProtocolStep` | El spec no lo congela: solo hay un hecho de completion |
 | Tabla `student_model` | `C01-043` sigue `OPEN`: mencionado, no especificado |
-| **Pauta o criterio de evaluación de la cátedra** | `HUMAN-P0-07 v1.0` la vuelve **la referencia determinante** de la corrección, y el ADL no tiene dónde guardarla. No se inventa el campo: se resuelve al construir B5 con `C01-027`. Nota de procedencia: cargada por el estudiante entra `student` / `unverified`, porque el ingestor **no puede declarar `institution` ni `instructor`** ([ADR-023](decisions.md#adr-023)) |
-| **Repetición de un `ProtocolStep`** | El tramo 9–18 es reentrante (`HUMAN-P0-01 v1.0`) y hoy `protocol_step_completion` admite **una sola completion por paso**. Cómo se modela toca `C01-026` y `C01-028`, `OPEN` |
+| ~~**Pauta o criterio de evaluación de la cátedra**~~ | ✅ **`assessment_criterion`, desde la Fase B5** ([ADR-029](decisions.md#adr-029)). Con Provenance completa: cargada por el estudiante entra `student`/`unverified` y **no se eleva** (`I9`). Sigue abierto `C01-037`: qué pasa cuando la pauta contradice las familias generales |
+| ~~**Repetición de un `ProtocolStep`**~~ | ✅ **Resuelta por [ADR-028](decisions.md#adr-028):** se cayó el `UNIQUE`, cada vuelta es una fila con su `occurrence` y su `topic_id`. La garantía vieja no se perdió, se volvió configurable: `protocol_step.is_reentrant` |
+| **El contenido de los 20 pasos `PE-PSY`** | `HUMAN-P0-01 v1.0` confirma la **secuencia**; el **texto de cada paso nunca se transcribió al repositorio**. Hasta que esté, corre `EP-SPEC v0.1` —los 12 del spec— rotulado como provisional en sus propias columnas ([ADR-030](decisions.md#adr-030)) |
 
 ---
 

@@ -14,11 +14,13 @@ import {
   actionTransitions,
   commitmentTransitions,
   evidenceOwnerTransitions,
+  examPreparationTransitions,
 } from "@/lib/domain/state-machines";
 import { nombreDeEventoDeAction } from "@/lib/server/servicios/accion";
 import { NOMBRES_DE_EVENTO } from "@/lib/server/servicios/progreso";
 import { nombreDeEventoDeCommitment } from "@/lib/server/servicios/compromiso";
 import { nombreDeEventoDeEvidence } from "@/lib/server/servicios/evidencia";
+import { nombreDeEventoDePreparacion } from "@/lib/server/servicios/preparacion";
 
 /**
  * Etapa B3.2 — el Product Event Model, declarado y verificado.
@@ -53,6 +55,7 @@ function emitibles(): string[] {
     ...destinos(actionTransitions).map(nombreDeEventoDeAction),
     ...destinos(commitmentTransitions).map(nombreDeEventoDeCommitment),
     ...destinos(evidenceOwnerTransitions).map(nombreDeEventoDeEvidence),
+    ...destinos(examPreparationTransitions).map(nombreDeEventoDePreparacion),
   ];
   // Los que se publican con nombre literal, fuera de la maquinaria compartida.
   // **Se leen del código**, no de una lista acá: una lista a mano no se entera
@@ -111,6 +114,26 @@ describe("B3.2 · el catálogo y el código no se desincronizan", () => {
       expect(puedeEmitirse, `${nombre} está declarado como extensión y ya nadie lo emite`).toContain(
         nombre,
       );
+    }
+  });
+
+  /**
+   * El agujero que dejó la Fase B5, cerrado.
+   *
+   * Hasta acá el guard exigía que lo declarado como `EMITIDO` tuviera quién lo
+   * emitiera, **pero no al revés**: `ProtocolStepCompleted` y
+   * `ExamPreparationActivated` pasaron a emitirse y el catálogo los siguió
+   * declarando *pendientes por falta de tablas de examen*, en verde. Un
+   * catálogo que miente sobre lo que ya ocurre es peor que uno vacío.
+   */
+  it("nada declarado como pendiente se está emitiendo ya", () => {
+    const puedeEmitirse = new Set(emitibles());
+    for (const [nombre, evento] of Object.entries(catalogoP0)) {
+      if (evento.instrumentacion.estado !== "PENDIENTE") continue;
+      expect(
+        puedeEmitirse,
+        `${nombre} dice estar pendiente (${evento.instrumentacion.fase}) y el código ya lo emite`,
+      ).not.toContain(nombre);
     }
   });
 

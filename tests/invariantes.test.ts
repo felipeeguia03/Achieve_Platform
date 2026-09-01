@@ -79,22 +79,24 @@ const CUBIERTOS: Record<string, Invariante> = {
       "scripts/db-aislamiento.sh",
     ],
   },
+  // Migrada en la Fase B5. El `UNIQUE (student_id, assessment_id)` existe y se
+  // prueba contra Postgres: la segunda preparación para la misma evaluación
+  // choca. Estuvo pendiente exactamente mientras su tabla no existió.
+  I7: { cubiertoEn: ["scripts/db-aislamiento.sh"] },
   I10: { cubiertoEn: ["scripts/db-superficies.sh"] },
   I11: { cubiertoEn: ["scripts/db-aislamiento.sh", "scripts/db-superficies.sh"] },
   I12: { cubiertoEn: ["scripts/db-verificar.sh", "scripts/db-aislamiento.sh"] },
 };
 
 /**
- * El que **no se puede probar todavía**, y por qué.
+ * Los que **no se pueden probar todavía**, y por qué.
  *
- * `I7` habla de `ExamPreparation`, y esa tabla no está migrada: es la Fase B5,
- * que además arrastra tres requisitos de schema nuevos desde
- * [ADR-025](../docs/decisions.md#adr-025). Escribirle un test hoy exigiría crear
- * la tabla, o sea adelantar la fase para poner un tilde en un checklist.
+ * **Vacío desde la Fase B5.** `I7` era el único, y lo era porque
+ * `exam_preparation` no estaba migrada. El guard de abajo rompió el día que la
+ * migración entró, que es exactamente para lo que se escribió: los 12
+ * invariantes de `data-model.md` §11 tienen test.
  */
-const PENDIENTES: Record<string, { tabla: string; fase: string }> = {
-  I7: { tabla: "exam_preparation", fase: "B5" },
-};
+const PENDIENTES: Record<string, { tabla: string; fase: string }> = {};
 
 /** Los `I<n>` que declara la tabla de `data-model.md` §11, en su orden. */
 function invariantesDelDocumento(): string[] {
@@ -136,6 +138,11 @@ describe("Fase B2 · el Done: los invariantes de §11 tienen test", () => {
    * B5 migre `exam_preparation`, esto rompe hasta que se lo pruebe y se lo saque
    * de la lista.
    */
+  it("los 12 tienen test: no queda ninguno pendiente", () => {
+    expect(Object.keys(CUBIERTOS)).toHaveLength(12);
+    expect(PENDIENTES).toEqual({});
+  });
+
   it("un invariante pendiente lo está porque su tabla NO existe todavía", () => {
     const dir = resolve(RAIZ, "supabase/migrations");
     const sql = readdirSync(dir)

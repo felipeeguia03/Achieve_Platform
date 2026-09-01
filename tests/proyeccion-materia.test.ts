@@ -131,9 +131,12 @@ describe("B2.6 · lo que sí es un hecho", () => {
     expect(p.examen).toBe("Parcial 1");
   });
 
-  it("la evaluación con fecha la muestra en la zona del estudiante", () => {
+  it("la evaluación con fecha la muestra sin correrla un día", () => {
+    // Este test decía sólo `/.*sep/` y por eso no vio el bug durante dos fases:
+    // `assessment_date` es un `DATE` y se estaba formateando como instante en
+    // la zona del estudiante, así que un examen del 10 salía como del 9.
     const p = proyectarMateria({ ...base, examen: { titulo: "Parcial 1", fechaEn: "2026-09-10" } });
-    expect(p.examen).toMatch(/Parcial 1 · .*sep/);
+    expect(p.examen).toBe("Parcial 1 · jue 10 sept");
   });
 
   it("sin contexto de cursado, el estado lo dice y el aviso no lo repite", () => {

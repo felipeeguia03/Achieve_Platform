@@ -287,9 +287,16 @@ alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el
 
 En el Track B, hoy:
 
-- **`UX01`–`UX06` leen de Postgres** con sesión real, cada una con una función de lectura propia, y
-  ninguna cae al fixture en silencio. El catálogo sintético sigue disponible bajo `?escenario=`.
-  `UX07`–`UX09` esperan a la Fase B5: no hay tablas de examen.
+- **Las nueve superficies leen de Postgres** con sesión real, cada una con una función de lectura
+  propia, y ninguna cae al fixture en silencio. El catálogo sintético sigue disponible bajo
+  `?escenario=`. `UX07`–`UX09` se conectaron en la Fase B5.
+- **Modo Examen existe.** El protocolo es **configuración versionada**: sus pasos se cargan con
+  `INSERT`, nunca se hardcodean. Y hoy corre `EP-SPEC v0.1`, que es **una asunción del equipo** —el
+  texto de los 20 `PE-PSY` nunca se transcribió— rotulada como tal en la pantalla
+  ([ADR-030](docs/decisions.md#adr-030)). ⚠️ **Readiness no se calcula:** sin card, sin score, sin
+  porcentaje, y **nunca "paso 5 de 12"**.
+- **Repetir un paso no es retroceder.** Cada vuelta es un hecho más
+  ([ADR-028](docs/decisions.md#adr-028)); el copy dice *"volviste sobre"*, nunca *"repetiste"*.
 - **El loop diario está persistido entero** — `Action`, `Commitment`, `Evidence` y `Reflection`,
   esta última desde que [ADR-026](docs/decisions.md#adr-026) decidió `C01-051`.
 - **El progreso se escribe con sus invariantes** y `UX06` lo proyecta. ⚠️ **El Service recibe el

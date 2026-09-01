@@ -437,6 +437,15 @@ export interface OpcionDeEvaluacion {
 
 export interface ActivacionExamenProps {
   estado: EstadoActivacion;
+  /**
+   * La `ExamPreparation` sobre la que actúa `CTA-011`. **No se muestra.**
+   *
+   * Está acá porque una CTA que escribe tiene que nombrar su objeto: sin esto,
+   * la pantalla activaría "la preparación que el servidor decida", y elegir cuál
+   * es la elegibilidad que `C01-024` deja abierta. `null` ⇒ no hay nada que
+   * activar, y entonces tampoco hay CTA.
+   */
+  preparacionId: string | null;
   /** El `CourseEnrollment` de origen. Materia y comisión NO son selectores. */
   materia: string;
   comision: string | null;

@@ -917,12 +917,19 @@ escribir y no tiene dónde poner lo que hace que readiness sea legible: **la exp
 que lo produjeron y la versión de la regla**. Un estado sin su explicación es un veredicto, y este
 producto no emite veredictos sobre personas.
 
-### Qué falta para ejecutarla
+### ✅ Ejecutada — Fase B5, 1 de septiembre de 2026
 
-La decisión está tomada; **la implementación es de la Fase B5**, que todavía no tiene tablas de
-examen. Cuando se escriba esa migración, esta decisión es la que manda. Los umbrales —qué cuenta como
-señal suficiente— tienen insumo de [ADR-025](#adr-025): `HUMAN-P0-05` define qué es señal de
-aprendizaje y `HUMAN-P0-04` qué es el núcleo mínimo con menos de 24 horas.
+La tabla `preparation_readiness` existe, con estado, señales, explicación **obligatoria**, versión de
+la regla que lo calculó, fecha de cálculo y overrides. Y `ExamPreparation` **perdió los tres estados
+de readiness**: `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` salieron de su `CHECK`, del tipo
+`ExamPreparationStatus` y de la máquina de transiciones. La segunda verdad no quedó desalentada:
+quedó imposible de escribir.
+
+> ⚠️ **Nadie escribe esa tabla todavía, y no es un olvido.** Los umbrales son `C01-029`, abierto: qué
+> cuenta como señal suficiente lo fija la psicopedagoga con el insumo de `HUMAN-P0-04` y
+> `HUMAN-P0-05`. Hasta entonces rige lo que este ADR dejó vigente —**sin card, sin score, sin
+> cálculo**— y `UX08` muestra el `status` recibido con su descargo al lado. La tabla existe para que
+> el día que haya regla no haya además que decidir dónde vive el resultado.
 
 ### Lo que estuvo vigente mientras el ADR estuvo abierto
 
@@ -2057,3 +2064,172 @@ que los produce.
 Y quedan **dos nombres que el P0 usa y el código no**: `CommitmentCreated`, que el backend emite como
 `CommitmentConfirmed` —por el estado al que transiciona—, y que no se renombra por la misma regla de
 compatibilidad.
+
+---
+
+<a id="adr-028"></a>
+## ADR-028 — La completion de un paso es un hecho, no un estado
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** el requisito de schema #1 de la Fase B5. Avanza `C01-026` y `C01-028`.
+**Toca:** `data-model.md` §10, `product.md` §5.6 y §8.2.
+
+### Contexto
+
+`HUMAN-P0-01 v1.0` dice, textual, que en el tramo 9–18 *"el estudiante puede avanzar, volver sobre un
+tema, recuperar, detectar un error, corregir, practicar, repasar y de nuevo recuperar. Incluso algunas
+de estas acciones pueden darse varias veces sobre un mismo tema"*.
+
+El schema de `data-model.md` §10 decía lo contrario, y lo decía en una línea:
+
+```sql
+UNIQUE (exam_preparation_id, protocol_step_id)
+```
+
+**Un paso se completa una vez y no vuelve.** Construir la Fase B5 sobre eso habría congelado en la
+base una afirmación que el criterio profesional confirmado contradice.
+
+### Decisión
+
+**Se cae el `UNIQUE`. Cada vuelta es una fila más**, con dos columnas nuevas:
+
+| Columna | Qué guarda |
+|---|---|
+| `occurrence` | El ordinal de la vuelta, asignado **dentro de la transacción** |
+| `topic_id` | El tema sobre el que se volvió. `NULL` ⇒ no se sabe, **no** "todos" |
+
+**El tema es parte del hecho.** La fuente no dice "varias veces", dice *"varias veces sobre un mismo
+tema"*: sin el tema, la repetición se puede contar pero no se puede leer, y la superficie tendría que
+decir *"repetiste el paso 12"* en vez de *"volviste sobre Series"*.
+
+**La garantía vieja no se pierde: se vuelve configurable.** `protocol_step.is_reentrant` viaja con el
+contenido del protocolo, y un paso no reentrante conserva exactamente el comportamiento del `UNIQUE`
+—se completa una vez—. La regla pedagógica vive en la configuración, que es donde `HUMAN-P0-01` la
+puso.
+
+**Y `ProtocolStepCompleted` se emite por cada vuelta**, no sólo por la primera. Un evento que marcara
+únicamente la primera pasada convertiría a las siguientes en trabajo invisible.
+
+### Por qué esta forma y no la otra
+
+Las alternativas eran conservar el `UNIQUE` con una tabla de "revisitas" al lado, o hacer la
+completion única por tema.
+
+La primera crea **dos verdades sobre el mismo hecho** y obliga a toda lectura de historia a unir dos
+tablas; peor, privilegia la primera pasada sobre las demás, que es justamente lo que la profesional
+negó. La segunda es más chica pero pierde la repetición sobre el **mismo** tema, que es literalmente
+lo que la fuente describe.
+
+Y hay un argumento que ya estaba escrito: `product.md` §5.6 dice desde el principio que *"no existe un
+enum de estado por paso congelado; sólo hay un hecho factual de completion"*. **El `UNIQUE` era lo
+único que sostenía la lectura de estado.** Sacarlo alinea el schema con la regla que el producto ya
+declaraba.
+
+### Regla de producto que va con la decisión
+
+**Repetir no es retroceder.** Ninguna superficie presenta una repetición como incumplimiento, recaída
+ni pérdida de progreso. El copy dice *"volviste sobre"* y *"lo trabajaste N veces"*, nunca
+*"repetiste"*; hay tests que lo verifican sobre las tres superficies de examen.
+
+---
+
+<a id="adr-029"></a>
+## ADR-029 — La pauta de la cátedra tiene entidad propia, con Provenance
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** el requisito de schema #2 de la Fase B5. Avanza `C01-027`.
+**Relacionado:** `C01-037` (peso relativo de cada criterio), `I9`, [ADR-023](#adr-023).
+
+### Contexto
+
+`HUMAN-P0-07 v1.0` convierte la pauta de la cátedra en **la referencia determinante** de la
+corrección: *"siempre tomando como referencia la pauta o criterio de evaluación de la cátedra porque
+en definitiva es lo que va a determinar qué se espera del estudiante en ese examen"*.
+
+Y el Academic Data Layer **no tenía dónde guardarla**. Peor: cargada por el estudiante entra
+`student`/`unverified` ([ADR-023](#adr-023)), y `I9` prohíbe elevar la procedencia. Una pauta
+`unverified` presentada como *"criterio de la cátedra"* sería exactamente esa elevación.
+
+### Decisión
+
+Entidad propia — `assessment_criterion` — colgando del `Assessment`, **con las columnas de Provenance
+que ya lleva todo dato académico discutible**.
+
+**Es la única forma de guardar la pauta y a la vez negarse a decir que es oficial.** Con
+`source_type = student` la superficie la muestra como *lo que el estudiante cargó*; sólo
+`institution` o `instructor` la presenta como criterio de cátedra. `I9` no se toca.
+
+`weight` existe y admite `NULL`: `C01-037` —el peso relativo de cada criterio— sigue abierto, y un
+`NULL` **no se lee como "pesa poco"**.
+
+### Por qué no un adjunto
+
+Guardarla como archivo del `Assessment` era más barato y deja el criterio **enterrado**: el motor no
+puede citar *procedimiento* o *claridad* por separado, y `C01-037` no tendría dónde aterrizar el día
+que se cierre. Un PDF no es un criterio consultable.
+
+### Lo que esta decisión NO cierra
+
+`C01-037` sigue `OPEN`: **qué pasa cuando la pauta de la cátedra contradice las familias generales**
+de `HUMAN-P0-07`. La entidad guarda las dos cosas; cuál gana lo decide una persona.
+
+---
+
+<a id="adr-030"></a>
+## ADR-030 — El protocolo corre con contenido provisional, y lo dice en sus columnas
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Cierra:** el requisito de schema #3 de la Fase B5. Avanza `C01-027`.
+
+### Contexto — un hueco que nadie había visto
+
+`HUMAN-P0-01 v1.0` confirma la secuencia `PE-PSY-01…20` **como base**. Al ir a cargarla apareció
+esto: **el contenido de esos 20 pasos no está en el repositorio.** Vive en el PDF del cuestionario y
+nunca se transcribió. Lo único que hay son los 12 `EP-01…EP-12` del spec, que `product.md` §8.1
+rotula como *"arquitectura funcional provisional"* del equipo.
+
+Es decir: la Fase B5 estaba marcada como *"contenido desbloqueado"* y lo que se desbloqueó fue **el
+criterio**, no el texto. Escribir los 20 desde los 12 habría sido inventar criterio pedagógico, que es
+lo único que `AGENTS.md` prohíbe sin excepción.
+
+### Decisión
+
+Se carga `EP-SPEC v0.1` —los 12 del spec— **rotulado como provisional en sus propias columnas**:
+`provisional_default_id = 'EP-SPEC'`, `provisional_version = 'v0.1'`. Las superficies leen ese rótulo
+y lo dicen: *"contenido provisional del equipo, todavía sin confirmación profesional"*.
+
+**El día que la hoja se transcriba, cargar los 20 es un `INSERT` y un `UPDATE is_current`.** No hay
+migración de dominio: es exactamente para esto que el protocolo se diseñó como configuración
+versionada, y es la segunda vez que esa decisión se cobra sola.
+
+### Y una versión que sí es criterio confirmado
+
+En la misma migración entra **`HUMAN-P0-04 v1.0`, el núcleo de las últimas 24 horas**, transcripto
+literal de la respuesta profesional: *situación real y logística · contenidos críticos · una prueba
+breve sin ayuda · priorización · práctica parecida al examen · corrección de los errores importantes ·
+descanso y estrategia*.
+
+**Son siete componentes, no uno.** El default que corría antes —*"consolidar y no incorporar contenido
+nuevo"*— era uno solo, y la profesional lo acotó: eso *"supone un ideal en el que ya todos los temas
+fueron vistos, comprendidos y aprendidos"*.
+
+Entra como **una versión de protocolo aparte**, con `alcance = 'NUCLEO_H24'`, y no como un paso del
+protocolo completo: siete componentes con su propio criterio de cierre son un protocolo. Modelarlo así
+permitió cargarlo **sin inventar a qué paso de los 20 corresponde cada uno**, que es lo que `C01-034`
+deja abierto.
+
+### Una corrección al schema que vino con esto
+
+`data-model.md` §10 declaraba `is_required BOOLEAN NOT NULL DEFAULT TRUE`, que **afirma que los 20
+pasos son obligatorios**. `C01-031` es exactamente esa pregunta y sigue abierta.
+
+Un booleano no tiene dónde poner *"todavía nadie lo declaró"*, así que la columna pasó a ser ternaria
+con el patrón que [ADR-026](#adr-026) ya fijó para `Reflection`: `NO_CONFIGURADA` / `OPCIONAL` /
+`OBLIGATORIO`. Los siete del núcleo H24 quedan `NO_CONFIGURADA` porque `C01-034` pregunta si son
+obligatorios o priorizables, y en qué orden se sacrifican cuando no entran todos.
+
+### Lo que esta decisión NO cierra
+
+**La transcripción de los 20 `PE-PSY`.** Es trabajo de una persona con el PDF a la vista, y hasta que
+esté, el protocolo completo que ve un estudiante es una asunción del equipo — declarada como tal en
+pantalla, no escondida.

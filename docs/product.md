@@ -255,19 +255,29 @@ EXPECTED → SUBMITTED ─┬→ UNDER_REVIEW ─┬→ SUFFICIENT → VALIDATED
 ### 5.4 ExamPreparation
 
 ```
-RECOMMENDED → ACTIVE → BUILDING → READY_BY_PROTOCOL → EXAM_TAKEN → CLOSED
-                    ↘ NOT_READY / BLOCKED
+RECOMMENDED → ACTIVE → EXAM_TAKEN → CLOSED
+                    ↘ BLOCKED
                     ↘ ABANDONED (conserva historial)
 ```
 
+✅ **[ADR-011](decisions.md#adr-011), implementada en la Fase B5.** `BUILDING`, `READY_BY_PROTOCOL` y
+`NOT_READY` **salieron de este lifecycle**: son estados de `PreparationReadiness`, su única fuente.
+La cadena central se cierra en `ACTIVE → EXAM_TAKEN`, que no es un atajo nuevo sino el mismo camino
+sin los nodos que dejaron de pertenecer a esta entidad.
+
 **Invariantes:**
 - Activar produce `ACTIVE` y **nada más**: no crea Action, Commitment, Evidence, Progress, protocolo
-  completo ni readiness.
+  completo ni readiness. Lo único que se anota además es **contra qué versión del protocolo corre**,
+  que no es crear un protocolo: sin eso, cambiar la versión vigente le reescribiría el recorrido a
+  alguien que ya arrancó.
+- **La activación es siempre del estudiante.** El spec fuente lo fija: *"la misma entrada produce
+  siempre `RECOMMENDED` → CTA → `ACTIVE`"*. No existe camino que cree una preparación ya activa.
 - `READY_BY_PROTOCOL` significa que se cumplieron las condiciones del protocolo vigente.
   **No predice ni garantiza aprobación.** Nunca se dice "listo para rendir".
 - Volver a Cursado, al Overview o a Hoy **no** abandona la preparación.
-- Ver [ADR-011](decisions.md#adr-011) sobre la contradicción entre este `status` y la entidad
-  `PreparationReadiness`.
+- `BLOCKED` **no tiene salida declarada**, y no se le inventa una: el diagrama no dibuja el retorno y
+  `C01-025` sigue `OPEN`.
+- Abandonar **conserva el historial**: es un estado, no un borrado. Sus completions quedan.
 
 ### 5.5 RiskSignal
 
@@ -294,8 +304,16 @@ subir Evidence, ni ninguno de los estados `SUBMITTED`, `UNDER_REVIEW`, `SUFFICIE
 **Y un paso completado puede volver a trabajarse.** `HUMAN-P0-01 v1.0` confirma que en el tramo 9–18
 —estudio, recuperación, revisión y práctica— el recorrido es reentrante: el estudiante vuelve sobre
 un tema, corrige y recupera de nuevo, **varias veces sobre el mismo tema**. Repetir un paso **no es
-retroceder** y no se presenta como incumplimiento ni como pérdida de progreso. El modelo de datos
-todavía no admite esto — ver §8.2.
+retroceder** y no se presenta como incumplimiento ni como pérdida de progreso.
+
+✅ **El modelo de datos ya lo admite** ([ADR-028](decisions.md#adr-028)): cada vuelta es una fila con
+su ordinal y su tema, y `ProtocolStepCompleted` se emite **una vez por vuelta**. La reentrancia viaja
+con el contenido del protocolo (`protocol_step.is_reentrant`), no con el código: un paso no
+reentrante conserva la garantía de completarse una sola vez.
+
+**Completar un paso no es progreso.** Sigue estando en la lista de arriba, y ahora que las
+completions existen importa más: `UX08` las muestra como pasos trabajados, nunca como dimensiones
+cambiadas.
 
 ---
 
@@ -435,18 +453,22 @@ provisional**. La propia fuente prohíbe hardcodearlos. Por eso:
 reglas. Con el protocolo como configuración, eso es cargar otra versión; hardcodeado, habría sido
 migrar el dominio para cambiar una regla pedagógica.
 
-### 8.2 El tramo 9–18 es reentrante — y todavía no hay modelo para eso
+### 8.2 El tramo 9–18 es reentrante — ✅ y el modelo ya lo admite
 
 `HUMAN-P0-01 v1.0` dice que en estudio, recuperación, revisión y práctica el estudiante **avanza,
 vuelve sobre un tema, recupera, detecta un error, corrige, practica, repasa y vuelve a recuperar**, y
 que **algunas de esas acciones pueden darse varias veces sobre el mismo tema**.
 
-El modelo de examen de [`data-model.md`](data-model.md) §10 asume hoy lo contrario: hay un
-`sequence` obligatorio por paso, un único `current_step_id`, y **una sola completion por paso**
-(`UNIQUE (exam_preparation_id, protocol_step_id)`). **Un paso se completa una vez y no vuelve.**
+El modelo de examen de [`data-model.md`](data-model.md) §10 asumía lo contrario: **una sola completion
+por paso**, `UNIQUE (exam_preparation_id, protocol_step_id)`. Un paso se completaba una vez y no
+volvía.
 
-Es una brecha estructural, no de copy, y la Fase B5 no se construye contra el schema actual sin
-resolverla. Consecuencias que ya son firmes, aunque el schema cambie:
+✅ **[ADR-028](decisions.md#adr-028) lo cerró antes de la primera migración de la Fase B5.** El
+`UNIQUE` se cayó, cada vuelta es una fila con su `occurrence` y **su `topic_id`** —la fuente no dice
+"varias veces", dice *"varias veces sobre un mismo tema"*—, y la garantía vieja no se perdió: se
+volvió configurable en `protocol_step.is_reentrant`.
+
+Las consecuencias siguen siendo las mismas, y ahora tienen dónde verificarse:
 
 - **Volver sobre un tema no es retroceder.** Ninguna superficie presenta una repetición como
   incumplimiento, recaída ni pérdida de progreso.
@@ -464,12 +486,14 @@ reglas visibles del producto **sí** siguen corriendo sobre un default no cerrad
 
 | Regla | Estado | Referencia |
 |---|---|---|
-| Activación de Modo Examen a los **14 días** | **Default UX documentado, no regla pedagógica rígida.** La UI **no calcula la ventana**: consume una señal ya emitida | `C01-024`, `SCP-01`/`SCP-02` |
-| Owner canónico de readiness | **La contradicción es estructural, no pedagógica:** las respuestas de la psicopedagoga **no la tocan**. Sin card, sin score, sin cálculo | `C01-029`, [ADR-011](decisions.md#adr-011) |
+| Activación de Modo Examen a los **14 días** | **Default UX documentado, no regla pedagógica rígida.** La UI **no calcula la ventana**: consume una señal ya emitida. Desde la Fase B5 esa señal es concreta —una preparación en `RECOMMENDED`— y **nadie la emite todavía**: sin ella `UX07` dice que no hay recomendación, en vez de inventarse un umbral de días | `C01-024`, `SCP-01`/`SCP-02` |
+| Owner canónico de readiness | ✅ **Cerrado e implementado:** `PreparationReadiness` es la fuente canónica y `ExamPreparation` perdió sus tres estados. **Sigue sin card, sin score y sin cálculo**, porque los umbrales son otra cosa | ✅ [ADR-011](decisions.md#adr-011) |
 | Umbrales de `BUILDING` → `READY_BY_PROTOCOL` | Criterios generales definidos; umbrales exactos pendientes. **Ya hay insumo profesional** para fijarlos: `HUMAN-P0-04` y `HUMAN-P0-05` | `C01-029` |
 | Obligatoriedad de `Reflection` | **Tres estados**, no dos: `NO_CONFIGURADA` no ofrece nada, `OPTIONAL` ofrece la `CTA-016` y omitirla es válido, `REQUIRED` bloquea **sólo el submit dependiente**. Vive en la Action y en el paso del protocolo, **congelado al crearlos**; el default del loop diario es `OPTIONAL` | ✅ [ADR-026](decisions.md#adr-026) · residuo: en qué pasos del protocolo es obligatoria |
-| Secuencia y criterio de cierre del Exam Protocol | **La secuencia dejó de estar abierta** (`HUMAN-P0-01 v1.0`). Sigue abierto **el criterio de cierre**, y ahora también **cómo se modela el tramo reentrante 9–18** — ver §8.2 | `C01-027` |
-| Dónde vive la **pauta de la cátedra** | `HUMAN-P0-07 v1.0` la vuelve la referencia determinante de la corrección, y **el ADL no tiene entidad ni campo para guardarla**. No se inventa: se resuelve al construir B5 | `C01-027`, [ADR-025](decisions.md#adr-025) |
+| Secuencia y criterio de cierre del Exam Protocol | **La secuencia dejó de estar abierta** (`HUMAN-P0-01 v1.0`) y **el tramo reentrante ya tiene modelo** ([ADR-028](decisions.md#adr-028)). Sigue abierto **el criterio de cierre** | `C01-027` |
+| Dónde vive la **pauta de la cátedra** | ✅ **`assessment_criterion`, con Provenance completa.** Cargada por el estudiante entra `student`/`unverified` y no se eleva. Sigue abierto qué pasa cuando **contradice** las familias generales | ✅ [ADR-029](decisions.md#adr-029) · residuo: `C01-037` |
+| **El texto de los 20 pasos `PE-PSY`** | La secuencia está confirmada; **el contenido de cada paso nunca se transcribió al repositorio.** Corre `EP-SPEC v0.1` —los 12 del spec— rotulado como provisional en pantalla | ✅ [ADR-030](decisions.md#adr-030) · falta la transcripción |
+| **Cuáles pasos son obligatorios** | `protocol_step.requirement` es ternario y todos están en `NO_CONFIGURADA`. El booleano anterior afirmaba que los 20 eran obligatorios | `C01-031`, `C01-034` |
 | `TopicProgress` y resumen de materia | Semántica técnica pendiente, **más la reconciliación de vocabularios** que abre `HUMAN-P0-02` — ver §6 | `C01-019` (gate `H`) |
 | Contenido ejecutable de Action y Resource | Pendiente | `C01-008` (gate `H`) |
 
@@ -590,9 +614,13 @@ institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`
 
 > **El catálogo ejecutable vive en `lib/domain/product-events.ts`** desde la Etapa B3.2, con **la
 > cobertura real**: cuáles se emiten hoy, cuáles esperan a qué fase y cuáles se le muestran al
-> estudiante en la Bitácora. De los 23 se emiten 9 — los ocho del loop diario más `RescueSucceeded`,
-> instrumentado en la B3.3. Hay guard en las dos direcciones: ningún evento emitible queda sin
-> declarar, y ninguno declarado como emitido se queda sin emisor.
+> estudiante en la Bitácora. **De los 23 se emiten 11** desde la Fase B5: los ocho del loop diario,
+> `RescueSucceeded` (B3.3) y los dos de examen —`ExamPreparationActivated` y `ProtocolStepCompleted`—.
+> Hay guard en **tres** direcciones: ningún evento emitible queda sin declarar, ninguno declarado como
+> emitido se queda sin emisor, y **nada declarado como pendiente se está emitiendo ya**. El tercero se
+> agregó en la B5, cuando esos dos eventos pasaron a emitirse y el catálogo los siguió declarando
+> *"pendientes por falta de tablas de examen"* en verde. Un catálogo que miente sobre lo que ya
+> ocurre es peor que uno vacío.
 
 | Evento | Cuándo |
 |---|---|
@@ -609,9 +637,9 @@ institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`
 | `EvidenceSubmitted` | Evidencia recibida. **Una vez por Evidence canónica** |
 | `EvidenceValidated` | Evidencia validada |
 | `ProgressUpdated` | Cambió `TopicProgress`/`CourseProgress`. **Único evento que habilita mostrar un cambio confirmado** |
-| `ExamPreparationRecommended` | Modo Examen recomendado |
-| `ExamPreparationActivated` | El alumno activó la preparación |
-| `ProtocolStepCompleted` | Hito cerrado |
+| `ExamPreparationRecommended` | Modo Examen recomendado. **Sin emisor todavía:** cuándo aparece la señal es `C01-024` |
+| `ExamPreparationActivated` | El alumno activó la preparación. ✅ Emitido desde la Fase B5 |
+| `ProtocolStepCompleted` | Hito cerrado. ✅ Emitido desde la Fase B5, **una vez por vuelta** ([ADR-028](decisions.md#adr-028)) |
 | `SimulationCompleted` | Simulación registrada |
 | `RiskSignalCreated` | Señal generada |
 | `InterventionStarted` / `InterventionResolved` | Intervención humana |

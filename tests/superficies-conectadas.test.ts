@@ -26,7 +26,12 @@ const RUTA = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
  * y **nadie escribe esa tabla todavía**. Lo que se agregó es la estructura y su
  * invariante `I10`; la proyección se sigue negando a mostrar magnitudes.
  *
- * `UX07`–`UX09` no están: no hay tablas de examen (Fase B5).
+ * `UX07`–`UX09` **entraron el 1 de septiembre de 2026** con la Fase B5: la capa
+ * de examen existe, el protocolo se carga como configuración versionada y las
+ * tres proyectan desde Postgres. La lista de no conectadas quedó **vacía**, y el
+ * bloque que la recorre se conserva a propósito: el día que aparezca una
+ * superficie nueva sin backend, tiene dónde declararse en vez de aparecer
+ * conectada a medias.
  */
 const CONECTADAS = [
   { ux: "UX01", pagina: "app/(student)/hoy/page.tsx", api: "/api/hoy" },
@@ -35,13 +40,13 @@ const CONECTADAS = [
   { ux: "UX04", pagina: "app/(student)/compromiso/page.tsx", api: "/api/compromiso" },
   { ux: "UX05", pagina: "app/(student)/evidencia/page.tsx", api: "/api/evidencia" },
   { ux: "UX06", pagina: "app/(student)/progreso/page.tsx", api: "/api/progreso" },
+  { ux: "UX07", pagina: "app/(student)/examen/activar/page.tsx", api: "/api/examen/activacion" },
+  { ux: "UX08", pagina: "app/(student)/examen/overview/page.tsx", api: "/api/examen" },
+  { ux: "UX09", pagina: "app/(student)/examen/paso/page.tsx", api: "/api/examen/paso" },
 ] as const;
 
-const SIN_CONECTAR = [
-  { ux: "UX07", pagina: "app/(student)/examen/activar/page.tsx", falta: "tablas de examen · Fase B5" },
-  { ux: "UX08", pagina: "app/(student)/examen/overview/page.tsx", falta: "tablas de examen · Fase B5" },
-  { ux: "UX09", pagina: "app/(student)/examen/paso/page.tsx", falta: "tablas de examen · Fase B5" },
-] as const;
+/** Vacía desde la Fase B5. Las nueve superficies leen de la base. */
+const SIN_CONECTAR: ReadonlyArray<{ ux: string; pagina: string; falta: string }> = [];
 
 describe("B2.6 · las superficies conectadas no caen al fixture en silencio", () => {
   for (const { ux, pagina, api } of CONECTADAS) {
@@ -69,6 +74,11 @@ describe("B2.6 · las superficies conectadas no caen al fixture en silencio", ()
 });
 
 describe("B2.6 · las que no se conectaron están declaradas, no olvidadas", () => {
+  it("las nueve superficies del estudiante están conectadas", () => {
+    expect(CONECTADAS).toHaveLength(9);
+    expect(SIN_CONECTAR).toEqual([]);
+  });
+
   for (const { ux, pagina, falta } of SIN_CONECTAR) {
     it(`${ux} sigue en fixtures — falta ${falta}`, () => {
       const src = RUTA(pagina);
@@ -99,6 +109,9 @@ describe("B2.6 · la frontera con la pantalla", () => {
     "components/screens/compromiso.tsx",
     "components/screens/evidencia.tsx",
     "components/screens/progreso-bitacora.tsx",
+    "components/screens/activacion-modo-examen.tsx",
+    "components/screens/overview-modo-examen.tsx",
+    "components/screens/paso-de-protocolo.tsx",
   ];
 
   it("ninguna pantalla sabe que existe una API", () => {

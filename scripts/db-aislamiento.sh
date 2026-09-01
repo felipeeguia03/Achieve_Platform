@@ -28,7 +28,12 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # por `exit 1` es justo la que dejaba el mundo a medio poner, y así garantizaba
 # que la siguiente también fallara.
 limpiar_mundo() {
-  q "delete from evidence_content; \
+  q "delete from protocol_step_completion; \
+   delete from protocol_artifact; \
+   delete from preparation_readiness; \
+   delete from exam_preparation; \
+   delete from assessment_criterion; \
+   delete from evidence_content; \
    delete from evidence; \
    delete from reflection; \
    delete from action_recommendation; \
@@ -316,6 +321,72 @@ corre "insert into assessment_topic (assessment_id,topic_id) values ('e5000000-0
 temas2=$(q "select jsonb_array_length(coalesce((public.contexto_del_ade('$A','a6000000-0000-0000-0000-000000000001')->'proximaEvaluacion'->'temas'),'[]'::jsonb));" | tr -d '[:space:]')
 [ "$temas2" = "1" ] && ok "declarado, sí viaja" || mal "no trajo el tema declarado"
 corre "delete from assessment_topic; delete from assessment where id='e5000000-0000-0000-0000-000000000001'; delete from topic where id='e6000000-0000-0000-0000-000000000001';"
+
+echo "→ B5. I7. Una sola ExamPreparation por (estudiante, evaluación)"
+corre "insert into assessment (id,offering_id,assessment_type,title,assessment_date,modality,source_type) values ('e7000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','parcial','P-B5', current_date + 20,'practico','institution');"
+corre "insert into exam_preparation (id,institution_id,assessment_id,student_id,course_enrollment_id) values ('e8000000-0000-0000-0000-000000000001','$A','e7000000-0000-0000-0000-000000000001','a5000000-0000-0000-0000-000000000001','a6000000-0000-0000-0000-000000000001');"
+if corre "insert into exam_preparation (institution_id,assessment_id,student_id,course_enrollment_id) values ('$A','e7000000-0000-0000-0000-000000000001','a5000000-0000-0000-0000-000000000001','a6000000-0000-0000-0000-000000000001');"; then
+  mal "se pudo abrir una segunda preparación para la misma evaluación"
+else
+  ok "I7: la segunda preparación choca contra el UNIQUE"
+fi
+
+echo "→ B5. El protocolo vigente sale por modalidad, y una fuera de P0 no lo tiene"
+prot=$(q "select version from public.protocolo_vigente('e7000000-0000-0000-0000-000000000001');" | tr -d '[:space:]')
+[ -n "$prot" ] && ok "una evaluación práctica tiene protocolo: $prot" || mal "no resolvió protocolo"
+corre "insert into assessment (id,offering_id,assessment_type,title,modality,source_type) values ('e9000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','final','Oral','oral','institution');"
+oral=$(q "select count(*) from public.protocolo_vigente('e9000000-0000-0000-0000-000000000001');" | tr -d '[:space:]')
+[ "$oral" = "0" ] && ok "una oral no recibe el protocolo de otra modalidad (C01-047)" || mal "le asignó un protocolo a la oral"
+
+echo "→ B5. ADR-028. Un paso reentrante se completa varias veces; uno que no, una sola"
+corre "update exam_preparation set status='ACTIVE', exam_protocol_id=(select protocol_id from public.protocolo_vigente('e7000000-0000-0000-0000-000000000001')) where id='e8000000-0000-0000-0000-000000000001';"
+PROT=$(q "select protocol_id from public.protocolo_vigente('e7000000-0000-0000-0000-000000000001');" | tr -d '[:space:]')
+RE=$(q "select id from protocol_step where exam_protocol_id='$PROT' and is_reentrant limit 1;" | tr -d '[:space:]')
+NORE=$(q "select id from protocol_step where exam_protocol_id='$PROT' and not is_reentrant limit 1;" | tr -d '[:space:]')
+corre "select public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE',null,'a5000000-0000-0000-0000-000000000001',null);"
+v2=$(q "select occurrence from public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE',null,'a5000000-0000-0000-0000-000000000001',null);" | tr -d '[:space:]')
+[ "$v2" = "2" ] && ok "la segunda vuelta se registra como occurrence 2" || mal "no dejó volver sobre el paso: $v2"
+corre "select public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$NORE',null,'a5000000-0000-0000-0000-000000000001',null);"
+if corre "select public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$NORE',null,'a5000000-0000-0000-0000-000000000001',null);"; then
+  mal "un paso NO reentrante admitió una segunda completion"
+else
+  ok "un paso no reentrante conserva la garantía vieja: se completa una vez"
+fi
+
+echo "→ B5. La misma vuelta sobre el mismo TEMA se puede repetir, y cuenta aparte"
+corre "insert into topic (id,offering_id,name,sequence) values ('ea000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','Series',1) on conflict do nothing;"
+TEMA=ea000000-0000-0000-0000-000000000001
+if [ -n "$TEMA" ]; then
+  t1=$(q "select occurrence from public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE','$TEMA','a5000000-0000-0000-0000-000000000001',null);" | tr -d '[:space:]')
+  t2=$(q "select occurrence from public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE','$TEMA','a5000000-0000-0000-0000-000000000001',null);" | tr -d '[:space:]')
+  [ "$t1" = "1" ] && [ "$t2" = "2" ] && ok "el tema lleva su propia cuenta: volver sobre Series no es volver sobre el paso" || mal "la cuenta por tema salió $t1/$t2"
+fi
+
+echo "→ B5. I8. Reintentar una completion no suma una vuelta que no ocurrió"
+k1=$(q "select occurrence from public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE',null,'a5000000-0000-0000-0000-000000000001','k-b5-1');" | tr -d '[:space:]')
+k2=$(q "select occurrence || '|' || duplicado from public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE',null,'a5000000-0000-0000-0000-000000000001','k-b5-1');" | tr -d '[:space:]')
+[ "$k2" = "$k1|true" ] && ok "la misma clave devuelve la vuelta anterior y no crea otra" || mal "la clave repetida produjo $k2"
+
+echo "→ B5. Una preparación que no está ACTIVE no acumula pasos"
+corre "update exam_preparation set status='EXAM_TAKEN' where id='e8000000-0000-0000-0000-000000000001';"
+if corre "select public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE',null,'a5000000-0000-0000-0000-000000000001',null);"; then
+  mal "una preparación EXAM_TAKEN siguió aceptando completions"
+else
+  ok "EXAM_TAKEN conserva su historia y deja de escribirla"
+fi
+
+echo "→ B5. ADR-029. La pauta de la cátedra se guarda sin elevarse a oficial (I9)"
+corre "insert into assessment_criterion (institution_id,assessment_id,criterion_text,source_type) values ('$A','e7000000-0000-0000-0000-000000000001','Procedimiento completo','student');"
+elevada=$(q "select verification_status from assessment_criterion where assessment_id='e7000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')
+[ "$elevada" = "unverified" ] && ok "cargada por el estudiante entra unverified, no oficial" || mal "entró como $elevada"
+
+echo "→ B5. ADR-011. Un readiness sin explicación no se puede guardar"
+if corre "insert into preparation_readiness (institution_id,exam_preparation_id,state,rule_version) values ('$A','e8000000-0000-0000-0000-000000000001','READY_BY_PROTOCOL','v1');"; then
+  mal "se guardó un readiness sin explicación: un estado sin explicación es un veredicto"
+else
+  ok "readiness exige explicación y versión de regla"
+fi
+corre "delete from protocol_step_completion; delete from exam_preparation; delete from assessment_criterion; delete from assessment where id in ('e7000000-0000-0000-0000-000000000001','e9000000-0000-0000-0000-000000000001'); delete from topic where id='ea000000-0000-0000-0000-000000000001';"
 
 echo "→ Coherencia entre estado y marcas de tiempo"
 if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,completed_at) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'UTC',40,'DRAFT',now());"; then

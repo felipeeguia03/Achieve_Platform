@@ -37,6 +37,11 @@ limpiar() {
      delete from evidence_content where evidence_id in (select id from evidence where institution_id in ('$INS','$OTRA'));
      delete from evidence where institution_id in ('$INS','$OTRA');
      delete from commitment where institution_id in ('$INS','$OTRA');
+     delete from protocol_step_completion where institution_id in ('$INS','$OTRA');
+     delete from protocol_artifact where institution_id in ('$INS','$OTRA');
+     delete from preparation_readiness where institution_id in ('$INS','$OTRA');
+     delete from exam_preparation where institution_id in ('$INS','$OTRA');
+     delete from assessment_criterion where institution_id in ('$INS','$OTRA');
      delete from action_recommendation where action_id in (select id from action where institution_id in ('$INS','$OTRA'));
      delete from action where institution_id in ('$INS','$OTRA');
      delete from topic_progress where institution_id in ('$INS','$OTRA');
@@ -240,8 +245,55 @@ igual "el hecho más reciente es el mismo en las dos superficies" \
   "$(q "select (public.estado_de_materia('$INS','$EST',now())->'actividadReciente'->0->>'evento') =
           (select h.event_name from public.hechos_de_cursada('$INS','$CE',1) h);")" "t"
 
-echo "→ Aislamiento: las cinco funciones lo respetan (I11)"
-for f in estado_de_materia estado_de_accion estado_de_compromiso estado_de_evidencia estado_de_progreso; do
+echo "→ B5 · estado_de_activacion · consume una señal emitida, no calcula la ventana"
+igual "sin preparación, la evaluación no trae señal" \
+  "$(q "select coalesce(public.estado_de_activacion('$INS','$EST',now())->'evaluaciones'->0->>'preparacion','NULO');")" "NULO"
+igual "y la evaluación práctica sí tiene protocolo vigente" \
+  "$(q "select public.estado_de_activacion('$INS','$EST',now())->'evaluaciones'->0->>'tieneProtocolo';")" "true"
+q "insert into exam_preparation (id,institution_id,assessment_id,student_id,course_enrollment_id)
+   select 'bf000000-0000-0000-0000-000000000001','$INS', a.id, '$EST', '$CE'
+     from assessment a where a.title='Parcial 1' and a.offering_id='b7000000-0000-0000-0000-000000000001';" >/dev/null 2>&1
+igual "con la preparación creada, la señal viaja como RECOMMENDED" \
+  "$(q "select public.estado_de_activacion('$INS','$EST',now())->'evaluaciones'->0->'preparacion'->>'status';")" "RECOMMENDED"
+
+echo "→ B5 · estado_de_preparacion · el recorrido sale del protocolo, sin posición"
+q "update exam_preparation set status='ACTIVE',
+     exam_protocol_id=(select protocol_id from public.protocolo_vigente(assessment_id))
+   where id='bf000000-0000-0000-0000-000000000001';" >/dev/null 2>&1
+igual "los 12 pasos del protocolo llegan a la superficie" \
+  "$(q "select jsonb_array_length(public.estado_de_preparacion('$INS','$EST',now())->'pasos');")" "12"
+igual "ninguno viene marcado como actual: nadie escribió current_step_id" \
+  "$(q "select bool_or((p->>'esActual')::boolean) from jsonb_array_elements(public.estado_de_preparacion('$INS','$EST',now())->'pasos') p;")" "f"
+igual "readiness sale nulo, y es la decisión (ADR-011 · C01-029)" \
+  "$(q "select coalesce(public.estado_de_preparacion('$INS','$EST',now())->>'readiness','NULO');")" "NULO"
+igual "el contenido se rotula como provisional del equipo" \
+  "$(q "select public.estado_de_preparacion('$INS','$EST',now())->'protocolo'->>'contenido';")" "EP-SPEC"
+
+echo "→ B5 · ADR-028 · las vueltas llegan a la superficie con su tema"
+PASO_RE=$(q "select id from protocol_step where exam_protocol_id=(select exam_protocol_id from exam_preparation where id='bf000000-0000-0000-0000-000000000001') and is_reentrant order by sequence limit 1;" | tr -d '[:space:]')
+q "select public.completar_paso_de_protocolo('$INS','bf000000-0000-0000-0000-000000000001','$PASO_RE','b8000000-0000-0000-0000-000000000001','$EST',null);" >/dev/null 2>&1
+q "select public.completar_paso_de_protocolo('$INS','bf000000-0000-0000-0000-000000000001','$PASO_RE','b8000000-0000-0000-0000-000000000001','$EST',null);" >/dev/null 2>&1
+igual "el paso trabajado dos veces las cuenta como dos" \
+  "$(q "select p->>'vueltas' from jsonb_array_elements(public.estado_de_preparacion('$INS','$EST',now())->'pasos') p where p->>'id'='$PASO_RE';")" "2"
+igual "y el paso trae su tema en UX09: «volviste sobre», no «repetiste»" \
+  "$(q "select public.estado_de_paso('$INS','$EST',now(),'bf000000-0000-0000-0000-000000000001','$PASO_RE')->'vueltas'->0->>'tema' is not null;")" "t"
+igual "la lectura del paso nunca devuelve un recurso inventado" \
+  "$(q "select coalesce(public.estado_de_paso('$INS','$EST',now(),'bf000000-0000-0000-0000-000000000001','$PASO_RE')->>'recurso','NULO');")" "NULO"
+igual "un paso de otro protocolo no se puede leer como propio" \
+  "$(q "select coalesce(public.estado_de_paso('$INS','$EST',now(),'bf000000-0000-0000-0000-000000000001',(select id from protocol_step where exam_protocol_id=(select id from exam_protocol where alcance='NUCLEO_H24') limit 1))::text,'NULO');")" "NULO"
+
+echo "→ B5 · HUMAN-P0-04 · el núcleo de 24 horas tiene siete componentes"
+igual "siete, no uno" \
+  "$(q "select count(*) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.alcance='NUCLEO_H24';")" "7"
+igual "e incluyen el diagnóstico sin ayuda" \
+  "$(q "select count(*) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.alcance='NUCLEO_H24' and s.label='Una prueba breve sin ayuda';")" "1"
+igual "y la corrección de errores" \
+  "$(q "select count(*) from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.alcance='NUCLEO_H24' and s.step_type='correccion';")" "1"
+igual "ninguno se declara obligatorio: C01-034 sigue abierto" \
+  "$(q "select bool_and(s.requirement='NO_CONFIGURADA') from protocol_step s join exam_protocol p on p.id=s.exam_protocol_id where p.alcance='NUCLEO_H24';")" "t"
+
+echo "→ Aislamiento: las ocho funciones lo respetan (I11)"
+for f in estado_de_materia estado_de_accion estado_de_compromiso estado_de_evidencia estado_de_progreso estado_de_activacion estado_de_preparacion; do
   igual "$f no cruza institución" \
     "$(q "select coalesce(public.$f('$OTRA','$EST',now())::text,'NULO');")" "NULO"
 done

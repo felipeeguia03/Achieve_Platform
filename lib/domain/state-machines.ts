@@ -68,25 +68,53 @@ export const evidenceOwnerTransitions: Readonly<Record<EvidenceState, readonly E
 } as const;
 
 /**
- * ⚠️ `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` colisionan con la entidad
- * separada `PreparationReadiness`. Esa contradicción es ADR-011 (`CR-UX08-01`)
- * y sigue `PENDING`: hasta resolverla NO se implementa `PreparationReadiness`.
+ * Los estados del lifecycle de `ExamPreparation`, **después de ADR-011**.
  *
- * `data-model.md` §3.4 declara los estados pero **no** su tabla de
- * transiciones. Omitir, no inventar (AGENTS.md §2.7): acá no se aproxima una.
- * Se cierra en la Fase B5.
+ * `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` ya no están acá, y no es una
+ * omisión: eran la contradicción `CR-UX08-01`. ADR-011 decidió que readiness
+ * tiene **una sola fuente** y que es `PreparationReadiness`; dejarlos en este
+ * enum sería mantener la segunda verdad que ese ADR prohíbe.
  */
 export const examPreparationStates: readonly ExamPreparationStatus[] = [
   "RECOMMENDED",
   "ACTIVE",
-  "BUILDING",
-  "READY_BY_PROTOCOL",
-  "NOT_READY",
   "BLOCKED",
   "EXAM_TAKEN",
   "CLOSED",
   "ABANDONED",
 ] as const;
+
+/**
+ * Y ahora sí, la tabla de transiciones que `data-model.md` §3.4 no traía.
+ *
+ * Sale de la máquina que `product.md` §5.4 dibuja, **quitándole los tres nodos
+ * de readiness**. El original era:
+ *
+ * ```
+ * RECOMMENDED → ACTIVE → BUILDING → READY_BY_PROTOCOL → EXAM_TAKEN → CLOSED
+ *                     ↘ NOT_READY / BLOCKED
+ *                     ↘ ABANDONED (conserva historial)
+ * ```
+ *
+ * Sacados `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY`, la cadena central se
+ * cierra en `ACTIVE → EXAM_TAKEN`. **No es un atajo nuevo:** es el mismo camino
+ * sin los nodos que dejaron de pertenecer a esta entidad.
+ *
+ * `BLOCKED` queda **sin salida declarada**, y tampoco se le inventa una. El
+ * diagrama no dibuja el retorno y `C01-025` —ownership y lifecycle de
+ * `ExamPreparation`— sigue `OPEN`. Deny-by-default: lo que nadie declaró, no
+ * se puede.
+ */
+export const examPreparationTransitions: Readonly<
+  Record<ExamPreparationStatus, readonly ExamPreparationStatus[]>
+> = {
+  RECOMMENDED: ["ACTIVE"],
+  ACTIVE: ["BLOCKED", "EXAM_TAKEN", "ABANDONED"],
+  BLOCKED: [],
+  EXAM_TAKEN: ["CLOSED"],
+  CLOSED: [],
+  ABANDONED: [],
+} as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 

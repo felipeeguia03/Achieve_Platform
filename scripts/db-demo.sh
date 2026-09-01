@@ -12,7 +12,9 @@ INST=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 EST=a5000000-0000-0000-0000-000000000001
 
 echo "→ Limpiando"
-q "delete from action_recommendation; delete from action_resource; delete from action;
+q "delete from protocol_step_completion; delete from protocol_artifact;
+   delete from preparation_readiness; delete from exam_preparation; delete from assessment_criterion;
+   delete from action_recommendation; delete from action_resource; delete from action;
    delete from topic_progress; delete from course_enrollment; delete from availability;
    delete from student; delete from resource; delete from assessment; delete from topic_prerequisite;
    delete from topic; delete from course_offering; delete from course; delete from curriculum_plan;
@@ -53,6 +55,26 @@ echo "→ Progreso: U1 trabajada, el resto sin información (NO cero)"
 q "insert into topic_progress (institution_id,course_enrollment_id,topic_id,practice_state,practice_value,recency_at)
    select '$INST','a6000000-0000-0000-0000-000000000001', t.id, 'value', 6, now() - interval '3 days'
      from topic t where t.offering_id='$OFF' and t.name='Límites y continuidad';" >/dev/null
+
+echo "→ Modo Examen: la señal emitida, sin activar"
+# `RECOMMENDED` y no `ACTIVE`: activar es del estudiante (`CTA-011`), y el spec
+# es explícito —"la misma entrada produce siempre RECOMMENDED → CTA → ACTIVE"—.
+# **Cuándo aparece la señal es `C01-024`, todavía abierto**: acá se siembra a
+# mano justamente porque no hay regla que la dispare.
+q "insert into exam_preparation (id,institution_id,assessment_id,student_id,course_enrollment_id)
+   select 'af000000-0000-0000-0000-000000000001','$INST', a.id, '$EST', 'a6000000-0000-0000-0000-000000000001'
+     from assessment a where a.offering_id='$OFF' and a.title='Parcial 1';" >/dev/null
+
+echo "→ La pauta de la cátedra, cargada por el estudiante (ADR-029)"
+# Entra `student`/`unverified` y **no se eleva** (`I9`): la superficie la muestra
+# como lo que el estudiante cargó, nunca como criterio oficial de la cátedra.
+q "insert into assessment_criterion (institution_id,assessment_id,criterion_text,sequence,source_type)
+   select '$INST', a.id, c.txt, c.n, 'student'
+     from assessment a,
+          (values ('Procedimiento completo y justificado',1),
+                  ('Elección del método',2),
+                  ('Resolver variaciones del ejercicio',3)) as c(txt,n)
+    where a.offering_id='$OFF' and a.title='Parcial 1';" >/dev/null
 
 echo
 echo "✓ Mundo listo. Cursada: a6000000-0000-0000-0000-000000000001"

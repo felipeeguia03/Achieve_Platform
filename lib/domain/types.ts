@@ -43,16 +43,24 @@ export type EvidenceState =
   | "RESUBMISSION_REQUESTED"
   | "VALIDATED";
 
+/**
+ * El lifecycle de la preparación, **sin readiness**.
+ *
+ * `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` estaban acá y se fueron con
+ * ADR-011: son estados de `PreparationReadiness`, que es su única fuente. Un
+ * tipo que los siguiera aceptando dejaría que el compilador aprobara la segunda
+ * verdad que la decisión eliminó.
+ */
 export type ExamPreparationStatus =
   | "RECOMMENDED"
   | "ACTIVE"
-  | "BUILDING"
-  | "READY_BY_PROTOCOL"
-  | "NOT_READY"
   | "BLOCKED"
   | "EXAM_TAKEN"
   | "CLOSED"
   | "ABANDONED";
+
+/** Los tres estados de readiness. Viven en `PreparationReadiness` (ADR-011). */
+export type PreparationReadinessState = "NOT_READY" | "BUILDING" | "READY_BY_PROTOCOL";
 
 export type RiskSignalStatus =
   | "OPEN"

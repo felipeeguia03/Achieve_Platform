@@ -159,19 +159,26 @@ export const catalogoP0: Readonly<Record<string, EventoDeProducto>> = {
   ExamPreparationRecommended: {
     uso: "Modo Examen recomendado.",
     nivel: "NEGOCIO",
-    instrumentacion: pendiente("B5 · no hay tablas de examen"),
+    // La preparación en `RECOMMENDED` es la señal, y **cuándo aparece** es
+    // `C01-024`: la ventana de recomendación sigue sin decidirse, así que nadie
+    // la emite todavía. La tabla existe desde la B5; el disparador no.
+    instrumentacion: pendiente("C01-024 · falta decidir la ventana de recomendación"),
     enBitacora: false,
   },
   ExamPreparationActivated: {
     uso: "Alumno activó preparación.",
     nivel: "NEGOCIO",
-    instrumentacion: pendiente("B5 · no hay tablas de examen"),
+    instrumentacion: emitido,
     enBitacora: false,
   },
   ProtocolStepCompleted: {
     uso: "Hito cerrado.",
     nivel: "NEGOCIO",
-    instrumentacion: pendiente("B5 · y el tramo 9–18 es reentrante (ADR-025)"),
+    // **Se emite una vez por vuelta, no una vez por paso.** ADR-028 hizo
+    // registrable la repetición; un evento que sólo marcara la primera pasada
+    // convertiría las siguientes en trabajo invisible, que es justo lo que
+    // `HUMAN-P0-01 v1.0` describe como parte del método.
+    instrumentacion: emitido,
     enBitacora: false,
   },
   SimulationCompleted: {
@@ -255,6 +262,33 @@ export const EXTENSIONES: Readonly<
     porQue: "Es el `CommitmentCreated` de §16, con el nombre del estado al que transiciona",
     nivel: "TRANSICION",
     enBitacora: true,
+  },
+  // ── Lifecycle de `ExamPreparation` · Fase B5 ───────────────────────────────
+  //
+  // §16 nombra la activación y nada más. Los otros cuatro destinos existen
+  // porque la máquina de `product.md` §5.4 los dibuja, y la maquinaria
+  // compartida emite un hecho **por cada estado al que se llega**. Entran como
+  // `TRANSICION` por el mismo criterio de ADR-027: son movimientos del
+  // lifecycle, no los hechos que el producto existe para medir.
+  ExamPreparationBlocked: {
+    porQue: "Destino declarado en la máquina de §5.4; §16 sólo nombra la activación",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  ExamPreparationExamTaken: {
+    porQue: "Rindió. `AssessmentTaken` del P0 es el hecho académico; esto es el lifecycle",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  ExamPreparationClosed: {
+    porQue: "Cierre de la preparación. Su historial se conserva",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  ExamPreparationAbandoned: {
+    porQue: "Abandonar conserva el historial (§5.4): el hecho se registra, no se borra",
+    nivel: "TRANSICION",
+    enBitacora: false,
   },
   CommitmentDue: {
     porQue: "Lo dispara el reloj del lifecycle, no una persona",

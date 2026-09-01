@@ -59,3 +59,26 @@ export function haceCuanto(instante: string, ahora: string, zona: string): strin
   if (dias === 1) return "ayer";
   return `hace ${dias} días`;
 }
+
+/**
+ * *"lun 15 sep"* para una **fecha de calendario**, sin zona horaria.
+ *
+ * Existe porque `fechaCorta` estaba formateando `assessment.assessment_date`,
+ * que es un `DATE`, y lo mostraba **un día antes**: `new Date("2026-09-15")` es
+ * medianoche UTC, y en Córdoba eso son las 21:00 del 14.
+ *
+ * Una fecha de examen **no tiene hora ni zona**: es el 15 de septiembre en
+ * cualquier lado. Convertirla es introducir una precisión que el dato no tiene
+ * y equivocarse justo en el borde. Se formatea en UTC, que para un `DATE` es
+ * exactamente no convertir nada.
+ */
+export function fechaDeCalendario(fecha: string): string {
+  return new Intl.DateTimeFormat("es-AR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })
+    .format(new Date(`${fecha.slice(0, 10)}T00:00:00Z`))
+    .replace(/[.,]/g, "");
+}

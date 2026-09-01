@@ -40,6 +40,9 @@ const DATOS_OFICIALES: DatoDeEvaluacion[] = [
 function base(over: Partial<ActivacionExamenProps>): ActivacionExamenProps {
   return {
     estado: "RECOMENDACION",
+    // Sintético: los fixtures no tocan la base, y el id sólo existe para que la
+    // CTA nombre su objeto cuando los datos son reales.
+    preparacionId: "fx-prep-0001",
     materia: MATERIA,
     comision: COMISION,
     titulo: "RECOMENDACIÓN DE ACTIVACIÓN",

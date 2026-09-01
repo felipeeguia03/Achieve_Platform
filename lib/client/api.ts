@@ -93,3 +93,43 @@ export async function pedir<T>(ruta: string): Promise<Respuesta<T>> {
     return { estado: "ERROR" };
   }
 }
+
+/**
+ * Escribe en `/api/*` con la sesión vigente — Etapa B5.5.
+ *
+ * Mismo manejo de sesión que `pedir`, y la misma regla: el `institutionId` y el
+ * `studentId` **no viajan en el cuerpo**. Los resuelve el servidor.
+ *
+ * Un `409` no es `ERROR`: es el dominio diciendo que no. Sale como `RECHAZADO`
+ * con el motivo, para que la superficie lo pueda mostrar en vez de un *"no se
+ * pudo cargar"* que no explica nada.
+ */
+export type ResultadoDeEnvio<T> = Respuesta<T> | { estado: "RECHAZADO"; motivo: string };
+
+export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<ResultadoDeEnvio<T>> {
+  let token: string | null;
+  try {
+    token = await tokenDeSesion();
+  } catch {
+    return { estado: "ERROR" };
+  }
+  if (!token) return { estado: "SIN_SESION" };
+
+  try {
+    const r = await fetch(ruta, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(cuerpo),
+    });
+    if (r.status === 401) return { estado: "SIN_SESION" };
+    if (r.status === 403) return { estado: "SIN_PADRON" };
+    if (r.status === 409) {
+      const cuerpo = (await r.json().catch(() => ({}))) as { error?: string };
+      return { estado: "RECHAZADO", motivo: cuerpo.error ?? "La operación no es válida ahora" };
+    }
+    if (!r.ok) return { estado: "ERROR" };
+    return { estado: "OK", datos: (await r.json()) as T };
+  } catch {
+    return { estado: "ERROR" };
+  }
+}

@@ -1,7 +1,7 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
 import { t } from "@/lib/content/es-AR";
 import { aEntradaVisible, type HechoPersistido } from "./hechos";
-import { fechaCorta, haceCuanto } from "./tiempo";
+import { fechaDeCalendario, haceCuanto } from "./tiempo";
 import type { FilaDato, MateriaProps } from "@/lib/domain/view-models";
 
 /**
@@ -209,7 +209,10 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     // estima, y el título sigue siendo un hecho.
     examen: e.examen
       ? e.examen.fechaEn
-        ? `${e.examen.titulo} · ${fechaCorta(e.examen.fechaEn, e.zona)}`
+        // `assessment_date` es un `DATE`, no un instante: se formatea sin zona.
+        // Con `fechaCorta` mostraba el día anterior en cualquier zona al oeste
+        // de UTC — un Parcial del 15 aparecía como del 14.
+        ? `${e.examen.titulo} · ${fechaDeCalendario(e.examen.fechaEn)}`
         : e.examen.titulo
       : null,
     // Sin Risk Engine no hay estado de materia. Ver `MateriaProps.chip`.

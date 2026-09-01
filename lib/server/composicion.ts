@@ -15,6 +15,12 @@ import { progresoEscrituraReal } from "./repositorios/progreso";
 import { institucionesReal } from "./repositorios/instituciones";
 import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
+import { preparacionesReal } from "./repositorios/preparacion";
+import {
+  activacionLecturaReal,
+  preparacionLecturaReal,
+  pasoLecturaReal,
+} from "./repositorios/examen-lectura";
 import { crearClienteDeCrm } from "./repositorios/crm";
 import {
   autorizarPorPadron as autorizarPuro,
@@ -32,12 +38,25 @@ import { proyectarAccion } from "./servicios/proyeccion-accion";
 import { proyectarCompromiso } from "./servicios/proyeccion-compromiso";
 import { proyectarEvidencia } from "./servicios/proyeccion-evidencia";
 import { proyectarProgreso } from "./servicios/proyeccion-progreso";
+import { proyectarActivacion } from "./servicios/proyeccion-activacion";
+import { proyectarPreparacion } from "./servicios/proyeccion-preparacion";
+import { proyectarPaso } from "./servicios/proyeccion-paso";
+import {
+  activar as activarPuro,
+  completarPaso as completarPasoPuro,
+  type PasoCompletado,
+  type ResultadoDeActivacion,
+  type ResultadoDeCompletion,
+} from "./servicios/preparacion";
 import {
   registrarProgreso as registrarProgresoPuro,
   type ResultadoDeProgresoEntrante,
   type ResultadoDelRegistro,
 } from "./servicios/progreso";
 import type {
+  ActivacionExamenProps,
+  OverviewExamenProps,
+  PasoProtocoloProps,
   CompromisoProps,
   EvidenciaProps,
   HoyProps,
@@ -228,4 +247,93 @@ export function registrarProgreso(
     { repo: progresoEscrituraReal, eventos: eventosReal },
     entrada,
   );
+}
+
+/**
+ * `UX07` desde datos persistidos (Etapa B5.5).
+ *
+ * ⚠️ **No calcula la ventana de recomendación.** `C01-024` sigue `OPEN` y
+ * `product.md` §9 lo fija: la UI *"consume una señal ya emitida"*. Sin una
+ * preparación en `RECOMMENDED` esta superficie dice que no hay recomendación,
+ * en vez de inventarse un umbral de días.
+ */
+export async function activacionDe(
+  institutionId: string,
+  studentId: string,
+  courseEnrollmentId: string | null = null,
+  ahora: string = new Date().toISOString(),
+): Promise<ActivacionExamenProps | null> {
+  const estado = await activacionLecturaReal.estadoDeActivacion(
+    institutionId,
+    studentId,
+    ahora,
+    courseEnrollmentId,
+  );
+  return estado ? proyectarActivacion(estado) : null;
+}
+
+/** `UX08` desde datos persistidos (Etapa B5.5). Sin readiness: ver ADR-011. */
+export async function preparacionDe(
+  institutionId: string,
+  studentId: string,
+  preparacionId: string | null = null,
+  ahora: string = new Date().toISOString(),
+): Promise<OverviewExamenProps | null> {
+  const estado = await preparacionLecturaReal.estadoDePreparacion(
+    institutionId,
+    studentId,
+    ahora,
+    preparacionId,
+  );
+  return estado ? proyectarPreparacion(estado) : null;
+}
+
+/** `UX09` desde datos persistidos (Etapa B5.5). */
+export async function pasoDe(
+  institutionId: string,
+  studentId: string,
+  preparacionId: string,
+  pasoId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<PasoProtocoloProps | null> {
+  const estado = await pasoLecturaReal.estadoDePaso(
+    institutionId,
+    studentId,
+    ahora,
+    preparacionId,
+    pasoId,
+  );
+  return estado ? proyectarPaso(estado) : null;
+}
+
+/**
+ * `RECOMMENDED → ACTIVE` por el CTA del estudiante (`CTA-011`).
+ *
+ * Activar produce `ACTIVE` y **nada más**: ni Action, ni Commitment, ni
+ * Evidence, ni progreso, ni readiness (`product.md` §5.4).
+ */
+export function activarPreparacion(
+  institutionId: string,
+  preparacionId: string,
+  actorId: string | null = null,
+): Promise<ResultadoDeActivacion> {
+  return activarPuro(
+    { repo: preparacionesReal, eventos: eventosReal },
+    institutionId,
+    preparacionId,
+    actorId,
+  );
+}
+
+/**
+ * Agrega una vuelta a un paso del protocolo.
+ *
+ * **Puede ocurrir varias veces sobre el mismo paso y el mismo tema** cuando el
+ * contenido lo declara reentrante (`HUMAN-P0-01 v1.0`, ADR-028). Repetir no es
+ * retroceder y ninguna superficie lo presenta como incumplimiento.
+ */
+export function completarPasoDeProtocolo(
+  entrada: PasoCompletado,
+): Promise<ResultadoDeCompletion> {
+  return completarPasoPuro({ repo: preparacionesReal, eventos: eventosReal }, entrada);
 }
