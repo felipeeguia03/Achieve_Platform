@@ -47,7 +47,10 @@ acepta() {
 # crean las comprobaciones —`assessment`, `resource`, `class_session`,
 # `topic_progress`— cae por `CASCADE` desde la cursada y la inscripción.
 limpiar_fixtures() {
-  q "delete from course_enrollment where id='88888888-8888-8888-8888-888888888888'; \
+  q "delete from progress_entry where course_enrollment_id='88888888-8888-8888-8888-888888888888'; \
+     delete from product_event where institution_id='11111111-1111-1111-1111-111111111111'; \
+     delete from topic_progress where course_enrollment_id='88888888-8888-8888-8888-888888888888'; \
+     delete from course_enrollment where id='88888888-8888-8888-8888-888888888888'; \
      delete from student where id='77777777-7777-7777-7777-777777777777'; \
      delete from course_offering where id='55555555-5555-5555-5555-555555555555'; \
      delete from course where id='44444444-4444-4444-4444-444444444444'; \
@@ -164,6 +167,54 @@ elif echo "$visto" | grep -qi "permissiondenied"; then
 else
   echo "   ✗ anon leyó: '$visto'"; fallos=$((fallos + 1))
 fi
+
+echo "→ B3.1 · registrar_progreso escribe el resultado, o no escribe nada"
+INS=11111111-1111-1111-1111-111111111111
+CE=88888888-8888-8888-8888-888888888888
+TOP=66666666-6666-6666-6666-666666666666
+
+acepta "un cambio declarado se registra" \
+  "select public.registrar_progreso('$INS','$CE','$TOP',null,null,null,'progress_updated',now(),
+     '[{\"dimension\":\"practice\",\"valor\":19,\"texto\":\"19 ejercicios\"}]'::jsonb,
+     false,null,'k-b31-1');"
+
+# La transacción: la entrada y la dimensión se escriben juntas. Si sólo se
+# escribiera la entrada, la Bitácora afirmaría un cambio que las dimensiones no
+# reflejan.
+if [ "$(q "select practice_state from topic_progress where course_enrollment_id='$CE' and topic_id='$TOP';" | tr -d '[:space:]')" = "value" ]; then
+  echo "   ✓ la dimensión quedó medida en la misma transacción"
+else
+  echo "   ✗ la entrada se escribió y la dimensión no"; fallos=$((fallos + 1))
+fi
+
+# `I8`: el mismo registro dos veces produce UNA entrada. Un reintento de red no
+# puede duplicar el avance de un estudiante.
+q "select public.registrar_progreso('$INS','$CE','$TOP',null,null,null,'progress_updated',now(),
+     '[{\"dimension\":\"practice\",\"valor\":19}]'::jsonb,false,null,'k-b31-1');" >/dev/null 2>&1
+if [ "$(q "select count(*) from progress_entry where idempotency_key='k-b31-1';" | tr -d '[:space:]')" = "1" ]; then
+  echo "   ✓ I8 · el mismo registro dos veces deja una sola entrada"
+else
+  echo "   ✗ I8 · el reintento duplicó el avance"; fallos=$((fallos + 1))
+fi
+if [ "$(q "select duplicado from public.registrar_progreso('$INS','$CE','$TOP',null,null,null,'progress_updated',now(),'[{\"dimension\":\"practice\",\"valor\":19}]'::jsonb,false,null,'k-b31-1');" | tr -d '[:space:]')" = "t" ]; then
+  echo "   ✓ y lo dice: el segundo intento vuelve marcado como duplicado"
+else
+  echo "   ✗ el duplicado no se declara como tal"; fallos=$((fallos + 1))
+fi
+
+rechaza "I10 · una entrada que no afirma nada tampoco entra por la función" \
+  "select public.registrar_progreso('$INS','$CE','$TOP',null,null,null,'progress_updated',now(),
+     '[]'::jsonb,false,null,null);"
+rechaza "una dimensión inventada es rechazada por la base" \
+  "select public.registrar_progreso('$INS','$CE','$TOP',null,null,null,'progress_updated',now(),
+     '[{\"dimension\":\"motivacion\",\"valor\":1}]'::jsonb,false,null,null);"
+rechaza "I11 · no se puede registrar progreso en una cursada de otra institución" \
+  "select public.registrar_progreso('99999999-9999-9999-9999-999999999999','$CE','$TOP',null,null,null,
+     'progress_updated',now(),'[{\"dimension\":\"practice\",\"valor\":1}]'::jsonb,false,null,null);"
+
+acepta "un no-cambio declarado también es un resultado válido" \
+  "select public.registrar_progreso('$INS','$CE','$TOP',null,null,null,'progress_no_change',now(),
+     '[]'::jsonb,true,'La entrega no cubre la unidad completa.','k-b31-2');"
 
 limpiar_fixtures
 echo "   ✓ datos de prueba limpiados"

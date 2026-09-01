@@ -96,10 +96,14 @@ el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Post
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` esperan a la Fase B5
 porque no hay tablas de examen.
 
-⚠️ **`progress_entry` existe pero nadie la escribe.** La B2.6 la migró —`data-model.md` §10 ya la
-declaraba— para que `UX06` pudiera proyectar un resultado de progreso. El `ProgressUpdated`
-productivo es la Fase B3 (`C01-018`), y con la tabla vacía la pantalla dice *"todavía no hay un
-cambio de progreso confirmado"*, que es lo correcto.
+**Fase B3 — Progreso, Bitácora y eventos.** 🟡 **1 / 3.** La Etapa B3.1 cerró: `progress_entry` **se
+escribe** con sus invariantes —`I10` en el Service y en la base, `I8` con el duplicado declarado, y
+todo en una transacción con `topic_progress`—, y `UX06` proyecta lo registrado.
+
+⚠️ **El Service recibe el resultado; no decide que hubo progreso.** `C01-018` —quién lo emite y con
+qué causalidad— sigue `OPEN`. **Ninguna ruta de `Evidence` escribe progreso**, y hay un guard
+estático que cubre los cuatro caminos, la maquinaria de transiciones y los triggers del schema:
+`VALIDATED` no produce `ProgressUpdated`, y es el error más barato de cometer.
 
 **Trabajo adelantado.** B2b va **1 / 3** con la ingesta asistida del ADL. En B4 ya existen el ADE
 v1 determinista, el reloj del lifecycle y la materialización transaccional de recomendaciones.
@@ -115,7 +119,7 @@ tiene siete componentes**. Ver `roadmap.md` → Fase B5.
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
 
-**Verificación de base:** `npm run db:verify` — **120 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **131 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de

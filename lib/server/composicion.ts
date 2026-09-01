@@ -11,6 +11,7 @@ import { accionLecturaReal } from "./repositorios/accion-lectura";
 import { compromisoLecturaReal } from "./repositorios/compromiso-lectura";
 import { evidenciaLecturaReal } from "./repositorios/evidencia-lectura";
 import { progresoLecturaReal } from "./repositorios/progreso-lectura";
+import { progresoEscrituraReal } from "./repositorios/progreso";
 import { institucionesReal } from "./repositorios/instituciones";
 import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
@@ -31,6 +32,11 @@ import { proyectarAccion } from "./servicios/proyeccion-accion";
 import { proyectarCompromiso } from "./servicios/proyeccion-compromiso";
 import { proyectarEvidencia } from "./servicios/proyeccion-evidencia";
 import { proyectarProgreso } from "./servicios/proyeccion-progreso";
+import {
+  registrarProgreso as registrarProgresoPuro,
+  type ResultadoDeProgresoEntrante,
+  type ResultadoDelRegistro,
+} from "./servicios/progreso";
 import type {
   CompromisoProps,
   EvidenciaProps,
@@ -205,4 +211,21 @@ export async function progresoDe(
 ): Promise<ProgresoProps | null> {
   const estado = await progresoLecturaReal.estadoDeProgreso(institutionId, studentId, ahora, evidenceId);
   return estado ? proyectarProgreso(estado) : null;
+}
+
+/**
+ * Registra un resultado de progreso (Etapa B3.1).
+ *
+ * ⚠️ **Esto no decide que alguien aprendió algo.** Persiste un resultado que el
+ * owner del progreso ya produjo; quién lo emite y con qué causalidad es
+ * `C01-018`, `OPEN`. **Ninguna ruta de `Evidence` llama acá**, y hay un guard
+ * estático que lo verifica: validar una evidencia no produce progreso.
+ */
+export function registrarProgreso(
+  entrada: ResultadoDeProgresoEntrante,
+): Promise<ResultadoDelRegistro> {
+  return registrarProgresoPuro(
+    { repo: progresoEscrituraReal, eventos: eventosReal },
+    entrada,
+  );
 }

@@ -2009,6 +2009,91 @@ duplicarlos como cuatro avances independientes.
 
 **Contratos a cerrar:** `C01-018`, `C01-019`, `C01-020`, `C01-023`.
 
+### Etapas
+
+| # | Etapa |
+|---|---|
+| B3.1 | ✅ **COMPLETA** — el resultado de progreso **se escribe**, y nadie lo infiere |
+| B3.2 | ⬜ El Product Event Model completo y la Bitácora sobre él |
+| B3.3 | ⬜ `TopicProgress` con sus cinco dimensiones desde el ADL |
+
+---
+
+#### ✅ Etapa B3.1 — El resultado de progreso se escribe, y nadie lo infiere · COMPLETA · 1 de septiembre de 2026
+
+**Decisiones de diseño — escritas antes de codear.**
+
+**1. El Service recibe el resultado; no decide cuándo hay uno.** `C01-018` —quién emite el
+`ProgressUpdated`, con qué causalidad y qué payload— sigue `OPEN` con gate `I`. El criterio es el
+mismo que la Etapa B2.4 sostuvo con la `Reflection`: **la regla se hace cumplir, la decisión no se
+inventa.** El Service valida y persiste un resultado que el owner del progreso ya produjo, y hace
+cumplir `I10`, el vocabulario de dimensiones y la causa.
+
+Lo que esto habilita hoy: un operador, un job del ADL o una carga asistida pueden registrar un
+resultado, y `UX06` lo proyecta. Lo que **no** habilita: que el sistema decida por su cuenta que
+alguien aprendió algo.
+
+**2. Ningún camino automático desde `Evidence`.** No se construye ninguna función que, al validar una
+evidencia, escriba progreso. Es el invariante central del producto —*validar no es dominio*— y el que
+más barato sale de romper, porque el dato está ahí. **Va con guard estático**, no con una convención.
+
+**3. Las magnitudes viajan como el owner las declara.** El input trae, por dimensión, el valor nuevo
+**y su texto mostrable si el owner lo dio**. El Service no formatea, no infiere unidades y no elige
+qué se ve: eso ya lo decide la proyección, que con un número crudo dice *"cambió"* (`C01-019`).
+
+**4. Una escritura, una transacción.** `progress_entry`, `topic_progress` y el evento se escriben
+juntos o no se escribe nada. Media escritura deja la Bitácora afirmando un cambio que las dimensiones
+no reflejan, y eso es peor que no registrar nada.
+
+**5. Idempotencia (`I8`).** El mismo registro enviado dos veces produce **una** entrada. Un
+reintento de red no puede duplicar el avance de un estudiante.
+
+**6. `entry_kind` sigue sin `CHECK`.** Cerrar su vocabulario es `C01-018`, y un enum en el schema lo
+cerraría sin que nadie lo decida.
+
+**7. Dos nombres de evento, y el segundo no está en el spec.** `ProgressUpdated` es el evento
+aprobado y se emite cuando hay dimensiones cambiadas. Para un no-cambio declarado se emite
+**`ProgressNoChangeConfirmed`**, que **el spec no nombra**: reusar *"Updated"* para decir que nada
+cambió es exactamente la clase de confusión que el producto entero evita. Queda rotulado acá como
+vocabulario del Product Event Model —objetivo declarado de esta fase—, no como regla de negocio.
+
+**Done cuando:** una entrada inválida (`I10`) es rechazada por el Service **y** por la base; el mismo
+registro dos veces produce una sola entrada; ninguna ruta escribe progreso al validar una Evidence; y
+`UX06` proyecta lo registrado sin cambiar una línea de la pantalla.
+
+##### El cierre
+
+| Qué prometía el Done | Cómo quedó |
+|---|---|
+| `I10` rechazada en el Service **y** en la base | ✅ las dos: el Service devuelve `NO_AFIRMA_NADA` sin tocar nada, y la función de base la rechaza aunque alguien la llame directo |
+| El mismo registro dos veces, una sola entrada | ✅ `I8` con índice único parcial, y el segundo intento **vuelve marcado como duplicado** — el evento no se publica de nuevo |
+| Ninguna ruta escribe progreso al validar una Evidence | ✅ **guard estático** sobre los cuatro caminos de `Evidence`, sobre `transiciones.ts` y sobre **los triggers del schema** |
+| `UX06` proyecta lo registrado | ✅ verificado contra Postgres: se escribe con `registrar_progreso` y se lee con `estado_de_progreso`, sin tocar la pantalla |
+| `lint` · `build` · `test` · `db:verify` | ✅ · ✅ · **652 tests en 36 archivos** · **131 comprobaciones** |
+
+**El guard más importante no es sobre lo que el código hace, sino sobre lo que no debe hacer.**
+`VALIDATED` no produce progreso, y el error es barato: la Evidence ya dice `VALIDATED` y escribir ahí
+la fila de progreso parece *cerrar el ciclo*. El guard cubre los cuatro caminos de `Evidence`, la
+maquinaria compartida de transiciones —que es por donde pasa `VALIDATED`— y **los triggers de la
+base**, porque un trigger que escribiera progreso sería invisible desde el código de aplicación. El
+criterio no es sobre qué tabla cuelga cada trigger sino **qué ejecuta**: el único permitido es la
+fontanería de `updated_at`.
+
+**El duplicado se declara, no se esconde.** `registrar_progreso` devuelve `duplicado: true` cuando la
+clave ya escribió, y el Service **no vuelve a publicar el evento**. Dos eventos harían que la Bitácora
+muestre dos avances donde hubo uno — el mismo error que `VI.6` §1 prohíbe para los eventos del mismo
+ciclo.
+
+**Dos nombres de evento, y uno no está en el spec.** `ProgressUpdated` para el cambio;
+`ProgressNoChangeConfirmed` para el no-cambio declarado. Reusar *"Updated"* para decir que nada cambió
+volvería a fundir en la Bitácora las dos cosas que [ADR-020](decisions.md#adr-020) acababa de separar
+en la pantalla.
+
+**Lo que sigue sin decidirse, y por eso el Service recibe en vez de decidir:** `C01-018` —quién emite
+el resultado y con qué causalidad— sigue `OPEN`. Hoy esto habilita que un operador, un job del ADL o
+una carga asistida registren un resultado y `UX06` lo proyecte. No habilita que el sistema decida por
+su cuenta que alguien aprendió algo.
+
 ---
 
 ## Fase B4 — Academic Decision Engine v1 · avance detallado arriba
@@ -2157,7 +2242,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
 | Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: 11 de 12 invariantes con test, `I7` es de B5 | 6 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
-| Fase B3 — Progreso y eventos | 🟢 **DESBLOQUEADA** — B2 cerró el 1 sep 2026. La estructura de `progress_entry` ya existe; falta el `ProgressUpdated` productivo (`C01-018`) | 0 / — |
+| Fase B3 — Progreso y eventos | 🟡 **EN CURSO** — `B3.1` completa: el resultado se escribe con sus invariantes y `UX06` lo proyecta. Quién lo emite sigue siendo `C01-018` | 1 / 3 |
 | Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |
 | Fase B5 — Modo Examen real | 🟢 DESBLOQUEADA, y ahora **con contenido real**: [ADR-025](decisions.md#adr-025) cerró las ocho `HUMAN-P0`. Readiness sigue bloqueada por [ADR-011](decisions.md#adr-011) | 0 / — |
 | Fase B6 — Risk e Intervención | 🟢 DESBLOQUEADA salvo Operador ([ADR-003](decisions.md#adr-003)) | 0 / — |

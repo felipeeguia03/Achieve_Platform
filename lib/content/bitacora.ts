@@ -44,6 +44,18 @@ const EVENTOS: Record<string, string> = {
    */
   EvidenceValidated: "La validaron",
   EvidenceResubmitted: "Volviste a entregarla",
+
+  /**
+   * El resultado de progreso — Etapa B3.1.
+   *
+   * Son **dos hechos distintos y se llaman distinto**. Un no-cambio confirmado
+   * no es la ausencia de un cambio: es que alguien miró y lo dijo, igual que
+   * `ADR-020` decidió para la fila de dimensiones. Mostrarlos con la misma
+   * frase sería volver a fundir las dos cosas en la Bitácora, después de
+   * haberlas separado en la pantalla.
+   */
+  ProgressUpdated: "Tu progreso cambió",
+  ProgressNoChangeConfirmed: "Revisaron tu progreso y no cambió",
 };
 
 /** `null` ⇒ el hecho no tiene copy aprobada y **la entrada no se renderiza**. */

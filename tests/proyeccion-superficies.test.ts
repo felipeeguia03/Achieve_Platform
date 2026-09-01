@@ -466,6 +466,35 @@ describe("B2.6 · UX06 no inventa causalidad ni procedencia", () => {
     expect(validada.provenance).toBeNull();
   });
 
+  it("el resultado de progreso entra a la Bitácora, y el no-cambio no dice «cambió»", () => {
+    // B3.1: los dos hechos que el Service emite tienen copy propia. Fundirlos
+    // sería volver a mezclar en la Bitácora lo que ADR-020 separó en la pantalla.
+    const p = proyectarProgreso({
+      ...progreso,
+      bitacora: [
+        {
+          accionId: "act-1",
+          objetivo: "Ejercicios 8–14",
+          desde: "2026-09-01T12:00:00.000Z",
+          entradas: [
+            { evento: "ProgressUpdated", en: "2026-09-01T12:00:00.000Z", porElEstudiante: false },
+            {
+              evento: "ProgressNoChangeConfirmed",
+              en: "2026-09-01T13:00:00.000Z",
+              porElEstudiante: false,
+            },
+          ],
+        },
+      ],
+    });
+    const titulos = p.bitacora![0].entradas.map((e) => e.titulo);
+    expect(titulos[0]).toBe("Tu progreso cambió");
+    expect(titulos[1]).toBe("Revisaron tu progreso y no cambió");
+    expect(titulos[1]).not.toContain("cambió tu");
+    // Y ninguno se le atribuye al estudiante: el progreso no lo declara él.
+    expect(p.bitacora![0].entradas.every((e) => e.provenance === null)).toBe(true);
+  });
+
   it("un hecho sin copy aprobada se omite en vez de mostrar su enum", () => {
     const p = proyectarProgreso({
       ...progreso,

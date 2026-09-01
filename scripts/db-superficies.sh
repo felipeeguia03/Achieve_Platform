@@ -211,6 +211,23 @@ igual "lo que declaró el estudiante viaja como suyo" \
 igual "lo que hizo el sistema no se le atribuye a nadie" \
   "$(q "select public.estado_de_progreso('$INS','$EST',now())->'bitacora'->0->'entradas'->1->>'porElEstudiante';")" "false"
 
+echo "→ B3.1 · lo que se registra es lo que UX06 proyecta"
+# El círculo completo: se escribe con `registrar_progreso` y se lee con
+# `estado_de_progreso`. Hasta la B3.1 la tabla no la escribía nadie, así que la
+# lectura sólo se podía probar sembrando a mano.
+q "delete from progress_entry where institution_id='$INS';" >/dev/null 2>&1
+NUEVA_ENTRY=$(q "select entry_id from public.registrar_progreso(
+    '$INS','$CE','b8000000-0000-0000-0000-000000000001',null,'bc000000-0000-0000-0000-000000000002',
+    'bc000000-0000-0000-0000-000000000002','progress_updated',now(),
+    '[{\"dimension\":\"practice\",\"valor\":19,\"texto\":\"19 ejercicios\",\"textoAnterior\":\"12 ejercicios\"}]'::jsonb,
+    false,null,'k-sup-1');" | tr -d '[:space:]')
+igual "la dimensión registrada llega a la superficie" \
+  "$(q "select public.estado_de_progreso('$INS','$EST',now())->'resultado'->'dimensionesCambiadas'->>0;")" "practice"
+igual "y el texto del owner viaja tal cual, sin reformatear" \
+  "$(q "select public.estado_de_progreso('$INS','$EST',now())->'resultado'->'valoresActuales'->>'practice';")" "19ejercicios"
+igual "el resultado se reconoce ligado a la evidencia que el owner señaló" \
+  "$(q "select public.estado_de_progreso('$INS','$EST',now())->'resultado'->>'esDeEstaEvidencia';")" "true"
+
 echo "→ Aislamiento: las cinco funciones lo respetan (I11)"
 for f in estado_de_materia estado_de_accion estado_de_compromiso estado_de_evidencia estado_de_progreso; do
   igual "$f no cruza institución" \
