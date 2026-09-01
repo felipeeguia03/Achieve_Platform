@@ -172,6 +172,12 @@ es exactamente la deriva de vocabulario).
 | **Reviewer (R1)** | Quien aplica el criterio a una `Evidence` que requiere revisión humana | El contenido necesario para aplicar el criterio, según assignment |
 | **Institución** | Cliente B2B | **Agregado por defecto.** Caso individual solo si está autorizado y es necesario para intervenir |
 
+> **El Operador es un rol del producto, no un usuario de la Plataforma**
+> ([ADR-033](decisions.md#adr-033)). Su alcance sigue siendo el que fija el spec —*"el operador no es
+> un parche humano detrás de la app"* (Parte I §21.0)—, pero lo ejerce **desde el CRM**: sus
+> superficies viven ahí (§10.1) y su identidad y asignación son fuente de verdad del CRM (Parte II
+> §18.1). La Plataforma no le da sesión.
+
 ### 4.1 Matriz de visibilidad (Parte II §17)
 
 | Dato | Estudiante | Operador | Institución |
@@ -188,7 +194,15 @@ es exactamente la deriva de vocabulario).
 > individual del estudiante. La institución **no** recibe chats, reflexiones íntimas ni evidencia
 > cruda por defecto.
 
-Todo esto queda gateado por [ADR-006](decisions.md#adr-006) antes de tocar datos reales.
+**La columna Operador se satisface por contrato, no por pantalla.** Lo que un operador ve llega por
+el flujo de contexto académico vivo (CRM → Plataforma, de lectura), no porque tenga acceso a una
+superficie de acá. La fila `human_assignment` —*qué estudiantes son "sus asignados"*— es del CRM
+(`C01-039`).
+
+Todo esto queda gateado por [ADR-006](decisions.md#adr-006) antes de tocar datos reales. **Cualquier
+contrato que transporte notas, causas detalladas, evidencias o información individual de un
+estudiante entre los dos sistemas queda condicionado por las decisiones de privacidad,
+consentimiento, minimización y retención de la Fase B7.**
 
 ---
 
@@ -560,15 +574,39 @@ reglas visibles del producto **sí** siguen corriendo sobre un default no cerrad
 
 **Mapeo canónico obligatorio:** `WF-S10 → UX08` y `WF-S11 → UX09`. **No existe `UX10`.**
 
-### 10.1 Superficies de Operador e Institución
+### 10.1 Superficies de Operador — **pertenecen al CRM**
 
-| ID | Nombre | Estado |
+**No están en el inventario de construcción de la Plataforma, y no van a estarlo**
+([ADR-033](decisions.md#adr-033)). El spec fuente ya las ubicaba ahí: la sección que las define se
+llama *"8. Wireframes low-fi — **Operador / CRM**"*, y el mockup de `WF-O01` lleva dibujado su propio
+encabezado, `ACHIEVE CRM · Cola de intervención`.
+
+| ID | Nombre | Dónde vive |
 |---|---|---|
-| `WF-O01` | Cola priorizada de intervención | No construida. Ver [ADR-012](decisions.md#adr-012) |
-| `WF-O02` | Contexto de estudiante (<10 s) | No construida |
-| `WF-O03` | Registrar intervención + outcome | No construida |
-| `WF-O04` | Revisión de evidencia | No construida |
-| `WF-I01` | Dashboard institucional mínimo | No construida |
+| `WF-O01` | Cola priorizada de intervención | **CRM** |
+| `WF-O02` | Contexto de estudiante (<10 s) | **CRM** — lo alimenta el flujo de contexto académico vivo |
+| `WF-O03` | Registrar intervención + outcome | **CRM** — el hecho canónico lo produce la Plataforma, por comando |
+| `WF-O04` | Revisión de evidencia | **CRM** |
+
+**El operador no interactúa con la Plataforma y no tiene sesión acá.** No es que falte construirla:
+no debe existir. A la Plataforma acceden únicamente los estudiantes que el CRM autoriza
+([`platform-integration-contract.md`](platform-integration-contract.md) §1). En las integraciones
+que correspondan, la Plataforma **autentica al CRM como sistema**, nunca a la persona.
+
+> `WF-O04` sale del alcance **como superficie de operador**, y nada más. El lifecycle `UNDER_REVIEW`
+> de `Evidence` sigue siendo dominio canónico de la Plataforma. Si el **Reviewer (R1)** de §4 —un rol
+> distinto del Operador— es o no un operador, sigue abierto.
+
+### 10.1.1 `WF-I01` — dashboard institucional · sin resolver
+
+| ID | Nombre | Dónde vive |
+|---|---|---|
+| `WF-I01` | Dashboard institucional mínimo | ⬜ **Abierto** |
+
+Está en la sección **9 — Institución** del spec, no en la 8, y su usuario es el **cliente B2B**, no
+el operador. La confirmación del CTO fue sobre superficies de operador y **no dispone de ésta**: el
+spec §18.1 le da al CRM la relación B2B, pero lo que `WF-I01` muestra son agregados académicos, que
+son de la Plataforma. Se decide aparte ([ADR-033](decisions.md#adr-033)).
 
 ### 10.2 Precedencia operativa del Hero (UX01)
 

@@ -371,8 +371,8 @@ lib/
 └── server/
     ├── composicion.ts    ← composition root: EL único lugar que ata implementaciones
     ├── servicios/        ← reglas, transacciones, eventos. No leen headers ni SQL
-    │   ├── operadores.ts    PUERTO al directorio del CRM. Sin implementación real:
-    │   │                    es lo único de la B6 que espera al contrato v2
+    │   ├── operadores.ts    PUERTO al directorio del CRM. TRANSITORIO: ADR-033 lo dejó
+    │   │                    superado en dirección, pendiente de retiro
     │   ├── auditoria.ts     PUERTO de `audit_log`. Distinto de `product_event`:
     │   │                    uno dice qué le pasó al estudiante, el otro quién tocó qué
     │   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
@@ -414,18 +414,42 @@ Congelada por el spec (Parte II §18.1), independientemente de qué opción se e
 
 | | Fuente de verdad de |
 |---|---|
-| **Plataforma** | Materias, evaluaciones, progreso, acciones, compromisos académicos, evidencias, `ExamPreparation`, `RiskSignal` académico y Bitácora |
+| **Plataforma** | Materias, evaluaciones, progreso, acciones, compromisos académicos, evidencias, `ExamPreparation`, `RiskSignal` académico, `Intervention` y Bitácora |
 | **CRM** | Institución cliente, elegibilidad/padrón, operadores, asignaciones, contratos/cobranza y métricas de negocio |
 
 - **No existe base de datos compartida.**
 - Integración por contratos HTTP/eventos versionados.
+
+#### Quién usa cada sistema, y quién escribe qué — [ADR-033](decisions.md#adr-033)
+
+**A la Plataforma acceden únicamente los estudiantes que el CRM autoriza.** El operador no interactúa
+con ella y **no tiene sesión acá**: sus superficies (`WF-O01`…`WF-O04`) viven en el CRM, y el spec
+fuente ya las ubicaba ahí — la sección que las define se llama *"8. Wireframes low-fi — Operador /
+CRM"*.
+
+| Dirección | Qué es | Quién se autentica |
+|---|---|---|
+| Estudiante → Plataforma | El loop diario, las nueve superficies | **La persona**, con su JWT |
+| Plataforma → CRM | Autorización de padrón (§1 del contrato), y a futuro actividad | La Plataforma, con secreto compartido |
+| CRM → Plataforma | Lectura de contexto académico, y **comandos de intervención y outcome** | **El CRM como sistema.** Nunca la persona |
+
+**El CRM no escribe el dominio de la Plataforma: envía comandos.** La Plataforma los valida contra
+sus máquinas de estados —el mismo `transiciones.ts` que usa todo lo demás— y produce el hecho
+canónico. La identidad del operador viaja **asertada por el CRM**: `intervention.owner_operator_id`
+es `UUID NOT NULL` sin FK, porque no hay nada de este lado contra qué verificarla.
+
+El mecanismo no es nuevo. `POST /api/reloj` ya corre con secreto de servicio y sin persona detrás; lo
+que falta es la forma del contrato, que versiona el CTO.
 - **Contrato existente hoy:** Plataforma consulta elegibilidad con
   `POST /api/service/v1/authorize`. El request, las respuestas, la autenticación y la idempotencia
   segura para reintentos están especificados en
   [`platform-integration-contract.md`](platform-integration-contract.md). El presupuesto concreto
   del cliente —timeouts, cantidad máxima de intentos, jitter y agotamiento— sigue pendiente.
 - **Contexto futuro, sin implementar:** (2) Plataforma publica actividad académica relevante; (3) CRM
-  consulta contexto académico vivo. Todavía no existe contrato exacto para ninguno.
+  consulta contexto académico vivo; **(4) el CRM devuelve comandos de intervención y outcome —que el
+  contrato actual no contempla, y sin el cual el circuito de la Fase B6 no puede cerrarse**. Todavía
+  no existe contrato exacto para ninguno; los tres están descritos a nivel de requerimiento en
+  [`platform-integration-contract.md`](platform-integration-contract.md) §2.2.
 - **Si el CRM no recibió un Commitment confirmado, el Commitment no se duplica ni se revierte.**
   Plataforma sigue siendo la fuente; la reparación pertenece al contrato de sincronización.
 

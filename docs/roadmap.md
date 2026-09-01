@@ -1168,20 +1168,26 @@ una sola frase de ausencia, y **sólo lleva instrucción el que el estudiante pu
 
 ---
 
-## Fase A1 — Operador e Institución · ⏸️ DIFERIDA al Track B
+## Fase A1 — Operador e Institución · ❌ RETIRADA DEL ALCANCE
 
-**Estado:** ⏸️ **DIFERIDA** por [ADR-012](decisions.md#adr-012), aprobado el 28 de agosto de 2026.
+**Estado:** ❌ **Retirada del alcance de la Plataforma** por
+[ADR-033](decisions.md#adr-033), 1 de septiembre de 2026. *(Antes: ⏸️ diferida al Track B por
+[ADR-012](decisions.md#adr-012), 28 de agosto de 2026.)*
 
-Las cinco superficies —`WF-O01` cola priorizada, `WF-O02` contexto de estudiante, `WF-O03` registrar
-intervención, `WF-O04` revisión de evidencia, `WF-I01` dashboard institucional— **salen del Track A**
-y su contenido se absorbe en la **Fase B6**, que ya está gateada por
-[ADR-003](decisions.md#adr-003).
+**No está diferida: no es nuestra.** Las cuatro superficies de operador —`WF-O01` cola priorizada,
+`WF-O02` contexto de estudiante, `WF-O03` registrar intervención, `WF-O04` revisión de evidencia—
+**pertenecen al CRM**. El CTO lo confirmó y el spec fuente ya lo decía: la sección que las define se
+llama *"8. Wireframes low-fi — **Operador / CRM**"*.
 
-**Razones:** los focus groups son con estudiantes, y construirlas ahora significaría bautizar el
-vocabulario del rol Operador antes de reconciliarlo con Dashboard_Achieve.
+El operador **no interactúa con la Plataforma y no tiene sesión acá**. No es que falte construirla:
+no debe existir.
 
-**Pendiente de evaluar en B6:** si `WF-O04` (revisión de evidencia) merece una versión mínima
-anticipada. Es la contraparte del estado `UNDER_REVIEW` que el estudiante **sí** ve en el Track A.
+**`WF-I01`** (dashboard institucional) queda **abierto**: es una superficie de cliente B2B, no de
+operador, y la confirmación del CTO no dispone de ella. Ver `product.md` §10.1.1.
+
+**Lo que ADR-012 dejó pendiente se cierra por no-aplicable:** *"evaluar en B6 si `WF-O04` merece una
+versión mínima anticipada"*. Es una superficie de operador. El lifecycle `UNDER_REVIEW` que el
+estudiante **sí** ve sigue siendo dominio canónico de la Plataforma y no se toca.
 
 > **Con esto, cerrar la Fase 0 cierra el Track A completo.**
 
@@ -2409,7 +2415,7 @@ abiertos `C01-029` (umbrales de readiness), `C01-031` y `C01-034` (obligatorieda
 es código nuestro**: son tres decisiones humanas y un contrato que lleva el CTO.
 
 **Objetivo.** `RiskSignal` rule-based explicable, `Intervention` con playbook/SLA/outcome, y la
-consola operativa P0.
+consola operativa P0 — **esta última en el CRM**, no acá ([ADR-033](decisions.md#adr-033)).
 
 ### Lo que quedó construido
 
@@ -2421,7 +2427,7 @@ consola operativa P0.
 | `intervention_outcome` | PK compartida: **como mucho un resultado por intervención** |
 | Los cuatro escritores | `registrar_senal`, `abrir_intervencion`, `cerrar_intervencion`, `resolver_senal` |
 | `circuito_de_senales()` | **Audita el Done** y **nombra el contrato que falta** en vez de dar el circuito por cerrado |
-| El puerto `DirectorioDeOperadores` | Aísla la integración con el CRM **sin inventar su contrato** |
+| El puerto `DirectorioDeOperadores` | Aísla la integración con el CRM **sin inventar su contrato**. ⚠️ **Transitorio y superado en dirección** por [ADR-033](decisions.md#adr-033): se retira cuando exista un contrato aceptado |
 | `audit_log`, por fin escrita | Existía desde la B1.5 y nadie la usaba. Toda escritura de riesgo pasa por el `Auditor` |
 | El reloj, ampliado | Expira las señales vencidas — **sólo `OPEN` y `ACKNOWLEDGED`** |
 | `UX01` | El riesgo como **modificador**: cambia el estado general y nada más |
@@ -2436,16 +2442,29 @@ comprobaciones contra Postgres que lo prueban.
 |---|---|
 | **Un motor que produzca señales** | `C01-021` (qué regla, qué severidad, qué sujeto) y `C01-036` (cuántas repeticiones hacen a un error *"reiterativo"*, **que es de la psicopedagoga**). Hay un guard estático que rompe si alguien agrega un evaluador |
 | **Los playbooks y sus SLA** | `C01-044`, gate `P`, textual: *"no se inventan valores"*. La tabla está vacía y el circuito lo declara |
-| **Las cinco superficies de operador** (`WF-O01`…`WF-O04`, `WF-I01`) | **No hay sesión de operador**, y fabricar una sería inventar el esquema de autenticación que el contrato v2 tiene que definir. Mismo criterio con el que la B5 no inventó el escritor de `current_step_id` |
-| **Cualquier endpoint HTTP de riesgo** | Un endpoint con JWT de estudiante expondría operaciones de operador; uno con secreto de servicio inventaría cómo se autentica un operador |
+| **Las superficies de operador** (`WF-O01`…`WF-O04`) | **No se construyen acá nunca: son del CRM** ([ADR-033](decisions.md#adr-033)). No falta la sesión de operador — **no debe existir**. `WF-I01` queda abierto, por ser superficie de institución y no de operador |
+| **Cualquier endpoint HTTP de riesgo** | Falta la **forma y el versionado del contrato**, que lleva el CTO. El mecanismo de autenticación **no** es el bloqueo: la persona nunca se autentica contra la Plataforma, se autentica el CRM como sistema, y ese patrón ya corre en `POST /api/reloj` con secreto de servicio |
 
-**Absorbe la ex-Fase A1:** las cinco superficies `WF-O01`…`WF-O04` y `WF-I01`, diferidas por
-[ADR-012](decisions.md#adr-012). **Siguen sin construirse**, ahora por el contrato v2 y no por
-ADR-003.
+**Ya no absorbe la ex-Fase A1.** [ADR-012](decisions.md#adr-012) había mandado las cinco superficies
+a esta fase; [ADR-033](decisions.md#adr-033) las retiró del alcance de la Plataforma por pertenecer
+al CRM. La consola operativa P0 del objetivo de arriba **se construye en el CRM**, alimentada por los
+contratos de §5 más abajo.
+
+**El dominio de esta fase no cambió una línea por esa corrección**, y eso es consecuencia de no haber
+inventado el contrato v2: se construyó sin asumir en ningún momento una superficie de operador. Si se
+hubiera fabricado una sesión para poder mostrar una cola, hoy habría que borrarla.
 
 **Done cuando:** toda señal relevante cierra su circuito causa → owner → playbook → SLA →
 intervención → outcome; ninguna señal queda sin outcome registrado. **Cuatro de seis eslabones están
 garantizados por construcción**; playbook y SLA esperan a `C01-044`.
+
+**Los tres flujos que faltan** ([`platform-integration-contract.md`](platform-integration-contract.md) §2.2):
+
+| # | Flujo | Dirección |
+|---|---|---|
+| A | Señal que requiere intervención humana | Plataforma → CRM |
+| B | **Comandos de intervención y outcome** | CRM → Plataforma. **No existe en el contrato actual**, y sin él el circuito no puede cerrarse |
+| C | Lectura de contexto académico | CRM → Plataforma |
 
 **Contratos a cerrar:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`. **Ninguno se cerró en
 esta fase**, y ninguno lo cierra un agente.

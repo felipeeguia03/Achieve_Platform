@@ -2,7 +2,7 @@
 
 **Documento:** `docs/decisions.md`
 **Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
-**Última actualización:** 31 de agosto de 2026
+**Última actualización:** 1 de septiembre de 2026
 
 ---
 
@@ -74,6 +74,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-025](#adr-025) | Las ocho `HUMAN-P0`, respondidas por la psicopedagoga | ✅ `ACCEPTED` | — |
 | [ADR-026](#adr-026) | Obligatoriedad de `Reflection`: dónde vive y qué la hace válida | ✅ `ACCEPTED` | — |
 | [ADR-027](#adr-027) | Los ocho eventos de transición entran al Product Event Model | ✅ `ACCEPTED` | — |
+| [ADR-033](#adr-033) | La frontera de superficies, corregida en la dirección del spec | ✅ `ACCEPTED` *(corrige cláusulas de [ADR-012](#adr-012) y [ADR-032](#adr-032))* | — |
 
 ---
 
@@ -2438,3 +2439,144 @@ sería fijar el umbral por el que a un estudiante se le dice que está en proble
   sesión de operador**, y fabricar una sería inventar el esquema de autenticación que el contrato v2
   tiene que definir. Es el mismo criterio con el que la Fase B5 no inventó el escritor de
   `current_step_id`.
+
+---
+
+<a id="adr-033"></a>
+## ADR-033 — La frontera de superficies, corregida en la dirección del spec
+
+**Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
+**Confirma:** [ADR-003](#adr-003), sin cambios.
+**Corrige cláusulas de:** [ADR-012](#adr-012) y [ADR-032](#adr-032). **Ninguno se edita**: los dos
+siguen `ACCEPTED` y su historia queda como está — ver *"Qué cláusulas corrige"* más abajo.
+**No reabre:** el dominio construido en la Fase B6. Ver *"Qué NO toca"*.
+**Toca:** `product.md`, `roadmap.md`, `platform-integration-contract.md`,
+`pending-decisions-annex.md`, `architecture.md`.
+
+### Contexto — el CTO confirmó la arquitectura, y coincide con el spec fuente
+
+El CTO responsable del CRM confirmó cinco hechos:
+
+1. El operador **no interactúa** con la Plataforma.
+2. El operador **nunca inicia sesión** en la Plataforma.
+3. **Todas** las superficies de operador pertenecen al CRM.
+4. A la Plataforma acceden **únicamente los estudiantes autorizados por el CRM**.
+5. Esa autorización se hace hoy con `POST /api/service/v1/authorize`.
+
+**Esto no corrige al spec fuente: corrige una lectura nuestra del spec fuente.** La sección que
+define las cinco superficies se llama, textualmente:
+
+> `product-spec-source.md` — **"8. Wireframes low-fi — Operador / CRM"**
+
+y el mockup de `WF-O01` lleva su propio encabezado dibujado adentro: **`ACHIEVE CRM · Cola de
+intervención`**. Tres declaraciones más del mismo documento apuntan al mismo lado:
+
+| Fuente | Qué dice |
+|---|---|
+| Parte II §18.1 | *"CRM es fuente de verdad de la relación B2B y operación: institución cliente, elegibilidad/padrón, **operadores, asignaciones**"* |
+| Parte I §22 | *"CRM — **Vista operacional** para priorizar y acompañar"* |
+| Parte I §15.3 y §21 | Los títulos son *"Intervention Engine / **CRM**"* y *"**CRM**, Orquestación e Intervention Engine"* |
+
+**Dónde se metió la divergencia.** [ADR-012](#adr-012) leyó *"cinco superficies que no existen en
+ningún lado"* como *"que todavía no construimos nosotros"*, y las difirió al Track B absorbiéndolas
+en la Fase B6. De ahí bajaron a `product.md` §10.1 —listadas junto a `UX01`–`UX09` como *"No
+construida"*—, al roadmap, y finalmente a `platform-integration-contract.md` §2.2, donde el supuesto
+ya se había endurecido en un bloqueo: *"no hay sesión de operador"*.
+
+Era comprensible: ADR-012 se escribió para decidir un alcance de focus groups con **estudiantes**, y
+en ese contexto la pregunta era cuándo construirlas, no dónde viven.
+
+### Decisión
+
+**1 · Ninguna superficie de operador vive en la Plataforma.** Las cinco —`WF-O01` cola priorizada,
+`WF-O02` contexto de estudiante, `WF-O03` registrar intervención, `WF-O04` revisión de evidencia,
+`WF-I01` dashboard institucional— **pertenecen al CRM**. No es un diferimiento con fecha: es una
+reubicación. Salen del inventario de construcción de la Plataforma y quedan registradas como
+superficies del CRM, con su trazabilidad a §8 y §9 del spec.
+
+**2 · La Plataforma no autentica operadores.** En las integraciones que correspondan autentica **al
+CRM como sistema**. Un operador no tiene, y no debe tener, sesión acá.
+
+La consecuencia es una que ya estaba escrita en el schema antes de saberlo:
+`intervention.owner_operator_id` es `UUID NOT NULL` **sin FK**, y seguirá siéndolo. Es una identidad
+externa **asertada por un par autenticado**, no una identidad que la Plataforma pueda verificar. Un
+secreto compartido autentica al CRM; nunca a la persona.
+
+**3 · El CRM no escribe el dominio de la Plataforma: envía comandos autenticados.** La Plataforma
+valida contra sus máquinas de estados y **produce el hecho canónico**. Esto no es una excepción a la
+regla de `platform-integration-contract.md` §2.1 —*"Dashboard no escribe dominio de Achieve"*—: es
+la distinción que la hace cumplible. Sin ella, esa frase y la propiedad canónica de `Intervention`
+que declaró [ADR-003](#adr-003) no podían ser ciertas al mismo tiempo, porque el operador trabaja en
+el otro sistema.
+
+`abrir_intervencion()`, `reconocer` y `cerrar_intervencion()` **ya son exactamente esos comandos**.
+Son transaccionales y agnósticos de quién los llama. No les falta lógica: les falta un Controller y
+un contrato.
+
+**4 · `WF-O04` queda fuera del alcance de la Plataforma**, por la misma razón que las otras cuatro.
+[ADR-012](#adr-012) había dejado abierto *"evaluar en B6 si merece una versión mínima anticipada"*.
+**Se cierra por no-aplicable**, no por postergación.
+
+> ⚠️ Esto dispone de `WF-O04` **como superficie de operador**, y de nada más. El lifecycle
+> `UNDER_REVIEW` de `Evidence` es dominio canónico de la Plataforma y no se toca. Si el **Reviewer
+> (R1)** —que `product.md` §4 lista como un rol **separado** del Operador— es o no un operador,
+> queda abierto abajo.
+
+### Lo que este ADR NO decide
+
+Siete cosas, y ninguna la cierra la confirmación del CTO:
+
+| Abierto | Por qué no lo cierra este ADR |
+|---|---|
+| **Si `playbook` y SLA son canónicos del CRM o de la Plataforma** | La evidencia del spec apunta al CRM (§15.3, §21: el Intervention Engine es del CRM), pero **es una propuesta pendiente de `C01-044`, no una decisión de este ADR**. Queda anotada como tal en el anexo |
+| **Si Reviewer (R1) es un operador** | El CTO confirmó sobre **operadores**. `product.md` §4 lista R1 como rol distinto. Si no lo es, su superficie no queda dispuesta acá |
+| **Dónde vive `WF-I01`** | Está en la sección **9 — Institución** del spec, no en la 8. Es una superficie de **cliente B2B**, no de operador. §18.1 le da al CRM la relación B2B, pero lo que `WF-I01` muestra son agregados académicos |
+| **Quién produce `OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED`** | *"Un operador la vio"* es un hecho del CRM; *"esto necesita una persona"* lo declara `risk_rule.modo = 'HUMANA'`, que es configuración de la Plataforma. Pertenece a `C01-022` |
+| **Endpoints, payloads y nombres de campo** | Los versiona el CTO ([ADR-003](#adr-003)) |
+| **El mecanismo concreto de autenticación entre servicios** | Ídem. Que exista el patrón —`POST /api/reloj` ya corre con secreto de servicio— no lo elige |
+| **Qué contenido personal circula entre sistemas** | Queda condicionado por [ADR-006](#adr-006) y la Fase B7: consentimiento, minimización y retención |
+
+### Qué cláusulas corrige, y qué se preserva
+
+**Ninguno de los dos ADR se edita.** Los dos siguen `ACCEPTED`, con su contexto y sus razones
+intactos: lo que decidieron era correcto para lo que tenían adelante.
+
+| ADR | Cláusula corregida | Cómo queda |
+|---|---|---|
+| [ADR-012](#adr-012) | *"La Fase A1 se difiere al Track B"* y *"su contenido se absorbe en la Fase B6"* | **Corregido:** no se difiere, se reubica. Las cinco no vuelven al roadmap de la Plataforma en ninguna fase |
+| [ADR-012](#adr-012) | *"Queda pendiente de evaluar, cuando se llegue a B6, si `WF-O04` merece una versión mínima anticipada"* | **Cerrado por no-aplicable** (Decisión 4) |
+| [ADR-032](#adr-032) | *"Las cinco superficies de operador. No se construyeron: **no hay sesión de operador**, y fabricar una sería inventar el esquema de autenticación"* | **Corregido:** no es que falte la sesión de operador — **no debe existir**. El bloqueo era circular: la persona nunca se autentica contra la Plataforma |
+| [ADR-032](#adr-032) | *"Cualquier endpoint HTTP de riesgo o intervención"* como bloqueado por la autenticación | **Corregido:** el mecanismo no está bloqueado —`POST /api/reloj` ya usa secreto de servicio—. Lo que falta es la **forma y el versionado del contrato**, que es del CTO |
+| [ADR-012](#adr-012) razón 2, y [ADR-003](#adr-003) entero | Reconciliar el vocabulario del rol Operador antes de bautizarlo | **Se confirma, y se cumplió.** El vocabulario del operador nunca se bautizó en la Plataforma |
+
+### Qué NO toca
+
+**El dominio de la Fase B6 sigue siendo válido.** Se construyó sin asumir en ningún momento una
+superficie de operador, y esta corrección no cambia una línea de él: `risk_signal` con causa
+obligatoria, `risk_rule` como configuración sin umbral, `intervention` con dueño y outcome
+obligatorio, los cuatro escritores transaccionales, `circuito_de_senales()`, el `Auditor`, el reloj y
+el modificador de riesgo en `UX01`.
+
+Que la corrección sea documental **es consecuencia de no haber inventado el contrato v2**. Si en la
+B6 se hubiera fabricado una sesión de operador para poder mostrar una cola, hoy habría que borrarla.
+
+Tres artefactos quedan marcados, y **ninguno se toca en este commit**:
+
+| Artefacto | Estado | Cuándo cambia |
+|---|---|---|
+| `DirectorioDeOperadores` | **Transitorio, superado en dirección.** Preguntarle al CRM *"¿existe este operador?"* sobre una identidad que el propio CRM asertó en un comando autenticado es pedirle a un emisor que valide su propia afirmación | Se retira cuando exista un contrato aceptado. Hasta entonces es lo único que hace que `owner_verified = false` sea un hecho registrado y no un descuido |
+| `intervention.owner_verified` | Significa hoy *"había un directorio que pudiera confirmarlo"* | **No se redefine en el lugar.** Cuando llegue el contrato, columna, valor o versión nuevos que preserven las filas históricas |
+| `playbook` | Tabla vacía, ownership propuesto al CRM | Lo decide `C01-044`, no este ADR |
+
+### Consecuencias
+
+- La ex-Fase A1 **desaparece del roadmap de la Plataforma**. No está diferida: no es nuestra.
+- `C01-039` deja de bloquear cinco superficies. Sigue abierta por `human_assignment` y por el canal
+  de comandos.
+- **El contrato v2, como está redactado, no tiene canal de escritura CRM → Plataforma.** Sus tres
+  flujos son autorización (Plataforma→CRM), actividad (Plataforma→CRM) y contexto vivo
+  (CRM→Plataforma, **de lectura**). Sin un cuarto, el circuito que la B6 construyó **no puede
+  cerrarse nunca**, porque el eslabón que lo cierra ocurre en el otro sistema. Queda registrado en
+  `platform-integration-contract.md` §2.2.
+- `POST /api/service/v1/authorize`, la autorización de estudiantes y `platformStudentId` quedan
+  **intactos**. Son de estudiantes, no de operadores, y no se mezclan con Risk ni con Intervención.
