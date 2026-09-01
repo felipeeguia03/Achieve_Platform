@@ -2216,11 +2216,11 @@ su cuenta que alguien aprendió algo.
 
 ---
 
-## Fase B4 — Academic Decision Engine v1 · avance detallado arriba
+## Fase B4 — Academic Decision Engine v1 · ✅ COMPLETA
 
-**Estado:** 🟡 EN CURSO. [ADR-004](decisions.md#adr-004) está `ACCEPTED (v1 provisional)`; el Engine
-puro y su materialización en Postgres están construidos. Ver la sección «ADE v1 y el reloj del
-lifecycle».
+**Estado:** ✅ **COMPLETA — 1 de septiembre de 2026.** [ADR-004](decisions.md#adr-004) está
+`ACCEPTED (v1 provisional)`. El Engine puro, su materialización en Postgres y el reloj estaban
+construidos desde el 30 de agosto; faltaban **el validador** y **que el reloj corriera**.
 
 **Objetivo.** Un ADE real que emita `ActionRecommendation` con las cuatro ramas
 `NEW` / `NONE` / `ERROR` / `PENDING`.
@@ -2228,6 +2228,95 @@ lifecycle».
 **Done cuando:** el ADE emite exactamente una recomendación principal por contexto; el validador
 determinista impide publicar una recomendación que afirme dominio, progreso o readiness inexistente;
 las cuatro ramas son observables.
+
+| # | Etapa |
+|---|---|
+| B4.1 | ✅ **COMPLETA** — el validador determinista, y con él la rama `ERROR` deja de ser teórica |
+| B4.2 | ✅ **COMPLETA** — el reloj tiene ejecución operativa |
+
+---
+
+#### ✅ Etapa B4.1 — El validador determinista · 1 de septiembre de 2026
+
+**El Done de la fase lo exigía desde el primer día y no existía.**
+[ADR-004](decisions.md#adr-004) lo describe con estas palabras: *"un validador determinista […]
+verifica que la Action sea ejecutable, que respete disponibilidad y que **no se afirma dominio,
+progreso ni readiness inexistente**. Ese validador es la parte que no se puede saltear"*. Y fija el
+orden: **la v1 construye el validador y las reglas; el LLM no.**
+
+**Sus reglas salen de `product.md` §13**, el copy prohibido, y **cada una cita la fila que la
+origina** — con un test que verifica la cita contra el documento. No están las 22 filas: están las
+**diez** que un motor de recomendación puede violar al escribir un objetivo o una razón. Las que
+hablan del protocolo de examen o de la revisión humana no las puede producir esta salida, y
+agregarlas habría sido teatro.
+
+**Valida sólo lo que el estudiante lee** —objetivo, razón, evidencia esperada, criterio de cierre—.
+`prioridad` ordena y nunca se muestra (`P-03`); validar copy invisible daría una cobertura que no
+existe.
+
+**Y va antes de materializar**, no después: lo que no se puede mostrar **no se persiste**. Una Action
+con una razón que afirma dominio ya es un dato malo en la base aunque nadie la vea, y el próximo que
+la lea no va a saber que estaba mal. Tampoco se publica evento: no ocurrió ningún hecho de producto.
+
+**Con esto la rama `ERROR` se vuelve real.** Estaba en el tipo desde el principio y **no la producía
+nada**; una recomendación rechazada **es** el caso de error del ADE: se decidió algo y no se puede
+publicar. `PENDING` sigue sin producirse en la v1 —no hay cálculo asincrónico— pero **dejó de
+colapsarse con `CONTEXTO_INCOMPLETO`**: tiene su propio estado, para que el día que la v2 la
+produzca nadie lea una cosa por otra.
+
+**¿Por qué construir un guard que la v1 no puede violar?** Porque no es un lint sino el **guard de
+publicación**: el día que la razón venga de otra fuente —un LLM, una plantilla editada, contenido de
+la cátedra— ya está puesto, y no hay que acordarse de agregarlo. Que hoy no dispare es la prueba de
+que el Engine se porta bien, no de que el guard sobre.
+
+---
+
+#### ✅ Etapa B4.2 — El reloj tiene ejecución operativa · 1 de septiembre de 2026
+
+**El reloj estaba construido, probado y nadie lo llamaba.** `correrReloj` existía en el composition
+root desde el 30 de agosto y sus únicos llamadores eran los tests. `product.md` §226 dice que la UI
+no declara `MISSED` ni `DUE` por el paso del tiempo —lo hace el owner del lifecycle—, y ese owner
+**no servía de nada sin nadie que lo despierte**.
+
+| Pieza | Qué es |
+|---|---|
+| `POST /api/reloj?institucion=<uuid>` | La ejecución que cualquier scheduler puede llamar |
+| `npm run reloj -- <uuid>` | La misma, a mano, para la demo y desarrollo |
+
+**Con qué frecuencia corre no lo decide esta etapa.** Eso es operación, y
+[ADR-005](decisions.md#adr-005) la dejó `DEFERRED`. Acá está la pieza; elegir Vercel Cron, GitHub
+Actions o `pg_cron` es una decisión de despliegue que no bloquea nada.
+
+**No lo dispara una persona**, así que no se autentica con el JWT de un estudiante: secreto de
+servicio en `Authorization: Bearer`, comparado **en tiempo constante** —un `===` sobre strings sale
+antes en el primer byte distinto y filtra el secreto de a un byte a quien mida—. Y **sin
+`RELOJ_SHARED_SECRET` configurado no entra nadie**: un endpoint que se abre cuando falta una variable
+de entorno es peor que uno que no existe.
+
+**`POST` y no `GET`**, porque muta estado. Un `GET` que cambia el mundo es lo que hace que un
+prefetch del navegador declare incumplido un compromiso.
+
+**La institución es explícita.** Un reloj que corre sobre *"todas"* es un reloj que un día corre
+sobre una que no debía (`I11`).
+
+**El script llama al endpoint, no al Service.** Si importara `correrReloj` directo, la demo
+ejercitaría un camino que en producción no existe —sin autenticación, sin borde HTTP— y el primer
+problema aparecería recién al desplegar.
+
+**Verificado de punta a punta, contra el servidor y la base:**
+
+| Qué | Resultado |
+|---|---|
+| Sin secreto · secreto equivocado · sin institución · correcto | `401` · `401` · `400` · `200` |
+| Un `CONFIRMED` vencido hace 3 h, primera corrida | → `DUE`. **No salta a `MISSED`** |
+| Segunda corrida | → `MISSED` |
+| Tercera | `0 · 0 · 0` — **converge** |
+| Los eventos | `CommitmentDue` y `CommitmentMissed`, los dos con **actor = sistema** |
+
+Que no salte `DUE` importa: saltar directo a `MISSED` borraría de la Bitácora que alguna vez llegó su
+hora.
+
+---
 
 ---
 
@@ -2384,7 +2473,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: 11 de 12 invariantes con test, `I7` es de B5 | 6 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | 🟡 **EN CURSO** — `B3.1` completa: el resultado se escribe con sus invariantes y `UX06` lo proyecta. Quién lo emite sigue siendo `C01-018` | 1 / 3 |
-| Fase B4 — ADE v1 | 🟡 **EN CURSO — es la única con trabajo disponible que no espera a una persona.** Engine, reloj y materialización construidos; falta integrar el reloj a una ejecución operativa | 3 / — |
+| Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | 🟢 **DESBLOQUEADA DEL TODO** — contenido por [ADR-025](decisions.md#adr-025) y readiness por [ADR-011](decisions.md#adr-011). **Es la fase grande que queda** | 0 / — |
 | Fase B6 — Risk e Intervención | 🟢 **DESBLOQUEADA** — [ADR-003](decisions.md#adr-003) repartió: Achieve es canónico, Dashboard consume. Falta el contrato v2, que lleva el CTO | 0 / — |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |

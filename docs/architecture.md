@@ -357,6 +357,7 @@ app/
 │                            dibujan `Ausencia` si la carga falla: nunca el fixture
 └── api/                  ← Controller. Valida sesión, llama a UN Service, traduce a HTTP
     ├── hoy · materia · accion · compromiso · evidencia · progreso
+    ├── reloj             ← POST. Secreto de SERVICIO, no JWT: no lo dispara una persona
     └── sesion            ← alta de la sesión sintética, fuera de las nueve
 
 lib/
@@ -383,6 +384,10 @@ scripts/                  ← db:verify — 134 comprobaciones que npm test no p
 `estado_de_progreso`— porque varias lecturas por pantalla dan una foto inconsistente entre sí. El
 historial es la excepción a la regla de *una por superficie*, y a propósito: `hechos_de_cursada()` la
 comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda fuente histórica**.
+
+**El reloj del lifecycle** corre por `POST /api/reloj`, con secreto de servicio: es lo que hace que
+un compromiso vencido pase a `DUE` y después a `MISSED` sin que nadie apriete nada. **Con qué
+frecuencia se lo llama es operación**, y [ADR-005](decisions.md#adr-005) la dejó `DEFERRED`.
 
 **Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment` y `Evidence`;
 `registrar_progreso`; `materializar_recomendacion` del ADE; e `ingerir_materia` del ADL. Todas

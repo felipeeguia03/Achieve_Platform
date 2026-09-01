@@ -101,6 +101,16 @@ el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Post
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` esperan a la Fase B5
 porque no hay tablas de examen.
 
+**Fase B4 — ADE v1 y el reloj.** ✅ **COMPLETA** — 1 de septiembre de 2026. El **validador
+determinista** rechaza toda recomendación que afirme dominio, progreso o readiness inexistente
+—sus diez reglas salen de `product.md` §13 y **cada una cita su fila**—, y con él la rama `ERROR`
+dejó de ser teórica. El **reloj corre** por `POST /api/reloj` con secreto de servicio comparado en
+tiempo constante; `npm run reloj -- <institucion>` hace lo mismo a mano.
+
+⚠️ **Antes de tocar el ADE:** lo que el motor escriba pasa por
+`lib/domain/validador-de-recomendacion.ts` **antes de materializar**. Lo que no se puede mostrar no
+se persiste.
+
 **Fase B3 — Progreso, Bitácora y eventos.** ✅ **COMPLETA, 3 / 3** — 1 de septiembre de 2026.
 
 - **El resultado de progreso se escribe** con sus invariantes: `I10` en el Service y en la base, `I8`
@@ -130,9 +140,12 @@ append-only.
 [ADR-027](docs/decisions.md#adr-027), y dejó [ADR-006](docs/decisions.md#adr-006) en `PROVISIONAL`.
 Con eso hay **tres frentes con trabajo real**:
 
-- **Fase B4** — integrar el reloj del lifecycle a una ejecución operativa.
+- ~~Fase B4~~ ✅ **COMPLETA** el 1 de septiembre: el **validador determinista** —que el Done exigía
+  desde el primer día y no existía— y **el reloj corriendo** por `POST /api/reloj` con secreto de
+  servicio. Verificado de punta a punta: un `CONFIRMED` vencido pasa a `DUE`, después a `MISSED`, y
+  la tercera corrida converge.
 - **Fase B5 · Modo Examen** — desbloqueada **del todo**: contenido por ADR-025 y readiness por
-  ADR-011. Es la fase grande que queda, con tres requisitos de schema nuevos.
+  ADR-011. **Es la fase grande que queda**, con tres requisitos de schema nuevos.
 - **Fase B6 · Risk e Intervención** — ADR-003 repartió: Achieve es canónico, Dashboard consume.
 
 Lo que **no** se puede hacer sigue siendo lo mismo: tocar un dato real. El mapa de bloqueos del
