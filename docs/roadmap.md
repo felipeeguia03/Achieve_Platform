@@ -1497,8 +1497,10 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ## Fase B2 — Dominio de ejecución · 🟡 EN CURSO
 
-**Estado:** 🟡 **4 completas / 6; 2 parciales** — `B2.6` cerró el 31 de agosto de 2026 con las cinco
-superficies leyendo de la base. `B2.4` sigue parcial por `C01-051`, `B2.5` con `UX01` conectada. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+**Estado:** 🟡 **5 completas / 6** — sólo `B2.4` sigue parcial, y la bloquea `C01-051`, que es una
+decisión humana. `B2.5` pasó a ✅ el 1 de septiembre de 2026: su alcance era `UX01` desde la base y
+estaba cumplido; lo que la dejaba en amarillo era el trabajo de las otras superficies, que hizo la
+`B2.6`. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
 autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
 `PENDING`.
 
@@ -1511,13 +1513,44 @@ autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decis
 | B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
 | B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
 | B2.4 | 🟡 **PARCIAL** — la regla se hace cumplir; **la configuración la bloquea `C01-051`** |
-| B2.5 | 🟡 **`UX01` conectada** — datos persistidos sintéticos, **cero cambios en `components/screens/`** |
+| B2.5 | ✅ **COMPLETA** — `UX01` desde la base. Estuvo 🟡 hasta que la `B2.6` conectó las demás |
 | B2.6 | ✅ **COMPLETA** — `UX02`–`UX06` desde la base, con sesión real y `Ausencia` |
 
 **Done cuando:** los 12 invariantes de [`data-model.md`](data-model.md) §11 tienen test; el mismo
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
 
 **Contratos a cerrar:** `C01-007`…`C01-016`, `C01-051`.
+
+##### El Done, auditado · 1 de septiembre de 2026
+
+`tests/invariantes.test.ts` audita el criterio de cierre. Estaba escrito y **nadie lo había
+verificado**: los invariantes se prueban en once archivos, la mitad en `npm test` y la otra mitad en
+scripts que necesitan Docker, y saber si faltaba alguno exigía buscar a mano. Un criterio que se
+audita a mano se marca cumplido sin auditar — es lo que ya pasó con la deuda de `npm audit` en la
+Fase 0.
+
+| Estado | Invariantes |
+|---|---|
+| ✅ Con test | `I1`–`I6`, `I8`–`I12` — **once** |
+| 🔒 Sin test, y no puede tenerlo | **`I7`**: habla de `ExamPreparation` y esa tabla no está migrada |
+
+**`I7` no es de esta fase.** El objetivo de B2 es el loop diario —`Action`, `Commitment`, `Evidence`,
+`Reflection`— y `ExamPreparation` es de la [Fase B5](#fase-b5--modo-examen-real). El Done citó §11
+entera, que incluye un invariante fuera del alcance de la fase. Escribirle un test hoy exigiría crear
+la tabla, o sea adelantar una fase para poner un tilde. **Queda declarado con un guard que rompe el
+día que `exam_preparation` se migre**, igual que la lista de CTAs bloqueadas de la Fase 0.
+
+> ⚠️ **Decisión para el owner.** Con `I7` fuera de alcance y `B2.4` bloqueada por `C01-051`, lo que
+> resta para cerrar B2 no es trabajo de código: es **una respuesta humana** y una corrección del
+> criterio. El roadmap no se corrige solo.
+
+**Dos citas eran promesas, no pruebas.** La primera versión de la tabla decía que `I1` se probaba en
+`servicio-compromiso.test.ts` y que `I11` se probaba en `db-aislamiento.sh`. Los dos lo hacían
+—`"un MISSED no vuelve a COMPLETED"` y el aislamiento entre dos instituciones— pero **sin nombrar el
+invariante**, así que la afirmación no era verificable. Ahora lo nombran. Y `I6` viaja con su residuo
+textual: el índice único parcial garantiza **como máximo una recomendación primaria por `action_id`**,
+no por contexto, porque *"contexto"* todavía no tiene identidad canónica. Marcar verde un invariante
+a medias es peor que no tener el test.
 
 #### 🟡 Etapa B2.5 — `UX01` desde la base · 30 de agosto de 2026
 
@@ -2074,7 +2107,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
-| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 4 completas, 2 parciales (`B2.4` por `C01-051`, `B2.5` con `UX01`) | 4 / 6 |
+| Fase B2 — Dominio de ejecución | 🟡 **EN CURSO** — 5 completas; sólo `B2.4` parcial, por `C01-051`. Done auditado: 11 de 12 invariantes con test, `I7` es de B5 | 5 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
 | Fase B3 — Progreso y eventos | 🔒 Depende del cierre de B2 | 0 / — |
 | Fase B4 — ADE v1 | 🟡 EN CURSO — Engine, reloj y materialización en base construidos | 3 / — |

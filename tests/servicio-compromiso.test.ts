@@ -90,7 +90,7 @@ describe("B1.4 · el Service ejecuta la máquina de estados del dominio", () => 
    * arista— y este test existe para que se rompa ruidosamente si alguien la
    * agrega.
    */
-  it("un MISSED no vuelve a COMPLETED, y no llega a tocar la base", async () => {
+  it("I1 · un MISSED no vuelve a COMPLETED, y no llega a tocar la base", async () => {
     const { deps, escrituras, actual } = repoFalso({ ...BASE, state: "MISSED" });
     const r = await transicionar(deps, "inst-A", "c-1", "COMPLETED");
 

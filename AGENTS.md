@@ -278,12 +278,12 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fase actual: Track B, Fase B2 — Dominio de ejecución.** 🟡 **4 etapas completas y 2 parciales.**
+**Fase actual: Track B, Fase B2 — Dominio de ejecución.** 🟡 **5 etapas completas de 6.**
 
 Track A y la Fase A2 están cerrados. Las nueve superficies existen, todos los estados críticos son
 alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner. B1 está
 completa (6/6). En B2, `Action`, `Commitment` y `Evidence` están completas; `Reflection` sigue
-parcial por `C01-051`. La Etapa B2.6 **cerró**: `UX01`–`UX06` leen de Postgres con sesión real, y el
+parcial por `C01-051` —la única que queda—. La Etapa B2.6 **cerró**: `UX01`–`UX06` leen de Postgres con sesión real, y el
 catálogo sintético sigue disponible bajo `?escenario=` explícito. `UX07`–`UX09` esperan a la Fase B5.
 B2b va 1/3; el ADE v1, su materialización en base y el reloj del lifecycle se construyeron por
 adelantado en B4.

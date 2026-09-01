@@ -87,9 +87,9 @@ segundos se corrió con resultado PASS** (reportado por el owner, 30 ago 2026).
 estudiante, la frontera Controller → Service → Repository, `product_event`/`audit_log` append-only y
 el cliente de autorización del CRM.
 
-**Fase B2 — Dominio de ejecución.** 🟡 **EN CURSO: 4 completas, 2 parciales.** `Action`,
-`Commitment` y `Evidence` están completas; `Reflection` está bloqueada en su configuración por
-`C01-051`. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Postgres con sesión real, cada una con una
+**Fase B2 — Dominio de ejecución.** 🟡 **EN CURSO: 5 completas de 6.** `Action`,
+`Commitment` y `Evidence` están completas; **sólo `Reflection` sigue parcial**, bloqueada en su
+configuración por `C01-051`. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Postgres con sesión real, cada una con una
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` esperan a la Fase B5
 porque no hay tablas de examen.
 
@@ -114,6 +114,11 @@ tiene siete componentes**. Ver `roadmap.md` → Fase B5.
 
 **Verificación de base:** `npm run db:verify` — **118 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
+
+**El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de
+cierre de la B2 —los 12 invariantes de `data-model.md` §11— contra el propio documento: 11 tienen
+test, `I7` no puede tenerlo porque `exam_preparation` no está migrada, y un guard rompe el día que se
+migre.
 
 La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 18 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.

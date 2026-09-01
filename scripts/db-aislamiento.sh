@@ -71,11 +71,11 @@ corre "insert into institution (id,name) values ('$A','Inst A'),('$B','Inst B');
  insert into commitment (id,institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state) values ('a8000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001',now(),'America/Argentina/Cordoba',40,'CONFIRMED');" \
  && ok "cargadas" || { mal "no se pudieron cargar"; exit 1; }
 
-echo "→ 1. Aislamiento: el scoping va en el WHERE, no después de leer"
+echo "→ 1. I11. Aislamiento: el scoping va en el WHERE, no después de leer"
 visto=$(q "select count(*) from commitment where institution_id='$B' and id='a8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')
 [ "$visto" = "0" ] && ok "B no alcanza el commitment de A" || mal "B vio $visto fila(s) de A"
 
-echo "→ 2. Transición prohibida: MISSED nunca vuelve a COMPLETED"
+echo "→ 2. I1. Transición prohibida: MISSED nunca vuelve a COMPLETED"
 corre "update commitment set state='MISSED', missed_at=now() where id='a8000000-0000-0000-0000-000000000001';"
 # El guard atómico del Repository: el estado esperado va en el WHERE.
 filas=$(q "with u as (update commitment set state='COMPLETED' where id='a8000000-0000-0000-0000-000000000001' and institution_id='$A' and state='CONFIRMED' returning 1) select count(*) from u;" | tr -d '[:space:]')
@@ -90,7 +90,7 @@ r1=$(q "with u as (update commitment set state='DUE' where id='a8000000-0000-000
 r2=$(q "with u as (update commitment set state='RENEGOTIATED' where id='a8000000-0000-0000-0000-000000000001' and state='CONFIRMED' returning 1) select count(*) from u;" | tr -d '[:space:]')
 [ "$((r1 + r2))" = "1" ] && ok "una escribió ($r1/$r2); la otra no encontró el estado" || mal "escribieron $((r1+r2))"
 
-echo "→ 3. Idempotencia en el servidor, no en el frontend"
+echo "→ 3. I8. Idempotencia en el servidor, no en el frontend"
 corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,idempotency_key) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'America/Argentina/Cordoba',40,'clave-repetida');"
 if corre "insert into commitment (institution_id,action_id,start_at,timezone_at_commit,planned_minutes,idempotency_key) values ('$A','a7000000-0000-0000-0000-000000000001',now(),'America/Argentina/Cordoba',40,'clave-repetida');"; then
   mal "la base aceptó dos veces la misma clave"

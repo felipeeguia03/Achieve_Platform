@@ -905,6 +905,11 @@ Estos invariantes combinan Services, Repositories y constraints. **No se impleme
 con triggers o PL/pgSQL.** Cuando una regla depende del estado actual, el Service la valida y el
 Repository usa una transacción o predicate atómico para evitar carreras. Cada invariante tiene test.
 
+> **Dónde se audita — 1 de septiembre de 2026.** `tests/invariantes.test.ts` mantiene la tabla de qué
+> prueba cada invariante y **se compara contra esta sección**: si acá aparece un `I13` y nadie lo
+> prueba, ese test rompe. Hoy hay once con test; **`I7` no lo tiene porque `exam_preparation` no está
+> migrada** (Fase B5), y un guard rompe el día que se migre.
+
 | # | Invariante | Implementación |
 |---|---|---|
 | I1 | Un `Commitment` `MISSED` nunca transiciona a `COMPLETED`, `CONFIRMED` ni `RENEGOTIATED` | Tabla `commitmentTransitions` en Service + `UPDATE` condicionado por estado actual en Repository |
