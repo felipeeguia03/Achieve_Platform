@@ -118,13 +118,27 @@ function mundo(
       };
       return { id: "i-nueva", slaAt: entrada.slaAt ?? null, duplicado: false };
     },
+    // El doble imita **la transacción**, no sólo la firma: cerrar resuelve la
+    // señal si estaba pidiendo una persona (ADR-034 §7.4). Un doble que sólo
+    // devolviera los campos nuevos probaría el tipo y nada más.
     async cerrar(entrada) {
       if (!filaInt) throw new Error("no existe");
-      if (filaInt.state === "closed") return { cerrada: true, yaEstaba: true };
+      if (filaInt.state === "closed") {
+        return { cerrada: true, yaEstaba: true, senalResuelta: false, senalId: filaInt.riskSignalId };
+      }
       if (filaInt.state !== "acknowledged") throw new Error("no reconocida");
+      if (entrada.registradoPor !== filaInt.ownerOperatorId) {
+        throw new Error("INVALID_OWNER_ASSERTION");
+      }
       outcomes.push(entrada.outcome);
+      const senalId = filaInt.riskSignalId;
       filaInt = { ...filaInt, state: "closed" };
-      return { cerrada: true, yaEstaba: false };
+      let senalResuelta = false;
+      if (senalId && filaSenal?.id === senalId && filaSenal.state === "INTERVENTION_REQUIRED") {
+        filaSenal = { ...filaSenal, state: "RESOLVED" };
+        senalResuelta = true;
+      }
+      return { cerrada: true, yaEstaba: false, senalResuelta, senalId };
     },
   };
 
@@ -327,6 +341,89 @@ describe("B6 · el circuito no se puede cerrar por la mitad", () => {
     expect(m.outcomes).toEqual(["replanificado"]);
     expect(m.publicados.map((e) => e.nombre)).toEqual(["InterventionResolved"]);
     expect(m.publicados[0].payload).toMatchObject({ outcome: "replanificado" });
+  });
+
+  // ── ADR-034 §7.4 · el cierre entero, en una transacción ───────────────────
+
+  it("cerrar la intervención resuelve la señal con el mismo `COMMIT`", async () => {
+    // Antes eran dos llamadas, y entre las dos quedaba una ventana con la
+    // intervención cerrada y la señal todavía pidiendo a alguien que ya la
+    // había atendido. Si la segunda no llegaba, la señal pedía para siempre.
+    const m = mundo({ senal: "INTERVENTION_REQUIRED", intervencion: "acknowledged" });
+    const r = await cerrar(m.intervencion, {
+      institutionId: "inst-A",
+      intervencionId: "i-1",
+      outcome: "recuperado",
+      registradoPor: "op-1",
+    });
+    expect(r).toMatchObject({ estado: "OK", senalResuelta: true });
+    expect(m.senal()!.state).toBe("RESOLVED");
+    // Los dos hechos, en orden, sin una segunda llamada de por medio.
+    expect(m.publicados.map((e) => e.nombre)).toEqual([
+      "InterventionResolved",
+      "RiskSignalResolved",
+    ]);
+    expect(m.auditado.map((a) => a.accion)).toEqual([
+      "intervention.close",
+      "risk_signal.resolve",
+    ]);
+  });
+
+  it("una intervención sin señal previa cierra igual, y no resuelve nada", async () => {
+    // Es un caso legítimo: el operador pudo intervenir sin una señal detrás.
+    const m = mundo({ intervencion: "acknowledged" });
+    const r = await cerrar(m.intervencion, {
+      institutionId: "inst-A",
+      intervencionId: "i-1",
+      outcome: "recuperado",
+      registradoPor: "op-1",
+    });
+    expect(r).toMatchObject({ estado: "OK", senalResuelta: false });
+    expect(m.publicados.map((e) => e.nombre)).toEqual(["InterventionResolved"]);
+  });
+
+  it("y no pisa una señal que ya terminó por otro camino", async () => {
+    // Otra intervención pudo resolverla, o alguien pudo escalarla. Reescribir
+    // ese final desde acá borraría lo que efectivamente pasó.
+    const m = mundo({ senal: "ESCALATED", intervencion: "acknowledged" });
+    const r = await cerrar(m.intervencion, {
+      institutionId: "inst-A",
+      intervencionId: "i-1",
+      outcome: "escalado",
+      registradoPor: "op-1",
+    });
+    expect(r).toMatchObject({ estado: "OK", senalResuelta: false });
+    expect(m.senal()!.state).toBe("ESCALATED");
+    expect(m.publicados.map((e) => e.nombre)).toEqual(["InterventionResolved"]);
+  });
+
+  // ── ADR-034 §7.5 · el caso es de quien lo tomó ────────────────────────────
+
+  it("no la reconoce alguien que no es su dueño", async () => {
+    const m = mundo({ intervencion: "open" });
+    const r = await reconocer(m.intervencion, "inst-A", "i-1", "otro-operador");
+    expect(r).toMatchObject({ estado: "OWNER_DISTINTO", duenio: "op-1" });
+    // No se movió, y no publicó nada: no ocurrió nada que registrar.
+    expect(m.intervencionActual()!.state).toBe("open");
+    expect(m.publicados).toEqual([]);
+    expect(m.auditado).toEqual([]);
+  });
+
+  it("ni la cierra: la reasignación necesita un comando propio", async () => {
+    // Cerrarla un tercero dejaría `owner_operator_id` diciendo una cosa y el
+    // outcome diciendo que lo registró otro.
+    const m = mundo({ senal: "INTERVENTION_REQUIRED", intervencion: "acknowledged" });
+    const r = await cerrar(m.intervencion, {
+      institutionId: "inst-A",
+      intervencionId: "i-1",
+      outcome: "recuperado",
+      registradoPor: "otro-operador",
+    });
+    expect(r).toMatchObject({ estado: "OWNER_DISTINTO", duenio: "op-1" });
+    expect(m.intervencionActual()!.state).toBe("acknowledged");
+    // Y la señal sigue pidiendo una persona: nadie la atendió.
+    expect(m.senal()!.state).toBe("INTERVENTION_REQUIRED");
+    expect(m.publicados).toEqual([]);
   });
 
   it("cerrar dos veces no pisa el outcome ni republica el hecho", async () => {

@@ -80,8 +80,20 @@ export const intervencionesReal: RepositorioDeIntervenciones = {
       p_human_minutes: entrada.minutosHumanos ?? null,
     });
     if (error) throw new Error(error.message);
-    const fila = (data as Array<{ cerrada: boolean; ya_estaba: boolean }>)[0];
+    const fila = (
+      data as Array<{
+        cerrada: boolean;
+        ya_estaba: boolean;
+        senal_resuelta: boolean;
+        senal_id: string | null;
+      }>
+    )[0];
     if (!fila) throw new Error("El cierre no devolvió fila");
-    return { cerrada: fila.cerrada, yaEstaba: fila.ya_estaba };
+    return {
+      cerrada: fila.cerrada,
+      yaEstaba: fila.ya_estaba,
+      senalResuelta: fila.senal_resuelta,
+      senalId: fila.senal_id,
+    };
   },
 };

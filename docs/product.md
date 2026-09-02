@@ -352,9 +352,13 @@ Golden Path D del spec —*selecciona caso → contexto → intervención → re
 decorativo: es el momento en que una persona se hace cargo, y sin él *"cerrada"* no distingue una
 intervención trabajada de una despachada.
 
-**Cerrar y registrar el resultado son una sola escritura**, y [ADR-034](decisions.md#adr-034) sumó a
-esa transacción el paso de la señal a `RESOLVED`. No existe camino que deje una intervención cerrada
-sin outcome. `closed` es terminal: reabrirla sería editar un hecho con su resultado ya
+**Cerrar, registrar el resultado y resolver la señal son una sola escritura** — ✅ implementado por
+[ADR-034](decisions.md#adr-034) §7.4. No existe camino que deje una intervención cerrada sin outcome,
+ni una señal pidiendo una persona que ya la atendió.
+
+**Y sólo la reconoce y la cierra su dueño** (§7.5). Que la tome un tercero dejaría
+`owner_operator_id` diciendo una cosa y el outcome diciendo que lo registró otro; la reasignación
+necesita un comando propio, y no existe en v1. `closed` es terminal: reabrirla sería editar un hecho con su resultado ya
 registrado — la misma regla de *No Cortar* que impide tocar un `Commitment` `MISSED`.
 
 ⚠️ **Playbook y SLA quedan en `null` y el circuito lo declara.** `C01-044` es explícito —*"no se

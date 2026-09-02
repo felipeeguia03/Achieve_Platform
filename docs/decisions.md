@@ -2726,6 +2726,11 @@ sin cambios.
 de `transicionar`, y un trigger que lo rechaza en la base—, el reloj sólo levanta `OPEN`, y las filas
 históricas conservan estado, marca y salidas.
 
-⏸️ **Pendientes de autorización:** §7.3 (`crmCaseId`), §7.4 (cierre y resolución en una transacción),
-§7.5 (validación de owner), §7.6 (ids en la lectura del flujo C) y §7.7 (outbox). Ver
+✅ **§7.4 y §7.5 ejecutados** el 2 de septiembre de 2026. `cerrar_intervencion()` escribe outcome,
+cierra la intervención y resuelve la señal en una transacción, y rechaza a quien no es el dueño del
+caso. `resolver_senal()` se conserva intacta para los cierres por otro camino.
+
+⏸️ **Pendientes:** §7.3 (`crmCaseId`), §7.6 (ids en la lectura del flujo C) y §7.7 (outbox). Los tres
+esperan algo de afuera —el contrato aceptado por el CTO en los dos primeros, y `C01-021` en el
+tercero, porque sin reglas que produzcan señales el outbox no tiene qué transportar—. Ver
 [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7.

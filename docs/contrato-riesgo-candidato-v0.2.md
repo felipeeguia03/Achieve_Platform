@@ -201,9 +201,10 @@ lateral para mandar evidencia ni contenido sensible.
 estado y resultado en la misma transacción. El CRM no debe considerar cerrado el caso hasta recibir
 confirmación exitosa.
 
-**El cierre resuelve la señal en la misma transacción.** Al cerrar: se registra el outcome, se cierra
-la intervención y la señal pasa a `RESOLVED` ([ADR-034](decisions.md#adr-034), decisión 4). Hoy son
-dos funciones separadas (`cerrar_intervencion` y `resolver_senal`); unificarlas es parte del §7.
+**El cierre resuelve la señal en la misma transacción** — ✅ implementado.
+`cerrar_intervencion()` escribe outcome, cierra la intervención y pasa la señal a `RESOLVED` con el
+mismo `COMMIT`, y devuelve `senal_resuelta` para que el CRM sepa si el caso quedó cerrado de punta a
+punta. Una señal ya resuelta o escalada **no se pisa**.
 
 ### 3.4 Owner y timestamps
 
@@ -329,8 +330,9 @@ mezclarlos es la decisión 2 de ADR-034 al revés.
 
 ## 7. Plan de migración no destructivo
 
-✅ **§7.1 y §7.2 ejecutados** el 2 de septiembre de 2026, migración
-`20260903000000_lifecycle_senal.sql`. ⏸️ **§7.3 a §7.7 siguen sin autorizar.**
+✅ **§7.1, §7.2, §7.4 y §7.5 ejecutados** el 2 de septiembre de 2026 — migraciones
+`20260903000000_lifecycle_senal.sql` y `20260903010000_cierre_transaccional.sql`.
+⏸️ **§7.3, §7.6 y §7.7 pendientes**, y los tres esperan algo de afuera.
 
 Regla que atraviesa los cinco pasos: **nada se borra, nada se reinterpreta en el lugar.** Una
 migración aplicada no se edita; las funciones se reemplazan desde una migración nueva.
@@ -360,14 +362,14 @@ migración aplicada no se edita; las funciones se reemplazan desde una migració
 externa, igual que `owner_operator_id`), con índice para reconciliar. Las filas existentes quedan en
 `NULL`, que es la verdad: no vinieron del CRM.
 
-### 7.4 Cierre en una transacción · ⏸️ pendiente
+### 7.4 Cierre en una transacción · ✅ hecho
 
 `cerrar_intervencion()` pasa a resolver también la señal, desde una **migración nueva** con
 `CREATE OR REPLACE`. La regla de `resolver_senal` —*`RESOLVED` exige una intervención con outcome*—
 **no se relaja**: se cumple por construcción, porque el outcome se escribe en la misma transacción.
 `resolver_senal()` se conserva para las señales que se resuelvan por otro camino.
 
-### 7.5 Validación de owner y de comandos · ⏸️ pendiente
+### 7.5 Validación de owner y de comandos · ✅ hecho
 
 `reconocer` y `cerrar` comparan el `ownerOperatorId` contra `intervention.owner_operator_id` y
 devuelven `INVALID_OWNER_ASSERTION` si difieren. Es un rechazo nuevo, no un cambio de comportamiento

@@ -7,7 +7,9 @@ import {
   transicionarEntidad,
   type EntidadConEstado,
   type RepositorioTransicionable,
+  type ResultadoDeTransicion,
 } from "./transiciones";
+import { nombreDeEventoDeSenal } from "./riesgo";
 
 /**
  * Service de `Intervention` — Fase B6.
@@ -56,8 +58,20 @@ export interface RepositorioDeIntervenciones
   abrir(
     entrada: AperturaDeIntervencion & { ownerVerified: boolean },
   ): Promise<{ id: string; slaAt: string | null; duplicado: boolean }>;
-  /** Cierra y registra el outcome **en una transacción**. */
-  cerrar(entrada: CierreDeIntervencion): Promise<{ cerrada: boolean; yaEstaba: boolean }>;
+  /**
+   * Cierra, registra el outcome **y resuelve la señal**, en una transacción
+   * ([ADR-034](../../../docs/decisions.md#adr-034) §7.4).
+   *
+   * `senalResuelta` dice si la señal pasó a `RESOLVED` en esta llamada. Puede
+   * ser `false` sin que nada haya fallado: la intervención podía no tener señal
+   * previa, o la señal podía haber sido resuelta o escalada antes.
+   */
+  cerrar(entrada: CierreDeIntervencion): Promise<{
+    cerrada: boolean;
+    yaEstaba: boolean;
+    senalResuelta: boolean;
+    senalId: string | null;
+  }>;
 }
 
 export type ResultadoDeApertura =
@@ -68,10 +82,17 @@ export type ResultadoDeApertura =
   | { estado: "RECHAZADA"; motivo: string };
 
 export type ResultadoDeCierre =
-  | { estado: "OK"; yaEstaba: boolean }
+  | { estado: "OK"; yaEstaba: boolean; senalResuelta: boolean }
   | { estado: "TRANSICION_PROHIBIDA"; desde: InterventionStatus }
   | { estado: "NO_ENCONTRADA" }
+  /** La cierra alguien que no es su dueño — `INVALID_OWNER_ASSERTION`. */
+  | { estado: "OWNER_DISTINTO"; duenio: string }
   | { estado: "RECHAZADA"; motivo: string };
+
+/** `open → acknowledged`, o el rechazo de que la tome alguien que no es su dueño. */
+export type ResultadoDeReconocimiento =
+  | ResultadoDeTransicion<InterventionStatus, Intervencion>
+  | { estado: "OWNER_DISTINTO"; duenio: string };
 
 /** `acknowledged` → `InterventionAcknowledged`. */
 export function nombreDeEventoDeIntervencion(hacia: InterventionStatus): string {
@@ -145,14 +166,31 @@ export async function abrir(
   };
 }
 
-/** `open → acknowledged`. Es el momento en que una persona se hace cargo. */
-export function reconocer(
+/**
+ * `open → acknowledged`. Es el momento en que una persona se hace cargo.
+ *
+ * **Sólo la toma su dueño** — [ADR-034](../../../docs/decisions.md#adr-034) §7.5.
+ * Que un tercero la reconozca dejaría `owner_operator_id` diciendo una cosa y
+ * `acknowledged_at` diciendo que la trabajó otro; la reasignación **necesita un
+ * comando propio**, y no se hace de costado dentro de un `acknowledge`.
+ *
+ * El chequeo previo no reemplaza al compare-and-swap: lee para poder devolver
+ * un rechazo con nombre en vez de un `TRANSICION_PROHIBIDA` que no explica
+ * nada. La carrera la sigue ganando `cambiarEstadoSi`.
+ */
+export async function reconocer(
   deps: { repo: RepositorioDeIntervenciones; eventos: PublicadorDeEventos; auditor: Auditor },
   institutionId: string,
   id: string,
   actorId: string,
   ahora: () => Date = () => new Date(),
-) {
+): Promise<ResultadoDeReconocimiento> {
+  const actual = await deps.repo.porId(institutionId, id);
+  if (!actual) return { estado: "NO_ENCONTRADO" };
+  if (actual.ownerOperatorId !== actorId) {
+    return { estado: "OWNER_DISTINTO", duenio: actual.ownerOperatorId };
+  }
+
   return transicionarEntidad(
     deps,
     {
@@ -181,6 +219,15 @@ export function reconocer(
  * **Cerrar dos veces devuelve lo de antes y no pisa el outcome.** El resultado
  * de una intervención es el registro de lo que pasó, y reescribirlo por un
  * reintento borraría el original.
+ *
+ * **Y la señal se resuelve con el mismo `COMMIT`** —
+ * [ADR-034](../../../docs/decisions.md#adr-034) §7.4. Antes eran dos llamadas, y
+ * entre las dos había una ventana con la intervención cerrada y la señal
+ * todavía pidiendo a alguien que ya la había atendido. Si la segunda no
+ * llegaba, la señal pedía para siempre.
+ *
+ * **Sólo la cierra su dueño** (§7.5), por la misma razón que sólo él la
+ * reconoce.
  */
 export async function cerrar(
   deps: { repo: RepositorioDeIntervenciones; eventos: PublicadorDeEventos; auditor: Auditor },
@@ -194,7 +241,11 @@ export async function cerrar(
     return { estado: "TRANSICION_PROHIBIDA", desde: actual.state };
   }
 
-  let r: { cerrada: boolean; yaEstaba: boolean };
+  if (actual.ownerOperatorId !== entrada.registradoPor) {
+    return { estado: "OWNER_DISTINTO", duenio: actual.ownerOperatorId };
+  }
+
+  let r: { cerrada: boolean; yaEstaba: boolean; senalResuelta: boolean; senalId: string | null };
   try {
     r = await deps.repo.cerrar(entrada);
   } catch (e) {
@@ -220,7 +271,29 @@ export async function cerrar(
       antes: { status: actual.state },
       despues: { status: "closed", outcome: entrada.outcome },
     });
+
+    // La señal cerró con la misma transacción, así que su hecho se publica acá.
+    // **No lo hace `resolver()`**: si esto se delegara a una segunda llamada,
+    // volvería la ventana que §7.4 vino a cerrar.
+    if (r.senalResuelta && r.senalId) {
+      await deps.eventos.publicar({
+        nombre: nombreDeEventoDeSenal("RESOLVED"),
+        institutionId: entrada.institutionId,
+        actorId: entrada.registradoPor,
+        sujetoTipo: "risk_signal",
+        sujetoId: r.senalId,
+        causa: "intervencion cerrada con outcome",
+      });
+      await deps.auditor.registrar({
+        institutionId: entrada.institutionId,
+        actorId: entrada.registradoPor,
+        accion: "risk_signal.resolve",
+        targetType: "risk_signal",
+        targetId: r.senalId,
+        despues: { status: "RESOLVED", porIntervencion: entrada.intervencionId },
+      });
+    }
   }
 
-  return { estado: "OK", yaEstaba: r.yaEstaba };
+  return { estado: "OK", yaEstaba: r.yaEstaba, senalResuelta: r.senalResuelta };
 }

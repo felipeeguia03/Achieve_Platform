@@ -1069,7 +1069,7 @@ CREATE TABLE intervention (
 
 -- PK compartida: **una intervención tiene como mucho un resultado**. Que una
 -- intervención cerrada no pueda no tenerlo no lo garantiza un CHECK entre
--- tablas: lo garantiza `cerrar_intervencion()`, que escribe las dos cosas en
+-- tablas: lo garantiza `cerrar_intervencion()`, que escribe las tres cosas en
 -- una transacción.
 CREATE TABLE intervention_outcome (
   intervention_id UUID PRIMARY KEY REFERENCES intervention(id) ON DELETE CASCADE,
@@ -1134,8 +1134,8 @@ Services (§3.2 de [`architecture.md`](architecture.md)).
 | `protocolo_vigente` | El protocolo de una evaluación, por modalidad | Una igualdad, no un fallback: sin protocolo para la modalidad devuelve **cero filas**, y eso es la respuesta (`C01-047`) |
 | `registrar_senal` | Persiste una señal **que su owner ya produjo** | `I8`: avisar dos veces que un estudiante está en problemas es ruido en la cola de alguien que decide con eso |
 | `abrir_intervencion` | Abre el caso con dueño, y con el SLA del playbook si lo hay | La señal tiene que estar pidiendo intervención: leerla y después insertar deja la ventana para que otro la resuelva en el medio |
-| `cerrar_intervencion` | Cierra **y registra el outcome** | Media escritura deja una intervención cerrada sin resultado, que es lo único que rompe el Done de la B6 |
-| `resolver_senal` | `RESOLVED`, **sólo con una intervención con outcome** | La condición mira dos tablas y tiene que verlas en la misma transacción |
+| `cerrar_intervencion` | Cierra, **registra el outcome y resuelve la señal** | Media escritura deja una intervención cerrada sin resultado, que es lo único que rompe el Done de la B6. Desde [ADR-034](decisions.md#adr-034) §7.4 la señal cierra con el mismo `COMMIT`: en dos llamadas quedaba una ventana con la intervención cerrada y la señal pidiendo a alguien que ya la había atendido. También rechaza a quien no es su dueño (§7.5) |
+| `resolver_senal` | `RESOLVED`, **sólo con una intervención con outcome** | La condición mira dos tablas y tiene que verlas en la misma transacción. **Se conserva** para las señales que cierren por otro camino; su regla no se relajó |
 | `circuito_de_senales` | **Audita el Done**: dónde está roto el circuito | Un criterio de cierre que se revisa a mano se marca cumplido sin revisar |
 
 **Ninguna es un trigger.** §11 lo dice y hay guard: el único trigger del schema es el de

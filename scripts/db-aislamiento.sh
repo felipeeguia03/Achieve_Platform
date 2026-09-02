@@ -424,19 +424,39 @@ I1=$(q "select intervention_id from public.abrir_intervencion('$A','$S1','a50000
 igualdad=$(q "select owner_verified::text from intervention where id='$I1';" | tr -d '[:space:]')
 [ "$igualdad" = "false" ] && ok "y el dueño queda sin verificar: no hay directorio (C01-039)" || mal "dio el dueño por verificado"
 
+OP='11111111-1111-1111-1111-111111111111'
 echo "→ B6. El Done: no se puede cerrar una intervención sin resultado"
-if corre "select public.cerrar_intervencion('$A','$I1','recuperado',null,'a5000000-0000-0000-0000-000000000001',null);"; then
+if corre "select public.cerrar_intervencion('$A','$I1','recuperado',null,'$OP',null);"; then
   mal "se cerró una intervención que nadie reconoció"
 else
   ok "una intervención sin reconocer no se cierra"
 fi
 corre "update intervention set status='acknowledged', acknowledged_at=now() where id='$I1';"
-corre "select public.cerrar_intervencion('$A','$I1','recuperado','se recuperó','a5000000-0000-0000-0000-000000000001',25);"
-estado=$(q "select i.status || '|' || o.outcome || '|' || coalesce(i.human_minutes::text,'-') from intervention i join intervention_outcome o on o.intervention_id=i.id where i.id='$I1';" | tr -d '[:space:]')
-[ "$estado" = "closed|recuperado|25" ] && ok "cerrar y registrar el outcome es UNA escritura" || mal "quedó a medias: $estado"
+
+echo "→ B6.3. Cerrar es del dueño, y sólo de él (ADR-034 §7.5)"
+if corre "select public.cerrar_intervencion('$A','$I1','recuperado',null,'a5000000-0000-0000-0000-000000000001',null);"; then
+  mal "un tercero cerró una intervención ajena"
+else
+  ok "INVALID_OWNER_ASSERTION: la reasignación necesita un comando propio"
+fi
+[ "$(q "select status from intervention where id='$I1';" | tr -d '[:space:]')" = "acknowledged" ] \
+  && ok "y el rechazo no la movió" || mal "el rechazo dejó la intervención tocada"
+
+echo "→ B6.3. El cierre entero, en una transacción (ADR-034 §7.4)"
+cierre=$(q "select cerrada || '|' || ya_estaba || '|' || senal_resuelta || '|' || coalesce(senal_id::text,'-') from public.cerrar_intervencion('$A','$I1','recuperado','se recuperó','$OP',25);" | tr -d '[:space:]')
+[ "$cierre" = "true|false|true|$S1" ] && ok "cerrar devuelve que resolvió la señal" || mal "el cierre devolvió $cierre"
+estado=$(q "select i.status || '|' || o.outcome || '|' || coalesce(i.human_minutes::text,'-') || '|' || s.status
+            from intervention i
+            join intervention_outcome o on o.intervention_id=i.id
+            join risk_signal s on s.id=i.risk_signal_id
+           where i.id='$I1';" | tr -d '[:space:]')
+[ "$estado" = "closed|recuperado|25|RESOLVED" ] \
+  && ok "outcome + intervención cerrada + señal RESOLVED, con el mismo COMMIT" || mal "quedó a medias: $estado"
+[ "$(q "select (resolved_at is not null)::text from risk_signal where id='$S1';" | tr -d '[:space:]')" = "true" ] \
+  && ok "y con su fecha de resolución" || mal "quedó RESOLVED sin fecha"
 
 echo "→ B6. Cerrar dos veces no pisa el resultado registrado"
-segunda=$(q "select ya_estaba::text from public.cerrar_intervencion('$A','$I1','falso_positivo',null,'a5000000-0000-0000-0000-000000000001',null);" | tr -d '[:space:]')
+segunda=$(q "select ya_estaba::text from public.cerrar_intervencion('$A','$I1','falso_positivo',null,'$OP',null);" | tr -d '[:space:]')
 [ "$segunda" = "true" ] && ok "el reintento devuelve lo de antes" || mal "el reintento no se detectó"
 [ "$(q "select outcome from intervention_outcome where intervention_id='$I1';" | tr -d '[:space:]')" = "recuperado" ] \
   && ok "y el outcome original sigue intacto" || mal "se pisó el outcome"
@@ -444,12 +464,13 @@ segunda=$(q "select ya_estaba::text from public.cerrar_intervencion('$A','$I1','
 echo "→ B6. El dashboard no es el final: RESOLVED exige una intervención con outcome"
 S3=$(q "select signal_id from public.registrar_senal('$A','a5000000-0000-0000-0000-000000000001',null,'factores_subjetivos','atencion','ansiedad frente al examen',null,null,null,null,null);" | tr -d '[:space:]')
 corre "update risk_signal set status='INTERVENTION_REQUIRED' where id='$S3';"
+# `resolver_senal()` **se conserva** para las señales que cierren por otro
+# camino, y su regla no se relajó: sin outcome no resuelve.
 sin=$(q "select resuelta || '|' || coalesce(motivo,'') from public.resolver_senal('$A','$S3');" | tr -d '[:space:]')
 [ "${sin%%|*}" = "false" ] && ok "sin outcome no se resuelve: $sin" || mal "se resolvió sin outcome"
-con=$(q "select resuelta::text from public.resolver_senal('$A','$S1');" | tr -d '[:space:]')
-[ "$con" = "true" ] && ok "con outcome sí" || mal "no resolvió una señal con outcome"
-[ "$(q "select status from risk_signal where id='$S1';" | tr -d '[:space:]')" = "RESOLVED" ] \
-  && ok "y la señal quedó RESOLVED con su fecha" || mal "no quedó resuelta"
+# Y sobre una que el cierre ya resolvió, tampoco reescribe nada.
+ya=$(q "select resuelta || '|' || coalesce(motivo,'') from public.resolver_senal('$A','$S1');" | tr -d '[:space:]')
+[ "${ya%%|*}" = "false" ] && ok "y sobre una ya resuelta no reescribe el final: $ya" || mal "volvió a resolver: $ya"
 
 echo "→ B6. Una regla sin umbral no puede correr sola"
 if corre "update risk_rule set modo='AUTOMATICA' where canonical_id='HP0-06-1';"; then
