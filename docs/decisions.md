@@ -2730,7 +2730,10 @@ históricas conservan estado, marca y salidas.
 cierra la intervención y resuelve la señal en una transacción, y rechaza a quien no es el dueño del
 caso. `resolver_senal()` se conserva intacta para los cierres por otro camino.
 
-⏸️ **Pendientes:** §7.3 (`crmCaseId`), §7.6 (ids en la lectura del flujo C) y §7.7 (outbox). Los tres
-esperan algo de afuera —el contrato aceptado por el CTO en los dos primeros, y `C01-021` en el
-tercero, porque sin reglas que produzcan señales el outbox no tiene qué transportar—. Ver
-[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7.
+✅ **§7.6 ejecutado** el 2 de septiembre de 2026, cuando el CRM aceptó el diseño del flujo C y pidió
+los identificadores: `estado_del_dia()` expone `materias[].cursadaId` y `accion.id`, sin que ninguno
+llegue a la pantalla.
+
+⏸️ **Pendientes:** §7.3 (`crmCaseId`), que espera el endpoint que escriba la columna, y §7.7 (outbox),
+que espera `C01-021` — sin reglas que produzcan señales no tiene qué transportar. Ver
+[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7 y §10.

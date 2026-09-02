@@ -23,6 +23,14 @@ export interface EstadoDelDia {
   zona: string;
   /** Estado de la Action viva, si hay. */
   accion: {
+    /**
+     * El id de la `Action` — §7.6 de [ADR-034](../../../docs/decisions.md#adr-034).
+     *
+     * **No lo usa `UX01`**, y no llega a la pantalla: existe porque el flujo C
+     * del contrato con el CRM necesita poder referenciar la acción. La lectura
+     * lo devuelve; la proyección lo deja pasar de largo, y hay guard.
+     */
+    id: string;
     status: string;
     objetivo: string;
     contexto: string;
@@ -40,7 +48,15 @@ export interface EstadoDelDia {
   evidencia: "NONE" | "ENVIADA" | "VALIDADA";
   /** ¿Falta contexto de cursado? Lo dice el ADE, no un cálculo local. */
   contextoIncompleto: boolean;
-  materias: Array<Omit<MateriaResumen, "ultimoAvance"> & { ultimoAvanceEn: string | null }>;
+  /**
+   * `cursadaId` es `course_enrollment.id` —**la cursada**, no la materia del
+   * catálogo—: es lo que identifica *esta materia para este estudiante*, y lo
+   * que ya aceptan `estado_de_materia()` y `GET /api/materia`. Igual que
+   * `accion.id`, **no llega a la pantalla**.
+   */
+  materias: Array<
+    Omit<MateriaResumen, "ultimoAvance"> & { cursadaId: string; ultimoAvanceEn: string | null }
+  >;
   bitacoraDisponible: boolean;
   /**
    * La señal de riesgo viva más severa, con su explicación — Fase B6.

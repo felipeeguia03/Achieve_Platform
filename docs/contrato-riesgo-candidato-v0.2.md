@@ -1,7 +1,9 @@
 # Achieve — Contrato candidato de riesgo e intervención · Plataforma ↔ CRM · **v0.2**
 
 **Documento:** `docs/contrato-riesgo-candidato-v0.2.md`
-**Estado:** `CANDIDATE — NOT IMPLEMENTED` · **corregido por la Plataforma**, pendiente de revisión del CTO.
+**Estado:** `CANDIDATE — DESIGN ACCEPTED BILATERALLY`. El CRM lo revisó contra su código el 2 de
+septiembre de 2026 y devolvió `CRM ACCEPTS WITH REQUIRED CHANGES`: **ninguna objeción de diseño**, y
+dos acuerdos de forma pendientes (§10).
 **Fecha:** 1 de septiembre de 2026
 **Referencias:** [ADR-033](decisions.md#adr-033) (la frontera), [ADR-034](decisions.md#adr-034) (`C01-022`).
 **Sustituye a:** el candidato v0.1 del CTO, del 1 de septiembre de 2026.
@@ -276,11 +278,20 @@ proyección la produce hoy:
 Queda **fuera de v0.2** hasta que se decida cómo se obtiene. Inventar una segunda lectura para el CRM
 sería crear una segunda verdad sobre el mismo estudiante — el error que `VI.6` §8.3 prohíbe.
 
-### 4.5 ⚠️ La proyección no expone identificadores
+### 4.5 ✅ La proyección ya expone sus identificadores
 
-`estado_del_dia()` devuelve `materias[].nombre`, y **no `subjectId`**; su `accion` no lleva
-`actionId`. Los ids existen en la base: falta exponerlos. **Es una ampliación de la lectura, no una
-invención**, y está en el §7.
+`estado_del_dia()` devuelve `materias[].cursadaId` y `accion.id` desde la migración
+`20260903020000_ids_en_estado_del_dia.sql` (§7.6). Era una ampliación, no una invención: los dos ids
+existían en la base desde la B1.
+
+⚠️ **`subjectId` es la cursada, no la materia del catálogo.** `cursadaId` es `course_enrollment.id`
+—*esta materia para este estudiante*—, y es lo que aceptan `estado_de_materia()` y `GET /api/materia`.
+`course.id` identifica la materia del catálogo, que es otra cosa: devolver ésa obligaría al CRM a
+resolver la cursada por su cuenta, o sea a adivinar. **Hay comprobación contra Postgres de que el id
+que viaja no es el del catálogo.**
+
+Ninguno de los dos llega a la pantalla: `UX01` no los necesita, y hay guard de que la proyección no
+los deja pasar.
 
 ---
 
@@ -330,9 +341,11 @@ mezclarlos es la decisión 2 de ADR-034 al revés.
 
 ## 7. Plan de migración no destructivo
 
-✅ **§7.1, §7.2, §7.4 y §7.5 ejecutados** el 2 de septiembre de 2026 — migraciones
-`20260903000000_lifecycle_senal.sql` y `20260903010000_cierre_transaccional.sql`.
-⏸️ **§7.3, §7.6 y §7.7 pendientes**, y los tres esperan algo de afuera.
+✅ **§7.1, §7.2, §7.4, §7.5 y §7.6 ejecutados** el 2 de septiembre de 2026 — migraciones
+`20260903000000_lifecycle_senal.sql`, `20260903010000_cierre_transaccional.sql` y
+`20260903020000_ids_en_estado_del_dia.sql`.
+⏸️ **§7.3 y §7.7 pendientes:** el primero espera el endpoint que escriba la columna; el segundo,
+`C01-021`, porque sin reglas que produzcan señales el outbox no tiene qué transportar.
 
 Regla que atraviesa los cinco pasos: **nada se borra, nada se reinterpreta en el lugar.** Una
 migración aplicada no se edita; las funciones se reemplazan desde una migración nueva.
@@ -375,10 +388,12 @@ externa, igual que `owner_operator_id`), con índice para reconciliar. Las filas
 devuelven `INVALID_OWNER_ASSERTION` si difieren. Es un rechazo nuevo, no un cambio de comportamiento
 existente: hoy **nadie** manda ese campo.
 
-### 7.6 Lectura del flujo C · ⏸️ pendiente
+### 7.6 Lectura del flujo C · ✅ hecho
 
-Exponer `subjectId` y `actionId` en `estado_del_dia()`, desde una migración nueva. **Aditivo**: las
-superficies que ya la consumen no cambian.
+`estado_del_dia()` expone `materias[].cursadaId` y `accion.id`, desde una migración nueva. **Aditivo**:
+ninguna de las nueve superficies cambió, y los ids no llegan a la pantalla. Se hizo cuando el CRM
+aceptó el diseño del flujo C y lo pidió explícitamente — antes habría sido construir contra un payload
+en revisión.
 
 ### 7.7 Outbox · ⏸️ pendiente
 
@@ -387,7 +402,7 @@ Ningún objeto existente se modifica.
 
 ### 7.8 Orden sugerido
 
-`7.1` → `7.2` → `7.4` → `7.3` → `7.5` → `7.6` → `7.7`. El lifecycle primero, porque todo lo demás
+`7.1` → `7.2` → `7.4` → `7.3` → `7.5` → `7.6` → `7.7`. **Ejecutado:** 7.1, 7.2, 7.4, 7.5 y 7.6. El lifecycle primero, porque todo lo demás
 asume la máquina corregida; el outbox último, porque es lo único que no bloquea a nadie.
 
 ---
@@ -434,3 +449,96 @@ observabilidad, privacidad, y la recomendación de §6 sobre playbook/SLA como *
 | `assessments[]` del flujo C | Producto | Cómo se obtiene sin crear una segunda verdad |
 | Reviewer `R1` y `WF-I01` | Producto | [ADR-033](decisions.md#adr-033) los dejó abiertos |
 | **B7 / [ADR-006](decisions.md#adr-006)** | Legal + Producto | **Ningún flujo transporta datos reales hasta cerrarlo.** La aprobación técnica del contrato no es autorización de tratamiento |
+
+---
+
+## 10. Devolución del CRM · 2 de septiembre de 2026
+
+> **`CRM ACCEPTS WITH REQUIRED CHANGES`** — sin objeciones de diseño. Lo que falta es construcción
+> del lado del CRM y **dos acuerdos de forma**.
+
+### 10.1 Lo que quedó cerrado de común acuerdo
+
+**`institutionId` fuera del payload, probado contra su código.** El CRM no dijo *"debería andar"*:
+verificó el camino entero —`students.platform_student_id` con índice único, `institution_id NOT NULL`
+con FK a `institutions`, y `operator_assignments` para resolver cola y operadores— y confirmó que
+**resuelve institución, cola y operador partiendo sólo de `platformStudentId`**.
+
+`C01-001` sigue abierta y **deja de bloquear estos tres flujos**: ninguno depende de la equivalencia
+de UUID de institución entre los dos sistemas.
+
+**Ningún campo retirado se pidió de vuelta.** Ni `institutionId`, ni `playbookRef`, ni
+`subjects[].status`, ni `nextAction.dueAt`, ni `assessments[]`. Los cinco quedan fuera de v1 **por
+acuerdo**, no por imposición de un lado.
+
+**El outbox es del emisor.** Coinciden: la durabilidad del push es responsabilidad de la Plataforma;
+del lado del CRM lo equivalente es la recepción idempotente por `eventId`.
+
+**`C01-039` está modelado del lado del CRM** (`operator_assignments` con `operator_id`, `level`,
+`shift`, `active`, más ruteo por turno). Falta la política, no la estructura.
+
+### 10.2 Dos acuerdos de forma pendientes
+
+**1 · El envelope de error.** El CRM propone `{ "error": { "code", "message" }, "correlationId" }`;
+hoy emite `{ "error": "<code>", "message": "..." }` plano.
+
+**Ninguno de los dos emite hoy lo que el contrato necesita, y nadie tiene que migrar nada viejo.** Las
+nueve rutas de estudiante de la Plataforma devuelven `{ error: "No autenticado" }` — plano, y con
+**prosa en castellano**, porque del otro lado hay una persona. Eso está bien y se queda como está.
+
+`/api/service/v1/*` es una superficie nueva con otro consumidor —una máquina—, así que el envelope
+anidado **se adopta ahí y en ningún otro lado**. Propuesta: aceptar la forma del CRM tal cual.
+
+**2 · Los dos secretos nuevos y su rotación.** Uno para el HMAC del flujo A (Plataforma → CRM) y otro
+Bearer para B y C (CRM → Plataforma), **sin reusar** el de `/authorize` ni el de `POST /api/reloj`.
+
+⚠️ **Hoy no hay rotación de secretos en ninguno de los dos sistemas.** Del lado del CRM es una env var
+única sin versionado ni overlap; del lado de la Plataforma es el ítem 5 de
+[ADR-005](decisions.md#adr-005), que sigue `DEFERRED` y que
+[ADR-034](decisions.md#adr-034) ya reabrió por el outbox. **Es el mismo trabajo**, y conviene
+resolverlo una vez.
+
+### 10.3 ⚠️ Hallazgo: `cause.code` no tiene vocabulario acordado
+
+El fixture del CRM manda `"code": "reiterative_error"`. **Ese valor no existe de este lado.** Hay dos
+candidatos reales y ninguno es ése:
+
+| Fuente | Valores |
+|---|---|
+| `risk_rule.canonical_id` | `HP0-06-1`, `HP0-06-2`, `HP0-06-3` |
+| `risk_signal.signal_type` | `error_reiterado`, `sin_avance_pese_a_devoluciones`, `factores_subjetivos` |
+
+**Propuesta: `cause.code` = `risk_rule.canonical_id`.** Es el identificador **versionado**: cambiar un
+umbral carga una versión nueva de la regla y el código sigue siendo trazable a la fuente profesional.
+El texto para humanos ya viaja en `cause.label`, así que el `code` no tiene que ser legible.
+
+`signal_type` es `TEXT` libre, no un enum: elegirlo dejaría el contrato **sin vocabulario cerrado que
+ofrecer** hasta que `C01-021` diga cuáles son las situaciones.
+
+Sin acordar esto, **los fixtures compartidos no coinciden**.
+
+### 10.4 Una implicancia para el outbox
+
+El CRM define `422 UNRESOLVABLE_STUDENT` para un `platformStudentId` que no puede resolver, y su tabla
+lo marca **no reintentable**. El outbox de §7.7 tiene que distinguirlo de un `5xx`: un estudiante que
+el CRM no conoce no se arregla insistiendo, y una cola que reintenta eso para siempre **se tapa sola**
+y deja de entregar las señales que sí podría entregar.
+
+### 10.5 Estado por lado
+
+| | Plataforma | CRM |
+|---|---|---|
+| Lifecycle y cierre transaccional | ✅ construido | — |
+| Identificadores del flujo C | ✅ construido | — |
+| Verificación HMAC / anti-replay | ⏸️ emisor | 🔴 a construir |
+| Idempotencia entrante (`webhook_events`) | — | 🔴 a construir |
+| Cliente saliente + reintentos | — | 🔴 a construir |
+| Entidad de caso con owner fijo | ✅ es `intervention` | 🔴 a construir |
+| `crmCaseId` | ⏸️ §7.3 | 🔴 a construir |
+| Outbox | ⏸️ §7.7 | — |
+| Secretos y rotación | 🔴 acuerdo | 🔴 acuerdo |
+| Envelope de error | 🔴 acuerdo | 🔴 acuerdo |
+
+**Bloqueos externos, iguales para los dos:** `C01-021` —sin reglas el flujo A no tiene qué
+transportar— y **B7 / [ADR-006](decisions.md#adr-006)**, que el CRM también reconoce: *"la aprobación
+técnica ≠ autorización de datos"*.

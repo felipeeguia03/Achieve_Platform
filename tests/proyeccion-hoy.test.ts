@@ -26,6 +26,7 @@ const vacio: EstadoDelDia = {
 const conAccion: EstadoDelDia = {
   ...vacio,
   accion: {
+    id: "acc-1",
     status: "RECOMMENDED",
     objetivo: "Derivadas",
     contexto: "ANÁLISIS II · UNIDAD 2",
@@ -127,7 +128,7 @@ describe("B2.5 · la fecha se formatea en la zona del estudiante", () => {
   it("sin avance registrado, la materia no dice «hace 0 días»", () => {
     const r = proyectarDia({
       ...vacio,
-      materias: [{ nombre: "M", estado: null, tono: "neutral", ultimoAvanceEn: null }],
+      materias: [{ cursadaId: "ce-" + "M", nombre: "M", estado: null, tono: "neutral", ultimoAvanceEn: null }],
     });
     expect(r.materias[0].ultimoAvance).toBeNull();
   });
@@ -145,7 +146,7 @@ describe("B2.6 · la materia no afirma un estado que nadie evaluó", () => {
   it("sin lectura de estado, la línea se omite en vez de rellenarse", () => {
     const r = proyectarDia({
       ...vacio,
-      materias: [{ nombre: "Análisis II", estado: null, tono: "neutral", ultimoAvanceEn: null }],
+      materias: [{ cursadaId: "ce-" + "Análisis II", nombre: "Análisis II", estado: null, tono: "neutral", ultimoAvanceEn: null }],
     });
     expect(r.materias[0].estado).toBeNull();
   });
@@ -155,7 +156,7 @@ describe("B2.6 · la materia no afirma un estado que nadie evaluó", () => {
     // tocarla: lo que cambia es que haya fuente, no la forma.
     const r = proyectarDia({
       ...vacio,
-      materias: [{ nombre: "Análisis II", estado: "Necesita atención", tono: "urgencia", ultimoAvanceEn: null }],
+      materias: [{ cursadaId: "ce-" + "Análisis II", nombre: "Análisis II", estado: "Necesita atención", tono: "urgencia", ultimoAvanceEn: null }],
     });
     expect(r.materias[0].estado).toBe("Necesita atención");
     expect(r.materias[0].tono).toBe("urgencia");
@@ -255,8 +256,8 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
     const conMaterias: EstadoDelDia = {
       ...vacio,
       materias: [
-        { nombre: "Análisis II", estado: null, ultimoAvanceEn: null, tono: "neutral" },
-        { nombre: "Álgebra", estado: null, ultimoAvanceEn: null, tono: "neutral" },
+        { cursadaId: "ce-" + "Análisis II", nombre: "Análisis II", estado: null, ultimoAvanceEn: null, tono: "neutral" },
+        { cursadaId: "ce-" + "Álgebra", nombre: "Álgebra", estado: null, ultimoAvanceEn: null, tono: "neutral" },
       ],
     };
     const sin = proyectarDia(conMaterias).materias.map((m) => m.nombre);
@@ -292,6 +293,22 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
     expect(proyectarDia({ ...vacio, riesgo: baja }).estadoGeneral).toBe(
       proyectarDia({ ...vacio, riesgo: riesgoAlto }).estadoGeneral,
     );
+  });
+
+  it("los identificadores de §7.6 no llegan a la pantalla", () => {
+    // ADR-034 §7.6: `estado_del_dia()` los devuelve para el flujo C del
+    // contrato con el CRM. `UX01` no los necesita, y lo que la pantalla no
+    // necesita no viaja: el día que alguien renderice un UUID va a ser porque
+    // estaba a mano.
+    const p = proyectarDia({
+      ...vacio,
+      accion: { ...vacio.accion!, id: "acc-1" },
+      materias: [
+        { cursadaId: "ce-1", nombre: "Análisis II", estado: null, ultimoAvanceEn: null, tono: "neutral" },
+      ],
+    });
+    expect(JSON.stringify(p)).not.toContain("acc-1");
+    expect(JSON.stringify(p)).not.toContain("ce-1");
   });
 
   it("el riesgo no entra a la matriz de precedencia", () => {

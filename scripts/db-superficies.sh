@@ -95,6 +95,17 @@ echo "→ estado_del_dia · la materia no afirma un estado que nadie evaluó (pr
 igual "ninguna materia trae estado" \
   "$(q "select coalesce((public.estado_del_dia('$INS','$EST',now())->'materias'->0->>'estado'),'NULO');")" "NULO"
 
+echo "→ estado_del_dia · los identificadores del flujo C (ADR-034 §7.6)"
+igual "la cursada viaja con su id" \
+  "$(q "select (public.estado_del_dia('$INS','$EST',now())->'materias'->0->>'cursadaId');")" "$CE"
+igual "y la acción con el suyo" \
+  "$(q "select (public.estado_del_dia('$INS','$EST',now())->'accion'->>'id') = (select id::text from action where institution_id='$INS' order by created_at desc limit 1);")" "t"
+# El id que viaja es el de la **cursada**, no el de la materia del catálogo: es
+# lo que aceptan `estado_de_materia()` y `GET /api/materia`. Devolver el del
+# catálogo obligaría al que lo recibe a resolver la cursada adivinando.
+igual "y es la cursada, no la materia del catálogo" \
+  "$(q "select (public.estado_del_dia('$INS','$EST',now())->'materias'->0->>'cursadaId') in (select course_id::text from course_offering);")" "f"
+
 echo "→ estado_de_materia"
 igual "devuelve la materia de la cursada" \
   "$(q "select public.estado_de_materia('$INS','$EST',now())->>'materia';")" "AnálisisII"
