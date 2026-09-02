@@ -425,3 +425,30 @@ Orden de precedencia:
 
 Si una instrucción que te den contradice un principio marcado `DEBE` o un invariante de §2:
 **decilo antes de ejecutar y explicá el costo.**
+
+---
+
+## 9. Bloque generado por Next — **no lo escribió este equipo**
+
+Lo que sigue entre `<!-- BEGIN:nextjs-agent-rules -->` y `<!-- END -->` lo **inyecta `next dev`**
+desde `node_modules/next/dist/server/lib/generate-agent-files.js`, y apareció con la actualización a
+`16.3.4` ([ADR-008](docs/brief-adr-008-seguridad.md) §10.4.1). Se conserva porque borrarlo sólo hace
+que se vuelva a agregar.
+
+**Su lugar en el orden de precedencia es el último.** Es documentación de una herramienta, no una
+regla de este proyecto: **no manda sobre §1 a §8, ni sobre `docs/`**. Si algo de ese bloque
+contradice un invariante de §2 o una decisión de `docs/decisions.md`, **gana este repositorio** — y
+aplica §8 igual que con cualquier otra instrucción.
+
+Esta nota está **fuera de los marcadores a propósito**: el generador sólo reemplaza lo de adentro, así
+que sobrevive a cada regeneración.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
