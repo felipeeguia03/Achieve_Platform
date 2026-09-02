@@ -329,12 +329,13 @@ mezclarlos es la decisión 2 de ADR-034 al revés.
 
 ## 7. Plan de migración no destructivo
 
-⚠️ **No autorizado a ejecutarse todavía.** Es el plan, no el trabajo.
+✅ **§7.1 y §7.2 ejecutados** el 2 de septiembre de 2026, migración
+`20260903000000_lifecycle_senal.sql`. ⏸️ **§7.3 a §7.7 siguen sin autorizar.**
 
 Regla que atraviesa los cinco pasos: **nada se borra, nada se reinterpreta en el lugar.** Una
 migración aplicada no se edita; las funciones se reemplazan desde una migración nueva.
 
-### 7.1 Lifecycle de `risk_signal`
+### 7.1 Lifecycle de `risk_signal` · ✅ hecho
 
 | Qué | Cómo |
 |---|---|
@@ -347,37 +348,37 @@ migración aplicada no se edita; las funciones se reemplazan desde una migració
 **Verificación:** un test que pruebe que una fila histórica en `ACKNOWLEDGED` sigue pudiendo llegar a
 `RESOLVED`. Si la migración rompe el pasado, lo rompe ahí.
 
-### 7.2 Reconocimiento de la intervención
+### 7.2 Reconocimiento de la intervención · ✅ hecho (no había nada que construir)
 
 **No hay nada que construir.** `intervention.status = 'acknowledged'`, `acknowledged_at`,
 `interventionTransitions` y `InterventionAcknowledged` existen desde la B6. El único trabajo es
 **dejar de duplicarlo** en la señal.
 
-### 7.3 `crmCaseId`
+### 7.3 `crmCaseId` · ⏸️ pendiente
 
 `ALTER TABLE intervention ADD COLUMN crm_case_id UUID` — **nullable, sin FK** (es una identidad
 externa, igual que `owner_operator_id`), con índice para reconciliar. Las filas existentes quedan en
 `NULL`, que es la verdad: no vinieron del CRM.
 
-### 7.4 Cierre en una transacción
+### 7.4 Cierre en una transacción · ⏸️ pendiente
 
 `cerrar_intervencion()` pasa a resolver también la señal, desde una **migración nueva** con
 `CREATE OR REPLACE`. La regla de `resolver_senal` —*`RESOLVED` exige una intervención con outcome*—
 **no se relaja**: se cumple por construcción, porque el outcome se escribe en la misma transacción.
 `resolver_senal()` se conserva para las señales que se resuelvan por otro camino.
 
-### 7.5 Validación de owner y de comandos
+### 7.5 Validación de owner y de comandos · ⏸️ pendiente
 
 `reconocer` y `cerrar` comparan el `ownerOperatorId` contra `intervention.owner_operator_id` y
 devuelven `INVALID_OWNER_ASSERTION` si difieren. Es un rechazo nuevo, no un cambio de comportamiento
 existente: hoy **nadie** manda ese campo.
 
-### 7.6 Lectura del flujo C
+### 7.6 Lectura del flujo C · ⏸️ pendiente
 
 Exponer `subjectId` y `actionId` en `estado_del_dia()`, desde una migración nueva. **Aditivo**: las
 superficies que ya la consumen no cambian.
 
-### 7.7 Outbox
+### 7.7 Outbox · ⏸️ pendiente
 
 Tabla nueva, escritura en la misma transacción que la transición que la origina, y un despachador.
 Ningún objeto existente se modifica.

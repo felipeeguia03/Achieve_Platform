@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { correrReloj, type RepositorioDeReloj } from "@/lib/server/servicios/reloj";
@@ -163,7 +166,7 @@ describe("B6 · el reloj también expira las señales que dejaron de importar", 
    * relevante** — eso lo declaró quien la creó, en `valid_until`—; sólo ejecuta
    * ese vencimiento, por la misma vía que un `CONFIRMED` que pasa a `DUE`.
    */
-  function conSenales(estados: Array<{ id: string; status: "OPEN" | "ACKNOWLEDGED" }>) {
+  function conSenales(estados: Array<{ id: string; status: "OPEN" }>) {
     const filas = new Map(estados.map((s) => [s.id, s.status as string]));
     const publicados: EventoDeProducto[] = [];
     const reloj: RepositorioDeReloj = {
@@ -199,12 +202,22 @@ describe("B6 · el reloj también expira las señales que dejaron de importar", 
   it("expira las vencidas y las cuenta aparte de los compromisos", async () => {
     const m = conSenales([
       { id: "s-1", status: "OPEN" },
-      { id: "s-2", status: "ACKNOWLEDGED" },
+      { id: "s-2", status: "OPEN" },
     ]);
     const r = await correrReloj(m.deps, "inst-A", AHORA);
     expect(r).toMatchObject({ vencidos: 0, incumplidos: 0, senalesExpiradas: 2 });
     expect(m.filas.get("s-1")).toBe("EXPIRED");
     expect(m.filas.get("s-2")).toBe("EXPIRED");
+  });
+
+  it("el reloj sólo levanta `OPEN`: una legacy en `ACKNOWLEDGED` no se vence sola", () => {
+    // ADR-034. El filtro vive en el `WHERE` del Repository, y por eso el test
+    // mira **la fuente**: un doble que devolviera lo correcto no probaría que
+    // la consulta real pide lo correcto.
+    const fuente = readFileSync(resolve(process.cwd(), "lib/server/repositorios/reloj.ts"), "utf8");
+    const consulta = fuente.slice(fuente.indexOf("senalesVencidas"));
+    expect(consulta).toContain('.eq("status", "OPEN")');
+    expect(consulta, "ACKNOWLEDGED volvió al WHERE del reloj").not.toContain("ACKNOWLEDGED");
   });
 
   it("el actor del evento es el sistema: nadie decidió que dejara de importar", async () => {

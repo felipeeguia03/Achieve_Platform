@@ -35,13 +35,16 @@ export const relojReal: RepositorioDeReloj = {
    * El filtro por estado va en el `WHERE` y no en el código: traer una señal en
    * `INTERVENTION_REQUIRED` para después descartarla es pasear la posibilidad
    * de expirarla por error.
+   *
+   * **Sólo `OPEN`** desde [ADR-034](../../../docs/decisions.md#adr-034):
+   * `ACKNOWLEDGED` quedó legacy y sus filas ya no se vencen solas.
    */
   async senalesVencidas(institutionId, ahora, limite) {
     const { data, error } = await clienteDeServicio()
       .from("risk_signal")
       .select("id, status")
       .eq("institution_id", institutionId)
-      .in("status", ["OPEN", "ACKNOWLEDGED"])
+      .eq("status", "OPEN")
       .not("valid_until", "is", null)
       .lt("valid_until", ahora)
       .order("valid_until", { ascending: true })
@@ -50,7 +53,7 @@ export const relojReal: RepositorioDeReloj = {
     if (error) throw new Error(`No se pudieron leer señales vencidas: ${error.message}`);
     return (data ?? []).map((f) => ({
       id: f.id as string,
-      status: f.status as "OPEN" | "ACKNOWLEDGED",
+      status: f.status as "OPEN",
     }));
   },
 };

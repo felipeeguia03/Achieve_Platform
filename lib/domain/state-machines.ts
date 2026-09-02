@@ -121,12 +121,34 @@ export const examPreparationTransitions: Readonly<
 /**
  * `RiskSignal` — Fase B6.
  *
- * Sale del diagrama de `product.md` §5.5, que es lineal:
+ * Sale del diagrama de `product.md` §5.5:
  *
  * ```
- * OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED → RESOLVED
- *                                            ↘ ESCALATED
+ * OPEN ──────────────► INTERVENTION_REQUIRED ──► RESOLVED
+ *  │                                          ↘  ESCALATED
+ *  └──► EXPIRED
+ *
+ * ACKNOWLEDGED  ·  legacy
  * ```
+ *
+ * **`OPEN → INTERVENTION_REQUIRED` es directo** — [ADR-034](../../docs/decisions.md#adr-034), que
+ * cerró `C01-022`. La necesidad de una persona la declara la Plataforma desde
+ * `risk_rule.modo`, y **no depende de que alguien haya visto la señal**.
+ *
+ * La versión anterior obligaba a pasar por `ACKNOWLEDGED`, y era un peaje sin
+ * cobrador: se dibujó cuando la cola de operador iba a vivir acá. Con el
+ * operador en el CRM ([ADR-033](../../docs/decisions.md#adr-033)) nadie podía
+ * producir ese paso, y `abrir_intervencion()` rechazaba todo lo demás — la
+ * máquina no se podía recorrer.
+ *
+ * **`ACKNOWLEDGED` queda como legacy y conserva sus salidas.** No se borra el
+ * valor ni las filas: una señal anterior a ADR-034 conserva su significado
+ * —*"alguien tomó conocimiento"*— y tiene que poder terminar su recorrido.
+ * **Ninguna señal nueva entra ahí**: no es destino de ningún estado vivo, el
+ * Service lo excluye por tipo y un trigger lo rechaza en la base.
+ *
+ * Que el operador se haya hecho cargo es un hecho de la `Intervention`
+ * —`interventionTransitions`, `open → acknowledged`—, y siempre lo fue.
  *
  * **`RESOLVED` sólo se alcanza desde `INTERVENTION_REQUIRED`, y eso es el Done
  * de la fase, no una restricción de más.** El spec: *"el dashboard no es el
@@ -136,10 +158,15 @@ export const examPreparationTransitions: Readonly<
  * es exactamente el tablero en verde con nada detrás.
  *
  * **`EXPIRED` es la salida de las que dejaron de ser relevantes** —*"una señal
- * puede expirar si deja de ser relevante; se guarda la causa histórica"*— y
- * llega **sólo desde `OPEN` y `ACKNOWLEDGED`**. Dejar expirar una que ya pidió
- * una persona borraría una obligación humana pendiente, y el Done dice que
- * ninguna señal queda sin outcome.
+ * puede expirar si deja de ser relevante; se guarda la causa histórica"*— y en
+ * el lifecycle vivo llega **sólo desde `OPEN`**: al salir `ACKNOWLEDGED` del
+ * recorrido, es la única puerta que queda. Dejar expirar una que ya pidió una
+ * persona borraría una obligación humana pendiente, y el Done dice que ninguna
+ * señal queda sin outcome.
+ *
+ * La arista `ACKNOWLEDGED → EXPIRED` **se conserva para las filas históricas**,
+ * pero el reloj ya no las levanta: `senalesVencidas()` filtra `OPEN` y nada
+ * más. Una señal vieja no se vence sola; alguien tiene que moverla.
  *
  * `ESCALATED` queda sin salida declarada: el spec dibuja la bifurcación y no el
  * retorno. Qué pasa después de escalar es `C01-022` y `C01-044`.
@@ -147,7 +174,8 @@ export const examPreparationTransitions: Readonly<
 export const riskSignalTransitions: Readonly<
   Record<RiskSignalStatus, readonly RiskSignalStatus[]>
 > = {
-  OPEN: ["ACKNOWLEDGED", "EXPIRED"],
+  OPEN: ["INTERVENTION_REQUIRED", "EXPIRED"],
+  /** **Legacy** (ADR-034). Nadie entra; las filas históricas salen. */
   ACKNOWLEDGED: ["INTERVENTION_REQUIRED", "EXPIRED"],
   INTERVENTION_REQUIRED: ["RESOLVED", "ESCALATED"],
   RESOLVED: [],

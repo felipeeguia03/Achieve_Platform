@@ -189,6 +189,10 @@ describe("B6 · la máquina de `RiskSignal`", () => {
       for (const hacia of estados) {
         if (riskSignalTransitions[desde].includes(hacia)) continue;
         if (hacia === "RESOLVED") continue; // tiene su propia función
+        // `ACKNOWLEDGED` no es expresable como destino (ADR-034): lo excluye el
+        // tipo de `transicionar`, así que no hay llamada que probar acá. Que
+        // nadie pueda entrar tiene su propio test, abajo.
+        if (hacia === "ACKNOWLEDGED") continue;
         const m = mundo({ senal: desde });
         const r = await transicionar(m.riesgo, "inst-A", "s-1", hacia, "op-1");
         expect(r.estado, `${desde}->${hacia}`).toBe("TRANSICION_PROHIBIDA");
@@ -210,7 +214,68 @@ describe("B6 · la máquina de `RiskSignal`", () => {
     // Expirarla borraría una obligación humana pendiente.
     expect(riskSignalTransitions.INTERVENTION_REQUIRED).not.toContain("EXPIRED");
     expect(riskSignalTransitions.OPEN).toContain("EXPIRED");
-    expect(riskSignalTransitions.ACKNOWLEDGED).toContain("EXPIRED");
+  });
+
+  // ── ADR-034 · el lifecycle corregido ───────────────────────────────────────
+
+  it("`OPEN → INTERVENTION_REQUIRED` es directo: no hay peaje que nadie pueda pagar", async () => {
+    // Era el bloqueo real: `abrir_intervencion()` exige `INTERVENTION_REQUIRED`,
+    // y la única puerta era `ACKNOWLEDGED` —"alguien la miró"— que con el
+    // operador en el CRM (ADR-033) no tenía quién la produjera.
+    expect(riskSignalTransitions.OPEN).toContain("INTERVENTION_REQUIRED");
+
+    const m = mundo({ senal: "OPEN" });
+    const r = await transicionar(m.riesgo, "inst-A", "s-1", "INTERVENTION_REQUIRED", null);
+    expect(r.estado).toBe("OK");
+    expect(m.senal()!.state).toBe("INTERVENTION_REQUIRED");
+    expect(m.publicados.map((e) => e.nombre)).toEqual(["RiskSignalInterventionRequired"]);
+    // El actor es el sistema: lo declaró `risk_rule.modo`, no una persona.
+    expect(m.publicados[0].actorId).toBeNull();
+  });
+
+  it("`OPEN → EXPIRED` sigue siendo la salida de las que dejaron de importar", async () => {
+    const m = mundo({ senal: "OPEN" });
+    const r = await transicionar(m.riesgo, "inst-A", "s-1", "EXPIRED", null);
+    expect(r.estado).toBe("OK");
+    expect(m.senal()!.state).toBe("EXPIRED");
+    // Y la causa histórica sobrevive: expirar no borra por qué se abrió.
+    expect(m.senal()!.reason).toBe("tres entregas seguidas con el mismo error de método");
+  });
+
+  it("`INTERVENTION_REQUIRED` no expira, ni por el reloj ni a mano", async () => {
+    expect(riskSignalTransitions.INTERVENTION_REQUIRED).not.toContain("EXPIRED");
+    const m = mundo({ senal: "INTERVENTION_REQUIRED" });
+    const r = await transicionar(m.riesgo, "inst-A", "s-1", "EXPIRED", null);
+    expect(r.estado).toBe("TRANSICION_PROHIBIDA");
+    expect(m.senal()!.state).toBe("INTERVENTION_REQUIRED");
+  });
+
+  it("`ACKNOWLEDGED` es legacy: ningún estado vivo lo tiene como destino", () => {
+    // La regla es *no entrar*, y se verifica sobre la tabla entera: si mañana
+    // alguien lo agrega como destino de cualquier estado, esto rompe.
+    const quienesEntran = (Object.keys(riskSignalTransitions) as RiskSignalStatus[]).filter((d) =>
+      riskSignalTransitions[d].includes("ACKNOWLEDGED"),
+    );
+    expect(quienesEntran).toEqual([]);
+  });
+
+  it("pero la fila histórica termina su recorrido: `ACKNOWLEDGED → INTERVENTION_REQUIRED`", async () => {
+    // Salir sí se puede, y es lo que hace que la corrección sea no destructiva:
+    // una señal anterior a ADR-034 no queda varada.
+    expect(riskSignalTransitions.ACKNOWLEDGED).toContain("INTERVENTION_REQUIRED");
+    const m = mundo({ senal: "ACKNOWLEDGED" });
+    const r = await transicionar(m.riesgo, "inst-A", "s-1", "INTERVENTION_REQUIRED", "op-1");
+    expect(r.estado).toBe("OK");
+    expect(m.senal()!.state).toBe("INTERVENTION_REQUIRED");
+  });
+
+  it("y una legacy puede llegar hasta `RESOLVED` con su outcome", async () => {
+    // El recorrido completo de una fila vieja, de punta a punta.
+    const m = mundo({ senal: "ACKNOWLEDGED", conOutcome: true });
+    await transicionar(m.riesgo, "inst-A", "s-1", "INTERVENTION_REQUIRED", "op-1");
+    const r = await resolver(m.riesgo, "inst-A", "s-1", "op-1");
+    expect(r.estado).toBe("OK");
+    expect(m.senal()!.state).toBe("RESOLVED");
   });
 
   it("`RESOLVED` y `ESCALATED` son terminales: no se reabre un cierre", () => {

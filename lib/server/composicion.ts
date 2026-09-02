@@ -393,11 +393,20 @@ export function registrarSenalDeRiesgo(entrada: SenalDetectada): Promise<Resulta
   return registrarSenalPuro(riesgo, entrada);
 }
 
-/** Mueve una señal de estado. `RESOLVED` no entra por acá: tiene condición. */
+/**
+ * Mueve una señal de estado.
+ *
+ * Dos destinos quedan fuera: `RESOLVED`, que tiene su propia función porque
+ * tiene condición, y `ACKNOWLEDGED`, que quedó **legacy** con
+ * [ADR-034](../../docs/decisions.md#adr-034) — ningún escritor nuevo entra ahí.
+ */
 export function transicionarSenal(
   institutionId: string,
   id: string,
-  hacia: Exclude<import("@/lib/domain/types").RiskSignalStatus, "RESOLVED">,
+  hacia: Exclude<
+    import("@/lib/domain/types").RiskSignalStatus,
+    "RESOLVED" | "ACKNOWLEDGED"
+  >,
   actorId: string | null = null,
 ) {
   return transicionarSenalPuro(riesgo, institutionId, id, hacia, actorId);

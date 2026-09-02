@@ -264,6 +264,36 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
     expect(con).toEqual(sin);
   });
 
+  /**
+   * Regresión de ADR-034 — Fase B6.2.
+   *
+   * El lifecycle cambió; **lo que el estudiante ve, no**. Una señal legacy en
+   * `ACKNOWLEDGED` sigue siendo una señal viva: si `estado_del_dia()` dejara de
+   * considerarla, desaparecería de `UX01` sin que nadie la resolviera — que es
+   * peor que el estado del que venía.
+   */
+  it("una señal legacy en `ACKNOWLEDGED` sigue viva para UX01", () => {
+    const sql = readFileSync(
+      resolve(process.cwd(), "supabase/migrations/20260902030000_riesgo_en_hoy.sql"),
+      "utf8",
+    );
+    expect(sql).toContain("'OPEN','ACKNOWLEDGED','INTERVENTION_REQUIRED'");
+  });
+
+  it("el disparador sigue siendo pedir una persona, no una severidad", () => {
+    // ADR-034 no tocó esto, y el test existe para que se note si alguien lo
+    // toca de paso: elegir una severidad sería fijar el umbral de `C01-021`.
+    // Sin copy hardcodeada: se compara contra los dos extremos ya proyectados.
+    const alta = { ...riesgoAlto, severidad: "intervencion" as const, necesitaPersona: false };
+    expect(proyectarDia({ ...vacio, riesgo: alta }).estadoGeneral).toBe(
+      proyectarDia(vacio).estadoGeneral,
+    );
+    const baja = { ...riesgoAlto, severidad: "bajo" as const, necesitaPersona: true };
+    expect(proyectarDia({ ...vacio, riesgo: baja }).estadoGeneral).toBe(
+      proyectarDia({ ...vacio, riesgo: riesgoAlto }).estadoGeneral,
+    );
+  });
+
   it("el riesgo no entra a la matriz de precedencia", () => {
     // El guard estructural: si alguien lo mete en `HeroInput`, esto rompe.
     const fuente = readFileSync(

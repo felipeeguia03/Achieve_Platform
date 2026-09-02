@@ -289,6 +289,8 @@ export const EXTENSIONES: Readonly<
   // Lo que el estudiante ve de todo esto es la explicación de su señal y sus
   // propias intervenciones relevantes (matriz de visibilidad §4.1), no cada
   // movimiento interno de la cola de un operador.
+  /** ⚠️ **Legacy desde ADR-034** — ver `LEGACY`. Se conserva porque hay eventos
+   * publicados con este nombre, y borrarlo los dejaría sin declarar. */
   RiskSignalAcknowledged: {
     porQue: "Alguien tomó conocimiento de la señal. §16 sólo nombra su creación",
     nivel: "TRANSICION",
@@ -402,6 +404,30 @@ export const EXTENSIONES: Readonly<
   ActionBlocked: { porQue: "Transición de `Action` bloqueada por el owner", nivel: "TRANSICION", enBitacora: false },
   ActionCancelled: { porQue: "Transición de `Action` cancelada", nivel: "TRANSICION", enBitacora: false },
   ActionReplaced: { porQue: "El ADE reemplazó la Action por otra", nivel: "TRANSICION", enBitacora: false },
+};
+
+/**
+ * Eventos que **se emitieron y ya no se emiten**, con la decisión que los dejó
+ * atrás — Fase B6.2, [ADR-034](../../docs/decisions.md#adr-034).
+ *
+ * Existe esta tercera categoría porque las otras dos no alcanzaban. El guard
+ * *"todo evento declarado como extensión tiene quién lo emita"* daría rojo con
+ * un evento que dejó de producirse; borrarlo daría verde **y reescribiría el
+ * pasado**: los `product_event` ya publicados seguirían en la base sin nada que
+ * los explicara.
+ *
+ * Un evento legacy **no se borra de `EXTENSIONES`**. Se declara acá además, y
+ * el guard cambia de dirección: en vez de exigir que alguien lo emita, exige
+ * que **nadie** lo emita. Si vuelve a aparecer un emisor, rompe.
+ */
+export const LEGACY: Readonly<Record<string, { desde: string; porQue: string }>> = {
+  RiskSignalAcknowledged: {
+    desde: "ADR-034",
+    porQue:
+      "`ACKNOWLEDGED` salió del lifecycle vivo de `RiskSignal`: la necesidad de una " +
+      "persona la declara `risk_rule.modo`, no quien la mira. Que el operador se hizo " +
+      "cargo es `InterventionAcknowledged`, y siempre lo fue",
+  },
 };
 
 /** Todo lo que el sistema puede emitir hoy: el P0 instrumentado más lo declarado. */

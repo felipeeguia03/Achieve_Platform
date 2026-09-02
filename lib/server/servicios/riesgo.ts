@@ -79,6 +79,8 @@ export type ResultadoDeResolucion =
   | { estado: "SIN_OUTCOME"; motivo: string };
 
 const MARCA_DE_TIEMPO: Partial<Record<RiskSignalStatus, string>> = {
+  // Legacy (ADR-034): ningún escritor nuevo llega acá. Se conserva porque la
+  // columna existe y las filas que la tienen siguen siendo válidas.
   ACKNOWLEDGED: "acknowledged_at",
   ESCALATED: "escalated_at",
   EXPIRED: "expired_at",
@@ -138,14 +140,24 @@ export async function registrarSenal(
 }
 
 /**
- * Mueve una señal de estado. **`RESOLVED` no entra por acá** — tiene su propia
- * función porque tiene una condición que la máquina no puede expresar.
+ * Mueve una señal de estado.
+ *
+ * **Dos destinos no entran por acá, y por motivos distintos.**
+ *
+ * `RESOLVED` tiene su propia función, porque tiene una condición que la máquina
+ * no puede expresar: exige una intervención con outcome.
+ *
+ * `ACKNOWLEDGED` quedó **legacy** con [ADR-034](../../../docs/decisions.md#adr-034),
+ * y se excluye **del tipo**: ningún escritor nuevo puede pedirlo, ni por error
+ * ni por refactor. Que el operador se hizo cargo es un hecho de la
+ * `Intervention`, y tiene su propio estado desde la B6. Las filas históricas
+ * **salen** de `ACKNOWLEDGED` sin problema — lo prohibido es entrar.
  */
 export async function transicionar(
   deps: { repo: RepositorioDeSenales; eventos: PublicadorDeEventos; auditor: Auditor },
   institutionId: string,
   id: string,
-  hacia: Exclude<RiskSignalStatus, "RESOLVED">,
+  hacia: Exclude<RiskSignalStatus, "RESOLVED" | "ACKNOWLEDGED">,
   actorId: string | null = null,
   ahora: () => Date = () => new Date(),
 ): Promise<ResultadoDeTransicion<RiskSignalStatus, Senal>> {

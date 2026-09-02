@@ -305,11 +305,9 @@ OPEN ──────────────► INTERVENTION_REQUIRED ──�
 ACKNOWLEDGED  ·  legacy
 ```
 
-> ⚠️ **Decidida y todavía no implementada.** El código vigente es el de
-> [ADR-032](decisions.md#adr-032) —`OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED`, con `EXPIRED`
-> saliendo también de `ACKNOWLEDGED`—. El plan de migración no destructivo está en
-> [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7 y su ejecución no está
-> autorizada.
+> ✅ **Implementada** el 2 de septiembre de 2026 (§7.1–§7.2 del plan). El resto de la integración
+> —`crmCaseId`, cierre y resolución en una transacción, validación de owner, outbox— sigue pendiente
+> en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7.
 
 **La necesidad de una persona la declara la Plataforma**, desde `risk_rule.modo`, y **no depende de
 que alguien haya visto la señal**. Mientras el operador trabajaba acá, *"alguien la miró"* era un
@@ -333,8 +331,7 @@ diagrama y que no son restricciones de más:
 - **`RESOLVED` sólo se alcanza desde `INTERVENTION_REQUIRED`, y sólo con una intervención que
   registró outcome.** Una señal que se pudiera marcar resuelta sin que nadie la trabajara **es** el
   tablero en verde con nada detrás.
-- **`EXPIRED` sale sólo de `OPEN`** (⚠️ y de `ACKNOWLEDGED` mientras la máquina de ADR-034 no esté
-  implementada). Una señal puede expirar si deja de ser relevante y se guarda la causa histórica; una
+- **`EXPIRED` sale sólo de `OPEN`.** Una señal puede expirar si deja de ser relevante y se guarda la causa histórica; una
   que **ya pidió una persona** no dejó de serlo, y vencerla borraría una obligación humana pendiente.
   Lo ejecuta el reloj del lifecycle, sobre el `valid_until` que declaró quien la creó.
 - **`RESOLVED`, `ESCALATED` y `EXPIRED` son terminales.** Qué pasa después de escalar es `C01-022`.

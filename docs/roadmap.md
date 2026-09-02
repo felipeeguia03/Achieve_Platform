@@ -2470,7 +2470,8 @@ y su plan de migración no destructivo. **Nada de eso está implementado.**
 
 **`C01-022` quedó cerrada** por [ADR-034](decisions.md#adr-034): la necesidad de una persona la
 declara la Plataforma desde `risk_rule.modo`, se habilita `OPEN → INTERVENTION_REQUIRED` y
-`ACKNOWLEDGED` pasa a legacy. **Decidida, todavía no implementada.**
+`ACKNOWLEDGED` pasa a legacy. ✅ **Lifecycle implementado** el 2 de septiembre de 2026 (§7.1–§7.2);
+el resto del plan de migración sigue pendiente de autorización.
 
 ⚠️ **El ítem 5 de [ADR-005](decisions.md#adr-005) —outbox y observabilidad— vuelve a estar en el
 camino crítico.** Estaba `DEFERRED`; el flujo A es push, y push sin outbox durable pierde señales en

@@ -180,7 +180,35 @@ describe("B3.1 · nada deriva progreso de una Evidence", () => {
       .join("\n");
     const triggers = sql.match(/CREATE TRIGGER[\s\S]*?;/g) ?? [];
     expect(triggers.length).toBeGreaterThan(0);
+
+    /**
+     * La única excepción, y es de otra naturaleza — Fase B6.2, ADR-034.
+     *
+     * `senal_no_entra_a_acknowledged` **no calcula ni escribe nada**: sólo
+     * levanta una excepción. La regla que prohíbe entra a `ACKNOWLEDGED` vive
+     * en `state-machines.ts` y en el tipo de `transicionar`, a la vista; esto
+     * es la misma regla puesta abajo, porque `service_role` puede escribir la
+     * tabla directo y una regla que sólo vive en una capa se saltea desde la
+     * de abajo.
+     *
+     * **La lista es explícita a propósito.** Agregar un trigger nuevo exige
+     * anotarlo acá, que es exactamente la conversación que este guard existe
+     * para forzar.
+     */
+    const SOLO_PROHIBEN = ["senal_no_entra_a_acknowledged"];
     for (const t of triggers) {
+      const prohibitivo = SOLO_PROHIBEN.find((f) => t.includes(f));
+      if (prohibitivo) {
+        // Y se verifica que efectivamente sólo prohíba: si algún día escribe
+        // una tabla, deja de ser una excepción y vuelve a estar prohibido.
+        const cuerpo = sql.slice(sql.indexOf(`FUNCTION public.${prohibitivo}`));
+        const fin = cuerpo.indexOf("$$;");
+        expect(
+          cuerpo.slice(0, fin),
+          `${prohibitivo} dejó de ser sólo un NO: escribe en una tabla`,
+        ).not.toMatch(/\b(INSERT|UPDATE|DELETE)\s+(INTO\s+)?[a-z_]+/i);
+        continue;
+      }
       // El criterio no es sobre qué tabla cuelga —`topic_progress` tiene el
       // suyo— sino **qué ejecuta**: el único trigger permitido es la fontanería
       // de `updated_at` de la B1.1. Cualquier otra función sería una regla de

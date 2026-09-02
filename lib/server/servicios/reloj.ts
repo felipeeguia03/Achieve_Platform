@@ -29,15 +29,21 @@ export interface RepositorioDeReloj {
    * relevante**: eso lo declaró quien la creó, en `valid_until`. Acá sólo se
    * ejecuta ese vencimiento, igual que un `CONFIRMED` que pasa a `DUE`.
    *
-   * Sólo `OPEN` y `ACKNOWLEDGED`. Una señal que ya pidió una persona **no
-   * expira sola**: hacerlo borraría una obligación humana pendiente, y el Done
-   * de la fase dice que ninguna señal queda sin outcome.
+   * **Sólo `OPEN`** — [ADR-034](../../../docs/decisions.md#adr-034). Una señal
+   * que ya pidió una persona **no expira sola**: hacerlo borraría una
+   * obligación humana pendiente, y el Done de la fase dice que ninguna señal
+   * queda sin outcome.
+   *
+   * `ACKNOWLEDGED` salió de esta lista con el lifecycle nuevo. Las filas
+   * históricas que quedaron ahí **dejan de expirarse solas**, que es la
+   * dirección conservadora: el reloj no toca lo que ya no produce, y moverlas
+   * queda en manos de alguien.
    */
   senalesVencidas(
     institutionId: string,
     ahora: string,
     limite: number,
-  ): Promise<Array<{ id: string; status: "OPEN" | "ACKNOWLEDGED" }>>;
+  ): Promise<Array<{ id: string; status: "OPEN" }>>;
 }
 
 export interface ResumenDeCorrida {

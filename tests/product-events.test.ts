@@ -6,6 +6,7 @@ import {
   catalogoP0,
   eventosDeNivel,
   EXTENSIONES,
+  LEGACY,
   eventosDeBitacora,
   eventosDeclarados,
 } from "@/lib/domain/product-events";
@@ -115,11 +116,41 @@ describe("B3.2 · el catálogo y el código no se desincronizan", () => {
       expect(puedeEmitirse, `${nombre} dice que se emite y nadie lo emite`).toContain(nombre);
     }
     // Las extensiones existen **porque** el código las emite: si una deja de
-    // emitirse, sobra en la lista.
+    // emitirse, sobra en la lista — salvo que esté declarada `LEGACY`, que es
+    // exactamente la afirmación *"esto se emitió y ya no"*.
     for (const nombre of Object.keys(EXTENSIONES)) {
+      if (nombre in LEGACY) continue;
       expect(puedeEmitirse, `${nombre} está declarado como extensión y ya nadie lo emite`).toContain(
         nombre,
       );
+    }
+  });
+
+  /**
+   * La cuarta dirección del guard — Fase B6.2.
+   *
+   * `LEGACY` afirma que un evento **dejó de emitirse**. Si alguien lo revive en
+   * un refactor, la afirmación pasa a ser falsa y nadie se entera: el evento
+   * está declarado, así que los otros tres guards siguen en verde. Este lo mira
+   * al revés.
+   */
+  it("nada declarado legacy se sigue emitiendo", () => {
+    const puedeEmitirse = new Set(emitibles());
+    for (const [nombre, e] of Object.entries(LEGACY)) {
+      expect(
+        puedeEmitirse,
+        `${nombre} se declaró legacy (${e.desde}) y el código lo emite de nuevo`,
+      ).not.toContain(nombre);
+    }
+  });
+
+  it("un evento legacy sigue declarado: los hechos publicados no se borran", () => {
+    for (const nombre of Object.keys(LEGACY)) {
+      expect(
+        eventosDeclarados(),
+        `${nombre} es legacy y dejó de estar declarado: los product_event viejos quedan sin explicación`,
+      ).toContain(nombre);
+      expect(LEGACY[nombre].desde.length, `${nombre} no dice qué decisión lo dejó atrás`).toBeGreaterThan(3);
     }
   });
 

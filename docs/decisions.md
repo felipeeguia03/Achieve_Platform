@@ -2721,7 +2721,11 @@ sin cambios.
 
 ### Estado de implementación
 
-⚠️ **Esta decisión no está implementada.** El schema y el código siguen exactamente como los dejó
-`b450b8e`: la máquina vigente en `lib/domain/state-machines.ts` es todavía la de ADR-032. El plan de
-migración no destructivo está en el §7 del contrato v0.2, y **su ejecución no está autorizada
-todavía**.
+✅ **§7.1 y §7.2 ejecutados** el 2 de septiembre de 2026. `OPEN → INTERVENTION_REQUIRED` es directo,
+`ACKNOWLEDGED` quedó legacy con triple cierre —fuera de la tabla de transiciones, excluido del tipo
+de `transicionar`, y un trigger que lo rechaza en la base—, el reloj sólo levanta `OPEN`, y las filas
+históricas conservan estado, marca y salidas.
+
+⏸️ **Pendientes de autorización:** §7.3 (`crmCaseId`), §7.4 (cierre y resolución en una transacción),
+§7.5 (validación de owner), §7.6 (ids en la lectura del flujo C) y §7.7 (outbox). Ver
+[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7.

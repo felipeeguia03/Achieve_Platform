@@ -959,11 +959,14 @@ CREATE TABLE preparation_readiness (
 --
 -- Ver [ADR-032](decisions.md#adr-032).
 --
--- ⚠️ **Decidido y todavía no migrado** — [ADR-034](decisions.md#adr-034) cerró `C01-022` y cambia
--- este schema en cuatro puntos: se habilita `OPEN → INTERVENTION_REQUIRED`, `ACKNOWLEDGED` pasa a
--- legacy (el valor, la columna `acknowledged_at`, el evento y las filas **se conservan**), `EXPIRED`
--- sale sólo de `OPEN`, y `intervention` gana un `crm_case_id UUID` nullable sin FK. El plan no
--- destructivo está en `contrato-riesgo-candidato-v0.2.md` §7. **Lo de abajo es lo que hay hoy.**
+-- ✅ **Lifecycle corregido** por [ADR-034](decisions.md#adr-034), migración
+-- `20260903000000_lifecycle_senal.sql`: `OPEN → INTERVENTION_REQUIRED` es directo, `EXPIRED` sale
+-- sólo de `OPEN`, y `ACKNOWLEDGED` quedó **legacy** — el valor del `CHECK`, la columna
+-- `acknowledged_at`, el evento y las filas **se conservan**, y un trigger prohíbe *entrar*, no
+-- *estar*. Sigue pendiente `intervention.crm_case_id` (§7.3 del contrato v0.2).
+--
+-- El `CHECK` de abajo es el vigente y **no cambió**: borrar `'ACKNOWLEDGED'` del enum volvería
+-- ilegales las filas históricas.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- El catálogo de reglas, como CONFIGURACIÓN VERSIONADA — mismo patrón que

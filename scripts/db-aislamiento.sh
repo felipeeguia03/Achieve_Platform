@@ -417,7 +417,7 @@ if corre "select public.abrir_intervencion('$A','$S1','a5000000-0000-0000-0000-0
 else
   ok "una señal OPEN no admite intervención: se saltearía el reconocimiento"
 fi
-corre "update risk_signal set status='ACKNOWLEDGED', acknowledged_at=now() where id='$S1';"
+# ADR-034: directo, sin pasar por ACKNOWLEDGED. Era el peaje sin cobrador.
 corre "update risk_signal set status='INTERVENTION_REQUIRED' where id='$S1';"
 I1=$(q "select intervention_id from public.abrir_intervencion('$A','$S1','a5000000-0000-0000-0000-000000000001','11111111-1111-1111-1111-111111111111',false,null,null,null);" | tr -d '[:space:]')
 [ -n "$I1" ] && ok "con la señal pidiendo intervención, se abre" || mal "no se pudo abrir"
@@ -481,16 +481,25 @@ echo "→ B6. El reloj expira lo que dejó de ser relevante, y sólo eso"
 corre "delete from intervention_outcome; delete from intervention; delete from risk_signal;"
 corre "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status,valid_until) values
   ('d5000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','vencida y abierta','OPEN', now() - interval '1 day'),
-  ('d6000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','vencida y reconocida','ACKNOWLEDGED', now() - interval '1 day'),
   ('d7000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','riesgo','vencida pero pide una persona','INTERVENTION_REQUIRED', now() - interval '1 day'),
   ('d8000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','todavía vigente','OPEN', now() + interval '1 day'),
   ('d9000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','sin vencimiento','OPEN', null);"
+# Una fila **legacy**: sólo pudo nacer antes de ADR-034, así que se siembra con
+# el trigger apagado. Apagarlo acá es lo honesto —fabricar un pasado que hoy es
+# imposible— y que el trigger funciona se prueba aparte, más abajo.
+corre "alter table risk_signal disable trigger risk_signal_acknowledged_legacy;"
+corre "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status,acknowledged_at,valid_until) values
+  ('d6000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','vencida y reconocida (legacy)','ACKNOWLEDGED', now() - interval '2 days', now() - interval '1 day');"
+corre "alter table risk_signal enable trigger risk_signal_acknowledged_legacy;"
 # La misma consulta que hace el Repository del reloj.
 cand=$(q "select string_agg(reason, ' / ' order by reason) from risk_signal
-          where institution_id='$A' and status in ('OPEN','ACKNOWLEDGED')
+          where institution_id='$A' and status = 'OPEN'
             and valid_until is not null and valid_until < now();")
-[ "$cand" = "vencida y abierta / vencida y reconocida" ] \
-  && ok "sólo OPEN y ACKNOWLEDGED vencidas entran" || mal "candidatas: $cand"
+[ "$cand" = "vencida y abierta" ] \
+  && ok "sólo las OPEN vencidas entran al reloj (ADR-034)" || mal "candidatas: $cand"
+# Y la legacy vencida **ya no la levanta el reloj**: no se vence sola.
+[ "$(q "select status from risk_signal where id='d6000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "ACKNOWLEDGED" ] \
+  && ok "una legacy vencida no la toca el reloj: alguien tiene que moverla" || mal "el reloj tocó una legacy"
 # La que ya pidió una persona **no** entra: expirarla borraría una obligación
 # humana pendiente, y el Done dice que ninguna señal queda sin outcome.
 [ "$(q "select status from risk_signal where id='d7000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "INTERVENTION_REQUIRED" ] \
@@ -499,6 +508,40 @@ cand=$(q "select string_agg(reason, ' / ' order by reason) from risk_signal
 corre "update risk_signal set status='EXPIRED', expired_at=now() where id='d5000000-0000-0000-0000-000000000001';"
 [ "$(q "select reason from risk_signal where id='d5000000-0000-0000-0000-000000000001';")" = "vencida y abierta" ] \
   && ok "y al expirar guarda su causa histórica" || mal "se perdió la causa"
+
+echo "→ B6.2. ACKNOWLEDGED es legacy: se prohíbe entrar, no estar (ADR-034)"
+# El `NO` en la base, y no sólo en el tipo de TypeScript: `service_role` escribe
+# la tabla directo, y una regla que vive en una sola capa se saltea desde abajo.
+if corre "insert into risk_signal (institution_id,student_id,signal_type,severity,reason,status) values
+  ('$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','nace reconocida','ACKNOWLEDGED');"; then
+  mal "una señal nueva nació en ACKNOWLEDGED"
+else
+  ok "una señal nueva no puede nacer en ACKNOWLEDGED"
+fi
+corre "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status) values
+  ('da000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','bajo','abierta','OPEN');"
+if corre "update risk_signal set status='ACKNOWLEDGED' where id='da000000-0000-0000-0000-000000000001';"; then
+  mal "una señal OPEN pudo entrar a ACKNOWLEDGED"
+else
+  ok "ni una OPEN puede entrar: el peaje se cerró"
+fi
+# Y el lifecycle nuevo, directo, sin el paso que nadie podía producir.
+corre "update risk_signal set status='INTERVENTION_REQUIRED' where id='da000000-0000-0000-0000-000000000001';"
+[ "$(q "select status from risk_signal where id='da000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "INTERVENTION_REQUIRED" ] \
+  && ok "OPEN → INTERVENTION_REQUIRED es directo" || mal "no se pudo pasar directo"
+
+echo "→ B6.2. Pero la fila legacy no queda varada, y conserva lo suyo"
+# Tocarla sin moverla: `OLD.status` ya era ACKNOWLEDGED, el trigger no dispara.
+corre "update risk_signal set valid_until = now() + interval '3 days' where id='d6000000-0000-0000-0000-000000000001';"
+[ "$(q "select status || '|' || (acknowledged_at is not null)::text from risk_signal where id='d6000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "ACKNOWLEDGED|true" ] \
+  && ok "se la puede editar sin moverla, y conserva su acknowledged_at" || mal "se perdió el estado o la marca"
+# Y salir: es lo que hace que la corrección sea no destructiva.
+corre "update risk_signal set status='INTERVENTION_REQUIRED' where id='d6000000-0000-0000-0000-000000000001';"
+[ "$(q "select status from risk_signal where id='d6000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "INTERVENTION_REQUIRED" ] \
+  && ok "una legacy termina su recorrido: salir sí se puede" || mal "la fila legacy quedó varada"
+# El valor sigue en el enum: no se borró nada.
+[ "$(q "select count(*)::text from pg_constraint where conname like '%risk_signal%' and pg_get_constraintdef(oid) like '%ACKNOWLEDGED%';" | tr -d '[:space:]')" != "0" ] \
+  && ok "y el valor sigue en el CHECK: no se borró del enum" || mal "ACKNOWLEDGED desapareció del CHECK"
 
 corre "delete from intervention_outcome; delete from intervention; delete from risk_signal;"
 
