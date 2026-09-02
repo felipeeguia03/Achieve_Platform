@@ -3024,17 +3024,46 @@ son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena e
 
 ### 3.1 Deuda técnica abierta — `npm audit`
 
-**Re-verificado el 30 de agosto de 2026: 3 vulnerabilidades `high`.**
+> ✅ **`IMPLEMENTED AND TECHNICALLY VERIFIED — AWAITING CTO SIGN-OFF`** · 2 de septiembre de 2026.
+> Opción A del brief, **autorizada para ejecución por el Product Owner** —la ratificación y el cierre
+> son del CTO, en [ADR-008](decisions.md#adr-008)—: `next` y `eslint-config-next` de `16.2.6` a
+> **`16.3.4`**, fijadas exactas, sin tocar React. **`npm audit`: 3 `high` → 0**, y cero en todas las severidades. Los cinco gates en
+> verde sin desvío contra la baseline —**953 tests**, y `db:reset && db:verify` completo con
+> **275 comprobaciones** y los dos códigos de salida en `0`—, más el recorrido del focus group a
+> 1440 y 360 px y el del MVP entero.
+>
+> ⚠️ **Todavía no está cerrada, y no hay promoción declarada.** Falta la **ratificación y firma del
+> CTO** en [ADR-008](decisions.md#adr-008). Quedan además dos deudas **fuera de su alcance**: un
+> hallazgo ambiental no bloqueante —un `package-lock.json` huérfano en el directorio padre, que
+> **no se tocó**— y la **trazabilidad**: el cambio **no se hizo en una rama aislada**, aunque el
+> repositorio Git existía. **Ya está aislado por staging selectivo** y es una unidad revisable y
+> promovible que no arrastra los otros 55 archivos; lo que queda registrado es que el aislamiento fue
+> posterior, no de origen. Todo el resultado, en §10 de
+> [`brief-adr-008-seguridad.md`](brief-adr-008-seguridad.md).
 
-| Paquete | Por qué está |
-|---|---|
-| `next` (`16.2.6`) | La versión fijada cae dentro del rango afectado |
-| `postcss` | Transitiva de `next` |
-| `sharp` | CVEs heredadas de `libvips` (`GHSA-f88m-g3jw-g9cj`) |
+**El estado que tenía antes de la actualización, para poder leer el antes/después:**
 
-**No se arreglan solas.** `npm audit fix --force` instala `next@16.3.3`, **fuera del rango declarado**
-en `package.json`: subir la versión mayor del framework es una decisión de
-[ADR-008](decisions.md#adr-008), no de una etapa de UI.
+| Paquete | Instalado | Corregido en | De dónde viene |
+|---|---|---|---|
+| `next` | `16.2.6` | **`16.3.0`** | Declarado en `package.json` |
+| `postcss` | `8.4.31` | `8.5.23` | **Dependencia directa de `next`**, fijada por él |
+| `sharp` | `0.34.5` | `0.35.0` | **Opcional de `next`** |
+
+**Las tres son la misma deuda contada tres veces:** ni `postcss` ni `sharp` están en `package.json`.
+
+> ⚠️ **Corrección de dato — 2 de septiembre de 2026.** Este párrafo decía que arreglarlo *"sube la
+> versión mayor del framework"*. **Es falso, y estuvo mal cuatro días en tres documentos.**
+> `16.2.6 → 16.3.4` es un **minor**. Lo que dispara el *"outside the stated dependency range"* de npm
+> es que `package.json` fija la versión **exacta, sin `^`** — cualquier versión distinta queda fuera,
+> incluso un parche. El costo real es el de un minor, y la exageración probablemente explica parte de
+> por qué se difirió tantas veces.
+
+**Ningún parche de la línea `16.2` sirve:** el rango afectado llega hasta `16.3.0-preview.10`, así que
+`16.2.7`…`16.2.12` siguen adentro. **El mínimo que corrige es `16.3.0`.**
+
+**Lo que sí sigue en pie:** no se corre `npm audit fix --force` sobre la rama principal. No por la
+versión que elige —es la correcta— sino porque una decisión de stack no puede quedar como efecto
+colateral de un comando. La elige [ADR-008](decisions.md#adr-008).
 
 **Lo incómodo:** la Etapa 0.1 registró esto como *"deuda a evaluar **antes de la Fase 0 Done**"*, y
 **la Fase 0 se cerró 8/8 sin evaluarla**. El gate estaba escrito y no se cumplió. Queda acá visible

@@ -320,11 +320,22 @@ Conserva **una** costura declarada: `UX05` cruza el nodo `ejecución`, que no ti
 
 **Stack:** Next.js 16 · React 19 · Tailwind v4 CSS-first · shadcn vendorizado · Vitest.
 
-⚠️ **`npm audit`: 3 `high` abiertas** (`next`, `postcss`, `sharp`). La Etapa 0.1 las registró como
-deuda a evaluar **antes** del Done de la Fase 0 y **la fase se cerró sin evaluarlas**. Hoy no
-exponen datos reales porque el entorno actual es sintético y no está desplegado, pero deben
-resolverse antes de producción o de incorporar una sola persona real. Arreglarlas cambia la versión
-de Next y debe registrarse bajo [ADR-008](docs/decisions.md#adr-008). Ver `roadmap.md` §3.1.
+**`npm audit`: 0 vulnerabilidades.** Eran **3 `high`** —`next`, `postcss`, `sharp`, que eran **la
+misma deuda contada tres veces**: ni `postcss` ni `sharp` estaban en `package.json`, los traía
+`next`—. Se cerraron subiendo `next` y `eslint-config-next` de `16.2.6` a **`16.3.4`**, fijadas
+exactas y sin tocar React.
+
+⚠️ **`IMPLEMENTED AND TECHNICALLY VERIFIED — AWAITING CTO SIGN-OFF`.** La actualización está
+ejecutada y verificada, pero **[ADR-008](docs/decisions.md#adr-008) todavía no está firmado**: no hay
+cierre ni promoción declarados. El candidato de revisión está **aislado en el index por staging
+selectivo** y sin commitear.
+
+⚠️ **Si vas a commitear: `git commit` sin `-a`.** Con `-a` barrerías los 36 archivos modificados de
+otras etapas y romperías el aislamiento.
+
+⚠️ **No corras `npm audit fix --force`.** La versión la elige el ADR, no una etapa. Todo el
+resultado y la exposición real, en [`brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md)
+§10; el resumen, en `roadmap.md` §3.1.
 
 Superficies: `UX01`–`UX09`. **Las nueve existen** como componente real con ruta propia bajo
 `app/(student)/`. **No existe `UX10`.** Las 19 CTAs son alcanzables y todos sus destinos tienen
