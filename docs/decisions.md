@@ -2,7 +2,7 @@
 
 **Documento:** `docs/decisions.md`
 **Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
-**Última actualización:** 1 de septiembre de 2026
+**Última actualización:** 2 de septiembre de 2026
 
 ---
 
@@ -76,6 +76,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-027](#adr-027) | Los ocho eventos de transición entran al Product Event Model | ✅ `ACCEPTED` | — |
 | [ADR-033](#adr-033) | La frontera de superficies, corregida en la dirección del spec | ✅ `ACCEPTED` *(corrige cláusulas de [ADR-012](#adr-012) y [ADR-032](#adr-032))* | — |
 | [ADR-034](#adr-034) | `C01-022` cerrada: la necesidad de una persona la declara la Plataforma | ✅ `ACCEPTED` *(corrige la máquina de [ADR-032](#adr-032); reabre el ítem 5 de [ADR-005](#adr-005))* | — |
+| [ADR-035](#adr-035) | La integración con el CRM se difiere; el dominio sigue adelante | ✅ `ACCEPTED` *(prioridad, no bloqueo: nada de lo construido se revierte)* | — |
 
 ---
 
@@ -2737,3 +2738,81 @@ llegue a la pantalla.
 ⏸️ **Pendientes:** §7.3 (`crmCaseId`), que espera el endpoint que escriba la columna, y §7.7 (outbox),
 que espera `C01-021` — sin reglas que produzcan señales no tiene qué transportar. Ver
 [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7 y §10.
+
+---
+
+<a id="adr-035"></a>
+## ADR-035 — La integración con el CRM se difiere; el dominio sigue adelante
+
+**Estado:** ✅ `ACCEPTED` · 2 de septiembre de 2026 · **decidido por el owner**
+**Difiere:** la firma y la construcción de los tres flujos de
+[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md).
+**No revierte:** nada de lo construido. **No reabre:** [ADR-033](#adr-033) ni [ADR-034](#adr-034).
+**Toca:** `roadmap.md`, `contrato-riesgo-candidato-v0.2.md`, `pending-decisions-annex.md`.
+
+### Contexto
+
+El contrato llegó a un punto raro y bueno: **el diseño está aceptado por los dos lados y no hay una
+sola objeción**. El CRM lo revisó contra su código, confirmó que resuelve institución, cola y
+operador partiendo sólo de `platformStudentId`, y no pidió de vuelta ninguno de los cinco campos que
+la v0.2 había retirado.
+
+Lo que falta son **tres definiciones de forma** —envelope de error, `cause.code`, y el esquema de dos
+secretos con rotación— y **construcción de los dos lados**, casi toda del lado del CRM.
+
+Pero por debajo hay un hecho que ordena la prioridad: **`C01-021` sigue abierta**. Sin reglas que
+produzcan señales, el flujo A no tiene qué transportar. Se puede construir el mecanismo entero —HMAC,
+outbox, endpoints, idempotencia— y no va a circular un solo evento.
+
+### Decisión
+
+**La integración con el CRM se difiere al final del Track B.** No se firman las tres definiciones ni
+se construyen los flujos hasta que el resto esté cerrado.
+
+**No es un bloqueo: es una prioridad.** Nada impide firmar mañana; lo que dice esta decisión es que
+no es lo que sigue.
+
+### Por qué se puede diferir sin costo
+
+**El dominio de riesgo e intervención está completo y no espera al contrato.** El circuito cierra por
+construcción, corre contra Postgres y está probado: señal con causa obligatoria, `OPEN →
+INTERVENTION_REQUIRED` directo, intervención con dueño, outcome obligatorio para cerrar, señal
+`RESOLVED` con el mismo `COMMIT`, y auditoría de todo.
+
+**Los tres comandos del flujo B ya existen** como funciones transaccionales. Cuando el contrato se
+firme, lo que falta es un Controller que las llame — no lógica de dominio.
+
+**Nada caduca.** Las tres definiciones pendientes son de forma, no de diseño, y ninguna depende del
+paso del tiempo. El acuerdo bilateral queda escrito con su evidencia en §10 del contrato.
+
+**Y la parte que sí se podía adelantar, se adelantó.** `estado_del_dia()` ya expone los
+identificadores que el CRM pidió (§7.6): era lo único de su lista que dependía sólo de nosotros.
+
+### Qué queda pendiente, y en qué orden se retoma
+
+Cuando se retome, el orden está escrito en §7.8 del contrato y §10.5 dice quién construye qué. Del
+lado de la Plataforma quedan exactamente dos pasos —§7.3 (`crmCaseId`) y §7.7 (outbox)— más los
+Controllers.
+
+**El outbox arrastra el ítem 5 de [ADR-005](#adr-005)**, que sigue `DEFERRED`, y **es el mismo trabajo
+que la rotación de secretos** que el contrato necesita. Conviene hacerlos juntos, una sola vez.
+
+### Consecuencias — qué es el camino crítico ahora
+
+Con la integración diferida, **lo que queda del Track B es de tres personas distintas y una etapa
+nuestra**:
+
+| Qué | De quién |
+|---|---|
+| `C01-021` · qué regla produce qué señal y con qué severidad | Risk owner. **Es el bloqueo #1 de los dos sistemas** |
+| `C01-036` · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga.** Ya está en su agenda, y `C01-021` lo necesita |
+| `C01-044` · playbooks y SLA | Product Operations |
+| [ADR-006](#adr-006) · dictamen legal | Legal. Bloquea B7, y B7 bloquea B8 |
+| **Etapa B2b.2 · corroboración** | **Nuestra, y no depende de nadie** |
+
+**B2b.2 es el único frente de construcción que queda sin dependencias externas**: la operación
+explícita que sí puede elevar un `verification_status`, que hoy no existe porque `I9` prohíbe que el
+ingestor lo toque. (B2b.3 necesita `C01-042`.)
+
+Fuera del roadmap sigue en pie la deuda de [ADR-008](#adr-008): **3 vulnerabilidades `high`**, con la
+restricción del owner de no correr `npm audit fix --force` sobre la rama principal.

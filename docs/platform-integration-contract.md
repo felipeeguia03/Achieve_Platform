@@ -227,11 +227,15 @@ datos de una persona real mientras [ADR-006](decisions.md#adr-006) siga sin dict
 
 ### 2.2 Lo que la Fase B6 necesita del contrato v2 — 1 de septiembre de 2026
 
-> **Hay candidato.** El CTO respondió con un contrato candidato el 1 de septiembre de 2026, y la
-> Plataforma lo revisó y corrigió: [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md).
-> Ese documento es ahora el owner de los tres flujos, con su matriz de diferencias y su plan de
-> migración. Esta sección queda como el **requerimiento** que lo originó. **Ninguno de los dos está
-> implementado**, y §1 de este documento sigue siendo el único contrato vigente.
+> **Hay candidato, y su diseño está aceptado por los dos lados.** El CTO respondió el 1 de
+> septiembre de 2026, la Plataforma lo revisó y corrigió, y el CRM lo contrastó contra su código el
+> 2 de septiembre: `CRM ACCEPTS WITH REQUIRED CHANGES`, **sin una sola objeción de diseño**. Todo
+> vive en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), que es ahora el
+> owner de los tres flujos.
+>
+> ⏸️ **Diferido por [ADR-035](decisions.md#adr-035)** al final del Track B — **prioridad, no
+> bloqueo**. Cómo se retoma: §11 de ese documento. Esta sección queda como el **requerimiento** que
+> lo originó, y **§1 de acá sigue siendo el único contrato vigente entre los dos sistemas**.
 
 **Esto no es una propuesta de contrato: es la lista de lo que Achieve no puede saber solo.** El
 dominio de riesgo e intervención está construido ([ADR-032](decisions.md#adr-032)) y **no está

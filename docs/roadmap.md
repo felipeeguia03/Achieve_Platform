@@ -2,7 +2,7 @@
 
 **Documento:** `docs/roadmap.md`
 **Rol:** owner canónico del plan por fases y del estado de avance.
-**Última actualización:** 31 de agosto de 2026
+**Última actualización:** 2 de septiembre de 2026
 
 ---
 
@@ -38,6 +38,39 @@ Cada etapa, sin excepción:
 ### Estados
 
 `⬜ NO INICIADA` · `🔵 EN CURSO` · `✅ COMPLETA` · `🔒 BLOQUEADA` · `⏸️ DIFERIDA`
+
+---
+
+## 0.1 Dónde estamos · 2 de septiembre de 2026
+
+**Track A: cerrado.** **Track B: B1 a B6 completas**, con B2b a la mitad.
+
+`lint` y `build` en verde · **820 tests en 44 archivos** · **216 comprobaciones** contra Postgres ·
+**36 migraciones** · las **nueve superficies** del estudiante leen de la base.
+
+### Lo único que queda sin depender de nadie
+
+| Frente | Estado |
+|---|---|
+| **Etapa B2b.2 · corroboración** | 🔵 **Es el único.** La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
+| Las 3 vulnerabilidades `high` de [ADR-008](decisions.md#adr-008) | Deuda abierta, con la restricción de **no** correr `npm audit fix --force` sobre la rama principal |
+
+### Lo que espera a una persona
+
+| Qué | Quién | Qué destraba |
+|---|---|---|
+| **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | Es prerequisito de `C01-021` |
+| **`C01-021`** · qué regla produce qué señal y con qué severidad | Risk owner | **El bloqueo #1.** Sin esto nada produce señales, y el Risk Engine no arranca |
+| **`C01-044`** · playbooks y SLA | Product Operations | El playbook y el SLA del circuito, que hoy son `null` y el circuito lo declara |
+| **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
+| Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |
+
+### Lo diferido por decisión, no por bloqueo
+
+**La integración con el CRM** — [ADR-035](decisions.md#adr-035). El diseño del contrato está
+**aceptado por los dos lados sin objeciones**; faltan tres definiciones de forma y construcción,
+casi toda del lado del CRM. Se retoma al final del Track B, y cómo hacerlo está escrito en §11 de
+[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md).
 
 ---
 
@@ -2410,9 +2443,15 @@ abiertos `C01-029` (umbrales de readiness), `C01-031` y `C01-034` (obligatorieda
 
 ## Fase B6 — Risk Engine, Intervención y Operador
 
-**Estado:** 🟡 **DOMINIO COMPLETO — 2 de septiembre de 2026.** Desbloqueada por
-[ADR-003](decisions.md#adr-003) y ejecutada según [ADR-032](decisions.md#adr-032). Lo que falta **no
-es código nuestro**: son tres decisiones humanas y un contrato que lleva el CTO.
+**Estado:** 🟡 **DOMINIO COMPLETO · integración ⏸️ DIFERIDA — 2 de septiembre de 2026.**
+Desbloqueada por [ADR-003](decisions.md#adr-003), ejecutada según [ADR-032](decisions.md#adr-032),
+con el lifecycle corregido por [ADR-034](decisions.md#adr-034) y la frontera por
+[ADR-033](decisions.md#adr-033).
+
+**El circuito cierra por construcción y está probado contra Postgres.** Lo que falta no es código
+nuestro: son tres decisiones humanas, y la integración con el CRM, que
+[ADR-035](decisions.md#adr-035) difirió al final del Track B **por prioridad, no por bloqueo** — el
+diseño del contrato ya está aceptado por los dos lados, sin objeciones.
 
 **Objetivo.** `RiskSignal` rule-based explicable, `Intervention` con playbook/SLA/outcome, y la
 consola operativa P0 — **esta última en el CRM**, no acá ([ADR-033](decisions.md#adr-033)).
@@ -2458,23 +2497,27 @@ hubiera fabricado una sesión para poder mostrar una cola, hoy habría que borra
 intervención → outcome; ninguna señal queda sin outcome registrado. **Cuatro de seis eslabones están
 garantizados por construcción**; playbook y SLA esperan a `C01-044`.
 
-**Los tres flujos que faltan.** El CTO respondió con un contrato candidato y la Plataforma lo corrigió:
-[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), con su matriz de diferencias
-y su plan de migración no destructivo. **Nada de eso está implementado.**
+**Los tres flujos, congelados.** El CTO mandó un contrato candidato, la Plataforma lo corrigió y el
+CRM lo revisó contra su código: **`CRM ACCEPTS WITH REQUIRED CHANGES`, sin una sola objeción de
+diseño**. Todo está en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), con
+su matriz de diferencias, su plan de migración y cómo se retoma (§11).
 
 | # | Flujo | Dirección | Estado |
 |---|---|---|---|
-| A | Señal que requiere intervención humana | Plataforma → CRM | Push con webhook firmado. **Exige outbox** |
-| B | Comandos de intervención y outcome | CRM → Plataforma | Los tres comandos mapean 1:1 a funciones que ya existen |
-| C | Lectura de contexto académico | CRM → Plataforma | Desde `estado_del_dia()`. `assessments[]` sin fuente canónica |
+| A | Señal que requiere intervención humana | Plataforma → CRM | ⏸️ Push con webhook firmado. **Exige outbox** |
+| B | Comandos de intervención y outcome | CRM → Plataforma | ⏸️ Los tres comandos **ya existen** como funciones transaccionales: falta el Controller, no la lógica |
+| C | Lectura de contexto académico | CRM → Plataforma | ⏸️ Desde `estado_del_dia()`, que **ya expone sus identificadores** (§7.6) |
+
+**Tres definiciones de forma para descongelarlo:** envelope de error, `cause.code` y el esquema de
+secretos con rotación. Las tres están propuestas con su fundamento en §11.1 del contrato.
 
 **`C01-022` quedó cerrada** por [ADR-034](decisions.md#adr-034): la necesidad de una persona la
 declara la Plataforma desde `risk_rule.modo`, se habilita `OPEN → INTERVENTION_REQUIRED` y
 `ACKNOWLEDGED` pasa a legacy. ✅ **Implementado** el 2 de septiembre de 2026: el
 lifecycle (§7.1–§7.2), el cierre transaccional con validación de dueño (§7.4–§7.5) y los
-identificadores del flujo C (§7.6). **El CRM revisó el contrato contra su código y aceptó el diseño
-sin objeciones**; quedan dos acuerdos de forma —envelope de error y secretos con su rotación— y dos
-pasos: §7.3 (`crmCaseId`) y §7.7 (outbox).
+identificadores del flujo C (§7.6). Quedan §7.3 (`crmCaseId`) y §7.7 (outbox), **los dos diferidos
+con la integración**. El outbox arrastra el ítem 5 de [ADR-005](decisions.md#adr-005), que es el
+mismo trabajo que la rotación de secretos del contrato: conviene hacerlos juntos.
 
 ⚠️ **El ítem 5 de [ADR-005](decisions.md#adr-005) —outbox y observabilidad— vuelve a estar en el
 camino crítico.** Estaba `DEFERRED`; el flujo A es push, y push sin outbox durable pierde señales en

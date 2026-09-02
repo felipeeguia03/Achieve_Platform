@@ -85,19 +85,19 @@ locales son **54420–54429** para que los dos stacks puedan correr al mismo tie
 ```bash
 npm run db:start     # levanta el stack local (necesita Docker corriendo)
 npm run db:reset     # tira abajo y re-aplica todas las migraciones desde cero
-npm run db:verify    # migraciones, deny-by-default de §6 y los 10 invariantes de §7
+npm run db:verify    # migraciones, deny-by-default de §6 y los 12 invariantes de §7
 npm run db:studio    # http://127.0.0.1:54423
 npm run db:stop
 ```
 
 Copiá [`.env.local.example`](.env.local.example) a `.env.local` con lo que imprime `db:start`.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de 531 corre sin Docker, en
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de **820** corre sin Docker, en
 cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack levantado.
 
 ⚠️ **`db:verify` es dueño de la base local y la deja vacía de datos de negocio.** Comparte UUID con
 `db:demo` a propósito —`aaaaaaaa-…` es la misma institución en los dos—, así que **no pueden
-convivir**: después de verificar hay que volver a sembrar con `npm run db:demo`. Las **87
+convivir**: después de verificar hay que volver a sembrar con `npm run db:demo`. Las **216
 comprobaciones** limpian lo suyo también al empezar y por `trap EXIT`, para que una corrida que
 falla no arrastre a la siguiente.
 

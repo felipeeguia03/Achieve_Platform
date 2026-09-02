@@ -1,17 +1,21 @@
 # Achieve — Contrato candidato de riesgo e intervención · Plataforma ↔ CRM · **v0.2**
 
 **Documento:** `docs/contrato-riesgo-candidato-v0.2.md`
-**Estado:** `CANDIDATE — DESIGN ACCEPTED BILATERALLY`. El CRM lo revisó contra su código el 2 de
-septiembre de 2026 y devolvió `CRM ACCEPTS WITH REQUIRED CHANGES`: **ninguna objeción de diseño**, y
-dos acuerdos de forma pendientes (§10).
+**Estado:** ⏸️ **`FROZEN — DESIGN ACCEPTED BILATERALLY, SIGNATURES DEFERRED`**. El CRM lo revisó
+contra su código el 2 de septiembre de 2026 y devolvió `CRM ACCEPTS WITH REQUIRED CHANGES`: **ninguna
+objeción de diseño** (§10). El owner difirió la firma y la construcción al final del Track B
+([ADR-035](decisions.md#adr-035)) — **por prioridad, no por bloqueo**. Cómo se retoma: §11.
 **Fecha:** 1 de septiembre de 2026
 **Referencias:** [ADR-033](decisions.md#adr-033) (la frontera), [ADR-034](decisions.md#adr-034) (`C01-022`).
 **Sustituye a:** el candidato v0.1 del CTO, del 1 de septiembre de 2026.
 
 > ⚠️ **Este documento no es un contrato vigente.** El único contrato vigente entre los dos sistemas
 > es el de autorización de padrón, en [`platform-integration-contract.md`](platform-integration-contract.md)
-> §1, que **no se toca acá**. Nada de lo que sigue está implementado: el schema y el código están
-> como los dejó `b450b8e`.
+> §1, que **no se toca acá**.
+>
+> ⚠️ **Ningún flujo está implementado.** Lo que sí se construyó del lado de la Plataforma es el
+> **dominio** que estos flujos van a usar, y está entero: §7.1, §7.2, §7.4, §7.5 y §7.6. Lo que falta
+> son los Controllers, `crmCaseId` y el outbox.
 >
 > ⚠️ **Ningún flujo de este documento transporta datos de una persona real** mientras
 > [ADR-006](decisions.md#adr-006) siga sin dictamen legal. Se especifica y se prueba con datos
@@ -542,3 +546,63 @@ y deja de entregar las señales que sí podría entregar.
 **Bloqueos externos, iguales para los dos:** `C01-021` —sin reglas el flujo A no tiene qué
 transportar— y **B7 / [ADR-006](decisions.md#adr-006)**, que el CRM también reconoce: *"la aprobación
 técnica ≠ autorización de datos"*.
+
+---
+
+## 11. Estado: congelado · cómo se retoma
+
+⏸️ **Diferido por [ADR-035](decisions.md#adr-035)** el 2 de septiembre de 2026. **Prioridad, no
+bloqueo:** nada impide firmarlo mañana, y nada de lo escrito acá caduca — las tres definiciones
+pendientes son de forma, no de diseño.
+
+**Por qué se difirió.** `C01-021` sigue abierta. Sin reglas que produzcan señales, el flujo A no
+tiene qué transportar: se puede construir el mecanismo entero —HMAC, outbox, endpoints,
+idempotencia— y no circula un solo evento.
+
+### 11.1 Lo que hay que firmar para descongelarlo
+
+Tres definiciones, todas de forma, y las tres están propuestas con su fundamento:
+
+| # | Qué | Propuesta | Dónde |
+|---|---|---|---|
+| 1 | Envelope de error | Aceptar la forma del CRM —`{ error: { code, message }, correlationId }`— **sólo en `/api/service/v1/*`**. Ninguna ruta existente de ninguno de los dos lados se migra | §10.2 |
+| 2 | `cause.code` | `risk_rule.canonical_id`, que es el identificador **versionado** y trazable a la fuente profesional. `signal_type` es `TEXT` libre y no ofrece vocabulario cerrado hasta `C01-021` | §10.3 |
+| 3 | Secretos y rotación | Dos secretos nuevos por dirección, con **dos activos simultáneos** durante la ventana de overlap y versión de secreto en el header. Hoy no hay rotación en ninguno de los dos sistemas | §10.2 |
+
+**Sin la 2, los fixtures compartidos no coinciden**: el fixture del CRM manda un valor que no existe
+de este lado.
+
+### 11.2 Lo que queda por construir, por lado
+
+Del lado de la **Plataforma**, exactamente tres cosas:
+
+1. **§7.3 · `crmCaseId`** — una columna `UUID` nullable sin FK, con índice. No se hizo antes porque
+   sería una columna que ningún código escribe hasta que exista el endpoint que la reciba.
+2. **§7.7 · outbox** — y arrastra el ítem 5 de [ADR-005](decisions.md#adr-005), que **es el mismo
+   trabajo que la rotación de secretos** de la definición 3. Conviene hacerlos juntos.
+3. **Los Controllers** de los tres comandos del flujo B y del flujo C. **No hay lógica de dominio
+   que escribir**: `abrir_intervencion()`, `reconocer` y `cerrar_intervencion()` ya existen, son
+   transaccionales y son agnósticas de quién las llama.
+
+Del lado del **CRM**, la lista está en §10.5: verificación HMAC con anti-replay, `webhook_events`
+para idempotencia entrante, entidad de caso con owner fijo, cliente saliente con reintentos,
+`crmCaseId` y `humanMinutes`.
+
+### 11.3 Lo que ya se adelantó, y por qué
+
+**`estado_del_dia()` expone `materias[].cursadaId` y `accion.id`** (§7.6). Era lo único de la lista
+del CRM que dependía sólo de nosotros, y se hizo cuando ellos aceptaron el diseño del flujo C — antes
+habría sido construir contra un payload en revisión.
+
+### 11.4 Al descongelar, revisar esto primero
+
+- **Los tres bloqueos externos siguen valiendo:** `C01-021`, `C01-044` y
+  **B7 / [ADR-006](decisions.md#adr-006)**. El CRM lo dice igual: *"la aprobación técnica del
+  contrato ≠ autorización de tratamiento de datos"*.
+- **`cause.label` es texto libre** escrito por quien produjo la señal (§2.3). Es el campo con más
+  riesgo de arrastrar contenido personal, y B7 tiene que decidir qué se hace con él **antes** de que
+  circule un dato real.
+- **`422 UNRESOLVABLE_STUDENT` no se reintenta** (§10.4). El despachador del outbox tiene que
+  distinguir un `4xx` terminal de un `5xx` transitorio, o la cola se tapa sola.
+- **Verificar que el CRM no cambió de lado.** Su devolución tiene referencias `archivo:línea` a su
+  repositorio; si pasó tiempo, esas referencias son lo primero que hay que reconfirmar.
