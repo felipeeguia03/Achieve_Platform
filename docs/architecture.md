@@ -359,6 +359,8 @@ app/
     ├── hoy · materia · accion · compromiso · evidencia · progreso
     ├── examen/           ← Modo Examen. `activacion` GET+POST (leer y activar son
     │                        el mismo hecho antes y después), `paso` GET+POST
+    ├── observacion       ← POST. Secreto de SERVICIO: registrar un error es de
+    │                        quien evalúa la entrega, y ese rol no tiene superficie acá
     ├── reloj             ← POST. Secreto de SERVICIO, no JWT: no lo dispara una persona.
     │                        Además de los compromisos, expira las señales vencidas
     └── sesion            ← alta de la sesión sintética, fuera de las nueve
@@ -375,7 +377,9 @@ lib/
     │   │                    superado en dirección, pendiente de retiro
     │   ├── auditoria.ts     PUERTO de `audit_log`. Distinto de `product_event`:
     │   │                    uno dice qué le pasó al estudiante, el otro quién tocó qué
-    │   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
+    │   ├── reiteracion.ts   la regla PROVISIONAL de C01-021 (ADR-036). El umbral NO
+│   │                    está acá: llega de risk_rule.threshold_config
+│   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
     │   ├── hechos.ts        la traducción de un hecho a entrada visible. UNA, para UX02 y UX06
     │   ├── tiempo.ts        formato en la zona del estudiante. El formato es presentación
     │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar

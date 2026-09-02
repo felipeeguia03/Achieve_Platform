@@ -1,7 +1,7 @@
 # Agenda de cierre — los ocho residuos psicopedagógicos
 
 **Documento:** `docs/agenda-cierre-psicopedagoga.md`
-**Fecha:** 1 de septiembre de 2026
+**Fecha:** 1 de septiembre de 2026 · **§9 agregada** el 2 de septiembre de 2026
 **Con:** la psicopedagoga que respondió las ocho `HUMAN-P0` el 31 de agosto de 2026.
 **Origen:** [ADR-025](decisions.md#adr-025). La fuente literal de sus respuestas está en
 [`human-p0-source.md`](human-p0-source.md), y **manda sobre cualquier paráfrasis, incluida esta**.
@@ -124,12 +124,20 @@ por su naturaleza no se pueden hacer sin comprender. **¿Cuáles?** ¿Cambia por
 intervenga. Dijiste que la persona entra por la **situación del estudiante** —error reiterado, no
 avanzar pese a las devoluciones, factores subjetivos— y no por el tipo de entrega.
 
-Para programarlo hace falta:
+Para programarlo hacía falta la **cantidad** de repeticiones, la **ventana** en la que cuentan, qué
+**tipo** de error cuenta y las **excepciones**.
 
-- **cantidad** de repeticiones;
-- **ventana temporal** en la que cuentan;
-- **tipo** de error que cuenta (¿el mismo error, o errores del mismo tipo?);
-- **excepciones**.
+> ⚠️ **Esto ya no está vacío, y hay que decirlo con todas las letras.** El 2 de septiembre de 2026 el
+> **Product Owner** cargó valores provisionales para poder demostrar el producto con datos
+> inventados ([ADR-036](decisions.md#adr-036)). **No son tuyos, no tienen validación profesional, y
+> nadie va a decir que los aprobaste.** Están puestos para que el sistema pueda correr y para que vos
+> puedas ver el mecanismo funcionando en vez de imaginarlo — que es más fácil de corregir que una
+> hoja en blanco.
+>
+> **Ningún estudiante real los toca.** El sistema no tiene datos reales y no los va a tener hasta que
+> se cierre el gate de privacidad.
+
+**Lo que está puesto hoy, para que lo corrijas.** Ver §9, que es la lista completa.
 
 ### 7. `HUMAN-P0-07` — Peso de los criterios, y qué pasa si la cátedra contradice
 
@@ -144,9 +152,100 @@ después de conocer la nota. Cambia qué puede responder honestamente el estudia
 
 ---
 
+## 9. Los seis valores provisionales que cargó el Product Owner ⭐⭐
+
+**Es la lista más concreta de todo este documento, y la que más rápido se responde**: son seis
+números y una lista de palabras. Cada uno está funcionando hoy sobre datos inventados, y cada uno se
+cambia **cargando una fila de configuración** — no hay que reprogramar nada.
+
+### 9.1 · ¿Dos apariciones ya es "reiterativo"?
+
+**Puesto hoy:** un error se considera reiterativo a partir de la **segunda** aparición del mismo
+tipo. Ahí el sistema lo marca como *atención*, sin llamar a nadie.
+
+**Lo que necesitamos de vos:** si dos es el número, o si hace falta más.
+
+### 9.2 · ¿A la tercera entra una persona?
+
+**Puesto hoy:** la **tercera** aparición llama a una persona.
+
+**Lo que necesitamos de vos:** si tres es el punto donde el acompañamiento automático deja de
+alcanzar. Es literalmente el número que decide cuándo alguien recibe un mensaje de un humano.
+
+### 9.3 · ¿Volver a fallar después de una corrección salta la fila?
+
+**Puesto hoy:** si el estudiante recibe una acción correctiva y **vuelve a cometer el mismo tipo de
+error**, se llama a una persona **sin esperar la tercera vez**.
+
+**Lo que necesitamos de vos:** si fallar contra una corrección es distinto de fallar dos veces
+seguidas, o si es lo mismo y hay que sacar esta excepción.
+
+### 9.4 · ¿Una resolución bien hecha borra el contador, o lo baja de a uno?
+
+**Puesto hoy:** una resolución **correcta, independiente y sin ayuda** pone el contador **en cero**.
+
+**Lo que necesitamos de vos:** si eso es demasiado generoso. Alguien que se equivoca dos veces,
+acierta una y se vuelve a equivocar, hoy vuelve a empezar de cero.
+
+### 9.5 · ¿Los seis tipos de error son los correctos?
+
+**Puesto hoy**, como vocabulario provisional:
+
+| | |
+|---|---|
+| **Conceptual** | No comprende el concepto que la consigna requiere aplicar |
+| **De procedimiento** | Comprende el concepto y falla en la ejecución |
+| **De interpretación de consigna** | Resuelve bien algo distinto de lo que se pedía |
+| **De cálculo** | El método es correcto y la aritmética o el álgebra no |
+| **Omisión de paso obligatorio** | Saltea un paso que la resolución exige |
+| **Dependencia de ayuda externa** | Sólo resuelve con asistencia; no lo sostiene solo |
+
+**Lo que necesitamos de vos:** si esta lista sirve, si sobra alguno, o si el vocabulario correcto es
+otro. **El sistema no tenía ninguno**: éstos entraron porque hacía falta algo para poder contar.
+
+Y una precisión que ya está tomada y conviene confirmar: **el error se cuenta por su tipo, no por el
+tema**. El mismo error de procedimiento en dos unidades distintas **cuenta como dos apariciones del
+mismo error**. El tema queda como contexto para explicar, no como parte de la identidad.
+
+### 9.6 · Una frase ambigua que interpretamos, y no deberíamos haber tenido que interpretar ⚠️
+
+La instrucción decía que sólo cuentan *"intentos evaluables con **evidencia suficiente**"*.
+
+**Se implementó como:** cuenta cualquier entrega que **alguien haya evaluado** — incluidas las que
+resultaron **insuficientes**.
+
+**Por qué:** la otra lectura posible —que sólo cuenten los errores encontrados en entregas
+*suficientes*— haría que un error detectado en una entrega insuficiente **no contara nunca**, que es
+al revés de lo esperable.
+
+**Es la interpretación de un agente sobre una frase ambigua, y por eso está acá.** Si la lectura
+correcta era la otra, cambia bastante quién termina recibiendo una intervención.
+
+### 9.7 · Y dos cosas más, del Roadmap
+
+**Vigencia.** Se puso que el Roadmap está vigente **mientras la preparación esté activa**, y que deja
+de estarlo cuando el examen se rinde, se cancela, el estudiante abandona, o se replanifica con fecha
+nueva. Una replanificación **no borra el historial**: crea una versión nueva.
+
+**Volver atrás.** Se permite volver a los pasos **9 a 18** cuando una evidencia resulta insuficiente,
+aparece un error reiterativo, cambia información del examen, o una replanificación exige repetir. La
+vuelta **no borra evidencias ni baja el progreso**, y queda registrada con su motivo y desde qué paso
+se volvió.
+
+**Lo que necesitamos de vos:** si esas cuatro condiciones de vigencia y esos cuatro motivos para
+volver atrás son los correctos, y si el tramo reentrante es 9–18 o son sólo el 14 y el 15, que es la
+pregunta que quedó abierta en la §*"Antes que las ocho"*.
+
+---
+
 ## Hasta que esta conversación se cierre
 
-Las reglas derivadas de estos ocho residuos se usan **únicamente como defaults provisionales en
-entornos sintéticos**, y **no disparan intervenciones automáticas sobre estudiantes reales**. Hoy eso
-no cuesta nada: no hay ningún estudiante real en el sistema, y no lo habrá hasta que se cierre el
-gate de privacidad.
+Las reglas derivadas de estos ocho residuos —y los seis valores de §9— se usan **únicamente como
+defaults provisionales en entornos sintéticos**, y **no disparan intervenciones automáticas sobre
+estudiantes reales**. Hoy eso no cuesta nada: no hay ningún estudiante real en el sistema, y no lo
+habrá hasta que se cierre el gate de privacidad.
+
+**La revisión de §9 es obligatoria antes de cualquier piloto con estudiantes reales**
+([ADR-036](decisions.md#adr-036)). Si cambiás cualquiera de los seis, el costo es cargar una fila de
+configuración: los números no están escritos en el código, y hay una prueba automática que lo
+verifica.

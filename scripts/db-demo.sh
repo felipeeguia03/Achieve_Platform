@@ -12,7 +12,7 @@ INST=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 EST=a5000000-0000-0000-0000-000000000001
 
 echo "→ Limpiando"
-q "delete from intervention_outcome; delete from intervention; delete from risk_signal;
+q "delete from error_observation; delete from intervention_outcome; delete from intervention; delete from risk_signal;
    delete from protocol_step_completion; delete from protocol_artifact;
    delete from preparation_readiness; delete from exam_preparation; delete from assessment_criterion;
    delete from action_recommendation; delete from action_resource; delete from action;
@@ -77,18 +77,41 @@ q "insert into assessment_criterion (institution_id,assessment_id,criterion_text
                   ('Resolver variaciones del ejercicio',3)) as c(txt,n)
     where a.offering_id='$OFF' and a.title='Parcial 1';" >/dev/null
 
-echo "→ Una señal de riesgo, con su causa (Fase B6)"
-# **Sembrada a mano, y a propósito.** No hay motor que la produzca: `C01-021`
-# sigue abierto y las tres reglas de `HUMAN-P0-06 v1.0` están cargadas **sin
-# umbral** (`C01-036`). Esta señal existe para que el mundo demo muestre cómo se
-# ve una, no porque el sistema la haya detectado.
-q "insert into risk_signal (id,institution_id,student_id,course_enrollment_id,signal_type,severity,reason,risk_rule_id,rule_version,status)
-   select 'af000000-0000-0000-0000-000000000002','$INST','$EST','a6000000-0000-0000-0000-000000000001',
-          r.signal_type,'atencion',
-          'Tres entregas seguidas con el mismo error de procedimiento en integrales.',
-          r.id, r.version, 'OPEN'
-     from risk_rule r where r.canonical_id='HP0-06-1';" >/dev/null
+echo "→ Dos errores del mismo tipo, ya corroborados (ADR-036)"
+# ⚠️ PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION. El umbral que cuenta
+# estos errores lo fijó el Product Owner, no la psicopedagoga.
+#
+# **La señal ya NO se siembra a mano.** Hasta la B6.5 se insertaba una fila de
+# `risk_signal` directamente, porque no había motor que la produjera. Ahora lo
+# hay, y sembrar el resultado sería mostrar un circuito que no corrió.
+#
+# Lo que se siembra son **los hechos**: dos entregas evaluadas y sus dos errores
+# del mismo tipo. El mundo queda en el estado más interesante para mirar — **a
+# una aparición de que el sistema llame a una persona**.
+PREP=af000000-0000-0000-0000-000000000001
+TIPO=$(q "select id from error_type where canonical_id='procedimiento' and is_current;" | tr -d '[:space:]')
 
+for n in 1 2; do
+  q "insert into action (id,institution_id,course_enrollment_id,exam_preparation_id,objective,verb,scope,status)
+     values ('ae00000$n-0000-0000-0000-000000000001','$INST','a6000000-0000-0000-0000-000000000001','$PREP',
+             'Resolver la guía de integrales por partes','resolver','tema','COMPLETED');
+     insert into evidence (id,institution_id,action_id,lifecycle_state,submitted_at)
+     values ('ad00000$n-0000-0000-0000-000000000001','$INST','ae00000$n-0000-0000-0000-000000000001','INSUFFICIENT',now());" >/dev/null
+  # Por la función, no por un `INSERT`: es la que exige que la evidencia esté
+  # evaluada. Un error "visto" en una entrega que nadie miró no cuenta.
+  q "select public.registrar_observacion_de_error(
+       '$INST','$PREP','$TIPO','error',true,'ad00000$n-0000-0000-0000-000000000001',
+       null,null,'Aplicó la regla sin verificar la condición de integrabilidad.',null,'demo-obs-$n');" >/dev/null
+done
+
+echo "   dos apariciones corroboradas · la próxima llama a una persona"
+
+echo
+echo "→ Para cerrar el circuito, con el server levantado:"
+echo "   curl -s -X POST http://localhost:3000/api/observacion \\"
+echo "     -H \"Authorization: Bearer \$RELOJ_SHARED_SECRET\" -H 'Content-Type: application/json' \\"
+echo "     -d '{\"institucionId\":\"$INST\",\"preparacionId\":\"$PREP\",\"tipoDeErrorId\":\"$TIPO\",\"corroborada\":true,\"evidenciaId\":\"ad000001-0000-0000-0000-000000000001\",\"trasAccionId\":\"ae000001-0000-0000-0000-000000000001\",\"claveDeIdempotencia\":\"demo-obs-3\"}'"
+echo "   → la tercera aparición produce la señal, y /hoy pasa a \"Necesita recuperación\""
 echo
 echo "✓ Mundo listo. Cursada: a6000000-0000-0000-0000-000000000001"
 q "select '   ' || (select count(*) from topic where offering_id='$OFF') || ' unidades · ' ||

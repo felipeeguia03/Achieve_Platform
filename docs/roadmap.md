@@ -52,6 +52,7 @@ Cada etapa, sin excepción:
 
 | Frente | Estado |
 |---|---|
+| **Fase B6.6 · el recorrido del MVP, visible** | 🔵 **En curso.** La regla corría en los tests y en ningún otro lado. Ahora hay un endpoint que la dispara y el mundo demo siembra los hechos, no el resultado |
 | **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado, una regla provisional lo cuenta, y el circuito produce una señal que pide una persona **sin que nadie la haya mirado** |
 | **Etapa B2b.2 · corroboración** | 🔵 **El que sigue.** La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
 | Las 3 vulnerabilidades `high` de [ADR-008](decisions.md#adr-008) | Deuda abierta, con la restricción de **no** correr `npm audit fix --force` sobre la rama principal |
@@ -2526,6 +2527,49 @@ silencio.
 
 **Contratos a cerrar:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`. **Ninguno se cerró en
 esta fase**, y ninguno lo cierra un agente.
+
+---
+
+## Fase B6.6 — El recorrido del MVP, visible · 🔵 EN CURSO
+
+**Estado:** 🔵 **1 / 3** — 2 de septiembre de 2026. Habilitada por
+[ADR-036](decisions.md#adr-036). **No depende de nadie de afuera.**
+
+**Por qué existe.** La B6.5 dejó la regla construida y probada, y **nadie la llamaba** — exactamente
+la situación del reloj antes de la B4. El circuito corría en los tests y en ningún otro lado, así que
+el MVP no podía demostrar el eslabón que más importa: *detectar que el estudiante está trabado*.
+
+**Por qué antes que B2b.2.** La corroboración del ADL es valiosa y no está en el camino del MVP. Lo
+que el owner pidió es *"demostrar que Achieve puede detectar que está trabado y escalar el caso"*, y
+eso pasa por acá.
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.6.1 | El endpoint que dispara la regla, y el mundo demo que siembra **hechos y no resultados** | ✅ **Completa** |
+| B6.6.2 | Qué ve el estudiante de su propia señal, más allá del estado general | ⬜ |
+| B6.6.3 | La cola interna sintética: dónde aterriza un caso escalado mientras el CRM está congelado | ⬜ |
+
+### ✅ Etapa B6.6.1 — 2 de septiembre de 2026
+
+`POST /api/observacion`, con **secreto de servicio**. Registrar un error **no es una acción del
+estudiante**: es de quien evalúa su entrega, y ese rol —Reviewer `R1`— **no tiene superficie acá**
+([ADR-033](decisions.md#adr-033) lo dejó abierto). Darle un JWT de estudiante le permitiría declarar
+sus propios errores, y como una observación sin corroborar no cuenta, sería una función que no hace
+nada o una que miente.
+
+**El mundo demo dejó de sembrar la señal.** Hasta acá insertaba una fila de `risk_signal` a mano, con
+un comentario que decía *"no hay motor que la produzca"* — y desde la B6.5 **eso era falso**. Ahora
+siembra **dos entregas evaluadas y sus dos errores**, y deja el mundo a una aparición de que el
+sistema llame a una persona.
+
+**Verificado de punta a punta** contra el stack local: la tercera observación devolvió
+`{"apariciones":3,"necesitaPersona":true}`, la señal quedó en `INTERVENTION_REQUIRED` con
+`rule_version: v2.0-po-provisional` y su causa en texto, y `/api/hoy` pasó a
+**`NECESITA RECUPERACIÓN`** con el Hero intacto en `NO_ACTION_AVAILABLE` — que es exactamente lo que
+`VI.1` §3.3 exige: **el riesgo modifica, no reemplaza**.
+
+**Done cuando:** el recorrido *error → repetición → corrección → recaída → escalamiento* se puede
+mostrar en una pantalla, sin explicar nada de arquitectura.
 
 ---
 

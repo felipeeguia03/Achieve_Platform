@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -204,5 +206,43 @@ describe("MVP · el recorrido completo, sin que nadie mire", () => {
     const r = await observarError(m.deps, m.base);
     expect(r.estado).toBe("RECHAZADA");
     expect(m.senales.size).toBe(0);
+  });
+});
+
+describe("MVP · el borde HTTP no le da al estudiante lo que no es suyo", () => {
+  const RUTA = readFileSync(
+    resolve(process.cwd(), "app/api/observacion/route.ts"),
+    "utf8",
+  );
+
+  /**
+   * Registrar un error **no es una acción del estudiante**: es de quien evalúa
+   * su entrega. Un JWT de estudiante acá le permitiría declarar sus propios
+   * errores, y el punto 6 de `C01-036` dice que una observación sin corroborar
+   * no cuenta — con lo cual sería una función que no hace nada, o una que
+   * miente.
+   */
+  it("usa secreto de servicio, no JWT de estudiante", () => {
+    expect(RUTA).toContain("esSecretoDeServicio");
+    expect(RUTA).not.toMatch(/sesionDe|estudianteDe|resolverSesion/);
+  });
+
+  it("`corroborada` no tiene un default que infle el contador", () => {
+    // El camino más corto —mandar el campo vacío— tiene que ser el que NO
+    // cuenta. Un default en `true` haría lo contrario.
+    expect(RUTA).toContain("corroborated: cuerpo.corroborada === true");
+  });
+
+  it("no barre: evalúa la preparación que acaba de recibir un hecho", () => {
+    // Un barrido por institución sería el motor general que `C01-021` no
+    // autoriza. El endpoint recibe una preparación y un tipo, y nada más.
+    // Una sola invocación, con una preparación que llega en el cuerpo. Si
+    // alguien agrega una segunda —o un loop sobre preparaciones— esto lo ve.
+    expect(RUTA.match(/observarErrorDeEstudiante\(/g) ?? []).toHaveLength(1);
+    expect(RUTA).toContain("examPreparationId: cuerpo.preparacionId as string");
+  });
+
+  it("un rechazo de dominio es 422, no 500", () => {
+    expect(RUTA).toMatch(/estado === "RECHAZADA"[\s\S]{0,200}status: 422/);
   });
 });
