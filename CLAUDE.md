@@ -30,7 +30,10 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
    `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`: **eso no levanta el gate.** El backend se construye
    sobre datos sintéticos, sin excepciones ni "una prueba chica".
 4. **Una etapa por vez, completa.** Readiness → decisiones aprobadas → implementar → verificar →
-   commit → docs actualizados.
+   commit → docs actualizados. **Verificar es `npm run lint`, `npm run typecheck`, `npm run build`,
+   `npm test` y `npm run db:verify`** — los cinco. ⚠️ `typecheck` es un gate propio: `vitest` borra
+   los tipos con esbuild y el build de Next no alcanza los tests, así que un mock desactualizado
+   pasa los dos y **sólo lo ve `tsc`**.
 5. **Antes de tocar UI, abrí las capturas de `docs/diseño/`.** Achieve es desktop-first y su
    lenguaje visual sale de ahí ([ADR-018](docs/decisions.md#adr-018)). **La carpeta no está
    versionada:** si la encontrás vacía, **decilo y pará** — no improvises un diseño.

@@ -30,8 +30,13 @@ Cada etapa, sin excepción:
    etapa no empieza.
 2. **Decisiones de diseño explícitas y aprobadas.** Se escriben antes de codear y se hacen aprobar.
 3. **Implementación.**
-4. **Verificación real.** `lint` y `build` en verde, tests pasando, y verificación funcional de lo
-   que la etapa prometió.
+4. **Verificación real.** `lint`, **`typecheck`** y `build` en verde, tests pasando, y verificación
+   funcional de lo que la etapa prometió.
+
+   > ⚠️ **`typecheck` es un gate propio, y hay que correrlo.** Medido el 2 de septiembre de 2026:
+   > `npm run build` estuvo en verde mientras `npx tsc --noEmit` tenía **6 errores** en archivos de
+   > test. `vitest` borra los tipos con esbuild y no los mira; el build de Next tampoco los alcanza.
+   > Un mock al que le falta un campo que el dominio agregó **no lo ve ninguno de los dos**.
 5. **Un commit o PR por etapa**, completo.
 6. **Documentación sincronizada.** Se marca la etapa acá y se actualizan los docs que el trabajo tocó.
 

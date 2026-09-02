@@ -400,13 +400,17 @@ Mapeo canónico: `WF-S10 → UX08`, `WF-S11 → UX09`. **No existe `UX10`.**
 ## 7. Antes de entregar
 
 1. `npm run lint` en verde.
-2. `npm run build` en verde.
-3. Tests pasando.
-4. Si tocaste UI: la auditoría de conformidad de `docs/design-system.md` §9, **reportando lo que
+2. **`npm run typecheck` en verde.** ⚠️ **Es un gate propio, no lo saltees:** `vitest` borra los
+   tipos con esbuild y el build de Next no alcanza los archivos de test. Medido el 2 de septiembre
+   de 2026: el build estuvo en verde con **6 errores de tipos** adentro. Un mock al que le falta un
+   campo que el dominio agregó **sólo lo ve `tsc`**.
+3. `npm run build` en verde.
+4. Tests pasando (`npm test`), y `npm run db:verify` si tocaste schema o funciones.
+5. Si tocaste UI: la auditoría de conformidad de `docs/design-system.md` §9, **reportando lo que
    falla**. No lo escondas.
-5. Si tomaste una decisión importante: registrala como ADR.
-6. Si completaste una etapa: marcala en `docs/roadmap.md`.
-7. **Si tuviste que asumir algo del dominio: decilo explícitamente.** No lo entierres en el código.
+6. Si tomaste una decisión importante: registrala como ADR.
+7. Si completaste una etapa: marcala en `docs/roadmap.md`.
+8. **Si tuviste que asumir algo del dominio: decilo explícitamente.** No lo entierres en el código.
 
 ---
 
