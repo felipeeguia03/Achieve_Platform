@@ -77,6 +77,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-033](#adr-033) | La frontera de superficies, corregida en la dirección del spec | ✅ `ACCEPTED` *(corrige cláusulas de [ADR-012](#adr-012) y [ADR-032](#adr-032))* | — |
 | [ADR-034](#adr-034) | `C01-022` cerrada: la necesidad de una persona la declara la Plataforma | ✅ `ACCEPTED` *(corrige la máquina de [ADR-032](#adr-032); reabre el ítem 5 de [ADR-005](#adr-005))* | — |
 | [ADR-035](#adr-035) | La integración con el CRM se difiere; el dominio sigue adelante | ✅ `ACCEPTED` *(prioridad, no bloqueo: nada de lo construido se revierte)* | — |
+| [ADR-036](#adr-036) | Cierre **provisional** de `C01-036` y `C01-021` para el MVP | ⚠️ ✅ `ACCEPTED` · **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`** *(autoridad: Product Owner, no la psicopedagoga)* | — |
 
 ---
 
@@ -2816,3 +2817,135 @@ ingestor lo toque. (B2b.3 necesita `C01-042`.)
 
 Fuera del roadmap sigue en pie la deuda de [ADR-008](#adr-008): **3 vulnerabilidades `high`**, con la
 restricción del owner de no correr `npm audit fix --force` sobre la rama principal.
+
+---
+
+<a id="adr-036"></a>
+## ADR-036 — Cierre **provisional** de `C01-036` y `C01-021` para desbloquear el MVP
+
+> ## ⚠️ `PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`
+>
+> | | |
+> |---|---|
+> | **Autoridad** | **Product Owner.** No es una definición clínica, pedagógica ni psicopedagógica, y **no se le atribuye a la psicopedagoga** |
+> | **Alcance** | MVP con **datos sintéticos** exclusivamente |
+> | **Estado** | **Provisional** |
+> | **Revisión obligatoria** | **Antes de cualquier piloto con estudiantes reales** |
+> | **Responsable de la validación posterior** | La **psicopedagoga** |
+> | **Impacto si cambia** | **Configuración y reglas versionadas. No rediseño del dominio** |
+
+**Estado:** ✅ `ACCEPTED` · 2 de septiembre de 2026 · **decidido por el owner**
+**Avanza provisionalmente:** `C01-036` y `C01-021`. **No los cierra**: siguen `OPEN` en el anexo,
+esperando validación profesional.
+**No toca:** [ADR-035](#adr-035) — la integración con el CRM sigue congelada.
+**Toca:** `data-model.md`, `product.md`, `roadmap.md`, `pending-decisions-annex.md`.
+
+### Contexto — el hallazgo que ordenó el trabajo
+
+**No existía ninguna entidad de error.** Ni tabla, ni `error_type`, ni el `WF-S12 Mapa de Errores`
+del spec. La regla cuenta apariciones *"del mismo `error_type` normalizado"*, y ese dato no se
+registraba en ningún lado.
+
+Sin eso, cualquier regla habría tenido que **inferir** el error desde el texto de una evidencia — que
+es exactamente lo que la decisión prohíbe: *"un error meramente inferido, ambiguo o no corroborado no
+incrementa el contador"*.
+
+### Decisión 1 · `C01-036` — qué es un error reiterativo, provisionalmente
+
+**La identidad del error es el tipo, no el tema.** El tema es contexto explicativo; dos errores del
+mismo tipo cuentan aunque ocurran en ejercicios distintos.
+
+El alcance del contador es **la preparación del mismo examen**. Sólo cuentan las observaciones
+**corroboradas**, y una **resolución correcta, independiente y sin ayuda reinicia el contador** de ese
+tipo. Si no se puede determinar con confianza que dos errores son del mismo tipo, **se conservan
+separados**.
+
+**Seis tipos**, cargados como configuración versionada `v1.0-po-provisional`: conceptual,
+procedimiento, interpretación de consigna, cálculo, omisión de paso obligatorio y dependencia de
+ayuda externa. **Se verificó que el dominio no tuviera otro vocabulario** antes de introducir éste.
+
+> ⚠️ **Una ambigüedad que resolví y hay que revisar.** *"Sólo cuentan intentos evaluables con
+> evidencia suficiente"* se implementó como **"una evidencia que alguien juzgó"** —`SUFFICIENT`,
+> `INSUFFICIENT` o `VALIDATED`— y no como *"una evidencia en estado `SUFFICIENT`"*. La segunda lectura
+> haría que un error encontrado en una entrega insuficiente no contara, que es al revés de lo
+> esperable. **Es la interpretación de un agente sobre una frase ambigua, y va a la lista de la
+> psicopedagoga.**
+
+### Decisión 2 · `C01-021` — la regla mínima, provisional
+
+Una sola regla, sobre `HP0-06-1`: segunda aparición → `atencion`; tercera → `intervencion` con
+`requiresHumanIntervention`; **una nueva aparición después de una acción correctiva** → `intervencion`
+sin esperar la tercera; una resolución limpia reinicia; las señales no se duplican por
+reprocesamiento.
+
+**No se agregó ninguna otra regla.** `HP0-06-2` y `HP0-06-3` siguen en `v1.0`, sin umbral y en modo
+`HUMANA`: nadie decidió las suyas.
+
+**No hay motor probabilístico.** Es un conteo sobre una lista ordenada, puro, en `lib/domain/`. El
+mismo input da el mismo output siempre, y hay tests que lo prueban corriendo dos veces.
+
+#### Cómo se preservó lo que dijo ella
+
+`HP0-06-1 v1.0` **no se tocó**: se apagó con un `UPDATE` de `is_current` y su `source_text` verbatim
+quedó intacto. El umbral entra en una **fila nueva**, `v2.0-po-provisional`, cuya procedencia dice de
+quién es: `provisional_default_id = 'PO-MVP-C01-021'`, no `HUMAN-P0-06`.
+
+Mismo criterio con el que la B5 apagó `EP-SPEC v0.1` y [ADR-034](#adr-034) dejó `ACKNOWLEDGED` como
+legacy. **Cambiar una configuración histórica en el lugar es reescribir lo que alguien afirmó.**
+
+Y como `risk_signal` guarda `risk_rule_id` y `rule_version`, **una señal conserva la versión que la
+produjo**: cambiar el umbral mañana no reescribe las señales de ayer.
+
+### Decisión 3 · Vigencia del Roadmap de examen
+
+El Roadmap **está vigente mientras la preparación esté activa**, y deja de estarlo cuando el examen se
+rinde (`EXAM_TAKEN`), el estudiante abandona (`ABANDONED`), el examen se cancela, o una
+replanificación crea una versión nueva del plan. **Una replanificación no borra el historial: produce
+una versión trazable.**
+
+> ⚠️ **Dos cosas que esta decisión encontró y no fusiona.**
+>
+> **Cancelar un examen no es abandonar una preparación.** Lo primero es un hecho del `assessment`; lo
+> segundo, un estado de `exam_preparation`. Hoy sólo existe el segundo. No se inventa el primero.
+>
+> **La replanificación choca con `UNIQUE (student_id, assessment_id)`**, que es donde vive el
+> invariante `I7`, y `exam_preparation` no tiene columna de versión. Versionar el plan **no se
+> implementa acá**: exige decidir si la nueva versión es otra fila (y entonces `I7` cambia de
+> significado) o una entidad aparte. Queda registrado como abierto.
+
+### Decisión 4 · Reentrancia de los pasos 9–18
+
+Se permite volver a los pasos 9–18 desde uno posterior cuando una evidencia resulta insuficiente,
+aparece un error reiterativo, cambia información del examen o una replanificación exige repetir.
+
+**La reentrada no borra evidencias ni reduce el progreso histórico.** Eso ya era cierto desde la B5:
+`protocol_step_completion` es append-only y `occurrence` cuenta las vueltas. Lo que se agrega ahora es
+que la vuelta diga **por qué**, **desde qué paso** y **contra qué intento anterior** —
+`reentry_reason`, `reentry_from_step_id`, `previous_completion_id`—, con un `CHECK` que impide
+declarar una reentrada en la primera vuelta.
+
+**No se permite saltear una condición obligatoria para mostrar progreso**, y no hay forma: la
+completion es un hecho factual y `requirement` sigue en `NO_CONFIGURADA` para los veinte pasos.
+
+### Lo que esta decisión NO hace
+
+- **No cierra `C01-036` ni `C01-021`.** Siguen `OPEN`, con su avance provisional anotado.
+- **No descongela la integración con el CRM** ([ADR-035](#adr-035)). No se construyó ningún endpoint,
+  ni HMAC, ni outbox.
+- **No construye superficies de operador.** Siguen siendo del CRM ([ADR-033](#adr-033)).
+- **No habilita datos reales.** [ADR-006](#adr-006) sigue siendo bloqueo absoluto.
+- **No cierra `C01-044`.** Playbook y SLA siguen en `null`, y el circuito lo declara.
+
+### Qué tiene que validar la psicopedagoga
+
+1. Si **dos apariciones** es el umbral correcto para *"reiterativo"*, y si **tres** lo es para llamar
+   a una persona.
+2. Si los **seis tipos de error** son el vocabulario correcto, o si hay otro.
+3. Si *"intentos evaluables con evidencia suficiente"* significa lo que se implementó — ver la
+   advertencia de la Decisión 1.
+4. Si una **reincidencia tras una acción correctiva** debe saltar directo a intervención.
+5. Si una **resolución limpia** debe reiniciar el contador **a cero** o descontar de a uno.
+6. Las cuatro condiciones de vigencia del Roadmap y la lista de motivos de reentrada.
+
+**Si cambia cualquiera de las seis, el impacto es cargar una versión nueva de configuración.** El
+dominio no se rediseña: los umbrales no están en el código, y hay un guard estático que lo verifica.

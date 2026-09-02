@@ -46,6 +46,11 @@ import { proyectarPreparacion } from "./servicios/proyeccion-preparacion";
 import { proyectarPaso } from "./servicios/proyeccion-paso";
 import { directorioNoDisponible } from "./servicios/operadores";
 import {
+  observarError as observarErrorPuro,
+  type ErrorObservado,
+} from "./servicios/reiteracion";
+import { reiteracionReal } from "./repositorios/reiteracion";
+import {
   registrarSenal as registrarSenalPuro,
   resolver as resolverSenalPuro,
   transicionar as transicionarSenalPuro,
@@ -444,4 +449,19 @@ export function cerrarIntervencion(
   entrada: CierreDeIntervencion,
 ): Promise<ResultadoDeCierre> {
   return cerrarIntervencionPuro(intervenciones, entrada);
+}
+
+/**
+ * Registra un error observado y evalúa la regla provisional de `C01-021`
+ * ([ADR-036](../../docs/decisions.md#adr-036)).
+ *
+ * ⚠️ **PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION.** El umbral es una
+ * decisión del Product Owner sobre datos sintéticos, sin validación
+ * psicopedagógica.
+ */
+export function observarErrorDeEstudiante(entrada: ErrorObservado) {
+  return observarErrorPuro(
+    { repo: reiteracionReal, senales: senalesReal, eventos: eventosReal, auditor: auditorReal },
+    entrada,
+  );
 }

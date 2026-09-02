@@ -336,10 +336,19 @@ diagrama y que no son restricciones de más:
   Lo ejecuta el reloj del lifecycle, sobre el `valid_until` que declaró quien la creó.
 - **`RESOLVED`, `ESCALATED` y `EXPIRED` son terminales.** Qué pasa después de escalar es `C01-022`.
 
-⚠️ **Nada produce señales automáticamente.** `C01-021` sigue `OPEN` y las tres situaciones de
-`HUMAN-P0-06 v1.0` están cargadas como configuración **sin umbral** (`C01-036`, y lo cierra la
-psicopedagoga). El Service **persiste una señal que su owner ya produjo**; no hay evaluador, y hay un
-guard estático que rompe si alguien lo agrega.
+🟡 **Una regla produce señales, y es provisional** — [ADR-036](decisions.md#adr-036).
+
+> ⚠️ **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`.** El umbral lo fijó el **Product Owner**
+> para poder demostrar el MVP con datos sintéticos. **No tiene validación psicopedagógica y no se le
+> atribuye a la psicopedagoga**, que lo revisa antes de cualquier piloto con estudiantes reales.
+
+`HP0-06-1` corre en `v2.0-po-provisional`: la segunda aparición corroborada del mismo tipo de error
+da `atencion`, la tercera —o una nueva tras una acción correctiva— da `intervencion` y pide una
+persona. **La versión de la psicopedagoga no se tocó**: quedó apagada, con su texto intacto, y una
+señal conserva la versión de la regla que la produjo.
+
+`HP0-06-2` y `HP0-06-3` **siguen sin umbral y en modo `HUMANA`**: nadie decidió las suyas. El umbral
+vive en `risk_rule.threshold_config`, nunca en el código, y hay un guard estático que lo verifica.
 
 ### 5.5.1 Intervention
 

@@ -512,12 +512,69 @@ describe("B6 · lo que esta fase NO hace, y hay que poder verificarlo", () => {
     .map((f) => readFileSync(resolve(process.cwd(), "lib/server/servicios", f), "utf8"))
     .join("\n");
 
-  it("ningún Service evalúa una regla de riesgo por su cuenta", () => {
-    // `C01-021` está `OPEN` y `C01-036` —cuántas repeticiones hacen a un error
-    // "reiterativo"— es de la psicopedagoga. Si aparece un evaluador, este test
-    // rompe y obliga a que alguien cierre la decisión primero.
-    expect(FUENTE).not.toMatch(/threshold_config/);
-    expect(FUENTE).not.toMatch(/\bevaluarRiesgo\b|\bdetectarRiesgo\b|\bcalcularSeveridad\b/);
+  /**
+   * Este guard cambió de afirmación — Etapa B6.5, [ADR-036](../docs/decisions.md#adr-036).
+   *
+   * Hasta acá decía *"no existe ningún evaluador"*, y rompió exactamente cuando
+   * apareció uno. **Estaba bien**: existía para forzar que alguien cerrara
+   * `C01-021` y `C01-036` antes de que un agente inventara el umbral. El Product
+   * Owner los cerró de forma provisional y explícita.
+   *
+   * Dejarlo como estaba habría sido peor que borrarlo: seguiría verde afirmando
+   * una ausencia que ya no es cierta. Así que **afirma lo que hay que sostener
+   * ahora**, que es más difícil de cumplir por accidente: el umbral vive en
+   * configuración, hay **una sola** regla que lo tiene, y dice de quién es.
+   */
+  it("el umbral vive en configuración, no en el código", () => {
+    const dominio = readFileSync(
+      resolve(process.cwd(), "lib/domain/reiteracion.ts"),
+      "utf8",
+    );
+    // El evaluador **recibe** el umbral. Si algún día lo construye adentro, este
+    // test lo ve: no puede haber un objeto de apariciones literal.
+    expect(dominio).not.toMatch(/apariciones:\s*\{\s*atencion:\s*\d/);
+    expect(dominio).toContain("umbral: UmbralDeReiteracion");
+    // Y el Service lo saca de la configuración, no de una constante local.
+    expect(FUENTE).toContain("umbralDesdeConfig(");
+  });
+
+  it("hay UNA sola regla con umbral, y ninguna más se agregó", () => {
+    const dir = resolve(process.cwd(), "supabase/migrations");
+    const sql = readdirSync(dir)
+      .filter((f) => f.endsWith(".sql"))
+      .map((f) => readFileSync(resolve(dir, f), "utf8"))
+      .join("\n");
+    // `AUTOMATICA` sólo puede aparecer como valor cargado una vez: la regla
+    // provisional de `C01-021`. `HP0-06-2` y `HP0-06-3` siguen sin umbral,
+    // porque nadie decidió las suyas.
+    expect(sql.match(/'AUTOMATICA', TRUE/g) ?? []).toHaveLength(1);
+    expect(sql).toContain("'HP0-06-1', 'v2.0-po-provisional'");
+    expect(sql).not.toContain("'HP0-06-2', 'v2");
+    expect(sql).not.toContain("'HP0-06-3', 'v2");
+  });
+
+  it("la versión provisional dice de quién es, y no se la atribuye a ella", () => {
+    const sql = readFileSync(
+      resolve(process.cwd(), "supabase/migrations/20260904010000_regla_c01_021_provisional.sql"),
+      "utf8",
+    );
+    // La procedencia del umbral **no** es `HUMAN-P0-06`: es del Product Owner.
+    expect(sql).toContain("'PO-MVP-C01-021'");
+    expect(sql).toContain("v1.0-provisional-sin-validacion-profesional");
+    expect(sql).toContain("PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION");
+  });
+
+  it("la fila de la psicopedagoga se apaga, no se reescribe", () => {
+    const sql = readFileSync(
+      resolve(process.cwd(), "supabase/migrations/20260904010000_regla_c01_021_provisional.sql"),
+      "utf8",
+    );
+    // Mismo criterio que `EP-SPEC v0.1` en la B5 y `ACKNOWLEDGED` en ADR-034:
+    // se apaga con un `UPDATE` de `is_current`, y su texto queda intacto.
+    expect(sql).toMatch(/UPDATE risk_rule SET is_current = FALSE/);
+    expect(sql).not.toMatch(/DELETE\s+FROM\s+risk_rule/i);
+    // Y en particular, nadie le mete un umbral a la versión de ella.
+    expect(sql).not.toMatch(/UPDATE risk_rule SET[^;]*threshold_config/i);
   });
 
   it("las reglas se cargan sin umbral y ninguna corre en modo automático", () => {

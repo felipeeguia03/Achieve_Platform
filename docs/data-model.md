@@ -1117,6 +1117,30 @@ CREATE TABLE audit_log (
 
 ---
 
+## 10.0 Capa de error — Etapa B6.5
+
+> ⚠️ **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`** — [ADR-036](decisions.md#adr-036).
+> Autoridad: **Product Owner**. Sin validación psicopedagógica. Sólo datos sintéticos.
+
+**No existía ninguna entidad de error**: ni tabla, ni `error_type`, ni el `WF-S12 Mapa de Errores`
+del spec. La regla de `C01-036` cuenta apariciones del mismo tipo, y ese dato no se registraba.
+
+| Tabla | Qué es |
+|---|---|
+| `error_type` | El vocabulario, **configuración versionada** — mismo patrón que `risk_rule` y `exam_protocol`. Seis tipos en `v1.0-po-provisional`. Cambiarlo es cargar una versión, no migrar |
+| `error_observation` | **Hechos**: un error o una resolución limpia sobre un tipo, dentro de una preparación. `corroborated` decide si cuenta; `after_action_id` dice si ocurrió tras una correctiva, **declarado y nunca inferido** |
+
+**La identidad del error es el tipo, no el tema.** `topic_id` es contexto explicativo y no entra en
+la clave del contador: dos errores del mismo tipo cuentan aunque ocurran en ejercicios distintos.
+
+**Un error y una resolución limpia viven en la misma tabla** porque la regla las lee en orden: una
+resolución reinicia el contador. Separarlas obligaría a reconstruir esa línea de tiempo con un
+`UNION`, que es la forma más fácil de que las dos mitades se desincronicen.
+
+`registrar_observacion_de_error()` exige que una observación corroborada apunte a una evidencia que
+**alguien juzgó** (`SUFFICIENT`, `INSUFFICIENT` o `VALIDATED`). Un error "visto" en una entrega que
+nadie miró es exactamente el error inferido que la decisión prohíbe contar.
+
 ## 10.1 Las funciones de base, y qué decide cada una
 
 Actualizado el 1 de septiembre de 2026. **Ninguna implementa una regla de negocio**: componen una
@@ -1135,6 +1159,7 @@ Services (§3.2 de [`architecture.md`](architecture.md)).
 | `registrar_senal` | Persiste una señal **que su owner ya produjo** | `I8`: avisar dos veces que un estudiante está en problemas es ruido en la cola de alguien que decide con eso |
 | `abrir_intervencion` | Abre el caso con dueño, y con el SLA del playbook si lo hay | La señal tiene que estar pidiendo intervención: leerla y después insertar deja la ventana para que otro la resuelva en el medio |
 | `cerrar_intervencion` | Cierra, **registra el outcome y resuelve la señal** | Media escritura deja una intervención cerrada sin resultado, que es lo único que rompe el Done de la B6. Desde [ADR-034](decisions.md#adr-034) §7.4 la señal cierra con el mismo `COMMIT`: en dos llamadas quedaba una ventana con la intervención cerrada y la señal pidiendo a alguien que ya la había atendido. También rechaza a quien no es su dueño (§7.5) |
+| `registrar_observacion_de_error` | Registra el error como **hecho**, e impide corroborar contra una evidencia sin juzgar | Un error inferido no puede incrementar el contador (`C01-036`, [ADR-036](decisions.md#adr-036)) |
 | `resolver_senal` | `RESOLVED`, **sólo con una intervención con outcome** | La condición mira dos tablas y tiene que verlas en la misma transacción. **Se conserva** para las señales que cierren por otro camino; su regla no se relajó |
 | `circuito_de_senales` | **Audita el Done**: dónde está roto el circuito | Un criterio de cierre que se revisa a mano se marca cumplido sin revisar |
 

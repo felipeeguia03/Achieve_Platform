@@ -52,15 +52,16 @@ Cada etapa, sin excepción:
 
 | Frente | Estado |
 |---|---|
-| **Etapa B2b.2 · corroboración** | 🔵 **Es el único.** La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
+| **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado, una regla provisional lo cuenta, y el circuito produce una señal que pide una persona **sin que nadie la haya mirado** |
+| **Etapa B2b.2 · corroboración** | 🔵 **El que sigue.** La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
 | Las 3 vulnerabilidades `high` de [ADR-008](decisions.md#adr-008) | Deuda abierta, con la restricción de **no** correr `npm audit fix --force` sobre la rama principal |
 
 ### Lo que espera a una persona
 
 | Qué | Quién | Qué destraba |
 |---|---|---|
-| **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | Es prerequisito de `C01-021` |
-| **`C01-021`** · qué regla produce qué señal y con qué severidad | Risk owner | **El bloqueo #1.** Sin esto nada produce señales, y el Risk Engine no arranca |
+| **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | 🟡 **Umbral provisional cargado** ([ADR-036](decisions.md#adr-036)). Ella lo valida **antes del piloto** |
+| **`C01-021`** · qué regla produce qué señal y con qué severidad | Risk owner | 🟡 **Una regla mínima corre**, provisional y del Product Owner. Las otras dos siguen sin umbral |
 | **`C01-044`** · playbooks y SLA | Product Operations | El playbook y el SLA del circuito, que hoy son `null` y el circuito lo declara |
 | **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
 | Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |

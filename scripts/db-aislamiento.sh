@@ -28,7 +28,8 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # por `exit 1` es justo la que dejaba el mundo a medio poner, y así garantizaba
 # que la siguiente también fallara.
 limpiar_mundo() {
-  q "delete from intervention_outcome; \
+  q "delete from error_observation; \
+   delete from intervention_outcome; \
    delete from intervention; \
    delete from risk_signal; \
    delete from playbook; \
@@ -471,6 +472,61 @@ sin=$(q "select resuelta || '|' || coalesce(motivo,'') from public.resolver_sena
 # Y sobre una que el cierre ya resolvió, tampoco reescribe nada.
 ya=$(q "select resuelta || '|' || coalesce(motivo,'') from public.resolver_senal('$A','$S1');" | tr -d '[:space:]')
 [ "${ya%%|*}" = "false" ] && ok "y sobre una ya resuelta no reescribe el final: $ya" || mal "volvió a resolver: $ya"
+
+echo "→ B6.5. El error es un hecho registrado, no una inferencia (ADR-036)"
+TIPO=$(q "select id from error_type where canonical_id='procedimiento' and is_current;" | tr -d '[:space:]')
+[[ "$TIPO" =~ ^[0-9a-f-]{36}$ ]] && ok "el vocabulario provisional del PO está cargado y versionado" || mal "no hay error_type vigente: $TIPO"
+# La preparación de examen sobre la que corre el contador.
+corre "insert into assessment (id,offering_id,assessment_type,title,modality,source_type) values
+  ('e1000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','parcial','Parcial MVP','practico','student');"
+corre "insert into exam_preparation (id,institution_id,assessment_id,student_id,course_enrollment_id,status)
+  values ('e2000000-0000-0000-0000-000000000001','$A','e1000000-0000-0000-0000-000000000001','a5000000-0000-0000-0000-000000000001','a6000000-0000-0000-0000-000000000001','ACTIVE');"
+PREP=e2000000-0000-0000-0000-000000000001
+
+# Corroborar exige una evidencia **juzgada**. Una entrega que nadie miró es una
+# sospecha, y el punto 6 de C01-036 dice que una sospecha no cuenta.
+corre "insert into action (id,institution_id,course_enrollment_id,exam_preparation_id,objective,verb,scope,status)
+  values ('e3000000-0000-0000-0000-000000000001','$A','a6000000-0000-0000-0000-000000000001','$PREP','resolver la guía','practicar','tema','IN_PROGRESS');"
+corre "insert into evidence (id,institution_id,action_id,lifecycle_state)
+  values ('e4000000-0000-0000-0000-000000000001','$A','e3000000-0000-0000-0000-000000000001','SUBMITTED');"
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'e4000000-0000-0000-0000-000000000001');"; then
+  mal "se corroboró un error contra una evidencia que nadie evaluó"
+else
+  ok "una evidencia sin juzgar no corrobora nada: sería el error inferido que C01-036 prohíbe"
+fi
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,null);"; then
+  mal "se corroboró un error sin evidencia"
+else
+  ok "ni se corrobora sin evidencia que lo sostenga"
+fi
+# Juzgada: ahora sí.
+corre "update evidence set lifecycle_state='INSUFFICIENT' where id='e4000000-0000-0000-0000-000000000001';"
+OBS=$(q "select observation_id from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'e4000000-0000-0000-0000-000000000001',null,null,null,null,'k-obs-1');" | tr -d '[:space:]')
+[[ "$OBS" =~ ^[0-9a-f-]{36}$ ]] && ok "con la evidencia evaluada, el error se registra" || mal "no se pudo registrar: $OBS"
+dup=$(q "select duplicado::text from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'e4000000-0000-0000-0000-000000000001',null,null,null,null,'k-obs-1');" | tr -d '[:space:]')
+[ "$dup" = "true" ] && ok "y reprocesar la misma evidencia no infla el contador" || mal "el reproceso duplicó la observación: $dup"
+# Una observación sin corroborar entra —es un dato— pero el evaluador la ignora.
+corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',false,null,null,null,'sospecha');"
+[ "$(q "select count(*) from error_observation where exam_preparation_id='$PREP' and corroborated;" | tr -d '[:space:]')" = "1" ] \
+  && ok "la sospecha se guarda, pero no cuenta como aparición" || mal "una sospecha entró al contador"
+
+echo "→ B6.5. El umbral es de quien lo puso, y la fuente profesional queda intacta"
+[ "$(q "select provisional_default_id from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "PO-MVP-C01-021" ] \
+  && ok "la regla vigente dice que el umbral es del Product Owner" || mal "la procedencia del umbral no es la del PO"
+[ "$(q "select provisional_default_id from risk_rule where canonical_id='HP0-06-1' and version='v1.0';" | tr -d '[:space:]')" = "HUMAN-P0-06" ] \
+  && ok "y la versión de la psicopedagoga sigue ahí, apagada y sin reescribir" || mal "se tocó la fila de ella"
+[ "$(q "select count(*) from risk_rule where threshold_config is not null;" | tr -d '[:space:]')" = "1" ] \
+  && ok "hay UNA sola regla con umbral: no se inventaron otras" || mal "apareció más de una regla con umbral"
+[ "$(q "select count(*) from risk_rule where canonical_id in ('HP0-06-2','HP0-06-3') and modo='HUMANA' and threshold_config is null;" | tr -d '[:space:]')" = "2" ] \
+  && ok "las otras dos siguen sin umbral y en modo HUMANA" || mal "se les puso umbral a las otras"
+
+echo "→ B6.5. La reentrada deja rastro, y la primera vuelta no es una reentrada"
+if corre "insert into protocol_step_completion (institution_id,exam_preparation_id,protocol_step_id,occurrence,confirmed_by,reentry_reason)
+  select '$A','$PREP',id,1,'a5000000-0000-0000-0000-000000000001','volví porque sí' from protocol_step limit 1;"; then
+  mal "una primera vuelta pudo declarar un motivo de reentrada"
+else
+  ok "reentrada_solo_desde_la_segunda: no se vuelve a donde no se fue"
+fi
 
 echo "→ B6. Una regla sin umbral no puede correr sola"
 if corre "update risk_rule set modo='AUTOMATICA' where canonical_id='HP0-06-1';"; then
