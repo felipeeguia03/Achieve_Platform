@@ -78,6 +78,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-034](#adr-034) | `C01-022` cerrada: la necesidad de una persona la declara la Plataforma | ✅ `ACCEPTED` *(corrige la máquina de [ADR-032](#adr-032); reabre el ítem 5 de [ADR-005](#adr-005))* | — |
 | [ADR-035](#adr-035) | La integración con el CRM se difiere; el dominio sigue adelante | ✅ `ACCEPTED` *(prioridad, no bloqueo: nada de lo construido se revierte)* | — |
 | [ADR-036](#adr-036) | Cierre **provisional** de `C01-036` y `C01-021` para el MVP | ⚠️ ✅ `ACCEPTED` · **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`** *(autoridad: Product Owner, no la psicopedagoga)* | — |
+| [ADR-037](#adr-037) | La validación profesional llegó, y los números no eran el problema | ✅ `ACCEPTED` *(6 `CAMBIAR` + 1 `APROBAR`; los umbrales quedaron, cambió el denominador)* | — |
 
 ---
 
@@ -2949,3 +2950,121 @@ completion es un hecho factual y `requirement` sigue en `NO_CONFIGURADA` para lo
 
 **Si cambia cualquiera de las seis, el impacto es cargar una versión nueva de configuración.** El
 dominio no se rediseña: los umbrales no están en el código, y hay un guard estático que lo verifica.
+
+---
+
+<a id="adr-037"></a>
+## ADR-037 — La validación profesional llegó, y los números no eran el problema
+
+**Estado:** ✅ `ACCEPTED` · 2 de septiembre de 2026 · **respondido por la psicopedagoga**
+**Fuente literal:** [`validacion-psicopedagogica-source.md`](validacion-psicopedagogica-source.md).
+**Manda sobre este ADR**, que es una paráfrasis con plan de implementación.
+**Responde a:** los seis valores provisionales de [ADR-036](#adr-036).
+**Toca:** `data-model.md`, `product.md`, `roadmap.md`, `pending-decisions-annex.md`,
+`agenda-cierre-psicopedagoga.md`.
+
+> **Su dictamen, textual:** *"VALIDACIÓN CON MODIFICACIONES PARA MVP CON DATOS SINTÉTICOS. Las reglas
+> pueden implementarse como defaults configurables, pero **no deberían trasladarse sin piloto a
+> estudiantes reales**."*
+>
+> Y la frase que ordena todo lo demás: **"el sistema debe reconocer patrones, no etiquetar personas;
+> toda escalada humana debe presentarse como apoyo y nunca como sanción."**
+
+### El hallazgo: los umbrales quedaron donde estaban
+
+Seis `CAMBIAR` y un `APROBAR`, y sin embargo **los dos números centrales no se movieron**:
+`repeat_signal_at = 2` y `human_review_at = 3` son exactamente los que había puesto el Product Owner.
+
+Lo que cambió es **qué cuenta como una repetición**. Su objeción no fue *"tres es poco"*: fue que
+*"los umbrales numéricos… por sí solos no distinguen entre una dificultad persistente, una consigna
+ambigua, una ayuda inadecuada, fatiga, ansiedad, barreras de accesibilidad o falta de enseñanza
+previa"*.
+
+**El problema no era el umbral. Era el denominador.**
+
+### Lo que ya estaba bien, y conviene registrarlo
+
+Tres cosas que validó sin cambios, y que son decisiones que el repositorio tomó defendiéndose de sí
+mismo:
+
+| Qué | Dónde estaba |
+|---|---|
+| **Separar la suficiencia de una entrega de la identificabilidad del error** (9.6, `APROBAR`) | La interpretación ambigua que [ADR-036](#adr-036) marcó como *"de un agente, y no debería haber tenido que interpretarla"*. Era la correcta: *"excluir entregas insuficientes **sesgaría la detección contra quienes más necesitan acompañamiento**"* |
+| **Conservar evidencias y versionar el Roadmap** | `protocol_step_completion` append-only desde la B5 |
+| **No bloquear el avance mientras espera respuesta** | El riesgo nunca ganó el Hero (`VI.1` §3.3) |
+
+### Las siete decisiones, y qué le falta al sistema para cumplirlas
+
+**1 · `9.1` — la unidad de conteo cambia.** Hoy se cuenta por `(preparación, tipo de error)`. Ella
+exige `(estudiante, preparación, tipo de error, **objetivo de aprendizaje o demanda**)`, y avisa por
+qué: *"dos errores procedimentales en contenidos no comparables **no necesariamente expresan la misma
+dificultad**"*.
+
+Y una separación que hoy no existe: **'repetición detectada' no es 'dificultad confirmada'**. La
+señal es *"una señal para explorar, no una prueba"*.
+
+**2 · `9.2` — el contador deja de ser el único camino.** Se suman `early_review_triggers`
+configurables: bloqueo manifiesto, malestar, pedido explícito de ayuda, alto impacto académico,
+barrera de accesibilidad y **baja confianza del sistema**. Y *"la persona debe recibir el caso con la
+evidencia y el historial de apoyos, **no sólo con un contador**"*.
+
+**3 · `9.3` — acelerar exige que la ayuda haya sido válida.** Hoy alcanza con `after_action_id`. Ella
+pide cinco condiciones: `correction_delivered`, `correction_accessible`, `learner_engaged`,
+`new_independent_attempt` y `same_error_confidence`. El motivo es contundente: *"un feedback genérico,
+demasiado complejo o no leído **no demuestra falta de aprendizaje; puede demostrar un problema de
+intervención**"*.
+
+**4 · `9.4` — dos aciertos, y el reinicio deja de ser un borrado.** Hoy un acierto limpio pone el
+contador en cero. Ella pide dos, *"en tareas equivalentes pero no idénticas"*, y redefine la palabra:
+*"'reiniciar' debe significar **cerrar el estado activo, no eliminar datos previos**"*. Con una
+consecuencia estructural: una recaída **abre un episodio nuevo vinculado al anterior**.
+
+**5 · `9.5` — 'dependencia de ayuda externa' sale, y no por precisión sino por daño.** *"La necesidad
+de ayuda puede ser esperable y productiva; denominarla 'dependencia' corre el riesgo de
+estigmatizar."* Pasa a ser **«necesidad de apoyo para avanzar», una condición de desempeño y no un
+error**. Quedan cinco familias, con categoría **principal + secundaria**, **'clasificación incierta'**
+y **corrección humana**.
+
+**6 · `9.6` — aprobado, con tres estados de evidencia.** *Suficiente de logro*, *suficiente para
+identificar un error*, *no interpretable*. Con `evidence_quality`, `error_identifiable` y
+`classification_confidence`.
+
+**7 · `9.7` — replanificar no cierra nada.** *"Cambiar una fecha suele ser una replanificación, **no
+el inicio de un proceso completamente nuevo**"*. Estados `active`, `replanned`, `completed`,
+`cancelled`, `explicitly_abandoned`, y **la inactividad sola no es abandono**.
+
+La reentrada sigue siendo 9–18, pero **al primer paso estrictamente necesario**: *"una vuelta
+indiscriminada puede aumentar carga, frustración y abandono"*. Se agregan dos motivos —pedido
+fundamentado del estudiante, indicación humana— y **override humano**.
+
+> **Y una regla transversal que es de interfaz, no de dominio.** Antes de volver atrás, Achieve tiene
+> que explicar **por qué lo propone, qué se repite, qué evidencia sigue vigente y cómo pedir otra
+> opción**.
+
+### Lo que esto resuelve del `UNIQUE (student_id, assessment_id)`
+
+[ADR-036](#adr-036) dejó abierto si versionar el plan era otra fila o una entidad aparte, porque
+chocaba con el invariante `I7`. **Ella lo contestó sin saberlo:** *"crear una nueva versión del plan
+**dentro del mismo historial**"* y *"cerrar y abrir otra preparación **sólo si cambia el evento
+objetivo**"*.
+
+Es decir: **una preparación por evaluación sigue siendo cierto**, `I7` no se toca, y la versión del
+plan es algo **adentro** de la preparación. La restricción no era un obstáculo: era la respuesta.
+
+### Estado de las decisiones
+
+`C01-036` y `C01-021` pasan de **provisionales del Product Owner** a **criterio profesional con
+modificaciones**. **No se cierran**: ella condicionó explícitamente el uso con estudiantes reales a
+*"piloto, revisión humana, explicabilidad, accesibilidad y monitoreo de equidad"*.
+
+Y **[ADR-006](#adr-006) sigue siendo bloqueo absoluto**: su validación es de producto, no una
+autorización de tratamiento de datos.
+
+### Lo que NO cambia
+
+- **La arquitectura.** Todo esto es configuración versionada, columnas aditivas y una regla pura que
+  ya recibe su umbral de afuera. [ADR-036](#adr-036) prometió que *"si cambia, el impacto es cargar
+  una fila de configuración"* — se cumple para los números, y para lo demás son columnas nullable.
+- **La integración con el CRM**, congelada por [ADR-035](#adr-035).
+- **Los valores del Product Owner no se borran.** `v2.0-po-provisional` se apaga con un `UPDATE`,
+  como `EP-SPEC v0.1` y como `ACKNOWLEDGED`.

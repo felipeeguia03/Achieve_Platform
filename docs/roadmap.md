@@ -54,15 +54,16 @@ Cada etapa, sin excepción:
 |---|---|
 | **Fase B6.6 · el recorrido del MVP, visible** | ✅ **Completa** el 2 de septiembre de 2026. El recorrido entero se reproduce desde cero: [`demo-mvp.md`](demo-mvp.md) |
 | **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado, una regla provisional lo cuenta, y el circuito produce una señal que pide una persona **sin que nadie la haya mirado** |
-| **Etapa B2b.2 · corroboración** | 🔵 **El que sigue.** La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
+| **Fase B6.7 · la validación profesional, aplicada** | 🔵 **El que sigue.** Cuatro etapas, [ADR-037](decisions.md#adr-037). Es configuración versionada y columnas aditivas: la arquitectura no cambia |
+| **Etapa B2b.2 · corroboración** | ⬜ Después. La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
 | Las 3 vulnerabilidades `high` de [ADR-008](decisions.md#adr-008) | Deuda abierta, con la restricción de **no** correr `npm audit fix --force` sobre la rama principal |
 
 ### Lo que espera a una persona
 
 | Qué | Quién | Qué destraba |
 |---|---|---|
-| **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | 🟡 **Umbral provisional cargado** ([ADR-036](decisions.md#adr-036)). Ella lo valida **antes del piloto** |
-| **`C01-021`** · qué regla produce qué señal y con qué severidad | Risk owner | 🟡 **Una regla mínima corre**, provisional y del Product Owner. Las otras dos siguen sin umbral |
+| **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | ✅ **Respondida** el 2 de septiembre de 2026: 6 `CAMBIAR` + 1 `APROBAR` ([ADR-037](decisions.md#adr-037)). Los umbrales quedaron; **cambió qué cuenta como repetición**. Sigue `OPEN` para datos reales: condicionada a piloto |
+| **`C01-021`** · qué regla produce qué señal y con qué severidad | Risk owner | 🟡 Una regla corre, ahora con **criterio profesional con modificaciones**. Las otras dos siguen sin umbral |
 | **`C01-044`** · playbooks y SLA | Product Operations | El playbook y el SLA del circuito, que hoy son `null` y el circuito lo declara |
 | **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
 | Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |
@@ -2601,6 +2602,39 @@ tabla **se borran**.
 
 **Done cuando:** el recorrido *error → repetición → corrección → recaída → escalamiento* se puede
 mostrar en una pantalla, sin explicar nada de arquitectura. ✅ — ver [`demo-mvp.md`](demo-mvp.md).
+
+---
+
+## Fase B6.7 — La validación profesional, aplicada · 🔵 EN CURSO
+
+**Estado:** 🔵 **0 / 4** — abierta el 2 de septiembre de 2026 por [ADR-037](decisions.md#adr-037).
+**No depende de nadie de afuera.**
+
+**Por qué existe.** La psicopedagoga respondió los seis valores provisionales del Product Owner con
+**seis `CAMBIAR` y un `APROBAR`** — y sin mover un solo umbral. Lo que cambió es **qué cuenta como
+una repetición**: su objeción no fue *"tres es poco"*, fue que *"los umbrales numéricos por sí solos
+no distinguen entre una dificultad persistente, una consigna ambigua, una ayuda inadecuada, fatiga,
+ansiedad, barreras de accesibilidad o falta de enseñanza previa"*.
+
+La frase que ordena la fase entera: **«el sistema debe reconocer patrones, no etiquetar personas»**.
+
+| # | Etapa | Qué cierra |
+|---|---|---|
+| B6.7.1 | **El vocabulario** — cinco familias, principal + secundaria, *clasificación incierta*, y *"dependencia de ayuda externa"* fuera como error | `9.5` |
+| B6.7.2 | **El denominador** — objetivo/demanda en la unidad de conteo, calidad de evidencia y confianza de clasificación; separar *repetición detectada* de *dificultad confirmada* | `9.1`, `9.6` |
+| B6.7.3 | **Acelerar y reiniciar** — las cinco condiciones de corrección válida, dos aciertos limpios, el episodio vinculado, y los disparadores cualitativos tempranos | `9.2`, `9.3`, `9.4` |
+| B6.7.4 | **Replanificar y volver** — `replanned` sin cerrar la preparación, reentrada al primer paso necesario, y la explicación previa al estudiante | `9.7` |
+
+**Fixtures obligatorios**, que ella pidió por nombre: error repetido comparable; errores del mismo
+tipo en **temas no comparables**; corrección válida e inválida; evidencia insuficiente interpretable y
+no interpretable; recuperación y recaída; reentrada mínima.
+
+**Done cuando:** las siete decisiones están como **configuración versionada**, los valores del Product
+Owner quedaron apagados **sin borrarse**, y ningún umbral vive en el código.
+
+> ⚠️ **Su validación no autoriza datos reales.** Es de producto, y ella condicionó el uso con
+> estudiantes reales a *"piloto, revisión humana, explicabilidad, accesibilidad y monitoreo de
+> equidad"*. [ADR-006](decisions.md#adr-006) sigue siendo bloqueo absoluto.
 
 ---
 

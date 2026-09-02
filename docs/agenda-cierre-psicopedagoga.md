@@ -152,7 +152,15 @@ después de conocer la nota. Cambia qué puede responder honestamente el estudia
 
 ---
 
-## 9. Los seis valores provisionales que cargó el Product Owner ⭐⭐
+## 9. Los seis valores provisionales que cargó el Product Owner ⭐⭐ · ✅ RESPONDIDA
+
+> ✅ **Respondida el 2 de septiembre de 2026.** La transcripción completa está en
+> [`validacion-psicopedagogica-source.md`](validacion-psicopedagogica-source.md), que **manda sobre
+> cualquier paráfrasis**. El plan de implementación es [ADR-037](decisions.md#adr-037).
+>
+> **Seis `CAMBIAR` y un `APROBAR` — y ningún umbral se movió.** Lo que cambió es qué cuenta como una
+> repetición. Lo que sigue abajo es la pregunta original, que se conserva para poder leer la
+> respuesta contra ella.
 
 **Es la lista más concreta de todo este documento, y la que más rápido se responde**: son seis
 números y una lista de palabras. Cada uno está funcionando hoy sobre datos inventados, y cada uno se
