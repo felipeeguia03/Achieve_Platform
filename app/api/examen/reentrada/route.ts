@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   }
   const resultado = await responderReentradaDeProtocolo({
     institutionId: sesion.estudiante.institutionId,
+    studentId: sesion.estudiante.id,
     propuestaId: cuerpo.propuesta,
     decision: cuerpo.decision as "ACEPTAR" | "PEDIR_OTRA_OPCION",
     respondidaPor: sesion.estudiante.id,

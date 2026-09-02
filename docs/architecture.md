@@ -2,7 +2,7 @@
 
 **Documento:** `docs/architecture.md`
 **Rol:** owner canónico de la arquitectura del repositorio.
-**Última actualización:** 31 de agosto de 2026
+**Última actualización:** 2 de septiembre de 2026
 
 > ⚠️ **Estado de este documento.** La arquitectura del **Track A** está **decidida y aprobada**
 > ([ADR-008](decisions.md#adr-008), 28 ago 2026). La arquitectura del **Track B** también está
@@ -112,7 +112,7 @@ Achieve_Platform/
 │   ├── roadmap.md               ← fases y etapas
 │   ├── decisions.md             ← ADRs
 │   ├── domain-translation-dd1-dd10.md  ← respuestas DD1–DD10
-│   ├── pending-decisions-annex.md   ← las 51 C01: 42 abiertas, 9 respondidas (vivo)
+│   ├── pending-decisions-annex.md   ← las 51 C01: 41 abiertas, 9 respondidas, 1 cerrada
 │   ├── legal-package.md             ← las preguntas para asesoría jurídica
 │   ├── agenda-cierre-psicopedagoga.md ← los 8 residuos de ADR-025
 │   ├── brief-adr-008-seguridad.md   ← el brief del CTO para las 3 `high`
@@ -272,6 +272,8 @@ en el owner de las reglas:
 - La autorización fina y el scoping por institución/recurso ocurren en el backend.
 - Todas las tablas habilitan RLS **deny-by-default** para cerrar la API autoexpuesta por Supabase.
   Como `service_role` saltea RLS, esa política es defensa en profundidad, no el control primario.
+- Los escritores atómicos repiten el scope de la sesión en su predicado. En operaciones de
+  estudiante no alcanza con `institution_id`: también validan `student_id` contra el recurso.
 - Storage se usa para Evidence cuando su contrato y política de acceso estén cerrados.
 
 ### 3.4 Fronteras del frontend y Realtime
@@ -343,13 +345,13 @@ capa de servicio propia. Desplaza dos aspectos de la propuesta anterior:
 - Las reglas de dominio dejan de proponerse como triggers; los triggers quedan limitados a funciones
   técnicas que no deciden el negocio.
 
-Proveedor, aislamiento y capas quedaron ratificados por ADR-005 (Bloque A). Sigue sin ratificar:
-Storage y operación. Hasta entonces se conserva como diseño objetivo y no se crean migraciones.
+Proveedor, aislamiento y capas quedaron ratificados por ADR-005. Storage privado y las migraciones
+locales ya están implementados; el runtime operativo de producción sigue `DEFERRED`.
 
 ### 3.9 El código que hoy la implementa
 
-Actualizado el 2 de septiembre de 2026, con las fases B1 a B5 completas y el dominio de la B6. **§3.2 describe el
-diseño; esto dice dónde vive**, que es lo que hacía falta para no tener que deducirlo del `grep`.
+Actualizado el 2 de septiembre de 2026, con B1–B6.7 completas en su alcance disponible y B2b en
+2/3. **§3.2 describe el diseño; esto dice dónde vive**, para no tener que deducirlo del `grep`.
 
 ```text
 app/
@@ -357,8 +359,9 @@ app/
 │                            dibujan `Ausencia` si la carga falla: nunca el fixture
 └── api/                  ← Controller. Valida sesión, llama a UN Service, traduce a HTTP
     ├── hoy · materia · accion · compromiso · evidencia · progreso
-    ├── examen/           ← Modo Examen. `activacion` GET+POST (leer y activar son
-    │                        el mismo hecho antes y después), `paso` GET+POST
+    ├── examen/           ← Modo Examen. Activación y paso; replanificación y
+    │                        reentrada explicada en dos tiempos
+    ├── corroboracion     ← POST. Secreto de SERVICIO; eleva procedencia con auditoría
     ├── observacion       ← POST. Secreto de SERVICIO: registrar un error es de
     │                        quien evalúa la entrega, y ese rol no tiene superficie acá
     ├── reloj             ← POST. Secreto de SERVICIO, no JWT: no lo dispara una persona.
@@ -377,17 +380,17 @@ lib/
     │   │                    superado en dirección, pendiente de retiro
     │   ├── auditoria.ts     PUERTO de `audit_log`. Distinto de `product_event`:
     │   │                    uno dice qué le pasó al estudiante, el otro quién tocó qué
-    │   ├── reiteracion.ts   la regla PROVISIONAL de C01-021 (ADR-036). El umbral NO
-│   │                    está acá: llega de risk_rule.threshold_config
-│   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
+    │   ├── reiteracion.ts   la regla profesional HP0-06-1. Umbrales y denominador
+    │   │                    llegan de configuración versionada, no viven acá
+    │   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
     │   ├── hechos.ts        la traducción de un hecho a entrada visible. UNA, para UX02 y UX06
     │   ├── tiempo.ts        formato en la zona del estudiante. El formato es presentación
     │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar
     └── repositorios/     ← única capa que toca Postgres. No decide permisos ni transiciones
 
-supabase/migrations/      ← 33 migraciones. Una aplicada NO se edita: se reemplaza
+supabase/migrations/      ← 46 migraciones. Una aplicada NO se edita: se reemplaza
                              la función desde una nueva
-scripts/                  ← db:verify — 203 comprobaciones que npm test no puede hacer
+scripts/                  ← db:verify — 275 comprobaciones que npm test no puede hacer
 ```
 
 **Una lectura, una función de base.** Las nueve superficies tienen la suya —`estado_del_dia`,
@@ -403,8 +406,9 @@ frecuencia se lo llama es operación**, y [ADR-005](decisions.md#adr-005) la dej
 
 **Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment`, `Evidence`,
 `ExamPreparation`, `RiskSignal` e `Intervention`; `registrar_progreso`;
-`completar_paso_de_protocolo`; `registrar_senal`, `abrir_intervencion`, `cerrar_intervencion` y
-`resolver_senal`; `materializar_recomendacion` del ADE; e `ingerir_materia` del ADL. Todas publican su hecho en
+`completar_paso_de_protocolo`; replanificación y reentrada; `registrar_senal`, `abrir_intervencion`,
+`cerrar_intervencion` y `resolver_senal`; `materializar_recomendacion` del ADE;
+`ingerir_materia` y `corroborar_procedencia` del ADL. Todas publican su hecho en
 `product_event` **después** de que la escritura ganó — un evento de algo que perdió la carrera sería
 un hecho que no ocurrió.
 
@@ -451,7 +455,7 @@ que falta es la forma del contrato, que versiona el CTO.
   del cliente —timeouts, cantidad máxima de intentos, jitter y agotamiento— sigue pendiente.
 - **Contexto futuro, sin implementar:** (2) Plataforma publica actividad académica relevante; (3) CRM
   consulta contexto académico vivo; **(4) el CRM devuelve comandos de intervención y outcome —que el
-  contrato actual no contempla, y sin el cual el circuito de la Fase B6 no puede cerrarse**. Todavía
+  contrato actual no contempla y sin el cual no se cierra el tramo operativo entre sistemas**. Todavía
   no existe contrato exacto para ninguno; los tres están descritos a nivel de requerimiento en
   [`platform-integration-contract.md`](platform-integration-contract.md) §2.2.
 - **Si el CRM no recibió un Commitment confirmado, el Commitment no se duplica ni se revierte.**
@@ -467,7 +471,7 @@ capa puede igualarlos por inferencia. Los pagos pertenecen al CRM/institución: 
 pagos de estudiantes.
 
 Aunque el endpoint exista, su uso procesa email/nombre/legajo de una persona y por eso **no se llama
-con datos reales** mientras ADR-006 siga `PENDING`.
+con datos reales** mientras ADR-006 no tenga confirmación legal.
 
 Cómo interactúa esto con la convergencia hacia Dashboard_Achieve es exactamente
 [ADR-003](decisions.md#adr-003).

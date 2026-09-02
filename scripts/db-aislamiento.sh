@@ -376,7 +376,7 @@ k1=$(q "select occurrence from public.completar_paso_de_protocolo('$A','e8000000
 k2=$(q "select occurrence || '|' || duplicado from public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE',null,'a5000000-0000-0000-0000-000000000001','k-b5-1');" | tr -d '[:space:]')
 [ "$k2" = "$k1|true" ] && ok "la misma clave devuelve la vuelta anterior y no crea otra" || mal "la clave repetida produjo $k2"
 
-echo "→ B5. Una preparación que no está ACTIVE no acumula pasos"
+echo "→ B5. Una preparación que no está ACTIVE ni REPLANNED no acumula pasos"
 corre "update exam_preparation set status='EXAM_TAKEN' where id='e8000000-0000-0000-0000-000000000001';"
 if corre "select public.completar_paso_de_protocolo('$A','e8000000-0000-0000-0000-000000000001','$RE',null,'a5000000-0000-0000-0000-000000000001',null);"; then
   mal "una preparación EXAM_TAKEN siguió aceptando completions"

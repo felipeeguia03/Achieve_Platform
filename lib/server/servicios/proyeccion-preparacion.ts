@@ -99,10 +99,12 @@ const VOLVER = "VOLVER A CURSADO";
 const DESCARGO: Record<string, string> = {
   RECOMMENDED: "Todavía no la activaste.",
   ACTIVE: "Es el estado de la preparación, no un pronóstico del examen.",
+  REPLANNED: "El plan cambió; la preparación y su historial siguen activos.",
   BLOCKED: "Está bloqueada por una condición del protocolo.",
   EXAM_TAKEN: "Ya rendiste; la preparación queda como registro.",
   CLOSED: "Cerrada. Su historial se conserva.",
-  ABANDONED: "La dejaste. Su historial se conserva.",
+  CANCELLED: "El examen fue cancelado. Su historial se conserva.",
+  EXPLICITLY_ABANDONED: "La dejaste de forma explícita. Su historial se conserva.",
 };
 
 const ESTADO_DOMINANTE: Record<NivelOverview, string> = {
@@ -124,10 +126,12 @@ const ESTADO_DOMINANTE: Record<NivelOverview, string> = {
 const SIN_OBJETO: Record<string, string> = {
   RECOMMENDED: "PREPARACIÓN RECOMENDADA",
   ACTIVE: "PREPARACIÓN ACTIVA",
+  REPLANNED: "PREPARACIÓN REPLANIFICADA",
   BLOCKED: "PREPARACIÓN BLOQUEADA",
   EXAM_TAKEN: "EXAMEN RENDIDO",
   CLOSED: "PREPARACIÓN CERRADA",
-  ABANDONED: "PREPARACIÓN ABANDONADA",
+  CANCELLED: "EXAMEN CANCELADO",
+  EXPLICITLY_ABANDONED: "PREPARACIÓN ABANDONADA",
 };
 
 const CTA: Partial<Record<NivelOverview, string>> = {

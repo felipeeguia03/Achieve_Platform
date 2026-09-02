@@ -6,7 +6,10 @@
 
 ## Qué es esto y qué no es
 
-Son 51 decisiones de negocio/producto (registro C01), de las que **42 siguen sin resolver** más 8 decisiones psicopedagógicas específicas que forman parte de esas 51 (`HUMAN-P0-01…08`, dentro de C01-031…038). Ninguna bloquea generar el prototipo low-fi: para eso alcanza con fixtures y estados sintéticos, que es justamente lo que ya cubre el spec consolidado. Bloquean, en cambio, cualquier paso hacia high-fidelity, implementación real o piloto — ahí estas 51 filas dejan de poder resolverse con un fixture y necesitan una respuesta real de un owner.
+Son 51 decisiones de negocio/producto (registro C01): **41 siguen `OPEN`**, 9 tienen respuesta con
+residuo abierto y 1 está cerrada. Ocho decisiones psicopedagógicas forman parte de esas 51
+(`HUMAN-P0-01…08`, dentro de C01-031…038). Ninguna bloquea generar el prototipo low-fi: para eso
+alcanzan fixtures y estados sintéticos. Sí bloquean los usos materiales indicados por su gate.
 
 **Severidad:**
 - `P1` — tiene fallback reversible hoy (fixture/omisión/estado neutral), pero debe cerrarse antes de su gate material.
@@ -15,10 +18,13 @@ Son 51 decisiones de negocio/producto (registro C01), de las que **42 siguen sin
 **Gate material** (a partir de qué etapa deja de poder posponerse):
 `I` = antes de implementación productiva · `H` = antes de high-fidelity · `P` = antes de piloto institucional · `O` = fuera del MVP, no bloquea nada del corte actual.
 
-**42 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
+**41 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
 `ANSWERED — RESIDUO ABIERTO` el 31 de agosto de 2026, y `C01-051` el 1 de septiembre: su owner —una psicopedagoga real— respondió por
 escrito. Ver [ADR-025](decisions.md#adr-025) y la fuente literal en
 [`human-p0-source.md`](human-p0-source.md).
+
+`C01-022` quedó `CLOSED` el 1 de septiembre de 2026 por [ADR-034](decisions.md#adr-034), y su
+mecanismo quedó implementado el 2 de septiembre.
 
 Eso es exactamente lo que este anexo pedía: **una respuesta real de su owner, documentada, no una
 inferencia.** Ninguna reclasificación ni uso en el low-fi cierra una fila; sólo su owner.
@@ -50,8 +56,8 @@ construir contra él; lo que queda listado en la columna de residuo sigue sin po
 | C01-018 | `ProgressUpdated`: payload, causalidad y no-cambio | Progress owner; UX06/08/09/ADE/Risk; C01-013/014/023 | OPEN | P1 | I |
 | C01-019 | TopicProgress y resumen de materia | Product Progress; Hoy/Materia/Bitácora/Risk; C01-003/018 | OPEN; semántica técnica pendiente | P1 | H |
 | C01-020 | ProgressEntry / Bitácora bundle | Progress/Event owner; Bitácora/Materia; C01-018/019/023 | OPEN; read model/materialización no decididos | P1 | I |
-| C01-021 | Risk Engine v1 y sujeto de RiskSignal | Risk owner; TodayView/CRM/ADE; C01-001/002/019/023/036 | OPEN. El **sujeto** quedó resuelto por schema (estudiante, opcionalmente scoped a una cursada) y los tres disparadores de `HUMAN-P0-06 v1.0` están **cargados como configuración sin umbral** ([ADR-032](decisions.md#adr-032)). Sigue abierto **qué regla produce qué señal y con qué severidad**: no existe evaluador, y hay guard que rompe si aparece. ⚠️ **El vocabulario de severidad NO está bloqueado**: ya está congelado en el `CHECK`. 🟡 **Avance provisional** — [ADR-036](decisions.md#adr-036) cargó **una** regla con umbral (`HP0-06-1 v2.0-po-provisional`) por decisión del **Product Owner**, `PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`. `HP0-06-2` y `HP0-06-3` siguen sin umbral. **La decisión sigue OPEN**: la valida la psicopedagoga antes del piloto | P1 | I |
-| C01-022 | Closed-loop Risk–Intervention–Outcome | Product Operations; CRM/Risk/institución; C01-021/039/044 | OPEN. ✅ **El mecanismo está construido y es inviolable**: cerrar sin outcome no es un camino que exista, y `RESOLVED` exige una intervención con resultado ([ADR-032](decisions.md#adr-032)). ✅ **CERRADA el 1 de septiembre de 2026 por [ADR-034](decisions.md#adr-034)**, opción A: la necesidad de intervención humana la produce la Plataforma desde `risk_rule.modo`; se habilita `OPEN → INTERVENTION_REQUIRED`; `ACKNOWLEDGED` queda legacy y hacerse cargo es un hecho de la `Intervention`; `EXPIRED` sale sólo de `OPEN`; el cierre escribe outcome, intervención y `RESOLVED` en una transacción. **Decidida, todavía no implementada** (plan en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7) | P1 | I |
+| C01-021 | Risk Engine v1 y sujeto de RiskSignal | Risk owner; TodayView/CRM/ADE; C01-001/002/019/023/036 | OPEN. El sujeto quedó resuelto por schema. ✅ `HP0-06-1 v4.0-psicopedagogia` ya evalúa hechos comparables con el denominador y las condiciones profesionales de [ADR-037](decisions.md#adr-037); sus umbrales `2` y `3` viven en configuración. `HP0-06-2` y `HP0-06-3` siguen en modo `HUMANA`. Queda abierto definir su operación, severidad y calibración de piloto; no se inventan evaluadores para esas dos reglas | P1 | I |
+| C01-022 | Closed-loop Risk–Intervention–Outcome | Product Operations; CRM/Risk/institución; C01-021/039/044 | **CLOSED — 1 sep 2026**, [ADR-034](decisions.md#adr-034). ✅ Implementado el 2 sep: la Plataforma declara `INTERVENTION_REQUIRED`; `ACKNOWLEDGED` queda legacy en `RiskSignal` y hacerse cargo es un hecho de `Intervention`; `EXPIRED` sale sólo de `OPEN`; cerrar escribe outcome, intervención y `RESOLVED` en una transacción. Cerrar sin outcome no es un camino que exista | P1 | I |
 | C01-023 | Product Event Model | Product Event owner; analytics/servicios; C01-001 | OPEN; artifact ausente | P1 | I |
 | C01-024 | Recomendación/activación temporal de Modo Examen | Product/ADE; UX01/02/07; C01-005/006/023 | OPEN; default configurable | P1 | I |
 | C01-025 | ExamPreparation: ownership y lifecycle | ExamPreparation owner; UX07–09; C01-005/023/024 | OPEN | P1 | I |

@@ -20,7 +20,7 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
 
 ## Las seis reglas
 
-1. **No inventes reglas de negocio.** Hay 42 decisiones abiertas; las 8 psicopedagógicas
+1. **No inventes reglas de negocio.** Hay 41 decisiones abiertas; las 8 psicopedagógicas
    ([ADR-025](docs/decisions.md#adr-025)) y la obligatoriedad de `Reflection`
    ([ADR-026](docs/decisions.md#adr-026)) están respondidas, pero **con residuos**. Si falta una
    regla, registrala como ADR `PENDING` y **preguntá**.
@@ -90,9 +90,10 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 críticos son alcanzables, el Golden Path se recorre por clic y **el test de comprensión de 10
 segundos se corrió con resultado PASS** (reportado por el owner, 30 ago 2026).
 
-**Fase B0 — Cerrar decisiones.** 🟡 **3 / 5.** [ADR-004](docs/decisions.md#adr-004),
-[ADR-005](docs/decisions.md#adr-005) y [ADR-010](docs/decisions.md#adr-010) están `ACCEPTED`;
-[ADR-003](docs/decisions.md#adr-003) y [ADR-006](docs/decisions.md#adr-006) siguen `PENDING`.
+**Fase B0 — Cerrar decisiones.** 🟡 **4 / 5.** [ADR-003](docs/decisions.md#adr-003),
+[ADR-004](docs/decisions.md#adr-004), [ADR-005](docs/decisions.md#adr-005) y
+[ADR-010](docs/decisions.md#adr-010) están `ACCEPTED`; [ADR-006](docs/decisions.md#adr-006) sigue
+`PROVISIONAL — LEGAL CONFIRMATION REQUIRED`.
 
 **Fase B1 — Fundación.** ✅ **COMPLETA, 6 / 6.** Supabase local reproducible, capa académica y del
 estudiante, la frontera Controller → Service → Repository, `product_event`/`audit_log` append-only y
@@ -113,11 +114,9 @@ intervención que registró outcome. `circuito_de_senales()` **audita el Done** 
 falta en vez de dar el circuito por cerrado. `audit_log`, que existía desde la B1.5 y nadie escribía,
 por fin se escribe.
 
-⚠️ **Antes de tocar riesgo:** **no existe motor que produzca señales, y no es un olvido.** `C01-021`
-está `OPEN` y `C01-036` —cuántas repeticiones hacen a un error *"reiterativo"*— **es de la
-psicopedagoga**. Las tres reglas de `HUMAN-P0-06 v1.0` están cargadas como configuración **sin
-umbral**, un `CHECK` impide que corran solas, y **hay un guard estático que rompe si alguien agrega un
-evaluador**. Los playbooks tampoco existen: `C01-044` dice *"no se inventan valores"*.
+⚠️ **Antes de tocar riesgo:** `HP0-06-1 v4.0-psicopedagogia` ya produce señales, pero sólo desde
+hechos comparables bajo el criterio de ADR-037. `HP0-06-2` y `HP0-06-3` siguen en modo humano;
+`C01-021` permanece abierto para esas reglas y `C01-044` para playbooks/SLA. No inventes ninguno.
 
 ⚠️ **El riesgo en `UX01` es un modificador, no un reemplazo.** Cambia el estado general y **nada
 más**: no gana el Hero, no interrumpe `IN_PROGRESS`, no reordena materias y no inventa una CTA. Ni
@@ -216,7 +215,7 @@ se persiste.
 - **El resultado de progreso se escribe** con sus invariantes: `I10` en el Service y en la base, `I8`
   con el duplicado declarado, y todo en una transacción con `topic_progress`.
 - **El Product Event Model está declarado** en `lib/domain/product-events.ts`: los 23 eventos P0 del
-  spec §16 con su uso textual, más 18 extensiones que el backend emite y el P0 no lista. De los 23 se
+  spec §16 con su uso textual, más 36 extensiones que el backend emite o conserva como legacy. De los 23 se
   emiten 9. **Antes de agregar un evento nuevo, declaralo ahí:** hay guard en las dos direcciones.
 - **Una sola fuente histórica.** La Bitácora de `UX06` y la Actividad reciente de `UX02` salen de
   `hechos_de_cursada()` y comparten la traducción: `VI.6` §8.3 dice que no existe una segunda, y hay
@@ -245,10 +244,10 @@ Con eso quedó **un frente con trabajo real**, y dos que se cerraron el mismo d�
   servicio. Verificado de punta a punta: un `CONFIRMED` vencido pasa a `DUE`, después a `MISSED`, y
   la tercera corrida converge.
 - ~~Fase B5~~ ✅ **COMPLETA** el 1 de septiembre: la capa de examen, el protocolo como configuración
-  versionada y las tres superficies conectadas. **La que queda es la B6.**
-- ~~Fase B6~~ 🟡 **DOMINIO COMPLETO** el 2 de septiembre. Lo que queda de la fase **no es código
-  nuestro**: `C01-021` y `C01-036` (los umbrales), `C01-044` (playbooks y SLA), y el **contrato v2**
-  del CTO, que es lo único que bloquea las cinco superficies de operador.
+  versionada y las tres superficies conectadas.
+- ~~Fase B6~~ 🟡 **DOMINIO COMPLETO** el 2 de septiembre. Lo que queda de la fase **no está
+  desbloqueado para implementar**: `C01-021` para las dos reglas todavía humanas, `C01-044` (playbooks y SLA), y el
+  **contrato v2** del CTO. B6.7 ya incorporó el criterio profesional a `HP0-06-1`.
 
 Lo que **no** se puede hacer sigue siendo lo mismo: tocar un dato real. El mapa de bloqueos del
 `roadmap.md` ahora dice **quién** cierra cada cosa.
@@ -275,7 +274,7 @@ colapsan. La pregunta está arriba de todo en la
 [agenda](docs/agenda-cierre-psicopedagoga.md).
 
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
-`PENDING` y es bloqueo absoluto desde el primer usuario real.
+`PROVISIONAL — LEGAL CONFIRMATION REQUIRED` y es bloqueo absoluto desde el primer usuario real.
 
 **Fase B2b — Ingesta del ADL.** 🟡 **2 / 3.** La **B2b.2 cerró el invariante `I9`**: existe por fin
 la operación explícita que eleva un `verification_status`, y es la única —`corroborar_procedencia()`,
@@ -315,7 +314,7 @@ Conserva **una** costura declarada: `UX05` cruza el nodo `ejecución`, que no ti
 
 - **Track A** (clickeable, fixtures, sin backend): **sin bloqueos.** Cerrar la Fase 0 cierra el
   track — Operador e Institución se difirieron ([ADR-012](docs/decisions.md#adr-012)).
-- **Track B** (backend persistente): B1 a B5 completas y el dominio de B6, sobre datos sintéticos.
+- **Track B** (backend persistente): B1–B6.7 completas en su alcance disponible y B2b en 2/3, sobre datos sintéticos.
   Todo lo que toque un dato real sigue bloqueado por [ADR-006](docs/decisions.md#adr-006).
 
 **Stack:** Next.js 16 · React 19 · Tailwind v4 CSS-first · shadcn vendorizado · Vitest.

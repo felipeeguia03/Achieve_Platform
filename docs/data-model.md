@@ -2,7 +2,7 @@
 
 **Documento:** `docs/data-model.md`
 **Rol:** owner canónico de entidades, relaciones, máquinas de estado y schema.
-**Última actualización:** 31 de agosto de 2026
+**Última actualización:** 2 de septiembre de 2026
 
 > ⚠️ **Estado.** Las **entidades, relaciones y máquinas de estado** (§1–§5) están heredadas del spec
 > fuente y son firmes. El **schema SQL** (§6–§10) es la baseline implementada en Postgres, con las
@@ -980,7 +980,7 @@ CREATE TABLE risk_rule (
   signal_type  TEXT NOT NULL,
   label        TEXT NOT NULL,
   source_text  TEXT,                    -- verbatim de la fuente profesional
-  -- ⚠️ NULL ⇒ `C01-036` sin responder. **Es de la psicopedagoga.**
+  -- NULL ⇒ la versión no tiene disparador automático configurado.
   threshold_config JSONB,
   -- NULL ⇒ nadie le asignó severidad. **No es `bajo`.**
   suggested_severity TEXT CHECK (suggested_severity IS NULL
@@ -1120,8 +1120,9 @@ CREATE TABLE audit_log (
 
 ## 10.0 Capa de error — Etapa B6.5
 
-> ⚠️ **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`** — [ADR-036](decisions.md#adr-036).
-> Autoridad: **Product Owner**. Sin validación psicopedagógica. Sólo datos sintéticos.
+> **Historial de la capa:** nació provisional en B6.5 ([ADR-036](decisions.md#adr-036)) y fue
+> sustituida por configuración profesional versionada en B6.7 ([ADR-037](decisions.md#adr-037)).
+> Todo el entorno continúa limitado a datos sintéticos.
 
 **No existía ninguna entidad de error**: ni tabla, ni `error_type`, ni el `WF-S12 Mapa de Errores`
 del spec. La regla de `C01-036` cuenta apariciones del mismo tipo, y ese dato no se registraba.
@@ -1131,8 +1132,10 @@ del spec. La regla de `C01-036` cuenta apariciones del mismo tipo, y ese dato no
 | `error_type` | El vocabulario, **configuración versionada** — mismo patrón que `risk_rule` y `exam_protocol`. Arrancó con seis tipos en `v1.0-po-provisional`; **desde la B6.7.1 rige `v2.0-psicopedagogia`** (§10.0.1). Cambiarlo es cargar una versión, no migrar |
 | `error_observation` | **Hechos**: un error o una resolución limpia sobre un tipo, dentro de una preparación. `corroborated` decide si cuenta; `after_action_id` dice si ocurrió tras una correctiva, **declarado y nunca inferido** |
 
-**La identidad del error es el tipo, no el tema.** `topic_id` es contexto explicativo y no entra en
-la clave del contador: dos errores del mismo tipo cuentan aunque ocurran en ejercicios distintos.
+**La identidad de clasificación es la familia, pero comparabilidad no significa sólo compartirla.**
+`topic_id` sigue siendo contexto explicativo; desde B6.7.2 el contador que puede escalar exige además
+el mismo `learning_objective_id`. La repetición por familia se conserva como dato separado y no
+dispara por sí sola.
 
 **Un error y una resolución limpia viven en la misma tabla** porque la regla las lee en orden: una
 resolución reinicia el contador. Separarlas obligaría a reconstruir esa línea de tiempo con un
@@ -1385,9 +1388,14 @@ entra declarada y puede discutirse.
 La operación no escribe `protocol_step_completion`, Evidence ni progreso. `estado_de_paso()`
 proyecta la propuesta pendiente a `UX09` para explicar todo antes del cambio.
 
+Las operaciones iniciadas por el estudiante reciben `student_id` desde la sesión y lo validan junto
+con `institution_id` y la preparación/propuesta. `service_role` saltea RLS, así que el scoping por
+institución solo no alcanza: un estudiante de la misma institución tampoco puede replanificar ni
+responder la propuesta de otro.
+
 ## 10.1 Las funciones de base, y qué decide cada una
 
-Actualizado el 1 de septiembre de 2026. **Ninguna implementa una regla de negocio**: componen una
+Actualizado el 2 de septiembre de 2026. **Ninguna implementa una regla de negocio**: componen una
 lectura consistente o escriben una transacción que no puede quedar a medias. Las reglas viven en los
 Services (§3.2 de [`architecture.md`](architecture.md)).
 

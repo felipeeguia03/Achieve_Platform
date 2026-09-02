@@ -244,6 +244,7 @@ describe("B6.7.4 · replanificar y volver", () => {
     const { deps, publicados } = falso("ACTIVE");
     const r = await replanificar(deps, {
       institutionId: "inst-A",
+      studentId: "est-1",
       preparacionId: "prep-1",
       motivo: "Cambió la fecha del mismo examen",
       nuevaFecha: "2026-10-10",
@@ -272,6 +273,7 @@ describe("B6.7.4 · replanificar y volver", () => {
     expect(propuesta.estado).toBe("OK");
     await responderReentrada(deps, {
       institutionId: "inst-A",
+      studentId: "est-1",
       propuestaId: "propuesta-1",
       decision: "PEDIR_OTRA_OPCION",
       respondidaPor: "est-1",

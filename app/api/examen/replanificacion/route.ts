@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   }
   const resultado = await replanificarPreparacion({
     institutionId: sesion.estudiante.institutionId,
+    studentId: sesion.estudiante.id,
     preparacionId: c.preparacion,
     motivo: c.motivo,
     nuevaFecha: c.nuevaFecha ?? null,

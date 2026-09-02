@@ -18,6 +18,7 @@ describe("B6.7.4 · el contrato persistido", () => {
     expect(migration).not.toContain("DROP CONSTRAINT exam_preparation_student_id_assessment_id_key");
     expect(migration).toContain("UPDATE exam_preparation SET status = 'REPLANNED'");
     expect(migration).toContain("v_status NOT IN ('ACTIVE','REPLANNED')");
+    expect(migration).toContain("AND student_id = p_student_id");
   });
 
   it("el tramo y los seis motivos confirmados son configuración versionada", () => {
@@ -49,6 +50,7 @@ describe("B6.7.4 · el contrato persistido", () => {
     expect(respuesta).toMatch(/UPDATE exam_preparation SET current_step_id/);
     expect(migration).toContain("p_decision IN ('ACCEPT','HUMAN_OVERRIDE')");
     expect(migration).toContain("'ALTERNATIVE_REQUESTED'");
+    expect(respuesta).toContain("ep.student_id = p_student_id");
   });
 });
 

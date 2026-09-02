@@ -48,21 +48,21 @@ Cada etapa, sin excepción:
 
 ## 0.1 Dónde estamos · 2 de septiembre de 2026
 
-**Track A: cerrado.** **Track B: B1 a B6 completas**, con B2b a la mitad.
+**Track A: cerrado.** **Track B: B1–B6.7 completas en su alcance disponible**, con B2b en 2/3.
 
 `lint`, `typecheck` y `build` en verde · **953 tests en 52 archivos** · **275 comprobaciones** históricas contra
-Postgres + comprobación funcional transaccional de B6.7.4 · **45 migraciones** · las **nueve superficies** del
+Postgres + comprobación funcional transaccional de B6.7.4 · **46 migraciones** · las **nueve superficies** del
 estudiante leen de la base.
 
-### Lo único que queda sin depender de nadie
+### Estado inmediato
 
 | Frente | Estado |
 |---|---|
 | **Fase B6.6 · el recorrido del MVP, visible** | ✅ **Completa** el 2 de septiembre de 2026. El recorrido entero se reproduce desde cero: [`demo-mvp.md`](demo-mvp.md) |
-| **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado, una regla provisional lo cuenta, y el circuito produce una señal que pide una persona **sin que nadie la haya mirado** |
+| **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado y el circuito produce una señal que pide una persona **sin que nadie la haya mirado**. B6.7 sustituyó la regla provisional por criterio profesional |
 | **Fase B6.7 · la validación profesional, aplicada** | ✅ **4 / 4**, [ADR-037](decisions.md#adr-037). Vocabulario, denominador, aceleración válida, episodios vinculados y reentrada mínima explicada quedaron implementados el 2 de septiembre de 2026 |
 | **Etapa B2b.2 · corroboración** | ✅ **Completa** el 2 de septiembre de 2026. La operación explícita que `I9` exigía y no existía: append-only, con fuente concreta y auditoría. **`official` queda inalcanzable** hasta `C01-030` |
-| Las 3 vulnerabilidades `high` de [ADR-008](decisions.md#adr-008) | Deuda abierta, con la restricción de **no** correr `npm audit fix --force` sobre la rama principal |
+| Seguridad de dependencias de [ADR-008](decisions.md#adr-008) | ✅ `npm audit`: **0 vulnerabilidades** tras actualizar `next` y `eslint-config-next` a `16.3.4`; queda la revisión de trazabilidad antes del push |
 
 ### Lo que espera a una persona
 
@@ -109,7 +109,7 @@ TRACK A ─── no depende de ninguna decisión abierta ───────�
                                                                               │
 TRACK B ─── cada fase tiene su gate ──────────────────────────────────────────┘
 
-  Fase B0 · Cerrar decisiones          🟡 3/5 · pendientes ADR-003 y ADR-006
+  Fase B0 · Cerrar decisiones          🟡 4/5 · pendiente confirmación legal de ADR-006
        ↓
   Fase B1 · Fundación                  ✅ 6/6 · datos sintéticos
        ↓
@@ -1254,8 +1254,8 @@ no cambian por sí solos el estado de los ADRs ni habilitan datos reales.
 |---|---|---|
 | ✅ Backend, auth, persistencia | [ADR-005](decisions.md#adr-005) — **`ACCEPTED`**, sólo operación/runtime `DEFERRED` | Producto + CTO |
 | ✅ Pipeline del ADE | [ADR-004](decisions.md#adr-004) — **`ACCEPTED (v1 provisional)`** | Producto |
-| Convergencia con Dashboard_Achieve | [ADR-003](decisions.md#adr-003) | Producto + CTO |
-| Privacidad y consentimiento | [ADR-006](decisions.md#adr-006) | Producto + asesoría legal |
+| ✅ Convergencia con Dashboard_Achieve | [ADR-003](decisions.md#adr-003) — **`ACCEPTED`**, se integra el dominio y no los frontends | Producto + CTO |
+| Privacidad y consentimiento | [ADR-006](decisions.md#adr-006) — **`PROVISIONAL — LEGAL CONFIRMATION REQUIRED`** | Producto + asesoría legal |
 | ✅ Respuestas `DD1`–`DD10` | [ADR-010](decisions.md#adr-010) — **`ACCEPTED`**, `DD4` `DEFERRED` | Producto |
 
 **Done cuando:** cada ADR está `ACCEPTED` o explícitamente `DEFERRED` con su fase bloqueada marcada.
@@ -1297,7 +1297,7 @@ son todas legales**: tres las puede contestar producto hoy.
 el Bloque A y después los ítems 4 y 6, que eran los que faltaban.
 
 ⚠️ **Toda la fase corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) entra desde el
-momento en que exista **un solo usuario real**, y sigue `PENDING`.
+momento en que exista **un solo usuario real**, y sigue sin confirmación legal.
 
 **Objetivo.** Backend en capas, base de datos, auth, tenancy y esquema base de la Academic Data Layer,
 sin acceso del frontend a tablas de negocio.
@@ -1339,7 +1339,8 @@ tabla lo engancha explícitamente; no hay magia que lo aplique sola.
 **`db:verify` queda fuera de `npm test`.** La suite tenía 396 tests en este hito y hoy tiene 531;
 corre sin Docker. Atarla al stack haría que todos fallaran en una máquina sin él.
 
-⚠️ **Todo corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue `PENDING`.
+⚠️ **Todo corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue
+`PROVISIONAL — LEGAL CONFIRMATION REQUIRED`.
 
 ---
 
@@ -2621,9 +2622,8 @@ eso pasa por acá.
 **Fase completa.** El recorrido entero es reproducible desde cero y está escrito en
 [`demo-mvp.md`](demo-mvp.md), con su salida real.
 
-> ⚠️ **Lo que sigue provisional o congelado, y hay que decirlo cada vez:** la regla que dispara todo
-> esto es del **Product Owner** y espera la validación de la psicopedagoga
-> ([ADR-036](decisions.md#adr-036)); la integración con el CRM sigue **congelada**
+> ⚠️ **Lo que sigue congelado, y hay que decirlo cada vez:** la regla que dispara este recorrido ya
+> usa el criterio profesional de [ADR-037](decisions.md#adr-037); la integración con el CRM sigue **congelada**
 > ([ADR-035](decisions.md#adr-035)); y **no hay autorización para datos reales**
 > ([ADR-006](decisions.md#adr-006)).
 
@@ -2641,8 +2641,8 @@ siembra **dos entregas evaluadas y sus dos errores**, y deja el mundo a una apar
 sistema llame a una persona.
 
 **Verificado de punta a punta** contra el stack local: la tercera observación devolvió
-`{"apariciones":3,"necesitaPersona":true}`, la señal quedó en `INTERVENTION_REQUIRED` con
-`rule_version: v2.0-po-provisional` y su causa en texto, y `/api/hoy` pasó a
+`{"apariciones":3,"necesitaPersona":true}`, la señal quedó en `INTERVENTION_REQUIRED` con la
+versión profesional vigente y su causa en texto, y `/api/hoy` pasó a
 **`NECESITA RECUPERACIÓN`** con el Hero intacto en `NO_ACTION_AVAILABLE` — que es exactamente lo que
 `VI.1` §3.3 exige: **el riesgo modifica, no reemplaza**.
 
@@ -2723,15 +2723,19 @@ versionada. La Plataforma valida el límite configurado, pero no elige el *prime
 | `proponer_reentrada()` + `responder_reentrada()` | Proponer no mueve; aceptar u override mueven; pedir otra opción conserva el origen |
 | `UX09` + `FX-LOCAL-PASO-REENTRADA-MINIMA` | Panel previo con una CTA primaria y una secundaria, sin castigo ni pérdida de progreso |
 
+Las rutas del estudiante pasan su `student_id` desde la sesión y las funciones lo validan junto con
+la institución. Es intencional: `service_role` saltea RLS y un UUID de la misma institución no puede
+dar acceso a la preparación o propuesta de otro alumno.
+
 **Verificación real:**
 
 | Criterio | Resultado |
 |---|---|
 | `npm run lint` · `npm run build` | ✅ verde · verde; tres rutas B6.7.4 registradas |
-| `npm test` | ✅ **936 tests en 51 archivos** |
-| Migraciones desde cero | ✅ **45** aplicadas |
+| `npm test` | ✅ **953 tests en 52 archivos** |
+| Migraciones desde cero | ✅ **46** aplicadas |
 | Schema/configuración | ✅ 4 tablas con RLS, 3 funciones, 6 motivos, tramo 9–18 |
-| Flujo transaccional sobre datos sintéticos | ✅ propuesta no mueve; alternativa conserva; aceptación y override mueven; `I7`, Evidence, progreso y completions intactos; `ROLLBACK` final |
+| Flujo transaccional sobre datos sintéticos | ✅ aislamiento por alumno; `REPLANNED` admite trabajo; propuesta no mueve; alternativa conserva; aceptación y override mueven; `I7`, Evidence, progreso y completions intactos; `ROLLBACK` final |
 | Conformidad UI | ✅ 34 capturas revisadas; panel con hairline, subcopy y jerarquía primaria/secundaria; auditoría automatizada completa en verde |
 
 **Lo que no se inventó:** cuál es el primer paso necesario. Lo declara el owner de la propuesta; la
@@ -2935,10 +2939,10 @@ desvío, riesgo y recuperación.
 |---|---|---|
 | **El dictamen legal** de [ADR-006](decisions.md#adr-006) | **Cualquier fase con datos reales.** Absoluto | Asesoría jurídica — [paquete de preguntas](legal-package.md) |
 | **La autorización institucional** del golden dataset (`C01-042`) | Fase B8 · piloto | Producto + la institución |
-| **Las tres `high` de `npm audit`** ([ADR-008](decisions.md#adr-008)) | Cualquier despliegue | CTO — [brief](brief-adr-008-seguridad.md) |
-| **Los ocho residuos psicopedagógicos** ([ADR-025](decisions.md#adr-025)) | Intervención automática sobre personas reales | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
+| **La revisión de trazabilidad de ADR-008** | Push de la actualización de dependencias; `npm audit` ya está en 0 | CTO — [brief](brief-adr-008-seguridad.md) |
+| **Los residuos profesionales todavía abiertos** ([ADR-025](decisions.md#adr-025), [ADR-037](decisions.md#adr-037)) | Intervención automática sobre personas reales y calibración del piloto | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
 | **El contrato de integración v2** | Las **cinco superficies de operador** y la verificación del dueño de una intervención. **No bloquea el dominio de B6**, que ya está | CTO — [propuesta](platform-integration-contract.md) §2.1 |
-| **Los umbrales del Risk Engine** (`C01-021`, `C01-036`) | Que alguna señal se produzca sola. Hoy se registran señales que su owner ya produjo | Producto + la psicopedagoga — `C01-036` está en su [agenda](agenda-cierre-psicopedagoga.md) |
+| **Las dos reglas de Risk todavía humanas** (`C01-021`) | Automatizar `HP0-06-2` y `HP0-06-3`. `HP0-06-1` ya produce señales con el denominador profesional | Risk owner + validación del piloto |
 | **Los 4–6 playbooks del piloto y sus SLA** (`C01-044`) | Los dos eslabones del circuito que faltan. La tabla está vacía **a propósito** | Product Operations |
 | **La confirmación de vigencia del Roadmap** | Que el protocolo deje de rotularse *"vigencia sin confirmar"*. **Dos frases**, y no bloquea código: los veinte pasos ya corren con su texto ([ADR-031](decisions.md#adr-031)) | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md), arriba de todo |
 
@@ -3005,7 +3009,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase 0 — Cerrar Track A | ✅ **COMPLETA** — 8/8 etapas y el test de 10 segundos corrido | 8 / 8 |
 | Fase A2 — Shell de aplicación | ✅ **5 / 5 etapas completas** | 5 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
-| Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
+| Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-003`, `ADR-004`, `ADR-005` y `ADR-010` aceptados; ADR-006 espera confirmación legal | 4 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
 | Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: **los 12 invariantes tienen test** desde que la B5 migró `exam_preparation` e `I7` dejó de estar pendiente | 6 / 6 |
 | Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida y corroboración completas. **B2b.3 espera a `C01-042`**, que no lo cierra un agente | 2 / 3 |
@@ -3013,16 +3017,17 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
-| Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. **Falta lo que no es código nuestro:** `C01-021`, `C01-036`, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
+| Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. `HP0-06-1` ya corre con criterio profesional; faltan `C01-021` para las otras dos reglas, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
-**Estado de los 51 contratos `C01`: 42 `OPEN`, 9 `ANSWERED — RESIDUO ABIERTO`, 0 `CLOSED`.** Ocho
+**Estado de los 51 contratos `C01`: 41 `OPEN`, 9 `ANSWERED — RESIDUO ABIERTO`, 1 `CLOSED`.** Ocho
 son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena es `C01-051`
-([ADR-026](decisions.md#adr-026)), el 1 de septiembre. Ver
+([ADR-026](decisions.md#adr-026)), el 1 de septiembre. `C01-022` cerró por
+[ADR-034](decisions.md#adr-034). Ver
 [`pending-decisions-annex.md`](pending-decisions-annex.md).
 
-### 3.1 Deuda técnica abierta — `npm audit`
+### 3.1 Seguridad de dependencias — corregida, con trazabilidad pendiente
 
 > ⏸️ **`TECHNICALLY VERIFIED — LOCAL COMMITS CREATED — TRACEABILITY REVIEW REQUIRED — NO PUSH`** ·
 > 2 de septiembre de 2026. Opción A del brief, **autorizada para ejecución por el Product Owner** —la

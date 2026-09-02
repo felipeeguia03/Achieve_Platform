@@ -543,9 +543,10 @@ y deja de entregar las señales que sí podría entregar.
 | Secretos y rotación | 🔴 acuerdo | 🔴 acuerdo |
 | Envelope de error | 🔴 acuerdo | 🔴 acuerdo |
 
-**Bloqueos externos, iguales para los dos:** `C01-021` —sin reglas el flujo A no tiene qué
-transportar— y **B7 / [ADR-006](decisions.md#adr-006)**, que el CRM también reconoce: *"la aprobación
-técnica ≠ autorización de datos"*.
+**Bloqueos externos, iguales para los dos:** `C01-021` para completar las dos reglas que siguen en
+modo humano, y **B7 / [ADR-006](decisions.md#adr-006)**, que el CRM también reconoce: *"la aprobación
+técnica ≠ autorización de datos"*. `HP0-06-1` ya produce señales sintéticas; eso no habilita su
+transporte con datos reales.
 
 ---
 
@@ -555,9 +556,9 @@ técnica ≠ autorización de datos"*.
 bloqueo:** nada impide firmarlo mañana, y nada de lo escrito acá caduca — las tres definiciones
 pendientes son de forma, no de diseño.
 
-**Por qué se difirió.** `C01-021` sigue abierta. Sin reglas que produzcan señales, el flujo A no
-tiene qué transportar: se puede construir el mecanismo entero —HMAC, outbox, endpoints,
-idempotencia— y no circula un solo evento.
+**Por qué sigue diferido.** `HP0-06-1` ya produce señales sintéticas, pero el flujo real continúa
+bloqueado por ADR-006 y todavía faltan las tres definiciones de forma de abajo. Construir HMAC,
+outbox y endpoints ahora no adelanta un piloto autorizado; la prioridad de ADR-035 se conserva.
 
 ### 11.1 Lo que hay que firmar para descongelarlo
 

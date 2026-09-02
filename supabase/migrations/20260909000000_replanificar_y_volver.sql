@@ -135,6 +135,7 @@ ALTER TABLE protocol_reentry_proposal      ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.replanificar_preparacion(
   p_institution_id      UUID,
   p_exam_preparation_id UUID,
+  p_student_id          UUID,
   p_change_reason       TEXT,
   p_created_by          UUID,
   p_assessment_date     DATE DEFAULT NULL,
@@ -152,7 +153,9 @@ BEGIN
   END IF;
 
   SELECT status INTO v_status FROM exam_preparation
-   WHERE id = p_exam_preparation_id AND institution_id = p_institution_id
+   WHERE id = p_exam_preparation_id
+     AND institution_id = p_institution_id
+     AND student_id = p_student_id
    FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'preparación fuera de alcance'; END IF;
   IF v_status NOT IN ('ACTIVE','REPLANNED') THEN
@@ -264,7 +267,8 @@ CREATE OR REPLACE FUNCTION public.responder_reentrada(
   p_institution_id UUID,
   p_proposal_id    UUID,
   p_decision       TEXT,
-  p_responded_by   UUID
+  p_responded_by   UUID,
+  p_student_id     UUID
 )
 RETURNS TABLE (proposal_status TEXT, current_step_id UUID)
 LANGUAGE plpgsql AS $$
@@ -276,8 +280,13 @@ BEGIN
   IF p_decision NOT IN ('ACCEPT','REQUEST_ALTERNATIVE','HUMAN_OVERRIDE') THEN
     RAISE EXCEPTION 'decisión de reentrada inválida';
   END IF;
-  SELECT rp.* INTO v_proposal FROM protocol_reentry_proposal rp
-   WHERE rp.id = p_proposal_id AND rp.institution_id = p_institution_id FOR UPDATE;
+  SELECT rp.* INTO v_proposal
+    FROM protocol_reentry_proposal rp
+    JOIN exam_preparation ep ON ep.id = rp.exam_preparation_id
+   WHERE rp.id = p_proposal_id
+     AND rp.institution_id = p_institution_id
+     AND (p_decision = 'HUMAN_OVERRIDE' OR ep.student_id = p_student_id)
+   FOR UPDATE OF rp;
   IF NOT FOUND THEN RAISE EXCEPTION 'propuesta fuera de alcance'; END IF;
   IF v_proposal.status <> 'PROPOSED' THEN
     RAISE EXCEPTION 'la propuesta ya fue respondida';

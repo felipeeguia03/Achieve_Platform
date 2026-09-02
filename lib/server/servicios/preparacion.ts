@@ -57,6 +57,7 @@ export type ResultadoDeCompletion =
 
 export interface Replanificacion {
   institutionId: string;
+  studentId: string;
   preparacionId: string;
   motivo: string;
   nuevaFecha: string | null;
@@ -81,6 +82,8 @@ export type DecisionDeReentrada = "ACEPTAR" | "PEDIR_OTRA_OPCION" | "OVERRIDE_HU
 
 export interface RespuestaDeReentrada {
   institutionId: string;
+  /** `null` sólo para el override de un actor humano interno. */
+  studentId: string | null;
   propuestaId: string;
   decision: DecisionDeReentrada;
   respondidaPor: string;

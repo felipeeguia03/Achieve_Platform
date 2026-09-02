@@ -7,9 +7,9 @@
 > ⚠️ **Todo lo de acá corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue siendo
 > bloqueo absoluto para cualquier dato de una persona real.
 >
-> ⚠️ **La regla que dispara este recorrido es `PROVISIONAL`** — [ADR-036](decisions.md#adr-036).
-> Los umbrales los fijó el **Product Owner**, no la psicopedagoga, y esperan su validación (§9 de
-> [`agenda-cierre-psicopedagoga.md`](agenda-cierre-psicopedagoga.md)).
+> ✅ **La regla que dispara este recorrido ya incorpora la validación profesional** —
+> [ADR-037](decisions.md#adr-037). Los umbrales `2` y `3` se conservaron; cambió qué cuenta como una
+> repetición y cuándo una corrección permite acelerar. Esto no autoriza datos reales.
 >
 > ⚠️ **La cola de escalamiento es sintética y transitoria.** No es el CRM, cuya integración está
 > congelada por [ADR-035](decisions.md#adr-035).
@@ -35,7 +35,7 @@ Los seis puntos que el owner fijó como definición del MVP, en un solo recorrid
 
 ```bash
 npm run db:start        # Docker tiene que estar corriendo
-npm run db:reset        # 41 migraciones desde cero
+npm run db:reset        # 46 migraciones desde cero
 npm run db:demo         # el mundo sintético
 npm run db:sesion       # la identidad del estudiante sintético
 npm run dev
@@ -203,4 +203,5 @@ outbox ni `fetch`. El día que el destino sea un webhook firmado, el dominio no 
 - **La entrega.** Nada consume la cola.
 - **La revisión de evidencia.** Quién registra un error observado en producción depende del rol
   Reviewer `R1`, que [ADR-033](decisions.md#adr-033) dejó abierto. Acá lo hace el seed.
-- **Los umbrales.** `PROVISIONAL`, del Product Owner, esperando a la psicopedagoga.
+- **Los dos disparadores todavía humanos.** `HP0-06-2` y `HP0-06-3` no tienen automatización ni
+  umbral inventado; `C01-021` sigue abierto para su operación.

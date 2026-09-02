@@ -76,7 +76,7 @@ export const preparacionesReal: RepositorioDePreparaciones = {
     });
 
     // La función levanta excepción cuando el paso no es reentrante y ya está
-    // completado, o cuando la preparación no está `ACTIVE`. Son rechazos de
+    // completado, o cuando la preparación no está `ACTIVE`/`REPLANNED`. Son rechazos de
     // negocio, no fallas: viajan como resultado y no como error 500.
     if (error) return { estado: "RECHAZADO", motivo: error.message };
 
@@ -94,6 +94,7 @@ export const preparacionesReal: RepositorioDePreparaciones = {
     const { data, error } = await clienteDeServicio().rpc("replanificar_preparacion", {
       p_institution_id: entrada.institutionId,
       p_exam_preparation_id: entrada.preparacionId,
+      p_student_id: entrada.studentId,
       p_change_reason: entrada.motivo,
       p_created_by: entrada.creadoPor,
       p_assessment_date: entrada.nuevaFecha,
@@ -144,6 +145,7 @@ export const preparacionesReal: RepositorioDePreparaciones = {
       p_proposal_id: entrada.propuestaId,
       p_decision: decision,
       p_responded_by: entrada.respondidaPor,
+      p_student_id: entrada.studentId,
     });
     if (error) return { estado: "RECHAZADO", motivo: error.message };
     const fila = (data as Array<{ proposal_status: string; current_step_id: string | null }>)[0];

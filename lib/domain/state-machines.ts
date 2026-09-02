@@ -98,7 +98,7 @@ export const examPreparationStates: readonly ExamPreparationStatus[] = [
  * ```
  * RECOMMENDED → ACTIVE → BUILDING → READY_BY_PROTOCOL → EXAM_TAKEN → CLOSED
  *                     ↘ NOT_READY / BLOCKED
- *                     ↘ ABANDONED (conserva historial)
+ *                     ↘ CANCELLED / EXPLICITLY_ABANDONED (conservan historial)
  * ```
  *
  * Sacados `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY`, la cadena central se

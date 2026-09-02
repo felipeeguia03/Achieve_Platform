@@ -3,7 +3,7 @@
 **Documento:** `docs/product.md`
 **Rol:** owner canónico del vocabulario, los roles, las máquinas de estado observables y el alcance.
 **Deriva de:** `docs/product-spec-source.md` (Partes I, II, IV, VI, IX).
-**Última actualización:** 29 de agosto de 2026
+**Última actualización:** 2 de septiembre de 2026
 
 > **Regla de precedencia.** Si este documento entra en conflicto con `product-spec-source.md`, gana
 > el spec fuente y este documento es el defectuoso. Si entra en conflicto con el código, gana este
@@ -345,19 +345,17 @@ diagrama y que no son restricciones de más:
   Lo ejecuta el reloj del lifecycle, sobre el `valid_until` que declaró quien la creó.
 - **`RESOLVED`, `ESCALATED` y `EXPIRED` son terminales.** Qué pasa después de escalar es `C01-022`.
 
-🟡 **Una regla produce señales, y es provisional** — [ADR-036](decisions.md#adr-036).
+✅ **Una regla produce señales con criterio profesional** — [ADR-037](decisions.md#adr-037).
 
-> ⚠️ **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`.** El umbral lo fijó el **Product Owner**
-> para poder demostrar el MVP con datos sintéticos. **No tiene validación psicopedagógica y no se le
-> atribuye a la psicopedagoga**, que lo revisa antes de cualquier piloto con estudiantes reales.
+`HP0-06-1` corre en `v4.0-psicopedagogia`: la segunda aparición comparable da `atencion` y la
+tercera da `intervencion`. No basta con compartir una etiqueta: la unidad de conteo incluye familia
+y objetivo/demanda; acelerar exige las cinco condiciones de corrección válida, y una recaída abre
+otro episodio sin borrar el anterior. Los umbrales siguen en `risk_rule.threshold_config`, nunca en
+el código.
 
-`HP0-06-1` corre en `v2.0-po-provisional`: la segunda aparición corroborada del mismo tipo de error
-da `atencion`, la tercera —o una nueva tras una acción correctiva— da `intervencion` y pide una
-persona. **La versión de la psicopedagoga no se tocó**: quedó apagada, con su texto intacto, y una
-señal conserva la versión de la regla que la produjo.
-
-`HP0-06-2` y `HP0-06-3` **siguen sin umbral y en modo `HUMANA`**: nadie decidió las suyas. El umbral
-vive en `risk_rule.threshold_config`, nunca en el código, y hay un guard estático que lo verifica.
+`HP0-06-2` y `HP0-06-3` **siguen en modo `HUMANA`**. `C01-021` permanece abierto para definir su
+operación, y los datos reales siguen bloqueados hasta el dictamen legal y el piloto con revisión,
+explicabilidad, accesibilidad y monitoreo de equidad.
 
 ### 5.5.1 Intervention
 
