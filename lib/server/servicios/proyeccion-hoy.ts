@@ -1,6 +1,6 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
 import { t } from "@/lib/content/es-AR";
-import type { HoyProps, MateriaResumen } from "@/lib/domain/view-models";
+import type { HoyProps, MateriaResumen, RecuperacionProjection } from "@/lib/domain/view-models";
 import { fechaCorta } from "./tiempo";
 
 /**
@@ -73,6 +73,13 @@ export interface EstadoDelDia {
     razon: string;
     /** La señal misma dice que necesita una persona. **No es un umbral local.** */
     necesitaPersona: boolean;
+    /**
+     * En qué estado está el acompañamiento, si alguien lo tomó — B6.6.2.
+     *
+     * `null` ⇒ nadie todavía. **No viene con quién**: la identidad del operador
+     * es del CRM y no le suma nada al estudiante.
+     */
+    intervencion?: "open" | "acknowledged" | "closed" | null;
   } | null;
 }
 
@@ -114,6 +121,63 @@ const ESTADO: Record<string, string> = {
   NO_ACTION: t("HOY.ESTADO.DEFECTO"),
 };
 
+/**
+ * Lo que el estudiante ve de su propia señal — Etapa B6.6.2.
+ *
+ * **Traduce, no evalúa.** Los seis estados salen de dos campos canónicos —el
+ * estado de la señal y el de la intervención— y de nada más. Si acá se contara
+ * algo o se comparara un umbral, habría dos verdades sobre el mismo estudiante,
+ * que es lo que `VI.6` §8.3 prohíbe para el historial y vale igual para esto.
+ *
+ * **Una señal resuelta no se muestra como activa**, y de hecho no llega: la
+ * lectura sólo trae señales vivas. El estado `RESUELTA` existe en el tipo para
+ * que la derivación esté completa, no porque haya un camino que lo produzca hoy.
+ */
+function proyectarRecuperacion(e: EstadoDelDia): RecuperacionProjection | null {
+  const r = e.riesgo;
+  // Sin señal viva **la sección no existe**. Dibujarla vacía diciendo "todo
+  // bien" sería afirmar una lectura que nadie hizo (`P-09`).
+  if (!r) return null;
+
+  // Mientras no pida una persona, es una dificultad que se puede trabajar sola.
+  if (!r.necesitaPersona) {
+    return {
+      estado: "REITERADA",
+      titulo: t("HOY.RECUPERACION.TITULO"),
+      explicacion: t("HOY.RECUPERACION.EXPLICACION"),
+      // La causa concreta, tal como la registró quien produjo la señal.
+      detalle: r.razon,
+      queSigue: t("HOY.RECUPERACION.QUE_HACER"),
+    };
+  }
+
+  // Pide una persona. Lo que cambia de acá para abajo es **si ya la tomaron**,
+  // que es la diferencia entre "avisamos" y "te están acompañando".
+  const estado =
+    r.intervencion === "closed"
+      ? "RESUELTA"
+      : r.intervencion === "acknowledged"
+        ? "EN_CURSO"
+        : r.intervencion === "open"
+          ? "TOMADA"
+          : "ELEVADA";
+
+  const queSigue =
+    estado === "EN_CURSO"
+      ? t("HOY.RECUPERACION.QUE_HACER_EN_CURSO")
+      : estado === "TOMADA"
+        ? t("HOY.RECUPERACION.QUE_HACER_TOMADO")
+        : t("HOY.RECUPERACION.QUE_HACER_ELEVADO");
+
+  return {
+    estado,
+    titulo: t("HOY.RECUPERACION.TITULO_ELEVADO"),
+    explicacion: t("HOY.RECUPERACION.EXPLICACION_ELEVADO"),
+    detalle: r.razon,
+    queSigue,
+  };
+}
+
 export function proyectarDia(e: EstadoDelDia): HoyProps {
   const { nivel, variante } = selectHeroLevel(aEntradaDeHero(e));
 
@@ -130,6 +194,7 @@ export function proyectarDia(e: EstadoDelDia): HoyProps {
    * dice que está en problemas.
    */
   const necesitaRecuperacion = e.riesgo?.necesitaPersona === true;
+  const recuperacion = proyectarRecuperacion(e);
 
   // La línea operativa: tiempo si lo hay, estado si la Action ya arrancó.
   const tiempoOEstado =
@@ -147,6 +212,7 @@ export function proyectarDia(e: EstadoDelDia): HoyProps {
     estadoGeneral: necesitaRecuperacion
       ? ESTADO.RESCUE_REQUIRED
       : (ESTADO[nivel] ?? ESTADO.NO_ACTION),
+    recuperacion,
     hero: {
       nivel,
       variante,

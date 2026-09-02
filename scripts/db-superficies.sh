@@ -30,6 +30,7 @@ INS=b1111111-0000-0000-0000-000000000001
 OTRA=b1111111-0000-0000-0000-000000000002
 EST=b2222222-0000-0000-0000-000000000001
 CE=b3333333-0000-0000-0000-000000000001
+OPERADOR=b9999999-0000-0000-0000-000000000001
 
 limpiar() {
   q "delete from progress_entry where institution_id in ('$INS','$OTRA');
@@ -105,6 +106,20 @@ igual "y la acción con el suyo" \
 # catálogo obligaría al que lo recibe a resolver la cursada adivinando.
 igual "y es la cursada, no la materia del catálogo" \
   "$(q "select (public.estado_del_dia('$INS','$EST',now())->'materias'->0->>'cursadaId') in (select course_id::text from course_offering);")" "f"
+
+echo "→ estado_del_dia · el acompañamiento, sin decir quién (B6.6.2)"
+q "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status)
+  values ('c9000000-0000-0000-0000-000000000001','$INS','$EST','error_reiterado','intervencion','tres veces lo mismo','INTERVENTION_REQUIRED');" >/dev/null
+igual "sin nadie que la tome, la intervención viaja nula" \
+  "$(q "select coalesce(public.estado_del_dia('$INS','$EST',now())->'riesgo'->>'intervencion','NULO');")" "NULO"
+q "select public.abrir_intervencion('$INS','c9000000-0000-0000-0000-000000000001','$EST','$OPERADOR',false,null,null,null);" >/dev/null
+igual "tomada, el estudiante puede saber que alguien la tiene" \
+  "$(q "select public.estado_del_dia('$INS','$EST',now())->'riesgo'->>'intervencion';")" "open"
+# **Y no viaja quién.** La identidad del operador es del CRM (ADR-033) y no le
+# suma nada al estudiante; el SLA sería una promesa que nadie asumió (C01-044).
+igual "pero no viaja el dueño ni el SLA" \
+  "$(q "select (public.estado_del_dia('$INS','$EST',now())->'riesgo'::text)::text like '%$OPERADOR%';")" "f"
+q "delete from intervention where institution_id='$INS'; delete from risk_signal where institution_id='$INS';" >/dev/null
 
 echo "→ estado_de_materia"
 igual "devuelve la materia de la cursada" \

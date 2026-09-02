@@ -162,6 +162,29 @@ export const copy = {
   "HOY.ESTADO.EVIDENCE_INFO": "SIN ACCIÓN PENDIENTE",
   "HOY.ESTADO.DEFECTO": "SIN ACCIONES POR AHORA",
 
+  // ── Recuperación · lo que el estudiante ve de su propia señal (B6.6.2) ────
+  //
+  // `VI.2` §8.6 y la matriz de visibilidad §4.1: al estudiante le corresponde
+  // una **explicación útil**, no la señal. Nada de esto nombra `risk_signal`,
+  // una severidad, una regla ni una versión.
+  //
+  // Y ninguna frase diagnostica. *"Volvimos varias veces sobre esto"* describe
+  // lo que pasó; *"tenés dificultades de procedimiento"* sería una etiqueta
+  // sobre la persona, que es justo lo que `P-11` prohíbe.
+  "HOY.RECUPERACION.TITULO": "Volvimos varias veces sobre lo mismo",
+  "HOY.RECUPERACION.EXPLICACION":
+    "Lo mismo se te trabó más de una vez, así que conviene cambiar el abordaje antes de seguir.",
+  "HOY.RECUPERACION.QUE_HACER":
+    "Vamos a ajustar el próximo paso para que puedas destrabarlo.",
+
+  "HOY.RECUPERACION.TITULO_ELEVADO": "Pedimos que alguien te acompañe",
+  "HOY.RECUPERACION.EXPLICACION_ELEVADO":
+    "Esto siguió apareciendo después de trabajarlo, así que no alcanza con seguir solo.",
+  "HOY.RECUPERACION.QUE_HACER_ELEVADO": "Ya avisamos al equipo de acompañamiento.",
+
+  "HOY.RECUPERACION.QUE_HACER_TOMADO": "Alguien del equipo ya tomó tu caso.",
+  "HOY.RECUPERACION.QUE_HACER_EN_CURSO": "Alguien del equipo lo está viendo con vos.",
+
   // ── CTAs · registro canónico en product.md §10.3 ──────────────────────────
   "CTA.COMPROMETERME": "Comprometerme",
   "CTA.ME_COMPROMETO": "Me comprometo",

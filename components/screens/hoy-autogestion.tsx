@@ -26,7 +26,12 @@ import {
 } from "./design-system";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
-import type { HeroProjection, HoyProps, MateriaResumen } from "@/lib/domain/view-models";
+import type {
+  HeroProjection,
+  HoyProps,
+  MateriaResumen,
+  RecuperacionProjection,
+} from "@/lib/domain/view-models";
 
 /**
  * Línea operativa: tiempo (o estado) · evidencia esperada.
@@ -164,11 +169,49 @@ function MateriasQueue({
   );
 }
 
+/**
+ * La explicación de la propia señal — Etapa B6.6.2.
+ *
+ * Va **debajo del estado general y encima del Hero**, y en ese orden a
+ * propósito: el estado dice *qué pasa*, esto dice *por qué*, y el Hero dice
+ * *qué hacer*. Es la secuencia que ya usa el resto de la pantalla.
+ *
+ * **No lleva CTA**, y no es un olvido. `VI.1` §3.3: el riesgo *"no gana
+ * automáticamente el Hero"*. Un botón acá competiría con la única CTA primaria
+ * de la superficie, que es `C-02` roto —un concepto, un lugar— en la pantalla
+ * donde el estudiante decide.
+ *
+ * `null` ⇒ **no se dibuja nada**. Una sección vacía diciendo "todo bien"
+ * afirmaría una lectura que nadie hizo.
+ */
+function Recuperacion({ r }: { r: RecuperacionProjection | null }) {
+  if (!r) return null;
+  return (
+    <section
+      aria-label={r.titulo}
+      style={{
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius)",
+        padding: "12px 14px",
+        background: "var(--muted)",
+      }}
+    >
+      <Eyebrow>{r.titulo}</Eyebrow>
+      <ReglaDeNegocio>{r.explicacion}</ReglaDeNegocio>
+      {/* El hecho concreto, tal como lo registró la señal. Sin esto, la
+          explicación es una frase amable y nada más. */}
+      <ReglaDeNegocio>{r.detalle}</ReglaDeNegocio>
+      {r.queSigue ? <ReglaDeNegocio>{r.queSigue}</ReglaDeNegocio> : null}
+    </section>
+  );
+}
+
 export function HoyAutogestion({
   fecha,
   estadoGeneral,
   hero,
   materias,
+  recuperacion,
   verProgreso,
   onAvanzar,
   onVerMateria,
@@ -197,6 +240,8 @@ export function HoyAutogestion({
       />
 
       <EstadoGeneral>{estadoGeneral}</EstadoGeneral>
+
+      <Recuperacion r={recuperacion} />
 
       <HeroContent hero={hero} onAvanzar={onAvanzar} />
 

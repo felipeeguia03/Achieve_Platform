@@ -186,8 +186,8 @@ es exactamente la deriva de vocabulario).
 | Compromisos | Sí | Sí | Agregado por defecto |
 | Evidencias | Sí | Según rol | **No por defecto** |
 | Reflexiones personales | Sí | Según necesidad | **No por defecto** |
-| RiskSignal | Explicación útil | Completo operativo | Agregado; individual solo autorizado y accionable |
-| Intervenciones | Propias relevantes | Completo | Métricas, estado y outcome; detalle solo autorizado |
+| RiskSignal | **Explicación útil** — implementada en `UX01` como `recuperacion` (B6.6.2): qué pasó, por qué pide atención y qué sigue. **Nunca** la severidad, la regla, su versión ni el estado interno | Completo operativo | Agregado; individual solo autorizado y accionable |
+| Intervenciones | Propias relevantes — el estudiante puede saber **que su caso fue tomado**, y en qué estado está. **Nunca quién lo acompaña**: esa identidad es del CRM ([ADR-033](decisions.md#adr-033)) y no le suma nada. Tampoco el playbook ni el SLA | Completo | Métricas, estado y outcome; detalle solo autorizado |
 | Bitácora | Sí | Sí | **No por defecto**; resumen agregado |
 
 > **Regla (Parte II §17).** No asumir que porque la universidad paga puede ver toda la información

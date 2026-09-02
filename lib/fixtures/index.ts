@@ -81,6 +81,12 @@ export function proyectarHoy(escenario: Escenario): HoyProps | null {
     fecha: hoy.fecha,
     estadoGeneral: hoy.estadoGeneral ?? estadoGeneralPara(nivel),
     hero: { nivel, variante, ...hoy.heroContenido },
+    // **Siempre `null` en el Track A**, y no es una omisión: los escenarios
+    // declaran un mundo, y en ese mundo no hay Risk Engine. Una recuperación
+    // fabricada por un fixture le afirmaría al que mira el catálogo que el
+    // sistema detectó algo — que es justo la diferencia entre declarar un
+    // estado y haberlo evaluado.
+    recuperacion: null,
     materias: hoy.materias,
     // La CTA de lectura aparece sólo si el contexto declara la Bitácora
     // disponible: es la condición de aparición de CTA-009.

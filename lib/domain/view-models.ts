@@ -127,10 +127,61 @@ export interface MateriaResumen {
   tono: "neutral" | "urgencia";
 }
 
+/**
+ * Lo que el estudiante ve de su propia señal — Etapa B6.6.2.
+ *
+ * **Es una traducción, no una segunda evaluación.** La causa canónica sale de
+ * `risk_signal.reason`, que produjo la regla; esta capa la dice en castellano y
+ * con el tono del producto. Si acá se decidiera algo, habría dos verdades sobre
+ * el mismo estudiante.
+ *
+ * **Nada de esto nombra el mecanismo.** Sin `risk_signal`, sin severidad, sin
+ * `risk_rule_id`, sin `rule_version`, sin estados internos y **sin identidad de
+ * quien acompaña**. `VI.2` §8.6: *"nunca expone un valor interno bruto"*.
+ *
+ * **Y ninguna frase es un diagnóstico.** Describe lo que pasó —*"volvimos varias
+ * veces sobre lo mismo"*—, no lo que el estudiante es.
+ */
+export interface RecuperacionProjection {
+  /**
+   * Los seis estados observables, **derivados de los canónicos**: el de la
+   * señal y el de la intervención. No hay un lifecycle paralelo acá.
+   */
+  estado:
+    /** No hay señal viva. La sección no se dibuja. */
+    | "SIN_SENAL"
+    /** Dificultad reiterada, todavía sin pedir una persona. */
+    | "REITERADA"
+    /** La señal pide una persona y nadie la tomó todavía. */
+    | "ELEVADA"
+    /** Alguien la tomó. */
+    | "TOMADA"
+    /** Alguien se hizo cargo y la está trabajando. */
+    | "EN_CURSO"
+    /** Se cerró con su resultado. **Deja de mostrarse como activa.** */
+    | "RESUELTA";
+  titulo: string;
+  /** Por qué esto pide atención, en lenguaje llano. */
+  explicacion: string;
+  /**
+   * La causa concreta, tal como la registró la señal. **Es el hecho**, y por eso
+   * viaja aparte del texto de producto: `VI.1` §3.3 pide *"explicación útil"*, y
+   * una explicación sin el hecho concreto es una frase amable y nada más.
+   */
+  detalle: string;
+  /** Qué puede hacer ahora. `null` ⇒ no hay nada que ofrecerle todavía. */
+  queSigue: string | null;
+}
+
 export interface HoyProps {
   fecha: string;
   estadoGeneral: string;
   hero: HeroProjection;
+  /**
+   * `null` ⇒ **no hay señal viva y la sección no existe**, que no es lo mismo
+   * que una sección vacía diciendo "todo bien" (`P-09`).
+   */
+  recuperacion: RecuperacionProjection | null;
   materias: MateriaResumen[];
   /**
    * `CTA-009` — *ver progreso*. `null` ⇒ la Bitácora no está disponible y la

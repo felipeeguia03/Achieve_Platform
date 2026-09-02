@@ -181,7 +181,7 @@ describe("B2.5 · la forma es la que la pantalla espera", () => {
    */
   it("devuelve exactamente las claves de `HoyProps`", () => {
     expect(Object.keys(proyectarDia(conAccion)).sort()).toEqual(
-      ["estadoGeneral", "fecha", "hero", "materias", "verProgreso"].sort(),
+      ["estadoGeneral", "fecha", "hero", "materias", "recuperacion", "verProgreso"].sort(),
     );
   });
 
@@ -322,5 +322,97 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
       fuente.indexOf("const ESTADO"),
     );
     expect(entrada).not.toContain("riesgo");
+  });
+});
+
+/**
+ * Lo que el estudiante ve de su propia señal — Etapa B6.6.2.
+ *
+ * ⚠️ La regla que produce estas señales es `PROVISIONAL` ([ADR-036](../docs/decisions.md#adr-036)).
+ * Lo que estos tests fijan no es el umbral: es que la **presentación traduzca y
+ * no vuelva a decidir**, y que no se le filtre al estudiante nada del mecanismo.
+ */
+describe("B6.6.2 · la explicación útil, y lo que nunca sale de la máquina", () => {
+  const señal = {
+    severidad: "riesgo" as const,
+    razon: "Error de procedimiento: 2 veces en la preparación de este examen",
+    necesitaPersona: false,
+  };
+  const elevada = { ...señal, necesitaPersona: true, severidad: "intervencion" as const };
+
+  it("sin señal viva, la sección no existe", () => {
+    // `null` y no un objeto vacío: una sección que dice "todo bien" afirma una
+    // lectura que nadie hizo (`P-09`).
+    expect(proyectarDia(vacio).recuperacion).toBeNull();
+    expect(proyectarDia({ ...vacio, riesgo: null }).recuperacion).toBeNull();
+  });
+
+  it("una dificultad reiterada explica qué pasó y qué sigue", () => {
+    const r = proyectarDia({ ...vacio, riesgo: señal }).recuperacion!;
+    expect(r.estado).toBe("REITERADA");
+    expect(r.titulo.length).toBeGreaterThan(0);
+    expect(r.queSigue).not.toBeNull();
+    // La causa canónica viaja tal cual: sin el hecho, la explicación es una
+    // frase amable y nada más.
+    expect(r.detalle).toBe(señal.razon);
+  });
+
+  it("cuando pide una persona, se lo dice: el caso fue elevado", () => {
+    const r = proyectarDia({ ...vacio, riesgo: elevada }).recuperacion!;
+    expect(r.estado).toBe("ELEVADA");
+    expect(r.queSigue).toContain("acompañamiento");
+  });
+
+  it("y distingue avisado, tomado y en curso", () => {
+    const de = (i: "open" | "acknowledged" | "closed" | null) =>
+      proyectarDia({ ...vacio, riesgo: { ...elevada, intervencion: i } }).recuperacion!;
+    expect(de(null).estado).toBe("ELEVADA");
+    expect(de("open").estado).toBe("TOMADA");
+    expect(de("acknowledged").estado).toBe("EN_CURSO");
+    expect(de("closed").estado).toBe("RESUELTA");
+    // Los seis estados salen de dos campos canónicos. No hay lifecycle paralelo.
+    expect(new Set(["SIN_SENAL", "REITERADA", "ELEVADA", "TOMADA", "EN_CURSO", "RESUELTA"]).size).toBe(6);
+  });
+
+  it("una señal resuelta no se muestra como activa", () => {
+    // La lectura sólo trae señales vivas: una `RESOLVED` no llega, y entonces
+    // no hay sección. Es la misma ausencia que no tener ninguna.
+    expect(proyectarDia({ ...vacio, riesgo: null }).recuperacion).toBeNull();
+  });
+
+  it("no se filtra una sola palabra del mecanismo", () => {
+    const p = proyectarDia({ ...vacio, riesgo: { ...elevada, intervencion: "acknowledged" } });
+    const texto = JSON.stringify(p.recuperacion);
+    for (const interno of [
+      "risk_signal", "riskSignal", "risk_rule", "rule_version", "HP0-06",
+      "INTERVENTION_REQUIRED", "acknowledged", "intervencion\":", "severidad",
+      "atencion", "AUTOMATICA", "threshold", "operator", "operador",
+    ]) {
+      expect(texto, `se filtró "${interno}"`).not.toContain(interno);
+    }
+  });
+
+  it("ni la severidad ni la regla llegan a la pantalla", () => {
+    // La severidad es un valor interno: `VI.2` §8.6 prohíbe exponer uno bruto.
+    const p = proyectarDia({ ...vacio, riesgo: elevada });
+    expect(JSON.stringify(p)).not.toContain("intervencion\"");
+    expect(Object.keys(p.recuperacion!).sort()).toEqual(
+      ["detalle", "estado", "explicacion", "queSigue", "titulo"].sort(),
+    );
+  });
+
+  it("el Hero sigue intacto: la recuperación no lo toca", () => {
+    // Regresión de `VI.1` §3.3, ya probada en la B6 y que esta etapa no puede
+    // romper: el riesgo modifica el estado general, no la precedencia.
+    const sin = proyectarDia(vacio);
+    const con = proyectarDia({ ...vacio, riesgo: elevada });
+    expect(con.hero).toEqual(sin.hero);
+    expect(con.materias).toEqual(sin.materias);
+    expect(con.verProgreso).toEqual(sin.verProgreso);
+  });
+
+  it("proyectar dos veces da lo mismo: la presentación no acumula nada", () => {
+    const e = { ...vacio, riesgo: elevada };
+    expect(proyectarDia(e)).toEqual(proyectarDia(e));
   });
 });
