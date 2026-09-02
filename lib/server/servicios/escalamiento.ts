@@ -30,6 +30,8 @@ export interface CasoEscalado {
    * nuevo, ni se reescribe lo que la regla dijo.
    */
   explanation: string;
+  /** Evidencia, apoyos y conteos que la persona necesita para leer el caso. */
+  reviewContext: Record<string, unknown>;
 }
 
 export interface DestinoDeEscalamiento {

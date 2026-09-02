@@ -11,7 +11,7 @@ import { clienteDeServicio } from "../supabase";
  * reintentada no puede aparecer como dos señales. Y `RESOLVED` también, porque
  * su condición mira dos tablas y tiene que verlas en la misma transacción.
  */
-const COLUMNAS = "id, institution_id, status, student_id, severity, reason";
+const COLUMNAS = "id, institution_id, status, student_id, severity, reason, review_context";
 
 function aDominio(f: Record<string, unknown>): Senal {
   return {
@@ -21,6 +21,7 @@ function aDominio(f: Record<string, unknown>): Senal {
     studentId: f.student_id as string,
     severity: f.severity as SeveridadDeRiesgo,
     reason: f.reason as string,
+    reviewContext: (f.review_context as Record<string, unknown> | null) ?? {},
   };
 }
 
@@ -50,7 +51,7 @@ export const senalesReal: RepositorioDeSenales = {
   },
 
   async registrar(entrada) {
-    const { data, error } = await clienteDeServicio().rpc("registrar_senal", {
+    const { data, error } = await clienteDeServicio().rpc("registrar_senal_b6_7_3", {
       p_institution_id: entrada.institutionId,
       p_student_id: entrada.studentId,
       p_course_enrollment_id: entrada.courseEnrollmentId ?? null,
@@ -62,6 +63,8 @@ export const senalesReal: RepositorioDeSenales = {
       p_rule_version: entrada.ruleVersion ?? null,
       p_valid_until: entrada.validUntil ?? null,
       p_idempotency_key: entrada.claveDeIdempotencia ?? null,
+      p_reiteration_episode_id: entrada.reiterationEpisodeId ?? null,
+      p_review_context: entrada.reviewContext ?? {},
     });
     if (error) throw new Error(`No se pudo registrar la señal: ${error.message}`);
     const fila = (data as Array<{ signal_id: string; duplicado: boolean }>)[0];

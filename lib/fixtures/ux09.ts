@@ -81,6 +81,7 @@ function paso(input: StepInput, vista: Partial<Vista>): PasoProtocoloProps {
     ctaPrimaria: { texto: VOLVER, habilitada: true },
     despues: null,
     secundarios: [],
+    reentradaPendiente: null,
     fuenteDelContenido: "protocolo de la cátedra",
     ctaRetorno: VOLVER,
     ...vista,
@@ -534,6 +535,32 @@ export const FX_LOCAL_PASO_RETORNO_SEGURO = esc(
   ["C01-026", "SC-EX-05"],
 );
 
+// Fixture pedido explícitamente por la validación profesional: vuelve sólo del
+// paso 15 al 12, con explicación previa y sin borrar la evidencia ya válida.
+export const FX_LOCAL_PASO_REENTRADA_MINIMA = esc(
+  "FX-LOCAL-PASO-REENTRADA-MINIMA",
+  "Reentrada mínima: explicación completa antes de mover el recorrido",
+  { ...nada },
+  {
+    estadoDominante: "PROPUESTA DE REENTRADA",
+    ctaPrimaria: null,
+    reentradaPendiente: {
+      id: "reentrada-SYN-1",
+      titulo: "Antes de volver",
+      motivo: "La evidencia resultó insuficiente",
+      justificacion: "Conviene revisar el armado del plan antes de intentar la actividad de nuevo.",
+      actividad: "Volvés a trabajar el plan de resolución del mismo objetivo.",
+      evidenciaVigente: "La evidencia de los pasos anteriores sigue vigente.",
+      recorrido: "Práctica autónoma → Plan de resolución",
+      comoPedirOtraOpcion:
+        "Si esta vuelta no te sirve, podés pedir otra opción sin perder lo que ya hiciste.",
+      ctaAceptar: "ACEPTAR ESTA VUELTA",
+      ctaOtraOpcion: "PEDIR OTRA OPCIÓN",
+    },
+  },
+  ["C01-026", "SC-EX-03"],
+);
+
 export const escenariosUX09 = {
   "FX-LOCAL-PASO-COMPLETO": FX_LOCAL_PASO_COMPLETO,
   "FX-LOCAL-PASO-SIN-RECURSO": FX_LOCAL_PASO_SIN_RECURSO,
@@ -570,4 +597,5 @@ export const escenariosUX09 = {
   "FX-LOCAL-PASO-NO-CARGA": FX_LOCAL_PASO_NO_CARGA,
   "FX-LOCAL-PASO-PROVENANCE-DESCONOCIDA": FX_LOCAL_PASO_PROVENANCE_DESCONOCIDA,
   "FX-LOCAL-PASO-RETORNO-SEGURO": FX_LOCAL_PASO_RETORNO_SEGURO,
+  "FX-LOCAL-PASO-REENTRADA-MINIMA": FX_LOCAL_PASO_REENTRADA_MINIMA,
 } as const satisfies Record<string, Escenario>;

@@ -120,6 +120,63 @@ evaluador**. Los playbooks tampoco existen: `C01-044` dice *"no se inventan valo
 más**: no gana el Hero, no interrumpe `IN_PROGRESS`, no reordena materias y no inventa una CTA. Ni
 siquiera entra a `HeroInput`, y hay guard.
 
+**Fase B6.7 — La validación profesional, aplicada.** ✅ **4 / 4** — 2 de septiembre de 2026
+([ADR-037](docs/decisions.md#adr-037)). La psicopedagoga respondió con **6 `CAMBIAR` + 1 `APROBAR`**
+y **sin mover un solo umbral**: lo que objetó es **qué cuenta como una repetición**. La frase que
+ordena la fase: **«el sistema debe reconocer patrones, no etiquetar personas»**.
+
+**B6.7.1 cerró el punto `9.5`** — el vocabulario. `v2.0-psicopedagogia` con **cinco familias**;
+*"dependencia de ayuda externa"* **sale como error** y pasa a `support_need_observation` como
+condición de desempeño; categoría **principal + secundaria** (la secundaria **no cuenta**);
+*clasificación incierta* como fila del catálogo con `es_familia = FALSE`; y **corrección humana
+append-only**.
+
+⚠️ **Antes de tocar el contador de reiteración:** cuenta por **familia** (`canonical_id`), **nunca**
+por fila de versión de `error_type`. Filtrar por `error_type_id` parte el contador al medio en
+silencio la próxima vez que se cargue una versión del vocabulario. Y **el vocabulario vigente decide
+qué cuenta**: sin fila vigente que declare la familia, no se evalúa — es lo que retira `dependencia`
+sin haber editado la fila que el Product Owner escribió.
+
+**B6.7.2 cerró `9.1` y `9.6`** — el denominador. La unidad de conteo pasó a
+`(estudiante, preparación, familia, objetivo/demanda)`; `learning_objective` es una tabla nueva que
+**nace vacía**; y el resultado separa **`repeticionDetectada`** (misma familia, no escala sola) de
+**`apariciones`** comparables (mismo objetivo, lo único que lee el umbral). La regla vigente es
+`HP0-06-1 v4.0-psicopedagogia`.
+
+**B6.7.3 cerró `9.2`, `9.3` y `9.4`** — acelerar exige las cinco condiciones de corrección válida;
+recuperar exige dos aciertos independientes; y una recaída abre un `reiteration_episode` vinculado
+al anterior, sin borrar historia. Los seis disparadores cualitativos tempranos viven en configuración
+y `review_context` lleva evidencia e historial de apoyos a la cola sintética.
+
+**B6.7.4 cerró `9.7`** — una replanificación crea `exam_preparation_plan_version` dentro de la
+misma preparación; `REPLANNED` sigue vivo. La reentrada 9–18 usa seis motivos configurados y una
+propuesta en dos tiempos: explicar primero, mover `current_step_id` sólo al aceptar u override.
+Pedir otra opción conserva el paso; ninguna rama toca Evidence, progreso ni completions.
+
+⚠️ **Recuperar un episodio no resuelve una obligación humana.** Si una `RiskSignal` ya llegó a
+`INTERVENTION_REQUIRED`, sólo una intervención con outcome puede llevarla a `RESOLVED` (ADR-032).
+Son dos lifecycles distintos y no se colapsan.
+
+⚠️ **Los umbrales siguen siendo `2` y `3`.** Ella los recomendó tal cual: no objetó los números,
+objetó **qué cuenta como una repetición**. Si algo no escala, mirá el denominador antes que el
+umbral.
+
+⚠️ **Sin objetivo declarado no hay comparabilidad, y no se escala.** El mundo demo declara uno; si
+sembrás observaciones sin `learning_objective_id`, el circuito cuenta la repetición y **no llama a
+nadie** — eso es correcto, no un bug. *"Cómo se define una tarea comparable"* es de la psicopedagoga
+y sigue abierto: **no lo infieras**.
+
+⚠️ **`evidence_quality` no es `evidence.lifecycle_state`.** Una entrega `INSUFFICIENT` **cuenta** si
+el error es identificable — es el único `APROBAR` de los siete, y excluirla *"sesgaría la detección
+contra quienes más necesitan acompañamiento"*. Lo que no cuenta es lo ilegible, no lo incompleto.
+
+⚠️ **`risk_signal.reason` llega a la pantalla del estudiante.** No estrenes vocabulario ahí: ella
+pidió revisión experta de lenguaje, accesibilidad y no estigmatización **antes** de probar con
+personas.
+
+⚠️ **Quién puede corregir una clasificación no está definido.** `corrected_by` es identidad externa
+sin FK y `POST /api/observacion/correccion` va con secreto de servicio. **No inventes el rol.**
+
 **Fase B5 — Modo Examen real.** ✅ **COMPLETA, 5 / 5** — 1 de septiembre de 2026. **Las nueve
 superficies del estudiante leen de Postgres**; `UX07`–`UX09` eran las tres últimas que proyectaban
 fixtures. Los tres requisitos de schema se cerraron **antes** de la primera migración, porque una
@@ -193,7 +250,7 @@ Con eso quedó **un frente con trabajo real**, y dos que se cerraron el mismo d�
 Lo que **no** se puede hacer sigue siendo lo mismo: tocar un dato real. El mapa de bloqueos del
 `roadmap.md` ahora dice **quién** cierra cada cosa.
 
-**Trabajo adelantado.** B2b va **1 / 3** con la ingesta asistida del ADL. En B4 ya existen el ADE
+**Trabajo adelantado.** B2b va **2 / 3**: la ingesta asistida del ADL y la corroboración. En B4 ya existen el ADE
 v1 determinista, el reloj del lifecycle y la materialización transaccional de recomendaciones.
 
 ✅ **Las 8 decisiones psicopedagógicas están respondidas** (31 ago 2026,
@@ -217,7 +274,26 @@ colapsan. La pregunta está arriba de todo en la
 ⚠️ **Todo el Track B corre sobre datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PENDING` y es bloqueo absoluto desde el primer usuario real.
 
-**Verificación de base:** `npm run db:verify` — **203 comprobaciones** contra Postgres que `npm test`
+**Fase B2b — Ingesta del ADL.** 🟡 **2 / 3.** La **B2b.2 cerró el invariante `I9`**: existe por fin
+la operación explícita que eleva un `verification_status`, y es la única —`corroborar_procedencia()`,
+append-only, con fuente concreta, motivo obligatorio y entrada de `audit_log` con antes y después.
+
+⚠️ **Antes de tocar `verification_status`:** no lo escribas desde ningún lado. Hay guard sobre las 46
+migraciones y sobre los repositorios de que **ninguna otra escritura existe**. Corregirlo "a mano"
+también es una corroboración, con su fuente y su motivo.
+
+⚠️ **A `official` no llega nadie, y no es un olvido.** Significa que la institución lo afirma, y la
+Plataforma no puede autenticar a una institución: `C01-030` está `OPEN`, ADR-023 sacó la identidad de
+docente y ADR-033 mandó las superficies de operador al CRM. El estado sigue en el enum y conserva su
+salida; ninguna operación lo produce. **No lo hagas alcanzable.**
+
+⚠️ **Nada vuelve a `unverified`**, y **`disputed` no es terminal**: una disputa resuelta puede volver.
+
+⚠️ **Quién puede corroborar sigue sin definirse** (`C01-030`). `corroborated_by` es identidad externa
+sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
+confirmando lo que él mismo declaró no es verificación.
+
+**Verificación de base:** `npm run db:verify` — **275 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de

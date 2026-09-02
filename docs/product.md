@@ -269,9 +269,10 @@ EXPECTED → SUBMITTED ─┬→ UNDER_REVIEW ─┬→ SUFFICIENT → VALIDATED
 ### 5.4 ExamPreparation
 
 ```
-RECOMMENDED → ACTIVE → EXAM_TAKEN → CLOSED
-                    ↘ BLOCKED
-                    ↘ ABANDONED (conserva historial)
+RECOMMENDED → ACTIVE → REPLANNED ─→ EXAM_TAKEN → CLOSED
+                    ↘ BLOCKED       ↘ CANCELLED
+                    ↘ CANCELLED     ↘ EXPLICITLY_ABANDONED
+                    ↘ EXPLICITLY_ABANDONED
 ```
 
 ✅ **[ADR-011](decisions.md#adr-011), implementada en la Fase B5.** `BUILDING`, `READY_BY_PROTOCOL` y
@@ -279,11 +280,19 @@ RECOMMENDED → ACTIVE → EXAM_TAKEN → CLOSED
 La cadena central se cierra en `ACTIVE → EXAM_TAKEN`, que no es un atajo nuevo sino el mismo camino
 sin los nodos que dejaron de pertenecer a esta entidad.
 
+✅ **[ADR-038](decisions.md#adr-038), implementada en B6.7.4.** `REPLANNED` conserva activa la
+misma preparación y agrega una versión del plan; `CANCELLED` y `EXPLICITLY_ABANDONED` son cierres
+explícitos. La inactividad sola no transiciona la preparación.
+
 **Invariantes:**
 - Activar produce `ACTIVE` y **nada más**: no crea Action, Commitment, Evidence, Progress, protocolo
   completo ni readiness. Lo único que se anota además es **contra qué versión del protocolo corre**,
   que no es crear un protocolo: sin eso, cambiar la versión vigente le reescribiría el recorrido a
-  alguien que ya arrancó.
+  alguien que ya empezó.
+- Replanificar el mismo examen no crea otra `ExamPreparation`: agrega una versión dentro del mismo
+  historial (`I7`).
+- Una propuesta de reentrada no mueve el paso. Aceptarla u override humano sí; pedir otra opción no.
+- Ninguna reentrada borra Evidence, completions ni progreso.
 - **La activación es siempre del estudiante.** El spec fuente lo fija: *"la misma entrada produce
   siempre `RECOMMENDED` → CTA → `ACTIVE`"*. No existe camino que cree una preparación ya activa.
 - `READY_BY_PROTOCOL` significa que se cumplieron las condiciones del protocolo vigente.
@@ -291,7 +300,7 @@ sin los nodos que dejaron de pertenecer a esta entidad.
 - Volver a Cursado, al Overview o a Hoy **no** abandona la preparación.
 - `BLOCKED` **no tiene salida declarada**, y no se le inventa una: el diagrama no dibuja el retorno y
   `C01-025` sigue `OPEN`.
-- Abandonar **conserva el historial**: es un estado, no un borrado. Sus completions quedan.
+- Abandonar explícitamente **conserva el historial**: es un estado, no un borrado. Sus completions quedan.
 
 ### 5.5 RiskSignal
 

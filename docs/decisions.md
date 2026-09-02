@@ -3060,6 +3060,26 @@ modificaciones**. **No se cierran**: ella condicionó explícitamente el uso con
 Y **[ADR-006](#adr-006) sigue siendo bloqueo absoluto**: su validación es de producto, no una
 autorización de tratamiento de datos.
 
+### Estado de implementación
+
+| Punto | Etapa | Estado |
+|---|---|---|
+| `9.5` — el vocabulario | **B6.7.1** | ✅ **Implementado** el 2 de septiembre de 2026. Migración `20260906000000_vocabulario_psicopedagogico.sql`. Ver [`roadmap.md`](roadmap.md) y [`data-model.md`](data-model.md) §10.0.1 |
+| `9.1`, `9.6` — el denominador | **B6.7.2** | ✅ **Implementado** el 2 de septiembre de 2026. Migración `20260907000000_denominador_psicopedagogico.sql`. Ver [`data-model.md`](data-model.md) §10.0.2 |
+| `9.2`, `9.3`, `9.4` — acelerar y reiniciar | B6.7.3 | ✅ **Implementado** el 2 de septiembre de 2026. Migración `20260908000000_acelerar_y_reiniciar.sql`: cinco condiciones conjuntas, dos aciertos, episodio vinculado y seis disparadores tempranos |
+| `9.7` — replanificar y volver | B6.7.4 | ✅ **Implementado** el 2 de septiembre de 2026. Migración `20260909000000_replanificar_y_volver.sql`, contrato técnico en ADR-038 y fixture `FX-LOCAL-PASO-REENTRADA-MINIMA` |
+
+**Lo que la B6.7.2 dejó explícitamente sin hacer:** *"cómo se define una **tarea comparable**"* está
+entre lo que ella pidió evaluar antes de un piloto, así que `learning_objective` **nace vacía** y la
+comparabilidad se declara. Y dos claves de `threshold_config` —`reincidencia_tras_correctiva` y
+`reinicia_con_resolucion_limpia`— siguen llevando el valor del Product Owner: están nombradas en
+`pendiente_b6_7_3`, porque `9.3` y `9.4` las corrigen.
+
+**Un hallazgo de la B6.7.1 que conviene dejar escrito acá:** cargar una versión nueva del vocabulario
+**parte el contador** si éste filtra por `error_type_id`, porque esa columna apunta a una fila de
+versión. La identidad de un error es el `canonical_id`. Se corrigió antes de cargar `v2.0`, y vale
+para cualquier vocabulario versionado que un contador lea.
+
 ### Lo que NO cambia
 
 - **La arquitectura.** Todo esto es configuración versionada, columnas aditivas y una regla pura que
@@ -3068,3 +3088,57 @@ autorización de tratamiento de datos.
 - **La integración con el CRM**, congelada por [ADR-035](#adr-035).
 - **Los valores del Product Owner no se borran.** `v2.0-po-provisional` se apaga con un `UPDATE`,
   como `EP-SPEC v0.1` y como `ACKNOWLEDGED`.
+
+---
+
+## ADR-038 — Replanificar versiona dentro de la preparación; volver exige una propuesta aceptada
+
+**Estado:** `ACCEPTED`  
+**Fecha:** 2 de septiembre de 2026  
+**Origen:** `validacion-psicopedagogica-source.md` §9.7 y ADR-037  
+**Etapa:** B6.7.4
+
+### Contexto
+
+La respuesta profesional resolvió dos ambigüedades que ADR-036 había dejado abiertas. Un cambio de
+fecha del mismo examen conserva la preparación y crea *"una nueva versión del plan dentro del mismo
+historial"*; una reentrada vuelve al *"primer paso estrictamente necesario"* y, antes de mover el
+recorrido, explica motivo, actividad, evidencia conservada y cómo pedir otra opción.
+
+### Decisión
+
+1. **`I7` queda intacto.** Sigue existiendo una sola `exam_preparation` por estudiante y
+   `assessment`. Cada replanificación agrega una `exam_preparation_plan_version`; nunca crea una
+   segunda preparación ni borra una versión anterior.
+2. **`REPLANNED` sigue siendo un estado vivo.** Completar pasos admite `ACTIVE` y `REPLANNED`.
+   `CANCELLED` y `EXPLICITLY_ABANDONED` son cierres explícitos; el legacy `ABANDONED` se migra al
+   segundo. Ningún reloj ni regla de inactividad produce esos estados.
+3. **La política es configuración versionada.** El tramo 9–18 y los seis motivos confirmados viven
+   en `protocol_reentry_policy`/`protocol_reentry_reason`, versión
+   `HUMAN-P0-9.7 v1.0`; no quedan como constantes del Service.
+4. **Volver es una decisión en dos tiempos.** Primero se persiste una
+   `protocol_reentry_proposal`, con motivo, paso de origen, primer paso necesario declarado,
+   justificación, actividad que se vuelve a trabajar y explicación de la evidencia que sigue
+   vigente. Eso **no mueve** `current_step_id`. Sólo aceptar la propuesta —o un override humano
+   explícito— mueve el puntero; pedir otra opción conserva el paso actual.
+5. **La Plataforma no decide cuál paso es necesario.** El destino lo declara el owner de la
+   propuesta y Postgres sólo comprueba que pertenece al mismo protocolo, está dentro del tramo
+   configurado y es anterior al origen. Elegir entre varias rutas sigue siendo decisión compartida,
+   no ranking local.
+6. **Mover el puntero no completa nada.** La operación no escribe `protocol_step_completion`,
+   `Evidence`, `ProgressUpdated`, apoyos ni alertas. Todos esos hechos siguen ligados a la misma
+   preparación y por eso permanecen visibles en el historial.
+
+### Interfaz
+
+`UX09` proyecta la propuesta pendiente como panel explicativo antes de cualquier CTA del paso. La
+acción primaria acepta la vuelta; la secundaria pide otra opción. La pantalla no deriva el motivo,
+no reduce progreso y no presenta la reentrada como castigo.
+
+### Consecuencias
+
+- La explicación existe antes del cambio, no como texto retrospectivo.
+- Replanificar varias veces conserva una secuencia auditable y una sola preparación.
+- El override humano queda soportado en dominio y persistencia, pero no se inventa una superficie de
+  operador: esa frontera sigue en ADR-033.
+- Todo continúa limitado a datos sintéticos por ADR-006.

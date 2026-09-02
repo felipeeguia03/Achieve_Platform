@@ -28,7 +28,10 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # por `exit 1` es justo la que dejaba el mundo a medio poner, y así garantizaba
 # que la siguiente también fallara.
 limpiar_mundo() {
-  q "delete from escalation_sink; \
+  q "delete from provenance_corroboration; \
+   delete from error_classification_correction; \
+   delete from support_need_observation; \
+   delete from escalation_sink; \
    delete from error_observation; \
    delete from intervention_outcome; \
    delete from intervention; \
@@ -502,14 +505,239 @@ else
 fi
 # Juzgada: ahora sí.
 corre "update evidence set lifecycle_state='INSUFFICIENT' where id='e4000000-0000-0000-0000-000000000001';"
-OBS=$(q "select observation_id from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'e4000000-0000-0000-0000-000000000001',null,null,null,null,'k-obs-1');" | tr -d '[:space:]')
+EV_OK=e4000000-0000-0000-0000-000000000001
+OBS=$(q "select observation_id from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'$EV_OK',null,null,null,null,'k-obs-1',null,null,'suficiente_para_identificar_error',true,'alta');" | tr -d '[:space:]')
 [[ "$OBS" =~ ^[0-9a-f-]{36}$ ]] && ok "con la evidencia evaluada, el error se registra" || mal "no se pudo registrar: $OBS"
-dup=$(q "select duplicado::text from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'e4000000-0000-0000-0000-000000000001',null,null,null,null,'k-obs-1');" | tr -d '[:space:]')
+dup=$(q "select duplicado::text from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'$EV_OK',null,null,null,null,'k-obs-1',null,null,'suficiente_para_identificar_error',true,'alta');" | tr -d '[:space:]')
 [ "$dup" = "true" ] && ok "y reprocesar la misma evidencia no infla el contador" || mal "el reproceso duplicó la observación: $dup"
 # Una observación sin corroborar entra —es un dato— pero el evaluador la ignora.
 corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',false,null,null,null,'sospecha');"
 [ "$(q "select count(*) from error_observation where exam_preparation_id='$PREP' and corroborated;" | tr -d '[:space:]')" = "1" ] \
   && ok "la sospecha se guarda, pero no cuenta como aparición" || mal "una sospecha entró al contador"
+
+echo "→ B2b.2. La corroboración: la única operación que mueve un verification_status (I9)"
+OBJ_C=$(q "insert into learning_objective (institution_id,kind,label,source_type,source_ref)
+           values ('$A','objetivo_de_aprendizaje','Objetivo a corroborar','student','carga del estudiante')
+           returning id;" | head -1 | tr -d '[:space:]')
+[ "$(q "select verification_status from learning_objective where id='$OBJ_C';" | tr -d '[:space:]')" = "unverified" ] \
+  && ok "todo entra unverified: el ingestor no tiene por dónde elevarlo" || mal "no entró unverified"
+
+# **`official` no se alcanza**, y el rechazo nombra la decisión que falta.
+if corre "select public.corroborar_procedencia('$A','learning_objective','$OBJ_C','official','institution','acta','porque sí');"; then
+  mal "se declaró official sin poder autenticar a la institución"
+else
+  ok "nadie declara official: haría falta autenticar a la institución (C01-030)"
+fi
+# Una fuente sin referencia concreta no se puede volver a mirar.
+if corre "select public.corroborar_procedencia('$A','learning_objective','$OBJ_C','corroborated','instructor','   ','motivo');"; then
+  mal "se corroboró sin referencia concreta"
+else
+  ok "una fuente sin referencia concreta no corrobora: no se podría volver a mirar"
+fi
+if corre "select public.corroborar_procedencia('$A','learning_objective','$OBJ_C','corroborated','instructor','ref','  ');"; then
+  mal "se corroboró sin motivo"
+else
+  ok "ni una corroboración sin motivo: sería indistinguible de un clic"
+fi
+# El sujeto tiene que ser de esta institución.
+if corre "select public.corroborar_procedencia('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','learning_objective','$OBJ_C','corroborated','instructor','ref','motivo');"; then
+  mal "se corroboró un sujeto de otra institución"
+else
+  ok "un sujeto de otra institución queda fuera de alcance"
+fi
+
+# El camino feliz, con su hecho registrado.
+DESDE=$(q "select from_status from public.corroborar_procedencia('$A','learning_objective','$OBJ_C','corroborated','instructor','Programa 2026, pág. 4','coincide con el programa de la cátedra','11111111-1111-1111-1111-111111111111');" | head -1 | tr -d '[:space:]')
+[ "$DESDE" = "unverified" ] && ok "la corroboración devuelve de dónde venía" || mal "no devolvió el origen: $DESDE"
+[ "$(q "select verification_status from learning_objective where id='$OBJ_C';" | tr -d '[:space:]')" = "corroborated" ] \
+  && ok "y la fila quedó corroborada" || mal "la fila no se elevó"
+[ "$(q "select source_ref from provenance_corroboration where subject_id='$OBJ_C';" | tr -d '[:space:]')" = "Programa2026,pág.4" ] \
+  && ok "contra qué se corroboró quedó registrado, no sólo que se corroboró" || mal "se perdió la referencia"
+
+# **`disputed` no es terminal**: una disputa resuelta puede volver.
+corre "select public.corroborar_procedencia('$A','learning_objective','$OBJ_C','disputed','student','reclamo del estudiante','dice que la cátedra lo cambió');"
+corre "select public.corroborar_procedencia('$A','learning_objective','$OBJ_C','corroborated','instructor','acta de cátedra','se revisó el reclamo');"
+[ "$(q "select count(*) from provenance_corroboration where subject_id='$OBJ_C';" | tr -d '[:space:]')" = "3" ] \
+  && ok "una disputa resuelta puede volver, y el historial conserva las tres" || mal "se perdió el historial"
+# Nada baja a unverified.
+if corre "select public.corroborar_procedencia('$A','learning_objective','$OBJ_C','unverified','instructor','ref','motivo');"; then
+  mal "se volvió a unverified"
+else
+  ok "no se vuelve a unverified: borraría que alguien lo miró"
+fi
+# Y una tabla sin procedencia no entra por acá.
+if corre "select public.corroborar_procedencia('$A','risk_signal','$OBJ_C','corroborated','instructor','ref','motivo');"; then
+  mal "se corroboró una tabla que no lleva verification_status"
+else
+  ok "una tabla sin procedencia no entra: el CHECK es el contrato"
+fi
+
+corre "delete from provenance_corroboration; delete from learning_objective where id='$OBJ_C';"
+
+echo "→ B6.7.1. El vocabulario con criterio profesional (ADR-037, 9.5)"
+# Las cinco familias, y ninguna sexta. 'Clasificación incierta' está vigente
+# **declarándose no-familia**, así que no engrosa la cuenta de familias.
+[ "$(q "select count(*) from error_type where is_current and es_familia;" | tr -d '[:space:]')" = "5" ] \
+  && ok "quedan cinco familias vigentes" || mal "el catálogo vigente no tiene cinco familias"
+[ "$(q "select es_familia::text from error_type where canonical_id='clasificacion_incierta' and is_current;" | tr -d '[:space:]')" = "false" ] \
+  && ok "'clasificación incierta' está en el catálogo y no es una familia" || mal "'clasificación incierta' cuenta como familia"
+
+# 'Dependencia de ayuda externa' deja de ser un error **sin que se haya editado
+# la fila que el Product Owner escribió**: sigue ahí, apagada y con su texto.
+[ "$(q "select count(*) from error_type where canonical_id='dependencia' and is_current;" | tr -d '[:space:]')" = "0" ] \
+  && ok "'dependencia' no tiene versión vigente: dejó de ser un error" || mal "'dependencia' sigue vigente"
+[ "$(q "select label from error_type where canonical_id='dependencia' and version='v1.0-po-provisional';" | tr -d '[:space:]')" = "Dependenciadeayudaexterna" ] \
+  && ok "y su fila histórica quedó intacta: apagada, no reescrita" || mal "se editó la fila del Product Owner"
+
+TIPO2=$(q "select id from error_type where canonical_id='consigna' and is_current;" | tr -d '[:space:]')
+INCIERTA=$(q "select id from error_type where canonical_id='clasificacion_incierta' and is_current;" | tr -d '[:space:]')
+VIEJO=$(q "select id from error_type where canonical_id='procedimiento' and version='v1.0-po-provisional';" | tr -d '[:space:]')
+
+# Sólo el vocabulario vigente clasifica algo nuevo.
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$VIEJO','error',false);"; then
+  mal "se clasificó con una versión apagada del vocabulario"
+else
+  ok "una versión apagada del vocabulario ya no clasifica nada nuevo"
+fi
+
+# La secundaria tiene que ser una familia: 'incierta' como secundaria no agrega
+# nada, porque la principal ya dijo que no se pudo determinar.
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',false,null,null,null,null,null,null,'$INCIERTA');"; then
+  mal "'clasificación incierta' entró como categoría secundaria"
+else
+  ok "la secundaria tiene que ser una familia de error"
+fi
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',false,null,null,null,null,null,null,'$TIPO');"; then
+  mal "la secundaria pudo ser la misma que la principal"
+else
+  ok "y no puede ser la misma que la principal"
+fi
+OBS2=$(q "select observation_id from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',false,null,null,null,null,null,'k-sec-1','$TIPO2');" | tr -d '[:space:]')
+[[ "$OBS2" =~ ^[0-9a-f-]{36}$ ]] && ok "una principal con secundaria válida se registra" || mal "no se registró la secundaria: $OBS2"
+
+# **El contador cruza versiones del vocabulario.** Es la decisión que hubo que
+# resolver antes de cargar `v2.0`: `error_type_id` apunta a una fila de versión,
+# así que contar por ese id partiría una sola familia en dos, en silencio.
+VIEJO_CONSIGNA=$(q "select id from error_type where canonical_id='consigna' and version='v1.0-po-provisional';" | tr -d '[:space:]')
+corre "insert into error_observation (institution_id,student_id,exam_preparation_id,error_type_id,kind,corroborated)
+  values ('$A','a5000000-0000-0000-0000-000000000001','$PREP','$VIEJO_CONSIGNA','error',true);"
+corre "insert into error_observation (institution_id,student_id,exam_preparation_id,error_type_id,kind,corroborated)
+  values ('$A','a5000000-0000-0000-0000-000000000001','$PREP','$TIPO2','error',true);"
+cruzado=$(q "select count(*) from error_observation o join error_type t on t.id=o.error_type_id
+             where o.exam_preparation_id='$PREP' and t.canonical_id='consigna';" | tr -d '[:space:]')
+[ "$cruzado" = "2" ] \
+  && ok "una observación de v1.0 y una de v2.0 son la misma familia" \
+  || mal "la familia se partió entre versiones: $cruzado"
+por_fila=$(q "select count(*) from error_observation where exam_preparation_id='$PREP' and error_type_id='$TIPO2';" | tr -d '[:space:]')
+[ "$por_fila" = "1" ] \
+  && ok "y contar por fila de versión habría dicho 1: por eso no se cuenta así" || mal "conteo por fila inesperado: $por_fila"
+corre "delete from error_observation where error_type_id in ('$VIEJO_CONSIGNA','$TIPO2');"
+
+# **La necesidad de apoyo no es un error, y vive en otra tabla.**
+APOYO=$(q "select id from support_need_type where canonical_id='necesidad_de_apoyo' and is_current;" | tr -d '[:space:]')
+antes=$(q "select count(*) from error_observation where exam_preparation_id='$PREP';" | tr -d '[:space:]')
+corre "select public.registrar_necesidad_de_apoyo('$A','$PREP','$APOYO',null,null,'pidió ayuda para arrancar');"
+despues=$(q "select count(*) from error_observation where exam_preparation_id='$PREP';" | tr -d '[:space:]')
+[ "$antes" = "$despues" ] \
+  && ok "registrar una necesidad de apoyo no agrega una sola observación de error" \
+  || mal "la necesidad de apoyo entró al contador: $antes → $despues"
+[ "$(q "select count(*) from support_need_observation where exam_preparation_id='$PREP';" | tr -d '[:space:]')" = "1" ] \
+  && ok "y quedó registrada donde corresponde, como condición de desempeño" || mal "no se registró la necesidad de apoyo"
+
+# **La corrección humana es append-only**, y exige motivo.
+if corre "select public.corregir_clasificacion_de_error('$A','$OBS2','$TIPO2','   ');"; then
+  mal "se reclasificó sin motivo"
+else
+  ok "una reclasificación sin motivo no entra: no se podría auditar"
+fi
+# Misma principal **y** misma secundaria: no cambia nada, y no se registra.
+if corre "select public.corregir_clasificacion_de_error('$A','$OBS2','$TIPO','no cambia nada','$TIPO2');"; then
+  mal "se registró una corrección que no corrige nada"
+else
+  ok "y una que no cambia la clasificación tampoco"
+fi
+DESDE=$(q "select from_canonical_id from public.corregir_clasificacion_de_error('$A','$OBS2','$TIPO2','la consigna pedía otra cosa');" | tr -d '[:space:]')
+[ "$DESDE" = "procedimiento" ] && ok "la corrección devuelve la familia de la que salió" || mal "no devolvió el origen: $DESDE"
+[ "$(q "select canonical_id from error_type t join error_observation o on o.error_type_id=t.id where o.id='$OBS2';" | tr -d '[:space:]')" = "consigna" ] \
+  && ok "la observación pasó a llevar la clasificación nueva" || mal "no se reclasificó"
+[ "$(q "select count(*) from error_classification_correction where observation_id='$OBS2';" | tr -d '[:space:]')" = "1" ] \
+  && ok "y la anterior no se borró: quedó registrada de qué a qué" || mal "la corrección no dejó rastro"
+[ "$(q "select canonical_id from error_type t join error_classification_correction c on c.from_error_type_id=t.id where c.observation_id='$OBS2';" | tr -d '[:space:]')" = "procedimiento" ] \
+  && ok "el historial dice de qué familia venía" || mal "el historial perdió el origen"
+
+corre "delete from error_classification_correction; delete from support_need_observation;
+       delete from error_observation where id='$OBS2';"
+
+echo "→ B6.7.2. El denominador (ADR-037, 9.1 y 9.6)"
+# **La regla vigente es la de ella**, ya completada por B6.7.3, y las versiones
+# anteriores quedaron apagadas.
+[ "$(q "select version from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "v4.0-psicopedagogia" ] \
+  && ok "la regla vigente es la de la psicopedagoga, con B6.7.3" || mal "la regla vigente no es v4.0"
+[ "$(q "select count(*) from risk_rule where canonical_id='HP0-06-1' and version='v2.0-po-provisional';" | tr -d '[:space:]')" = "1" ] \
+  && ok "y la del Product Owner sigue ahí, apagada" || mal "se borró la versión del PO"
+# Los números **no se movieron**: ella los recomendó tal cual.
+[ "$(q "select (threshold_config->'apariciones'->>'atencion') || '/' || (threshold_config->'apariciones'->>'intervencion') from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "2/3" ] \
+  && ok "los umbrales siguen siendo 2 y 3: cambió el denominador, no el número" || mal "se movió un umbral"
+# B6.7.3 cerró los tres pendientes: no quedan mezclados con la configuración.
+[ "$(q "select (threshold_config ? 'pendiente_b6_7_3')::text from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "false" ] \
+  && ok "B6.7.3 ya no conserva pendientes heredados del PO" || mal "la regla vigente conserva pendiente_b6_7_3"
+[ "$(q "select (threshold_config->>'clean_successes_to_resolve') || '/' || jsonb_array_length(threshold_config->'early_review_triggers') from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "2/6" ] \
+  && ok "dos aciertos y seis disparadores viven en configuración" || mal "B6.7.3 quedó hardcodeada o incompleta"
+
+# `learning_objective` **nace vacía**: la comparabilidad se declara.
+[ "$(q "select count(*) from learning_objective;" | tr -d '[:space:]')" = "0" ] \
+  && ok "learning_objective está vacía: no se inventó ninguna taxonomía" || mal "se sembraron objetivos"
+
+OBJ_A=$(q "insert into learning_objective (institution_id,kind,label,source_type)
+           values ('$A','objetivo_de_aprendizaje','Objetivo A','instructor') returning id;" | head -1 | tr -d '[:space:]')
+OBJ_B=$(q "insert into learning_objective (institution_id,kind,label,source_type)
+           values ('$A','demanda_cognitiva','Demanda B','instructor') returning id;" | head -1 | tr -d '[:space:]')
+[ "$(q "select verification_status from learning_objective where id='$OBJ_A';" | tr -d '[:space:]')" = "unverified" ] \
+  && ok "un objetivo declarado entra unverified: nadie eleva su propia autoridad" || mal "entró elevado"
+
+# Comparar contra el objetivo de otra institución sería comparabilidad inventada.
+OTRA=$(q "insert into learning_objective (institution_id,kind,label,source_type)
+          select id,'objetivo_de_aprendizaje','De otra casa','instructor' from institution where id<>'$A' limit 1 returning id;" | head -1 | tr -d '[:space:]')
+if [ -n "$OTRA" ] && corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',false,null,null,null,null,null,null,null,'$OTRA');"; then
+  mal "se comparó contra un objetivo de otra institución"
+else
+  ok "un objetivo de otra institución no compara nada acá"
+fi
+
+# **9.6 · lo que no se puede leer no corrobora.**
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'$EV_OK',null,null,null,null,null,null,'$OBJ_A','no_interpretable',false,'alta');"; then
+  mal "una evidencia no interpretable corroboró un error"
+else
+  ok "una evidencia no interpretable no corrobora: no se distingue qué ocurrió"
+fi
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'$EV_OK',null,null,null,null,null,null,'$OBJ_A','suficiente_de_logro',false,'alta');"; then
+  mal "se corroboró un error que nadie pudo identificar"
+else
+  ok "y un error no identificable tampoco: 9.6 pide identificarlo con claridad"
+fi
+if corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'$EV_OK',null,null,null,null,null,null,'$OBJ_A',null,true,'alta');"; then
+  mal "se corroboró sin declarar la calidad de la evidencia"
+else
+  ok "ni sin declarar la calidad de la evidencia"
+fi
+# **Y una entrega INSUFFICIENT sí cuenta**, que es lo que ella aprobó.
+[ "$(q "select lifecycle_state from evidence where id='$EV_OK';" | tr -d '[:space:]')" = "INSUFFICIENT" ] \
+  && ok "la evidencia de esta prueba es INSUFFICIENT" || mal "la evidencia no es INSUFFICIENT"
+OBS_96=$(q "select observation_id from public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',true,'$EV_OK',null,null,null,null,'k-96',null,'$OBJ_A','suficiente_para_identificar_error',true,'alta');" | head -1 | tr -d '[:space:]')
+[[ "$OBS_96" =~ ^[0-9a-f-]{36}$ ]] \
+  && ok "una entrega insuficiente con el error identificable CUENTA (9.6, su APROBAR)" \
+  || mal "se excluyó una entrega insuficiente: sesgaría contra quien más lo necesita"
+
+# El `CHECK` de coherencia: no interpretable e identificable a la vez no existe.
+if corre "insert into error_observation (institution_id,student_id,exam_preparation_id,error_type_id,kind,evidence_quality,error_identifiable)
+  values ('$A','a5000000-0000-0000-0000-000000000001','$PREP','$TIPO','error','no_interpretable',true);"; then
+  mal "una evidencia no interpretable pudo identificar el error"
+else
+  ok "no interpretable e identificable a la vez no es un estado que exista"
+fi
+
+corre "delete from error_observation where idempotency_key='k-96' or evidence_quality is not null;
+       delete from learning_objective;"
 
 echo "→ B6.6.3. La cola sintética: un caso por señal, y no toca el dominio"
 corre "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status)
@@ -537,13 +765,18 @@ else
 fi
 corre "delete from escalation_sink; delete from risk_signal where id='ec000000-0000-0000-0000-000000000001';"
 
-echo "→ B6.5. El umbral es de quien lo puso, y la fuente profesional queda intacta"
-[ "$(q "select provisional_default_id from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "PO-MVP-C01-021" ] \
-  && ok "la regla vigente dice que el umbral es del Product Owner" || mal "la procedencia del umbral no es la del PO"
+echo "→ B6.5/B6.7.2. El umbral es de quien lo puso, y ninguna versión se reescribe"
+# **Cada versión declara su autoría, y ninguna pisa a la anterior.** Es la única
+# forma de poder decir, dentro de un año, quién decidió qué.
+[ "$(q "select provisional_default_id from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "PSICOPEDAGOGIA-ADR-037" ] \
+  && ok "la regla vigente dice que el umbral es de la psicopedagoga" || mal "la procedencia del umbral vigente no es la de ella"
+[ "$(q "select provisional_default_id from risk_rule where canonical_id='HP0-06-1' and version='v2.0-po-provisional';" | tr -d '[:space:]')" = "PO-MVP-C01-021" ] \
+  && ok "la del Product Owner sigue diciendo que era suya, apagada" || mal "se reescribió la procedencia del PO"
 [ "$(q "select provisional_default_id from risk_rule where canonical_id='HP0-06-1' and version='v1.0';" | tr -d '[:space:]')" = "HUMAN-P0-06" ] \
-  && ok "y la versión de la psicopedagoga sigue ahí, apagada y sin reescribir" || mal "se tocó la fila de ella"
-[ "$(q "select count(*) from risk_rule where threshold_config is not null;" | tr -d '[:space:]')" = "1" ] \
-  && ok "hay UNA sola regla con umbral: no se inventaron otras" || mal "apareció más de una regla con umbral"
+  && ok "y la situación que ella nombró en HUMAN-P0-06 sigue intacta" || mal "se tocó la fila de HUMAN-P0-06"
+# Lo que no puede haber es **dos reglas corriendo a la vez**.
+[ "$(q "select count(*) from risk_rule where threshold_config is not null and is_current;" | tr -d '[:space:]')" = "1" ] \
+  && ok "hay UNA sola regla vigente con umbral: no se inventaron otras" || mal "hay más de una regla vigente con umbral"
 [ "$(q "select count(*) from risk_rule where canonical_id in ('HP0-06-2','HP0-06-3') and modo='HUMANA' and threshold_config is null;" | tr -d '[:space:]')" = "2" ] \
   && ok "las otras dos siguen sin umbral y en modo HUMANA" || mal "se les puso umbral a las otras"
 

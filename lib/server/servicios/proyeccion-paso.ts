@@ -46,6 +46,15 @@ export interface EstadoDePaso {
   accion: { status: string; objetivo: string | null } | null;
   compromiso: { state: string } | null;
   evidencia: string;
+  reentrada: {
+    id: string;
+    motivo: string;
+    justificacion: string;
+    actividad: string;
+    evidenciaVigente: string;
+    desde: string;
+    hacia: string;
+  } | null;
 }
 
 export interface RepositorioDePasoLectura {
@@ -201,9 +210,26 @@ export function proyectarPaso(e: EstadoDePaso): PasoProtocoloProps {
     // rompe sola cuando una pantalla marca "visto" al renderizar.
     avisoDeApertura: "Abriste este paso. Abrirlo no lo completa.",
     aviso: null,
-    ctaPrimaria: CTA[nivel] ? { texto: CTA[nivel]!, habilitada: true } : null,
+    // La propuesta pendiente domina: mover el recorrido requiere esta decisión
+    // antes de ofrecer cualquier CTA del paso.
+    ctaPrimaria: e.reentrada ? null : CTA[nivel] ? { texto: CTA[nivel]!, habilitada: true } : null,
     despues: null,
     secundarios,
+    reentradaPendiente: e.reentrada
+      ? {
+          id: e.reentrada.id,
+          titulo: "Antes de volver",
+          motivo: e.reentrada.motivo,
+          justificacion: e.reentrada.justificacion,
+          actividad: e.reentrada.actividad,
+          evidenciaVigente: e.reentrada.evidenciaVigente,
+          recorrido: `${e.reentrada.desde} → ${e.reentrada.hacia}`,
+          comoPedirOtraOpcion:
+            "Si esta vuelta no te sirve, podés pedir otra opción sin perder lo que ya hiciste.",
+          ctaAceptar: "ACEPTAR ESTA VUELTA",
+          ctaOtraOpcion: "PEDIR OTRA OPCIÓN",
+        }
+      : null,
     // La procedencia del contenido, dicha en la pantalla y sin oficializarla.
     fuenteDelContenido: fuenteDeContenido(e.contenido, e.contenidoVersion),
     ctaRetorno: "VOLVER AL OVERVIEW",

@@ -617,6 +617,20 @@ export interface RecursoConfigurado {
   derechos: string | null;
 }
 
+/** Propuesta que debe explicarse y responderse antes de mover el recorrido. */
+export interface ReentradaPendiente {
+  id: string;
+  titulo: string;
+  motivo: string;
+  justificacion: string;
+  actividad: string;
+  evidenciaVigente: string;
+  recorrido: string;
+  comoPedirOtraOpcion: string;
+  ctaAceptar: string;
+  ctaOtraOpcion: string;
+}
+
 export interface PasoProtocoloProps {
   nivel: NivelPaso;
   variante: VariantePaso | null;
@@ -653,6 +667,8 @@ export interface PasoProtocoloProps {
   ctaPrimaria: { texto: string; habilitada: boolean } | null;
   despues: string | null;
   secundarios: readonly string[];
+  /** Presente ⇒ domina la decisión y `ctaPrimaria` queda en `null`. */
+  reentradaPendiente: ReentradaPendiente | null;
 
   // ── Configuración · columna secundaria ────────────────────────────────────
   /** Fuente del contenido: real o desconocida. Nunca se oficializa. */

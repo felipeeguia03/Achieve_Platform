@@ -357,6 +357,11 @@ export const copy = {
   "PASO.SEPARACION": "Objetivo del paso. No es una próxima acción generada por el Engine.",
   "PASO.ABRIR_NO_COMPLETA": "Abriste este paso. Abrirlo no lo completa.",
   "PASO.CIERRE_NO_CONFIRMADO": "Cierre del paso todavía no confirmado.",
+  "PASO.REENTRADA.EYEBROW": "PROPUESTA DE REENTRADA",
+  "PASO.REENTRADA.MOTIVO": "Por qué:",
+  "PASO.REENTRADA.RECORRIDO": "La vuelta:",
+  "PASO.REENTRADA.ACTIVIDAD": "Qué volvés a trabajar:",
+  "PASO.REENTRADA.EVIDENCIA": "Qué sigue vigente:",
 
   "CTA.PASO.ABRIR_RECURSO": "ABRIR RECURSO",
   "CTA.PASO.VOLVER_OVERVIEW": "VOLVER AL OVERVIEW",

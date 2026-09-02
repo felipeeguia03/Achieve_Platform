@@ -37,6 +37,8 @@ export interface Senal extends EntidadConEstado<RiskSignalStatus> {
   studentId: string;
   severity: SeveridadDeRiesgo;
   reason: string;
+  /** Contexto estructurado para la persona; nunca reemplaza la causa legible. */
+  reviewContext: Record<string, unknown>;
 }
 
 /** Una señal detectada por su owner. **El Service no la deduce: la recibe.** */
@@ -55,6 +57,8 @@ export interface SenalDetectada {
   validUntil?: string | null;
   /** `I8` del lado del servidor: reintentar no duplica la señal. */
   claveDeIdempotencia?: string;
+  reiterationEpisodeId?: string | null;
+  reviewContext?: Record<string, unknown>;
 }
 
 export interface RepositorioDeSenales
@@ -219,6 +223,7 @@ export async function transicionar(
         studentId: resultado.entidad.studentId,
         // La causa que ya registró la señal. **No se reescribe.**
         explanation: resultado.entidad.reason,
+        reviewContext: resultado.entidad.reviewContext,
       });
     }
   }

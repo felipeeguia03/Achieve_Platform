@@ -112,8 +112,8 @@ describe("Los conflictos que §19.1 declara", () => {
 });
 
 describe("Cobertura de la matriz de estados críticos (VI.9 §22)", () => {
-  it("hay 35 escenarios cubriendo los 31 estados obligatorios", () => {
-    expect(ids).toHaveLength(35);
+  it("hay 36 escenarios: los 31 obligatorios y la reentrada mínima profesional", () => {
+    expect(ids).toHaveLength(36);
   });
 
   it("el catálogo general los incluye a todos", () => {
@@ -130,7 +130,8 @@ describe("Cobertura de la matriz de estados críticos (VI.9 §22)", () => {
   it("se renderiza exactamente una CTA primaria, o ninguna", () => {
     for (const e of todos) {
       const { container, unmount } = render(<PasoDeProtocolo {...e.ux09!} />);
-      expect(container.querySelectorAll("[data-cta-primaria]").length, e.id).toBe(e.ux09!.ctaPrimaria ? 1 : 0);
+      const esperaPrimaria = e.ux09!.ctaPrimaria || e.ux09!.reentradaPendiente ? 1 : 0;
+      expect(container.querySelectorAll("[data-cta-primaria]").length, e.id).toBe(esperaPrimaria);
       unmount();
     }
   });

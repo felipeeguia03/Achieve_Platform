@@ -278,9 +278,9 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fases B1, B2 y B3: ✅ completas** (1 sep 2026). **La próxima con trabajo disponible es la B4**, a
-la que le falta integrar el reloj del lifecycle a una ejecución operativa; todo lo demás topa con una
-decisión humana.
+**Fases B1–B6.7: ✅ completas en su alcance disponible.** No queda otra etapa desbloqueada: B7
+espera el dictamen legal de ADR-006 y B2b.2 espera un owner para corroboración. B6.7.4 dejó la
+replanificación versionada y la reentrada explicada antes de mover el recorrido.
 
 Track A y la Fase A2 están cerrados: las nueve superficies existen, todos los estados críticos son
 alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner.

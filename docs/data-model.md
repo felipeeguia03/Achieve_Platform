@@ -162,8 +162,8 @@ const evidenceOwnerTransitions: Record<EvidenceState, EvidenceState[]> = {
 
 ```ts
 type ExamPreparationStatus =
-  | 'RECOMMENDED' | 'ACTIVE' | 'BLOCKED'
-  | 'EXAM_TAKEN' | 'CLOSED' | 'ABANDONED';
+  | 'RECOMMENDED' | 'ACTIVE' | 'REPLANNED' | 'BLOCKED'
+  | 'EXAM_TAKEN' | 'CLOSED' | 'CANCELLED' | 'EXPLICITLY_ABANDONED';
 
 type PreparationReadinessState = 'NOT_READY' | 'BUILDING' | 'READY_BY_PROTOCOL';
 ```
@@ -863,11 +863,12 @@ CREATE TABLE exam_preparation (
   exam_protocol_id     UUID REFERENCES exam_protocol(id) ON DELETE SET NULL,
   -- **Sin los tres estados de readiness** (ADR-011): eran la segunda verdad.
   status               TEXT NOT NULL DEFAULT 'RECOMMENDED'
-                         CHECK (status IN ('RECOMMENDED','ACTIVE','BLOCKED',
-                                           'EXAM_TAKEN','CLOSED','ABANDONED')),
+                         CHECK (status IN ('RECOMMENDED','ACTIVE','REPLANNED','BLOCKED',
+                                           'EXAM_TAKEN','CLOSED','CANCELLED',
+                                           'EXPLICITLY_ABANDONED')),
   -- "Dónde está ahora", **nunca** "hasta dónde llegó". Con el tramo reentrante
-  -- la segunda lectura es directamente falsa. Hoy **nadie lo escribe**, y por
-  -- eso las superficies dicen "todavía no hay un paso para abrir".
+  -- la segunda lectura es directamente falsa. B6.7.4 sólo lo mueve después de
+  -- aceptar una propuesta de reentrada (o un override humano explícito).
   current_step_id      UUID REFERENCES protocol_step(id) ON DELETE SET NULL,
   -- En la migración real entra por `ALTER`: las dos tablas se referencian.
   readiness_id         UUID REFERENCES preparation_readiness(id) ON DELETE SET NULL,
@@ -1127,7 +1128,7 @@ del spec. La regla de `C01-036` cuenta apariciones del mismo tipo, y ese dato no
 
 | Tabla | Qué es |
 |---|---|
-| `error_type` | El vocabulario, **configuración versionada** — mismo patrón que `risk_rule` y `exam_protocol`. Seis tipos en `v1.0-po-provisional`. Cambiarlo es cargar una versión, no migrar |
+| `error_type` | El vocabulario, **configuración versionada** — mismo patrón que `risk_rule` y `exam_protocol`. Arrancó con seis tipos en `v1.0-po-provisional`; **desde la B6.7.1 rige `v2.0-psicopedagogia`** (§10.0.1). Cambiarlo es cargar una versión, no migrar |
 | `error_observation` | **Hechos**: un error o una resolución limpia sobre un tipo, dentro de una preparación. `corroborated` decide si cuenta; `after_action_id` dice si ocurrió tras una correctiva, **declarado y nunca inferido** |
 
 **La identidad del error es el tipo, no el tema.** `topic_id` es contexto explicativo y no entra en
@@ -1140,6 +1141,249 @@ resolución reinicia el contador. Separarlas obligaría a reconstruir esa línea
 `registrar_observacion_de_error()` exige que una observación corroborada apunte a una evidencia que
 **alguien juzgó** (`SUFFICIENT`, `INSUFFICIENT` o `VALIDATED`). Un error "visto" en una entrega que
 nadie miró es exactamente el error inferido que la decisión prohíbe contar.
+
+---
+
+## 10.0.1 El vocabulario con criterio profesional — Etapa B6.7.1
+
+**Estado:** ✅ construido el 2 de septiembre de 2026. Cierra el punto **`9.5`** de
+[ADR-037](decisions.md#adr-037). La fuente literal es
+[`validacion-psicopedagogica-source.md`](validacion-psicopedagogica-source.md) y **manda sobre este
+resumen**.
+
+> **«el sistema debe reconocer patrones, no etiquetar personas»**
+
+> ⚠️ **Su validación no autoriza datos reales.** Es de producto, y ella condicionó el uso con
+> estudiantes reales a *"piloto, revisión humana, explicabilidad, accesibilidad y monitoreo de
+> equidad"*. [ADR-006](decisions.md#adr-006) sigue siendo bloqueo absoluto.
+
+### Las cinco familias, y la sexta que no vuelve
+
+`v2.0-psicopedagogia` reemplaza a `v1.0-po-provisional`, que **se apaga con un `UPDATE` y no se
+borra**: es lo que el Product Owner afirmó, y editarlo sería reescribir su afirmación.
+
+| Familia | `canonical_id` |
+|---|---|
+| Error conceptual | `conceptual` |
+| Error de procedimiento o estrategia | `procedimiento` |
+| Error de interpretación de consigna | `consigna` |
+| Error de cálculo o ejecución | `calculo` |
+| Omisión o falla de monitoreo | `omision` |
+| **Clasificación incierta** — `es_familia = FALSE` | `clasificacion_incierta` |
+
+**Los `canonical_id` no cambian.** Es la **misma familia redefinida**, no una familia nueva:
+cambiarlos cortaría el vínculo con todo lo ya observado.
+
+### `es_familia` — estar en el catálogo no es contar
+
+*"No se pudo determinar"* **es una respuesta**, y por eso 'clasificación incierta' entra al catálogo
+en vez de dejar `error_type_id` en `NULL`. Pero no es una familia: contar repeticiones de *"no sé"*
+como si fueran el mismo error es el falso positivo que ella marcó.
+
+### El contador cuenta por familia, no por fila de versión
+
+**`error_observation.error_type_id` apunta a una fila de versión.** Un contador que filtre por ese id
+vería **dos tipos distintos donde hay una sola familia** apenas entrara una versión nueva del
+vocabulario: se partiría al medio, en silencio.
+
+La identidad de un error es el `canonical_id`; la versión dice **qué definición estaba vigente**
+cuando alguien lo clasificó. Contar por familia es lo que permite versionar el vocabulario **sin
+reescribir una sola observación**.
+
+De ahí sale la regla que retira 'dependencia de ayuda externa' sin tocar su fila:
+
+> **El contador sólo evalúa una familia que el vocabulario vigente todavía declara como familia.**
+
+Sin fila vigente, no hay familia. `dependencia` no tiene `v2.0`, y deja de contar.
+
+### Principal + secundaria
+
+`error_observation.secondary_error_type_id`, nullable, con `CHECK` de que difiere de la principal y
+validación de que **es una familia** —'clasificación incierta' como secundaria no agrega nada—.
+
+**La secundaria no cuenta nunca**, y no llega al evaluador puro: ella pidió *"mantener un indicador
+transversal por tipo para análisis, **pero sin usarlo solo para escalar**"*, y la forma de que eso no
+dependa de la disciplina de quien escriba la próxima query es que el evaluador **no la reciba**.
+
+### «Necesidad de apoyo para avanzar» — no es un error
+
+> *"La necesidad de ayuda **puede ser esperable y productiva**; denominarla 'dependencia' corre el
+> riesgo de **estigmatizar**."*
+
+| Tabla | Qué es |
+|---|---|
+| `support_need_type` | Vocabulario versionado. **Una sola fila**, porque ella nombró una sola condición |
+| `support_need_observation` | La condición de desempeño observada. **Ningún contador la lee** |
+
+Tabla propia y no un `kind` más en `error_observation`: guardarlo en una tabla llamada «observación
+de error» contradiría la decisión justo donde más se lee después, que es este documento.
+`registrar_necesidad_de_apoyo()` no evalúa ninguna regla, y el Service que la llama **no recibe ni el
+repositorio de señales ni el destino de escalamiento**.
+
+### La corrección humana
+
+`error_classification_correction` es **append-only**: guarda de qué a qué, con `reason` `NOT NULL`, y
+`corregir_clasificacion_de_error()` la escribe **antes** de actualizar la observación, en la misma
+transacción. Es la misma idea que ella pidió para el reinicio del contador —*"cerrar el estado
+activo, no eliminar datos previos"*— aplicada a la taxonomía.
+
+⚠️ **Quién puede corregir no está definido.** Ella lo puso entre lo que hay que evaluar antes de un
+piloto: *"quién puede corregir una clasificación de error"*. `corrected_by` es una **identidad
+externa** —UUID sin FK, igual que `intervention.owner_operator_id`— y la superficie va con secreto de
+servicio.
+
+⚠️ **Una corrección no retracta una señal ya emitida.** Fue cierta bajo la clasificación vigente
+entonces, y `risk_signal` guarda la `rule_version` que la produjo. Se re-evalúan **las dos familias
+afectadas** hacia adelante. Retractarla exigiría una transición del lifecycle que **nadie definió**.
+
+### Lo que esta etapa NO hace
+
+**No mueve un solo umbral.** `repeat_signal_at = 2` y `human_review_at = 3` son exactamente los que
+había puesto el Product Owner: ella no objetó los números, objetó **qué cuenta como una repetición**.
+El denominador es la Etapa **B6.7.2**.
+
+---
+
+## 10.0.2 El denominador — Etapa B6.7.2
+
+**Estado:** ✅ construido el 2 de septiembre de 2026. Cierra los puntos **`9.1`** y **`9.6`** de
+[ADR-037](decisions.md#adr-037). Migración `20260907000000_denominador_psicopedagogico.sql`.
+
+> *"No contar automáticamente dos errores sólo porque comparten una etiqueta amplia. **Deben coincidir
+> el tipo de error y el objetivo de aprendizaje o demanda cognitiva principal.**"*
+
+**El umbral nunca fue el problema.** `2` y `3` no se movieron —ella los recomendó tal cual después de
+mirar los del Product Owner—. Lo que cambió es **qué se cuenta**.
+
+### La unidad de conteo
+
+`(estudiante, preparación, familia de error, objetivo o demanda)`. El estudiante viene implícito en
+la preparación, que es de un solo estudiante.
+
+| Tabla / columna | Qué es |
+|---|---|
+| `learning_objective` | La identidad contra la que se compara. `kind` distingue *objetivo de aprendizaje* de *demanda cognitiva*, porque ella ofrece las dos. Con Provenance completa (§4) |
+| `error_observation.learning_objective_id` | La cuarta dimensión. **Nullable**, y eso significa algo preciso: nadie declaró contra qué comparar |
+
+⚠️ **`learning_objective` nace vacía, y es una decisión.** *"Cómo se define una tarea comparable"*
+está entre lo que ella pidió evaluar **antes de un piloto**. La comparabilidad **se declara, nunca se
+infiere**, y no hay ninguna taxonomía cargada —ni verbos de Bloom ni niveles de demanda—. Es el mismo
+criterio que `playbook` con `C01-044`: *"no se inventan valores"*.
+
+⚠️ **El tema no es el objetivo.** `topic` es contenido, y ella los mantiene separados: pide contar por
+objetivo/demanda **y además** registrar el tema. `action.objective` es otra cosa más — el objetivo de
+una acción del día.
+
+### Los dos números
+
+> *"Separar **'repetición detectada' de 'dificultad confirmada'**."*
+
+| Número | Qué cuenta | Escala |
+|---|---|---|
+| `repeticionDetectada` | Misma familia, sin exigir comparabilidad | **Nunca sola.** Es *"una señal para explorar, no una prueba"* |
+| `apariciones` | Misma familia **y mismo objetivo** | Es lo único que lee el umbral |
+
+Sin objetivo declarado **no hay comparabilidad que afirmar**: se cuenta la repetición y no se escala.
+Cuando el detectado supera al comparable, **la causa lo dice** — que hubo más errores del mismo tipo
+en tareas que nadie comparó entre sí es información, no ruido.
+
+**El reinicio respeta el mismo alcance que el conteo.** Una resolución limpia de otro objetivo no
+apaga este contador: sería reiniciar por algo no comparable, el mismo error al revés.
+
+### Qué evidencia deja contar — `9.6`
+
+| Columna | Qué es |
+|---|---|
+| `evidence_quality` | *suficiente de logro* · *suficiente para identificar un error* · *no interpretable* |
+| `error_identifiable` | `9.6` cuenta *"cuando permite identificar el error con claridad"* |
+| `classification_confidence` | **Ordinal declarado** —`alta`/`media`/`baja`—, no un número calculado. El umbral vive en `threshold_config` |
+
+⚠️ **`evidence_quality` es otro eje que `evidence.lifecycle_state`.** Una entrega `INSUFFICIENT` puede
+ser perfectamente legible. Fundirlos rompería *"enviar no es suficiencia"*.
+
+**Una entrega insuficiente cuenta si el error es identificable.** Es el único `APROBAR` de los siete,
+y su fundamento es explícito: *"excluir entregas insuficientes **sesgaría la detección contra quienes
+más necesitan acompañamiento**"*. Lo que no cuenta es lo ilegible, no lo incompleto.
+
+`registrar_observacion_de_error()` rechaza corroborar contra evidencia `no_interpretable`, sin
+declarar la calidad, o con un error que nadie pudo identificar.
+
+### La configuración, y lo que todavía no es de ella
+
+`HP0-06-1 v3.0-psicopedagogia` reemplaza a `v2.0-po-provisional`, que **se apaga y no se borra**.
+Cada versión conserva su `provisional_default_id`, así que dentro de un año se puede decir quién
+decidió qué.
+
+Dos claves siguen llevando el valor del Product Owner, y **se nombran una por una** en
+`threshold_config.pendiente_b6_7_3` en vez de quedar disimuladas: `reincidencia_tras_correctiva`
+(`9.3`) y `reinicia_con_resolucion_limpia` (`9.4`).
+
+⚠️ **Una configuración vieja no hereda las exigencias nuevas.** `umbralDesdeConfig()` las lee con
+default `false`: si las heredara, cargar una versión nueva del lector cambiaría el significado de una
+fila que alguien escribió antes — la misma regla que impide editar una migración aplicada.
+
+## 10.0.3 Acelerar y reiniciar — Etapa B6.7.3
+
+**Estado:** ✅ construido el 2 de septiembre de 2026. Cierra `9.2`, `9.3` y `9.4` de
+[ADR-037](decisions.md#adr-037). Migración `20260908000000_acelerar_y_reiniciar.sql`.
+
+### Una corrección válida se demuestra con cinco hechos
+
+`after_action_id` conserva el vínculo con la acción correctiva, pero **ya no basta para acelerar**.
+Las cinco condiciones profesionales viven en `error_observation`: `correction_delivered`,
+`correction_accessible`, `learner_engaged`, `new_independent_attempt` y
+`same_error_confidence`. La última se compara contra el umbral ordinal configurado; no hay score.
+
+### Reiniciar cierra un episodio
+
+`reiteration_episode` identifica `(preparación, familia, objetivo/demanda)` y tiene estados `active`
+y `recovered`. Dos aciertos limpios de intentos distintos —con al menos uno espaciado o sin modelo
+inmediato— cierran el episodio activo con `recovered_at`; ninguna observación se modifica ni se
+borra. Una recaída crea otra fila con `previous_episode_id`.
+
+`risk_signal.reiteration_episode_id` vincula la señal con el episodio que la produjo. **Los
+lifecycles no se fusionan**: recuperar el episodio no resuelve una señal que ya pidió una persona;
+ADR-032 sigue exigiendo intervención y outcome.
+
+### El contador no es el único camino
+
+`early_review_observation` registra uno de los seis `early_review_triggers` de la configuración
+vigente. El Service rechaza cualquier identificador no configurado y crea una señal que pide persona
+sin esperar la tercera aparición. `risk_signal.review_context` y `escalation_sink.review_context`
+transportan observaciones, evidencia e historial de apoyos; la causa legible sigue siendo obligatoria.
+
+## 10.0.4 Replanificar y volver — Etapa B6.7.4
+
+**Estado:** ✅ construido el 2 de septiembre de 2026. Cierra `9.7` de
+[ADR-037](decisions.md#adr-037). Migración `20260909000000_replanificar_y_volver.sql` y decisión
+estructural en [ADR-038](decisions.md#adr-038).
+
+### Una preparación, varias versiones del plan
+
+`exam_preparation_plan_version` agrega una secuencia append-only dentro de la misma
+`exam_preparation`. El `UNIQUE (student_id, assessment_id)` de `I7` no cambia. Cada versión conserva
+el snapshot de la fecha recibida, su motivo, actor e idempotencia; los objetos históricos siguen
+ligados a la preparación y no se copian ni se borran al versionar.
+
+`REPLANNED` es un estado vivo: admite trabajo del protocolo igual que `ACTIVE`. `CANCELLED` y
+`EXPLICITLY_ABANDONED` son cierres explícitos; el antiguo `ABANDONED` se migró al segundo. Ningún
+reloj interpreta inactividad como abandono.
+
+### Política versionada y decisión en dos tiempos
+
+`protocol_reentry_policy` declara el tramo vigente 9–18 y `protocol_reentry_reason` sus seis motivos
+en `v1.0-psicopedagogia`. El Service no contiene esa lista ni el límite.
+`protocol_reentry_proposal` guarda motivo, origen, destino, justificación, actividad y explicación
+de evidencia conservada.
+
+Una fila `PROPOSED` **no mueve** `current_step_id`. `ACCEPTED` o `HUMAN_OVERRIDDEN` lo mueven al
+destino; `ALTERNATIVE_REQUESTED` mantiene el origen. Postgres verifica que ambos pasos pertenezcan
+al protocolo, que el origen siga siendo el paso actual, que la vuelta esté dentro del tramo
+configurado y que el destino sea anterior. **No determina cuál paso es necesario:** esa decisión
+entra declarada y puede discutirse.
+
+La operación no escribe `protocol_step_completion`, Evidence ni progreso. `estado_de_paso()`
+proyecta la propuesta pendiente a `UX09` para explicar todo antes del cambio.
 
 ## 10.1 Las funciones de base, y qué decide cada una
 
@@ -1160,6 +1404,12 @@ Services (§3.2 de [`architecture.md`](architecture.md)).
 | `abrir_intervencion` | Abre el caso con dueño, y con el SLA del playbook si lo hay | La señal tiene que estar pidiendo intervención: leerla y después insertar deja la ventana para que otro la resuelva en el medio |
 | `cerrar_intervencion` | Cierra, **registra el outcome y resuelve la señal** | Media escritura deja una intervención cerrada sin resultado, que es lo único que rompe el Done de la B6. Desde [ADR-034](decisions.md#adr-034) §7.4 la señal cierra con el mismo `COMMIT`: en dos llamadas quedaba una ventana con la intervención cerrada y la señal pidiendo a alguien que ya la había atendido. También rechaza a quien no es su dueño (§7.5) |
 | `registrar_observacion_de_error` | Registra el error como **hecho**, e impide corroborar contra una evidencia sin juzgar | Un error inferido no puede incrementar el contador (`C01-036`, [ADR-036](decisions.md#adr-036)) |
+| `registrar_observacion_b6_7_3` | Agrega las cinco condiciones de corrección y la identidad/calidad del intento en la misma transacción | `9.3` y `9.4`: `after_action_id` solo no demuestra ayuda válida, y dos replays no son dos aciertos |
+| `sincronizar_episodio_de_reiteracion` | Abre, recupera o vincula el episodio que el Service ya evaluó | El Repository persiste el resultado; no decide cuántos aciertos alcanzan |
+| `registrar_disparador_temprano` | Registra un criterio cualitativo configurado como hecho idempotente | `9.2`: pedir una persona no depende únicamente del contador |
+| `replanificar_preparacion` | Agrega una versión y deja la misma preparación en `REPLANNED` | Versionar y cambiar el lifecycle ocurren juntos; nunca aparece una segunda preparación |
+| `proponer_reentrada` | Persiste la explicación y valida protocolo, tramo y origen vigente | Una propuesta incompleta u obsoleta no puede presentarse como ruta actual; **no mueve el paso** |
+| `responder_reentrada` | Registra aceptar, pedir alternativa u override; mueve el puntero sólo en las dos ramas afirmativas | La decisión y el movimiento no pueden quedar partidos |
 | `resolver_senal` | `RESOLVED`, **sólo con una intervención con outcome** | La condición mira dos tablas y tiene que verlas en la misma transacción. **Se conserva** para las señales que cierren por otro camino; su regla no se relajó |
 | `circuito_de_senales` | **Audita el Done**: dónde está roto el circuito | Un criterio de cierre que se revisa a mano se marca cumplido sin revisar |
 
@@ -1190,10 +1440,83 @@ Repository usa una transacción o predicate atómico para evitar carreras. Cada 
 | I6 | Exactamente **una** `ActionRecommendation` primaria por contexto | Regla de Service/contrato pendiente de una identidad canónica de contexto o lote; el índice único parcial solo garantiza **como máximo una por `action_id`** |
 | I7 | Una sola `ExamPreparation` por (`student_id`, `assessment_id`) | `UNIQUE` |
 | I8 | Las mutaciones idempotentes no crean duplicados ante reintento | `UNIQUE (idempotency_key)` + `ON CONFLICT` |
-| I9 | Ninguna capa eleva un `verification_status` | Operación explícita del owner en Service + autorización y auditoría; Repository no expone un update genérico del campo |
+| I9 | Ninguna capa eleva un `verification_status` | Operación explícita del owner en Service + autorización y auditoría; Repository no expone un update genérico del campo. ✅ **Construida en la B2b.2** — §12.1. La única escritura es `corroborar_procedencia()`, y hay guard de que ningún otro SQL ni repositorio toca el campo |
 | I10 | Un `ProgressUpdated` con `changed_dimensions` vacío y `explicit_no_change = FALSE` es inválido | `CHECK` |
 | I11 | Ningún dato de un `institution_id` es visible desde otro | Scoping obligatorio en Service/Repository + tests de aislamiento; RLS deny-by-default como defensa en profundidad ([ADR-005](decisions.md#adr-005)) |
 | I12 | `product_event` y `audit_log` son append-only | Revocar `UPDATE`/`DELETE` |
+
+---
+
+## 11.1 La corroboración — Etapa B2b.2, invariante `I9`
+
+**Estado:** ✅ construida el 2 de septiembre de 2026. Migración `20260910000000_corroboracion.sql`.
+
+**Por qué hacía falta.** La B2b.1 dejó al ingestor sin ninguna forma de elevar el campo —no es que
+no deba: **no tiene por dónde**—, y eso estaba bien. Pero sin la operación que faltaba, **todo el ADL
+quedaba `unverified` para siempre**, y la distinción entre *"lo cargó un estudiante"* y *"alguien lo
+verificó"* nunca se podía ejercer.
+
+### Las cinco tablas
+
+`class_session` · `assessment` · `class_event_record` · `assessment_criterion` ·
+`learning_objective`.
+
+`provenance_corroboration` es **polimórfica** —`(subject_table, subject_id)` con `CHECK` sobre el
+conjunto—, porque cinco tablas de corroboración serían la misma máquina de transiciones escrita cinco
+veces, que es como se desincronizan. Agregar una sexta tabla con Provenance es agregar un valor al
+`CHECK`.
+
+### Corroborar es un hecho, no un `UPDATE`
+
+La función escribe la fila de `provenance_corroboration` **y después** actualiza el sujeto, en una
+transacción. Si sólo se cambiara el campo, dentro de un año nadie podría decir **contra qué** se
+verificó ni quién lo hizo — y ésa es toda la diferencia entre un dato auditable y un dato que alguien
+tocó.
+
+| Columna | Por qué es obligatoria |
+|---|---|
+| `source_ref` `NOT NULL` | La misma regla que la B2b.1 le puso al ingestor: *"lo dijo alguien"* no se puede volver a mirar, así que no se puede corroborar nunca |
+| `reason` `NOT NULL` | Una corroboración sin motivo es indistinguible de un clic |
+| `corroborated_by` | ⚠️ **Identidad externa, sin FK**: quién puede corroborar es `C01-030`, `OPEN` |
+
+### La máquina — `provenanceTransitions`
+
+```
+unverified   → corroborated | disputed
+corroborated → disputed
+disputed     → corroborated
+official     → disputed          (sale, no entra)
+```
+
+Está declarada en `lib/domain/state-machines.ts` **y** impuesta en `corroborar_procedencia()`. Las
+dos existen a propósito: el dominio para poder leerla y testearla sin base, la base para imponerla
+aunque alguien llame a la función sin pasar por el Service. **Que digan lo mismo se verifica con un
+test.**
+
+**Nada vuelve a `unverified`.** Bajar a *"nadie lo miró"* borraría que alguien lo miró.
+
+**`disputed` no es terminal.** Una disputa que se resuelve tiene que poder volver, con la misma
+exigencia de fuente concreta. Dejarla terminal dejaría varada para siempre una fila disputada por
+error — el mismo criterio con el que [ADR-034](decisions.md#adr-034) le conservó las salidas a
+`ACKNOWLEDGED`.
+
+### ⚠️ A `official` no llega nadie, y no es un olvido
+
+`official` significa que **la institución lo afirma**, y la Plataforma **no puede autenticar a una
+institución hoy**: `C01-030` está `OPEN`, [ADR-023](decisions.md#adr-023) sacó la identidad de docente
+y [ADR-033](decisions.md#adr-033) mandó las superficies de operador al CRM. El secreto de servicio
+autentica al **sistema llamante**, no a una autoridad académica.
+
+El estado se conserva en el `CHECK` —una fila podría venir así de otro lado— y **conserva su
+salida**, pero ninguna operación lo produce. El rechazo nombra la decisión que falta en vez de decir
+*"inválido"*.
+
+### Y nunca un JWT de estudiante
+
+`POST /api/corroboracion` va con secreto de servicio. Aunque `C01-030` estuviera cerrada, **no sería
+el estudiante**: alguien confirmando lo que él mismo declaró no es verificación, es la misma
+afirmación dos veces. Es el mismo razonamiento que dejó `POST /api/observacion` fuera del alcance del
+estudiante.
 
 ---
 

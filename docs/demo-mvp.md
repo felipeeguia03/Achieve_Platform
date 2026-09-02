@@ -56,6 +56,14 @@ En `.env.local` hacen falta `RELOJ_SHARED_SECRET` y, **sólo para el paso 9**,
 entregas evaluadas y sus dos errores del mismo tipo, ya corroborados. **La señal no está sembrada**:
 la produce la regla, o no existe.
 
+> **Y desde la B6.7.2 el seed declara un objetivo de aprendizaje** ([ADR-037](decisions.md#adr-037),
+> `9.1`). Sin él el circuito **ya no escala**, y ése es exactamente el punto: dos errores del mismo
+> tipo sólo son comparables si coinciden en el objetivo o demanda. `learning_objective` está vacía en
+> el schema — la comparabilidad **se declara, nunca se infiere**.
+>
+> Las dos entregas son **`INSUFFICIENT`** y aun así cuentan, porque el error es identificable
+> (`9.6`). Excluirlas *"sesgaría la detección contra quienes más necesitan acompañamiento"*.
+
 El propio seed imprime el `curl` del paso 3 con los UUID de esa corrida.
 
 ### 3 · La tercera aparición, después de una acción correctiva
@@ -65,14 +73,31 @@ curl -s -X POST http://localhost:3000/api/observacion \
   -H "Authorization: Bearer $RELOJ_SHARED_SECRET" -H 'Content-Type: application/json' \
   -d '{"institucionId":"…","preparacionId":"…","tipoDeErrorId":"…",
        "corroborada":true,"evidenciaId":"…","trasAccionId":"…",
+       "objetivoId":"…","calidadDeEvidencia":"suficiente_para_identificar_error",
+       "errorIdentificable":true,"confianzaDeClasificacion":"alta",
        "claveDeIdempotencia":"demo-obs-3"}'
 ```
 
 ```json
 {"observacionId":"1b64d494-…","duplicado":false,
  "evaluacion":{"estado":"OK","senalId":"eeea1dd6-…","apariciones":3,
+               "repeticionDetectada":3,"noInterpretables":0,
                "duplicado":false,"necesitaPersona":true}}
 ```
+
+### 4 · La misma tercera aparición, en otro objetivo · **no escala**
+
+El paso que hace visible la corrección de la psicopedagoga. Mismo tipo de error, misma cantidad,
+**otro objetivo de aprendizaje**:
+
+```json
+{"evaluacion":{"estado":"SIN_SENAL","apariciones":1,
+               "repeticionDetectada":3,"noInterpretables":0}}
+```
+
+**Tres repeticiones detectadas, una comparable, cero señales.** Es el falso positivo que ella marcó:
+*"dos errores procedimentales en contenidos no comparables no necesariamente expresan la misma
+dificultad"*. El umbral es el mismo de siempre — lo que cambió es el denominador.
 
 ### 5 · La señal que produjo la regla
 
@@ -91,8 +116,8 @@ recuperacion:
     estado      = ELEVADA
     titulo      = Pedimos que alguien te acompañe
     explicacion = Esto siguió apareciendo después de trabajarlo, así que no alcanza con seguir solo.
-    detalle     = Error de procedimiento: volvió a aparecer después de una acción correctiva,
-                  3 veces en esta preparación
+    detalle     = Error de procedimiento o estrategia: volvió a aparecer después de
+                  una acción correctiva, 3 veces en esta preparación
     queSigue    = Ya avisamos al equipo de acompañamiento.
 fugas internas: ninguna
 ```
@@ -103,6 +128,16 @@ Las dos líneas que importan:
   estado general y agrega una explicación; **no reemplaza** la decisión del día.
 - **`fugas internas: ninguna`.** Ni `risk_signal`, ni `rule_version`, ni `HP0-06`, ni el estado
   interno, ni la severidad, ni nada que huela a operador.
+
+> **La etiqueta salió del vocabulario vigente**, que desde la B6.7.1 es `v2.0-psicopedagogia`
+> ([ADR-037](decisions.md#adr-037), `9.5`). Antes decía *"Error de procedimiento"*; el texto de la
+> causa **se escribe con la versión de hoy**, no con la que estuviera vigente cuando se registró cada
+> aparición. Los umbrales no cambiaron: siguen siendo `2` y `3`.
+>
+> **Y la B6.7.2 no tocó una sola palabra de lo que ve el estudiante**, a propósito. La distinción
+> entre repetición detectada y aparición comparable viaja en el resultado estructurado, no en esta
+> frase: ella pidió *"una revisión experta de lenguaje, accesibilidad, privacidad y no
+> estigmatización **antes de probar con personas**"*, y estrenar vocabulario acá sería saltearla.
 
 ### 9–10 · La cola sintética
 
@@ -117,7 +152,7 @@ curl -s "http://localhost:3000/api/escalamiento?institucion=…" \
  "pendientes":1,
  "casos":[{"escalationId":"5e2b8901-…","riskSignalId":"eeea1dd6-…",
            "platformStudentId":"a5000000-…",
-           "explanation":"Error de procedimiento: volvió a aparecer después de una acción correctiva, 3 veces en esta preparación",
+           "explanation":"Error de procedimiento o estrategia: volvió a aparecer después de una acción correctiva, 3 veces en esta preparación",
            "deliveryStatus":"pendiente","createdAt":"2026-09-02T15:04:18Z"}]}
 ```
 

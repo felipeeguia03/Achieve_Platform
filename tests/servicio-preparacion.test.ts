@@ -4,6 +4,9 @@ import {
   activar,
   completarPaso,
   nombreDeEventoDePreparacion,
+  proponerReentrada,
+  replanificar,
+  responderReentrada,
   transicionar,
   type Preparacion,
   type RepositorioDePreparaciones,
@@ -57,6 +60,19 @@ function falso(
       vuelta += 1;
       return { estado: "OK", completionId: `c-${vuelta}`, vuelta, duplicado: false };
     },
+    async replanificar() {
+      return { estado: "OK", versionId: "version-2", version: 2, duplicado: false };
+    },
+    async proponerReentrada() {
+      return { estado: "OK", propuestaId: "propuesta-1", duplicado: false };
+    },
+    async responderReentrada(entrada) {
+      return {
+        estado: "OK",
+        status: entrada.decision === "PEDIR_OTRA_OPCION" ? "ALTERNATIVE_REQUESTED" : "ACCEPTED",
+        pasoActualId: entrada.decision === "PEDIR_OTRA_OPCION" ? "paso-18" : "paso-12",
+      };
+    },
   };
   const eventos: PublicadorDeEventos = {
     async publicar(e) {
@@ -94,10 +110,10 @@ describe("B5 · la máquina de `ExamPreparation` después de ADR-011", () => {
 
   it("abandonar conserva el historial: es un estado, no un borrado", async () => {
     const { deps, actual } = falso("ACTIVE");
-    const r = await transicionar(deps, "inst-A", "prep-1", "ABANDONED");
+    const r = await transicionar(deps, "inst-A", "prep-1", "EXPLICITLY_ABANDONED");
     expect(r.estado).toBe("OK");
     expect(actual()).not.toBeNull();
-    expect(actual()!.state).toBe("ABANDONED");
+    expect(actual()!.state).toBe("EXPLICITLY_ABANDONED");
   });
 });
 
@@ -126,7 +142,10 @@ describe("B5 · activar produce ACTIVE y nada más", () => {
       "cambiarEstadoSi",
       "completarPaso",
       "porId",
+      "proponerReentrada",
       "protocoloVigente",
+      "replanificar",
+      "responderReentrada",
     ]);
   });
 
@@ -214,6 +233,52 @@ describe("B5 · los nombres de evento", () => {
 
   it("los otros destinos llevan el nombre de su estado", () => {
     expect(nombreDeEventoDePreparacion("EXAM_TAKEN")).toBe("ExamPreparationExamTaken");
-    expect(nombreDeEventoDePreparacion("ABANDONED")).toBe("ExamPreparationAbandoned");
+    expect(nombreDeEventoDePreparacion("EXPLICITLY_ABANDONED")).toBe(
+      "ExamPreparationExplicitlyAbandoned",
+    );
+  });
+});
+
+describe("B6.7.4 · replanificar y volver", () => {
+  it("replanificar publica una versión nueva dentro de la misma preparación", async () => {
+    const { deps, publicados } = falso("ACTIVE");
+    const r = await replanificar(deps, {
+      institutionId: "inst-A",
+      preparacionId: "prep-1",
+      motivo: "Cambió la fecha del mismo examen",
+      nuevaFecha: "2026-10-10",
+      creadoPor: "est-1",
+    });
+    expect(r).toMatchObject({ estado: "OK", version: 2 });
+    expect(publicados[0]).toMatchObject({
+      nombre: "ExamPreparationReplanned",
+      sujetoTipo: "exam_preparation_plan_version",
+    });
+  });
+
+  it("proponer y pedir otra opción son hechos distintos", async () => {
+    const { deps, publicados } = falso("REPLANNED");
+    const propuesta = await proponerReentrada(deps, {
+      institutionId: "inst-A",
+      preparacionId: "prep-1",
+      desdePasoId: "paso-15",
+      haciaPasoId: "paso-12",
+      motivoCanonico: "EVIDENCIA_INSUFICIENTE",
+      justificacion: "Hace falta revisar el plan.",
+      actividad: "Plan de resolución",
+      evidenciaVigente: "Lo anterior sigue vigente.",
+      propuestaPor: null,
+    });
+    expect(propuesta.estado).toBe("OK");
+    await responderReentrada(deps, {
+      institutionId: "inst-A",
+      propuestaId: "propuesta-1",
+      decision: "PEDIR_OTRA_OPCION",
+      respondidaPor: "est-1",
+    });
+    expect(publicados.map((e) => e.nombre)).toEqual([
+      "ProtocolReentryProposed",
+      "ProtocolReentryAlternativeRequested",
+    ]);
   });
 });

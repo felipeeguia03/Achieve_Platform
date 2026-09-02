@@ -45,8 +45,9 @@ Cada etapa, sin excepción:
 
 **Track A: cerrado.** **Track B: B1 a B6 completas**, con B2b a la mitad.
 
-`lint` y `build` en verde · **820 tests en 44 archivos** · **216 comprobaciones** contra Postgres ·
-**36 migraciones** · las **nueve superficies** del estudiante leen de la base.
+`lint`, `typecheck` y `build` en verde · **953 tests en 52 archivos** · **275 comprobaciones** históricas contra
+Postgres + comprobación funcional transaccional de B6.7.4 · **45 migraciones** · las **nueve superficies** del
+estudiante leen de la base.
 
 ### Lo único que queda sin depender de nadie
 
@@ -54,8 +55,8 @@ Cada etapa, sin excepción:
 |---|---|
 | **Fase B6.6 · el recorrido del MVP, visible** | ✅ **Completa** el 2 de septiembre de 2026. El recorrido entero se reproduce desde cero: [`demo-mvp.md`](demo-mvp.md) |
 | **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado, una regla provisional lo cuenta, y el circuito produce una señal que pide una persona **sin que nadie la haya mirado** |
-| **Fase B6.7 · la validación profesional, aplicada** | 🔵 **El que sigue.** Cuatro etapas, [ADR-037](decisions.md#adr-037). Es configuración versionada y columnas aditivas: la arquitectura no cambia |
-| **Etapa B2b.2 · corroboración** | ⬜ Después. La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
+| **Fase B6.7 · la validación profesional, aplicada** | ✅ **4 / 4**, [ADR-037](decisions.md#adr-037). Vocabulario, denominador, aceleración válida, episodios vinculados y reentrada mínima explicada quedaron implementados el 2 de septiembre de 2026 |
+| **Etapa B2b.2 · corroboración** | ✅ **Completa** el 2 de septiembre de 2026. La operación explícita que `I9` exigía y no existía: append-only, con fuente concreta y auditoría. **`official` queda inalcanzable** hasta `C01-030` |
 | Las 3 vulnerabilidades `high` de [ADR-008](decisions.md#adr-008) | Deuda abierta, con la restricción de **no** correr `npm audit fix --force` sobre la rama principal |
 
 ### Lo que espera a una persona
@@ -1906,8 +1907,8 @@ que eso.
 
 ## Fase B2b — Ingesta del Academic Data Layer · 🟡 EN CURSO
 
-**Estado:** 🟡 **1 / 3.** Abierta por [ADR-023](decisions.md#adr-023) el 30 de agosto de 2026, a
-pedido del owner.
+**Estado:** 🟡 **2 / 3.** Abierta por [ADR-023](decisions.md#adr-023) el 30 de agosto de 2026, a
+pedido del owner. **B2b.3 depende de `C01-042`**, que es de una persona.
 
 **Por qué existe.** Al mirar la B2.5 apareció que **el producto no se mueve solo**: faltan dos
 productores —el reloj del lifecycle (ADR-005 ítem 5) y el ADE ([ADR-004](decisions.md#adr-004))—. El
@@ -1918,7 +1919,7 @@ decidir.
 | # | Etapa |
 |---|---|
 | B2b.1 | ✅ **Ingesta asistida**: una guía estructurada → ADL, con procedencia obligatoria |
-| B2b.2 | Corroboración: la operación explícita que **sí** puede elevar un `verification_status` |
+| B2b.2 | ✅ **Corroboración**: la operación explícita que **sí** puede elevar un `verification_status` |
 | B2b.3 | Otra fuente para el mismo ingestor — scraping. **Requiere `C01-042`** |
 
 **Done del MVP sintético cuando:** una materia sintética representativa está cargada con su
@@ -1941,6 +1942,68 @@ procedencia y el ADE tiene sobre qué decidir. Cargar una materia real requiere 
 **`oral` se almacena** aunque quede fuera de P0 (`C01-047`).
 
 **Lo que esta etapa no hace:** no recomienda nada. Estructura conocimiento; decidir es el ADE.
+
+#### ✅ Etapa B2b.2 — Corroboración · COMPLETA · 2 de septiembre de 2026
+
+La operación explícita que el invariante **`I9`** exigía y que no existía. Migración
+`20260910000000_corroboracion.sql`.
+
+> *"Ninguna capa eleva un `verification_status`. **Operación explícita del owner en Service +
+> autorización y auditoría**; Repository no expone un update genérico del campo."* — `data-model.md`
+> §11
+
+**Por qué hacía falta.** La B2b.1 dejó al ingestor sin ninguna forma de elevar el campo —no es que no
+deba: **no tiene por dónde**—, y eso estaba bien. Pero sin esto **todo el ADL quedaba `unverified`
+para siempre**, y la distinción entre *"lo cargó un estudiante"* y *"alguien lo verificó"* nunca se
+podía ejercer.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | Corroborar es un **hecho append-only**, no un `UPDATE` | Si sólo se cambiara el campo, nadie podría decir después contra qué se verificó ni quién lo hizo |
+| D2 | **Una tabla polimórfica**, no cinco | Cinco tablas serían la misma máquina escrita cinco veces, que es como se desincronizan |
+| D3 | **`official` inalcanzable**, y declarado | Significa que la institución lo afirma, y el secreto de servicio autentica al sistema llamante, no a una autoridad académica. `C01-030` sigue `OPEN` |
+| D4 | **`disputed` no es terminal** | Dejarla terminal dejaría varada para siempre una fila disputada por error. Mismo criterio que ADR-034 con `ACKNOWLEDGED` |
+| D5 | `source_ref` y `reason` obligatorios | *"Lo dijo alguien"* no se puede volver a mirar. Una corroboración sin motivo es indistinguible de un clic |
+| D6 | Secreto de servicio, **nunca JWT de estudiante** | Alguien confirmando lo que él mismo declaró no es verificación: es la misma afirmación dos veces |
+
+**Lo que quedó construido:**
+
+| Pieza | Qué hace |
+|---|---|
+| `provenance_corroboration` | El hecho: qué, de qué estado a cuál, contra qué fuente, por qué y quién |
+| `corroborar_procedencia()` | Escribe el hecho **y después** actualiza, en una transacción, con la fila tomada |
+| `provenanceTransitions` | La máquina en el dominio, legible y testeable sin base. **Un test verifica que dice lo mismo que la función** |
+| `POST /api/corroboracion` | Con secreto de servicio. `official` se rechaza **nombrando la decisión que falta** |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run typecheck` · `npm run build` | ✅ los tres en verde, con `/api/corroboracion` registrada |
+| `npm test` | ✅ **953 tests en 52 archivos** |
+| `npm run db:verify` | ✅ **275 comprobaciones**, **11 nuevas** de esta etapa, cero fallos |
+| Circuito completo por HTTP | ✅ `unverified → corroborated`, con entrada de `audit_log` que lleva antes, después **y la referencia** |
+| `official` por HTTP | ✅ `422`, con el mensaje que nombra `C01-030` |
+| Una disputa resuelta vuelve | ✅ y el historial conserva las tres corroboraciones |
+| Ningún otro SQL escribe el campo | ✅ guard sobre las 46 migraciones |
+
+**⚠️ Un defecto operativo que sólo apareció al correr el script dos veces.**
+`provenance_corroboration.institution_id` es `ON DELETE RESTRICT` —correcto para un registro de
+auditoría—, así que una corrida que fallara a mitad dejaba filas que **trancaban el setup de la
+corrida siguiente**, con un error que no decía nada (*"no se pudieron cargar"*). Se agregaron a
+`limpiar_mundo` esa tabla y las tres de la B6.7 que tenían el mismo problema latente
+(`error_classification_correction`, `support_need_observation`, `learning_objective`). **Dos corridas
+seguidas sin reset, en verde.**
+
+**Lo que esta etapa NO hizo:**
+
+1. **No definió quién puede corroborar.** `C01-030` sigue `OPEN`; `corroborated_by` no se valida
+   contra nada.
+2. **No hizo alcanzable `official`.** Ver D3.
+3. **No corrobora nada por su cuenta.** Deducirlo —*"si dos estudiantes cargaron lo mismo, está
+   corroborado"*— sería fabricar verificación, que es lo que `I9` existe para impedir.
 
 ---
 
@@ -2605,10 +2668,10 @@ mostrar en una pantalla, sin explicar nada de arquitectura. ✅ — ver [`demo-m
 
 ---
 
-## Fase B6.7 — La validación profesional, aplicada · 🔵 EN CURSO
+## Fase B6.7 — La validación profesional, aplicada · ✅ COMPLETA
 
-**Estado:** 🔵 **0 / 4** — abierta el 2 de septiembre de 2026 por [ADR-037](decisions.md#adr-037).
-**No depende de nadie de afuera.**
+**Estado:** ✅ **4 / 4** — abierta y cerrada el 2 de septiembre de 2026 por
+[ADR-037](decisions.md#adr-037).
 
 **Por qué existe.** La psicopedagoga respondió los seis valores provisionales del Product Owner con
 **seis `CAMBIAR` y un `APROBAR`** — y sin mover un solo umbral. Lo que cambió es **qué cuenta como
@@ -2618,12 +2681,12 @@ ansiedad, barreras de accesibilidad o falta de enseñanza previa"*.
 
 La frase que ordena la fase entera: **«el sistema debe reconocer patrones, no etiquetar personas»**.
 
-| # | Etapa | Qué cierra |
-|---|---|---|
-| B6.7.1 | **El vocabulario** — cinco familias, principal + secundaria, *clasificación incierta*, y *"dependencia de ayuda externa"* fuera como error | `9.5` |
-| B6.7.2 | **El denominador** — objetivo/demanda en la unidad de conteo, calidad de evidencia y confianza de clasificación; separar *repetición detectada* de *dificultad confirmada* | `9.1`, `9.6` |
-| B6.7.3 | **Acelerar y reiniciar** — las cinco condiciones de corrección válida, dos aciertos limpios, el episodio vinculado, y los disparadores cualitativos tempranos | `9.2`, `9.3`, `9.4` |
-| B6.7.4 | **Replanificar y volver** — `replanned` sin cerrar la preparación, reentrada al primer paso necesario, y la explicación previa al estudiante | `9.7` |
+| # | Etapa | Qué cierra | Estado |
+|---|---|---|---|
+| B6.7.1 | **El vocabulario** — cinco familias, principal + secundaria, *clasificación incierta*, y *"dependencia de ayuda externa"* fuera como error | `9.5` | ✅ **Completa** |
+| B6.7.2 | **El denominador** — objetivo/demanda en la unidad de conteo, calidad de evidencia y confianza de clasificación; separar *repetición detectada* de *dificultad confirmada* | `9.1`, `9.6` | ✅ **Completa** |
+| B6.7.3 | **Acelerar y reiniciar** — las cinco condiciones de corrección válida, dos aciertos limpios, el episodio vinculado, y los disparadores cualitativos tempranos | `9.2`, `9.3`, `9.4` | ✅ **Completa** |
+| B6.7.4 | **Replanificar y volver** — `replanned` sin cerrar la preparación, reentrada al primer paso necesario, y la explicación previa al estudiante | `9.7` | ✅ **Completa** |
 
 **Fixtures obligatorios**, que ella pidió por nombre: error repetido comparable; errores del mismo
 tipo en **temas no comparables**; corrección válida e inválida; evidencia insuficiente interpretable y
@@ -2632,9 +2695,205 @@ no interpretable; recuperación y recaída; reentrada mínima.
 **Done cuando:** las siete decisiones están como **configuración versionada**, los valores del Product
 Owner quedaron apagados **sin borrarse**, y ningún umbral vive en el código.
 
+### ✅ Etapa B6.7.4 — Replanificar y volver · COMPLETA · 2 de septiembre de 2026
+
+**Readiness:** habilitado. `9.7` fue respondido por la psicopedagoga y ADR-037 resolvió la colisión
+con `I7`; ADR-006 limita toda verificación a datos sintéticos.
+
+**Decisiones de diseño — aprobadas antes de codear:** [ADR-038](decisions.md#adr-038). Una
+replanificación agrega una versión dentro de la misma preparación; la reentrada es una propuesta
+persistida que no mueve el paso hasta ser aceptada. El tramo y los motivos son configuración
+versionada. La Plataforma valida el límite configurado, pero no elige el *primer paso necesario*.
+`UX09` explica motivo, actividad y evidencia conservada, y ofrece pedir otra opción antes del cambio.
+
+**Lo que quedó construido:**
+
+| Pieza | Qué garantiza |
+|---|---|
+| `exam_preparation_plan_version` | Versiones dentro de la misma preparación; `I7` permanece intacto |
+| `REPLANNED`, `CANCELLED`, `EXPLICITLY_ABANDONED` | Replanificar sigue vivo; cancelación y abandono son decisiones explícitas; inactividad no transiciona |
+| `protocol_reentry_policy` + `protocol_reentry_reason` | Tramo 9–18 y seis motivos en `v1.0-psicopedagogia`, fuera del Service |
+| `protocol_reentry_proposal` | Motivo, origen, destino, justificación, actividad y evidencia conservada antes de mover el paso |
+| `replanificar_preparacion()` | Agrega versión y deja la preparación en `REPLANNED`, sin crear otra |
+| `proponer_reentrada()` + `responder_reentrada()` | Proponer no mueve; aceptar u override mueven; pedir otra opción conserva el origen |
+| `UX09` + `FX-LOCAL-PASO-REENTRADA-MINIMA` | Panel previo con una CTA primaria y una secundaria, sin castigo ni pérdida de progreso |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde; tres rutas B6.7.4 registradas |
+| `npm test` | ✅ **936 tests en 51 archivos** |
+| Migraciones desde cero | ✅ **45** aplicadas |
+| Schema/configuración | ✅ 4 tablas con RLS, 3 funciones, 6 motivos, tramo 9–18 |
+| Flujo transaccional sobre datos sintéticos | ✅ propuesta no mueve; alternativa conserva; aceptación y override mueven; `I7`, Evidence, progreso y completions intactos; `ROLLBACK` final |
+| Conformidad UI | ✅ 34 capturas revisadas; panel con hairline, subcopy y jerarquía primaria/secundaria; auditoría automatizada completa en verde |
+
+**Lo que no se inventó:** cuál es el primer paso necesario. Lo declara el owner de la propuesta; la
+Plataforma valida que sea una vuelta válida, no rankea rutas. El override humano existe en Service y
+persistencia, pero no se expone en la superficie del estudiante ni crea una UI de operador.
+
 > ⚠️ **Su validación no autoriza datos reales.** Es de producto, y ella condicionó el uso con
 > estudiantes reales a *"piloto, revisión humana, explicabilidad, accesibilidad y monitoreo de
 > equidad"*. [ADR-006](decisions.md#adr-006) sigue siendo bloqueo absoluto.
+
+### ✅ Etapa B6.7.1 — El vocabulario · COMPLETA · 2 de septiembre de 2026
+
+Cierra el punto **`9.5`**. Migración `20260906000000_vocabulario_psicopedagogico.sql`.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | `v2.0-psicopedagogia` con los **`canonical_id` estables** | Es la misma familia redefinida, no una nueva. Cambiarlos cortaría el vínculo con lo ya observado |
+| D2 | **El contador cuenta por familia, no por fila de versión** | Ver el hallazgo, abajo |
+| D3 | `dependencia` deja de ser familia **sin editar la fila que la afirmó** | Editarla sería reescribir lo que el Product Owner afirmó. Lo que la retira es no tener versión vigente |
+| D4 | «Necesidad de apoyo para avanzar» en **tabla propia** | Guardarla en `error_observation` contradiría *"no es un error"* justo donde más se lee: el modelo de datos |
+| D5 | Principal + secundaria, y **la secundaria nunca cuenta** | *"Sin usarlo solo para escalar"*. No llega al evaluador puro |
+| D6 | *Clasificación incierta* es **fila del catálogo con `es_familia = FALSE`** | *"No se pudo determinar"* es una respuesta; `NULL` no lo es. Y "no cuenta" queda como propiedad de la configuración, no del código |
+| D7 | La corrección humana es **append-only**, y **no retracta señales** | Una señal fue cierta bajo la clasificación vigente entonces. Retractarla exige una transición que nadie definió |
+
+**⚠️ El hallazgo que hizo falta resolver antes de cargar la versión nueva.**
+`error_observation.error_type_id` es FK a una **fila de versión**. Al entrar `v2.0`, lo ya observado
+queda apuntando a `v1.0`, y el contador —que filtraba por ese id— habría visto **dos tipos distintos
+donde hay una sola familia**: se habría partido al medio, en silencio, justo en el eslabón que el MVP
+existe para demostrar. La identidad de un error es el `canonical_id`; la versión dice **qué
+definición estaba vigente** cuando alguien lo clasificó.
+
+**Lo que quedó construido:**
+
+| Pieza | Qué hace |
+|---|---|
+| `error_type` `v2.0-psicopedagogia` | Las cinco familias + *clasificación incierta*. Los seis `v1.0-po-provisional` **apagados, no borrados** |
+| `error_type.es_familia` | Estar en el catálogo no es contar. Default `TRUE`: no reescribe lo que ya se afirmó |
+| `error_observation.secondary_error_type_id` | Categoría secundaria. `CHECK` de que difiere de la principal, y validación de que **es una familia** |
+| `support_need_type` · `support_need_observation` | «Necesidad de apoyo para avanzar», **una fila** porque ella nombró una condición. Ningún contador las lee |
+| `error_classification_correction` | Append-only, `reason` `NOT NULL`, `corrected_by` como identidad externa **sin FK** |
+| `corregir_clasificacion_de_error()` | Registra la corrección **y después** actualiza, en una transacción. Devuelve **las dos familias** a re-evaluar |
+| `POST /api/observacion/correccion` · `POST /api/apoyo` | Con secreto de servicio. La de apoyo **no recibe con qué escalar**: la firma no tiene `senales` ni `destino` |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde, con las dos rutas nuevas registradas |
+| `npm test` | ✅ **905 tests en 49 archivos** |
+| `npm run db:verify` | ✅ **249 comprobaciones**, **18 nuevas** de esta etapa |
+| Cinco familias vigentes, ni una sexta | ✅ contra Postgres |
+| La fila de `dependencia` quedó **intacta** | ✅ su `label` sigue siendo el que escribió el Product Owner |
+| Una versión apagada ya no clasifica nada nuevo | ✅ el escritor la rechaza |
+| **Una observación de `v1.0` y una de `v2.0` son la misma familia** | ✅ y contar por fila de versión habría dicho `1` |
+| **El circuito completo, contra el stack local** | ✅ dos apariciones históricas con `v1.0` + una nueva con `v2.0` ⇒ `{"apariciones":3,"necesitaPersona":true}`, señal en `INTERVENTION_REQUIRED` |
+| Registrar una necesidad de apoyo **no agrega una observación de error** | ✅ medido antes y después |
+| La corrección deja rastro de qué familia venía | ✅ y sin motivo no entra |
+
+**⚠️ Un defecto que sólo apareció en la verificación funcional.** `secondary_error_type_id` creó una
+**segunda FK** de `error_observation` a `error_type`, y el embed de PostgREST dejó de resolver —*"more
+than one relationship was found"*—. Ni los tests unitarios ni las comprobaciones por `psql` lo veían:
+lo encontró la corrida real contra el stack, con un `500`. El embed ahora **nombra la FK de la
+principal**, lo que además garantiza que el contador no lee la secundaria, y hay guard estático.
+
+**Lo que esta etapa NO hizo, y hay que decirlo:**
+
+1. **No movió un solo umbral.** `repeat_signal_at = 2` y `human_review_at = 3` son los que había
+   puesto el Product Owner. Ella no objetó los números: objetó **qué cuenta como una repetición**. El
+   denominador —objetivo de aprendizaje o demanda en la unidad de conteo— es la **B6.7.2**, y hasta
+   que entre, el evaluador **sigue contando como contaba**. Está declarado en el propio
+   `lib/domain/reiteracion.ts`.
+2. **No definió quién puede corregir una clasificación.** Ella lo puso entre lo que hay que evaluar
+   antes de un piloto. `corrected_by` no se valida contra nada y la ruta va con secreto de servicio.
+3. **No retracta señales.** Ver D7.
+
+### ✅ Etapa B6.7.2 — El denominador · COMPLETA · 2 de septiembre de 2026
+
+Cierra los puntos **`9.1`** y **`9.6`**. Migración
+`20260907000000_denominador_psicopedagogico.sql`.
+
+**El umbral nunca fue el problema.** `2` y `3` no se movieron —ella los recomendó tal cual después
+de mirar los del Product Owner—. Lo que cambió es **qué se cuenta**.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | La unidad de conteo pasa a `(estudiante, preparación, familia, objetivo/demanda)` | Su corrección textual. El estudiante ya venía implícito en la preparación |
+| D2 | **Dos números, no uno**: `repeticionDetectada` y `apariciones` comparables | *"Separar 'repetición detectada' de 'dificultad confirmada'"*. Sólo el comparable lee el umbral |
+| D3 | Sin objetivo declarado **no hay comparabilidad**, y no se escala | *"Deben coincidir el tipo de error **y** el objetivo."* Si no lo sabemos, no podemos afirmar que coinciden |
+| D4 | `learning_objective`, **tabla nueva y vacía** | El concepto es de ella; la lista de objetivos no la inventa un agente. *"Cómo se define una tarea comparable"* sigue abierto |
+| D5 | `evidence_quality` **no se funde** con `evidence.lifecycle_state` | Una entrega `INSUFFICIENT` puede ser perfectamente legible. Fundirlos rompería *"enviar no es suficiencia"* |
+| D6 | `classification_confidence` **ordinal**, no numérico | Nadie calcula esa probabilidad. Un `0.73` a mano parece medición y no lo es |
+
+**Lo que quedó construido:**
+
+| Pieza | Qué hace |
+|---|---|
+| `learning_objective` | La identidad contra la que se compara, con `kind` y Provenance completa. **Nace vacía** |
+| `error_observation` +6 columnas | `learning_objective_id`, `evidence_quality`, `error_identifiable`, `classification_confidence`, `task_format`, `support_offered` |
+| `HP0-06-1 v3.0-psicopedagogia` | La unidad de conteo como configuración. `v2.0-po-provisional` **apagada, no borrada** |
+| `evaluarReiteracion()` | Cuenta los dos números y reinicia **en el mismo alcance en que cuenta** |
+| `registrar_observacion_de_error()` | Rechaza corroborar contra evidencia `no_interpretable`, sin calidad declarada, o con un error que nadie identificó |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde |
+| `npm test` | ✅ **921 tests en 49 archivos** |
+| `npm run db:verify` | ✅ **263 comprobaciones**, **14 nuevas** de esta etapa, cero fallos |
+| **Tres del mismo tipo en objetivos distintos** | ✅ contra el stack: `{"apariciones":1,"repeticionDetectada":3}` y **cero señales** |
+| **Tres en el mismo objetivo** | ✅ `{"apariciones":3,"necesitaPersona":true}`, señal en `INTERVENTION_REQUIRED` con `rule_version: v3.0-psicopedagogia` |
+| Una entrega `INSUFFICIENT` con el error identificable **cuenta** | ✅ su único `APROBAR` |
+| `learning_objective` vacía en el schema | ✅ y un objetivo declarado entra `unverified` |
+
+**⚠️ Un cambio que hubo que revertir en la verificación funcional.** La causa nueva decía *"3 veces
+en **tareas comparables** de esta preparación. Del mismo tipo hubo 4 en total…"*, y `risk_signal.reason`
+**llega a la pantalla del estudiante** como el detalle de su propia señal (B6.6.2). Eso es
+vocabulario interno que nadie revisó, y ella pidió *"una revisión experta de lenguaje, accesibilidad,
+privacidad y no estigmatización **antes de probar con personas**"*. **El texto quedó como estaba** —
+sigue siendo cierto, porque las comparables **son** apariciones en esta preparación—, y la distinción
+viaja en el resultado estructurado. Llega a la persona que recibe el caso en la **B6.7.3**, que es
+donde ella la pidió.
+
+**Lo que esta etapa NO hizo:**
+
+1. **No definió qué hace comparables a dos tareas.** Se declara. `learning_objective` está vacía.
+2. **No tocó `9.2`, `9.3` ni `9.4`.** Dos claves de `threshold_config` siguen llevando el valor del
+   Product Owner, y **están nombradas una por una** en `pendiente_b6_7_3` en vez de disimuladas.
+3. **No estrenó copy para el estudiante.** Ver arriba.
+
+⚠️ **Consecuencia operativa:** el mundo demo **tuvo que declarar un objetivo de aprendizaje**. Sin
+eso el circuito ya no escala — y ése es exactamente el punto.
+
+### ✅ Etapa B6.7.3 — Acelerar y reiniciar · COMPLETA · 2 de septiembre de 2026
+
+Cierra los puntos **`9.2`, `9.3` y `9.4`**. Migración
+`20260908000000_acelerar_y_reiniciar.sql`.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | `HP0-06-1 v4.0-psicopedagogia`; `v3.0` se apaga y no se borra | Cada señal histórica conserva la versión que la produjo |
+| D2 | `after_action_id` solo **no acelera** | `9.3` exige juntas las cinco condiciones profesionales |
+| D3 | Dos aciertos independientes, de intentos distintos, y uno espaciado o sin modelo inmediato | Un único acierto puede ser azar o memoria inmediata (`9.4`) |
+| D4 | Recuperar cierra un `reiteration_episode`; nunca borra observaciones | *Reiniciar* deja de significar poner la historia en cero |
+| D5 | Una recaída abre otro episodio con `previous_episode_id` | La recuperación previa sigue siendo cierta y queda vinculada |
+| D6 | Los seis `early_review_triggers` viven en configuración y tienen escritor propio | El contador deja de ser el único camino hacia una persona (`9.2`) |
+| D7 | `review_context` lleva observaciones e historial de apoyos a la cola | La persona recibe el caso con evidencia, no sólo con un contador |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde; `/api/revision-temprana` aparece en el build |
+| `npm test` | ✅ **929 tests en 50 archivos** |
+| Migraciones desde cero | ✅ las **44** aplican; `v4.0` es la única vigente |
+| Schema de B6.7.3 | ✅ 8 columnas, 2 tablas con RLS y 4 funciones; comprobado con lecturas SQL |
+| `npm run db:verify` | ⚠️ no corrido: el entorno bloqueó sus borrados amplios. Se sustituyó por comprobaciones de schema estrictamente de solo lectura |
+
+**Lo que esta etapa NO hizo:** no resolvió el lifecycle de una señal que ya pidió persona. Aunque el
+episodio académico se recupere, `INTERVENTION_REQUIRED` sigue exigiendo una intervención con outcome
+para llegar a `RESOLVED` ([ADR-032](decisions.md#adr-032)); cerrar el episodio no borra esa obligación.
 
 ---
 
@@ -2744,10 +3003,11 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-004`, `ADR-005` y `ADR-010` aceptados | 3 / 5 |
 | Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
 | Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: **los 12 invariantes tienen test** desde que la B5 migró `exam_preparation` e `I7` dejó de estar pendiente | 6 / 6 |
-| Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida completa | 1 / 3 |
+| Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida y corroboración completas. **B2b.3 espera a `C01-042`**, que no lo cierra un agente | 2 / 3 |
 | Fase B3 — Progreso y eventos | ✅ **COMPLETA** — el resultado se escribe con sus invariantes, el Product Event Model está declarado con guards en tres direcciones, y `UX02`/`UX06` comparten una sola fuente histórica. Quién emite el progreso sigue siendo `C01-018` | 3 / 3 |
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
+| Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
 | Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. **Falta lo que no es código nuestro:** `C01-021`, `C01-036`, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |

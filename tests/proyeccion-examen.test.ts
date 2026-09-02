@@ -278,6 +278,10 @@ const PASO: EstadoDePaso = {
   accion: null,
   compromiso: null,
   evidencia: "NONE",
+  // Sin propuesta de reentrada pendiente (B6.7.4): este bloque prueba cómo se
+  // renderiza el contenido de un paso, y una propuesta abierta **domina la CTA**,
+  // que es otra cosa y tiene sus propios tests.
+  reentrada: null,
 };
 
 describe("B5 · `UX09` renderiza contenido recibido", () => {

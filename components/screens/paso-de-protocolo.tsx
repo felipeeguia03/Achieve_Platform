@@ -77,11 +77,19 @@ export function PasoDeProtocolo({
   ctaPrimaria,
   despues,
   secundarios,
+  reentradaPendiente,
   fuenteDelContenido,
   ctaRetorno,
   onAvanzar,
   onVolver,
-}: PasoProtocoloProps & { onAvanzar?: () => void; onVolver?: () => void }) {
+  onAceptarReentrada,
+  onPedirOtraOpcion,
+}: PasoProtocoloProps & {
+  onAvanzar?: () => void;
+  onVolver?: () => void;
+  onAceptarReentrada?: () => void;
+  onPedirOtraOpcion?: () => void;
+}) {
   return (
     <div
       className="space-y-4"
@@ -120,15 +128,54 @@ export function PasoDeProtocolo({
             <Bloque bloque={entregable} />
             <Bloque bloque={criterio} />
 
-            <EstadoGeneral>{estadoDominante}</EstadoGeneral>
-
-            {avisoDeApertura && <ReglaDeNegocio>{avisoDeApertura}</ReglaDeNegocio>}
             {aviso && (
               <ReglaDeNegocio>
                 <span style={{ color: "var(--urgencia-texto)" }}>{aviso}</span>
               </ReglaDeNegocio>
             )}
 
+            {reentradaPendiente && (
+              <section
+                aria-labelledby="reentrada-titulo"
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  padding: "20px",
+                  background: "var(--muted)",
+                }}
+              >
+                <Eyebrow>{t("PASO.REENTRADA.EYEBROW")}</Eyebrow>
+                <h2 id="reentrada-titulo" style={{ fontSize: "var(--text-title)", fontWeight: 650 }}>
+                  {reentradaPendiente.titulo}
+                </h2>
+                <p style={{ marginTop: "8px", lineHeight: 1.5 }}>{reentradaPendiente.justificacion}</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <ReglaDeNegocio>
+                    <strong>{t("PASO.REENTRADA.MOTIVO")}</strong> {reentradaPendiente.motivo}
+                  </ReglaDeNegocio>
+                  <ReglaDeNegocio>
+                    <strong>{t("PASO.REENTRADA.RECORRIDO")}</strong> {reentradaPendiente.recorrido}
+                  </ReglaDeNegocio>
+                  <ReglaDeNegocio>
+                    <strong>{t("PASO.REENTRADA.ACTIVIDAD")}</strong> {reentradaPendiente.actividad}
+                  </ReglaDeNegocio>
+                  <ReglaDeNegocio>
+                    <strong>{t("PASO.REENTRADA.EVIDENCIA")}</strong> {reentradaPendiente.evidenciaVigente}
+                  </ReglaDeNegocio>
+                </div>
+                <ReglaDeNegocio>{reentradaPendiente.comoPedirOtraOpcion}</ReglaDeNegocio>
+                <CTAPrincipal onClick={onAceptarReentrada}>{reentradaPendiente.ctaAceptar}</CTAPrincipal>
+                <div className="mt-2">
+                  <CTASecundaria onClick={onPedirOtraOpcion}>
+                    {reentradaPendiente.ctaOtraOpcion}
+                  </CTASecundaria>
+                </div>
+              </section>
+            )}
+
+            <EstadoGeneral>{estadoDominante}</EstadoGeneral>
+
+            {avisoDeApertura && <ReglaDeNegocio>{avisoDeApertura}</ReglaDeNegocio>}
             {ctaPrimaria && (
               <CTAPrincipal onClick={onAvanzar} disabled={!ctaPrimaria.habilitada}>
                 {ctaPrimaria.texto}

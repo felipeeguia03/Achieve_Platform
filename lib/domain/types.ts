@@ -54,10 +54,12 @@ export type EvidenceState =
 export type ExamPreparationStatus =
   | "RECOMMENDED"
   | "ACTIVE"
+  | "REPLANNED"
   | "BLOCKED"
   | "EXAM_TAKEN"
   | "CLOSED"
-  | "ABANDONED";
+  | "CANCELLED"
+  | "EXPLICITLY_ABANDONED";
 
 /** Los tres estados de readiness. Viven en `PreparationReadiness` (ADR-011). */
 export type PreparationReadinessState = "NOT_READY" | "BUILDING" | "READY_BY_PROTOCOL";

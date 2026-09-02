@@ -341,6 +341,41 @@ export const EXTENSIONES: Readonly<
     nivel: "TRANSICION",
     enBitacora: false,
   },
+  ExamPreparationCancelled: {
+    porQue: "La cancelación es un cierre explícito y conserva el historial (HUMAN-P0-9.7)",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  ExamPreparationExplicitlyAbandoned: {
+    porQue: "El abandono fue explícito; la inactividad sola nunca produce este hecho",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  ExamPreparationReplanned: {
+    porQue: "Una versión nueva conserva la misma preparación y todo su historial (ADR-038)",
+    nivel: "NEGOCIO",
+    enBitacora: false,
+  },
+  ProtocolReentryProposed: {
+    porQue: "La explicación existe antes de mover el recorrido",
+    nivel: "NEGOCIO",
+    enBitacora: false,
+  },
+  ProtocolReentryAccepted: {
+    porQue: "El estudiante aceptó la vuelta explicada al primer paso necesario declarado",
+    nivel: "NEGOCIO",
+    enBitacora: false,
+  },
+  ProtocolReentryAlternativeRequested: {
+    porQue: "El estudiante pidió otra ruta; el paso actual no se mueve",
+    nivel: "NEGOCIO",
+    enBitacora: false,
+  },
+  ProtocolReentryHumanOverridden: {
+    porQue: "Una persona aplicó el override permitido por HUMAN-P0-9.7",
+    nivel: "NEGOCIO",
+    enBitacora: false,
+  },
   CommitmentDue: {
     porQue: "Lo dispara el reloj del lifecycle, no una persona",
     nivel: "TRANSICION",
@@ -421,6 +456,10 @@ export const EXTENSIONES: Readonly<
  * que **nadie** lo emita. Si vuelve a aparecer un emisor, rompe.
  */
 export const LEGACY: Readonly<Record<string, { desde: string; porQue: string }>> = {
+  ExamPreparationAbandoned: {
+    desde: "ADR-038",
+    porQue: "El estado ambiguo se migró a EXPLICITLY_ABANDONED; sus hechos históricos se conservan",
+  },
   RiskSignalAcknowledged: {
     desde: "ADR-034",
     porQue:

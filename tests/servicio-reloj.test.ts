@@ -177,13 +177,13 @@ describe("B6 · el reloj también expira las señales que dejaron de importar", 
       async porId(_i: string, id: string) {
         const st = filas.get(id);
         return st
-          ? { id, institutionId: "inst-A", state: st as never, studentId: "e-1", severity: "bajo" as const, reason: "x" }
+          ? { id, institutionId: "inst-A", state: st as never, studentId: "e-1", severity: "bajo" as const, reason: "x", reviewContext: {} }
           : null;
       },
       async cambiarEstadoSi(_i: string, id: string, esperado: string, nuevo: string) {
         if (filas.get(id) !== esperado) return null;
         filas.set(id, nuevo);
-        return { id, institutionId: "inst-A", state: nuevo as never, studentId: "e-1", severity: "bajo" as const, reason: "x" };
+        return { id, institutionId: "inst-A", state: nuevo as never, studentId: "e-1", severity: "bajo" as const, reason: "x", reviewContext: {} };
       },
       async registrar() { return { id: "x", duplicado: false }; },
       async resolver() { return { resuelta: false, motivo: null }; },

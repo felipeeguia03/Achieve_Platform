@@ -36,6 +36,9 @@ export interface RepositorioDePreparaciones
   protocoloVigente(assessmentId: string): Promise<{ id: string; version: string } | null>;
   /** Agrega una vuelta al paso. La reentrancia la decide el contenido. */
   completarPaso(entrada: PasoCompletado): Promise<ResultadoDeCompletion>;
+  replanificar(entrada: Replanificacion): Promise<ResultadoDeReplanificacion>;
+  proponerReentrada(entrada: PropuestaDeReentrada): Promise<ResultadoDePropuesta>;
+  responderReentrada(entrada: RespuestaDeReentrada): Promise<ResultadoDeRespuesta>;
 }
 
 export interface PasoCompletado {
@@ -50,6 +53,47 @@ export interface PasoCompletado {
 
 export type ResultadoDeCompletion =
   | { estado: "OK"; completionId: string; vuelta: number; duplicado: boolean }
+  | { estado: "RECHAZADO"; motivo: string };
+
+export interface Replanificacion {
+  institutionId: string;
+  preparacionId: string;
+  motivo: string;
+  nuevaFecha: string | null;
+  creadoPor: string;
+  claveDeIdempotencia?: string;
+}
+
+export interface PropuestaDeReentrada {
+  institutionId: string;
+  preparacionId: string;
+  desdePasoId: string;
+  haciaPasoId: string;
+  motivoCanonico: string;
+  justificacion: string;
+  actividad: string;
+  evidenciaVigente: string;
+  propuestaPor: string | null;
+  claveDeIdempotencia?: string;
+}
+
+export type DecisionDeReentrada = "ACEPTAR" | "PEDIR_OTRA_OPCION" | "OVERRIDE_HUMANO";
+
+export interface RespuestaDeReentrada {
+  institutionId: string;
+  propuestaId: string;
+  decision: DecisionDeReentrada;
+  respondidaPor: string;
+}
+
+export type ResultadoDeReplanificacion =
+  | { estado: "OK"; versionId: string; version: number; duplicado: boolean }
+  | { estado: "RECHAZADO"; motivo: string };
+export type ResultadoDePropuesta =
+  | { estado: "OK"; propuestaId: string; duplicado: boolean }
+  | { estado: "RECHAZADO"; motivo: string };
+export type ResultadoDeRespuesta =
+  | { estado: "OK"; status: string; pasoActualId: string | null }
   | { estado: "RECHAZADO"; motivo: string };
 
 export type ResultadoDeActivacion =
@@ -104,7 +148,8 @@ export async function activar(
 }
 
 /**
- * `ACTIVE → EXAM_TAKEN | BLOCKED | ABANDONED`, y `EXAM_TAKEN → CLOSED`.
+ * Los cierres explícitos y bloqueos del lifecycle. `REPLANNED` tiene una
+ * operación propia porque estado + versión deben escribirse juntos.
  *
  * Abandonar **conserva el historial** (`product.md` §5.4): la fila no se borra
  * y sus completions tampoco. Es la misma regla de *No Cortar* que impide editar
@@ -176,5 +221,74 @@ export async function completarPaso(
     payload: { pasoId: entrada.pasoId, temaId: entrada.topicId, vuelta: resultado.vuelta },
   });
 
+  return resultado;
+}
+
+/**
+ * Agrega una versión al plan sin crear otra preparación ni cerrar la actual.
+ * La fecha es un snapshot recibido: esta operación no corrige `Assessment`.
+ */
+export async function replanificar(
+  deps: { repo: RepositorioDePreparaciones; eventos: PublicadorDeEventos },
+  entrada: Replanificacion,
+): Promise<ResultadoDeReplanificacion> {
+  const resultado = await deps.repo.replanificar(entrada);
+  if (resultado.estado !== "OK" || resultado.duplicado) return resultado;
+  await deps.eventos.publicar({
+    nombre: "ExamPreparationReplanned",
+    institutionId: entrada.institutionId,
+    actorId: entrada.creadoPor,
+    sujetoTipo: "exam_preparation_plan_version",
+    sujetoId: resultado.versionId,
+    causa: entrada.motivo,
+    payload: { preparacionId: entrada.preparacionId, version: resultado.version },
+  });
+  return resultado;
+}
+
+/** Persiste la explicación. Todavía no mueve el recorrido. */
+export async function proponerReentrada(
+  deps: { repo: RepositorioDePreparaciones; eventos: PublicadorDeEventos },
+  entrada: PropuestaDeReentrada,
+): Promise<ResultadoDePropuesta> {
+  const resultado = await deps.repo.proponerReentrada(entrada);
+  if (resultado.estado !== "OK" || resultado.duplicado) return resultado;
+  await deps.eventos.publicar({
+    nombre: "ProtocolReentryProposed",
+    institutionId: entrada.institutionId,
+    actorId: entrada.propuestaPor,
+    sujetoTipo: "protocol_reentry_proposal",
+    sujetoId: resultado.propuestaId,
+    causa: entrada.motivoCanonico,
+    payload: { desdePasoId: entrada.desdePasoId, haciaPasoId: entrada.haciaPasoId },
+  });
+  return resultado;
+}
+
+/**
+ * Aceptar u override mueven el puntero. Pedir otra opción no lo toca. Ninguna
+ * respuesta completa un paso ni escribe evidencia o progreso.
+ */
+export async function responderReentrada(
+  deps: { repo: RepositorioDePreparaciones; eventos: PublicadorDeEventos },
+  entrada: RespuestaDeReentrada,
+): Promise<ResultadoDeRespuesta> {
+  const resultado = await deps.repo.responderReentrada(entrada);
+  if (resultado.estado !== "OK") return resultado;
+  const base = {
+    institutionId: entrada.institutionId,
+    actorId: entrada.respondidaPor,
+    sujetoTipo: "protocol_reentry_proposal",
+    sujetoId: entrada.propuestaId,
+    causa: entrada.decision,
+    payload: { pasoActualId: resultado.pasoActualId },
+  };
+  if (entrada.decision === "ACEPTAR") {
+    await deps.eventos.publicar({ nombre: "ProtocolReentryAccepted", ...base });
+  } else if (entrada.decision === "PEDIR_OTRA_OPCION") {
+    await deps.eventos.publicar({ nombre: "ProtocolReentryAlternativeRequested", ...base });
+  } else {
+    await deps.eventos.publicar({ nombre: "ProtocolReentryHumanOverridden", ...base });
+  }
   return resultado;
 }

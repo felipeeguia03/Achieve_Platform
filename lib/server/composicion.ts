@@ -47,9 +47,20 @@ import { proyectarPaso } from "./servicios/proyeccion-paso";
 import { directorioNoDisponible } from "./servicios/operadores";
 import {
   observarError as observarErrorPuro,
+  corregirClasificacion as corregirClasificacionPuro,
+  registrarNecesidadDeApoyo as registrarNecesidadDeApoyoPuro,
+  registrarDisparadorTemprano as registrarDisparadorTempranoPuro,
   type ErrorObservado,
+  type CorreccionDeClasificacion,
+  type NecesidadDeApoyo,
+  type DisparadorTemprano,
 } from "./servicios/reiteracion";
 import { reiteracionReal } from "./repositorios/reiteracion";
+import {
+  corroborarProcedencia as corroborarProcedenciaPuro,
+  type Corroboracion,
+} from "./servicios/corroboracion";
+import { corroboracionReal } from "./repositorios/corroboracion";
 // ⚠️ **Cola SINTÉTICA, no el CRM** (B6.6.3). El día que exista el adaptador del
 // flujo A del contrato, se cambia `colaSintetica` por él **acá y en ningún otro
 // lado**: el dominio no sabe adónde va el caso.
@@ -74,7 +85,13 @@ import {
 import {
   activar as activarPuro,
   completarPaso as completarPasoPuro,
+  proponerReentrada as proponerReentradaPuro,
+  replanificar as replanificarPuro,
+  responderReentrada as responderReentradaPuro,
   type PasoCompletado,
+  type PropuestaDeReentrada,
+  type Replanificacion,
+  type RespuestaDeReentrada,
   type ResultadoDeActivacion,
   type ResultadoDeCompletion,
 } from "./servicios/preparacion";
@@ -374,6 +391,21 @@ export function completarPasoDeProtocolo(
   return completarPasoPuro({ repo: preparacionesReal, eventos: eventosReal }, entrada);
 }
 
+/** Crea una versión del plan dentro de la misma preparación. */
+export function replanificarPreparacion(entrada: Replanificacion) {
+  return replanificarPuro({ repo: preparacionesReal, eventos: eventosReal }, entrada);
+}
+
+/** Registra la explicación previa; no mueve el paso. */
+export function proponerReentradaDeProtocolo(entrada: PropuestaDeReentrada) {
+  return proponerReentradaPuro({ repo: preparacionesReal, eventos: eventosReal }, entrada);
+}
+
+/** La aceptación mueve el puntero; pedir otra opción lo conserva. */
+export function responderReentradaDeProtocolo(entrada: RespuestaDeReentrada) {
+  return responderReentradaPuro({ repo: preparacionesReal, eventos: eventosReal }, entrada);
+}
+
 // ── Fase B6 · Riesgo e intervención ──────────────────────────────────────────
 //
 // **El directorio de operadores es un puerto sin implementación real**, y es lo
@@ -477,10 +509,69 @@ export function observarErrorDeEstudiante(entrada: ErrorObservado) {
 }
 
 /**
+ * Corrige la clasificación de una observación y re-evalúa las dos familias
+ * afectadas — B6.7.1, `9.5` ([ADR-037](../../docs/decisions.md#adr-037)).
+ *
+ * ⚠️ **Quién puede corregir no está definido.** Es una de las cosas que la
+ * psicopedagoga puso entre lo que hay que evaluar antes de un piloto.
+ */
+export function corregirClasificacionDeError(entrada: CorreccionDeClasificacion) {
+  return corregirClasificacionPuro(
+    {
+      repo: reiteracionReal,
+      senales: senalesReal,
+      eventos: eventosReal,
+      auditor: auditorReal,
+      destino: colaSintetica,
+    },
+    entrada,
+  );
+}
+
+/**
+ * Registra una **necesidad de apoyo para avanzar** — B6.7.1, `9.5`.
+ *
+ * **Sólo recibe el repositorio.** Ni señales, ni escalamiento: registrar que
+ * alguien necesitó ayuda no puede acercarlo a una escalada, y la firma no tiene
+ * por dónde hacerlo.
+ */
+export function registrarNecesidadDeApoyoDeEstudiante(entrada: NecesidadDeApoyo) {
+  return registrarNecesidadDeApoyoPuro({ repo: reiteracionReal }, entrada);
+}
+
+export function registrarDisparadorTempranoDeEstudiante(entrada: DisparadorTemprano) {
+  return registrarDisparadorTempranoPuro(
+    {
+      repo: reiteracionReal,
+      senales: senalesReal,
+      eventos: eventosReal,
+      auditor: auditorReal,
+      destino: colaSintetica,
+    },
+    entrada,
+  );
+}
+
+/**
  * Los casos pendientes de la cola **sintética** — sólo demostración (B6.6.3).
  *
  * ⚠️ No es el CRM. Cuando llegue el adaptador del flujo A, esto se borra.
  */
 export function colaPendienteDeDemo(institutionId: string) {
   return colaPendiente(institutionId);
+}
+
+/**
+ * Corrobora la procedencia de una fila del ADL — Etapa B2b.2, invariante `I9`.
+ *
+ * Es **la única operación del sistema que mueve un `verification_status`**.
+ *
+ * ⚠️ **Quién puede corroborar no está definido** (`C01-030`, `OPEN`), así que
+ * `corroboradoPor` es una identidad externa que no se valida contra nada.
+ */
+export function corroborarProcedenciaDelADL(entrada: Corroboracion) {
+  return corroborarProcedenciaPuro(
+    { repo: corroboracionReal, auditor: auditorReal },
+    entrada,
+  );
 }

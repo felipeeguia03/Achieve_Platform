@@ -23,6 +23,9 @@ function mundo(estado: RiskSignalStatus, destino?: DestinoDeEscalamiento) {
     studentId: "est-1",
     severity: "intervencion",
     reason: "Error de procedimiento: 3 veces en esta preparación",
+    // Sin contexto estructurado: **nunca reemplaza la causa legible**, y este
+    // mundo prueba el transporte del caso, no lo que la persona lee.
+    reviewContext: {},
   };
   const publicados: EventoDeProducto[] = [];
   const auditado: EntradaDeAuditoria[] = [];
@@ -105,6 +108,7 @@ describe("B6.6.3 · un caso que pide una persona aterriza en algún lado", () =>
       riskSignalId: "s-1",
       studentId: "est-1",
       explanation: "otra cosa",
+      reviewContext: {},
     });
     expect(cola.casos).toHaveLength(1);
   });

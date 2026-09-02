@@ -55,6 +55,7 @@ function mundo(
         studentId: "est-1",
         severity: "riesgo",
         reason: "tres entregas seguidas con el mismo error de método",
+        reviewContext: {},
       }
     : null;
   let filaInt: Intervencion | null = opciones.intervencion
@@ -544,13 +545,27 @@ describe("B6 · lo que esta fase NO hace, y hay que poder verificarlo", () => {
       .filter((f) => f.endsWith(".sql"))
       .map((f) => readFileSync(resolve(dir, f), "utf8"))
       .join("\n");
-    // `AUTOMATICA` sólo puede aparecer como valor cargado una vez: la regla
-    // provisional de `C01-021`. `HP0-06-2` y `HP0-06-3` siguen sin umbral,
-    // porque nadie decidió las suyas.
-    expect(sql.match(/'AUTOMATICA', TRUE/g) ?? []).toHaveLength(1);
+    // **Toda regla cargada en `AUTOMATICA` tiene que ser `HP0-06-1`.** Se mira
+    // regla por regla y no por cantidad: `HP0-06-1` va a seguir versionándose
+    // —`v2.0-po-provisional`, `v3.0-psicopedagogia`…— y un guard que cuente
+    // ocurrencias habría que subirlo cada vez, que es como se apaga un guard sin
+    // que nadie lo decida.
+    const cargas = sql
+      .split("INSERT INTO risk_rule")
+      .slice(1)
+      .filter((bloque) => bloque.includes("'AUTOMATICA'"));
+    expect(cargas.length).toBeGreaterThan(0);
+    for (const carga of cargas) {
+      expect(carga).toContain("'HP0-06-1'");
+    }
+    // Las dos versiones que existen, nombradas. `HP0-06-2` y `HP0-06-3` siguen
+    // sin umbral, porque nadie decidió las suyas.
     expect(sql).toContain("'HP0-06-1', 'v2.0-po-provisional'");
+    expect(sql).toContain("'HP0-06-1', 'v3.0-psicopedagogia'");
     expect(sql).not.toContain("'HP0-06-2', 'v2");
     expect(sql).not.toContain("'HP0-06-3', 'v2");
+    expect(sql).not.toContain("'HP0-06-2', 'v3");
+    expect(sql).not.toContain("'HP0-06-3', 'v3");
   });
 
   it("la versión provisional dice de quién es, y no se la atribuye a ella", () => {

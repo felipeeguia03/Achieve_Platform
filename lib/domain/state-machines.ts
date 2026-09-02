@@ -17,6 +17,7 @@ import type {
   ExamPreparationStatus,
   InterventionStatus,
   RiskSignalStatus,
+  VerificationStatus,
 } from "./types";
 
 export const actionTransitions: Readonly<Record<ActionStatus, readonly ActionStatus[]>> = {
@@ -80,10 +81,12 @@ export const evidenceOwnerTransitions: Readonly<Record<EvidenceState, readonly E
 export const examPreparationStates: readonly ExamPreparationStatus[] = [
   "RECOMMENDED",
   "ACTIVE",
+  "REPLANNED",
   "BLOCKED",
   "EXAM_TAKEN",
   "CLOSED",
-  "ABANDONED",
+  "CANCELLED",
+  "EXPLICITLY_ABANDONED",
 ] as const;
 
 /**
@@ -111,11 +114,15 @@ export const examPreparationTransitions: Readonly<
   Record<ExamPreparationStatus, readonly ExamPreparationStatus[]>
 > = {
   RECOMMENDED: ["ACTIVE"],
-  ACTIVE: ["BLOCKED", "EXAM_TAKEN", "ABANDONED"],
+  // REPLANNED no entra por la transición genérica: `replanificar_preparacion`
+  // crea la versión y cambia el estado en una sola transacción (ADR-038).
+  ACTIVE: ["BLOCKED", "EXAM_TAKEN", "CANCELLED", "EXPLICITLY_ABANDONED"],
+  REPLANNED: ["BLOCKED", "EXAM_TAKEN", "CANCELLED", "EXPLICITLY_ABANDONED"],
   BLOCKED: [],
   EXAM_TAKEN: ["CLOSED"],
   CLOSED: [],
-  ABANDONED: [],
+  CANCELLED: [],
+  EXPLICITLY_ABANDONED: [],
 } as const;
 
 /**
@@ -251,3 +258,58 @@ export function assertTransition<S extends string>(
  * derivadas de la proyección (data-model.md §3.2 y §12).
  */
 export type RescueCondition = "NONE" | "REQUIRED" | "MATERIALIZED";
+
+/**
+ * `Provenance.verificationStatus` — Etapa B2b.2, invariante `I9`.
+ *
+ * > *"Ninguna capa eleva un `verification_status`. **Operación explícita del
+ * > owner en Service + autorización y auditoría**; Repository no expone un
+ * > update genérico del campo."* — `data-model.md` §11
+ *
+ * La máquina existe acá para poder **leerla y testearla sin base**, y está
+ * además impuesta en `corroborar_procedencia()`: que las dos digan lo mismo se
+ * verifica, y que sólo una de las dos exista sería peor de las dos formas.
+ *
+ * ## Las tres reglas que la explican
+ *
+ * **Nada vuelve a `unverified`.** Bajar a *"nadie lo miró"* borraría que alguien
+ * lo miró, y el historial de corroboraciones dejaría de cerrar contra el estado.
+ *
+ * **`disputed` no es terminal.** Una disputa que se resuelve tiene que poder
+ * volver, con la misma exigencia de fuente concreta. Dejarla terminal dejaría
+ * varada para siempre una fila disputada por error — el mismo criterio con el
+ * que [ADR-034](../../docs/decisions.md#adr-034) le conservó las salidas a
+ * `ACKNOWLEDGED`.
+ *
+ * ⚠️ **A `official` no llega nadie, y no es un olvido.** `official` significa
+ * que **la institución lo afirma**, y la Plataforma no puede autenticar a una
+ * institución hoy: `C01-030` está `OPEN`,
+ * [ADR-023](../../docs/decisions.md#adr-023) sacó la identidad de docente y
+ * [ADR-033](../../docs/decisions.md#adr-033) mandó las superficies de operador
+ * al CRM. El estado se conserva —una fila puede venir así de otro lado— y
+ * **conserva su salida**, pero ninguna operación lo produce. Alcanzarlo hoy
+ * sería fabricar autoridad.
+ */
+export const provenanceTransitions: Readonly<
+  Record<VerificationStatus, readonly VerificationStatus[]>
+> = {
+  unverified: ["corroborated", "disputed"],
+  corroborated: ["disputed"],
+  disputed: ["corroborated"],
+  /** Nadie entra. Conserva su salida para que una fila así no quede varada. */
+  official: ["disputed"],
+} as const;
+
+/** Los estados que una corroboración puede **producir**. `official` no está. */
+export const ESTADOS_CORROBORABLES: readonly VerificationStatus[] = [
+  "corroborated",
+  "disputed",
+] as const;
+
+export function puedeCorroborar(
+  desde: VerificationStatus,
+  hacia: VerificationStatus,
+): boolean {
+  if (!ESTADOS_CORROBORABLES.includes(hacia)) return false;
+  return provenanceTransitions[desde].includes(hacia);
+}

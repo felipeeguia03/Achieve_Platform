@@ -25,6 +25,7 @@ export const colaSintetica: DestinoDeEscalamiento = {
         risk_signal_id: caso.riskSignalId,
         student_id: caso.studentId,
         explanation: caso.explanation,
+        review_context: caso.reviewContext,
       })
       .select("id")
       .maybeSingle();
@@ -54,7 +55,7 @@ export const colaSintetica: DestinoDeEscalamiento = {
 export async function colaPendiente(institutionId: string) {
   const { data, error } = await clienteDeServicio()
     .from("escalation_sink")
-    .select("id, risk_signal_id, student_id, explanation, delivery_status, created_at")
+    .select("id, risk_signal_id, student_id, explanation, review_context, delivery_status, created_at")
     .eq("institution_id", institutionId)
     .eq("delivery_status", "pendiente")
     .order("created_at", { ascending: true });
@@ -65,6 +66,7 @@ export async function colaPendiente(institutionId: string) {
     riskSignalId: f.risk_signal_id as string,
     platformStudentId: f.student_id as string,
     explanation: f.explanation as string,
+    reviewContext: (f.review_context as Record<string, unknown> | null) ?? {},
     deliveryStatus: f.delivery_status as string,
     createdAt: f.created_at as string,
   }));
