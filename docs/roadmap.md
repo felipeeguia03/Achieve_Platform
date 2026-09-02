@@ -52,7 +52,7 @@ Cada etapa, sin excepción:
 
 | Frente | Estado |
 |---|---|
-| **Fase B6.6 · el recorrido del MVP, visible** | 🔵 **En curso.** La regla corría en los tests y en ningún otro lado. Ahora hay un endpoint que la dispara y el mundo demo siembra los hechos, no el resultado |
+| **Fase B6.6 · el recorrido del MVP, visible** | ✅ **Completa** el 2 de septiembre de 2026. El recorrido entero se reproduce desde cero: [`demo-mvp.md`](demo-mvp.md) |
 | **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado, una regla provisional lo cuenta, y el circuito produce una señal que pide una persona **sin que nadie la haya mirado** |
 | **Etapa B2b.2 · corroboración** | 🔵 **El que sigue.** La operación explícita que **sí** puede elevar un `verification_status` — hoy no existe, porque `I9` prohíbe que el ingestor lo toque |
 | Las 3 vulnerabilidades `high` de [ADR-008](decisions.md#adr-008) | Deuda abierta, con la restricción de **no** correr `npm audit fix --force` sobre la rama principal |
@@ -2546,8 +2546,17 @@ eso pasa por acá.
 | # | Etapa | Estado |
 |---|---|---|
 | B6.6.1 | El endpoint que dispara la regla, y el mundo demo que siembra **hechos y no resultados** | ✅ **Completa** |
-| B6.6.2 | Qué ve el estudiante de su propia señal, más allá del estado general | ⬜ |
-| B6.6.3 | La cola interna sintética: dónde aterriza un caso escalado mientras el CRM está congelado | ⬜ |
+| B6.6.2 | Qué ve el estudiante de su propia señal, más allá del estado general | ✅ **Completa** |
+| B6.6.3 | La cola interna sintética: dónde aterriza un caso escalado mientras el CRM está congelado | ✅ **Completa** |
+
+**Fase completa.** El recorrido entero es reproducible desde cero y está escrito en
+[`demo-mvp.md`](demo-mvp.md), con su salida real.
+
+> ⚠️ **Lo que sigue provisional o congelado, y hay que decirlo cada vez:** la regla que dispara todo
+> esto es del **Product Owner** y espera la validación de la psicopedagoga
+> ([ADR-036](decisions.md#adr-036)); la integración con el CRM sigue **congelada**
+> ([ADR-035](decisions.md#adr-035)); y **no hay autorización para datos reales**
+> ([ADR-006](decisions.md#adr-006)).
 
 ### ✅ Etapa B6.6.1 — 2 de septiembre de 2026
 
@@ -2568,8 +2577,30 @@ sistema llame a una persona.
 **`NECESITA RECUPERACIÓN`** con el Hero intacto en `NO_ACTION_AVAILABLE` — que es exactamente lo que
 `VI.1` §3.3 exige: **el riesgo modifica, no reemplaza**.
 
+### ✅ Etapa B6.6.2 — lo que ve el estudiante
+
+Seis estados observables, **derivados de dos campos canónicos** —el de la señal y el de la
+intervención—. No hay lifecycle paralelo: la presentación **traduce, no evalúa**.
+
+El estudiante puede saber **que su caso fue tomado** y en qué estado está, porque la matriz de
+visibilidad §4.1 le da *"intervenciones propias relevantes"*. **Nunca sabe quién lo acompaña**: esa
+identidad es del CRM y no le suma nada; el SLA sería una promesa que nadie asumió (`C01-044`).
+
+**La sección no lleva CTA.** Un botón ahí competiría con la única CTA primaria de la superficie —`C-02`
+roto en la pantalla donde el estudiante decide—. El Hero queda **idéntico** con señal y sin señal.
+
+### ✅ Etapa B6.6.3 — la cola sintética
+
+Un puerto `DestinoDeEscalamiento` con **un método y ningún endpoint**, y una cola local detrás. El
+dominio no sabe adónde va el caso, y hay guard estático de que el Service **no nombra** al CRM, HMAC,
+webhooks, outbox ni `fetch`.
+
+Se inspecciona con `GET /api/escalamiento`, con **tres cerrojos**: apagada por defecto —`404`, no
+`403`—, secreto de servicio, y **sólo lectura**. Cuando llegue el adaptador del flujo A, la ruta y la
+tabla **se borran**.
+
 **Done cuando:** el recorrido *error → repetición → corrección → recaída → escalamiento* se puede
-mostrar en una pantalla, sin explicar nada de arquitectura.
+mostrar en una pantalla, sin explicar nada de arquitectura. ✅ — ver [`demo-mvp.md`](demo-mvp.md).
 
 ---
 

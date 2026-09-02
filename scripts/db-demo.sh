@@ -12,7 +12,7 @@ INST=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 EST=a5000000-0000-0000-0000-000000000001
 
 echo "→ Limpiando"
-q "delete from error_observation; delete from intervention_outcome; delete from intervention; delete from risk_signal;
+q "delete from escalation_sink; delete from error_observation; delete from intervention_outcome; delete from intervention; delete from risk_signal;
    delete from protocol_step_completion; delete from protocol_artifact;
    delete from preparation_readiness; delete from exam_preparation; delete from assessment_criterion;
    delete from action_recommendation; delete from action_resource; delete from action;

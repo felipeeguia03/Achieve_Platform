@@ -1,6 +1,7 @@
 import { riskSignalTransitions } from "@/lib/domain/state-machines";
 import type { RiskSignalStatus, SeveridadDeRiesgo } from "@/lib/domain/types";
 import type { Auditor } from "./auditoria";
+import type { DestinoDeEscalamiento } from "./escalamiento";
 import type { PublicadorDeEventos } from "./eventos";
 import {
   transicionarEntidad,
@@ -154,7 +155,18 @@ export async function registrarSenal(
  * **salen** de `ACKNOWLEDGED` sin problema — lo prohibido es entrar.
  */
 export async function transicionar(
-  deps: { repo: RepositorioDeSenales; eventos: PublicadorDeEventos; auditor: Auditor },
+  deps: {
+    repo: RepositorioDeSenales;
+    eventos: PublicadorDeEventos;
+    auditor: Auditor;
+    /**
+     * Adónde va el caso cuando la señal pide una persona — B6.6.3.
+     *
+     * Opcional a propósito: **que no haya destino no puede impedir que una
+     * señal pida ayuda.** El circuito de dominio ya cerraba sin esto.
+     */
+    destino?: DestinoDeEscalamiento;
+  },
   institutionId: string,
   id: string,
   hacia: Exclude<RiskSignalStatus, "RESOLVED" | "ACKNOWLEDGED">,
@@ -189,6 +201,26 @@ export async function transicionar(
       targetId: id,
       despues: { status: hacia },
     });
+
+    // El caso sale hacia donde sea que vaya — B6.6.3.
+    //
+    // Va **acá y no en el llamador** para que todo camino que llegue a
+    // `INTERVENTION_REQUIRED` escale, incluido el que todavía no existe. Un
+    // segundo camino que no encolara sería un caso que pide una persona y no
+    // llega a ninguna cola.
+    //
+    // Sólo en la transición: la señal **entra** una vez a ese estado, y el
+    // compare-and-swap garantiza que dos escrituras simultáneas no la muevan
+    // dos veces. Y el destino además es idempotente por señal.
+    if (hacia === "INTERVENTION_REQUIRED" && deps.destino) {
+      await deps.destino.escalar({
+        institutionId,
+        riskSignalId: id,
+        studentId: resultado.entidad.studentId,
+        // La causa que ya registró la señal. **No se reescribe.**
+        explanation: resultado.entidad.reason,
+      });
+    }
   }
 
   return resultado;

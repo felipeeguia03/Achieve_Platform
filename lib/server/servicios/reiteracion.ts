@@ -5,6 +5,7 @@ import {
 } from "@/lib/domain/reiteracion";
 import type { Auditor } from "./auditoria";
 import type { PublicadorDeEventos } from "./eventos";
+import type { DestinoDeEscalamiento } from "./escalamiento";
 import { registrarSenal, transicionar, type RepositorioDeSenales } from "./riesgo";
 
 /**
@@ -115,6 +116,7 @@ export async function evaluarYRegistrar(
     senales: RepositorioDeSenales;
     eventos: PublicadorDeEventos;
     auditor: Auditor;
+    destino?: DestinoDeEscalamiento;
   },
   institutionId: string,
   examPreparationId: string,
@@ -177,7 +179,12 @@ export async function evaluarYRegistrar(
   // El actor es `null`: **nadie apretó nada**. Lo produjo la regla.
   if (r.necesitaPersona && !registro.duplicado) {
     await transicionar(
-      { repo: deps.senales, eventos: deps.eventos, auditor: deps.auditor },
+      {
+        repo: deps.senales,
+        eventos: deps.eventos,
+        auditor: deps.auditor,
+        destino: deps.destino,
+      },
       institutionId,
       registro.senalId,
       "INTERVENTION_REQUIRED",
@@ -208,6 +215,7 @@ export async function observarError(
     senales: RepositorioDeSenales;
     eventos: PublicadorDeEventos;
     auditor: Auditor;
+    destino?: DestinoDeEscalamiento;
   },
   entrada: ErrorObservado,
 ): Promise<

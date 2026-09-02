@@ -50,6 +50,10 @@ import {
   type ErrorObservado,
 } from "./servicios/reiteracion";
 import { reiteracionReal } from "./repositorios/reiteracion";
+// ⚠️ **Cola SINTÉTICA, no el CRM** (B6.6.3). El día que exista el adaptador del
+// flujo A del contrato, se cambia `colaSintetica` por él **acá y en ningún otro
+// lado**: el dominio no sabe adónde va el caso.
+import { colaSintetica, colaPendiente } from "./repositorios/escalamiento";
 import {
   registrarSenal as registrarSenalPuro,
   resolver as resolverSenalPuro,
@@ -414,7 +418,7 @@ export function transicionarSenal(
   >,
   actorId: string | null = null,
 ) {
-  return transicionarSenalPuro(riesgo, institutionId, id, hacia, actorId);
+  return transicionarSenalPuro({ ...riesgo, destino: colaSintetica }, institutionId, id, hacia, actorId);
 }
 
 /** `RESOLVED`, **sólo si hubo una intervención con outcome**. */
@@ -461,7 +465,22 @@ export function cerrarIntervencion(
  */
 export function observarErrorDeEstudiante(entrada: ErrorObservado) {
   return observarErrorPuro(
-    { repo: reiteracionReal, senales: senalesReal, eventos: eventosReal, auditor: auditorReal },
+    {
+      repo: reiteracionReal,
+      senales: senalesReal,
+      eventos: eventosReal,
+      auditor: auditorReal,
+      destino: colaSintetica,
+    },
     entrada,
   );
+}
+
+/**
+ * Los casos pendientes de la cola **sintética** — sólo demostración (B6.6.3).
+ *
+ * ⚠️ No es el CRM. Cuando llegue el adaptador del flujo A, esto se borra.
+ */
+export function colaPendienteDeDemo(institutionId: string) {
+  return colaPendiente(institutionId);
 }

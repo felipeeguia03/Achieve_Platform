@@ -28,7 +28,8 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # por `exit 1` es justo la que dejaba el mundo a medio poner, y así garantizaba
 # que la siguiente también fallara.
 limpiar_mundo() {
-  q "delete from error_observation; \
+  q "delete from escalation_sink; \
+   delete from error_observation; \
    delete from intervention_outcome; \
    delete from intervention; \
    delete from risk_signal; \
@@ -509,6 +510,32 @@ dup=$(q "select duplicado::text from public.registrar_observacion_de_error('$A',
 corre "select public.registrar_observacion_de_error('$A','$PREP','$TIPO','error',false,null,null,null,'sospecha');"
 [ "$(q "select count(*) from error_observation where exam_preparation_id='$PREP' and corroborated;" | tr -d '[:space:]')" = "1" ] \
   && ok "la sospecha se guarda, pero no cuenta como aparición" || mal "una sospecha entró al contador"
+
+echo "→ B6.6.3. La cola sintética: un caso por señal, y no toca el dominio"
+corre "insert into risk_signal (id,institution_id,student_id,signal_type,severity,reason,status)
+  values ('ec000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','error_reiterado','intervencion','tres veces lo mismo','INTERVENTION_REQUIRED');"
+corre "insert into escalation_sink (institution_id,risk_signal_id,student_id,explanation)
+  values ('$A','ec000000-0000-0000-0000-000000000001','a5000000-0000-0000-0000-000000000001','tres veces lo mismo');"
+[ "$(q "select count(*) from escalation_sink where risk_signal_id='ec000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "1" ] \
+  && ok "el caso queda pendiente y se puede mirar" || mal "no se encoló"
+if corre "insert into escalation_sink (institution_id,risk_signal_id,student_id,explanation)
+  values ('$A','ec000000-0000-0000-0000-000000000001','a5000000-0000-0000-0000-000000000001','otra vez');"; then
+  mal "un replay encoló un segundo caso para la misma señal"
+else
+  ok "un replay no duplica: la unicidad está en el índice, no en un SELECT previo"
+fi
+# Estado de **entrega**, nunca de dominio: encolar no resuelve ni reconoce nada.
+[ "$(q "select status from risk_signal where id='ec000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "INTERVENTION_REQUIRED" ] \
+  && ok "y la señal sigue pidiendo una persona: la cola no es lifecycle" || mal "la cola movió la señal"
+[ "$(q "select count(*) from intervention where risk_signal_id='ec000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "0" ] \
+  && ok "ni abre una intervención por su cuenta" || mal "la cola abrió una intervención"
+if corre "insert into escalation_sink (institution_id,risk_signal_id,student_id,explanation)
+  values ('$A','ec000000-0000-0000-0000-000000000001','a5000000-0000-0000-0000-000000000001','   ');"; then
+  mal "se encoló un caso sin explicación"
+else
+  ok "un caso sin explicación no entra: sería una cola sin causa"
+fi
+corre "delete from escalation_sink; delete from risk_signal where id='ec000000-0000-0000-0000-000000000001';"
 
 echo "→ B6.5. El umbral es de quien lo puso, y la fuente profesional queda intacta"
 [ "$(q "select provisional_default_id from risk_rule where canonical_id='HP0-06-1' and is_current;" | tr -d '[:space:]')" = "PO-MVP-C01-021" ] \
