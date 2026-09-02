@@ -3024,22 +3024,28 @@ son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena e
 
 ### 3.1 Deuda técnica abierta — `npm audit`
 
-> ✅ **`IMPLEMENTED AND TECHNICALLY VERIFIED — AWAITING CTO SIGN-OFF`** · 2 de septiembre de 2026.
-> Opción A del brief, **autorizada para ejecución por el Product Owner** —la ratificación y el cierre
-> son del CTO, en [ADR-008](decisions.md#adr-008)—: `next` y `eslint-config-next` de `16.2.6` a
-> **`16.3.4`**, fijadas exactas, sin tocar React. **`npm audit`: 3 `high` → 0**, y cero en todas las severidades. Los cinco gates en
-> verde sin desvío contra la baseline —**953 tests**, y `db:reset && db:verify` completo con
-> **275 comprobaciones** y los dos códigos de salida en `0`—, más el recorrido del focus group a
-> 1440 y 360 px y el del MVP entero.
+> ⏸️ **`TECHNICALLY VERIFIED — LOCAL COMMITS CREATED — TRACEABILITY REVIEW REQUIRED — NO PUSH`** ·
+> 2 de septiembre de 2026. Opción A del brief, **autorizada para ejecución por el Product Owner** —la
+> ratificación y el cierre son del CTO, en [ADR-008](decisions.md#adr-008)—: `next` y
+> `eslint-config-next` de `16.2.6` a **`16.3.4`**, fijadas exactas, sin tocar React.
+> **`npm audit`: 3 `high` → 0**, y cero en todas las severidades. Los cinco gates en verde sin desvío
+> contra la baseline —**953 tests**, y `db:reset && db:verify` completo con **275 comprobaciones** y
+> los dos códigos de salida en `0`—, más el recorrido del focus group a 1440 y 360 px y el del MVP
+> entero.
 >
-> ⚠️ **Todavía no está cerrada, y no hay promoción declarada.** Falta la **ratificación y firma del
-> CTO** en [ADR-008](decisions.md#adr-008). Quedan además dos deudas **fuera de su alcance**: un
-> hallazgo ambiental no bloqueante —un `package-lock.json` huérfano en el directorio padre, que
-> **no se tocó**— y la **trazabilidad**: el cambio **no se hizo en una rama aislada**, aunque el
-> repositorio Git existía. **Ya está aislado por staging selectivo** y es una unidad revisable y
-> promovible que no arrastra los otros 55 archivos; lo que queda registrado es que el aislamiento fue
-> posterior, no de origen. Todo el resultado, en §10 de
-> [`brief-adr-008-seguridad.md`](brief-adr-008-seguridad.md).
+> ⚠️ **No está cerrada, y no hay promoción declarada.** Falta la **ratificación y firma del CTO**, y
+> `decisions.md` sigue **sin tocar**.
+>
+> ⚠️ **Hay una revisión de trazabilidad abierta, previa a eso.** El trabajo se commiteó localmente en
+> **cuatro commits sin pushear**, pero se crearon **antes** de presentar su aislamiento para revisión,
+> que era lo indicado. **Si se conservan, se rehacen o se deshacen está sin decidir.**
+>
+> Además, tres cosas **fuera del alcance de ADR-008 y sin tocar**: el `package-lock.json` huérfano del
+> directorio padre; el bloque que `next dev` inyecta en `AGENTS.md` —que **se puede desactivar con
+> `agentRules: false`**, que era el dato que faltaba para decidir—; y `git diff --check` fallando en
+> tres líneas heredadas de `docs/decisions.md`.
+>
+> Todo el resultado, en §10 de [`brief-adr-008-seguridad.md`](brief-adr-008-seguridad.md).
 
 **El estado que tenía antes de la actualización, para poder leer el antes/después:**
 

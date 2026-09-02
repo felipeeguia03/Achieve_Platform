@@ -325,13 +325,10 @@ misma deuda contada tres veces**: ni `postcss` ni `sharp` estaban en `package.js
 `next`—. Se cerraron subiendo `next` y `eslint-config-next` de `16.2.6` a **`16.3.4`**, fijadas
 exactas y sin tocar React.
 
-⚠️ **`IMPLEMENTED AND TECHNICALLY VERIFIED — AWAITING CTO SIGN-OFF`.** La actualización está
-ejecutada y verificada, pero **[ADR-008](docs/decisions.md#adr-008) todavía no está firmado**: no hay
-cierre ni promoción declarados. El candidato de revisión está **aislado en el index por staging
-selectivo** y sin commitear.
-
-⚠️ **Si vas a commitear: `git commit` sin `-a`.** Con `-a` barrerías los 36 archivos modificados de
-otras etapas y romperías el aislamiento.
+⚠️ **`TECHNICALLY VERIFIED — LOCAL COMMITS CREATED — TRACEABILITY REVIEW REQUIRED — NO PUSH`.** La
+actualización está ejecutada y verificada, pero **[ADR-008](docs/decisions.md#adr-008) no está
+firmado** —`decisions.md` sigue sin tocar— y hay una **revisión de trazabilidad abierta** sobre los
+cuatro commits locales. **Nada está pusheado. No pushees.**
 
 ⚠️ **No corras `npm audit fix --force`.** La versión la elige el ADR, no una etapa. Todo el
 resultado y la exposición real, en [`brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md)

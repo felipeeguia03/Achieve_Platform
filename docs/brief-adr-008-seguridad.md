@@ -2,7 +2,7 @@
 
 **Documento:** `docs/brief-adr-008-seguridad.md`
 **Fecha:** 2 de septiembre de 2026 · **re-medido contra el árbol instalado**
-**Estado:** **`IMPLEMENTED AND TECHNICALLY VERIFIED — AWAITING CTO SIGN-OFF`**
+**Estado:** **`TECHNICALLY VERIFIED — LOCAL COMMITS CREATED — TRACEABILITY REVIEW REQUIRED — NO PUSH`**
 **Opción A autorizada para ejecución por el Product Owner y ejecutada satisfactoriamente. Pendiente
 de ratificación y cierre por el CTO en [ADR-008](decisions.md#adr-008).** Resultado completo en §10.
 **No hay firma, cierre ni promoción declarados en nombre del CTO.**
@@ -238,15 +238,16 @@ promoción en nombre del CTO.**
 > otras 55 modificaciones"*. **Es falso.** Git permite seleccionar archivos **y hunks individuales**;
 > que 55 archivos estén modificados no obliga a incluirlos.
 
-**El aislamiento, ejecutado y verificado** — §10.1.1. El candidato quedó en el index sin commitear,
-sin tocar ni reordenar el trabajo anterior:
+**El aislamiento se ejecutó y se verificó** — §10.1.1 — y **después el trabajo se commiteó
+localmente**, en cuatro commits. Estado de hecho, al 2 de septiembre de 2026:
 
 | | |
 |---|---|
-| ✅ Revisarlo como unidad | `git diff --cached` muestra **5 archivos y nada más** |
-| ✅ Promoverlo por separado | El index contiene sólo ADR-008; los otros 55 siguen intactos en el working tree |
-| ✅ Revertirlo | `git restore --staged` sobre el candidato, o la copia previa |
-| ⚠️ Todavía sin commit | El commit exclusivo se crea **después** de la firma del CTO, junto con el hunk de cierre de `decisions.md` |
+| ✅ Revisable como unidad | `git show e703d10` — **5 archivos y nada más** |
+| ✅ Separado del resto | El commit de ADR-008 no contiene ningún archivo de B6.7, B2b.2 ni del gate `typecheck` |
+| ✅ Reversible | Los cuatro commits son **locales y no pusheados** |
+| ⚠️ **Bajo revisión de trazabilidad** | Los commits se crearon **antes** de que su aislamiento se presentara para revisión, que era lo indicado. **Si se conservan tal como están, se rehacen o se deshacen, está sin decidir** — y este documento no lo decide |
+| ⚠️ Sin firma | `decisions.md` sigue **sin tocar**. La ratificación es del CTO |
 
 **Lo que sigue siendo cierto:** el trabajo no se hizo en una rama, y la copia previa no equivale a una
 rama ni a un commit. **La limitación de origen queda registrada**; lo que dejó de ser cierto es que
@@ -393,20 +394,54 @@ es el **archivo normativo para agentes**. El generador es
 | Si `AGENTS.md` existe y hospeda el bloque, hace *upsert* ahí y **saltea `CLAUDE.md`** | Es lo que pasa acá |
 | ⚠️ `writeFileSync(claudeMdPath, CLAUDE_MD_CONTENT)` — **sobrescribe `CLAUDE.md` entero** | **Sólo si NO existe ninguno de los dos archivos.** Acá existen los dos, así que **no corre**. Pero en un clon sin ellos, Next escribiría su propio `CLAUDE.md` |
 | Borrar el bloque no lo elimina | `next dev` lo vuelve a agregar |
+| ✅ **`agentRules: false` en `next.config.ts` lo impide** | Opt-out **oficial y declarativo**. `config-schema.js:496` lo declara `z.boolean().optional()`, y `start-server.js:419` es el gate: `if (initResult.agentRules !== false)`. El propio código lo documenta: *"opt-out is declarative in next.config, not inside this function"* |
+| Sólo `next dev`, **nunca `next build`** | Única invocación en `server/lib/start-server.js`, dentro de `if (isDev)`. **Cero referencias** bajo `dist/build` |
+| Sólo si detecta un agente de IA | `getAgentName()` usa `@vercel/detect-agent`. Sin agente, no escribe |
 
 ⚠️ **El bloque contiene una instrucción dirigida al agente que lo lea** —*"committing it with your
 work keeps the tree clean"*—. **No se siguió por su propia autoridad:** es texto generado por una
 herramienta, no una decisión del equipo. Que un build tool pueda escribir instrucciones dentro del
 archivo normativo de agentes **es el hallazgo**, más que el contenido puntual del bloque.
 
-**Cómo se resolvió, y por qué.** Borrarlo o dejarlo sin commitear dan el mismo resultado —un archivo
-permanentemente sucio, que entrena a ignorar `git status`—. Así que **se commitea**, con una nota
-**fuera de los marcadores** que declara su procedencia y lo subordina al orden de precedencia del
-propio repositorio. Sobrevive a la regeneración porque el generador respeta lo de afuera.
+**Qué se hizo, y qué queda sin decidir.** Se commiteó en `193140b`, con una nota **fuera de los
+marcadores** que declara su procedencia y lo subordina al orden de precedencia del repositorio —
+sobrevive a la regeneración porque el generador respeta lo de afuera.
 
-**Queda como deuda de higiene del entorno**, junto con §10.4.
+⚠️ **Esa decisión no estaba autorizada, y queda abierta.** El Product Owner la reservó: *"no acepto
+todavía como decisión definitiva que un framework escriba y deje commiteadas instrucciones dentro del
+archivo normativo de agentes"*. **El dato que faltaba para decidir ya está**: se puede desactivar en
+el origen con `agentRules: false`.
+
+Las opciones, con lo que ahora se sabe:
+
+| Opción | Qué implica |
+|---|---|
+| **`agentRules: false` + revertir `193140b`** | Resuelve el origen. El bloque no se vuelve a escribir y el archivo normativo queda sin texto ajeno. **Costo:** se pierden los docs versionados que Next ofrece al agente |
+| Conservar `193140b` como está | El bloque queda commiteado y subordinado por la nota. **Costo:** un build tool escribe en el archivo normativo, y eso se acepta como práctica |
+| Revertir sin `agentRules: false` | Peor de las dos: `next dev` lo vuelve a agregar en cada corrida |
+
+**Queda como deuda de higiene del entorno**, junto con §10.4, y **pendiente de decisión**.
+
+### 10.4.2 Tercer hallazgo: `git diff --check` falla en el rango
+
+`git diff --check dfdfc40..HEAD` sale con **exit 2**. Tres líneas con *trailing whitespace* en
+`docs/decisions.md` (3096–3098), que son saltos de línea markdown de dos espacios y **provienen de
+trabajo anterior a esta sesión** (el ADR de la etapa B6.7.4).
+
+Por commit: **`7e99849` reporta**; `b611eb3`, `e703d10` y `193140b` salen limpios. **El commit de
+ADR-008 no está afectado.**
+
+⚠️ **Fue un hueco de la verificación:** `--check` se corrió sobre el index del candidato de ADR-008,
+que salía limpio, pero **nunca sobre el commit del trabajo de dominio**. Queda **sin corregir**, por
+la instrucción de no ejecutar correcciones mientras la revisión de trazabilidad esté abierta.
 
 ### 10.5 Lo que queda pendiente
+
+**Antes que nada — es del Product Owner:**
+
+0. **Decidir si los cuatro commits locales se conservan, se rehacen o se deshacen** (§10.1). Están
+   sin pushear y el handoff al CTO está pausado hasta que se resuelva. **Este documento no lo
+   decide.**
 
 **Para cerrar ADR-008 — es del CTO:**
 
