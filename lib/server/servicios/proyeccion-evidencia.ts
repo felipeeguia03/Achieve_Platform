@@ -69,7 +69,10 @@ const LIFECYCLE = new Set<EstadoEvidencia>([
 /** El lifecycle en copy de producto. **El enum crudo nunca se muestra.** */
 const VISIBLE: Record<string, string> = {
   EXPECTED: "Todavía no entregaste esta evidencia",
-  SUBMITTED: "Entregada · todavía no revisada",
+  // Precisión del CTO: después de entregar, la pantalla dice que la evidencia
+  // llegó y que **todavía no fue validada**. No debe aparentar progreso antes
+  // de que alguien la juzgue.
+  SUBMITTED: "Evidencia recibida · pendiente de validación",
   UNDER_REVIEW: "En revisión",
   SUFFICIENT: "Suficiente · falta validar",
   INSUFFICIENT: "Necesita cambios",

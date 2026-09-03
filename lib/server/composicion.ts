@@ -6,6 +6,13 @@ import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
 import { accionesReal } from "./repositorios/accion";
+import { entregaReal } from "./repositorios/evidencia";
+import { claveDeObjeto, urlFirmadaParaSubir } from "./repositorios/almacenamiento";
+import {
+  entregarEvidencia as entregarEvidenciaPuro,
+  type EntregaDeEvidencia,
+  type ResultadoDeEntrega,
+} from "./servicios/evidencia";
 import { transicionar as transicionarAccion } from "./servicios/accion";
 import {
   confirmarCompromiso as confirmarCompromisoPuro,
@@ -200,6 +207,32 @@ export async function confirmarCompromiso(
   await transicionarAccion(deps, institutionId, datos.actionId, "COMMITTED", {}, datos.estudianteId);
 
   return resultado;
+}
+
+/**
+ * Reserva el id de una evidencia y firma su subida — **no escribe ninguna fila**.
+ *
+ * La clave del objeto se deriva de la institución y de este id, nunca de lo que
+ * proponga el cliente: si el cliente eligiera la ruta podría pedir una firma
+ * para la carpeta de otra institución. El id se emite acá por eso, y la fila
+ * recién se crea cuando la subida cerró (D3·A).
+ */
+export async function firmarSubidaDeEvidencia(
+  institutionId: string,
+  nombre: string,
+): Promise<{ evidenciaId: string; clave: string; url: string; token: string }> {
+  const evidenciaId = crypto.randomUUID();
+  const clave = claveDeObjeto(institutionId, evidenciaId, nombre);
+  const { url, token } = await urlFirmadaParaSubir(clave);
+  return { evidenciaId, clave, url, token };
+}
+
+/** Registra la entrega una vez que el archivo está arriba (D3·A). */
+export function entregarEvidencia(
+  institutionId: string,
+  datos: EntregaDeEvidencia,
+): Promise<ResultadoDeEntrega> {
+  return entregarEvidenciaPuro({ repo: entregaReal, eventos: eventosReal }, institutionId, datos);
 }
 
 /**

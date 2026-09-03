@@ -251,14 +251,14 @@ describe("B2.6 · UX05 no confunde el lifecycle", () => {
 
   it("`SUBMITTED` no se presenta como suficiencia ni como revisión en curso", () => {
     const p = proyectarEvidencia({ ...evidencia, lifecycle: "SUBMITTED" });
-    expect(p.estadoVisible).toBe("Entregada · todavía no revisada");
+    expect(p.estadoVisible).toBe("Evidencia recibida · pendiente de validación");
     expect(p.ctaPrimaria).toBeNull();
   });
 
   it("una entrega tardía se encuadra como tardía sin perder su lifecycle", () => {
     const p = proyectarEvidencia({ ...evidencia, lifecycle: "SUBMITTED", tardia: true });
     expect(p.estado).toBe("TARDIA");
-    expect(p.estadoVisible).toBe("Entregada · todavía no revisada");
+    expect(p.estadoVisible).toBe("Evidencia recibida · pendiente de validación");
   });
 
   it("no inventa los formatos permitidos", () => {

@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { tokenDelHeader } from "@/lib/server/http";
-import { evidenciaDe, resolverSesion } from "@/lib/server/composicion";
+import {
+  entregarEvidencia,
+  evidenciaDe,
+  firmarSubidaDeEvidencia,
+  resolverSesion,
+} from "@/lib/server/composicion";
 
 /**
  * `GET /api/evidencia` — Controller de `UX05`. `?evidencia=<uuid>` opcional.
@@ -26,4 +31,67 @@ export async function GET(request: Request) {
   if (!props) return NextResponse.json({ error: "Sin evidencia registrada" }, { status: 404 });
 
   return NextResponse.json(props);
+}
+
+/**
+ * `POST /api/evidencia` — la entrega, en dos tiempos.
+ *
+ * **`?firmar=<nombre>`** reserva el id y devuelve la URL firmada. No escribe
+ * ninguna fila: si el estudiante abandona, no queda una entrega que no ocurrió.
+ *
+ * **Sin `?firmar`** registra la entrega, con el archivo ya arriba. `clave` la
+ * genera el cliente (D2·A): repetirla con el mismo dueño, compromiso y
+ * evidencia devuelve la fila existente; con otro dueño o contenido es `409`
+ * sin exponerla.
+ *
+ * ⚠️ **Entregar no es suficiencia ni progreso.** La fila nace `SUBMITTED` con
+ * las tres señales en `not_evaluated`. Quién juzga es otra operación, y va con
+ * secreto de servicio.
+ */
+export async function POST(request: Request) {
+  const sesion = await resolverSesion(tokenDelHeader(request.headers.get("authorization")));
+  if (sesion.estado === "NO_AUTENTICADO") {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+  if (sesion.estado === "SIN_PADRON") {
+    return NextResponse.json({ error: "Sin habilitación de padrón" }, { status: 403 });
+  }
+
+  const institutionId = sesion.estudiante.institutionId;
+  const firmar = new URL(request.url).searchParams.get("firmar");
+  if (firmar) {
+    return NextResponse.json(await firmarSubidaDeEvidencia(institutionId, firmar));
+  }
+
+  const cuerpo = (await request.json().catch(() => null)) as {
+    compromiso?: string;
+    evidencia?: string;
+    clave?: string;
+  } | null;
+
+  if (!cuerpo?.compromiso || !cuerpo.evidencia || !cuerpo.clave) {
+    return NextResponse.json(
+      { error: "Faltan `compromiso`, `evidencia` y `clave`" },
+      { status: 400 },
+    );
+  }
+
+  const resultado = await entregarEvidencia(institutionId, {
+    evidenciaId: cuerpo.evidencia,
+    commitmentId: cuerpo.compromiso,
+    estudianteId: sesion.estudiante.id,
+    claveDeIdempotencia: cuerpo.clave,
+  });
+
+  switch (resultado.estado) {
+    case "OK":
+      return NextResponse.json(
+        { evidencia: resultado.evidenciaId, duplicado: resultado.duplicado },
+        { status: resultado.duplicado ? 200 : 201 },
+      );
+    case "CONFLICTO_DE_CLAVE":
+      return NextResponse.json({ error: "La clave ya se usó para otro pedido" }, { status: 409 });
+    case "COMPROMISO_NO_ENTREGABLE":
+      return NextResponse.json({ error: resultado.motivo }, { status: 409 });
+  }
 }

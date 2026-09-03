@@ -112,6 +112,90 @@ export async function transicionar(
  * qué se entregó primero, y borrarlo haría imposible explicar por qué se pidió
  * una segunda entrega.
  */
+/** Lo que hace falta para registrar la entrega. */
+export interface EntregaDeEvidencia {
+  evidenciaId: string;
+  commitmentId: string;
+  estudianteId: string;
+  claveDeIdempotencia: string;
+}
+
+/** La huella de la fila que ya usó una clave, para poder compararla. */
+export interface HuellaDeEvidencia {
+  evidenciaId: string;
+  estudianteId: string;
+  commitmentId: string | null;
+}
+
+export type ResultadoDeEntrega =
+  | { estado: "OK"; evidenciaId: string; duplicado: boolean }
+  | { estado: "COMPROMISO_NO_ENTREGABLE"; motivo: string }
+  /** La clave existe con otro dueño, otro compromiso u otro contenido. */
+  | { estado: "CONFLICTO_DE_CLAVE" };
+
+export interface RepositorioDeEntrega {
+  huellaDeClave(institutionId: string, clave: string): Promise<HuellaDeEvidencia | null>;
+  /** `INSERT` en `SUBMITTED`. `null` ⇒ el compromiso no es de este estudiante. */
+  crearEntregada(
+    institutionId: string,
+    datos: EntregaDeEvidencia,
+  ): Promise<{ actionId: string } | null>;
+}
+
+/**
+ * Registra la entrega — D3·A del paquete de decisión.
+ *
+ * ## Qué NO significa esto
+ *
+ * **`SUBMITTED` no es suficiencia, ni revisión, ni progreso.** La fila nace con
+ * las tres señales en `not_evaluated` justamente para que nadie las lea como un
+ * juicio que nadie emitió: quién juzga es D4, y es otra operación.
+ *
+ * ## Por qué la fila se crea después de subir
+ *
+ * El objeto de storage **no lo nombra el cliente** —su clave se deriva de la
+ * institución y del id de la evidencia—, así que el id se reserva antes de
+ * subir y la fila se escribe cuando la subida ya cerró. Si el estudiante
+ * abandona a mitad, queda un objeto huérfano y **ninguna fila que afirme una
+ * entrega que no ocurrió**, que es el error caro de los dos.
+ */
+export async function entregarEvidencia(
+  deps: { repo: RepositorioDeEntrega; eventos: PublicadorDeEventos },
+  institutionId: string,
+  datos: EntregaDeEvidencia,
+): Promise<ResultadoDeEntrega> {
+  const huella = await deps.repo.huellaDeClave(institutionId, datos.claveDeIdempotencia);
+  if (huella) {
+    const mismo =
+      huella.estudianteId === datos.estudianteId &&
+      huella.commitmentId === datos.commitmentId &&
+      huella.evidenciaId === datos.evidenciaId;
+    return mismo
+      ? { estado: "OK", evidenciaId: huella.evidenciaId, duplicado: true }
+      : { estado: "CONFLICTO_DE_CLAVE" };
+  }
+
+  const creada = await deps.repo.crearEntregada(institutionId, datos);
+  if (!creada) {
+    return {
+      estado: "COMPROMISO_NO_ENTREGABLE",
+      motivo: "El compromiso no existe, no es de este estudiante o su estado no admite entregar.",
+    };
+  }
+
+  await deps.eventos.publicar({
+    nombre: "EvidenceSubmitted",
+    institutionId,
+    actorId: datos.estudianteId,
+    sujetoTipo: "evidence",
+    sujetoId: datos.evidenciaId,
+    causa: "->SUBMITTED",
+    payload: { commitmentId: datos.commitmentId, actionId: creada.actionId },
+  });
+
+  return { estado: "OK", evidenciaId: datos.evidenciaId, duplicado: false };
+}
+
 export async function resubmitir(
   deps: { repo: RepositorioDeEvidencias; eventos: PublicadorDeEventos },
   institutionId: string,
