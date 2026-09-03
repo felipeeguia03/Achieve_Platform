@@ -1,7 +1,10 @@
 import "server-only";
 
+import type { EvidenceState } from "@/lib/domain/types";
 import type {
   EntregaDeEvidencia,
+  RepositorioDeEvidencias,
+  Evidencia,
   HuellaDeEvidencia,
   RepositorioDeEntrega,
 } from "../servicios/evidencia";
@@ -89,3 +92,101 @@ async function crearEntregada(
 }
 
 export const entregaReal: RepositorioDeEntrega = { huellaDeClave, crearEntregada };
+
+// ── Transiciones ─────────────────────────────────────────────────────────────
+
+const COLUMNAS = "id, institution_id, action_id, lifecycle_state, superseded_by_id, review_instance_id";
+
+function aDominio(f: Record<string, unknown>): Evidencia {
+  return {
+    id: f.id as string,
+    institutionId: f.institution_id as string,
+    actionId: f.action_id as string,
+    state: f.lifecycle_state as EvidenceState,
+    supersededById: (f.superseded_by_id as string | null) ?? null,
+    reviewInstanceId: (f.review_instance_id as string | null) ?? null,
+  };
+}
+
+async function porId(institutionId: string, id: string): Promise<Evidencia | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("evidence")
+    .select(COLUMNAS)
+    .eq("institution_id", institutionId)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer evidence: ${error.message}`);
+  return data ? aDominio(data as Record<string, unknown>) : null;
+}
+
+/** Compare-and-swap: si otro se adelantó, no pisa nada y devuelve `null`. */
+async function cambiarEstadoSi(
+  institutionId: string,
+  id: string,
+  esperado: EvidenceState,
+  nuevo: EvidenceState,
+  columnas: Readonly<Record<string, unknown>> = {},
+): Promise<Evidencia | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("evidence")
+    .update({ lifecycle_state: nuevo, ...columnas })
+    .eq("institution_id", institutionId)
+    .eq("id", id)
+    .eq("lifecycle_state", esperado)
+    .select(COLUMNAS)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo actualizar evidence: ${error.message}`);
+  return data ? aDominio(data as Record<string, unknown>) : null;
+}
+
+/** Lo que la validación necesita saber de la evidencia para causar el progreso. */
+export async function contextoDeEvidencia(
+  institutionId: string,
+  id: string,
+): Promise<{ actionId: string; courseEnrollmentId: string; topicId: string | null } | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("evidence")
+    .select("action_id, action:action_id(course_enrollment_id, topic_id)")
+    .eq("institution_id", institutionId)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer el contexto de evidence: ${error.message}`);
+  if (!data) return null;
+  const f = data as Record<string, unknown>;
+  const a = f.action as { course_enrollment_id?: string; topic_id?: string | null } | null;
+  return {
+    actionId: f.action_id as string,
+    courseEnrollmentId: a?.course_enrollment_id ?? "",
+    topicId: a?.topic_id ?? null,
+  };
+}
+
+/**
+ * `I4` — la resubmission crea una `Evidence` nueva y **preserva la anterior**.
+ *
+ * Delega en `resubmitir_evidencia`: crear la nueva y enlazarlas son un solo
+ * hecho, y partirlo en dos escrituras dejaría, si falla la segunda, una entrega
+ * huérfana que nadie sabe de qué es sucesora.
+ */
+async function resubmitirAtomico(
+  institutionId: string,
+  anteriorId: string,
+  canal: "WEB" | "WHATSAPP",
+  claveDeIdempotencia?: string,
+): Promise<Evidencia | null> {
+  const { data, error } = await clienteDeServicio().rpc("resubmitir_evidencia", {
+    p_institution_id: institutionId,
+    p_anterior_id: anteriorId,
+    p_canal: canal,
+    p_idempotency_key: claveDeIdempotencia ?? null,
+  });
+  if (error) throw new Error(`No se pudo resubmitir: ${error.message}`);
+  const filas = (data ?? []) as Record<string, unknown>[];
+  return filas.length > 0 ? aDominio(filas[0]) : null;
+}
+
+export const evidenciasReal: RepositorioDeEvidencias = {
+  porId,
+  cambiarEstadoSi,
+  resubmitirAtomico,
+};

@@ -23,7 +23,8 @@
     "db:demo": "./scripts/db-demo.sh",
     "db:sesion": "node ./scripts/sesion-demo.mjs",
     "reloj": "node ./scripts/reloj.mjs",
-    "recomendar": "node ./scripts/recomendar.mjs"
+    "recomendar": "node ./scripts/recomendar.mjs",
+    "validar": "node ./scripts/validar.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

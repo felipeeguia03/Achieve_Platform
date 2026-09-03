@@ -6,7 +6,12 @@ import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
 import { accionesReal } from "./repositorios/accion";
-import { entregaReal } from "./repositorios/evidencia";
+import { contextoDeEvidencia, entregaReal, evidenciasReal } from "./repositorios/evidencia";
+import {
+  validarEvidencia as validarEvidenciaPuro,
+  type ResultadoDeValidacion,
+  type ValidacionEntrante,
+} from "./servicios/validacion";
 import { claveDeObjeto, urlFirmadaParaSubir } from "./repositorios/almacenamiento";
 import {
   entregarEvidencia as entregarEvidenciaPuro,
@@ -233,6 +238,25 @@ export function entregarEvidencia(
   datos: EntregaDeEvidencia,
 ): Promise<ResultadoDeEntrega> {
   return entregarEvidenciaPuro({ repo: entregaReal, eventos: eventosReal }, institutionId, datos);
+}
+
+/**
+ * Valida una evidencia y **registra el progreso como paso aparte** (D4·A, D5·A).
+ *
+ * Ninguna ruta de `Evidence` llega hasta acá: el progreso no se infiere de que
+ * la evidencia haya quedado `VALIDATED`, lo registra este orquestador porque
+ * alguien decidió validarla.
+ */
+export function validarEvidencia(entrada: ValidacionEntrante): Promise<ResultadoDeValidacion> {
+  return validarEvidenciaPuro(
+    {
+      evidencias: evidenciasReal,
+      eventos: eventosReal,
+      contextoDeEvidencia,
+      registrarProgreso,
+    },
+    entrada,
+  );
 }
 
 /**
