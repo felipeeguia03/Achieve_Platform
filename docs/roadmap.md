@@ -68,6 +68,10 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 ### Lo que espera a una persona
 
+> **Las tres del Product Owner tienen su brief con contexto:** [`agenda-decisiones-po-crm.md`](agenda-decisiones-po-crm.md) — ADR-041, ADR-042 y ADR-043, con
+> opciones y recomendación en cada una. **Van juntas:** el orden de ADR-043 no arranca nada sin las
+> otras dos.
+
 | Qué | Quién | Qué destraba |
 |---|---|---|
 | **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | ✅ **Respondida** el 2 de septiembre de 2026: 6 `CAMBIAR` + 1 `APROBAR` ([ADR-037](decisions.md#adr-037)). Los umbrales quedaron; **cambió qué cuenta como repetición**. Sigue `OPEN` para datos reales: condicionada a piloto |

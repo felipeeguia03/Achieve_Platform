@@ -80,6 +80,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Saber en qué quedó la integración con el CRM | [`docs/contrato-riesgo-candidato-v0.2.md`](docs/contrato-riesgo-candidato-v0.2.md) §11 (flujos A·B·C, **congelados**) y [`docs/respuesta-crm-flujos-d-e-v0.1.md`](docs/respuesta-crm-flujos-d-e-v0.1.md) (flujos **D · actividad** y **E · teléfono**, aceptados con cambios) |
 | Preparar la consulta legal | [`docs/legal-package.md`](docs/legal-package.md) |
 | Cerrar los residuos psicopedagógicos | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) |
+| Cerrar las tres decisiones del Product Owner | [`docs/agenda-decisiones-po-crm.md`](docs/agenda-decisiones-po-crm.md) — ADR-041, ADR-042 y ADR-043, con contexto y opciones |
 | Resolver las vulnerabilidades `high` | [`docs/brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md) |
 | El spec original completo | `docs/product-spec-source.md` — **no se edita** |
 
