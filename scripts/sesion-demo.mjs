@@ -2,9 +2,12 @@
 /**
  * Achieve Platform · Etapa B2.6 — alta de la sesión sintética.
  *
- * El spec tiene nueve superficies y **ninguna es un login**. Inventar una sería
- * romper la regla 1 de `AGENTS.md`, así que la identidad del estudiante
- * sintético se da de alta **fuera del producto**, acá.
+ * La identidad del estudiante sintético se da de alta **fuera del producto**,
+ * acá. Desde [ADR-039](../docs/decisions.md#adr-039) hay pantalla de ingreso,
+ * pero **no ofrece crear una cuenta**: quién puede entrar lo decide el padrón
+ * del CRM, y un alta desde el formulario sería el camino por el que una persona
+ * real entraría sin padrón. Así que el alta sigue viviendo acá, y lo que este
+ * script deja listo son **las credenciales que alguien escribe en `/login`**.
  *
  * Qué hace:
  *
@@ -89,4 +92,6 @@ if (ataduraFallida) {
 console.log("✓ Sesión sintética lista");
 console.log(`   email:    ${EMAIL}`);
 console.log(`   password: ${PASSWORD}`);
-console.log("   Poné las dos en .env.local como NEXT_PUBLIC_DEMO_EMAIL y NEXT_PUBLIC_DEMO_PASSWORD.");
+console.log("   Escribilas en /login: desde ADR-039 el navegador ya no abre sesión solo.");
+console.log("   En .env.local van como NEXT_PUBLIC_DEMO_EMAIL y NEXT_PUBLIC_DEMO_PASSWORD,");
+console.log("   que hoy son sólo el recordatorio de qué tipear — ya no autentican nada.");
