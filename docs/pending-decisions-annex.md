@@ -6,8 +6,8 @@
 
 ## Qué es esto y qué no es
 
-Son 51 decisiones de negocio/producto (registro C01): **41 siguen `OPEN`**, 9 tienen respuesta con
-residuo abierto y 1 está cerrada. Ocho decisiones psicopedagógicas forman parte de esas 51
+Son 51 decisiones de negocio/producto (registro C01): **40 siguen `OPEN`**, 9 tienen respuesta con
+residuo abierto y 2 están cerradas. Ocho decisiones psicopedagógicas forman parte de esas 51
 (`HUMAN-P0-01…08`, dentro de C01-031…038). Ninguna bloquea generar el prototipo low-fi: para eso
 alcanzan fixtures y estados sintéticos. Sí bloquean los usos materiales indicados por su gate.
 
@@ -18,13 +18,17 @@ alcanzan fixtures y estados sintéticos. Sí bloquean los usos materiales indica
 **Gate material** (a partir de qué etapa deja de poder posponerse):
 `I` = antes de implementación productiva · `H` = antes de high-fidelity · `P` = antes de piloto institucional · `O` = fuera del MVP, no bloquea nada del corte actual.
 
-**41 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
+**40 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
 `ANSWERED — RESIDUO ABIERTO` el 31 de agosto de 2026, y `C01-051` el 1 de septiembre: su owner —una psicopedagoga real— respondió por
 escrito. Ver [ADR-025](decisions.md#adr-025) y la fuente literal en
 [`human-p0-source.md`](human-p0-source.md).
 
 `C01-022` quedó `CLOSED` el 1 de septiembre de 2026 por [ADR-034](decisions.md#adr-034), y su
 mecanismo quedó implementado el 2 de septiembre.
+
+`C01-009` quedó `CLOSED` el 3 de septiembre de 2026 por decisión del CTO
+([ADR-040](decisions.md#adr-040)), con el camino de ejecución ya implementado contra Postgres el
+mismo día.
 
 Eso es exactamente lo que este anexo pedía: **una respuesta real de su owner, documentada, no una
 inferencia.** Ninguna reclasificación ni uso en el low-fi cierra una fila; sólo su owner.
@@ -44,7 +48,7 @@ construir contra él; lo que queda listado en la columna de residuo sigue sin po
 | C01-006 | Academic Decision Engine y `ActionRecommendation` | Academic Decision owner; TodayView/Materia/Action/Exam; C01-001/002/021 | OPEN; owner funcional conocido | P1 | I |
 | C01-007 | Action: identidad, lifecycle y contexto inequívoco | Academic Decision Engine mantiene ownership; Action lifecycle consume CourseEnrollment y contexto ExamPreparation; C01-003/006/026 | OPEN; `C01-CF-03` gap, no contradicción | P1 | I |
 | C01-008 | Contenido ejecutable de Action y Resource | Action content owner; Hoy/Materia/Commitment/Evidence/Protocol; C01-006/007 | OPEN | P1 | H |
-| C01-009 | Mutaciones de Action e idempotencia | Action lifecycle owner; UX03/04/analytics; C01-007/023 | OPEN | P1 | I |
+| C01-009 | Mutaciones de Action e idempotencia | Action lifecycle owner; UX03/04/analytics; C01-007/023 | ✅ **`CLOSED`** — 3 de septiembre de 2026, por decisión del CTO ([ADR-040](decisions.md#adr-040)). Una `Action` pasa a `COMPLETED` cuando una operación autorizada valida como suficiente una `Evidence` vinculada a un `Commitment` de esa misma `Action`; la idempotencia es por clave del cliente, con `409` sin exponer la fila | P1 | I |
 | C01-010 | Commitment temporal, renegociación y rescate | Commitment owner; Hoy/Materia/Bitácora/CRM; C01-003/008 | OPEN | P1 | I |
 | C01-011 | Coordinación observable Action–Commitment | Product lifecycle owner; UX01/03/04; C01-007/009/010/023 | OPEN | P1 | I |
 | C01-012 | Evidence content y pre-submission | Evidence System; UX05/Protocol; C01-001/008 | OPEN; Reflection config separada en C01-051 | P1 | I |

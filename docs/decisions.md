@@ -2,7 +2,7 @@
 
 **Documento:** `docs/decisions.md`
 **Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
-**Última actualización:** 2 de septiembre de 2026
+**Última actualización:** 3 de septiembre de 2026
 
 ---
 
@@ -86,6 +86,9 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-037](#adr-037) | La validación profesional llegó, y los números no eran el problema | ✅ `ACCEPTED` *(6 `CAMBIAR` + 1 `APROBAR`; los umbrales quedaron, cambió el denominador)* | — |
 | [ADR-038](#adr-038) | Replanificar versiona dentro de la preparación; volver exige una propuesta aceptada | ✅ `ACCEPTED` *(`REPLANNED` sigue vivo; ninguna rama toca Evidence ni progreso)* | — |
 | [ADR-039](#adr-039) | Hay pantalla de ingreso, y no es una superficie de producto | ✅ `ACCEPTED` *(sólo sign-in: **no hay alta**, que la decide el padrón del CRM)* | — |
+| [ADR-040](#adr-040) | El camino de ejecución escribe en Postgres, y `C01-009` queda cerrada | ✅ `ACCEPTED` *(decidido por el CTO; **registrado retroactivamente** desde los commits del 3 sep 2026)* | — |
+| [ADR-041](#adr-041) | Qué cuenta como «actividad» del estudiante a efectos de facturar | 🔴 `PENDING` *(Product Owner + CTO)* | El emisor del **Flujo D** del contrato con el CRM |
+| [ADR-042](#adr-042) | Dónde da el estudiante su WhatsApp, si es que lo da | 🔴 `PENDING` *(Product Owner)* | **Todo el Flujo E**, y arrastra el onboarding que [ADR-039](#adr-039) dejó abierto |
 
 ---
 
@@ -3328,3 +3331,220 @@ sesión ahora se abre con una credencial escrita por quien entra, y no con dos v
   académico mínimo, disponibilidad— y qué ve un estudiante recién habilitado que todavía no tiene
   cursadas. Hoy caería en el vacío de `UX01`, que dice *"no hay una acción recomendada"*: una
   afirmación sobre el mundo que en ese caso nadie puede hacer.
+
+---
+
+<a id="adr-040"></a>
+## ADR-040 — El camino de ejecución escribe en Postgres, y `C01-009` queda cerrada
+
+**Estado:** ✅ `ACCEPTED`
+**Fecha:** 3 de septiembre de 2026 · **decidido por el CTO**
+**Registro:** ⚠️ **retroactivo.** La decisión se tomó y se implementó el 3 de septiembre; este ADR la
+registra en `docs/` a partir de los commits que la ejecutan (`91a490c`, `679308c`, `d18b397`,
+`ebc8d2c`, `8ce1cd5`, `8ab58d4`, `cd893f9`). **No la toma este documento.** Si algún punto no refleja
+lo que el CTO decidió, se corrige por ADR posterior, no editando éste.
+**Cierra:** `C01-009` — *mutaciones de `Action` e idempotencia*.
+**Toca:** `roadmap.md` (Fase B6.8), `pending-decisions-annex.md`, `product.md` §10.
+**Etapa:** B6.8
+
+### Contexto
+
+Después de la B6.7 el backend tenía **el dominio construido y sin quién lo llamara**, en cinco
+lugares distintos:
+
+- El **ADE** —Engine puro, validador determinista, repositorio y `recomendarPara`— existía desde la
+  Fase B4 y **sus únicos llamadores eran los tests**. `UX01` proyectaba *"sin acciones por ahora"*
+  contra la base, y no porque no hubiera nada que recomendar.
+- **No existía `POST /api/compromiso`:** ninguna operación creaba el primer `Commitment` de una
+  `Action`.
+- **`/api/evidencia` era sólo `GET`:** no había forma de entregar contra Postgres.
+- **`registrarProgreso` estaba en el composition root sin ningún caller**, así que nada movía una
+  `Evidence` de `SUBMITTED` y el progreso nunca se materializaba.
+- **Ninguna pantalla usaba los endpoints:** la CTA de `UX04` sólo navegaba.
+
+Es el mismo hueco que la Etapa B4.2 le había cerrado al reloj, repetido del otro lado del loop:
+**construido, probado y sin ejecución operativa**.
+
+### Decisión
+
+**El camino principal del estudiante escribe en Postgres, en cinco tramos.** Cada uno es una
+operación explícita; ninguno infiere un hecho de un estado.
+
+| Tramo | Qué decidió |
+|---|---|
+| **Disparador del ADE** | Un endpoint con secreto de servicio más un script para la demo — **la misma forma que el repositorio ya eligió para el reloj**, en vez de inventar una nueva. No toca dominio: qué unidad conviene lo sigue decidiendo el Engine puro, y si la recomendación se puede mostrar lo sigue decidiendo el validador **antes** de materializar |
+| **`Commitment`** (`D1·A`, `D2·A`) | La fila **nace en `CONFIRMED`**: `DRAFT` no se persiste, así que *"hasta que confirmes no queda registrado"* deja de ser copy y pasa a ser propiedad del schema. El `GET` devuelve una **propuesta proyectada** y no escribe nada. La clave de idempotencia la genera el cliente; repetida con el mismo dueño, recurso y payload devuelve la fila existente, y con otro contenido responde `409` **sin exponer la fila** |
+| **`Evidence`** (`D3·A`) | La entrega va **en dos tiempos** —firmar, subir, registrar— porque la clave del objeto se deriva del id de la evidencia y **el cliente no puede elegir la ruta**: si la eligiera podría pedir una firma para la carpeta de otra institución. Abandonar a mitad deja un objeto huérfano y **ninguna fila que afirme una entrega que no ocurrió**, que es el error caro de los dos. La fila nace `SUBMITTED` con las tres señales en `not_evaluated` —no en `none`, que afirmaría que alguien miró— y `validation_method` en `NULL` |
+| **Validación y progreso** (`D4·A`, `D5·A`) | Operación declarativa **con secreto de servicio, nunca con el JWT del estudiante**: nadie valida su propia evidencia. Orquesta `SUBMITTED → SUFFICIENT → VALIDATED` y **después invoca** `registrarProgreso`. **El progreso no se infiere de que la evidencia esté `VALIDATED`** y el guard estático sigue valiendo. Reentrante en vez de transaccional —son dos entidades y el schema no ofrece una transacción—, con clave derivada de la evidencia (`I8`) |
+| **Cierre de la `Action`** (`C01-009`) | Ver abajo |
+
+### `C01-009`, cerrada — la causalidad, textual
+
+> Una `Action` pasa de `COMMITTED` a `COMPLETED` cuando **una operación autorizada valida como
+> suficiente** una `Evidence` vinculada a un `Commitment` **de esa misma `Action`**.
+
+```
+Evidence suficiente → validación registrada → progreso registrado → Action completada
+```
+
+**Cada flecha es una operación que ocurre porque la anterior ocurrió.** Ninguna se infiere de un
+estado: `VALIDATED` sigue sin producir `ProgressUpdated`, y la `Action` **no se cierra por tener una
+evidencia validada**, sino porque esta operación la cierra.
+
+Las seis reglas:
+
+1. **Sólo la operación con secreto de servicio cierra.** La ruta de subida no toca el lifecycle de la
+   `Action`.
+2. **Cadena causal verificable, leída de una sola vez:** la `Action` de la evidencia, el `Commitment`
+   al que se adjuntó y la `Action` de **ese** commitment tienen que coincidir, con el mismo estudiante
+   de los dos lados. Si no cierra: `CADENA_INVALIDA`, sin escribir nada y **sin decir cuál de los tres
+   falla**.
+3. **Insuficiente** → `SUBMITTED` pasa a `INSUFFICIENT`, la `Action` se queda en `COMMITTED` y la
+   entrega anterior no se toca.
+4. **`explicit_no_change = TRUE` cierra igual:** cumplir la acción y avanzar académicamente son hechos
+   distintos ([ADR-020](#adr-020)).
+5. **Reentrante de punta a punta.** Ni un `ProgressUpdated` ni un `ActionCompleted` de más.
+6. **La `Action` completada no se borra ni se reutiliza.**
+
+### El hallazgo que obligó a ampliar el cierre
+
+**El `Commitment` quedaba `CONFIRMED` para siempre**, y el reloj lo habría pasado a `MISSED` al vencer
+su hora: **un incumplimiento falso sobre trabajo hecho y validado**. El cierre recorre ahora también
+su máquina —`CONFIRMED → STARTED → COMPLETED`— antes de cerrar la `Action`. **El original no se edita
+para parecer otra cosa:** cada escalón publica su hecho, que es el mismo criterio del invariante *"un
+`Commitment` `MISSED` nunca se edita para parecer cumplido"*.
+
+### Dos columnas que obligaron a decidir sin inventar
+
+`reviewer_id` y `product_event.actor_id` son `uuid`, y **quien valida hoy es identidad externa sin
+FK**. En vez de fabricar un UUID para llenarlas, `reviewer_id` queda `NULL` y el actor del evento es
+`null` —lo produjo un proceso, no una persona—, con el validador declarado en el payload.
+**`C01-030` sigue abierto y esto no lo adelanta.**
+
+### Consecuencias
+
+- **`C01-009` pasa a `CLOSED`** en [`pending-decisions-annex.md`](pending-decisions-annex.md). El
+  registro queda en **40 `OPEN` · 9 `ANSWERED — RESIDUO ABIERTO` · 2 `CLOSED`**.
+- **Sin migraciones.** Los cinco tramos usan columnas y `UNIQUE` que ya existían: el schema no cambió.
+- **El ADE corre después del cierre como paso derivado y reintentable.** Si falla, la acción sigue
+  completada y el comando lo dice. Hay **guard estático** de que el Service de validación no importa
+  ni menciona el motor: lo que se garantiza es que **no exista un camino por el que el ADE pueda
+  invalidar un cierre que ya ocurrió**.
+- **En el camino real manda el registro canónico de CTAs, no el guion del focus group.** `CTA-007`
+  tiene destino `null`, así que entregar deja al estudiante viendo *"pendiente de validación"*. El
+  guion sigue mandando bajo `?escenario=`.
+- **El copy de `SUBMITTED`** pasa a *"Evidencia recibida · pendiente de validación"*.
+- **`components/screens/*` no se tocó:** el cableado vive en `app/(student)/*` y las pantallas siguen
+  siendo proyección pura.
+- ⚠️ **El instante que propone el compromiso quedó marcado en el código como `PROVISIONAL — REVISAR
+  ANTES DE INCORPORAR ESTUDIANTES REALES`**, ratificado por el CTO para el MVP sintético. Es
+  reversible sin migrar: **lo que se persiste es el instante que el estudiante confirmó, no la regla
+  que lo propuso**.
+- **Nada de esto levanta [ADR-006](#adr-006).** Todo corre sobre datos sintéticos.
+
+---
+
+<a id="adr-041"></a>
+## ADR-041 — Qué cuenta como «actividad» del estudiante a efectos de facturar
+
+**Estado:** 🔴 `PENDING` — **la cierra el Product Owner, con el CTO.** Un agente puede proponer y
+recomendar; no puede decidir qué se factura.
+**Fecha de apertura:** 3 de septiembre de 2026
+**Origen:** `crm-propuesta-flujos-actividad-vinculacion-v0.1.md` §1 (Flujo D) y la respuesta de la
+Plataforma en [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §1.3.
+**Bloquea:** el emisor del **Flujo D** del contrato con el CRM. **No bloquea nada más:** la
+integración sigue diferida por [ADR-035](#adr-035).
+
+### Contexto
+
+El CRM pide que la Plataforma le empuje **eventos de actividad real** —*"produjo, no miró"*— y los usa
+para dos cosas que no son técnicas: **facturar** (US$X por alumno único activo por institución/mes) y
+**graduar operadores** (al primer evento de actividad de un alumno vinculado). El CRM **no interpreta
+el `type`**: cuenta al alumno como activo con que llegue ≥1 evento. **Qué cuenta como producir lo
+decide la Plataforma**, y por eso la decisión aterriza acá.
+
+La propuesta que la Plataforma tenía escrita —`platform-integration-contract.md` §2.1: *"sólo los
+eventos de nivel `NEGOCIO`"*— **no sirve**, y se descubrió al contestar:
+
+- **`EvidenceSubmitted` —la entrega, que es *el* caso de "produjo"— es nivel `TRANSICION`.** Con ese
+  filtro, el evento más facturable del producto no viajaría.
+- **`InterventionStarted` e `InterventionResolved` son `NEGOCIO` y los produce un operador**, no el
+  estudiante. Facturar por ellos sería facturar porque alguien está en problemas.
+
+**El nivel clasifica para qué sirve un evento, no quién lo produjo** ([ADR-027](#adr-027)).
+
+### Opciones
+
+| # | Opción | Consecuencia |
+|---|---|---|
+| **A** | **Una marca propia y explícita en el catálogo** —*"cuenta como actividad del estudiante"*— versionada y con su guard, independiente de `nivel` | El criterio queda declarado en un solo lugar, testeable, y se puede cambiar sin tocar el transporte. **Recomendada** |
+| B | Reusar `nivel` con una lista de excepciones | Dos reglas para lo mismo. Es como se desincronizan los catálogos |
+| C | Que el CRM reciba todo y filtre él | Contradice *"qué cuenta como producir lo decide la Plataforma"* y exporta ruido a un sistema que factura con eso |
+
+**Lista candidata para la opción A**, de los eventos que hoy **efectivamente se emiten**:
+`EvidenceSubmitted` (entregó), `ProtocolStepCompleted` (cerró un paso, una vez por vuelta —
+[ADR-028](#adr-028)), `ProgressUpdated` (avanzó, con su resultado escrito) y `RescueSucceeded` (volvió
+después de un incumplimiento).
+
+**Y lo que la recomendación deja afuera a propósito:** `CourseViewed` —declarado `TELEMETRIA` con el
+motivo escrito: *"abrir una pantalla no es un hecho de dominio"*—, `ActionAccepted` —aceptar no es
+hacer— y `CommitmentCreated`: comprometerse tampoco es producir.
+
+### Lo que este ADR no decide
+
+- **No decide el precio ni la unidad de facturación.** Eso es del contrato comercial.
+- **No habilita a emitir.** Ningún evento con datos de una persona real viaja hasta el dictamen de
+  [ADR-006](#adr-006).
+
+---
+
+<a id="adr-042"></a>
+## ADR-042 — Dónde da el estudiante su WhatsApp, si es que lo da
+
+**Estado:** 🔴 `PENDING` — **la cierra el Product Owner.** Es una superficie nueva, y una superficie
+nueva no la inventa un agente: es la misma regla que hizo esperar a `/login`
+([ADR-039](#adr-039)).
+**Fecha de apertura:** 3 de septiembre de 2026
+**Origen:** `crm-propuesta-flujos-actividad-vinculacion-v0.1.md` §2 (Flujo E) y
+[`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §2.
+**Bloquea:** **todo el Flujo E.** No por transporte: **la Plataforma no tiene el número.**
+**Relacionado:** [ADR-006](#adr-006), [ADR-039](#adr-039), `C01-030`.
+
+### Contexto
+
+El CRM necesita mapear **teléfono → alumno** para acompañar por WhatsApp, y espera que la Plataforma
+le avise el número cuando el estudiante lo vincula. Del lado de la Plataforma:
+
+| Hecho | Dónde |
+|---|---|
+| La columna existe desde la primera migración de la capa del estudiante | `student.whatsapp TEXT`, rotulada *"dato personal: gateado por ADR-006"* |
+| **Nadie la escribe** | Ninguna ruta, ningún Service, ningún repositorio |
+| El repositorio **ni siquiera la selecciona** | Está escrito con su motivo |
+| **No hay pantalla donde el estudiante lo escriba** | Las nueve superficies (`UX01`–`UX09`) no incluyen ninguna de cuenta o perfil |
+
+El spec sí lo pone en la secuencia de alta —*"LOGIN / CUENTA │ WHATSAPP + ACOMPAÑANTE │ ORIENTACIÓN
+MÍNIMA │ …"*, §19—, pero **ese onboarding no está construido**, y [ADR-039](#adr-039) lo dejó dicho:
+*"entre el `authorized: true` del CRM y la primera acción del estudiante no hay ninguna pantalla
+definida"*.
+
+**Es la misma decisión que ese hueco**, y por eso conviene tomarla junto con él y no dos veces.
+
+### Opciones
+
+| # | Opción | Consecuencia |
+|---|---|---|
+| **A** | **Un tramo de alta con WhatsApp y consentimiento**, dentro del onboarding del spec §19 | Cierra el hueco de ADR-039 y el Flujo E de una sola vez, en el orden que el spec ya propone. **Recomendada** |
+| B | Una pantalla de cuenta/perfil aparte | Superficie nueva fuera del spec, y el estudiante nuevo sigue sin tener dónde empezar |
+| C | Que el número lo cargue el CRM y no viaje nunca desde acá | El Flujo E desaparece. Consistente con §2.4 de la respuesta —el teléfono es canónico en el CRM—, pero deja al estudiante dando su número por un canal que no es el producto |
+
+### Lo que esta decisión arrastra, y hay que decidir con ella
+
+1. **Consentimiento explícito** para la vinculación, en la misma pantalla donde se pide el número.
+2. **Borrado que cruza el límite.** Hoy no hay cláusula que diga qué pasa en el CRM cuando el
+   estudiante revoca o se le borra el dato acá. **Borrar de un lado no borra del otro**, y sin eso el
+   derecho de supresión no es ejecutable.
+3. **Procedencia:** el número entra declarado por el estudiante —`student`/`unverified`— y **la
+   Plataforma no lo verifica ni lo reconcilia**. Si cambia por el canal del CRM, manda el CRM.
+
+⚠️ **Nada de esto se construye antes del dictamen de [ADR-006](#adr-006):** un teléfono es un
+identificador directo de una persona, y es el primer flujo del contrato que transporta uno.

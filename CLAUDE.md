@@ -20,7 +20,7 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
 
 ## Las seis reglas
 
-1. **No inventes reglas de negocio.** Hay 41 decisiones abiertas; las 8 psicopedagógicas
+1. **No inventes reglas de negocio.** Hay 40 decisiones abiertas; las 8 psicopedagógicas
    ([ADR-025](docs/decisions.md#adr-025)) y la obligatoriedad de `Reflection`
    ([ADR-026](docs/decisions.md#adr-026)) están respondidas, pero **con residuos**. Si falta una
    regla, registrala como ADR `PENDING` y **preguntá**.
@@ -77,6 +77,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Buscar evidencia esperada de un paso | [`docs/cuadro-problemas-source.md`](docs/cuadro-problemas-source.md) — **propuesto, no cargado**: tiene preguntas abiertas de la autora |
 | Nombrar algo como lo nombra el oficio | [`docs/indice-psicopedagogico-source.md`](docs/indice-psicopedagogico-source.md) |
 | Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) — §2.1 la propuesta de contrato v2, §2.2 **lo que la Fase B6 necesita de él** |
+| Saber en qué quedó la integración con el CRM | [`docs/contrato-riesgo-candidato-v0.2.md`](docs/contrato-riesgo-candidato-v0.2.md) §11 (flujos A·B·C, **congelados**) y [`docs/respuesta-crm-flujos-d-e-v0.1.md`](docs/respuesta-crm-flujos-d-e-v0.1.md) (flujos **D · actividad** y **E · teléfono**, aceptados con cambios) |
 | Preparar la consulta legal | [`docs/legal-package.md`](docs/legal-package.md) |
 | Cerrar los residuos psicopedagógicos | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) |
 | Resolver las vulnerabilidades `high` | [`docs/brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md) |
@@ -106,6 +107,35 @@ es ternario —`NO_CONFIGURADA` no ofrece nada, `OPTIONAL` ofrece y no bloquea, 
 el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Postgres con sesión real, cada una con una
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` se conectaron en la
 Fase B5.
+
+**Fase B6.8 — El camino de ejecución escribe en Postgres.** ✅ **COMPLETA, 5 / 5** — 3 de septiembre
+de 2026, decidida por el CTO ([ADR-040](docs/decisions.md#adr-040)). El ADE tiene disparador
+(`POST /api/recomendacion`), el `Commitment` nace de una confirmación explícita, la entrega crea una
+`Evidence` real en dos tiempos, la validación registra el progreso y **`C01-009` quedó cerrada**:
+
+> `Evidence` suficiente → validación registrada → progreso registrado → `Action` completada.
+> **Cada flecha es una operación que ocurre porque la anterior ocurrió.**
+
+⚠️ **`VALIDATED` sigue sin producir `ProgressUpdated`.** El progreso lo escribe la operación, no el
+estado, y el guard de los cuatro caminos sigue valiendo. **La `Action` no se cierra por tener una
+evidencia validada:** se cierra porque la operación autorizada la cierra, con la cadena causal
+verificada de una sola vez.
+
+⚠️ **El cierre recorre también la máquina del `Commitment`** (`CONFIRMED → STARTED → COMPLETED`). Sin
+eso, el reloj lo pasaba a `MISSED`: un incumplimiento falso sobre trabajo hecho y validado.
+
+⚠️ **Quién valida sigue sin definirse.** `reviewer_id` queda `NULL` y el actor del evento es `null`
+—lo produjo un proceso, no una persona—. `C01-030` sigue `OPEN` y esto no lo adelanta.
+
+**Hay pantalla de ingreso: `/login`** ([ADR-039](docs/decisions.md#adr-039), Product Owner, 3 de
+septiembre de 2026). **No es `UX10`** —el registro canónico sigue con nueve nodos y hay guard—, no
+ofrece crear cuenta (eso lo decide el padrón del CRM) y **no levanta el gate de
+[ADR-006](docs/decisions.md#adr-006)**. El navegador ya no abre sesión solo.
+
+⚠️ **Dos decisiones nuevas esperan a una persona:** [ADR-041](docs/decisions.md#adr-041) —qué cuenta
+como *"actividad"* a efectos de facturar— y [ADR-042](docs/decisions.md#adr-042) —dónde da el
+estudiante su WhatsApp—, las dos abiertas por los flujos D y E que propuso el CRM. **No construyas
+contra ninguna.**
 
 **Fase B6 — Risk e Intervención.** 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026
 ([ADR-032](docs/decisions.md#adr-032)). El **circuito cerrado se garantiza por construcción**: cerrar

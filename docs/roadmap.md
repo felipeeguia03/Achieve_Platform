@@ -2,7 +2,7 @@
 
 **Documento:** `docs/roadmap.md`
 **Rol:** owner canónico del plan por fases y del estado de avance.
-**Última actualización:** 2 de septiembre de 2026
+**Última actualización:** 3 de septiembre de 2026
 
 ---
 
@@ -46,18 +46,20 @@ Cada etapa, sin excepción:
 
 ---
 
-## 0.1 Dónde estamos · 2 de septiembre de 2026
+## 0.1 Dónde estamos · 3 de septiembre de 2026
 
-**Track A: cerrado.** **Track B: B1–B6.7 completas en su alcance disponible**, con B2b en 2/3.
+**Track A: cerrado.** **Track B: B1–B6.8 completas en su alcance disponible**, con B2b en 2/3.
 
-`lint`, `typecheck` y `build` en verde · **953 tests en 52 archivos** · **275 comprobaciones** históricas contra
+`lint`, `typecheck` y `build` en verde · **980 tests en 54 archivos** · **275 comprobaciones** históricas contra
 Postgres + comprobación funcional transaccional de B6.7.4 · **46 migraciones** · las **nueve superficies** del
-estudiante leen de la base.
+estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](decisions.md#adr-040)).
 
 ### Estado inmediato
 
 | Frente | Estado |
 |---|---|
+| **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
+| **La puerta · `/login`** | ✅ **Hecha** el 3 de septiembre de 2026 ([ADR-039](decisions.md#adr-039), decidido por el Product Owner). **No es `UX10`** y no levanta el gate de [ADR-006](decisions.md#adr-006). Deja abierto el onboarding del spec §19 |
 | **Fase B6.6 · el recorrido del MVP, visible** | ✅ **Completa** el 2 de septiembre de 2026. El recorrido entero se reproduce desde cero: [`demo-mvp.md`](demo-mvp.md) |
 | **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado y el circuito produce una señal que pide una persona **sin que nadie la haya mirado**. B6.7 sustituyó la regla provisional por criterio profesional |
 | **Fase B6.7 · la validación profesional, aplicada** | ✅ **4 / 4**, [ADR-037](decisions.md#adr-037). Vocabulario, denominador, aceleración válida, episodios vinculados y reentrada mínima explicada quedaron implementados el 2 de septiembre de 2026 |
@@ -73,6 +75,8 @@ estudiante leen de la base.
 | **`C01-044`** · playbooks y SLA | Product Operations | El playbook y el SLA del circuito, que hoy son `null` y el circuito lo declara |
 | **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
 | Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |
+| **[ADR-042](decisions.md#adr-042)** · dónde da el estudiante su WhatsApp | **Product Owner** | Todo el **Flujo E** del CRM, y es **la misma decisión** que el onboarding del spec §19 que [ADR-039](decisions.md#adr-039) dejó abierto — hoy el trabajo de más valor sin dependencia externa |
+| **[ADR-041](decisions.md#adr-041)** · qué cuenta como *"actividad"* a efectos de facturar | **Product Owner + CTO** | El emisor del **Flujo D**. La integración sigue diferida por [ADR-035](decisions.md#adr-035): no corre apuro, pero sin esto no se puede construir sin inventar el criterio |
 
 ### Lo diferido por decisión, no por bloqueo
 
@@ -80,6 +84,18 @@ estudiante leen de la base.
 **aceptado por los dos lados sin objeciones**; faltan tres definiciones de forma y construcción,
 casi toda del lado del CRM. Se retoma al final del Track B, y cómo hacerlo está escrito en §11 de
 [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md).
+
+**Y el 3 de septiembre el CRM propuso dos flujos más** — **D · actividad** y **E · vinculación de
+teléfono**—, con las mismas convenciones del v0.2 y sin transporte ni secreto nuevos. La Plataforma
+respondió **`ACEPTA EL DISEÑO CON CAMBIOS REQUERIDOS`**:
+[`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md). Dos hallazgos que conviene
+tener a mano cuando se descongele:
+
+- ⚠️ **`422 UNRESOLVABLE_STUDENT` significa dos cosas distintas** — terminal en el Flujo A (§10.4 del
+  contrato) y reintentable en el D—, y los dos comparten despachador. Se arregla en el catálogo, no en
+  el outbox.
+- ⚠️ **El Flujo E no espera un webhook: espera una pantalla.** La Plataforma no tiene el número
+  ([ADR-042](decisions.md#adr-042)).
 
 ---
 
@@ -2600,9 +2616,9 @@ esta fase**, y ninguno lo cierra un agente.
 
 ---
 
-## Fase B6.6 — El recorrido del MVP, visible · 🔵 EN CURSO
+## Fase B6.6 — El recorrido del MVP, visible · ✅ COMPLETA
 
-**Estado:** 🔵 **1 / 3** — 2 de septiembre de 2026. Habilitada por
+**Estado:** ✅ **3 / 3** — 2 de septiembre de 2026. Habilitada por
 [ADR-036](decisions.md#adr-036). **No depende de nadie de afuera.**
 
 **Por qué existe.** La B6.5 dejó la regla construida y probada, y **nadie la llamaba** — exactamente
@@ -2906,6 +2922,67 @@ para llegar a `RESOLVED` ([ADR-032](decisions.md#adr-032)); cerrar el episodio n
 
 ---
 
+## Fase B6.8 — El camino de ejecución escribe en Postgres · ✅ COMPLETA
+
+**Estado:** ✅ **5 / 5** — 3 de septiembre de 2026. Decidida por el **CTO** y registrada en
+[ADR-040](decisions.md#adr-040). **No dependió de nadie de afuera.**
+
+> ⚠️ **Esta fase se registró retroactivamente**, el mismo día, a partir de los commits que la
+> implementan. El roadmap había quedado un día atrás del código, que bajo Spec Driven Development es
+> el defecto que primero hay que corregir: **la fuente de verdad son los documentos**.
+
+**Por qué existe.** Después de la B6.7 el backend tenía **el dominio construido y sin quién lo
+llamara**, en cinco lugares a la vez: el ADE corría sólo en los tests, no existía `POST` de
+compromiso, `/api/evidencia` era sólo `GET`, `registrarProgreso` no tenía ningún caller y ninguna
+pantalla usaba los endpoints. Es **el mismo hueco que la Etapa B4.2 le cerró al reloj**, repetido del
+otro lado del loop: construido, probado y sin ejecución operativa.
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.8.1 | **El disparador del ADE** — `POST /api/recomendacion` con secreto de servicio y `npm run recomendar`, **la misma forma que el repositorio ya eligió para el reloj**. No toca dominio | ✅ |
+| B6.8.2 | **El `Commitment` nace de una confirmación explícita** (`D1·A`, `D2·A`) — la fila nace en `CONFIRMED`, `DRAFT` no se persiste, y el `GET` proyecta una propuesta sin escribir nada | ✅ |
+| B6.8.3 | **La entrega crea una `Evidence` real** (`D3·A`) — firmar, subir, registrar: **el cliente no elige la ruta del objeto** | ✅ |
+| B6.8.4 | **La validación orquesta el lifecycle y registra el progreso** (`D4·A`, `D5·A`) — declarativa, con secreto de servicio, reentrante | ✅ |
+| B6.8.5 | **Las pantallas reales reemplazan a los fixtures en el camino principal**, y el cierre de `C01-009` completa la `Action` con causalidad explícita | ✅ |
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/recomendacion` · `npm run recomendar` | Despierta al ADE. Qué unidad conviene lo sigue decidiendo el Engine puro, y **el validador determinista sigue decidiendo antes de materializar** |
+| `POST /api/compromiso` | Crea el primer `Commitment` de una `Action`, con clave de idempotencia del cliente. Repetida con el mismo payload devuelve la fila; con otro contenido, `409` **sin exponer la fila** |
+| `POST /api/evidencia` (+ `?firmar=`) | La entrega en dos tiempos. Abandonar a mitad deja un objeto huérfano y **ninguna fila que afirme una entrega que no ocurrió** |
+| `POST /api/validacion` · `npm run validar` | Orquesta `SUBMITTED → SUFFICIENT → VALIDATED` y **después invoca** `registrarProgreso`. Nunca con JWT de estudiante |
+| El cierre de la `Action` | `Evidence` suficiente → validación registrada → progreso registrado → `Action` completada. **Cada flecha es una operación que ocurre porque la anterior ocurrió** |
+| El cableado en `app/(student)/*` | `UX04` confirma y `UX05` firma/sube/entrega. **`components/screens/*` no se tocó**: las pantallas siguen siendo proyección pura |
+
+### Un incumplimiento falso que apareció al cerrar
+
+El `Commitment` quedaba `CONFIRMED` para siempre, y **el reloj lo habría pasado a `MISSED` al vencer
+su hora: un incumplimiento sobre trabajo hecho y validado.** El cierre recorre ahora también su
+máquina —`CONFIRMED → STARTED → COMPLETED`—, y **el original no se edita para parecer otra cosa**:
+cada escalón publica su hecho.
+
+### Lo que esta fase NO hizo, y por qué
+
+| Qué | Por qué |
+|---|---|
+| **No definió quién valida** | `reviewer_id` queda `NULL` y el actor del evento es `null` —lo produjo un proceso, no una persona—, con el validador declarado en el payload. **`C01-030` sigue `OPEN` y esto no lo adelanta** |
+| **No hizo que `VALIDATED` produzca progreso** | El progreso lo escribe la operación, no el estado. El guard estático de los cuatro caminos **sigue valiendo** |
+| **No tocó el schema** | Cinco tramos, **cero migraciones**: las columnas y los `UNIQUE` ya existían |
+| **No incorporó a nadie real** | Todo corre sobre datos sintéticos. [ADR-006](decisions.md#adr-006) sigue siendo bloqueo absoluto |
+
+⚠️ **El instante que propone el compromiso está marcado en el código como `PROVISIONAL — REVISAR
+ANTES DE INCORPORAR ESTUDIANTES REALES`**, ratificado por el CTO para el MVP sintético. Es reversible
+sin migrar: **lo que se persiste es el instante que el estudiante confirmó, no la regla que lo
+propuso**.
+
+**Done cuando:** el recorrido *recomendación → compromiso → entrega → validación → progreso → nueva
+recomendación* se completa contra Postgres, dos vueltas seguidas, sin tocar la base a mano. ✅ —
+verificado el 3 de septiembre de 2026, con la cadena de eventos append-only de la segunda vuelta.
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**
@@ -3016,15 +3093,16 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
+| Fase B6.8 — El camino de ejecución escribe en Postgres | ✅ **COMPLETA** — 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el camino principal escribe contra Postgres y **`C01-009` quedó cerrada**. Sin migraciones | 5 / 5 |
 | Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. `HP0-06-1` ya corre con criterio profesional; faltan `C01-021` para las otras dos reglas, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
-**Estado de los 51 contratos `C01`: 41 `OPEN`, 9 `ANSWERED — RESIDUO ABIERTO`, 1 `CLOSED`.** Ocho
+**Estado de los 51 contratos `C01`: 40 `OPEN`, 9 `ANSWERED — RESIDUO ABIERTO`, 2 `CLOSED`.** Ocho
 son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena es `C01-051`
 ([ADR-026](decisions.md#adr-026)), el 1 de septiembre. `C01-022` cerró por
-[ADR-034](decisions.md#adr-034). Ver
-[`pending-decisions-annex.md`](pending-decisions-annex.md).
+[ADR-034](decisions.md#adr-034) y **`C01-009` por [ADR-040](decisions.md#adr-040)**, el 3 de
+septiembre. Ver [`pending-decisions-annex.md`](pending-decisions-annex.md).
 
 ### 3.1 Seguridad de dependencias — cerrada y firmada
 
