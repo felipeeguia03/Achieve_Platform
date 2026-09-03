@@ -2,7 +2,7 @@
 
 **Documento:** `docs/brief-adr-008-seguridad.md`
 **Fecha:** 2 de septiembre de 2026 · **re-medido contra el árbol instalado**
-**Estado:** **`TECHNICALLY VERIFIED — LOCAL COMMITS CREATED — TRACEABILITY REVIEW REQUIRED — NO PUSH`**
+**Estado:** **`ADR-008 IMPLEMENTED AND TECHNICALLY VERIFIED — AGENT RULE GENERATION DISABLED — AWAITING CTO SIGN-OFF`**
 **Opción A autorizada para ejecución por el Product Owner y ejecutada satisfactoriamente. Pendiente
 de ratificación y cierre por el CTO en [ADR-008](decisions.md#adr-008).** Resultado completo en §10.
 **No hay firma, cierre ni promoción declarados en nombre del CTO.**
@@ -403,24 +403,40 @@ work keeps the tree clean"*—. **No se siguió por su propia autoridad:** es te
 herramienta, no una decisión del equipo. Que un build tool pueda escribir instrucciones dentro del
 archivo normativo de agentes **es el hallazgo**, más que el contenido puntual del bloque.
 
-**Qué se hizo, y qué queda sin decidir.** Se commiteó en `193140b`, con una nota **fuera de los
-marcadores** que declara su procedencia y lo subordina al orden de precedencia del repositorio —
-sobrevive a la regeneración porque el generador respeta lo de afuera.
+**Lo que se hizo primero, sin autorización.** Se commiteó en `193140b`, con una nota fuera de los
+marcadores que lo subordinaba. El Product Owner lo reservó: *"no acepto todavía como decisión
+definitiva que un framework escriba y deje commiteadas instrucciones dentro del archivo normativo de
+agentes"*.
 
-⚠️ **Esa decisión no estaba autorizada, y queda abierta.** El Product Owner la reservó: *"no acepto
-todavía como decisión definitiva que un framework escriba y deje commiteadas instrucciones dentro del
-archivo normativo de agentes"*. **El dato que faltaba para decidir ya está**: se puede desactivar en
-el origen con `agentRules: false`.
+### ✅ Resuelto — **Opción A**, 3 de septiembre de 2026
 
-Las opciones, con lo que ahora se sabe:
+**Decisión del Product Owner: desactivar el comportamiento en el origen.**
 
-| Opción | Qué implica |
+> **`agentRules: false` en `next.config.ts`**, y `AGENTS.md` restaurado al contenido previo a
+> `193140b`. **El archivo volvió a estar íntegramente bajo control del repositorio.**
+
+**Fundamento:** `AGENTS.md` es **normativo** en este repositorio. Que su contenido pueda cambiar por
+una actualización de dependencias, sin decisión humana, es exactamente lo que este proyecto documenta
+para no permitir.
+
+**Por qué en el origen y no administrando el síntoma.** Conservar el bloque parecía estable, pero
+`hasCurrentAgentRules` compara el bloque instalado contra el de la versión en uso **byte a byte**: el
+día que Next cambie una coma de ese texto, la comparación falla y **lo reescribe solo**, en una
+actualización futura y sin aviso. `agentRules: false` corta eso de raíz — el gate de
+`start-server.js` ni siquiera llama al generador.
+
+**`193140b` se conserva en el historial.** No se reescribió ni se revirtió: el rastro de que esto
+ocurrió, y de cómo se resolvió, queda completo.
+
+| Estado | Verificación |
 |---|---|
-| **`agentRules: false` + revertir `193140b`** | Resuelve el origen. El bloque no se vuelve a escribir y el archivo normativo queda sin texto ajeno. **Costo:** se pierden los docs versionados que Next ofrece al agente |
-| Conservar `193140b` como está | El bloque queda commiteado y subordinado por la nota. **Costo:** un build tool escribe en el archivo normativo, y eso se acepta como práctica |
-| Revertir sin `agentRules: false` | Peor de las dos: `next dev` lo vuelve a agregar en cada corrida |
+| `next.config.ts` | `agentRules: false`, top-level de `NextConfig` — es donde el tipo lo declara, no bajo `experimental` |
+| `AGENTS.md` | **Cero marcadores `nextjs-agent-rules`**, cero rastros de la nota manual |
+| `next dev` | Arrancado y detenido: **no volvió a crear ni modificar `AGENTS.md` ni `CLAUDE.md`** |
 
-**Queda como deuda de higiene del entorno**, junto con §10.4, y **pendiente de decisión**.
+⚠️ **Lo que esto no cubre:** en un clon donde **no existan** ni `AGENTS.md` ni `CLAUDE.md`, la tercera
+rama del generador escribiría su propio `CLAUDE.md` completo. `agentRules: false` lo previene, porque
+`next.config.ts` va commiteado — pero depende de que el clon lo tenga.
 
 ### 10.4.2 Tercer hallazgo: `git diff --check` falla en el rango
 
@@ -432,16 +448,21 @@ Por commit: **`7e99849` reporta**; `b611eb3`, `e703d10` y `193140b` salen limpio
 ADR-008 no está afectado.**
 
 ⚠️ **Fue un hueco de la verificación:** `--check` se corrió sobre el index del candidato de ADR-008,
-que salía limpio, pero **nunca sobre el commit del trabajo de dominio**. Queda **sin corregir**, por
-la instrucción de no ejecutar correcciones mientras la revisión de trazabilidad esté abierta.
+que salía limpio, pero **nunca sobre el commit del trabajo de dominio**.
+
+✅ **Resuelto el 3 de septiembre de 2026: no se corrige, porque no es un defecto.** Son **saltos de
+línea Markdown intencionales** —dos espacios al final— en el encabezado de ADR-038. `docs/decisions.md`
+queda intacto.
 
 ### 10.5 Lo que queda pendiente
 
-**Antes que nada — es del Product Owner:**
+**✅ Resuelto por el Product Owner — 3 de septiembre de 2026:**
 
-0. **Decidir si los cuatro commits locales se conservan, se rehacen o se deshacen** (§10.1). Están
-   sin pushear y el handoff al CTO está pausado hasta que se resuelva. **Este documento no lo
-   decide.**
+0. **Los cuatro commits locales se conservan.** `b611eb3` y `e703d10` son atómicos; rehacer `7e99849`
+   no habría recuperado una separación verificable entre etapas ya superpuestas; y deshacerlos habría
+   devuelto trabajo validado a un árbol sin custodia. El defecto documental de `e703d10` se corrigió
+   **por commit posterior**, conservando el rastro. Y **`AGENTS.md` se resolvió por la opción A**
+   (§10.4.1), conservando `193140b` en el historial.
 
 **Para cerrar ADR-008 — es del CTO:**
 
@@ -452,8 +473,9 @@ la instrucción de no ejecutar correcciones mientras la revisión de trazabilida
 **Fuera de ADR-008, registrado como deuda separada:**
 
 2. **Higiene del entorno** — el `package-lock.json` huérfano del directorio padre (§10.4). No
-   bloqueante. Se trata por una corrección independiente si reaparece en el repositorio o el entorno
-   canónico.
+   bloqueante, **sin tocar**. Se trata por una corrección independiente si reaparece en el
+   repositorio o el entorno canónico. *(El otro hallazgo ambiental, el de `AGENTS.md`, quedó resuelto
+   en §10.4.1.)*
 3. **Trazabilidad** — el trabajo **no se hizo en una rama aislada**, aunque el repositorio Git
    existía (§10.1). **Ya está aislado por staging selectivo** (§10.1.1) y es promovible por sí solo;
    lo que queda registrado es que el aislamiento fue posterior, no de origen.

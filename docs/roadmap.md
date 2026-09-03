@@ -3041,14 +3041,18 @@ son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena e
 > ⚠️ **No está cerrada, y no hay promoción declarada.** Falta la **ratificación y firma del CTO**, y
 > `decisions.md` sigue **sin tocar**.
 >
-> ⚠️ **Hay una revisión de trazabilidad abierta, previa a eso.** El trabajo se commiteó localmente en
-> **cuatro commits sin pushear**, pero se crearon **antes** de presentar su aislamiento para revisión,
-> que era lo indicado. **Si se conservan, se rehacen o se deshacen está sin decidir.**
+> ✅ **La revisión de trazabilidad se resolvió el 3 de septiembre de 2026: los cuatro commits locales
+> se conservan.** Rehacerlos no habría recuperado una separación verificable entre etapas ya
+> superpuestas, y deshacerlos habría devuelto trabajo validado a un árbol sin custodia. El defecto
+> documental de `e703d10` se corrigió **por commit posterior**, conservando el rastro.
 >
-> Además, tres cosas **fuera del alcance de ADR-008 y sin tocar**: el `package-lock.json` huérfano del
-> directorio padre; el bloque que `next dev` inyecta en `AGENTS.md` —que **se puede desactivar con
-> `agentRules: false`**, que era el dato que faltaba para decidir—; y `git diff --check` fallando en
-> tres líneas heredadas de `docs/decisions.md`.
+> ✅ **`AGENTS.md` volvió a estar íntegramente bajo control del repositorio.** El bloque que `next dev`
+> inyectaba se **desactivó en el origen** con `agentRules: false` en `next.config.ts`, y el archivo se
+> restauró. `193140b` **se conserva en el historial**: el rastro de lo que pasó no se borra.
+>
+> Queda **una** deuda de higiene del entorno, sin tocar: el `package-lock.json` huérfano del directorio
+> padre. Y `git diff --check` reporta tres líneas de `docs/decisions.md` que **no son un defecto**: son
+> saltos Markdown intencionales, heredados de la etapa B6.7.4.
 >
 > Todo el resultado, en §10 de [`brief-adr-008-seguridad.md`](brief-adr-008-seguridad.md).
 

@@ -23,8 +23,7 @@ Si el código y `docs/` discrepan, **el código es el defectuoso**.
 
 ### 1.1 No inventes reglas de negocio
 
-Este proyecto tiene **41 decisiones de negocio abiertas** (de `C01-001` a `C01-051`), 9 respondidas
-con residuo y 1 cerrada. Las **8
+Este proyecto tiene **42 decisiones de negocio abiertas** (de `C01-001` a `C01-051`). Las **8
 decisiones psicopedagógicas** (`HUMAN-P0-01`…`08`) **fueron respondidas** por la psicopedagoga real
 el 31 de agosto de 2026: se construye contra su criterio confirmado `v1.0`, **citándolo**, y sus
 residuos siguen abiertos. Todas están en
@@ -53,15 +52,14 @@ falta:** las respondió la psicopedagoga real el 31 de agosto de 2026. Se usa el
 cita.
 
 **Lo que sigue cerrado para un agente son los residuos** que [ADR-025](docs/decisions.md#adr-025)
-lista —obligatoriedad paso a paso, reconciliación de dimensiones, definición de tarea comparable,
-peso de los criterios, momento del postmortem y condiciones del piloto—. Ésos se preguntan. Y una fuente literal manda sobre
+lista —obligatoriedad paso a paso, reconciliación de dimensiones, umbral de "error reiterativo",
+peso de los criterios, momento del postmortem—. Ésos se preguntan. Y una fuente literal manda sobre
 cualquier paráfrasis: si [`docs/human-p0-source.md`](docs/human-p0-source.md) y un resumen
 discrepan, **gana la transcripción**.
 
 ### 1.3 Datos reales: bloqueo absoluto
 
-[ADR-006](docs/decisions.md#adr-006) está `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`. Mientras no
-tenga confirmación legal:
+[ADR-006](docs/decisions.md#adr-006) está `PENDING`. Mientras lo esté:
 
 > **Ninguna funcionalidad que procese datos de una persona real puede construirse.** Esto incluye el
 > primer login de un estudiante real, no solo el piloto institucional.
@@ -234,7 +232,7 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/roadmap.md`](docs/roadmap.md) | Fases, etapas, bloqueos, estado | Antes de empezar cualquier trabajo |
 | [`docs/decisions.md`](docs/decisions.md) | ADRs numerados | **Siempre.** Para saber qué está bloqueado |
 | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) | Las respuestas `DD1`–`DD10` que el manual de diseño exige | Antes de aplicar un principio del manual |
-| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` — **41 abiertas**, 9 respondidas con residuo, 1 cerrada | Cuando dudes si algo está decidido |
+| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` — **42 abiertas**, 9 respondidas | Cuando dudes si algo está decidido |
 | [`docs/human-p0-source.md`](docs/human-p0-source.md) | **Fuente literal** de las 8 respuestas psicopedagógicas | Antes de escribir contenido del protocolo de examen |
 | [`docs/design-system-capturas.md`](docs/design-system-capturas.md) | Extracción visual anonimizada + §12, las decisiones de diseño abiertas | Antes de tocar layout, espaciado o la posición de una CTA |
 | **`docs/diseño/*.png`** | **Las 34 capturas: la fuente del lenguaje visual.** No versionadas ([ADR-006](docs/decisions.md#adr-006)) | **Siempre, antes de tocar UI.** Ver §1.5 |
@@ -281,9 +279,8 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 ## 5. Estado actual del proyecto
 
 **Fases B1–B6.7: ✅ completas en su alcance disponible.** No queda otra etapa desbloqueada: B7
-espera el dictamen legal de ADR-006 y B2b.3 espera la autorización institucional `C01-042`.
-B6.7.4 dejó la replanificación versionada y la reentrada explicada antes de mover el recorrido;
-B2b.2 ya cerró la corroboración append-only.
+espera el dictamen legal de ADR-006 y B2b.2 espera un owner para corroboración. B6.7.4 dejó la
+replanificación versionada y la reentrada explicada antes de mover el recorrido.
 
 Track A y la Fase A2 están cerrados: las nueve superficies existen, todos los estados críticos son
 alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner.
@@ -302,11 +299,11 @@ En el Track B, hoy:
   para que quien los lea encuentre lo que la profesional escribió. Y **lo que la fuente no define no
   se completa** — evidencia esperada, criterio de cierre y obligatoriedad de los veinte pasos entraron
   vacíos. Hay tests que rompen en las dos direcciones.
-- **Riesgo e intervención existen.** `HP0-06-1 v4.0-psicopedagogia` produce una señal sólo desde
-  hechos comparables y con el denominador profesional; `HP0-06-2` y `HP0-06-3` siguen en modo
-  humano. Los playbooks tampoco se inventan: `C01-044` sigue abierto. ⚠️ **Una señal sin causa no
-  existe**, cerrar una intervención sin outcome no es un camino posible, y el riesgo en `UX01`
-  **sólo cambia el estado general**.
+- **Riesgo e intervención existen, y ningún motor los dispara.** `C01-021` y `C01-036` están
+  abiertos: las tres reglas de `HUMAN-P0-06 v1.0` son configuración **sin umbral** y hay guard
+  estático contra agregar un evaluador. Los playbooks tampoco: `C01-044` dice *"no se inventan
+  valores"*. ⚠️ **Una señal sin causa no existe** —`CHECK` en la base—, **cerrar una intervención sin
+  outcome no es un camino posible**, y el riesgo en `UX01` **sólo cambia el estado general**.
 - **Repetir un paso no es retroceder.** Cada vuelta es un hecho más
   ([ADR-028](docs/decisions.md#adr-028)); el copy dice *"volviste sobre"*, nunca *"repetiste"*.
 - **El loop diario está persistido entero** — `Action`, `Commitment`, `Evidence` y `Reflection`,
@@ -315,15 +312,16 @@ En el Track B, hoy:
   resultado; no decide que hubo progreso:** `C01-018` sigue `OPEN`. Ninguna ruta de `Evidence`
   escribe progreso, con guard.
 - **El Product Event Model está declarado** en `lib/domain/product-events.ts`: 23 eventos P0 del
-  spec §16 más 36 extensiones que el backend emite o conserva como legacy. Antes de agregar un evento,
+  spec §16 más 18 extensiones que el backend emite y el P0 no lista. Antes de agregar un evento,
   declaralo ahí.
-- **B2b va 2/3**: ingesta y corroboración completas; B2b.3 espera `C01-042`.
+- **B2b va 1/3**, y el ADE v1, su materialización y el reloj del lifecycle se construyeron por
+  adelantado en B4.
 
 Dónde vive cada cosa hoy:
 
 | Carpeta | Qué es |
 |---|---|
-| `lib/domain/` | Tipos, las 6 máquinas de estado, `selectHeroLevel`, y los view models de `UX01`–`UX09`. **Puro:** sin React, sin I/O |
+| `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, y los view models de `UX01`–`UX06`. **Puro:** sin React, sin I/O |
 | `lib/content/` | El copy con ID tipado (regla `C-07`) |
 | `lib/navigation/` | El grafo del Golden Path y el registro de las 19 CTAs. **No importa `lib/fixtures/`** |
 | `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |
@@ -427,30 +425,3 @@ Orden de precedencia:
 
 Si una instrucción que te den contradice un principio marcado `DEBE` o un invariante de §2:
 **decilo antes de ejecutar y explicá el costo.**
-
----
-
-## 9. Bloque generado por Next — **no lo escribió este equipo**
-
-Lo que sigue entre `<!-- BEGIN:nextjs-agent-rules -->` y `<!-- END -->` lo **inyecta `next dev`**
-desde `node_modules/next/dist/server/lib/generate-agent-files.js`, y apareció con la actualización a
-`16.3.4` ([ADR-008](docs/brief-adr-008-seguridad.md) §10.4.1). Se conserva porque borrarlo sólo hace
-que se vuelva a agregar.
-
-**Su lugar en el orden de precedencia es el último.** Es documentación de una herramienta, no una
-regla de este proyecto: **no manda sobre §1 a §8, ni sobre `docs/`**. Si algo de ese bloque
-contradice un invariante de §2 o una decisión de `docs/decisions.md`, **gana este repositorio** — y
-aplica §8 igual que con cualquier otra instrucción.
-
-Esta nota está **fuera de los marcadores a propósito**: el generador sólo reemplaza lo de adentro, así
-que sobrevive a cada regeneración.
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
