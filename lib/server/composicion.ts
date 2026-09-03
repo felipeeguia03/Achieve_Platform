@@ -26,6 +26,7 @@ import {
 import { transicionar as transicionarAccion } from "./servicios/accion";
 import {
   confirmarCompromiso as confirmarCompromisoPuro,
+  transicionar as transicionarCompromiso,
   type ConfirmacionDeCompromiso,
   type ResultadoDeConfirmacion,
 } from "./servicios/compromiso";
@@ -251,12 +252,15 @@ export async function entregaEsperadaDe(
   studentId: string,
   ahora: string = new Date().toISOString(),
 ): Promise<{ props: EvidenciaProps; compromisoId: string } | null> {
-  const vigente = await compromisoLecturaReal.estadoDeCompromiso(institutionId, studentId, ahora, null);
-  if (!vigente) return null;
-  if (await evidenciaDeCompromiso(institutionId, vigente.compromisoId)) return null;
-
+  // Se parte de la **acción vigente**, no del último compromiso del estudiante:
+  // después de una vuelta cerrada, ese último es el `COMPLETED` de la anterior.
   const accion = await accionLecturaReal.estadoDeAccion(institutionId, studentId, ahora, null);
   if (!accion) return null;
+
+  const vivo = await compromisosReal.vivoDeAccion(institutionId, accion.accionId);
+  if (!vivo) return null;
+  if (await evidenciaDeCompromiso(institutionId, vivo.id)) return null;
+  const vigente = { compromisoId: vivo.id };
 
   return {
     compromisoId: vigente.compromisoId,
@@ -322,9 +326,54 @@ export function validarEvidencia(entrada: ValidacionEntrante): Promise<Resultado
       eventos: eventosReal,
       contextoDeEvidencia,
       registrarProgreso,
+      completarAccion,
     },
     entrada,
   );
+}
+
+/**
+ * Lleva una `Action` a `COMPLETED` **recorriendo su máquina**, sin saltos.
+ *
+ * `COMMITTED → IN_PROGRESS → EVIDENCE_PENDING → COMPLETED`: los tres escalones
+ * existen y cada uno publica su hecho. Saltarlos con un `update` directo
+ * ahorraría dos escrituras y perdería el rastro de por dónde pasó la acción,
+ * que es lo que la Bitácora proyecta.
+ *
+ * **Idempotente**: `transicionar` hace compare-and-swap, así que un escalón ya
+ * recorrido no vuelve a escribir ni a publicar. Devuelve si la acción quedó
+ * `COMPLETED`, la haya completado esta corrida o una anterior.
+ */
+const CAMINO_AL_CIERRE = ["IN_PROGRESS", "EVIDENCE_PENDING", "COMPLETED"] as const;
+const CIERRE_DEL_COMPROMISO = ["STARTED", "COMPLETED"] as const;
+
+export async function completarAccion(
+  institutionId: string,
+  actionId: string,
+  commitmentId: string,
+  actorId: string | null,
+): Promise<boolean> {
+  /*
+    El compromiso primero, y **no es un detalle**: un `CONFIRMED` que nadie
+    cierra lo levanta el reloj y lo pasa a `MISSED` cuando vence su hora — un
+    incumplimiento falso sobre trabajo que se hizo y se validó. Cerrarlo es lo
+    que hace que el hecho quede como lo que fue.
+
+    El original no se edita para parecer otra cosa: recorre su propia máquina,
+    `CONFIRMED → STARTED → COMPLETED`, y cada escalón publica su hecho.
+  */
+  const compromisos = { repo: compromisosReal, eventos: eventosReal };
+  for (const hacia of CIERRE_DEL_COMPROMISO) {
+    await transicionarCompromiso(compromisos, institutionId, commitmentId, hacia, actorId);
+  }
+
+  const acciones = { repo: accionesReal, eventos: eventosReal };
+  for (const hacia of CAMINO_AL_CIERRE) {
+    await transicionarAccion(acciones, institutionId, actionId, hacia, {}, actorId);
+  }
+
+  const final = await accionesReal.porId(institutionId, actionId);
+  return final?.state === "COMPLETED";
 }
 
 /**
@@ -426,11 +475,15 @@ export async function compromisoDe(
  * `CompromisoProps` que la pantalla ya sabe dibujar, `estado: "DRAFT"` como
  * estado de vista, y ni una fila en la base.
  *
- * ⚠️ **El instante propuesto es un default, no una regla de negocio.** Se
- * propone la próxima media hora en punto en la zona de la institución, y el
- * estudiante confirma o no. Elegir el momento es parte de `C01-010`, que sigue
- * `OPEN`: cuando se cierre, esto se reemplaza sin migrar nada, porque no hay
- * nada persistido que dependa de este default.
+ * ⚠️ **`PROVISIONAL — REVISAR ANTES DE INCORPORAR ESTUDIANTES REALES`.** El
+ * instante propuesto —la próxima media hora en punto en la zona de la
+ * institución— es un **default ratificado provisionalmente por el CTO para el
+ * MVP sintético**, no una regla de negocio. Elegir el momento es parte de
+ * `C01-010`, que sigue `OPEN`.
+ *
+ * **Es reversible sin migrar nada:** lo que se persiste es el instante que el
+ * estudiante confirmó, no la regla que lo propuso. Cambiar el default no toca
+ * ninguna fila existente, porque ninguna depende de él.
  */
 export async function propuestaDeCompromiso(
   institutionId: string,

@@ -139,25 +139,65 @@ async function cambiarEstadoSi(
   return data ? aDominio(data as Record<string, unknown>) : null;
 }
 
-/** Lo que la validación necesita saber de la evidencia para causar el progreso. */
+/**
+ * La cadena causal completa de una evidencia, en **una sola lectura**.
+ *
+ * Trae la `Action` de la evidencia, el `Commitment` al que se adjuntó y la
+ * `Action` de **ese** compromiso, más el estudiante de cada lado. Sirve para lo
+ * que pide la regla 2 del cierre: que evidencia, compromiso y acción sean del
+ * mismo estudiante y estén realmente encadenados. Comparar los tres exige
+ * tenerlos juntos; leerlos por separado deja lugar a que uno cambie en el medio.
+ */
+export interface CadenaCausal {
+  actionId: string;
+  actionStatus: string;
+  courseEnrollmentId: string;
+  topicId: string | null;
+  estudianteDeLaAccion: string;
+  commitmentId: string | null;
+  /** La `Action` a la que apunta el compromiso. Tiene que ser la misma. */
+  accionDelCompromiso: string | null;
+  estudianteDelCompromiso: string | null;
+}
+
 export async function contextoDeEvidencia(
   institutionId: string,
   id: string,
-): Promise<{ actionId: string; courseEnrollmentId: string; topicId: string | null } | null> {
+): Promise<CadenaCausal | null> {
   const { data, error } = await clienteDeServicio()
     .from("evidence")
-    .select("action_id, action:action_id(course_enrollment_id, topic_id)")
+    .select(
+      "action_id, commitment_id," +
+        " action:action_id(status, course_enrollment_id, topic_id, course_enrollment:course_enrollment_id(student_id))," +
+        " commitment:commitment_id(action_id, action:action_id(course_enrollment:course_enrollment_id(student_id)))",
+    )
     .eq("institution_id", institutionId)
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(`No se pudo leer el contexto de evidence: ${error.message}`);
   if (!data) return null;
-  const f = data as Record<string, unknown>;
-  const a = f.action as { course_enrollment_id?: string; topic_id?: string | null } | null;
+
+  const f = data as unknown as Record<string, unknown>;
+  const a = f.action as {
+    status?: string;
+    course_enrollment_id?: string;
+    topic_id?: string | null;
+    course_enrollment?: { student_id?: string };
+  } | null;
+  const c = f.commitment as {
+    action_id?: string;
+    action?: { course_enrollment?: { student_id?: string } };
+  } | null;
+
   return {
     actionId: f.action_id as string,
+    actionStatus: a?.status ?? "",
     courseEnrollmentId: a?.course_enrollment_id ?? "",
     topicId: a?.topic_id ?? null,
+    estudianteDeLaAccion: a?.course_enrollment?.student_id ?? "",
+    commitmentId: (f.commitment_id as string | null) ?? null,
+    accionDelCompromiso: c?.action_id ?? null,
+    estudianteDelCompromiso: c?.action?.course_enrollment?.student_id ?? null,
   };
 }
 

@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     cambios?: { dimension: string; valor?: number; texto?: string }[];
     sinCambio?: boolean;
     razon?: string;
+    suficiente?: boolean;
   } | null;
 
   if (!cuerpo?.institucion || !cuerpo.evidencia) {
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
     // Identidad externa, sin FK: quién puede validar es `C01-030`, y sigue
     // abierto. No se inventa un rol.
     validadaPor: cuerpo.validadaPor ?? "validador-sintetico",
+    // Por defecto la entrega alcanza. Declarar `suficiente: false` es lo que
+    // deja la `Action` esperando otra entrega, sin tocar la que no alcanzó.
+    suficiente: cuerpo.suficiente,
     cambios: cuerpo.cambios,
     noCambioExplicito: cuerpo.sinCambio,
     razonDeNoCambio: cuerpo.razon ?? null,
@@ -61,7 +65,20 @@ export async function POST(request: Request) {
         evidencia: resultado.evidenciaId,
         yaEstaba: resultado.yaEstaba,
         progreso: resultado.progreso,
+        accion: resultado.accionId,
+        accionCompletada: resultado.accionCompletada,
       });
+    case "INSUFICIENTE":
+      // No es un error: es el juicio. La `Action` sigue `COMMITTED`.
+      return NextResponse.json({
+        evidencia: resultado.evidenciaId,
+        accion: resultado.accionId,
+        suficiente: false,
+        accionCompletada: false,
+      });
+    case "CADENA_INVALIDA":
+      // `404` y no `403`: decir "existe pero no es tuya" ya cuenta que existe.
+      return NextResponse.json({ error: "Evidencia inexistente" }, { status: 404 });
     case "NO_ENCONTRADA":
       return NextResponse.json({ error: "Evidencia inexistente" }, { status: 404 });
     case "NO_VALIDABLE":

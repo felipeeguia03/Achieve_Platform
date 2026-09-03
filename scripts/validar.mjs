@@ -10,9 +10,17 @@
  * Sin `--sin-cambio` hay que declarar al menos una dimensión: `I10` rechaza una
  * entrada que no dice qué cambió ni afirma que no cambió nada.
  *
+ * Después de cerrar la acción invoca el ADE para materializar la siguiente.
+ * **Es un paso derivado y reintentable, no parte del cierre**: si el ADE falla,
+ * la acción quedó completada igual y `npm run recomendar` lo repara. Acoplar la
+ * validez del cierre al éxito del ADE haría que un motor caído deshiciera un
+ * hecho que ya ocurrió.
+ *
  * Uso:
  *   npm run validar -- <institution-id> <evidence-id> practice=19
  *   npm run validar -- <institution-id> <evidence-id> --sin-cambio "todavía no alcanza"
+ *   npm run validar -- <institution-id> <evidence-id> --insuficiente
+ *   npm run validar -- <institution-id> <evidence-id> practice=19 --cursada <uuid>
  */
 import { readFileSync } from "node:fs";
 
@@ -48,6 +56,9 @@ if (!secreto) {
 const iSinCambio = resto.indexOf("--sin-cambio");
 const sinCambio = iSinCambio !== -1;
 const razon = sinCambio ? (resto[iSinCambio + 1] ?? null) : null;
+const insuficiente = resto.includes("--insuficiente");
+const iCursada = resto.indexOf("--cursada");
+const cursada = iCursada !== -1 ? resto[iCursada + 1] : env.DEMO_COURSE_ENROLLMENT_ID;
 
 // `practice=19` o `practice=19:19 ejercicios` — el texto es lo que se muestra.
 const cambios = resto
@@ -58,7 +69,7 @@ const cambios = resto
     return { dimension, valor: Number(valor), ...(texto ? { texto } : {}) };
   });
 
-if (!sinCambio && cambios.length === 0) {
+if (!insuficiente && !sinCambio && cambios.length === 0) {
   console.error("✗ Declará al menos una dimensión (`practice=19`) o pasá `--sin-cambio \"razón\"`.");
   console.error("   I10: una entrada que no dice qué cambió ni afirma un no-cambio no dice nada.");
   process.exit(1);
@@ -67,7 +78,14 @@ if (!sinCambio && cambios.length === 0) {
 const r = await fetch(`${base}/api/validacion`, {
   method: "POST",
   headers: { Authorization: `Bearer ${secreto}`, "Content-Type": "application/json" },
-  body: JSON.stringify({ institucion, evidencia, cambios, sinCambio, razon }),
+  body: JSON.stringify({
+    institucion,
+    evidencia,
+    cambios,
+    sinCambio,
+    razon,
+    suficiente: !insuficiente,
+  }),
 });
 const cuerpo = await r.json().catch(() => null);
 
@@ -76,6 +94,47 @@ if (!r.ok) {
   process.exit(1);
 }
 
+if (cuerpo.suficiente === false) {
+  console.log("· Evidencia insuficiente. La Action sigue COMMITTED, esperando otra entrega.");
+  console.log("   La entrega anterior se conserva sin tocar.");
+  process.exit(0);
+}
+
 console.log(cuerpo.yaEstaba ? "· Ya estaba validada. Nada que cambiar." : "✓ Evidencia validada");
 console.log(`   progreso: ${cuerpo.progreso?.estado}${cuerpo.progreso?.duplicado ? " (ya registrado)" : ""}`);
-console.log("   Abrí http://localhost:3000/progreso para verlo proyectado.");
+console.log(`   Action ${cuerpo.accion}: ${cuerpo.accionCompletada ? "COMPLETED" : "⚠ no quedó completada"}`);
+
+/*
+  El ADE, **después** del cierre. Su resultado no cambia lo que ya pasó: si
+  falla, la acción sigue completada y esto lo dice en vez de esconderlo.
+*/
+if (!cuerpo.accionCompletada) {
+  console.log("   No se pide la siguiente acción: la anterior no cerró.");
+  process.exit(0);
+}
+if (!cursada) {
+  console.log("⚠ Cierre correcto, pero no sé sobre qué cursada pedir la siguiente acción.");
+  console.log("   Pasá `--cursada <uuid>` o corré `npm run recomendar` cuando quieras.");
+  process.exit(0);
+}
+
+try {
+  const siguiente = await fetch(
+    `${base}/api/recomendacion?institucion=${encodeURIComponent(institucion)}&cursada=${encodeURIComponent(cursada)}`,
+    { method: "POST", headers: { Authorization: `Bearer ${secreto}` } },
+  );
+  const rec = await siguiente.json().catch(() => null);
+  if (siguiente.ok && rec?.estado === "RECOMENDADA") {
+    console.log(`✓ Siguiente acción materializada — ${rec.actionId}`);
+  } else if (siguiente.ok) {
+    console.log(`· El ADE no propuso otra: ${rec?.motivo ?? rec?.estado} ${rec?.detalle ?? ""}`.trim());
+  } else {
+    console.log(`⚠ Cierre correcto, pero el ADE falló (${siguiente.status}).`);
+    console.log("   La acción quedó completada. Reparalo con `npm run recomendar`.");
+  }
+} catch (e) {
+  console.log(`⚠ Cierre correcto, pero no se pudo llamar al ADE: ${e.message}`);
+  console.log("   La acción quedó completada. Reparalo con `npm run recomendar`.");
+}
+
+console.log("   Abrí http://localhost:3000/hoy para ver la siguiente.");
