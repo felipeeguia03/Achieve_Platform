@@ -74,11 +74,17 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-025](#adr-025) | Las ocho `HUMAN-P0`, respondidas por la psicopedagoga | ✅ `ACCEPTED` | — |
 | [ADR-026](#adr-026) | Obligatoriedad de `Reflection`: dónde vive y qué la hace válida | ✅ `ACCEPTED` | — |
 | [ADR-027](#adr-027) | Los ocho eventos de transición entran al Product Event Model | ✅ `ACCEPTED` | — |
+| [ADR-028](#adr-028) | La completion de un paso es un hecho, no un estado | ✅ `ACCEPTED` *(cae el `UNIQUE`; la garantía pasa a `protocol_step.is_reentrant`)* | — |
+| [ADR-029](#adr-029) | La pauta de la cátedra tiene entidad propia, con Provenance | ✅ `ACCEPTED` *(cargada por el estudiante entra `student`/`unverified` y no se eleva)* | — |
+| [ADR-030](#adr-030) | El protocolo corre con contenido rotulado, y lo dice en sus columnas | ✅ `ACCEPTED` *(su hueco de contenido lo cerró [ADR-031](#adr-031); `EP-SPEC v0.1` quedó apagado, no borrado)* | — |
+| [ADR-031](#adr-031) | Los veinte pasos entran con el texto de la psicopedagoga | ✅ `ACCEPTED` *(`HUMAN-ROADMAP v1.0`, verbatim y atado a la fuente por test)* | — |
+| [ADR-032](#adr-032) | El circuito de riesgo se cierra por construcción, y lo que falta se declara | ✅ `ACCEPTED` *(corregido después por [ADR-033](#adr-033) y [ADR-034](#adr-034))* | — |
 | [ADR-033](#adr-033) | La frontera de superficies, corregida en la dirección del spec | ✅ `ACCEPTED` *(corrige cláusulas de [ADR-012](#adr-012) y [ADR-032](#adr-032))* | — |
 | [ADR-034](#adr-034) | `C01-022` cerrada: la necesidad de una persona la declara la Plataforma | ✅ `ACCEPTED` *(corrige la máquina de [ADR-032](#adr-032); reabre el ítem 5 de [ADR-005](#adr-005))* | — |
 | [ADR-035](#adr-035) | La integración con el CRM se difiere; el dominio sigue adelante | ✅ `ACCEPTED` *(prioridad, no bloqueo: nada de lo construido se revierte)* | — |
 | [ADR-036](#adr-036) | Cierre **provisional** de `C01-036` y `C01-021` para el MVP | ⚠️ ✅ `ACCEPTED` · **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`** *(autoridad: Product Owner, no la psicopedagoga)* | — |
 | [ADR-037](#adr-037) | La validación profesional llegó, y los números no eran el problema | ✅ `ACCEPTED` *(6 `CAMBIAR` + 1 `APROBAR`; los umbrales quedaron, cambió el denominador)* | — |
+| [ADR-038](#adr-038) | Replanificar versiona dentro de la preparación; volver exige una propuesta aceptada | ✅ `ACCEPTED` *(`REPLANNED` sigue vivo; ninguna rama toca Evidence ni progreso)* | — |
 
 ---
 
@@ -288,7 +294,7 @@ Las dos quedan en [`platform-integration-contract.md`](platform-integration-cont
 
 ---
 
-<a id="adr-004"></a>
+<a id="adr-005"></a>
 ## ADR-005 — Motor de base de datos, auth y persistencia
 
 **Estado:** ✅ **`ACCEPTED`** · Bloque A el 30 ago 2026; **ítems 4 y 6 del Bloque B cerrados el mismo día**
@@ -1396,6 +1402,7 @@ Cuando los dos hablen del mismo píxel, sigue mandando la spec, **y se registra 
 
 ---
 
+<a id="adr-019"></a>
 ## ADR-019 — El dock inferior no se construye, y la primitiva `Ausencia` ocupa su etapa
 
 **Estado:** `ACCEPTED` · 30 ago 2026
@@ -1465,6 +1472,7 @@ tratamientos observados en columnas contiguas de la misma tabla), sí está decl
 
 ---
 
+<a id="adr-020"></a>
 ## ADR-020 — Cuántas clases de ausencia distingue Achieve, y con qué palabras
 
 **Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
@@ -1537,6 +1545,7 @@ dato, que es justamente lo que `I10` garantiza.
 
 ---
 
+<a id="adr-021"></a>
 ## ADR-021 — Qué es, en Achieve, el «trabajo pendiente que caduca»
 
 **Estado:** `ACCEPTED` · 30 ago 2026
@@ -1608,6 +1617,7 @@ de los que vencen— no hace falta contestarlo mientras el badge no se dibuje.
 
 ---
 
+<a id="adr-022"></a>
 ## ADR-022 — `C-04` elevado: el vacío argumenta, y la tercera cláusula es condicional
 
 **Estado:** `ACCEPTED` · 30 ago 2026 · **decidido por el owner**
@@ -1680,6 +1690,7 @@ lo que `C-07` pide justamente para que una regla que cambia se corrija en un lug
 
 ---
 
+<a id="adr-023"></a>
 ## ADR-023 — La ingesta del ADL se construye antes que el ADE, y empieza asistida
 
 **Estado:** `ACCEPTED` · 30 ago 2026 · **decidido por el owner**
@@ -1739,6 +1750,7 @@ inventar*, y acá además *omitir, no recolectar*.
 
 ---
 
+<a id="adr-024"></a>
 ## ADR-024 — Modo MVP: se construye todo sobre datos sintéticos
 
 **Estado:** `ACCEPTED` · 30 ago 2026 · **decidido por el owner**
@@ -1789,6 +1801,7 @@ real de un MVP no es tomar atajos: es olvidarse de cuáles se tomaron.
 
 ---
 
+<a id="adr-004"></a>
 ## ADR-004 — Diseño del pipeline del Academic Decision Engine
 
 **Estado:** ✅ **`ACCEPTED (v1 provisional — alcance MVP)`** · 30 ago 2026 · por [ADR-024](#adr-024)
@@ -1937,6 +1950,7 @@ Ninguno de estos residuos lo puede cerrar un agente. Siguen bajo la regla de
 
 ---
 
+<a id="adr-026"></a>
 ## ADR-026 — Obligatoriedad de `Reflection`: dónde vive, quién la pone y qué la hace válida
 
 **Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
@@ -2021,6 +2035,7 @@ propio anexo advierte que son cosas distintas.
 
 ---
 
+<a id="adr-027"></a>
 ## ADR-027 — Los ocho eventos de transición entran al Product Event Model
 
 **Estado:** ✅ `ACCEPTED` · 1 de septiembre de 2026 · **decidido por el owner**
@@ -3091,6 +3106,7 @@ para cualquier vocabulario versionado que un contador lea.
 
 ---
 
+<a id="adr-038"></a>
 ## ADR-038 — Replanificar versiona dentro de la preparación; volver exige una propuesta aceptada
 
 **Estado:** `ACCEPTED`  

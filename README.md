@@ -157,7 +157,7 @@ El contrato de layout que sí viaja es
 | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Registro de los 51 contratos de negocio: **41 abiertos**, 9 respondidos con residuo y `C01-022` cerrado. |
 | [`docs/legal-package.md`](docs/legal-package.md) | Las preguntas para asesoría jurídica, con el contexto para responderlas. |
 | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) | Los ocho residuos de `ADR-025`, como agenda de la reunión de cierre. |
-| [`docs/brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md) | El brief del CTO para las tres vulnerabilidades `high`. |
+| [`docs/brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md) | El brief del CTO para las tres vulnerabilidades `high` que tenía el árbol. Ya están en cero; el ADR espera firma. |
 | [`docs/human-p0-source.md`](docs/human-p0-source.md) | Las ocho respuestas psicopedagógicas, transcriptas literalmente. **Manda sobre cualquier paráfrasis.** |
 
 Los documentos `*-source.md` son referencias normativas de origen y no se editan.
