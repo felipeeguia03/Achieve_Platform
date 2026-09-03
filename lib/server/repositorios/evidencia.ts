@@ -190,3 +190,19 @@ export const evidenciasReal: RepositorioDeEvidencias = {
   cambiarEstadoSi,
   resubmitirAtomico,
 };
+
+/** ¿Este compromiso ya tiene una entrega? Lo necesita la vista de `UX05`. */
+export async function evidenciaDeCompromiso(
+  institutionId: string,
+  commitmentId: string,
+): Promise<{ id: string } | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("evidence")
+    .select("id")
+    .eq("institution_id", institutionId)
+    .eq("commitment_id", commitmentId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer evidence por compromiso: ${error.message}`);
+  return data ? { id: (data as { id: string }).id } : null;
+}

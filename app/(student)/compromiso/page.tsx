@@ -1,14 +1,19 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useRef, useState } from "react";
 import { Shell } from "@/components/shell/shell";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Compromiso } from "@/components/screens/compromiso";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
+import { enviar } from "@/lib/client/api";
 import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
 import type { CompromisoProps } from "@/lib/domain/view-models";
+
+/** Lo que el `GET` agrega cuando todavía no hay compromiso: qué confirmar. */
+type Propuesta = { accion: string; inicio: string; zona: string; minutos: number };
+type ConPropuesta = CompromisoProps & { propuesta?: Propuesta };
 
 const DESTINO = rutaDeCta("CTA-004");
 
@@ -24,7 +29,7 @@ function Vista() {
   const params = useSearchParams();
 
   const escenario = params.get("escenario");
-  const { respuesta, reintentar } = useSuperficie<CompromisoProps>("/api/compromiso", { omitir: !!escenario });
+  const { respuesta, reintentar } = useSuperficie<ConPropuesta>("/api/compromiso", { omitir: !!escenario });
 
   if (escenario) {
     const id = escenarioDesde(escenario, "compromiso") ?? "FX-DAY-BASE";
@@ -52,15 +57,71 @@ function Pantalla({
   router,
   params,
 }: {
-  props: CompromisoProps;
+  props: ConPropuesta;
   router: ReturnType<typeof useRouter>;
   params: ReturnType<typeof useSearchParams>;
 }) {
-  // El recorrido de focus group manda sobre el destino genérico: en una
-  // sesión, la CTA tiene que llevar a la estación siguiente.
-  const destino = siguienteUrl("/compromiso", params.get("escenario")) ?? DESTINO;
+  /*
+    El guion del focus group manda **sólo bajo `?escenario=`**, que es cuando
+    hay una sesión guiada que recorrer. En el camino real manda el registro
+    canónico: `CTA-004` lleva a `UX01` después de confirmar, y ahí el estudiante
+    ve su compromiso ya tomado. Cruzarlos mandaba el recorrido real a una
+    pantalla de fixture.
+  */
+  const escenario = params.get("escenario");
+  const destino = escenario ? (siguienteUrl("/compromiso", escenario) ?? DESTINO) : DESTINO;
+  const { propuesta } = props;
 
-  return <Compromiso {...props} onAvanzar={destino ? () => router.push(destino) : undefined} />;
+  /*
+    La clave de idempotencia se genera **una vez por pantalla**, no por clic
+    (D2·A). Es lo que hace que el doble clic sea el mismo pedido y no dos:
+    con una clave nueva por clic, el segundo sería un compromiso distinto y el
+    servidor no tendría con qué reconocerlo.
+  */
+  const clave = useRef<string>(undefined);
+  clave.current ??= crypto.randomUUID();
+  const [enCurso, setEnCurso] = useState(false);
+  const [motivo, setMotivo] = useState<string | null>(null);
+
+  // Sin propuesta la vista es un compromiso ya existente: la CTA sólo navega.
+  if (!propuesta) {
+    return <Compromiso {...props} onAvanzar={destino ? () => router.push(destino) : undefined} />;
+  }
+
+  /*
+    Acá nace el `Commitment`, y sólo acá. Es la intención explícita del
+    estudiante: ni abrir la pantalla ni llegar navegando escriben nada.
+  */
+  async function confirmar() {
+    if (enCurso) return;
+    setEnCurso(true);
+    setMotivo(null);
+
+    const r = await enviar<{ compromiso: string }>("/api/compromiso", {
+      ...propuesta,
+      clave: clave.current,
+    });
+
+    if (r.estado === "OK") {
+      if (destino) router.push(destino);
+      return;
+    }
+    setEnCurso(false);
+    setMotivo(
+      r.estado === "RECHAZADO" ? r.motivo : "No se pudo confirmar el compromiso. Probá de nuevo.",
+    );
+  }
+
+  return (
+    <Compromiso
+      {...props}
+      aviso={motivo ?? props.aviso}
+      ctaPrimaria={
+        props.ctaPrimaria ? { ...props.ctaPrimaria, habilitada: !enCurso } : props.ctaPrimaria
+      }
+      onAvanzar={confirmar}
+    />
+  );
 }
 
 export default function CompromisoPage() {

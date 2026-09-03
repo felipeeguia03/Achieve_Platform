@@ -6,7 +6,12 @@ import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
 import { accionesReal } from "./repositorios/accion";
-import { contextoDeEvidencia, entregaReal, evidenciasReal } from "./repositorios/evidencia";
+import {
+  contextoDeEvidencia,
+  entregaReal,
+  evidenciaDeCompromiso,
+  evidenciasReal,
+} from "./repositorios/evidencia";
 import {
   validarEvidencia as validarEvidenciaPuro,
   type ResultadoDeValidacion,
@@ -212,6 +217,69 @@ export async function confirmarCompromiso(
   await transicionarAccion(deps, institutionId, datos.actionId, "COMMITTED", {}, datos.estudianteId);
 
   return resultado;
+}
+
+/**
+ * El compromiso vigente del estudiante, sólo su identidad y su estado.
+ *
+ * `UX05` necesita saber **a qué compromiso** adjunta la entrega, y eso no viaja
+ * en `EvidenciaProps` porque la pantalla no lo muestra. Sale de la misma
+ * lectura que ya proyecta `UX04`: no hay consulta nueva.
+ */
+export async function compromisoVigenteDe(
+  institutionId: string,
+  studentId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<{ compromisoId: string; state: string } | null> {
+  const estado = await compromisoLecturaReal.estadoDeCompromiso(institutionId, studentId, ahora, null);
+  return estado ? { compromisoId: estado.compromisoId, state: estado.state } : null;
+}
+
+/**
+ * La entrega **esperada** de un compromiso que todavía no tiene evidencia.
+ *
+ * Es la contraparte de `propuestaDeCompromiso`, y por la misma razón: D3·A dice
+ * que la fila nace `SUBMITTED` cuando el archivo ya subió, así que antes de eso
+ * no hay nada que proyectar — y sin esto `UX05` mostraba **la evidencia de otra
+ * acción**, que es peor que no mostrar nada.
+ *
+ * `EXPECTED` acá es estado de vista, no una fila. `null` ⇒ no hay compromiso
+ * vivo, o ese compromiso ya tiene su entrega y manda la proyección real.
+ */
+export async function entregaEsperadaDe(
+  institutionId: string,
+  studentId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<{ props: EvidenciaProps; compromisoId: string } | null> {
+  const vigente = await compromisoLecturaReal.estadoDeCompromiso(institutionId, studentId, ahora, null);
+  if (!vigente) return null;
+  if (await evidenciaDeCompromiso(institutionId, vigente.compromisoId)) return null;
+
+  const accion = await accionLecturaReal.estadoDeAccion(institutionId, studentId, ahora, null);
+  if (!accion) return null;
+
+  return {
+    compromisoId: vigente.compromisoId,
+    props: {
+      estado: "EXPECTED",
+      contexto: `Cursado · ${accion.materia}`,
+      titulo: accion.objetivo,
+      unidad: accion.unidad,
+      evidenciaEsperada: accion.evidenciaEsperada,
+      criterioCierre: accion.criterioCierre,
+      // Qué formatos acepta una Action es `C01-008`, gate `H`. Sin contrato,
+      // la línea desaparece: omitir, no inventar.
+      formatosPermitidos: null,
+      nombreAdjuntoDemo: "practica.pdf",
+      estadoVisible: "Todavía no entregaste esta evidencia",
+      aviso: null,
+      // El requisito de Reflection vive en la Action y lo proyecta la lectura
+      // real; acá todavía no hay Evidence de la cual colgarlo.
+      reflection: null,
+      ctaPrimaria: { texto: "Enviar evidencia", habilitada: true },
+      adjuntoPrevio: null,
+    },
+  };
 }
 
 /**

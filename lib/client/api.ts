@@ -133,3 +133,26 @@ export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<Resultad
     return { estado: "ERROR" };
   }
 }
+
+/**
+ * Sube el archivo de una evidencia a la URL firmada que devolvió el servidor.
+ *
+ * Vive acá y no en la pantalla **por la regla de cero red de la presentación**:
+ * una pantalla que hace `fetch` decide de dónde salen sus datos, y la frontera
+ * de la Fase 0 existe para impedirlo. Hay guard estático.
+ *
+ * La firma es el control de acceso —la URL ya la lleva—, así que esto no manda
+ * el token de sesión: el bucket es privado y sin firma no entra nadie.
+ */
+export async function subirEvidencia(url: string, contenido: string): Promise<boolean> {
+  try {
+    const r = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "text/plain" },
+      body: contenido,
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { tokenDelHeader } from "@/lib/server/http";
 import {
+  compromisoVigenteDe,
+  entregaEsperadaDe,
   entregarEvidencia,
   evidenciaDe,
   firmarSubidaDeEvidencia,
@@ -27,10 +29,30 @@ export async function GET(request: Request) {
   }
 
   const id = new URL(request.url).searchParams.get("evidencia");
-  const props = await evidenciaDe(sesion.estudiante.institutionId, sesion.estudiante.id, id);
+  const { institutionId, id: studentId } = sesion.estudiante;
+
+  /*
+    Si el compromiso vigente todavía no tiene entrega, manda la vista esperada.
+    Va **antes** que la proyección real por una razón concreta: la lectura
+    devuelve la última evidencia del estudiante, que sin este corte sería la de
+    otra acción — y `UX05` mostraría una entrega ajena al compromiso que el
+    estudiante acaba de tomar.
+  */
+  if (!id) {
+    const esperada = await entregaEsperadaDe(institutionId, studentId);
+    if (esperada) {
+      return NextResponse.json({ ...esperada.props, compromiso: esperada.compromisoId });
+    }
+  }
+
+  const props = await evidenciaDe(institutionId, studentId, id);
   if (!props) return NextResponse.json({ error: "Sin evidencia registrada" }, { status: 404 });
 
-  return NextResponse.json(props);
+  // A qué compromiso se adjunta la entrega. No es contenido de la pantalla
+  // —`EvidenciaProps` no lo muestra—, es lo que el cliente necesita para poder
+  // entregar. Sale de la misma lectura que ya proyecta `UX04`.
+  const vigente = await compromisoVigenteDe(institutionId, studentId);
+  return NextResponse.json({ ...props, compromiso: vigente?.compromisoId ?? null });
 }
 
 /**
