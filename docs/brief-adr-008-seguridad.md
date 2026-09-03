@@ -470,8 +470,7 @@ queda intacto.
 1. **[ADR-008](decisions.md#adr-008) está ratificado y firmado.** La
    [Enmienda 1](decisions.md#adr-008-enmienda-1) registra la versión, su fundamento y el alcance de
    la autorización. El estado pasó a `ACCEPTED — AMENDED AND SIGNED`.
-   ⚠️ **El nombre del firmante quedó como marcador** (`[Nombre del CTO]`) y hay que reemplazarlo:
-   no se inventa. Todo lo demás de la firma llegó completo.
+   Firmada por **Conrado Verzini**, CTO.
    ⚠️ **La promoción autorizada es el push de la rama, y nada más.** Merge a principal y despliegue
    siguen sin autorización.
 

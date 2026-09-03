@@ -10,9 +10,6 @@ Owner con la opción A autorizada.
 > ✅ **Firmado.** Las tres decisiones quedaron ratificadas y el fundamento del CTO está transcripto en
 > §7. La enmienda vive ahora en [ADR-008 · Enmienda 1](decisions.md#adr-008-enmienda-1), que es el
 > registro canónico; este documento queda como el pliego que la sustentó.
->
-> ⚠️ **Con una salvedad: el nombre del firmante llegó como marcador** (`[Nombre del CTO]`) y sigue
-> sin completar. **No se inventa.**
 
 ---
 
@@ -267,11 +264,7 @@ El detalle de lo que decía cada uno antes de la firma:
 | **Versión ratificada** | ☑ **`16.3.4` (opción A)** — pin exacto, React sin modificar |
 | **`agentRules: false` ratificado** | ☑ **sí** |
 | **La firma autoriza el push** | ☑ **sí**, sobre `feat/fase-0-track-a` |
-| **Nombre y fecha** | `[Nombre del CTO]` · **3 de septiembre de 2026** |
-
-⚠️ **El nombre está sin completar.** La ratificación llegó con `[Nombre del CTO]` como marcador, y
-**no se reemplaza por un nombre inventado**. Queda visible acá y en la Enmienda 1 hasta que se cargue
-el real. Todo lo demás —versión, `agentRules`, alcance del push, fundamento y fecha— llegó completo.
+| **Nombre y fecha** | **Conrado Verzini** · CTO · **3 de septiembre de 2026** |
 
 ⚠️ **Lo que la firma *no* autoriza**, dicho por el propio CTO: **merge a la rama principal** y
 **despliegue**. Las dos necesitan decisión propia, y el despliegue además sigue bloqueado por

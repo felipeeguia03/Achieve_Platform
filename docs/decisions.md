@@ -768,7 +768,7 @@ depende de [ADR-005](#adr-005).
 ### Enmienda 1 — la actualización de seguridad de `next`
 
 **Estado:** ✅ `ACCEPTED` · 3 de septiembre de 2026
-**Ratificada por:** `[Nombre del CTO]` · CTO — ⚠️ **el nombre está sin completar**, ver más abajo
+**Ratificada por:** **Conrado Verzini** · CTO
 **Ejecutada por:** el Product Owner, opción A del brief, 2–3 de septiembre de 2026.
 **Cierra:** las tres vulnerabilidades `high` heredadas del árbol del prototipo.
 **Evidencia:** [`brief-adr-008-seguridad.md`](brief-adr-008-seguridad.md) §10 y
@@ -844,11 +844,6 @@ real.
 - **La limitación de trazabilidad se conserva registrada:** el trabajo no se hizo en una rama
   aislada aunque el repositorio existía. Se aisló después por staging selectivo; `e703d10` es
   revisable y promovible por sí solo.
-
-> ⚠️ **El nombre del firmante está sin completar.** La ratificación llegó con `[Nombre del CTO]` como
-> marcador. **No se inventa un nombre:** el registro queda con el marcador visible hasta que se
-> reemplace por el nombre real. Todo lo demás de la firma —versión, `agentRules`, alcance del push,
-> fundamento y fecha— llegó completo.
 
 ---
 
