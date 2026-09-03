@@ -4,7 +4,9 @@
 **Rol:** owner canónico del contrato máquina-a-máquina actualmente disponible entre Plataforma y CRM.
 **Última verificación documental:** 28 de agosto de 2026
 **Estado:** el endpoint de autorización de §1 existe; los flujos de §2 son contexto futuro sin contrato implementable.
-**Última corrección:** 1 de septiembre de 2026 — §2.1 y §2.2, por [ADR-033](decisions.md#adr-033). **§1 no se tocó.**
+**Última corrección:** 3 de septiembre de 2026 — §2.1: se tacha el selector *"sólo `NEGOCIO`"* del
+flujo 2 y entran los flujos **D** y **E** propuestos por el CRM. **§1 no se tocó**, y sigue siendo el
+único contrato vigente entre los dos sistemas.
 
 > Este documento registra un contrato externo. No acepta por sí mismo [ADR-005](decisions.md#adr-005),
 > no habilita datos reales mientras [ADR-006](decisions.md#adr-006) siga `PENDING` y no cierra por
@@ -204,9 +206,10 @@ pero son entidades distintas con lifecycle propio. Fusionarlas borraría el prim
 | # | Flujo | Dirección | Estado |
 |---|---|---|---|
 | 1 | **Autorización de padrón** | Plataforma → CRM | ✅ **v1, vigente.** §1 de este documento |
-| 2 | **Actividad** | Plataforma → CRM | ⬜ a definir. Webhooks firmados (HMAC), idempotentes por `event_id` |
+| 2 | **Actividad** | Plataforma → CRM | 🟡 **Especificado por el CRM el 3 de septiembre de 2026** como **Flujo D**, y aceptado con cambios: [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §1. Falta [ADR-041](decisions.md#adr-041) |
 | 3 | **Contexto vivo** | CRM → Plataforma | ⬜ a definir. API de servicio, token de servicio |
 | **4** | **Comandos de intervención y outcome** | **CRM → Plataforma** | ⬜ **Falta en esta lista, y hace falta.** Ver §2.2 |
+| **5** | **Vinculación de teléfono** | **Plataforma → CRM** | 🟡 **Propuesto por el CRM el 3 de septiembre de 2026** como **Flujo E**. El transporte no tiene objeciones; **la Plataforma no tiene el número ni dónde pedirlo** ([ADR-042](decisions.md#adr-042)) |
 
 > ⚠️ **Los tres flujos originales son dos de lectura y uno de alta de estudiante: ninguno permite al
 > CRM devolverle a la Plataforma un hecho de intervención.** Es el hallazgo de
@@ -214,8 +217,28 @@ pero son entidades distintas con lifecycle propio. Fusionarlas borraría el prim
 
 **Propuesta para el flujo 2 — actividad.** Que transporte **los eventos del Product Event Model que
 ya existen**, no un formato nuevo: el catálogo está declarado en `lib/domain/product-events.ts` con
-sus niveles ([ADR-027](decisions.md#adr-027)). Sugerencia concreta: **sólo los de nivel `NEGOCIO`**.
-Los de `TRANSICION` son trazabilidad interna del lifecycle y empujarlos al CRM sería exportar ruido.
+sus niveles ([ADR-027](decisions.md#adr-027)). ~~Sugerencia concreta: **sólo los de nivel
+`NEGOCIO`**. Los de `TRANSICION` son trazabilidad interna del lifecycle y empujarlos al CRM sería
+exportar ruido.~~
+
+> ⚠️ **La segunda mitad de esa propuesta quedó superada el 3 de septiembre de 2026, y se tacha en vez
+> de borrarse.** *"Sólo los de nivel `NEGOCIO`"* **no sirve como selector de actividad**, y se
+> descubrió al especificar el flujo con el CRM:
+>
+> - **`EvidenceSubmitted` —la entrega, que es *el* caso de "produjo"— es nivel `TRANSICION`.** Con
+>   ese filtro, el evento más facturable del producto no viajaría.
+> - **`InterventionStarted` e `InterventionResolved` son `NEGOCIO` y los produce un operador**, no el
+>   estudiante. Facturar por ellos sería facturar porque alguien está en problemas.
+>
+> **El nivel clasifica para qué sirve un evento, no quién lo produjo.** El selector correcto es una
+> marca propia y explícita en el mismo catálogo, y **cuáles la llevan es
+> [ADR-041](decisions.md#adr-041), que está `PENDING`: no se construye contra esto.** El desarrollo
+> completo, con la lista candidata, está en
+> [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §1.3.
+>
+> **Lo que sí sigue en pie es la primera mitad:** el vocabulario es el catálogo que ya existe, no uno
+> nuevo. Su estabilidad está garantizada por construcción —guard en las dos direcciones y nombres que
+> no se cambian, porque `product_event` es append-only—.
 
 **Propuesta para el flujo 3 — contexto vivo.** Que devuelva **la misma proyección que ya consume
 `UX02`**, que es exactamente *"materias, evaluaciones, próxima acción"*: `estado_de_materia()` ya la

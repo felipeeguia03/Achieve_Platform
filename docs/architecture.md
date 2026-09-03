@@ -2,7 +2,7 @@
 
 **Documento:** `docs/architecture.md`
 **Rol:** owner canónico de la arquitectura del repositorio.
-**Última actualización:** 2 de septiembre de 2026
+**Última actualización:** 3 de septiembre de 2026
 
 > ⚠️ **Estado de este documento.** La arquitectura del **Track A** está **decidida y aprobada**
 > ([ADR-008](decisions.md#adr-008), 28 ago 2026). La arquitectura del **Track B** también está
@@ -404,8 +404,18 @@ comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda 
 un compromiso vencido pase a `DUE` y después a `MISSED` sin que nadie apriete nada. **Con qué
 frecuencia se lo llama es operación**, y [ADR-005](decisions.md#adr-005) la dejó `DEFERRED`.
 
+**Y ya no está solo.** Desde [ADR-040](decisions.md#adr-040) son **cinco los endpoints que corren con
+secreto de servicio y sin persona detrás** —`/api/reloj`, `/api/recomendacion`, `/api/validacion`,
+`/api/observacion` y `/api/corroboracion`—, más `/api/escalamiento`, que es sólo lectura y está
+apagado por defecto. **El criterio que los junta es siempre el mismo:** ninguno es una acción del
+estudiante, y darle un JWT de estudiante a cualquiera de ellos lo dejaría declarando sobre sí mismo
+—validando su propia evidencia, corroborando lo que él mismo cargó, registrando sus propios errores—.
+**Quién es esa identidad externa sigue sin definirse:** `C01-030` está `OPEN`, y ninguno de los cinco
+la valida contra nada.
+
 **Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment`, `Evidence`,
-`ExamPreparation`, `RiskSignal` e `Intervention`; `registrar_progreso`;
+`ExamPreparation`, `RiskSignal` e `Intervention`; **la creación del primer `Commitment` de una
+`Action` y la de una `Evidence` entregada** ([ADR-040](decisions.md#adr-040)); `registrar_progreso`;
 `completar_paso_de_protocolo`; replanificación y reentrada; `registrar_senal`, `abrir_intervencion`,
 `cerrar_intervencion` y `resolver_senal`; `materializar_recomendacion` del ADE;
 `ingerir_materia` y `corroborar_procedencia` del ADL. Todas publican su hecho en
@@ -455,9 +465,14 @@ que falta es la forma del contrato, que versiona el CTO.
   del cliente —timeouts, cantidad máxima de intentos, jitter y agotamiento— sigue pendiente.
 - **Contexto futuro, sin implementar:** (2) Plataforma publica actividad académica relevante; (3) CRM
   consulta contexto académico vivo; **(4) el CRM devuelve comandos de intervención y outcome —que el
-  contrato actual no contempla y sin el cual no se cierra el tramo operativo entre sistemas**. Todavía
-  no existe contrato exacto para ninguno; los tres están descritos a nivel de requerimiento en
-  [`platform-integration-contract.md`](platform-integration-contract.md) §2.2.
+  contrato actual no contempla y sin el cual no se cierra el tramo operativo entre sistemas**; y (5)
+  la Plataforma le informa el teléfono que el estudiante vinculó. Ninguno está implementado, y
+  **ninguno tiene contrato firmado**: los tres primeros están congelados por
+  [ADR-035](decisions.md#adr-035) en
+  [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), y los flujos de actividad
+  y teléfono los especificó el CRM el 3 de septiembre de 2026, con la respuesta de la Plataforma en
+  [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md). El requerimiento original
+  sigue en [`platform-integration-contract.md`](platform-integration-contract.md) §2.2.
 - **Si el CRM no recibió un Commitment confirmado, el Commitment no se duplica ni se revierte.**
   Plataforma sigue siendo la fuente; la reparación pertenece al contrato de sincronización.
 
@@ -484,6 +499,15 @@ lifecycle, mismo evento `EvidenceSubmitted`, con `submission_channel = WHATSAPP`
 origen preservada para deduplicación y auditoría.
 
 Si el estudiante o la Action son ambiguos, la integración **no vincula por inferencia**.
+
+⚠️ **Hoy la Plataforma no tiene el número, y no es un olvido.** `student.whatsapp` existe desde la
+capa del estudiante rotulada como dato personal gateada por [ADR-006](decisions.md#adr-006), **nadie
+la escribe**, el repositorio **ni siquiera la selecciona**, y **ninguna de las nueve superficies pide
+un teléfono**. Que el CRM necesite el mapeo teléfono → alumno para acompañar por WhatsApp no crea la
+pantalla donde el estudiante lo daría: eso es [ADR-042](decisions.md#adr-042), está `PENDING`, y **es
+la misma decisión que el onboarding del spec §19** que [ADR-039](decisions.md#adr-039) dejó abierto.
+Es, además, **el primer flujo del contrato que transportaría un identificador directo de una
+persona**.
 
 ---
 
