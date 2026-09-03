@@ -28,12 +28,15 @@ export async function GET(request: Request) {
   const { institutionId, id: studentId } = sesion.estudiante;
   const pedido = new URL(request.url).searchParams.get("compromiso");
 
-  const props = await compromisoDe(institutionId, studentId, pedido);
-  if (props) return NextResponse.json(props);
+  /*
+    La propuesta va **primero**, y el orden importa: la lectura devuelve el
+    último compromiso del estudiante, que después de una vuelta cerrada es el
+    `COMPLETED` de la anterior. Preguntando por él primero, la acción nueva
+    parecía tener compromiso y la pantalla se quedaba sin CTA.
 
-  // Sin compromiso registrado, la pantalla no está vacía: hay una acción
-  // esperando que alguien acuerde cuándo. Pedir uno puntual por `?compromiso=`
-  // y no encontrarlo sí es `404` — se pidió una fila concreta.
+    `propuestaDeCompromiso` devuelve `null` si la acción vigente **sí** tiene un
+    compromiso vivo, así que este orden no pisa nada real.
+  */
   if (!pedido) {
     const propuesta = await propuestaDeCompromiso(institutionId, studentId);
     if (propuesta) {
@@ -41,6 +44,11 @@ export async function GET(request: Request) {
     }
   }
 
+  const props = await compromisoDe(institutionId, studentId, pedido);
+  if (props) return NextResponse.json(props);
+
+  // Pedir uno puntual por `?compromiso=` y no encontrarlo sí es `404`: se pidió
+  // una fila concreta.
   return NextResponse.json({ error: "Sin compromiso registrado" }, { status: 404 });
 }
 

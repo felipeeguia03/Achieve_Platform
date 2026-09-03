@@ -232,6 +232,27 @@ async function crearConfirmado(
 }
 
 /**
+ * El compromiso **vivo de una `Action`**, si lo tiene.
+ *
+ * No sirve preguntar "cuál es el compromiso del estudiante": después de una
+ * vuelta cerrada eso devuelve el `COMPLETED` de la vuelta anterior, y la vista
+ * concluye que ya hay compromiso cuando la acción nueva no tiene ninguno. La
+ * pregunta correcta cuelga de la `Action`.
+ */
+async function vivoDeAccion(institutionId: string, actionId: string): Promise<Compromiso | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("commitment")
+    .select(COLUMNAS)
+    .eq("institution_id", institutionId)
+    .eq("action_id", actionId)
+    .in("state", VIVOS)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer commitment vivo: ${error.message}`);
+  return data ? aDominio(data) : null;
+}
+
+/**
  * La implementación concreta, tipada contra el contrato que declara el Service.
  * Si el Service cambia lo que necesita, esto deja de compilar acá y no en una
  * request.
@@ -240,4 +261,5 @@ export const compromisosReal: RepositorioDeCompromisos & {
   porClaveDeIdempotencia: typeof porClaveDeIdempotencia;
   huellaDeClave: typeof huellaDeClave;
   crearConfirmado: typeof crearConfirmado;
-} = { porId, cambiarEstadoSi, porClaveDeIdempotencia, renegociarAtomico, crearRescateAtomico, huellaDeClave, crearConfirmado };
+  vivoDeAccion: typeof vivoDeAccion;
+} = { porId, cambiarEstadoSi, porClaveDeIdempotencia, renegociarAtomico, crearRescateAtomico, huellaDeClave, crearConfirmado, vivoDeAccion };
