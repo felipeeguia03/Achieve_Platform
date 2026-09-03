@@ -22,7 +22,8 @@
     "db:studio": "open http://127.0.0.1:54423",
     "db:demo": "./scripts/db-demo.sh",
     "db:sesion": "node ./scripts/sesion-demo.mjs",
-    "reloj": "node ./scripts/reloj.mjs"
+    "reloj": "node ./scripts/reloj.mjs",
+    "recomendar": "node ./scripts/recomendar.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
