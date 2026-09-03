@@ -62,7 +62,7 @@ estudiante leen de la base.
 | **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado y el circuito produce una señal que pide una persona **sin que nadie la haya mirado**. B6.7 sustituyó la regla provisional por criterio profesional |
 | **Fase B6.7 · la validación profesional, aplicada** | ✅ **4 / 4**, [ADR-037](decisions.md#adr-037). Vocabulario, denominador, aceleración válida, episodios vinculados y reentrada mínima explicada quedaron implementados el 2 de septiembre de 2026 |
 | **Etapa B2b.2 · corroboración** | ✅ **Completa** el 2 de septiembre de 2026. La operación explícita que `I9` exigía y no existía: append-only, con fuente concreta y auditoría. **`official` queda inalcanzable** hasta `C01-030` |
-| Seguridad de dependencias de [ADR-008](decisions.md#adr-008) | ✅ `npm audit`: **0 vulnerabilidades** tras actualizar `next` y `eslint-config-next` a `16.3.4`; queda la revisión de trazabilidad antes del push |
+| Seguridad de dependencias de [ADR-008](decisions.md#adr-008) | ✅ **Cerrada y firmada** el 3 de septiembre de 2026 ([Enmienda 1](decisions.md#adr-008-enmienda-1)). `npm audit`: **0 vulnerabilidades**; `next` y `eslint-config-next` en `16.3.4`; `agentRules: false` |
 
 ### Lo que espera a una persona
 
@@ -2939,7 +2939,6 @@ desvío, riesgo y recuperación.
 |---|---|---|
 | **El dictamen legal** de [ADR-006](decisions.md#adr-006) | **Cualquier fase con datos reales.** Absoluto | Asesoría jurídica — [paquete de preguntas](legal-package.md) |
 | **La autorización institucional** del golden dataset (`C01-042`) | Fase B8 · piloto | Producto + la institución |
-| **La revisión de trazabilidad de ADR-008** | Push de la actualización de dependencias; `npm audit` ya está en 0 | CTO — [brief](brief-adr-008-seguridad.md) |
 | **Los residuos profesionales todavía abiertos** ([ADR-025](decisions.md#adr-025), [ADR-037](decisions.md#adr-037)) | Intervención automática sobre personas reales y calibración del piloto | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
 | **El contrato de integración v2** | Las **cinco superficies de operador** y la verificación del dueño de una intervención. **No bloquea el dominio de B6**, que ya está | CTO — [propuesta](platform-integration-contract.md) §2.1 |
 | **Las dos reglas de Risk todavía humanas** (`C01-021`) | Automatizar `HP0-06-2` y `HP0-06-3`. `HP0-06-1` ya produce señales con el denominador profesional | Risk owner + validación del piloto |
@@ -3027,19 +3026,20 @@ son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena e
 [ADR-034](decisions.md#adr-034). Ver
 [`pending-decisions-annex.md`](pending-decisions-annex.md).
 
-### 3.1 Seguridad de dependencias — corregida, con trazabilidad pendiente
+### 3.1 Seguridad de dependencias — cerrada y firmada
 
-> ⏸️ **`TECHNICALLY VERIFIED — LOCAL COMMITS CREATED — TRACEABILITY REVIEW REQUIRED — NO PUSH`** ·
-> 2 de septiembre de 2026. Opción A del brief, **autorizada para ejecución por el Product Owner** —la
-> ratificación y el cierre son del CTO, en [ADR-008](decisions.md#adr-008)—: `next` y
+> ✅ **`ACCEPTED — AMENDED AND SIGNED`** · **el CTO ratificó la
+> [Enmienda 1 de ADR-008](decisions.md#adr-008-enmienda-1) el 3 de septiembre de 2026**: la versión,
+> `agentRules: false` y el push de `feat/fase-0-track-a`. Ejecutada como opción A del brief: `next` y
 > `eslint-config-next` de `16.2.6` a **`16.3.4`**, fijadas exactas, sin tocar React.
 > **`npm audit`: 3 `high` → 0**, y cero en todas las severidades. Los cinco gates en verde sin desvío
 > contra la baseline —**953 tests**, y `db:reset && db:verify` completo con **275 comprobaciones** y
 > los dos códigos de salida en `0`—, más el recorrido del focus group a 1440 y 360 px y el del MVP
 > entero.
 >
-> ⚠️ **No está cerrada, y no hay promoción declarada.** Falta la **ratificación y firma del CTO**, y
-> `decisions.md` sigue **sin tocar**.
+> ⚠️ **La firma autoriza el push, y nada más.** **No hay autorización de merge a la rama principal
+> ni de despliegue**: las dos necesitan decisión propia, y el despliegue además sigue bloqueado por
+> [ADR-006](decisions.md#adr-006).
 >
 > ✅ **La revisión de trazabilidad se resolvió el 3 de septiembre de 2026: los cuatro commits locales
 > se conservan.** Rehacerlos no habría recuperado una separación verificable entre etapas ya

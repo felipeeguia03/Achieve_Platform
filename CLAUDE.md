@@ -324,10 +324,17 @@ misma deuda contada tres veces**: ni `postcss` ni `sharp` estaban en `package.js
 `next`—. Se cerraron subiendo `next` y `eslint-config-next` de `16.2.6` a **`16.3.4`**, fijadas
 exactas y sin tocar React.
 
-⚠️ **`TECHNICALLY VERIFIED — LOCAL COMMITS CREATED — TRACEABILITY REVIEW REQUIRED — NO PUSH`.** La
-actualización está ejecutada y verificada, pero **[ADR-008](docs/decisions.md#adr-008) no está
-firmado** —`decisions.md` sigue sin tocar— y hay una **revisión de trazabilidad abierta** sobre los
-cuatro commits locales. **Nada está pusheado. No pushees.**
+✅ **`ACCEPTED — AMENDED AND SIGNED`** · 3 de septiembre de 2026. El CTO ratificó la
+[Enmienda 1 de ADR-008](docs/decisions.md#adr-008-enmienda-1): la versión, `agentRules: false` y el
+push de `feat/fase-0-track-a`. La revisión de trazabilidad se cerró el mismo día.
+
+⚠️ **La firma autoriza el push, y nada más.** **No hay autorización de merge a la rama principal ni
+de despliegue** — las dos necesitan decisión propia, y el despliegue además sigue bloqueado por
+[ADR-006](docs/decisions.md#adr-006).
+
+⚠️ **El criterio del CTO rige de acá en adelante:** un cambio puede resolverse de la manera más
+simple que permita avanzar **siempre que sea explícito, trazable, reversible y verificable**. Si más
+adelante hay que modificarlo, tiene que poder identificarse qué cambió, por qué y a qué afecta.
 
 ⚠️ **No corras `npm audit fix --force`.** La versión la elige el ADR, no una etapa. Todo el
 resultado y la exposición real, en [`brief-adr-008-seguridad.md`](docs/brief-adr-008-seguridad.md)

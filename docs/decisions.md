@@ -54,7 +54,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-005](#adr-005) | Motor de base de datos, auth y persistencia | ✅ `ACCEPTED` *(sólo el ítem 5 `DEFERRED`)* | `B3` |
 | [ADR-006](#adr-006) | Privacidad y consentimiento de datos reales | 🟡 `PROVISIONAL — LEGAL CONFIRMATION REQUIRED` | **Toda fase con datos reales: el gate sigue cerrado** |
 | [ADR-007](#adr-007) | Las 8 decisiones `HUMAN-P0` | ✅ `ACCEPTED` *(resuelto por [ADR-025](#adr-025))* | — |
-| [ADR-008](#adr-008) | Stack y runtime del frontend | `ACCEPTED` | — |
+| [ADR-008](#adr-008) | Stack y runtime del frontend | ✅ `ACCEPTED` · **enmendado** *([Enmienda 1](#adr-008-enmienda-1): `next` a `16.3.4` y `agentRules: false`, firmada el 3 sep 2026)* | — |
 | [ADR-009](#adr-009) | Colisión de namespace `D1–D25` vs `D1–D10` | `ACCEPTED` | — |
 | [ADR-010](#adr-010) | Respuestas DD1–DD10 de traducción al dominio | `ACCEPTED` *(DD4 `DEFERRED`)* | — |
 | [ADR-011](#adr-011) | Owner canónico de `PreparationReadiness` (CR-UX08-01) | ✅ `ACCEPTED` *(la entidad separada es canónica)* | — |
@@ -706,8 +706,8 @@ cambiar una regla pedagógica. Ver [ADR-025](#adr-025).
 <a id="adr-008"></a>
 ## ADR-008 — Stack y runtime del frontend
 
-**Estado:** `ACCEPTED` · 28 ago 2026
-**Toca:** `architecture.md`, `roadmap.md`.
+**Estado:** `ACCEPTED` · 28 ago 2026 · **enmendado el 3 de septiembre de 2026** ([Enmienda 1](#adr-008-enmienda-1))
+**Toca:** `architecture.md`, `roadmap.md`, `package.json`, `next.config.ts`.
 
 ### Contexto
 
@@ -761,6 +761,94 @@ depende de [ADR-005](#adr-005).
 - `package.json` pasa a `next dev` / `next build` / `next start`.
 - Los tests dejan de depender de `dist/server/index.js`; pasan a Vitest sobre componentes, alineado
   con Dashboard_Achieve.
+
+---
+
+<a id="adr-008-enmienda-1"></a>
+### Enmienda 1 — la actualización de seguridad de `next`
+
+**Estado:** ✅ `ACCEPTED` · 3 de septiembre de 2026
+**Ratificada por:** `[Nombre del CTO]` · CTO — ⚠️ **el nombre está sin completar**, ver más abajo
+**Ejecutada por:** el Product Owner, opción A del brief, 2–3 de septiembre de 2026.
+**Cierra:** las tres vulnerabilidades `high` heredadas del árbol del prototipo.
+**Evidencia:** [`brief-adr-008-seguridad.md`](brief-adr-008-seguridad.md) §10 y
+[`adr-008-firma-cto.md`](adr-008-firma-cto.md).
+
+#### Qué se decide
+
+`next` y `eslint-config-next` pasan de `16.2.6` a **`16.3.4`**, fijadas **exactas** y sin tocar
+React. `postcss` y `sharp` salen del rango afectado como consecuencia: los traía `next`, no
+`package.json`.
+
+**Por qué `16.3.4` y no `16.3.0`:** `16.3.0` es el mínimo que corrige, pero elegirlo dejaba afuera
+cuatro releases de parches por un delta despreciable. Ningún parche de la línea `16.2` servía: el
+rango afectado llega hasta `16.3.0-preview.10`.
+
+**Por qué el pin sigue exacto:** el rango `^` no haría entrar solo el próximo parche —con lockfile
+sólo habilita, y hay que renovarlo explícitamente—, así que cambiarlo no compraba nada y sí volvía
+implícita una decisión de stack. Automatizar actualizaciones queda como decisión separada, sin abrir.
+
+**Y `agentRules: false` en `next.config.ts`:** desde `16.3.4`, `next dev` inyecta un bloque de reglas
+dentro de `AGENTS.md`, que en este repositorio es normativo, y lo reescribe solo cada vez que Next
+cambia ese texto. Se desactiva en el origen, no administrando el síntoma. Que el contenido de un
+archivo normativo pueda cambiar por una actualización de dependencias, sin decisión humana, es
+exactamente lo que este proyecto documenta para no permitir.
+
+#### Fundamento del CTO
+
+> En esta etapa priorizamos avanzar rápidamente hacia un MVP observable y evaluable. No buscamos
+> optimizar prematuramente la arquitectura ni frenar el desarrollo por decisiones internas que no
+> afectan el comportamiento del producto.
+>
+> La implementación es aceptable porque mantiene coherencia técnica, elimina las vulnerabilidades
+> detectadas, conserva las versiones fijadas, evita modificaciones automáticas de archivos
+> normativos y deja los cambios identificables en commits y ADRs.
+>
+> El criterio para continuar será el siguiente: los cambios pueden resolverse de la manera más
+> simple que permita avanzar, siempre que sean explícitos, trazables, reversibles y verificables. Si
+> más adelante una decisión necesita modificarse, debe poder identificarse qué cambió, por qué
+> cambió y qué partes del sistema afecta.
+>
+> Autorizo el push de la rama para no bloquear el avance del MVP. Esta autorización publica el
+> trabajo existente, pero no implica por sí sola autorización de merge a la rama principal ni de
+> despliegue.
+
+⚠️ **Los cuatro criterios del último párrafo —explícito, trazable, reversible y verificable— rigen de
+acá en adelante**, no sólo esta enmienda. Una solución simple es aceptable; una que no se pueda
+identificar, deshacer o comprobar, no.
+
+#### Vulnerabilidades residuales
+
+**Ninguna.** `npm audit` reporta **0** en las cinco severidades —`info`, `low`, `moderate`, `high` y
+`critical`—, verificado contra el árbol instalado. No hay mitigación que documentar porque no queda
+nada que mitigar.
+
+#### Alcance de la autorización de push
+
+**Autorizado:** push de `feat/fase-0-track-a` a `origin`. Publica el trabajo existente de la rama,
+que incluye etapas ajenas a este ADR.
+
+**No autorizado por esta firma:** merge a la rama principal, y despliegue. Las dos siguen necesitando
+decisión propia, y el despliegue además sigue bloqueado por [ADR-006](#adr-006) para cualquier dato
+real.
+
+#### Consecuencias
+
+- Los cinco gates quedaron en verde sin desvío contra la baseline: **953 tests en 52 archivos** y
+  **275 comprobaciones** de `db:verify` con `db:reset` completo, más el recorrido del focus group a
+  1440 y 360 px y el del MVP entero.
+- El aviso de npm *"outside the stated dependency range"* se conserva: es consecuencia del pin
+  exacto, no un defecto.
+- Queda **una** deuda de higiene del entorno, fuera de este ADR: el `package-lock.json` huérfano del
+  directorio padre. No bloqueante — el build sale `exit 0`.
+- **La limitación de trazabilidad se conserva registrada:** el trabajo no se hizo en una rama
+  aislada aunque el repositorio existía. Se aisló después por staging selectivo; `e703d10` es
+  revisable y promovible por sí solo.
+
+> ⚠️ **El nombre del firmante está sin completar.** La ratificación llegó con `[Nombre del CTO]` como
+> marcador. **No se inventa un nombre:** el registro queda con el marcador visible hasta que se
+> reemplace por el nombre real. Todo lo demás de la firma —versión, `agentRules`, alcance del push,
+> fundamento y fecha— llegó completo.
 
 ---
 
@@ -1792,12 +1880,18 @@ que alguien conecte un padrón real sin querer.
 |---|---|
 | [ADR-006](#adr-006) — privacidad y consentimiento, con asesoría legal | `PENDING` · **bloqueo absoluto** |
 | `C01-042` — golden dataset: qué universidad, qué fuentes, legalidad | `OPEN` |
-| `npm audit` — 3 `high` | Sube la mayor de Next: [ADR-008](#adr-008). Ver `roadmap.md` §3.1 |
+| ~~`npm audit` — 3 `high`~~ | ✅ **Cerrada** el 3 de septiembre de 2026 por la [Enmienda 1 de ADR-008](#adr-008-enmienda-1). `npm audit`: **0** en las cinco severidades |
 | `C01-030` — modelo de usuario institucional | `OPEN`. Sin él no hay endpoints de institución |
 | Identidad de docente en material ingerido | Abierta por [ADR-023](#adr-023) |
 
 **Cada versión provisional queda marcada en el código con el contrato que la reemplaza.** El riesgo
 real de un MVP no es tomar atajos: es olvidarse de cuáles se tomaron.
+
+> ⚠️ **Corrección de dato — 3 de septiembre de 2026.** La fila de `npm audit` decía que cerrarla
+> *"sube la mayor de Next"*. **Es falso:** `16.2.6 → 16.3.4` es un **minor**. Lo que dispara el
+> *"outside the stated dependency range"* de npm es que `package.json` fija la versión **exacta,
+> sin `^`**. El texto original se conserva tachado: era la **cuarta copia** de ese error, y la
+> exageración explica parte de por qué la deuda se difirió cuatro días.
 
 ---
 
@@ -2831,8 +2925,12 @@ nuestra**:
 explícita que sí puede elevar un `verification_status`, que hoy no existe porque `I9` prohíbe que el
 ingestor lo toque. (B2b.3 necesita `C01-042`.)
 
-Fuera del roadmap sigue en pie la deuda de [ADR-008](#adr-008): **3 vulnerabilidades `high`**, con la
-restricción del owner de no correr `npm audit fix --force` sobre la rama principal.
+Fuera del roadmap seguía en pie la deuda de [ADR-008](#adr-008): **3 vulnerabilidades `high`**, con
+la restricción del owner de no correr `npm audit fix --force` sobre la rama principal.
+
+> ✅ **Cerrada el 3 de septiembre de 2026** por la [Enmienda 1 de ADR-008](#adr-008-enmienda-1).
+> `npm audit`: **0** en las cinco severidades. La restricción se respetó: la versión la eligió el
+> ADR, no el comando.
 
 ---
 

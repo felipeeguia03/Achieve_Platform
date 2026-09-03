@@ -2,10 +2,11 @@
 
 **Documento:** `docs/brief-adr-008-seguridad.md`
 **Fecha:** 2 de septiembre de 2026 · **re-medido contra el árbol instalado**
-**Estado:** **`ADR-008 IMPLEMENTED AND TECHNICALLY VERIFIED — AGENT RULE GENERATION DISABLED — AWAITING CTO SIGN-OFF`**
-**Opción A autorizada para ejecución por el Product Owner y ejecutada satisfactoriamente. Pendiente
-de ratificación y cierre por el CTO en [ADR-008](decisions.md#adr-008).** Resultado completo en §10.
-**No hay firma, cierre ni promoción declarados en nombre del CTO.**
+**Estado:** ✅ **`ADR-008 ACCEPTED — AMENDED AND SIGNED`** · 3 de septiembre de 2026
+**El CTO ratificó la [Enmienda 1](decisions.md#adr-008-enmienda-1)**: opción A (`16.3.4`, pin exacto,
+React sin tocar), `agentRules: false`, y **push autorizado** sobre `feat/fase-0-track-a`. Resultado
+completo en §10; la firma y su fundamento, en [`adr-008-firma-cto.md`](adr-008-firma-cto.md).
+⚠️ **La firma no autoriza merge a la rama principal ni despliegue.**
 **Asignado a:** CTO
 **Condición:** **previa a cualquier despliegue con usuarios o datos reales.**
 **Sustituye a:** la versión del 1 de septiembre de 2026, que tenía dos datos mal. Ver §2.
@@ -464,11 +465,15 @@ queda intacto.
    **por commit posterior**, conservando el rastro. Y **`AGENTS.md` se resolvió por la opción A**
    (§10.4.1), conservando `193140b` en el historial.
 
-**Para cerrar ADR-008 — es del CTO:**
+**✅ Cerrado por el CTO — 3 de septiembre de 2026:**
 
-1. **Ratificar y firmar [ADR-008](decisions.md#adr-008)** con la versión elegida y su fundamento.
-   Hasta entonces el estado es `IMPLEMENTED AND TECHNICALLY VERIFIED — AWAITING CTO SIGN-OFF`, y
-   **no hay promoción declarada**.
+1. **[ADR-008](decisions.md#adr-008) está ratificado y firmado.** La
+   [Enmienda 1](decisions.md#adr-008-enmienda-1) registra la versión, su fundamento y el alcance de
+   la autorización. El estado pasó a `ACCEPTED — AMENDED AND SIGNED`.
+   ⚠️ **El nombre del firmante quedó como marcador** (`[Nombre del CTO]`) y hay que reemplazarlo:
+   no se inventa. Todo lo demás de la firma llegó completo.
+   ⚠️ **La promoción autorizada es el push de la rama, y nada más.** Merge a principal y despliegue
+   siguen sin autorización.
 
 **Fuera de ADR-008, registrado como deuda separada:**
 
