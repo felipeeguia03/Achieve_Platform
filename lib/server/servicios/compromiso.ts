@@ -155,6 +155,110 @@ export type ResultadoDeAcuerdo =
  * función de base no sabe nada de eso: sólo garantiza que las dos escrituras
  * ocurran juntas.
  */
+/**
+ * Lo que hace falta para confirmar el **primer** compromiso de una `Action`.
+ *
+ * `estudianteId` y `actionId` no son decoración: la clave de idempotencia se
+ * acepta **sólo** si la fila que ya existe pertenece al mismo estudiante y al
+ * mismo recurso, con el mismo payload. Ver `ResultadoDeConfirmacion`.
+ */
+export interface ConfirmacionDeCompromiso extends AcuerdoNuevo {
+  actionId: string;
+  estudianteId: string;
+  claveDeIdempotencia: string;
+}
+
+/** Lo que el repositorio devuelve al resolver una clave ya usada. */
+export interface HuellaDeCompromiso {
+  compromiso: Compromiso;
+  estudianteId: string;
+  startAt: string;
+  timezone: string;
+  plannedMinutes: number;
+}
+
+export type ResultadoDeConfirmacion =
+  | { estado: "OK"; compromiso: Compromiso; duplicado: boolean }
+  /** La `Action` no existe, no es de este estudiante, o no admite comprometerse. */
+  | { estado: "ACCION_NO_COMPROMETIBLE"; motivo: string }
+  /** Ya hay un compromiso vivo sobre esta Action. No se apilan dos. */
+  | { estado: "YA_COMPROMETIDA" }
+  /**
+   * La clave existe **con otro dueño, otro recurso u otro contenido**.
+   *
+   * No se devuelve la fila: sería contar que existe, y de quién. Un `409` seco
+   * es lo único que el que reintenta necesita saber.
+   */
+  | { estado: "CONFLICTO_DE_CLAVE" };
+
+export interface RepositorioDeConfirmacion {
+  /** La huella de la fila que ya usó esa clave, para poder compararla. */
+  huellaDeClave(institutionId: string, clave: string): Promise<HuellaDeCompromiso | null>;
+  /** `INSERT` del compromiso ya en `CONFIRMED`, y `action.status → COMMITTED`. */
+  crearConfirmado(
+    institutionId: string,
+    datos: ConfirmacionDeCompromiso,
+  ): Promise<{ compromiso: Compromiso; comprometible: boolean; yaViva: boolean }>;
+}
+
+/**
+ * Confirma el primer compromiso de una `Action` — D1 y D2 del paquete de
+ * decisión, opción A en las dos.
+ *
+ * ## Por qué no hay `DRAFT`
+ *
+ * La fila **nace en `CONFIRMED`**. Mientras el estudiante mira la propuesta no
+ * existe nada persistido: *"hasta que confirmes, no queda registrado en ningún
+ * lado"* deja de ser una promesa de copy y pasa a ser una propiedad del schema.
+ *
+ * ## Por qué la clave se compara y no se cree
+ *
+ * Un `ON CONFLICT DO NOTHING` a secas devolvería la fila de otro si dos claves
+ * coincidieran. Acá la clave repetida **sólo** resuelve al mismo compromiso si
+ * coinciden dueño, `Action` y payload; en cualquier otro caso es
+ * `CONFLICTO_DE_CLAVE` y no se filtra nada de la fila existente.
+ */
+export async function confirmarCompromiso(
+  deps: { repo: RepositorioDeConfirmacion; eventos: PublicadorDeEventos },
+  institutionId: string,
+  datos: ConfirmacionDeCompromiso,
+): Promise<ResultadoDeConfirmacion> {
+  const huella = await deps.repo.huellaDeClave(institutionId, datos.claveDeIdempotencia);
+  if (huella) {
+    // Doble clic y reintento: mismo dueño, mismo recurso, mismo payload.
+    const mismo =
+      huella.estudianteId === datos.estudianteId &&
+      huella.compromiso.actionId === datos.actionId &&
+      huella.startAt === datos.startAt &&
+      huella.timezone === datos.timezone &&
+      huella.plannedMinutes === datos.plannedMinutes;
+    return mismo
+      ? { estado: "OK", compromiso: huella.compromiso, duplicado: true }
+      : { estado: "CONFLICTO_DE_CLAVE" };
+  }
+
+  const creado = await deps.repo.crearConfirmado(institutionId, datos);
+  if (!creado.comprometible) {
+    return {
+      estado: "ACCION_NO_COMPROMETIBLE",
+      motivo: "La Action no existe, no es de este estudiante o su estado no admite comprometerse.",
+    };
+  }
+  if (creado.yaViva) return { estado: "YA_COMPROMETIDA" };
+
+  await deps.eventos.publicar({
+    nombre: "CommitmentConfirmed",
+    institutionId,
+    actorId: datos.estudianteId,
+    sujetoTipo: "commitment",
+    sujetoId: creado.compromiso.id,
+    causa: "->CONFIRMED",
+    payload: { actionId: datos.actionId, startAt: datos.startAt },
+  });
+
+  return { estado: "OK", compromiso: creado.compromiso, duplicado: false };
+}
+
 export async function renegociar(
   deps: { repo: RepositorioDeCompromisos; eventos: PublicadorDeEventos },
   institutionId: string,

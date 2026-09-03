@@ -5,6 +5,13 @@ import { identidadReal } from "./repositorios/identidad";
 import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
+import { accionesReal } from "./repositorios/accion";
+import { transicionar as transicionarAccion } from "./servicios/accion";
+import {
+  confirmarCompromiso as confirmarCompromisoPuro,
+  type ConfirmacionDeCompromiso,
+  type ResultadoDeConfirmacion,
+} from "./servicios/compromiso";
 import { hoyReal } from "./repositorios/hoy";
 import { materiaReal } from "./repositorios/materia";
 import { accionLecturaReal } from "./repositorios/accion-lectura";
@@ -160,6 +167,42 @@ export function ingerirMateria(
 }
 
 /**
+ * Confirma el primer compromiso de una `Action` — el paso 5 del recorrido.
+ *
+ * ## Por qué la `Action` se mueve acá y no en el Service del compromiso
+ *
+ * Son dos entidades con su propio lifecycle, y `RECOMMENDED → ACCEPTED →
+ * COMMITTED` no se puede saltar: la máquina de `Action` no admite el atajo. El
+ * orden importa y es el que fijó el CTO — **`ACCEPTED → COMMITTED` ocurre
+ * únicamente cuando el `Commitment` fue creado correctamente**—, así que las
+ * dos transiciones van **después** de que la fila existe. Si alguna fallara, un
+ * reintento con la misma clave resuelve por idempotencia y vuelve a intentarlas.
+ *
+ * **Ningún `GET` llega hasta acá.** `RECOMMENDED → ACCEPTED` no lo dispara
+ * abrir la pantalla: lo dispara este `POST`, que es la intención explícita.
+ */
+export async function confirmarCompromiso(
+  institutionId: string,
+  datos: ConfirmacionDeCompromiso,
+): Promise<ResultadoDeConfirmacion> {
+  const resultado = await confirmarCompromisoPuro(
+    { repo: compromisosReal, eventos: eventosReal },
+    institutionId,
+    datos,
+  );
+
+  if (resultado.estado !== "OK" || resultado.duplicado) return resultado;
+
+  const deps = { repo: accionesReal, eventos: eventosReal };
+  // Idempotentes por construcción: `transicionar` compara y falla sin efecto si
+  // el estado ya no es el esperado, que es justo lo que pasa en un reintento.
+  await transicionarAccion(deps, institutionId, datos.actionId, "ACCEPTED", {}, datos.estudianteId);
+  await transicionarAccion(deps, institutionId, datos.actionId, "COMMITTED", {}, datos.estudianteId);
+
+  return resultado;
+}
+
+/**
  * Corre el reloj del lifecycle para una institución.
  *
  * `ahora` entra por parámetro incluso acá: permite correrlo sobre un instante
@@ -245,6 +288,64 @@ export async function compromisoDe(
 ): Promise<CompromisoProps | null> {
   const estado = await compromisoLecturaReal.estadoDeCompromiso(institutionId, studentId, ahora, commitmentId);
   return estado ? proyectarCompromiso(estado) : null;
+}
+
+/**
+ * La **propuesta** de compromiso para una `Action` que todavía no tiene ninguno.
+ *
+ * ## Por qué existe, y qué no es
+ *
+ * D1·A dice que la fila nace en `CONFIRMED` y que antes no hay nada
+ * persistido. Pero `UX04` tiene que mostrar *algo* para que el estudiante
+ * confirme, así que esto **proyecta una propuesta sin escribirla**: mismo
+ * `CompromisoProps` que la pantalla ya sabe dibujar, `estado: "DRAFT"` como
+ * estado de vista, y ni una fila en la base.
+ *
+ * ⚠️ **El instante propuesto es un default, no una regla de negocio.** Se
+ * propone la próxima media hora en punto en la zona de la institución, y el
+ * estudiante confirma o no. Elegir el momento es parte de `C01-010`, que sigue
+ * `OPEN`: cuando se cierre, esto se reemplaza sin migrar nada, porque no hay
+ * nada persistido que dependa de este default.
+ */
+export async function propuestaDeCompromiso(
+  institutionId: string,
+  studentId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<{ props: CompromisoProps; actionId: string; startAt: string; timezone: string; plannedMinutes: number } | null> {
+  const estado = await accionLecturaReal.estadoDeAccion(institutionId, studentId, ahora, null);
+  if (!estado || estado.compromisoVivo) return null;
+
+  const zona = estado.zona;
+  const inicio = new Date(ahora);
+  inicio.setSeconds(0, 0);
+  inicio.setMinutes(inicio.getMinutes() > 30 ? 60 : 30);
+  const startAt = inicio.toISOString();
+  const minutos = estado.minutosMax ?? estado.minutosMin ?? 45;
+
+  const fmt = (o: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("es-AR", { ...o, timeZone: zona }).format(inicio).replace(/[.,]/g, "");
+
+  return {
+    actionId: estado.accionId,
+    startAt,
+    timezone: zona,
+    plannedMinutes: minutos,
+    props: {
+      estado: "DRAFT",
+      contexto: `${estado.materia}${estado.unidad ? ` · ${estado.unidad}` : ""}`,
+      titulo: estado.objetivo,
+      fecha: fmt({ weekday: "short", day: "numeric", month: "short" }),
+      hora: fmt({ hour: "2-digit", minute: "2-digit", hour12: false }),
+      tiempoDeclarado: `${minutos} min`,
+      notaEstimacion: `Zona horaria: ${zona}.`,
+      evidenciaEsperada: estado.evidenciaEsperada,
+      criterioCierre: estado.criterioCierre,
+      estadoResultante: { tono: "exito", texto: "Confirmado" },
+      aviso: null,
+      original: null,
+      ctaPrimaria: { texto: "Me comprometo", habilitada: true },
+    },
+  };
 }
 
 /**

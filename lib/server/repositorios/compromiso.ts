@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { CommitmentState } from "@/lib/domain/types";
-import type { AcuerdoNuevo } from "../servicios/compromiso";
+import type { AcuerdoNuevo, ConfirmacionDeCompromiso, HuellaDeCompromiso } from "../servicios/compromiso";
 import type { Compromiso, RepositorioDeCompromisos } from "../servicios/compromiso";
 import { clienteDeServicio } from "../supabase";
 
@@ -133,6 +133,104 @@ async function crearRescateAtomico(
   return filas.length > 0 ? aDominio(filas[0]) : null;
 }
 
+/** Los estados en que un compromiso todavía ocupa a la `Action`. */
+const VIVOS = ["CONFIRMED", "DUE", "STARTED"];
+
+/**
+ * La huella de la fila que ya usó una clave de idempotencia.
+ *
+ * Trae el dueño y el payload **para poder compararlos**, no para mostrarlos:
+ * el Service decide con esto si la clave repetida es el mismo pedido o un
+ * conflicto, y en el segundo caso nada de esto sale por la respuesta.
+ */
+async function huellaDeClave(
+  institutionId: string,
+  clave: string,
+): Promise<HuellaDeCompromiso | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("commitment")
+    .select(`${COLUMNAS}, start_at, timezone_at_commit, planned_minutes, action:action_id(course_enrollment:course_enrollment_id(student_id))`)
+    .eq("institution_id", institutionId)
+    .eq("idempotency_key", clave)
+    .maybeSingle();
+
+  if (error) throw new Error(`No se pudo leer commitment por clave: ${error.message}`);
+  if (!data) return null;
+
+  const fila = data as Record<string, unknown>;
+  const accion = fila.action as { course_enrollment?: { student_id?: string } } | null;
+  return {
+    compromiso: aDominio(fila),
+    estudianteId: accion?.course_enrollment?.student_id ?? "",
+    startAt: new Date(fila.start_at as string).toISOString(),
+    timezone: fila.timezone_at_commit as string,
+    plannedMinutes: fila.planned_minutes as number,
+  };
+}
+
+/**
+ * `INSERT` del primer compromiso de una `Action`, ya en `CONFIRMED` (D1·A).
+ *
+ * Las dos guardas —que la `Action` sea de este estudiante y que no tenga otro
+ * compromiso vivo— se hacen acá y con el `institution_id` en el `WHERE`, por lo
+ * mismo que `porId`: comparar después de traer la fila ya la sacó de su
+ * compartimento.
+ *
+ * **La carrera la corta el `UNIQUE (idempotency_key)`**, no esta lectura: dos
+ * requests simultáneas con la misma clave hacen que una inserte y la otra
+ * falle, y el Service resuelve la fallida por `huellaDeClave`.
+ */
+async function crearConfirmado(
+  institutionId: string,
+  datos: ConfirmacionDeCompromiso,
+): Promise<{ compromiso: Compromiso; comprometible: boolean; yaViva: boolean }> {
+  const vacio = { id: "", institutionId, actionId: datos.actionId, rescuesCommitmentId: null, state: "DRAFT" as CommitmentState };
+
+  const { data: accion, error: errAccion } = await clienteDeServicio()
+    .from("action")
+    .select("id, status, course_enrollment:course_enrollment_id(student_id)")
+    .eq("institution_id", institutionId)
+    .eq("id", datos.actionId)
+    .maybeSingle();
+  if (errAccion) throw new Error(`No se pudo leer action: ${errAccion.message}`);
+
+  const duenio = (accion as { course_enrollment?: { student_id?: string } } | null)
+    ?.course_enrollment?.student_id;
+  const status = (accion as { status?: string } | null)?.status;
+  // `COMMITTED` en adelante ya pasó por acá; `BLOCKED`, `CANCELLED` y
+  // `REPLACED` no admiten un acuerdo nuevo.
+  if (!accion || duenio !== datos.estudianteId || (status !== "RECOMMENDED" && status !== "ACCEPTED")) {
+    return { compromiso: vacio, comprometible: false, yaViva: false };
+  }
+
+  const { data: vivos, error: errVivos } = await clienteDeServicio()
+    .from("commitment")
+    .select("id")
+    .eq("institution_id", institutionId)
+    .eq("action_id", datos.actionId)
+    .in("state", VIVOS)
+    .limit(1);
+  if (errVivos) throw new Error(`No se pudo leer commitment: ${errVivos.message}`);
+  if ((vivos ?? []).length > 0) return { compromiso: vacio, comprometible: true, yaViva: true };
+
+  const { data, error } = await clienteDeServicio()
+    .from("commitment")
+    .insert({
+      institution_id: institutionId,
+      action_id: datos.actionId,
+      start_at: datos.startAt,
+      timezone_at_commit: datos.timezone,
+      planned_minutes: datos.plannedMinutes,
+      state: "CONFIRMED",
+      idempotency_key: datos.claveDeIdempotencia,
+    })
+    .select(COLUMNAS)
+    .single();
+  if (error) throw new Error(`No se pudo crear el compromiso: ${error.message}`);
+
+  return { compromiso: aDominio(data as Record<string, unknown>), comprometible: true, yaViva: false };
+}
+
 /**
  * La implementación concreta, tipada contra el contrato que declara el Service.
  * Si el Service cambia lo que necesita, esto deja de compilar acá y no en una
@@ -140,4 +238,6 @@ async function crearRescateAtomico(
  */
 export const compromisosReal: RepositorioDeCompromisos & {
   porClaveDeIdempotencia: typeof porClaveDeIdempotencia;
-} = { porId, cambiarEstadoSi, porClaveDeIdempotencia, renegociarAtomico, crearRescateAtomico };
+  huellaDeClave: typeof huellaDeClave;
+  crearConfirmado: typeof crearConfirmado;
+} = { porId, cambiarEstadoSi, porClaveDeIdempotencia, renegociarAtomico, crearRescateAtomico, huellaDeClave, crearConfirmado };
