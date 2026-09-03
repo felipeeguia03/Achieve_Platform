@@ -76,7 +76,8 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 | **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
 | Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |
 | **[ADR-042](decisions.md#adr-042)** · dónde da el estudiante su WhatsApp | **Product Owner** | Todo el **Flujo E** del CRM, y es **la misma decisión** que el onboarding del spec §19 que [ADR-039](decisions.md#adr-039) dejó abierto — hoy el trabajo de más valor sin dependencia externa |
-| **[ADR-041](decisions.md#adr-041)** · qué cuenta como *"actividad"* a efectos de facturar | **Product Owner + CTO** | El emisor del **Flujo D**. La integración sigue diferida por [ADR-035](decisions.md#adr-035): no corre apuro, pero sin esto no se puede construir sin inventar el criterio |
+| **[ADR-041](decisions.md#adr-041)** · qué cuenta como *"actividad"* a efectos de facturar | **Product Owner + CTO** | El emisor del **Flujo D**. Tras la v0.2 del CRM, lo que se decida pasa a ser **cláusula versionada del contrato**: es la línea variable de una factura |
+| **[ADR-043](decisions.md#adr-043)** · el orden de los cinco flujos y el smoke test cross-sistema | **Product Owner** | Nada hoy. Lo pidió el CRM: que **D y E salgan primero** al descongelar, y un smoke test con alumno sintético que **no toca [ADR-006](decisions.md#adr-006)** pero **sí toca [ADR-035](decisions.md#adr-035)** |
 
 ### Lo diferido por decisión, no por bloqueo
 
@@ -91,11 +92,22 @@ respondió **`ACEPTA EL DISEÑO CON CAMBIOS REQUERIDOS`**:
 [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md). Dos hallazgos que conviene
 tener a mano cuando se descongele:
 
-- ⚠️ **`422 UNRESOLVABLE_STUDENT` significa dos cosas distintas** — terminal en el Flujo A (§10.4 del
-  contrato) y reintentable en el D—, y los dos comparten despachador. Se arregla en el catálogo, no en
-  el outbox.
+- ⚠️ **`422 UNRESOLVABLE_STUDENT` significaba dos cosas distintas** — terminal en el Flujo A (§10.4 del
+  contrato) y reintentable en el D—, y los dos comparten despachador. ✅ **Resuelto en la v0.2 del
+  CRM**, y mejor que nuestra propuesta: **código propio por flujo + reintento acotado + dead-letter**,
+  nunca infinito ni descarte silencioso.
 - ⚠️ **El Flujo E no espera un webhook: espera una pantalla.** La Plataforma no tiene el número
   ([ADR-042](decisions.md#adr-042)).
+
+**La segunda ronda cerró el diseño de D, E y el nuevo E′** —desvinculación—, en
+[`respuesta-crm-flujos-d-e-v0.2.md`](respuesta-crm-flujos-d-e-v0.2.md). Dejó **un hallazgo nuevo de la
+misma clase que el `422`**, y es el único punto donde el contrato congelado dice algo falso:
+
+⚠️ **La firma HMAC está especificada de dos maneras.** El contrato v0.2 §2 dice *"firma sobre
+timestamp + body original"*; la v0.2 del CRM dice `${timestamp}.${rawBody}`, **con punto**, y advierte
+que *"no es concatenación directa"*. **Es un solo middleware y un solo secreto para A, D, E y E′**, y
+el modo de falla es un `401` mudo que no dice cuál de las tres cosas falló. **Gana el punto**, y hay
+que corregir el §2 en la próxima versión del contrato.
 
 ---
 

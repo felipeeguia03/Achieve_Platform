@@ -89,6 +89,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-040](#adr-040) | El camino de ejecución escribe en Postgres, y `C01-009` queda cerrada | ✅ `ACCEPTED` *(decidido por el CTO; **registrado retroactivamente** desde los commits del 3 sep 2026)* | — |
 | [ADR-041](#adr-041) | Qué cuenta como «actividad» del estudiante a efectos de facturar | 🔴 `PENDING` *(Product Owner + CTO)* | El emisor del **Flujo D** del contrato con el CRM |
 | [ADR-042](#adr-042) | Dónde da el estudiante su WhatsApp, si es que lo da | 🔴 `PENDING` *(Product Owner)* | **Todo el Flujo E**, y arrastra el onboarding que [ADR-039](#adr-039) dejó abierto |
+| [ADR-043](#adr-043) | El orden de los cinco flujos al descongelar, y el smoke test cross-sistema | 🔴 `PENDING` *(Product Owner)* | Nada hoy: es alcance de [ADR-035](#adr-035). Lo pidió el CRM en su v0.2 |
 
 ---
 
@@ -3490,6 +3491,29 @@ después de un incumplimiento).
 motivo escrito: *"abrir una pantalla no es un hecho de dominio"*—, `ActionAccepted` —aceptar no es
 hacer— y `CommitmentCreated`: comprometerse tampoco es producir.
 
+### Ampliación — 3 de septiembre de 2026, tras la v0.2 del CRM
+
+El CRM **aceptó la lista candidata tal cual, sin agregar ni sacar**, y pidió algo que no habíamos
+previsto y es correcto: **que la lista no viva solamente en nuestro catálogo**.
+
+> *"Si mañana alguien agrega `CourseViewed` a esa marca, cambia lo que Achieve le factura a una
+> institución y nadie de Achieve lo aprobó. Y el CRM no puede detectar lo que no se envió."*
+
+Una marca que se cambia en un commit no puede ser la definición de una línea de factura. Así que
+**lo que este ADR decida pasa a ser una cláusula versionada del contrato**, y moverla exige aviso y
+acuerdo. El guard técnico sigue siendo nuestro; la garantía comercial es del contrato.
+
+⚠️ **Con una precisión de redacción que la Plataforma pidió y que hay que conservar:** lo que queda
+atado al contrato es **el conjunto de eventos marcados como facturables**, no el catálogo entero.
+Agregar un evento nuevo **no facturable** no es un cambio de contrato — si lo fuera, el modelo de
+eventos del producto quedaría congelado por un acuerdo comercial.
+
+**El CRM también pidió, como opcional y no bloqueante**, recibir `ActionAccepted` y
+`CommitmentCreated` **marcados no facturables**, para medir el embudo *vinculado → aceptó → produjo*.
+`ActionAccepted` se emite hoy y no cuesta nada. **`CommitmentCreated` no existe como nombre emitido:**
+el backend emite `CommitmentConfirmed`, y [ADR-027](#adr-027) prohíbe renombrarlo porque
+`product_event` es append-only. Si se acepta el pedido, el `type` que viaja es `CommitmentConfirmed`.
+
 ### Lo que este ADR no decide
 
 - **No decide el precio ni la unidad de facturación.** Eso es del contrato comercial.
@@ -3548,3 +3572,91 @@ definida"*.
 
 ⚠️ **Nada de esto se construye antes del dictamen de [ADR-006](#adr-006):** un teléfono es un
 identificador directo de una persona, y es el primer flujo del contrato que transporta uno.
+
+### Ampliación — 3 de septiembre de 2026, tras la v0.2 del CRM
+
+La v0.2 agregó dos cosas que **cambian lo que esta pantalla tiene que hacer**, y conviene tenerlas
+antes de diseñarla, no después:
+
+**1 · La pantalla también tiene que poder revocar.** El CRM propuso el **flujo E′**
+(`POST /api/service/v1/whatsapp-unlink`), que es lo que hace **ejecutable** el derecho de supresión —
+hasta ahora, del lado del CRM, `whatsapp_linked` **nunca volvía a `false`**. Si hay pantalla para dar
+el número, tiene que haber camino para sacarlo.
+
+**2 · La pantalla no puede prometer que el número quedó vinculado.** Con el desempate por
+`occurredAt` + procedencia que introdujo el CRM, **un evento puede acusarse con `202` y no
+aplicarse**, y el emisor no puede distinguir un caso del otro. La Plataforma **no observa** el estado
+del CRM. La superficie confirma **lo que el estudiante hizo** —*"guardamos tu número"*— y **nunca**
+afirma *"tu WhatsApp está vinculado"* ni *"te van a escribir"*. Es la misma disciplina por la que la
+Plataforma no le dice al estudiante quién lo acompaña.
+
+⚠️ **Y un requisito de orden que aparece con el borrado:** `whatsapp-unlink` se direcciona con
+`platformStudentId`. **Se emite y se materializa en el outbox antes de borrar al estudiante de la
+Plataforma.** Si el borrado elimina la fila primero, no queda a quién desvincular y el número queda
+vivo del otro lado: **la mitad de un borrado, que es peor que ninguno porque parece hecho.**
+
+---
+
+<a id="adr-043"></a>
+## ADR-043 — El orden de los cinco flujos al descongelar, y el smoke test cross-sistema
+
+**Estado:** 🔴 `PENDING` — **la cierra el Product Owner.** Es alcance de
+[ADR-035](#adr-035), que él decidió: un equipo no la revierte por acuerdo con la contraparte.
+**Fecha de apertura:** 3 de septiembre de 2026
+**Origen:** `crm-respuesta-flujos-actividad-vinculacion-v0.2.md` §5, y la respuesta de la Plataforma
+en [`respuesta-crm-flujos-d-e-v0.2.md`](respuesta-crm-flujos-d-e-v0.2.md) §6.
+**Relacionado:** [ADR-041](#adr-041), [ADR-042](#adr-042), ítem 5 de [ADR-005](#adr-005).
+
+### Contexto
+
+El CRM **no pide cambiar la prioridad** de ADR-035 ni pone una fecha. Pide dos cosas concretas, y
+deja escrita la consecuencia de no dárselas:
+
+| Flujo | Qué habilita | Qué pasa mientras no se emita |
+|---|---|---|
+| **D · Actividad** | La **línea variable de la factura** y la graduación del alumno a cobertura plena | Achieve puede facturar **el fijo**; el variable **no tiene fuente** |
+| **E · Vinculación** | **Toda la operación por WhatsApp** | Sin teléfono no hay asignación, no hay cola, **no hay conversaciones**. El padrón no trae teléfono y el inbound de un número desconocido se descarta |
+
+Su frase, que conviene no suavizar: *"el Flujo E no es 'un flujo que falta', es la entrada de datos
+del producto que Achieve vende"*.
+
+### Las dos preguntas
+
+**1 · ¿D y E salen primero de los cinco, antes de A/B/C?** Es un compromiso de **orden**, no de
+calendario.
+
+**2 · ¿Se corre un smoke test cross-sistema en dev, con alumno sintético?** Validaría HMAC, ventana
+anti-replay, idempotencia y catálogo de errores de los cinco flujos a la vez.
+
+### Recomendación de la Plataforma — a favor de las dos, con dos precisiones
+
+**Sobre el orden: el argumento del CRM es bueno.** D y E habilitan **facturar y operar**; A/B/C
+**mejoran** una operación que para entonces ya tiene que existir. Y su dato es correcto: **el Flujo E
+no depende de `C01-021` ni de Meta**.
+
+⚠️ **Pero el orden no alcanza.** El **Flujo D necesita [ADR-041](#adr-041)** y el **Flujo E necesita
+[ADR-042](#adr-042)**, las dos `PENDING` y las dos del mismo Product Owner. Aunque el orden se acepte
+mañana, **el trabajo no arranca hasta cerrarlas**: conviene llevar las tres juntas.
+
+**Sobre el smoke test: el CRM tiene razón en que no toca [ADR-006](#adr-006)** — un alumno sintético
+no es una persona, y [ADR-024](#adr-024) autoriza construir y probar sobre datos sintéticos. **Lo que
+falta decir es que sí toca ADR-035**, y por eso la decisión es del owner:
+
+1. Exige **el cliente HMAC y un outbox mínimo**, que es exactamente la construcción diferida.
+2. Exige **acordar y provisionar el secreto entrante**, que es la **definición 3 de §11.1** del
+   contrato — y con **un solo secreto para A, D, E y E′**, estrenarlo sin esquema de rotación es
+   empezar por donde no conviene.
+
+*"Cuesta un script del lado del emisor"* es cierto **si el emisor ya existe**, y no existe.
+
+**Aun así lo recomendamos**, con un fundamento concreto: esta ronda de dos documentos ya produjo
+**dos defectos de forma —el `422` con dos políticas y la firma HMAC especificada de dos maneras— que
+sólo aparecen cuando alguien firma de verdad**. Un smoke test encuentra la clase de defecto que
+ningún documento encuentra.
+
+### Lo que este ADR no decide
+
+- **No pone fecha.** El CRM tampoco la pidió.
+- **No descongela ADR-035** para A, B y C.
+- **No habilita datos reales.** [ADR-006](#adr-006) sigue siendo bloqueo absoluto, y el smoke test
+  usa alumno sintético **precisamente para no tocarlo**.
