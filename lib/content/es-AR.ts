@@ -408,6 +408,23 @@ export const copy = {
   "CARGA.SIN_SESION.TITULO": "No pudimos identificarte",
   "CARGA.SIN_SESION.CUERPO":
     "Tu sesión no está activa, así que no podemos mostrarte tu día. No es que no tengas nada: es que todavía no sabemos quién sos.",
+  // ── Ingreso ────────────────────────────────────────────────────────────────
+  // El spec no define esta pantalla: la autorizó el Product Owner y queda
+  // registrada en ADR-039. El copy no promete nada que el producto no haga —en
+  // particular, **no ofrece crear una cuenta**: el alta la decide el padrón del
+  // CRM, no este formulario.
+  "LOGIN.TITULO": "Entrar a Achieve",
+  "LOGIN.SUBCOPY":
+    "Tu cuenta la habilita tu institución. Si todavía no podés entrar, no es un error tuyo: es que tu email no está en el padrón.",
+  "LOGIN.EMAIL": "Email",
+  "LOGIN.PASSWORD": "Contraseña",
+  "LOGIN.CTA": "Entrar",
+  "LOGIN.ENTRANDO": "Entrando…",
+  "LOGIN.ERROR.CREDENCIALES":
+    "Ese email y esa contraseña no coinciden. Revisalos y probá de nuevo.",
+  "LOGIN.ERROR.RED": "No pudimos verificar tus datos. Probá de nuevo en un momento.",
+  "LOGIN.SALIR": "Salir",
+
   "CARGA.SIN_PADRON.TITULO": "Tu cuenta todavía no está habilitada",
   "CARGA.SIN_PADRON.CUERPO":
     "Te reconocemos, pero tu institución todavía no te habilitó en el padrón. Cuando lo haga, acá vas a ver tu día.",

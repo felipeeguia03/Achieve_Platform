@@ -39,29 +39,24 @@ export type Respuesta<T> =
 /**
  * El access token de la sesión vigente, o `null`.
  *
- * **El spec no tiene pantalla de login y acá no se inventa una** (regla 1 de
- * `AGENTS.md`). Para el MVP sintético la sesión se da de alta fuera de las nueve
- * superficies, con `npm run db:demo`, y el navegador entra con las credenciales
- * del estudiante sintético.
+ * ## Ya no da de alta la sesión, y ese es el punto
  *
- * ⚠️ **Sólo fuera de producción.** El alta por contraseña desde el cliente vive
- * detrás de `NEXT_PUBLIC_DEMO_*`, que existen únicamente en el entorno local y
- * apuntan a un estudiante que no es una persona. Con
- * [ADR-006](../../docs/decisions.md#adr-006) abierto no hay ningún otro tipo de
- * estudiante posible.
+ * Hasta [ADR-039](../../docs/decisions.md#adr-039) esto hacía
+ * `signInWithPassword` con credenciales de entorno cuando no había sesión: el
+ * navegador entraba solo. Con una pantalla de ingreso eso sería teatro —el
+ * login no decidiría nada, porque la sesión ya estaría abierta antes de
+ * llegar—, así que **acá sólo se lee lo que ya existe**.
+ *
+ * `null` significa *no hay sesión*, y quien pregunta manda a `/login`.
  */
 export async function tokenDeSesion(): Promise<string | null> {
-  const supabase = clienteDeNavegador();
+  const { data } = await clienteDeNavegador().auth.getSession();
+  return data.session?.access_token ?? null;
+}
 
-  const { data } = await supabase.auth.getSession();
-  if (data.session) return data.session.access_token;
-
-  const email = process.env.NEXT_PUBLIC_DEMO_EMAIL;
-  const password = process.env.NEXT_PUBLIC_DEMO_PASSWORD;
-  if (process.env.NODE_ENV === "production" || !email || !password) return null;
-
-  const alta = await supabase.auth.signInWithPassword({ email, password });
-  return alta.data.session?.access_token ?? null;
+/** Cierra la sesión. La pantalla que llame decide a dónde ir después. */
+export async function cerrarSesion(): Promise<void> {
+  await clienteDeNavegador().auth.signOut();
 }
 
 /**

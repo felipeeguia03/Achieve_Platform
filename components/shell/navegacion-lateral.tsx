@@ -26,7 +26,8 @@
  */
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, GraduationCap, PanelLeft, Sun } from "lucide-react";
+import { CalendarDays, ClipboardList, GraduationCap, LogOut, PanelLeft, Sun } from "lucide-react";
+import { cerrarSesion } from "@/lib/client/api";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
 import type { NodoId } from "@/lib/navigation/surfaces";
 import { t } from "@/lib/content/es-AR";
@@ -144,6 +145,21 @@ export function NavegacionLateral({
   colapsada: boolean;
   onAlternar: () => void;
 }) {
+  /*
+    Navegación dura y no `router.replace`, a propósito: cerrar sesión tiene que
+    tirar **todo** el estado en memoria, no sólo el token. Un `replace` del
+    router conserva el árbol montado, y con él lo que cada pantalla tenga
+    cargado del estudiante que se está yendo.
+
+    De paso, el componente no depende del router y se puede seguir montando
+    solo en un test.
+  */
+  async function salir() {
+    await cerrarSesion();
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- recarga deliberada: ver arriba
+    window.location.assign("/login");
+  }
+
   return (
     <nav
       aria-label={t("SHELL.NAVEGACION")}
@@ -184,6 +200,28 @@ export function NavegacionLateral({
           <Item key={item.nodo} item={item} activo={item.nodo === nodoActivo} colapsada={colapsada} />
         ))}
       </div>
+
+      {/*
+        Salir, al pie y en secundario. Va acá y no en el menú porque **no es una
+        superficie**: no lleva a ninguna pantalla de producto, cierra la sesión.
+        Sigue sin ser una CTA — no compite con la acción primaria (`I-06`).
+      */}
+      <button
+        onClick={salir}
+        aria-label={t("LOGIN.SALIR")}
+        className="flex items-center"
+        style={{
+          marginTop: "auto",
+          gap: 12,
+          padding: "8px 12px",
+          justifyContent: colapsada ? "center" : "flex-start",
+          color: "var(--muted-foreground)",
+          fontSize: "var(--text-body)",
+        }}
+      >
+        <LogOut size={18} aria-hidden />
+        {!colapsada && <span>{t("LOGIN.SALIR")}</span>}
+      </button>
     </nav>
   );
 }

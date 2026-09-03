@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 import { pedir, type Respuesta } from "./api";
 
@@ -16,6 +17,18 @@ import { pedir, type Respuesta } from "./api";
  * `omitir` es para la rama de `?escenario=`: con un escenario explícito no se
  * pide nada a la red, porque el catálogo sintético es la fuente por decisión y
  * no un fallback.
+ *
+ * ## Sin sesión, al ingreso
+ *
+ * Desde [ADR-039](../../docs/decisions.md#adr-039) el navegador ya no abre
+ * sesión solo. Cuando `/api/*` contesta que no hay sesión, la superficie no
+ * dibuja un error: manda a `/login` con la ruta actual, para volver acá después
+ * de entrar. Es **el único lugar** donde vive esa redirección, por lo mismo que
+ * el hook existe: nueve copias son nueve lugares donde arreglar el próximo bug.
+ *
+ * ⚠️ Con `?escenario=` no redirige. El catálogo sintético no necesita sesión, y
+ * mandar al login desde una demo del Track A rompería el recorrido del focus
+ * group, que corre sin backend.
  */
 export type EstadoDeSuperficie<T> = Respuesta<T> | { estado: "CARGANDO" };
 
@@ -41,17 +54,25 @@ export function useSuperficie<T>(ruta: string, opciones: { omitir?: boolean } = 
    */
   const [resultado, setResultado] = useState<{ clave: string; r: Respuesta<T> } | null>(null);
 
+  const router = useRouter();
+  const pathname = usePathname();
+
   useEffect(() => {
     if (omitir) return;
     let vigente = true;
     pedir<T>(ruta).then((r) => {
+      if (!vigente) return;
+      if (r.estado === "SIN_SESION") {
+        router.replace(`/login?volver=${encodeURIComponent(pathname)}`);
+        return;
+      }
       // Sin esta guarda se setea estado sobre un componente que ya se fue.
-      if (vigente) setResultado({ clave, r });
+      setResultado({ clave, r });
     });
     return () => {
       vigente = false;
     };
-  }, [ruta, omitir, clave]);
+  }, [ruta, omitir, clave, router, pathname]);
 
   const reintentar = useCallback(() => setIntento((i) => i + 1), []);
 

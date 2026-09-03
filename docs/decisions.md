@@ -85,6 +85,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-036](#adr-036) | Cierre **provisional** de `C01-036` y `C01-021` para el MVP | ⚠️ ✅ `ACCEPTED` · **`PROVISIONAL — REQUIRES POST-MVP HUMAN VALIDATION`** *(autoridad: Product Owner, no la psicopedagoga)* | — |
 | [ADR-037](#adr-037) | La validación profesional llegó, y los números no eran el problema | ✅ `ACCEPTED` *(6 `CAMBIAR` + 1 `APROBAR`; los umbrales quedaron, cambió el denominador)* | — |
 | [ADR-038](#adr-038) | Replanificar versiona dentro de la preparación; volver exige una propuesta aceptada | ✅ `ACCEPTED` *(`REPLANNED` sigue vivo; ninguna rama toca Evidence ni progreso)* | — |
+| [ADR-039](#adr-039) | Hay pantalla de ingreso, y no es una superficie de producto | ✅ `ACCEPTED` *(sólo sign-in: **no hay alta**, que la decide el padrón del CRM)* | — |
 
 ---
 
@@ -3251,3 +3252,79 @@ no reduce progreso y no presenta la reentrada como castigo.
 - El override humano queda soportado en dominio y persistencia, pero no se inventa una superficie de
   operador: esa frontera sigue en ADR-033.
 - Todo continúa limitado a datos sintéticos por ADR-006.
+
+---
+
+<a id="adr-039"></a>
+## ADR-039 — Hay pantalla de ingreso, y no es una superficie de producto
+
+**Estado:** ✅ `ACCEPTED` · 3 de septiembre de 2026 · **decidido por el Product Owner**
+**Toca:** `app/login/`, `lib/client/api.ts`, `lib/client/superficie.ts`, `components/shell/`.
+**Relacionado:** [ADR-006](#adr-006) (bloqueo de datos reales), `C01-030`,
+[`platform-integration-contract.md`](platform-integration-contract.md) §1.
+
+### Contexto
+
+El spec define **nueve superficies** (`UX01`–`UX09`) y **ninguna es un login**. Hasta acá eso se
+respetó literalmente: la identidad se daba de alta fuera del producto con `npm run db:sesion`, y
+`lib/client/api.ts` abría sesión sola con `NEXT_PUBLIC_DEMO_*` cuando no había ninguna.
+
+Eso alcanzaba para el MVP sintético y **no alcanza para nada más**. El propio código lo decía:
+*"el spec no tiene pantalla de login y acá no se inventa una"*. Inventarla era romper la regla 1 de
+`AGENTS.md`; la decisión la toma una persona, y la tomó el Product Owner.
+
+También quedó a la vista el hueco más grande del producto: entre el `authorized: true` del CRM y la
+primera acción del estudiante **no hay ninguna pantalla definida**. Este ADR cierra el primer tramo
+—identificarse— y **no** el resto: el onboarding progresivo del spec §19 sigue sin construir.
+
+### Decisión
+
+**Existe `/login`**, con email y contraseña contra Supabase Auth.
+
+**No es `UX10`.** No entra al registro canónico de navegación: `lib/navigation/` sigue teniendo nueve
+nodos y hay guard que verifica que `UX10` no existe. No es una superficie de producto —no proyecta
+estado del estudiante ni ofrece una acción de dominio—: es la puerta.
+
+**El navegador ya no abre sesión solo.** `tokenDeSesion()` pasa a leer únicamente la sesión que ya
+existe. Con auto-login, una pantalla de ingreso sería teatro: no decidiría nada, porque la sesión ya
+estaría abierta antes de llegar.
+
+**Sin sesión, las nueve superficies mandan a `/login`** y vuelven a donde estaban después de entrar.
+La redirección vive en `useSuperficie`, en un solo lugar.
+
+### Lo que esta pantalla NO hace, y por qué
+
+| | |
+|---|---|
+| **No ofrece crear una cuenta** | Quién puede entrar lo decide el **padrón del CRM**, y la Plataforma hace cumplir esa decisión. Un alta desde este formulario es exactamente el camino por el que una persona real entraría sin padrón, con [ADR-006](#adr-006) todavía `PROVISIONAL` |
+| **No recupera contraseña** | Manda un mail a una persona |
+| **No distingue "email inexistente" de "contraseña incorrecta"** | Distinguirlos convierte el formulario en un detector de quién está en el padrón |
+| **No valida contra el CRM** | El endpoint `authorize` es del CRM y su integración está diferida por [ADR-035](#adr-035). Mientras tanto, quién existe en `auth.users` lo sigue decidiendo una operación fuera del producto |
+
+⚠️ **Esto no levanta el gate de [ADR-006](#adr-006).** Que exista un login no autoriza a que entre
+una persona real: sigue habiendo bloqueo absoluto hasta el dictamen legal. Lo que cambia es que la
+sesión ahora se abre con una credencial escrita por quien entra, y no con dos variables de entorno.
+
+### Alternativas
+
+- **Seguir sin login, con auto-sesión.** Ventaja: cero superficie nueva y literalidad total con el
+  spec. Desventaja: no hay forma de que dos identidades usen el mismo navegador, ni de salir, y el
+  hueco entre el alta y la primera acción sigue sin tener dónde empezar.
+- **Login con alta incluida.** Ventaja: un estudiante nuevo entra solo. Desventaja: **contradice el
+  contrato del CRM y perfora ADR-006.** Descartada.
+- **Middleware que proteja las rutas.** Ventaja: el gate corre antes de renderizar. Desventaja:
+  `next.config.ts` y el relevamiento de exposición de [ADR-008](#adr-008) registran que **no hay
+  `middleware.ts`**, y varios avisos de Next dependen de que siga sin haberlo. Se difiere.
+
+### Consecuencias
+
+- `NEXT_PUBLIC_DEMO_EMAIL` y `NEXT_PUBLIC_DEMO_PASSWORD` dejan de abrir sesión. Siguen sirviendo como
+  las credenciales que **una persona escribe** en el formulario de la demo.
+- Cerrar sesión hace **navegación dura**, no `router.replace`: tiene que tirar todo el estado en
+  memoria, no sólo el token.
+- La auditoría `I-01` pasa a nombrar sus excepciones —la raíz y `/login`— en vez de contar *"todas
+  menos una"*. Una superficie real que se olvide de `?escenario=` sigue rompiendo el test.
+- **Queda abierto lo que este ADR no cierra:** el onboarding del spec §19 —orientación, mapa
+  académico mínimo, disponibilidad— y qué ve un estudiante recién habilitado que todavía no tiene
+  cursadas. Hoy caería en el vacío de `UX01`, que dice *"no hay una acción recomendada"*: una
+  afirmación sobre el mundo que en ese caso nadie puede hacer.

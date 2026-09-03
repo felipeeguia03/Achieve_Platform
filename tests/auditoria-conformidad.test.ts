@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { copy, type CopyId } from "@/lib/content/es-AR";
@@ -155,12 +155,23 @@ describe("Bloque 6 · Interacción", () => {
   it("`I-01` — todo estado compartible tiene URL", () => {
     // Cada ruta acepta ?escenario= y por eso cualquier estado crítico se puede
     // abrir y compartir por link.
-    const rutas = archivos("app").filter((p) => p.endsWith("page.tsx"));
+    /*
+      La excepción no es "la raíz": es **no ser una superficie de producto**.
+      La raíz sólo redirige, y `/login` es la puerta —no tiene estados críticos
+      que compartir, y aceptar `?escenario=` ahí sería ofrecer una demo de un
+      formulario de ingreso—. Se nombran las dos para que una superficie real
+      que se olvide de `?escenario=` siga rompiendo este test.
+    */
+    const NO_SON_SUPERFICIE = ["app/page.tsx", "app/login/page.tsx"];
+    const rutas = archivos("app")
+      .filter((p) => p.endsWith("page.tsx"))
+      .filter((p) => !NO_SON_SUPERFICIE.includes(p));
     const conEscenario = rutas.filter((p) =>
       readFileSync(resolve(ROOT, p), "utf8").includes("escenario"),
     );
-    // Todas menos la raíz, que sólo redirige.
-    expect(conEscenario.length).toBe(rutas.length - 1);
+    expect(conEscenario.length).toBe(rutas.length);
+    // Y que las excepciones sigan existiendo: si alguna se renombra, se ve acá.
+    for (const p of NO_SON_SUPERFICIE) expect(existsSync(resolve(ROOT, p))).toBe(true);
   });
 
   it("`I-05` — el bloqueante va arriba de la CTA, no debajo", () => {
