@@ -50,7 +50,7 @@ Cada etapa, sin excepción:
 
 **Track A: cerrado.** **Track B: B1–B6.8 completas en su alcance disponible**, con B2b en 2/3.
 
-`lint`, `typecheck` y `build` en verde · **991 tests en 56 archivos** · **276 comprobaciones** históricas contra
+`lint`, `typecheck` y `build` en verde · **995 tests en 57 archivos** · **276 comprobaciones** históricas contra
 Postgres + comprobación funcional transaccional de B6.7.4 · **47 migraciones** · las **nueve superficies** del
 estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](decisions.md#adr-040)).
 
@@ -58,6 +58,7 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 | Frente | Estado |
 |---|---|
+| **Fase B6.10 · la reflexión existe y se exige** | ✅ **Completa** — 4 de septiembre de 2026. El estudiante **puede reflexionar** —la tabla estaba desde la B1 y nadie la escribía— y el requisito que cerró [ADR-026](decisions.md#adr-026) **lo hace cumplir el servidor**, no un botón deshabilitado |
 | **Fase B6.9 · la salida del camino que no salió bien** | ✅ **Completa, 2 / 2** — 4 de septiembre de 2026. El **rescate** y el **reenvío** son alcanzables; con el primero, `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. **La renegociación queda fuera hasta `C01-010`** |
 | **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
 | **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
@@ -3156,6 +3157,81 @@ y la ruta va con secreto de servicio como todas las demás de ese lado.
 
 ---
 
+## Fase B6.10 — La reflexión existe y se exige · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026. Sigue la misma directiva del Product Owner:
+*"primero se termina y verifica el loop actual del MVP"*.
+
+**Por qué existe.** Tercera aparición del mismo patrón, y la peor de las tres:
+
+| Qué | Estado antes de esta fase |
+|---|---|
+| `chequearParaEnviar()` y `cuelgaDeAlgo()` | Construidos y probados desde la B2.4, **llamados sólo por sus tests** |
+| La tabla `reflection` | Existe desde la Fase B1. **Nadie la escribía** |
+| El bloqueo de `REQUIRED` | Vivía **sólo en la proyección**: `envioBloqueadoPorReflexion()` apagaba la CTA y `POST /api/evidencia` nunca lo consultaba |
+
+⚠️ **Lo único que impedía entregar sin la reflexión requerida era un botón deshabilitado.** Es la
+inversión exacta de *"la UI proyecta, nunca decide"*: ahí la UI era **lo único** que decidía, y
+cualquier cliente que llamara al endpoint pasaba por encima de [ADR-026](decisions.md#adr-026) — la
+decisión con la que el owner cerró `C01-051`.
+
+**Estaba latente, no roto:** `reflection_requirement` es `NO_CONFIGURADA` por default y nada pone
+`REQUIRED` todavía, así que el hueco no se podía ver corriendo la demo. Se ve el día que alguien
+configure una Action con reflexión obligatoria — y entonces es un dato perdido, no un botón.
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/reflexion` | Con JWT del estudiante. **Cuelga de algo** —Action, Evidence o paso— y **no está vacía**; la Action tiene que ser suya |
+| `reflexionesReal` | El primer repositorio que escribe la tabla, más la lectura de `(requisito, hayReflexion)` |
+| `entregarEvidencia()` | Consulta `chequearParaEnviar` **antes de escribir**. Falta la requerida → `409`, y **no nace la fila** |
+| La proyección de la **primera** entrega | Proyecta el requisito. Antes devolvía `reflection: null` fijo |
+
+### Un defecto que apareció al hacerlo cumplir
+
+**La pantalla prometía lo que el servidor ya rechazaba.** `entregaEsperadaDe` —la vista de la primera
+entrega— devolvía `reflection: null` y la CTA habilitada, con el motivo escrito *"acá todavía no hay
+Evidence de la cual colgarlo"*. Era cierto para la fila y **falso para la pantalla**: el requisito
+vive en la **`Action`**, congelado al crearla, y la primera entrega es justamente la que no puede
+tener una Evidence previa. Es el mismo defecto que tenía `UX04` con un incumplimiento, al revés.
+
+**Y un segundo, de vocabulario:** la proyección real llamaba ***"Agregar reflexión (opcional)"*** aun
+cuando el requisito era `REQUIRED`. Decirle *opcional* a lo que apaga el botón es decirle al
+estudiante lo contrario de lo que va a pasar.
+
+### ⚠️ Una decisión de copy que quedó levantada, no resuelta
+
+El fixture `FX-LOCAL-EVD-REFLECTION-REQUERIDA` —el diseño aprobado— dice **"Contanos cómo te fue
+(requerido)"**, y el guard `C-01` de `auditoria-conformidad` **prohíbe `Contanos`** en su lista de
+imperativos. Los dos no pueden tener razón: *contanos* **es** voseo (*contá* + *nos*), así que la
+lista del guard parece tener un defecto.
+
+**No se tocó el guard.** Aflojar un guard para que pase el cambio de uno es exactamente lo que un
+guard existe para impedir, y elegir la copy es de producto. Se usa mientras tanto **"Agregar
+reflexión (requerido)"**, que no estrena voz. **Lo decide una persona.**
+
+### Lo que esta fase NO hizo
+
+| Qué | Por qué |
+|---|---|
+| **La superficie para escribirla** | `components/screens/evidencia.tsx` renderiza `reflection.titulo` como CTA secundaria, **sin formulario**. Construirlo toca `components/screens/*` —regla 6— y necesita las capturas de `docs/diseño/`. **Hoy la reflexión se escribe por API** |
+| **Emitir un evento de producto** | El Product Event Model **no declara ninguno** para `Reflection`, y `product_event` es append-only: inventar un nombre es lo que el guard de [ADR-027](decisions.md#adr-027) impide. Si la Bitácora tiene que mostrarla, es decisión de producto |
+| **Poner `REQUIRED` en algún lado** | ADR-026 fijó `OPTIONAL` como default del loop diario, y `REQUIRED` **sólo donde el contenido versionado lo declare** |
+
+**Verificación de punta a punta, contra Postgres:**
+
+| Criterio | Resultado |
+|---|---|
+| Los cinco gates | ✅ `lint` · `typecheck` · `build` con `/api/reflexion` · **995 tests en 57 archivos** · **276 comprobaciones** |
+| Sin colgar de nada · vacía · ajena | ✅ `400` · `400` · `404` |
+| Con una Action en `REQUIRED`, entregar sin reflexión | ✅ **`409`, y la fila no nace** |
+| La pantalla, antes de reflexionar | ✅ CTA **deshabilitada** y el aviso diciendo por qué |
+| Reflexionar y volver a entregar | ✅ `201` la reflexión, CTA habilitada, `201` la entrega |
+| `OPTIONAL` y `NO_CONFIGURADA` | ✅ No bloquean nada |
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**
@@ -3266,6 +3342,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
+| Fase B6.10 — La reflexión existe y se exige | ✅ **COMPLETA** — 4 de septiembre de 2026. El estudiante puede reflexionar y el requisito de [ADR-026](decisions.md#adr-026) lo hace cumplir el servidor. **Falta la superficie para escribirla**, que toca `components/screens/*` | 1 / 1 |
 | Fase B6.9 — La salida del camino que no salió bien | ✅ **COMPLETA** — 4 de septiembre de 2026. Rescate y reenvío alcanzables; `RescueSucceeded` dejó de ser inalcanzable. **La renegociación queda fuera hasta `C01-010`** | 2 / 2 |
 | Fase B6.8 — El camino de ejecución escribe en Postgres | ✅ **COMPLETA** — 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el camino principal escribe contra Postgres y **`C01-009` quedó cerrada**. Sin migraciones | 5 / 5 |
 | Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. `HP0-06-1` ya corre con criterio profesional; faltan `C01-021` para las otras dos reglas, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |

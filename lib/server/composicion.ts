@@ -25,7 +25,14 @@ import {
   type EntregaDeEvidencia,
   type ResultadoDeEntrega,
 } from "./servicios/evidencia";
+import { t } from "@/lib/content/es-AR";
 import { transicionar as transicionarAccion } from "./servicios/accion";
+import {
+  chequearParaEnviar,
+  cuelgaDeAlgo,
+  type ReflexionEntregada,
+} from "./servicios/reflexion";
+import { reflexionesReal } from "./repositorios/reflexion";
 import {
   confirmarCompromiso as confirmarCompromisoPuro,
   rescatar as rescatarPuro,
@@ -448,6 +455,13 @@ export async function entregaEsperadaDe(
   const vivo = await compromisosReal.vivoDeAccion(institutionId, accion.accionId);
   if (!vivo) return null;
   if (await evidenciaDeCompromiso(institutionId, vivo.id)) return null;
+
+  // El requisito de Reflection y si ya hay una, para que la pantalla diga lo
+  // mismo que el servidor va a hacer cumplir — Etapa B6.10.
+  const { requisito, hayReflexion } = await reflexionesReal.requisitoYPresencia(
+    institutionId,
+    accion.accionId,
+  );
   const vigente = { compromisoId: vivo.id };
 
   return {
@@ -464,11 +478,32 @@ export async function entregaEsperadaDe(
       formatosPermitidos: null,
       nombreAdjuntoDemo: "practica.pdf",
       estadoVisible: "Todavía no entregaste esta evidencia",
-      aviso: null,
-      // El requisito de Reflection vive en la Action y lo proyecta la lectura
-      // real; acá todavía no hay Evidence de la cual colgarlo.
-      reflection: null,
-      ctaPrimaria: { texto: "Enviar evidencia", habilitada: true },
+      // Si la reflexión es obligatoria y no está, la pantalla lo dice **antes**
+      // de que el estudiante intente entregar y se coma un rechazo.
+      aviso: requisito === "REQUIRED" && !hayReflexion ? t("EVIDENCIA.FALTA_REFLEXION") : null,
+      /*
+        **La primera entrega también tiene requisito** — Etapa B6.10. Acá se
+        proyectaba `null` fijo con el motivo *"todavía no hay Evidence de la
+        cual colgarlo"*, y era cierto para la fila y falso para la pantalla: el
+        requisito vive en la **`Action`**, congelado al crearla
+        ([ADR-026](../../docs/decisions.md#adr-026)), y la primera entrega es
+        justamente la que **no puede** tener una Evidence previa.
+
+        La consecuencia era una CTA habilitada que el servidor rechaza con
+        `409`. Mismo defecto que tenía `UX04` con un incumplimiento: la
+        pantalla ofreciendo algo que el backend no puede hacer.
+      */
+      reflection:
+        requisito === "NO_CONFIGURADA"
+          ? null
+          : {
+              titulo: requisito === "REQUIRED" ? t("CTA.REFLEXION_REQUERIDA") : t("CTA.AGREGAR_REFLEXION"),
+              requerida: requisito === "REQUIRED",
+            },
+      ctaPrimaria: {
+        texto: "Enviar evidencia",
+        habilitada: !(requisito === "REQUIRED" && !hayReflexion),
+      },
       adjuntoPrevio: null,
     },
   };
@@ -493,10 +528,96 @@ export async function firmarSubidaDeEvidencia(
 }
 
 /** Registra la entrega una vez que el archivo está arriba (D3·A). */
-export function entregarEvidencia(
+export type ResultadoDeReflexion =
+  | { estado: "OK"; reflexionId: string }
+  /** No cuelga de nada: el `CHECK` de la base, dicho antes y en castellano. */
+  | { estado: "NO_CUELGA_DE_NADA" }
+  /** Presente pero sin ningún dato. Una `Reflection` vacía no es una `Reflection`. */
+  | { estado: "REFLEXION_VACIA" }
+  /** La `Action` no existe o no es suya. **Las dos son la misma respuesta.** */
+  | { estado: "NO_ES_SUYA" };
+
+/**
+ * Registrar una `Reflection` — Etapa B6.10. **Del estudiante**, con su JWT.
+ *
+ * ## Por qué existe recién ahora
+ *
+ * La tabla está desde la Fase B1 y `chequearParaEnviar()` desde la B2.4,
+ * probado y **sin un solo llamador fuera de sus tests**. O sea: el estudiante
+ * **no tenía por dónde reflexionar**, y el requisito ternario que
+ * [ADR-026](../../docs/decisions.md#adr-026) cerró no lo hacía cumplir nadie.
+ *
+ * ## Qué valida, y qué no
+ *
+ * **Cuelga de algo** —Action, Evidence o paso— y **no está vacía**: las dos
+ * reglas ya estaban escritas en el Service, que es donde siguen. Acá se agrega
+ * lo que el Service no puede saber: **de quién es la `Action`**.
+ *
+ * **No emite evento de producto.** El Product Event Model no declara ninguno
+ * para `Reflection`, y `product_event` es append-only: inventar un nombre acá
+ * sería exactamente lo que el guard de [ADR-027](../../docs/decisions.md#adr-027)
+ * existe para impedir. Si la Bitácora tiene que mostrarla, es una decisión de
+ * producto y entra por el catálogo.
+ */
+export async function registrarReflexion(
+  institutionId: string,
+  datos: ReflexionEntregada & { estudianteId: string },
+): Promise<ResultadoDeReflexion> {
+  if (!cuelgaDeAlgo(datos)) return { estado: "NO_CUELGA_DE_NADA" };
+
+  if (datos.actionId) {
+    const duenio = await reflexionesReal.duenioDeAccion(institutionId, datos.actionId);
+    if (duenio !== datos.estudianteId) return { estado: "NO_ES_SUYA" };
+  }
+
+  // El mismo chequeo que bloquea el submit, con el requisito en `OPTIONAL`:
+  // acá lo único que interesa es que **tenga contenido**. Que sea obligatoria o
+  // no es asunto de la entrega, no de guardarla.
+  const chequeo = chequearParaEnviar("OPTIONAL", datos);
+  if (chequeo.estado !== "OK") return { estado: "REFLEXION_VACIA" };
+
+  const creada = await reflexionesReal.crear(institutionId, datos);
+  return { estado: "OK", reflexionId: creada.id };
+}
+
+/**
+ * La entrega, con **el requisito de Reflection hecho cumplir del lado del
+ * servidor** — Etapa B6.10.
+ *
+ * ## Por qué esto no estaba, y por qué importa
+ *
+ * `envioBloqueadoPorReflexion()` apagaba la CTA en la proyección, y **nadie más
+ * lo miraba**: el único obstáculo para entregar sin la reflexión requerida era
+ * **un botón deshabilitado**. Es la inversión exacta de *"la UI proyecta, nunca
+ * decide"* — ahí la UI era lo único que decidía, y cualquier cliente que
+ * llamara al endpoint pasaba por encima de [ADR-026](../../docs/decisions.md#adr-026).
+ *
+ * Estaba **latente** y no roto: `reflection_requirement` es `NO_CONFIGURADA`
+ * por default y nada pone `REQUIRED` todavía. El día que alguien configure una
+ * Action con reflexión obligatoria, el hueco deja de ser teórico.
+ *
+ * ## Qué se comprueba, y en qué orden
+ *
+ * **Antes de escribir nada.** Si falta la reflexión requerida, no nace la fila:
+ * una entrega registrada que después se declara inválida ya afirmó algo que no
+ * debía.
+ */
+export async function entregarEvidencia(
   institutionId: string,
   datos: EntregaDeEvidencia,
-): Promise<ResultadoDeEntrega> {
+): Promise<ResultadoDeEntrega | { estado: "FALTA_REFLEXION_REQUERIDA" }> {
+  // La `Action` sale del compromiso al que se adjunta: el requisito vive ahí,
+  // congelado al crearla. No hace falta una lectura nueva.
+  const accion = (await compromisosReal.porId(institutionId, datos.commitmentId))?.actionId ?? null;
+  if (accion) {
+    const { requisito, hayReflexion } = await reflexionesReal.requisitoYPresencia(institutionId, accion);
+    // `chequearParaEnviar` es el mismo que corre la proyección. Con una
+    // reflexión ya escrita alcanza con su presencia: su contenido se validó
+    // cuando se guardó, y volver a juzgarlo acá sería una segunda regla.
+    const chequeo = chequearParaEnviar(requisito, hayReflexion ? { actionId: accion, note: "·" } : null);
+    if (chequeo.estado === "FALTA_REFLEXION_REQUERIDA") return { estado: "FALTA_REFLEXION_REQUERIDA" };
+  }
+
   return entregarEvidenciaPuro({ repo: entregaReal, eventos: eventosReal }, institutionId, datos);
 }
 

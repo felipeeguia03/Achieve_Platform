@@ -208,6 +208,25 @@ export const copy = {
   "CTA.NO_PUEDO": "No puedo hacerla · Corregir dato",
   "CTA.VER_RAZONES": "Ver razones y fuentes",
   "CTA.AGREGAR_REFLEXION": "Agregar reflexión (opcional)",
+  /*
+    Etapa B6.10. Cuando la reflexión **bloquea el submit**, llamarla "opcional"
+    le dice al estudiante lo contrario de lo que va a pasar.
+
+    ⚠️ **El texto no es el del fixture, y hay un conflicto sin resolver.**
+    `FX-LOCAL-EVD-REFLECTION-REQUERIDA` —el diseño aprobado— dice *"Contanos
+    cómo te fue (requerido)"*, y el guard `C-01` de `auditoria-conformidad`
+    **prohíbe `Contanos`** por su lista de imperativos. Los dos no pueden tener
+    razón: *contanos* es voseo (*contá* + *nos*), así que la lista del guard
+    parece tener un defecto — pero **aflojar un guard para que pase el cambio
+    de uno es exactamente lo que un guard existe para impedir**, y elegir la
+    copy es de producto.
+
+    Mientras tanto se usa la variante que no estrena voz: la misma frase que ya
+    estaba aprobada, con el paréntesis que corresponde. La decisión está
+    levantada en el roadmap.
+  */
+  "CTA.REFLEXION_REQUERIDA": "Agregar reflexión (requerido)",
+  "EVIDENCIA.FALTA_REFLEXION": "Necesitás completar la reflexión para poder enviar.",
   "CTA.VER_BITACORA": "Ver Bitácora",
 
   // ── UX02 · Materia / Cursado ──────────────────────────────────────────────

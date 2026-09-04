@@ -120,14 +120,26 @@ export function proyectarEvidencia(e: EstadoDeEvidencia): EvidenciaProps {
     // adjunto es el que ya subió el estudiante, o ninguno.
     nombreAdjuntoDemo: "",
     estadoVisible: VISIBLE[e.lifecycle] ?? null,
-    aviso: e.esResubmission ? e.razonResubmission : null,
+    // El motivo del reenvío manda: es lo que el estudiante tiene que corregir.
+    // Si no lo hay y la reflexión bloquea, la pantalla dice por qué no puede
+    // enviar, en vez de mostrar una CTA apagada sin explicación.
+    aviso: e.esResubmission
+      ? e.razonResubmission
+      : envioBloqueadoPorReflexion(e)
+        ? t("EVIDENCIA.FALTA_REFLEXION")
+        : null,
     // `ADR-026`: se ofrece cuando está **configurada** —igual que la condición
     // de aparición de la `CTA-016`—, y `requerida` sólo marca si además bloquea.
     reflection:
       e.requisitoDeReflexion === "NO_CONFIGURADA"
         ? null
         : {
-            titulo: t("CTA.AGREGAR_REFLEXION"),
+            // Llamar *"opcional"* a algo que bloquea el submit es decirle al
+            // estudiante lo contrario de lo que va a pasar.
+            titulo:
+              e.requisitoDeReflexion === "REQUIRED"
+                ? t("CTA.REFLEXION_REQUERIDA")
+                : t("CTA.AGREGAR_REFLEXION"),
             requerida: e.requisitoDeReflexion === "REQUIRED",
           },
     ctaPrimaria: ctaDe(e, estado),

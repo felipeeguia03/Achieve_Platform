@@ -114,6 +114,13 @@ export async function POST(request: Request) {
   });
 
   switch (resultado.estado) {
+    // El requisito de Reflection se hace cumplir **acá**, no en el botón — la
+    // proyección lo apagaba y nadie más lo miraba (Etapa B6.10).
+    case "FALTA_REFLEXION_REQUERIDA":
+      return NextResponse.json(
+        { error: "Esta acción pide una reflexión antes de entregar" },
+        { status: 409 },
+      );
     case "OK":
       return NextResponse.json(
         { evidencia: resultado.evidenciaId, duplicado: resultado.duplicado },

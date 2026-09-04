@@ -109,6 +109,27 @@ el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Post
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` se conectaron en la
 Fase B5.
 
+**Fase B6.10 — La reflexión existe y se exige.** ✅ **COMPLETA** — 4 de septiembre de 2026. La tabla
+`reflection` existía desde la B1 y **nadie la escribía**; el estudiante no tenía por dónde reflexionar.
+Ahora hay `POST /api/reflexion` con su JWT.
+
+⚠️ **Y el bloqueo de `REQUIRED` vivía sólo en la proyección.** La CTA se apagaba y
+`POST /api/evidencia` **nunca consultaba el requisito**: lo único que impedía entregar sin la
+reflexión obligatoria era **un botón deshabilitado**, con lo cual [ADR-026](docs/decisions.md#adr-026)
+no lo hacía cumplir nadie. **Ahora se comprueba en el servidor, antes de escribir.**
+
+⚠️ **Antes de tocar la proyección de la primera entrega:** el requisito vive en la **`Action`**,
+congelado al crearla — no en la Evidence. La primera entrega es justamente la que **no puede** tener
+una Evidence previa, y por eso proyectaba `reflection: null` y ofrecía una CTA que el servidor
+rechaza.
+
+⚠️ **No hay formulario para escribirla.** `components/screens/evidencia.tsx` muestra
+`reflection.titulo` como CTA secundaria y nada más: hoy la reflexión **se escribe por API**.
+Construir la superficie toca `components/screens/*` —regla 6— y necesita las capturas.
+
+⚠️ **Una decisión de copy quedó levantada:** el fixture aprobado dice *"Contanos cómo te fue
+(requerido)"* y el guard `C-01` prohíbe `Contanos`. **No aflojes el guard**: la decide una persona.
+
 **Fase B6.9 — La salida del camino que no salió bien.** ✅ **COMPLETA, 2 / 2** — 4 de septiembre de 2026. El
 loop tenía **sólo camino feliz**: el reloj llevaba un compromiso a `MISSED` y ahí el estudiante quedaba
 sin salida, porque la máquina no admite `MISSED → CONFIRMED` y `POST /api/compromiso` sólo crea el
