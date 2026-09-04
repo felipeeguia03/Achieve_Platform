@@ -2,7 +2,7 @@
 
 **Documento:** `docs/roadmap.md`
 **Rol:** owner canónico del plan por fases y del estado de avance.
-**Última actualización:** 3 de septiembre de 2026
+**Última actualización:** 4 de septiembre de 2026
 
 ---
 
@@ -46,7 +46,7 @@ Cada etapa, sin excepción:
 
 ---
 
-## 0.1 Dónde estamos · 3 de septiembre de 2026
+## 0.1 Dónde estamos · 4 de septiembre de 2026
 
 **Track A: cerrado.** **Track B: B1–B6.8 completas en su alcance disponible**, con B2b en 2/3.
 
@@ -58,6 +58,7 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 | Frente | Estado |
 |---|---|
+| **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
 | **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
 | **La puerta · `/login`** | ✅ **Hecha** el 3 de septiembre de 2026 ([ADR-039](decisions.md#adr-039), decidido por el Product Owner). **No es `UX10`** y no levanta el gate de [ADR-006](decisions.md#adr-006). Deja abierto el onboarding del spec §19 |
 | **Fase B6.6 · el recorrido del MVP, visible** | ✅ **Completa** el 2 de septiembre de 2026. El recorrido entero se reproduce desde cero: [`demo-mvp.md`](demo-mvp.md) |
@@ -68,9 +69,10 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 ### Lo que espera a una persona
 
-> **Las tres del Product Owner tienen su brief con contexto:** [`agenda-decisiones-po-crm.md`](agenda-decisiones-po-crm.md) — ADR-041, ADR-042 y ADR-043, con
-> opciones y recomendación en cada una. **Van juntas:** el orden de ADR-043 no arranca nada sin las
-> otras dos.
+> ✅ **Las tres del Product Owner quedaron ratificadas el 4 de septiembre de 2026.** El brief
+> [`agenda-decisiones-po-crm.md`](agenda-decisiones-po-crm.md) las planteó; la respuesta literal está
+> en [`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md). **Ya no esperan a
+> nadie.**
 
 | Qué | Quién | Qué destraba |
 |---|---|---|
@@ -79,9 +81,42 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 | **`C01-044`** · playbooks y SLA | Product Operations | El playbook y el SLA del circuito, que hoy son `null` y el circuito lo declara |
 | **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
 | Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |
-| **[ADR-042](decisions.md#adr-042)** · dónde da el estudiante su WhatsApp | **Product Owner** | Todo el **Flujo E** del CRM, y es **la misma decisión** que el onboarding del spec §19 que [ADR-039](decisions.md#adr-039) dejó abierto — hoy el trabajo de más valor sin dependencia externa |
-| **[ADR-041](decisions.md#adr-041)** · qué cuenta como *"actividad"* a efectos de facturar | **Product Owner + CTO** | El emisor del **Flujo D**. Tras la v0.2 del CRM, lo que se decida pasa a ser **cláusula versionada del contrato**: es la línea variable de una factura |
-| **[ADR-043](decisions.md#adr-043)** · el orden de los cinco flujos y el smoke test cross-sistema | **Product Owner** | Nada hoy. Lo pidió el CRM: que **D y E salgan primero** al descongelar, y un smoke test con alumno sintético que **no toca [ADR-006](decisions.md#adr-006)** pero **sí toca [ADR-035](decisions.md#adr-035)** |
+| ~~**[ADR-042](decisions.md#adr-042)**~~ · dónde da el estudiante su WhatsApp | Product Owner | ✅ **Respondida** el 4 de septiembre de 2026, y con más alcance del que se preguntó: **definió el alta entera**, la superficie de revocación y el estado del estudiante sin materias |
+| ~~**[ADR-041](decisions.md#adr-041)**~~ · qué cuenta como *"actividad"* a efectos de facturar | Product Owner | ✅ **Respondida** el 4 de septiembre de 2026: los cuatro eventos, **como cláusula del contrato** |
+| ~~**[ADR-043](decisions.md#adr-043)**~~ · el orden de los cinco flujos y el smoke test | Product Owner | ✅ **Respondida** el 4 de septiembre de 2026: **E/E′ primero**, D inmediatamente después, smoke test **al empezar la integración, no ahora** |
+
+### Lo aprobado, y por qué todavía no se construye — 4 de septiembre de 2026
+
+El Product Owner ratificó [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y
+[ADR-043](decisions.md#adr-043) ([fuente](respuesta-po-flujos-crm-source.md)), **y delimitó la
+autorización con la misma firmeza con la que decidió**:
+
+> *"Esta respuesta autoriza: cerrar ADR-041, ADR-042 y ADR-043; actualizar su trazabilidad y el
+> roadmap; incorporar las decisiones al backlog correspondiente. **No autoriza adelantar ahora la
+> integración CRM, provisionar secretos productivos, transmitir datos reales ni alterar la prioridad
+> vigente del Track B.** ADR-035 y ADR-006 permanecen plenamente vigentes."*
+
+**Y fijó qué va primero, textual:**
+
+> ⬅️ *"**Primero se termina y verifica el loop actual del MVP de Plataforma.** Después se ejecutará
+> este trabajo en el orden aprobado."*
+
+⚠️ **Eso convierte a *"qué falta para terminar el loop"* en la próxima pregunta del roadmap**, y no la
+contesta un agente: hay que acordar qué entra —el circuito corre de punta a punta desde la
+[Fase B6.8](#fase-b68--el-camino-de-ejecución-escribe-en-postgres-·--completa), y lo que sigue
+incompleto está listado en su fase y en el mapa de bloqueos.
+
+**Lo que queda en backlog, con su orden ya decidido:**
+
+| # | Trabajo | Gate |
+|---|---|---|
+| 1 | El tramo de alta: WhatsApp + consentimiento, orientación mínima, y el estado *"Estamos preparando tu información académica"* | ADR-042 ✅ · **espera a que termine el loop** |
+| 2 | La superficie **«WhatsApp y privacidad»** — consultar, reemplazar, revocar y pedir la desvinculación | Ídem. **La revocación se registra local aunque la integración no exista** |
+| 3 | La marca *"cuenta como actividad del estudiante"* en el catálogo, con su guard | ADR-041 ✅ |
+| 4 | Emisores de **E/E′ primero, D inmediatamente después** | ⏸️ [ADR-035](decisions.md#adr-035) |
+| 5 | Outbox durable + rotación de secretos + smoke test cross-sistema | ⏸️ ADR-035 · **el smoke test corre al empezar la integración, no antes** |
+
+---
 
 ### Lo diferido por decisión, no por bloqueo
 
@@ -106,6 +141,10 @@ tener a mano cuando se descongele:
 **La segunda ronda cerró el diseño de D, E y el nuevo E′** —desvinculación—, en
 [`respuesta-crm-flujos-d-e-v0.2.md`](respuesta-crm-flujos-d-e-v0.2.md). Dejó **un hallazgo nuevo de la
 misma clase que el `422`**, y es el único punto donde el contrato congelado dice algo falso:
+
+✅ **Y el 4 de septiembre el Product Owner cerró las tres decisiones que la ronda dejó abiertas**, con
+un desempate que el CRM no había propuesto: si hay que secuenciar, **E/E′ va primero** —habilita la
+operación— y **D inmediatamente después** —habilita la medición facturable—.
 
 ⚠️ **La firma HMAC está especificada de dos maneras.** El contrato v0.2 §2 dice *"firma sobre
 timestamp + body original"*; la v0.2 del CRM dice `${timestamp}.${rawBody}`, **con punto**, y advierte

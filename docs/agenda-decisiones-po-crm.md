@@ -8,6 +8,25 @@
 [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043). **Ninguna la puede cerrar el
 equipo ni un agente.**
 
+> ## ✅ RESPONDIDO — 4 de septiembre de 2026
+>
+> **Las tres quedaron ratificadas.** La respuesta literal del Product Owner está en
+> [`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md), y su lectura en los tres
+> ADR, que pasaron a `ACCEPTED`.
+>
+> | | Decisión |
+> |---|---|
+> | **ADR-041** | **Opción A.** Los cuatro eventos, y el conjunto pasa a ser **cláusula del contrato** |
+> | **ADR-042** | **Opción A**, y con más alcance del que se preguntó: **definió el alta entera**, la superficie **«WhatsApp y privacidad»** para revocar, y el texto del estado del estudiante sin materias |
+> | **ADR-043** | **Sí a las dos.** Con un desempate propio: si hay que secuenciar, **E/E′ primero** y **D inmediatamente después**. El smoke test corre **al empezar la integración, no ahora** |
+>
+> ⚠️ **La aprobación autoriza cerrar, documentar y poner en backlog — no construir todavía:**
+> *"primero se termina y verifica el loop actual del MVP de Plataforma"*. [ADR-035](decisions.md#adr-035)
+> y [ADR-006](decisions.md#adr-006) siguen plenamente vigentes.
+>
+> **Este documento queda como el planteo que produjo esas respuestas.** No se edita para reflejarlas:
+> para eso están los ADR.
+
 > **Por qué las tres juntas.** Son de la misma persona, salieron de la misma negociación con el CRM
 > —dos rondas de documentos, cerradas el 3 de septiembre— y **dos de ellas se destraban entre sí**:
 > aceptar el orden que pide el CRM (ADR-043) no sirve de nada si no están cerradas la 041 y la 042,

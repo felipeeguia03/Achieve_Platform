@@ -133,10 +133,28 @@ septiembre de 2026). **No es `UX10`** —el registro canónico sigue con nueve n
 ofrece crear cuenta (eso lo decide el padrón del CRM) y **no levanta el gate de
 [ADR-006](docs/decisions.md#adr-006)**. El navegador ya no abre sesión solo.
 
-⚠️ **Dos decisiones nuevas esperan a una persona:** [ADR-041](docs/decisions.md#adr-041) —qué cuenta
-como *"actividad"* a efectos de facturar— y [ADR-042](docs/decisions.md#adr-042) —dónde da el
-estudiante su WhatsApp—, las dos abiertas por los flujos D y E que propuso el CRM. **No construyas
-contra ninguna.**
+✅ **Las tres decisiones de los flujos del CRM quedaron cerradas** el 4 de septiembre de 2026 por el
+Product Owner: [ADR-041](docs/decisions.md#adr-041) (actividad facturable),
+[ADR-042](docs/decisions.md#adr-042) (WhatsApp, consentimiento y el alta entera) y
+[ADR-043](docs/decisions.md#adr-043) (orden y smoke test). Fuente literal:
+[`respuesta-po-flujos-crm-source.md`](docs/respuesta-po-flujos-crm-source.md).
+
+⚠️ **Cerradas no es "a construir".** El owner autorizó **cerrarlas, documentarlas y ponerlas en
+backlog**, y fijó qué va primero: *"primero se termina y verifica el loop actual del MVP de
+Plataforma"*. [ADR-035](docs/decisions.md#adr-035) y [ADR-006](docs/decisions.md#adr-006) siguen
+plenamente vigentes.
+
+⚠️ **Y traen reglas de producto que ya rigen, aunque la superficie no exista:**
+
+- **La confirmación sólo puede decir** *"Guardamos tu número"* o *"Recibimos tu solicitud"*. **Nunca**
+  que el CRM vinculó el número, que hay un operador asignado o que alguien va a escribirle: la
+  Plataforma **no observa** ese estado.
+- **Al estudiante sin materias no se le muestra *"no hay una acción recomendada"***, porque el sistema
+  todavía no está en condiciones de evaluar eso. El texto aprobado es *"Estamos preparando tu
+  información académica"*.
+- **Se emiten los cuatro eventos facturables y ninguno más.** El CRM pidió `ActionAccepted` y
+  `CommitmentConfirmed` apagados para su embudo; el owner no se pronunció sobre eso. **Hasta que lo
+  haga, no se emiten.**
 
 **Fase B6 — Risk e Intervención.** 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026
 ([ADR-032](docs/decisions.md#adr-032)). El **circuito cerrado se garantiza por construcción**: cerrar

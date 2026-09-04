@@ -2,7 +2,7 @@
 
 **Documento:** `docs/decisions.md`
 **Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
-**Última actualización:** 3 de septiembre de 2026
+**Última actualización:** 4 de septiembre de 2026
 
 ---
 
@@ -87,9 +87,9 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-038](#adr-038) | Replanificar versiona dentro de la preparación; volver exige una propuesta aceptada | ✅ `ACCEPTED` *(`REPLANNED` sigue vivo; ninguna rama toca Evidence ni progreso)* | — |
 | [ADR-039](#adr-039) | Hay pantalla de ingreso, y no es una superficie de producto | ✅ `ACCEPTED` *(sólo sign-in: **no hay alta**, que la decide el padrón del CRM)* | — |
 | [ADR-040](#adr-040) | El camino de ejecución escribe en Postgres, y `C01-009` queda cerrada | ✅ `ACCEPTED` *(decidido por el CTO; **registrado retroactivamente** desde los commits del 3 sep 2026)* | — |
-| [ADR-041](#adr-041) | Qué cuenta como «actividad» del estudiante a efectos de facturar | 🔴 `PENDING` *(Product Owner + CTO)* | El emisor del **Flujo D** del contrato con el CRM |
-| [ADR-042](#adr-042) | Dónde da el estudiante su WhatsApp, si es que lo da | 🔴 `PENDING` *(Product Owner)* | **Todo el Flujo E**, y arrastra el onboarding que [ADR-039](#adr-039) dejó abierto |
-| [ADR-043](#adr-043) | El orden de los cinco flujos al descongelar, y el smoke test cross-sistema | 🔴 `PENDING` *(Product Owner)* | Nada hoy: es alcance de [ADR-035](#adr-035). Lo pidió el CRM en su v0.2 |
+| [ADR-041](#adr-041) | Qué cuenta como «actividad» del estudiante a efectos de facturar | ✅ `ACCEPTED` *(4 sep 2026 · opción A: los cuatro eventos, como **cláusula del contrato**)* | — |
+| [ADR-042](#adr-042) | Dónde da el estudiante su WhatsApp, si es que lo da | ✅ `ACCEPTED` *(4 sep 2026 · opción A: **hay tramo de onboarding**, y el owner definió el alta entera)* | — |
+| [ADR-043](#adr-043) | El orden de los cinco flujos al descongelar, y el smoke test cross-sistema | ✅ `ACCEPTED` *(4 sep 2026 · **E/E′ primero**, D inmediatamente después; smoke test al empezar la integración)* | — |
 
 ---
 
@@ -3448,15 +3448,38 @@ FK**. En vez de fabricar un UUID para llenarlas, `reviewer_id` queda `NULL` y el
 <a id="adr-041"></a>
 ## ADR-041 — Qué cuenta como «actividad» del estudiante a efectos de facturar
 
-**Estado:** 🔴 `PENDING` — **la cierra el Product Owner, con el CTO.** Un agente puede proponer y
-recomendar; no puede decidir qué se factura.
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner** (opción A).
+Fuente literal: [`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md).
 **Fecha de apertura:** 3 de septiembre de 2026
-**Origen:** `crm-propuesta-flujos-actividad-vinculacion-v0.1.md` §1 (Flujo D) y la respuesta de la
-Plataforma en [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §1.3.
-**Bloquea:** el emisor del **Flujo D** del contrato con el CRM. **No bloquea nada más:** la
-integración sigue diferida por [ADR-035](#adr-035).
+**Origen:** `crm-propuesta-flujos-actividad-vinculacion-v0.1.md` §1 (Flujo D) y
+[`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §1.3.
+**Desbloquea:** el emisor del **Flujo D**, cuya construcción sigue diferida por [ADR-035](#adr-035).
 
-### Contexto
+### La decisión
+
+**Se aprueba el conjunto versionado de eventos facturables**, tal como estaba propuesto y como el CRM
+lo había aceptado: `EvidenceSubmitted`, `ProtocolStepCompleted`, `ProgressUpdated` y
+`RescueSucceeded`. Los cuatro **ya se emiten**.
+
+**No cuentan** `CourseViewed`, `ActionAccepted` ni `CommitmentConfirmed` — *"mirar, aceptar o
+comprometerse no equivale a producir"*.
+
+> ⚠️ **El pedido opcional del CRM quedó rechazado, y es una decisión, no un olvido.** Habían pedido
+> `ActionAccepted` y `CommitmentConfirmed` **marcados como no facturables**, para medir el embudo
+> *vinculado → aceptó → produjo*. El owner los listó entre los que **no cuentan como actividad
+> facturable**, que es la pregunta que se le hizo; **no se pronunció sobre emitirlos con la marca
+> apagada**. Hasta que lo haga, **no se emiten**: mandar un evento no pedido es inventar alcance.
+
+**El conjunto pasa a ser parte del contrato Plataforma–CRM:** agregar, quitar o cambiar un evento
+facturable **exige una versión nueva acordada entre las dos partes**, y no puede modificarse sólo con
+un commit.
+
+**Y la precisión que pedimos quedó firmada:** *"esta restricción no alcanza al catálogo general: la
+Plataforma puede agregar eventos nuevos no facturables sin modificar el contrato"*.
+
+**No define precios** ni habilita transmitir eventos reales mientras [ADR-006](#adr-006) siga abierto.
+
+### Contexto — cómo se llegó acá
 
 El CRM pide que la Plataforma le empuje **eventos de actividad real** —*"produjo, no miró"*— y los usa
 para dos cosas que no son técnicas: **facturar** (US$X por alumno único activo por institución/mes) y
@@ -3525,16 +3548,72 @@ el backend emite `CommitmentConfirmed`, y [ADR-027](#adr-027) prohíbe renombrar
 <a id="adr-042"></a>
 ## ADR-042 — Dónde da el estudiante su WhatsApp, si es que lo da
 
-**Estado:** 🔴 `PENDING` — **la cierra el Product Owner.** Es una superficie nueva, y una superficie
-nueva no la inventa un agente: es la misma regla que hizo esperar a `/login`
-([ADR-039](#adr-039)).
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner** (opción A).
+Fuente literal: [`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md).
 **Fecha de apertura:** 3 de septiembre de 2026
 **Origen:** `crm-propuesta-flujos-actividad-vinculacion-v0.1.md` §2 (Flujo E) y
 [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §2.
-**Bloquea:** **todo el Flujo E.** No por transporte: **la Plataforma no tiene el número.**
+**Desbloquea:** el tramo de alta que [ADR-039](#adr-039) dejó abierto, y con él los flujos **E** y
+**E′**, cuya construcción sigue diferida por [ADR-035](#adr-035).
 **Relacionado:** [ADR-006](#adr-006), [ADR-039](#adr-039), `C01-030`.
 
-### Contexto
+### La decisión
+
+**Hay un tramo de onboarding** que captura el número de WhatsApp y el consentimiento explícito. Y el
+owner decidió **más de lo que se le preguntó**: definió el orden entero del alta, que es el hueco que
+[ADR-039](#adr-039) había dejado abierto.
+
+**El orden aprobado, textual:**
+
+| # | Tramo |
+|---|---|
+| 1 | El CRM responde `authorized: true` |
+| 2 | **La Plataforma presenta el tramo de WhatsApp y consentimiento** |
+| 3 | Continúa la orientación mínima |
+| 4 | Si existe información académica suficiente, el estudiante entra a `HOY` |
+| 5 | **Si todavía no existen materias cargadas, ve un estado de preparación académica**; no entra al vacío actual de `HOY` |
+
+**Las seis reglas de producto:**
+
+1. El consentimiento es **explícito, específico y no premarcado**.
+2. **El estudiante puede rechazar u omitir WhatsApp sin perder el acceso.** No recibe acompañamiento
+   por ese canal, y nada más.
+3. Redacción legal, retención, base jurídica y tratamiento de datos reales quedan **subordinados a
+   [ADR-006](#adr-006)**.
+4. Mientras ADR-006 siga abierto, **todo se construye y prueba con identidades y teléfonos
+   sintéticos**.
+5. **La confirmación sólo puede afirmar** *"Guardamos tu número"* o *"Recibimos tu solicitud"*.
+6. **Nunca** debe afirmar que el CRM vinculó el número, que existe un operador asignado o que alguien
+   va a escribirle.
+
+> Las reglas 5 y 6 son la respuesta del owner al hueco que la Plataforma había señalado: con el
+> desempate por `occurredAt` que introdujo el CRM, **un evento puede acusarse con `202` y no
+> aplicarse**, y el emisor no puede distinguirlo. La superficie confirma lo que el estudiante hizo, no
+> un estado que la Plataforma no observa.
+
+**La revocación tiene superficie propia: «WhatsApp y privacidad»**, accesible desde la cuenta o un
+acceso visible equivalente, donde el estudiante puede **consultar si dio un número, reemplazarlo,
+retirar el consentimiento y solicitar la desvinculación**.
+
+⚠️ **Al revocar, la Plataforma registra la solicitud y emite `E′` cuando la integración esté
+habilitada.** Hasta que haya confirmación observable del CRM, la interfaz dice **"Recibimos tu
+solicitud de desvinculación"**, *no* *"WhatsApp desvinculado"*. **La revocación no espera a la
+integración: el registro del pedido es local y ocurre igual.**
+
+**El estado del estudiante sin materias, con su texto aprobado:**
+
+> **Estamos preparando tu información académica.**
+> Todavía no contamos con información suficiente para recomendarte una acción. Te avisaremos cuando
+> tu recorrido esté listo.
+
+⚠️ **Y con la prohibición explícita:** *"no debe mostrarse «no hay una acción recomendada», porque el
+sistema todavía no está en condiciones de evaluar eso"*. Es la misma disciplina de *"sin datos no es
+cero"*: **no evaluado no es lo mismo que evaluado y vacío.**
+
+⚠️ **Este texto todavía no está en [`product.md`](product.md).** Se incorpora al inventario de copy
+**cuando la etapa se construya**, citando la fuente; hasta entonces vive acá y en la fuente literal.
+
+### Contexto — cómo se llegó acá
 
 El CRM necesita mapear **teléfono → alumno** para acompañar por WhatsApp, y espera que la Plataforma
 le avise el número cuando el estudiante lo vincula. Del lado de la Plataforma:
@@ -3600,14 +3679,38 @@ vivo del otro lado: **la mitad de un borrado, que es peor que ninguno porque par
 <a id="adr-043"></a>
 ## ADR-043 — El orden de los cinco flujos al descongelar, y el smoke test cross-sistema
 
-**Estado:** 🔴 `PENDING` — **la cierra el Product Owner.** Es alcance de
-[ADR-035](#adr-035), que él decidió: un equipo no la revierte por acuerdo con la contraparte.
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner**: sí a las dos
+preguntas. Fuente literal:
+[`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md).
 **Fecha de apertura:** 3 de septiembre de 2026
-**Origen:** `crm-respuesta-flujos-actividad-vinculacion-v0.2.md` §5, y la respuesta de la Plataforma
-en [`respuesta-crm-flujos-d-e-v0.2.md`](respuesta-crm-flujos-d-e-v0.2.md) §6.
-**Relacionado:** [ADR-041](#adr-041), [ADR-042](#adr-042), ítem 5 de [ADR-005](#adr-005).
+**Origen:** `crm-respuesta-flujos-actividad-vinculacion-v0.2.md` §5, y
+[`respuesta-crm-flujos-d-e-v0.2.md`](respuesta-crm-flujos-d-e-v0.2.md) §6.
+**Relacionado:** [ADR-035](#adr-035), [ADR-041](#adr-041), [ADR-042](#adr-042), ítem 5 de
+[ADR-005](#adr-005).
 
-### Contexto
+### La decisión
+
+**Cuando [ADR-035](#adr-035) permita descongelar la integración:** los flujos **D y E/E′ se
+implementan antes que A, B y C**, y **se corre el smoke test** con un estudiante completamente
+sintético.
+
+**El owner agregó un desempate que no estaba en la pregunta:** D y E/E′ pueden prepararse en
+paralelo, y **si la capacidad obliga a secuenciarlos, va primero E/E′** —habilita la operación de
+acompañamiento— y D **inmediatamente después** —habilita la medición facturable—. Es lo contrario del
+orden en que el CRM los nombró, y está fundado.
+
+⚠️ **El smoke test se corre al empezar el tramo de integración, no ahora.** Es la respuesta directa a
+la advertencia de la Plataforma: correrlo hoy exige el cliente de firma, el outbox y provisionar el
+secreto, que es exactamente lo que ADR-035 difirió.
+
+**Los siete requisitos que deberá cubrir**, textuales: secreto compartido exclusivo de desarrollo;
+firma y verificación real de mensajes; outbox mínimo durable; vinculación y desvinculación de un
+teléfono sintético; emisión de al menos un evento facturable; reintento e idempotencia; y **evidencia
+de recepción en los dos sistemas**.
+
+**No se usan datos personales reales y el smoke test no levanta [ADR-006](#adr-006).**
+
+### Contexto — cómo se llegó acá
 
 El CRM **no pide cambiar la prioridad** de ADR-035 ni pone una fecha. Pide dos cosas concretas, y
 deja escrita la consecuencia de no dárselas:
