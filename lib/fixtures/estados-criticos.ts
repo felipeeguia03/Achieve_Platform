@@ -279,6 +279,9 @@ export const FX_LOCAL_ACC_CORRECCION = esc(
 
 const compromisoBase: CompromisoProps = {
   estado: "DRAFT",
+  // ADR-050: un `DRAFT` todavía no es un acuerdo, así que no hay horario que
+  // cambiar. Los fixtures que sí lo ofrecen lo declaran uno por uno.
+  cambioDeHorario: null,
   contexto: "Unidad 3 · Acción aceptada",
   titulo: "Resolver ejercicios 8–14",
   fecha: "Sáb 30 ago",
@@ -322,7 +325,23 @@ export const FX_LOCAL_COM_CONFIRMED = compromiso(
   {
     estado: "CONFIRMED",
     estadoResultante: { tono: "humano", texto: "Acordado" },
-    ctaPrimaria: { texto: "Renegociar", habilitada: true },
+    /*
+      ⚠️ **Este fixture decía «Renegociar» como CTA principal**, y ADR-050 lo
+      corrigió en las dos mitades: la principal es «Empezar» —que es lo que la
+      pantalla propone— y cambiar el horario baja a acción secundaria. Además
+      la palabra sale de la interfaz: *"«Renegociar» es lenguaje interno, no
+      del estudiante"*.
+    */
+    ctaPrimaria: { texto: "Empezar", habilitada: true },
+    cambioDeHorario: {
+      sePuede: true,
+      horaActual: "19:00",
+      horarios: [
+        { valor: "2026-08-30T23:00:00.000Z", etiqueta: "20:00" },
+        { valor: "2026-08-30T23:30:00.000Z", etiqueta: "20:30" },
+        { valor: "2026-08-31T00:00:00.000Z", etiqueta: "21:00" },
+      ],
+    },
   },
 );
 
@@ -334,6 +353,17 @@ export const FX_LOCAL_COM_DUE = compromiso(
     fecha: "Hoy",
     estadoResultante: { tono: "urgencia", texto: "Es la hora acordada" },
     ctaPrimaria: { texto: "Empezar", habilitada: true },
+    // Un `DUE` todavía se puede mover: el límite es el estado, no el reloj del
+    // acuerdo viejo (ADR-046).
+    cambioDeHorario: {
+      sePuede: true,
+      horaActual: "19:00",
+      horarios: [
+        { valor: "2026-08-30T23:00:00.000Z", etiqueta: "20:00" },
+        { valor: "2026-08-30T23:30:00.000Z", etiqueta: "20:30" },
+        { valor: "2026-08-31T00:00:00.000Z", etiqueta: "21:00" },
+      ],
+    },
   },
 );
 
@@ -343,9 +373,10 @@ export const FX_LOCAL_COM_STARTED = compromiso(
   {
     estado: "STARTED",
     estadoResultante: { tono: "humano", texto: "En curso" },
-    // STARTED no admite RENEGOTIATED: no se ofrece edición retroactiva.
-    aviso: "Un compromiso ya iniciado no se renegocia.",
     ctaPrimaria: { texto: "Continuar", habilitada: true },
+    // STARTED no admite RENEGOTIATED. El aviso que decía «no se renegocia»
+    // pasó acá con la copy del estudiante (ADR-050): **no un botón apagado**.
+    cambioDeHorario: { sePuede: false, motivo: "Este compromiso ya empezó." },
   },
 );
 
@@ -370,6 +401,10 @@ export const FX_LOCAL_COM_MISSED = compromiso(
     estadoResultante: { tono: "urgencia", texto: "Incumplido" },
     aviso: "Este compromiso no se edita. El rescate es un acuerdo nuevo.",
     ctaPrimaria: { texto: "Retomar", habilitada: true },
+    cambioDeHorario: {
+      sePuede: false,
+      motivo: "Este compromiso se incumplió; ahora corresponde rescatarlo.",
+    },
   },
   ["C01-010", "SC-DAY-04"],
 );
@@ -441,6 +476,15 @@ export const FX_LOCAL_COM_RENEGOCIACION_NO_ELEGIBLE = compromiso(
     original: ORIGINAL,
     aviso: "Este compromiso ya no puede renegociarse.",
     ctaPrimaria: null,
+    /*
+      ADR-050 le dio cuerpo: hasta acá este fixture describía una pantalla que
+      **nadie podía ver**, porque nada calculaba la elegibilidad. Ahora es el
+      caso de una cadena que ya gastó su única renegociación.
+    */
+    cambioDeHorario: {
+      sePuede: false,
+      motivo: "Ya cambiaste el horario de este compromiso una vez.",
+    },
   },
   ["C01-010", "SC-REN-02"],
 );

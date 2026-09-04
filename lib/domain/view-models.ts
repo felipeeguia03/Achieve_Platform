@@ -334,6 +334,23 @@ export interface CompromisoProps {
   original: readonly FilaDato[] | null;
   /** `null` ⇒ no se renderiza CTA primaria. */
   ctaPrimaria: { texto: string; habilitada: boolean } | null;
+  /**
+   * **Cambiar horario** — [ADR-050](../../docs/decisions.md#adr-050).
+   *
+   * La acción secundaria de `UX04`. Va **debajo** de la principal y no le
+   * saca jerarquía: «Empezar» sigue siendo lo que la pantalla propone.
+   *
+   * `null` ⇒ la pantalla no habla del tema. **`sePuede: false` NO es `null`**:
+   * cuando el estudiante no puede cambiar el horario se le dice por qué, en
+   * vez de dejarle un botón apagado sin explicación.
+   *
+   * ⚠️ **La pantalla no decide nada de esto.** Los horarios y el motivo salen
+   * de `lib/domain/renegociacion.ts`; acá llegan resueltos.
+   */
+  cambioDeHorario:
+    | { sePuede: true; horaActual: string; horarios: readonly { valor: string; etiqueta: string }[] }
+    | { sePuede: false; motivo: string }
+    | null;
 }
 
 // ── UX05 · Evidencia ─────────────────────────────────────────────────────────

@@ -99,7 +99,15 @@ export async function pedir<T>(ruta: string): Promise<Respuesta<T>> {
  * con el motivo, para que la superficie lo pueda mostrar en vez de un *"no se
  * pudo cargar"* que no explica nada.
  */
-export type ResultadoDeEnvio<T> = Respuesta<T> | { estado: "RECHAZADO"; motivo: string };
+export type ResultadoDeEnvio<T> =
+  | Respuesta<T>
+  /**
+   * `motivo` es el texto del servidor; `codigo` es **el motivo canónico**,
+   * cuando la ruta lo declara. La superficie prefiere el código y resuelve la
+   * copy con `t()`: así el texto que lee el estudiante vive en `es-AR.ts` y no
+   * en el mensaje de error de una API — ADR-050.
+   */
+  | { estado: "RECHAZADO"; motivo: string; codigo?: string };
 
 export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<ResultadoDeEnvio<T>> {
   let token: string | null;
@@ -119,8 +127,12 @@ export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<Resultad
     if (r.status === 401) return { estado: "SIN_SESION" };
     if (r.status === 403) return { estado: "SIN_PADRON" };
     if (r.status === 409) {
-      const cuerpo = (await r.json().catch(() => ({}))) as { error?: string };
-      return { estado: "RECHAZADO", motivo: cuerpo.error ?? "La operación no es válida ahora" };
+      const cuerpo = (await r.json().catch(() => ({}))) as { error?: string; motivo?: string };
+      return {
+        estado: "RECHAZADO",
+        motivo: cuerpo.error ?? "La operación no es válida ahora",
+        codigo: cuerpo.motivo,
+      };
     }
     if (!r.ok) return { estado: "ERROR" };
     return { estado: "OK", datos: (await r.json()) as T };

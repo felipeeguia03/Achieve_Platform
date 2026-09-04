@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   MINUTOS_DE_ANTICIPACION,
+  cambioDeHorarioPosible,
   elegibilidadDeRenegociacion,
   type PropuestaDeRenegociacion,
 } from "@/lib/domain/renegociacion";
@@ -135,5 +136,85 @@ describe("ADR-046 · el orden del rechazo", () => {
     expect(elegibilidadDeRenegociacion({
       ...BASE, renegociadoDeId: "c-0", inicioPropuesto: "2026-09-09T19:00:00.000Z",
     })).toEqual({ elegible: false, motivo: "CADENA_YA_RENEGOCIADA" });
+  });
+});
+
+// ── ADR-050 · si se ofrece cambiar el horario, y cuáles ──────────────────────
+
+describe("ADR-050 · cuándo aparece «Cambiar horario»", () => {
+  const base = {
+    estado: "CONFIRMED" as const,
+    renegociadoDeId: null,
+    inicioOriginal: "2026-09-02T14:00:00.000Z", // 11:00 en Córdoba
+    ahora: "2026-09-02T12:00:00.000Z", // 09:00 en Córdoba
+    zonaInstitucional: ZONA,
+  };
+
+  it("un CONFIRMED con día por delante ofrece horarios", () => {
+    const r = cambioDeHorarioPosible(base);
+    expect(r.sePuede).toBe(true);
+  });
+
+  it.each([
+    ["STARTED", "YA_EMPEZO"],
+    ["MISSED", "INCUMPLIDO"],
+    ["COMPLETED", "ESTADO_TERMINAL"],
+  ] as const)("%s no lo ofrece, y dice por qué: %s", (estado, motivo) => {
+    expect(cambioDeHorarioPosible({ ...base, estado })).toEqual({ sePuede: false, motivo });
+  });
+
+  it("una cadena ya renegociada no lo ofrece", () => {
+    expect(cambioDeHorarioPosible({ ...base, renegociadoDeId: "c-0" })).toEqual({
+      sePuede: false, motivo: "CADENA_YA_RENEGOCIADA",
+    });
+  });
+
+  /**
+   * El caso que hace falta esta función: a las 23:50 del día acordado el
+   * estado es válido, la cadena está limpia, y **no queda ningún horario** que
+   * cumpla las condiciones 4 y 5 a la vez. Un botón acá sería prometer lo que
+   * el servidor rechaza.
+   */
+  it("sin franja que cumpla las dos condiciones, no lo ofrece", () => {
+    expect(cambioDeHorarioPosible({
+      ...base, ahora: "2026-09-03T02:50:00.000Z", // 23:50 en Córdoba
+    })).toEqual({ sePuede: false, motivo: "SIN_HORARIO_POSIBLE" });
+  });
+
+  it("todos los horarios ofrecidos son elegibles según las cinco condiciones", () => {
+    const r = cambioDeHorarioPosible(base);
+    if (!r.sePuede) throw new Error("debería ofrecer horarios");
+    for (const h of r.horarios) {
+      expect(
+        elegibilidadDeRenegociacion({ ...base, inicioPropuesto: h }),
+        `${h} se ofrece y el dominio lo rechaza`,
+      ).toEqual({ elegible: true });
+    }
+  });
+
+  it("el primero está a 15 minutos o más, y el último cae dentro del día", () => {
+    const r = cambioDeHorarioPosible(base);
+    if (!r.sePuede) throw new Error("debería ofrecer horarios");
+    const primero = Date.parse(r.horarios[0]);
+    expect(primero - Date.parse(base.ahora)).toBeGreaterThanOrEqual(15 * 60_000);
+
+    const dia = (i: string) =>
+      new Intl.DateTimeFormat("en-CA", {
+        year: "numeric", month: "2-digit", day: "2-digit", timeZone: ZONA,
+      }).format(new Date(i));
+    expect(dia(r.horarios[r.horarios.length - 1])).toBe(dia(base.inicioOriginal));
+  });
+
+  /**
+   * El día se corta en la zona **de la institución**. El mismo compromiso,
+   * leído desde Madrid, tiene otro final de día y por lo tanto otra oferta.
+   */
+  it("el corte del día lo pone la zona institucional, no UTC", () => {
+    const cordoba = cambioDeHorarioPosible(base);
+    const madrid = cambioDeHorarioPosible({ ...base, zonaInstitucional: "Europe/Madrid" });
+    if (!cordoba.sePuede || !madrid.sePuede) throw new Error("ambas deberían ofrecer");
+    expect(cordoba.horarios[cordoba.horarios.length - 1]).not.toBe(
+      madrid.horarios[madrid.horarios.length - 1],
+    );
   });
 });

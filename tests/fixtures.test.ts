@@ -48,7 +48,29 @@ describe("Cero datos reales (AGENTS.md §1.3)", () => {
 
   it("sin emails ni teléfonos", () => {
     expect(serializado).not.toMatch(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i);
-    expect(serializado).not.toMatch(/\+?\d[\d\s().-]{8,}\d/);
+    /*
+      Los instantes ISO-8601 se sacan ANTES de buscar teléfonos, y no es
+      aflojar el guard: `2026-08-30T23:00:00.000Z` no es el teléfono de nadie.
+      Desde ADR-050 los fixtures de `UX04` llevan los horarios que el selector
+      ofrece, y son instantes. Lo que el guard busca —una tira de dígitos que
+      pueda ser un número de contacto real— sigue prohibido, y el test de abajo
+      lo comprueba con un número de verdad.
+    */
+    const sinInstantes = serializado.replace(
+      /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g,
+      "«instante»",
+    );
+    expect(sinInstantes).not.toMatch(/\+?\d[\d\s().-]{8,}\d/);
+  });
+
+  /** Que la excepción de arriba no haya abierto la puerta que el guard cierra. */
+  it("y el guard sigue detectando uno de verdad", () => {
+    const conTelefono = JSON.stringify([{ nota: "Llamar al +54 351 555-0199" }]);
+    const sinInstantes = conTelefono.replace(
+      /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g,
+      "«instante»",
+    );
+    expect(sinInstantes).toMatch(/\+?\d[\d\s().-]{8,}\d/);
   });
 
   it("sin URLs a sistemas reales", () => {

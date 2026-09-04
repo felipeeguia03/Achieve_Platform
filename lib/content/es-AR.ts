@@ -22,6 +22,8 @@
  * estado operativo del sistema.
  */
 
+import type { MotivoSinCambio } from "@/lib/domain/renegociacion";
+
 /**
  * La subcopy explicativa de cada superficie — `D-02` de
  * `design-system-capturas.md` §14.2.
@@ -191,6 +193,14 @@ export const copy = {
   "CTA.CONTINUAR": "Continuar",
   "CTA.SUBIR_EVIDENCIA": "Subir evidencia",
   "CTA.RETOMAR": "Retomar",
+  /*
+    ADR-050. **No dice «Renegociar»**: el Product Owner fue explícito en que es
+    lenguaje interno, no del estudiante. Lo que el estudiante hace es cambiar
+    la hora de algo que ya acordó.
+  */
+  "CTA.CAMBIAR_HORARIO": "Cambiar horario",
+  "CTA.CONFIRMAR_NUEVO_HORARIO": "Confirmar nuevo horario",
+  "CTA.CANCELAR": "Cancelar",
   // Etapa B6.9.1. El texto sale del fixture `FX-LOCAL-COM-MISSED`, que es el
   // diseño aprobado de esa pantalla: no se estrena copy acá.
   "COMPROMISO.AVISO_INCUMPLIDO": "Este compromiso no se edita. El rescate es un acuerdo nuevo.",
@@ -263,6 +273,20 @@ export const copy = {
   "COMPROMISO.QUEDA": "queda",
   // Aceptar una Action NO crea un Commitment; confirmarlo sí (AGENTS.md §2.1).
   "COMPROMISO.RESULTADO": "en Hoy y Materia; podrás iniciarlo cuando corresponda.",
+  // ── El cambio de horario — ADR-050 ────────────────────────────────────────
+  "COMPROMISO.HORARIO_ACTUAL": "Horario actual",
+  "COMPROMISO.NUEVO_HORARIO": "Nuevo horario",
+  "COMPROMISO.HORARIO_ACTUALIZADO": "Horario actualizado",
+  "COMPROMISO.NO_SE_PUEDE_CAMBIAR": "Este compromiso ya no se puede cambiar.",
+  /*
+    Los cuatro motivos son los que aprobó el Product Owner, y son distintos
+    porque la salida del estudiante es distinta en cada uno: seguir, rescatar,
+    o elegir otra cosa. Un único «no se puede» los borraría a los tres.
+  */
+  "COMPROMISO.MOTIVO_YA_CAMBIADO": "Ya cambiaste el horario de este compromiso una vez.",
+  "COMPROMISO.MOTIVO_YA_EMPEZO": "Este compromiso ya empezó.",
+  "COMPROMISO.MOTIVO_INCUMPLIDO": "Este compromiso se incumplió; ahora corresponde rescatarlo.",
+  "COMPROMISO.MOTIVO_SIN_HORARIO": "Ya no queda un horario válido dentro del día acordado.",
 
   // ── UX05 · Evidencia ──────────────────────────────────────────────────────
   "EVIDENCIA.ESPERADA": "Evidencia esperada",
@@ -494,3 +518,23 @@ export type CopyId = keyof typeof copy;
 export function t(id: CopyId): string {
   return copy[id];
 }
+
+/**
+ * Motivo canónico → copy aprobada — [ADR-050](../../docs/decisions.md#adr-050).
+ *
+ * **Una sola tabla**, y por eso vive acá y no en la proyección ni en la
+ * pantalla: la usan las dos. La proyección explica antes de intentar; la
+ * pantalla explica cuando el servidor contradice lo que había proyectado. Dos
+ * tablas serían dos verdades, y una de las dos envejecería sola.
+ *
+ * ⚠️ **`ESTADO_TERMINAL` y `SIN_ACUERDO_ORIGINAL` no están, y es a propósito.**
+ * A alguien que mira un compromiso cumplido o cerrado no hay que explicarle que
+ * no puede moverlo: el chip ya lo dice, y una línea más sería ruido. Sin copy,
+ * la proyección no dibuja el bloque.
+ */
+export const MOTIVO_DE_CAMBIO: Partial<Record<MotivoSinCambio, string>> = {
+  YA_EMPEZO: t("COMPROMISO.MOTIVO_YA_EMPEZO"),
+  INCUMPLIDO: t("COMPROMISO.MOTIVO_INCUMPLIDO"),
+  CADENA_YA_RENEGOCIADA: t("COMPROMISO.MOTIVO_YA_CAMBIADO"),
+  SIN_HORARIO_POSIBLE: t("COMPROMISO.MOTIVO_SIN_HORARIO"),
+};

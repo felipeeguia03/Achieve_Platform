@@ -45,8 +45,9 @@ export async function GET(request: Request) {
     }
   }
 
-  const props = await compromisoDe(institutionId, studentId, pedido);
-  if (props) {
+  const vista = await compromisoDe(institutionId, studentId, pedido);
+  if (vista) {
+    const { props, cambio } = vista;
     // La pantalla del incumplido lleva su salida: **qué** rescatar y con qué
     // acuerdo. Va junto a los props por la misma razón que `propuesta` —el
     // cliente no puede inventar ninguno de los dos— y sólo cuando hay algo que
@@ -55,7 +56,10 @@ export async function GET(request: Request) {
       const rescate = await propuestaDeRescate(institutionId, studentId);
       if (rescate) return NextResponse.json({ ...props, rescate });
     }
-    return NextResponse.json(props);
+    // Y la del compromiso vigente lleva la suya: **cuál** mover y con qué
+    // acuerdo — ADR-050. `null` cuando no se puede, para no mandar datos de una
+    // operación que la pantalla no va a ofrecer.
+    return NextResponse.json(cambio ? { ...props, cambio } : props);
   }
 
   // Pedir uno puntual por `?compromiso=` y no encontrarlo sí es `404`: se pidió

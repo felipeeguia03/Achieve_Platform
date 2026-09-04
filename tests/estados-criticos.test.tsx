@@ -28,11 +28,20 @@ describe("UX04 — los ocho estados del lifecycle de Commitment son alcanzables"
     expect(v.ctaPrimaria!.texto).toBe("Retomar");
   });
 
-  it("STARTED no ofrece renegociar: no hay edición retroactiva", () => {
+  /**
+   * ADR-050 cambió **cómo** se dice, no qué se dice: el aviso en lenguaje
+   * interno pasó al bloque de «Cambiar horario», con la copy del estudiante.
+   * Lo que se sigue exigiendo es lo mismo — que no haya edición retroactiva—,
+   * y ahora además que la pantalla **explique** en vez de apagar un botón.
+   */
+  it("STARTED no ofrece cambiar el horario, y dice por qué", () => {
     const v = escenarios["FX-LOCAL-COM-STARTED"].compromiso!;
     expect(v.ctaPrimaria!.texto).not.toBe("Renegociar");
+    expect(v.cambioDeHorario).toEqual({ sePuede: false, motivo: "Este compromiso ya empezó." });
     render(<Compromiso {...v} />);
-    expect(screen.getByText("Un compromiso ya iniciado no se renegocia.")).toBeInTheDocument();
+    expect(screen.getByText("Este compromiso ya no se puede cambiar.")).toBeInTheDocument();
+    expect(screen.getByText("Este compromiso ya empezó.")).toBeInTheDocument();
+    expect(screen.queryByText("Cambiar horario")).not.toBeInTheDocument();
   });
 
   it("los estados terminales no ofrecen ninguna operación", () => {

@@ -1,4 +1,5 @@
-import { t } from "@/lib/content/es-AR";
+import { MOTIVO_DE_CAMBIO, t } from "@/lib/content/es-AR";
+import { cambioDeHorarioPosible } from "@/lib/domain/renegociacion";
 import type { CompromisoProps, EstadoCompromiso, FilaDato } from "@/lib/domain/view-models";
 
 /**
@@ -20,7 +21,13 @@ import type { CompromisoProps, EstadoCompromiso, FilaDato } from "@/lib/domain/v
 
 export interface EstadoDeCompromiso {
   instante: string;
+  /** La del **estudiante**: a qué hora ve él su propio día. */
   zona: string;
+  /**
+   * La de la **institución** ([ADR-049](../../../docs/decisions.md#adr-049)):
+   * define el «día calendario» del cambio de horario. No es la de arriba.
+   */
+  zonaInstitucional: string;
   compromisoId: string;
   state: string;
   materia: string;
@@ -71,10 +78,15 @@ function hora(instante: string, zona: string): string {
  * porque describen de qué se trata esta pantalla; el lifecycle sigue visible en
  * el chip.
  */
+/** El estado del lifecycle, sin el encuadre de rescate o renegociación. */
+function lifecycleDe(e: EstadoDeCompromiso): EstadoCompromiso {
+  return ESTADOS.has(e.state as EstadoCompromiso) ? (e.state as EstadoCompromiso) : "DRAFT";
+}
+
 function estadoDe(e: EstadoDeCompromiso): EstadoCompromiso {
   if (e.esRescate) return "RESCATE";
   if (e.esRenegociacion) return "RENEGOCIACION";
-  return ESTADOS.has(e.state as EstadoCompromiso) ? (e.state as EstadoCompromiso) : "DRAFT";
+  return lifecycleDe(e);
 }
 
 /**
@@ -95,6 +107,20 @@ function estadoDe(e: EstadoDeCompromiso): EstadoCompromiso {
  * **se quedaba sin ninguna salida** —la máquina no admite `MISSED → CONFIRMED`
  * y `POST /api/compromiso` sólo crea el primero de una `Action`—, así que el
  * loop terminaba ahí.
+ */
+/**
+ * ## Y la decide el **lifecycle**, no el encuadre — ADR-050
+ *
+ * Hasta acá la CTA salía de `estadoDe()`, donde el rescate y la renegociación
+ * ganan sobre el lifecycle. Eso valía cuando el sucesor todavía no existía y la
+ * pantalla servía para confirmarlo. **Desde ADR-050 no existe ese momento:** el
+ * cambio de horario se confirma en el bloque y el sucesor nace `CONFIRMED`, así
+ * que la pantalla que se ve después ofrecía *«Confirmar compromiso»* sobre algo
+ * ya confirmado — y sobre un sucesor incumplido, en vez de *«Retomar»*.
+ *
+ * El encuadre no se pierde: de dónde viene el compromiso lo cuenta el bloque
+ * del original, que sigue arriba y sin editar. Lo que la CTA tiene que decir es
+ * **qué hacer ahora**, y eso lo sabe el lifecycle.
  */
 function ctaDe(estado: EstadoCompromiso): CompromisoProps["ctaPrimaria"] {
   if (estado === "DRAFT" || estado === "RENEGOCIACION" || estado === "RESCATE") {
@@ -117,6 +143,47 @@ const CHIP: Partial<Record<EstadoCompromiso, { tono: "urgencia" | "exito" | "hum
   RENEGOTIATED: { tono: "humano", texto: "Renegociado" },
 };
 
+/**
+ * El bloque de «Cambiar horario» — ADR-050.
+ *
+ * **Devuelve `null` sólo cuando no hay nada que decir**: un estado terminal no
+ * necesita explicar que no se puede mover algo que ya terminó. En todos los
+ * demás casos devuelve la oferta **o el motivo**, porque un botón apagado sin
+ * explicación es lo que el Product Owner descartó expresamente.
+ */
+function cambioDeHorarioDe(e: EstadoDeCompromiso): CompromisoProps["cambioDeHorario"] {
+  const r = cambioDeHorarioPosible({
+    estado: e.state as Parameters<typeof cambioDeHorarioPosible>[0]["estado"],
+    // Un compromiso que ya es sucesor de otro gastó la única renegociación de
+    // su cadena. `esRenegociacion` es ese hecho.
+    renegociadoDeId: e.esRenegociacion ? e.compromisoId : null,
+    inicioOriginal: e.inicioEn,
+    ahora: e.instante,
+    zonaInstitucional: e.zonaInstitucional,
+  });
+
+  if (r.sePuede) {
+    return {
+      sePuede: true,
+      horaActual: hora(e.inicioEn, e.zonaDelAcuerdo),
+      // La etiqueta se lee en la zona **del acuerdo**, igual que el horario
+      // actual: si no, el estudiante compararía dos relojes distintos.
+      horarios: r.horarios.map((valor) => ({ valor, etiqueta: hora(valor, e.zonaDelAcuerdo) })),
+    };
+  }
+
+  /*
+    `MOTIVO_DE_CAMBIO` es la única tabla motivo→copy, y vive en `es-AR.ts`
+    porque la comparte con la pantalla: ahí se usa cuando el servidor
+    contradice lo que acá se proyectó. Dos tablas serían dos verdades.
+
+    Un motivo sin copy —`SIN_ACUERDO_ORIGINAL`— devuelve `null`: la pantalla
+    no dice nada en vez de mostrar un código.
+  */
+  const motivo = MOTIVO_DE_CAMBIO[r.motivo];
+  return motivo ? { sePuede: false, motivo } : null;
+}
+
 export function proyectarCompromiso(e: EstadoDeCompromiso): CompromisoProps {
   const estado = estadoDe(e);
 
@@ -135,9 +202,12 @@ export function proyectarCompromiso(e: EstadoDeCompromiso): CompromisoProps {
     estadoResultante: CHIP[estado] ?? null,
     // El incumplido dice por qué su pantalla no se edita. Los demás estados no
     // tienen nada que avisar, y un aviso vacío ocupa lugar sin decir nada.
-    aviso: estado === "MISSED" ? t("COMPROMISO.AVISO_INCUMPLIDO") : null,
+    // Por lo mismo: un sucesor incumplido sigue siendo un incumplido, y el
+    // aviso que lo dice no lo tapa el encuadre de la renegociación.
+    aviso: lifecycleDe(e) === "MISSED" ? t("COMPROMISO.AVISO_INCUMPLIDO") : null,
     original: e.original ? originalDe(e.original, e.esRescate) : null,
-    ctaPrimaria: ctaDe(estado),
+    ctaPrimaria: ctaDe(lifecycleDe(e)),
+    cambioDeHorario: cambioDeHorarioDe(e),
   };
 }
 

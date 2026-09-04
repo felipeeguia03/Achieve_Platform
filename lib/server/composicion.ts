@@ -882,9 +882,37 @@ export async function compromisoDe(
   studentId: string,
   commitmentId: string | null = null,
   ahora: string = new Date().toISOString(),
-): Promise<CompromisoProps | null> {
+): Promise<{ props: CompromisoProps; cambio: CambioDeHorarioSolicitable | null } | null> {
   const estado = await compromisoLecturaReal.estadoDeCompromiso(institutionId, studentId, ahora, commitmentId);
-  return estado ? proyectarCompromiso(estado) : null;
+  if (!estado) return null;
+
+  const props = proyectarCompromiso(estado);
+  /*
+    Lo que el cliente devuelve **tal cual** al cambiar el horario, igual que
+    `propuesta` y `rescate` — ADR-050. Sale de la misma lectura que ya se hizo.
+
+    ⚠️ **La zona y los minutos no los recalcula la pantalla.** Los tiene en
+    props como texto para mostrar («45 min», «Acordado en Cordoba»), y parsear
+    un texto de interfaz para armar un pedido es cómo una etiqueta se convierte
+    sin querer en un dato.
+  */
+  const cambio = props.cambioDeHorario?.sePuede
+    ? {
+        original: estado.compromisoId,
+        // La zona del acuerdo se conserva: mover la hora no muda al estudiante.
+        zona: estado.zonaDelAcuerdo,
+        minutos: estado.minutosPlanificados,
+      }
+    : null;
+
+  return { props, cambio };
+}
+
+/** Lo que hace falta para pedir el cambio, sin que el cliente invente nada. */
+export interface CambioDeHorarioSolicitable {
+  original: string;
+  zona: string;
+  minutos: number;
 }
 
 /**
@@ -987,6 +1015,9 @@ export async function propuestaDeCompromiso(
     plannedMinutes: minutos,
     props: {
       estado: "DRAFT",
+      // Todavía no hay acuerdo: no hay horario que cambiar, y no hay motivo
+      // que explicar. ADR-050.
+      cambioDeHorario: null,
       contexto: `${estado.materia}${estado.unidad ? ` · ${estado.unidad}` : ""}`,
       titulo: estado.objetivo,
       fecha: fmt({ weekday: "short", day: "numeric", month: "short" }),

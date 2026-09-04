@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { tokenDelHeader } from "@/lib/server/http";
 import { renegociarCompromiso, resolverSesion } from "@/lib/server/composicion";
-import { MINUTOS_DE_ANTICIPACION } from "@/lib/domain/renegociacion";
+import { MINUTOS_DE_ANTICIPACION, motivoDelEstado } from "@/lib/domain/renegociacion";
+import type { CommitmentState } from "@/lib/domain/types";
 
 /**
  * `POST /api/renegociacion` — **mover la hora sin romper el acuerdo** ·
@@ -74,9 +75,18 @@ export async function POST(request: Request) {
     // existir, son la misma respuesta.
     case "NO_ES_SUYO":
       return NextResponse.json({ error: "No se encontró ese compromiso" }, { status: 404 });
+    /*
+      El motivo dice **cuál** estado, no sólo que el estado no deja. Un único
+      `ESTADO_NO_RENEGOCIABLE` obligaba a la pantalla a elegir una copy para
+      todos, y terminaba diciendo *«ya empezó»* de un compromiso que en
+      realidad se había incumplido o ya se había movido.
+    */
     case "NO_RENEGOCIABLE":
       return NextResponse.json(
-        { error: `Un compromiso ${resultado.desde} ya no se renegocia`, motivo: "ESTADO_NO_RENEGOCIABLE" },
+        {
+          error: `Un compromiso ${resultado.desde} ya no se renegocia`,
+          motivo: motivoDelEstado(resultado.desde as CommitmentState),
+        },
         { status: 409 },
       );
     case "NO_ELEGIBLE":

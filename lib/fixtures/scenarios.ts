@@ -136,6 +136,7 @@ export const FX_DAY_BASE: Escenario = {
 
   compromiso: {
     estado: "DRAFT",
+    cambioDeHorario: null,
     contexto: "Unidad 3 · Acción aceptada",
     titulo: "Resolver ejercicios 8–14",
     fecha: "Sáb 23 ago ▾",

@@ -107,6 +107,7 @@ describe("B2.6 · la tabla de provenance de `product.md` §7", () => {
 const compromiso: EstadoDeCompromiso = {
   instante: "2026-08-31T15:00:00.000Z",
   zona: "America/Argentina/Cordoba",
+  zonaInstitucional: "America/Argentina/Cordoba",
   compromisoId: "cm-syn-1",
   state: "CONFIRMED",
   materia: "Análisis Matemático II",
