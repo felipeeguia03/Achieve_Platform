@@ -446,7 +446,7 @@ export async function entregaEsperadaDe(
   institutionId: string,
   studentId: string,
   ahora: string = new Date().toISOString(),
-): Promise<{ props: EvidenciaProps; compromisoId: string } | null> {
+): Promise<{ props: EvidenciaProps; compromisoId: string; accionId: string } | null> {
   // Se parte de la **acción vigente**, no del último compromiso del estudiante:
   // después de una vuelta cerrada, ese último es el `COMPLETED` de la anterior.
   const accion = await accionLecturaReal.estadoDeAccion(institutionId, studentId, ahora, null);
@@ -466,6 +466,9 @@ export async function entregaEsperadaDe(
 
   return {
     compromisoId: vigente.compromisoId,
+    // A qué `Action` cuelga la reflexión que se escribe en esa pantalla
+    // (ADR-045). No es contenido: el cliente no puede inventarlo.
+    accionId: accion.accionId,
     props: {
       estado: "EXPECTED",
       contexto: `Cursado · ${accion.materia}`,

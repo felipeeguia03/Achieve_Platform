@@ -8,6 +8,7 @@ import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { enviar, subirEvidencia } from "@/lib/client/api";
+import { t } from "@/lib/content/es-AR";
 import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
 import type { EvidenciaProps } from "@/lib/domain/view-models";
 
@@ -15,7 +16,12 @@ import type { EvidenciaProps } from "@/lib/domain/view-models";
  * El compromiso al que se adjunta la entrega, y —si la entrega fue devuelta— a
  * qué evidencia sucede el reenvío. Ninguno es contenido de la pantalla.
  */
-type ConCompromiso = EvidenciaProps & { compromiso?: string | null; anterior?: string | null };
+type ConCompromiso = EvidenciaProps & {
+  compromiso?: string | null;
+  anterior?: string | null;
+  /** La `Action` a la que cuelga la reflexión — ADR-045. */
+  accion?: string | null;
+};
 
 const DESTINO = rutaDeCta("CTA-007");
 
@@ -83,6 +89,40 @@ function Pantalla({
   clave.current ??= crypto.randomUUID();
   const [enCurso, setEnCurso] = useState(false);
   const [motivo, setMotivo] = useState<string | null>(null);
+  const [reflexion, setReflexion] = useState("");
+
+  /*
+    **La reflexión y la entrega son la misma intención** (ADR-045): el
+    estudiante escribe y aprieta una sola vez. Por eso la reflexión se guarda
+    acá, justo antes de entregar, y no en un flujo aparte.
+
+    Devuelve `false` si no se pudo guardar, y entonces **no se entrega**: una
+    entrega que pasa sin la reflexión requerida es lo que la Fase B6.10 fue a
+    impedir, y el servidor la rechazaría igual.
+  */
+  async function guardarReflexionSiHace(): Promise<boolean> {
+    if (!props.reflection || !props.accion) return true;
+    const texto = reflexion.trim();
+
+    if (!texto) {
+      // Vacía y obligatoria: no se entrega, y se dice por qué. Opcional y
+      // vacía: se sigue, que es lo que *opcional* quiere decir.
+      if (props.reflection.requerida) {
+        setMotivo(t("EVIDENCIA.FALTA_REFLEXION"));
+        return false;
+      }
+      return true;
+    }
+
+    const r = await enviar<{ reflexion: string }>("/api/reflexion", {
+      accion: props.accion,
+      nota: texto,
+    });
+    if (r.estado === "OK") return true;
+
+    setMotivo(r.estado === "RECHAZADO" ? r.motivo : "No se pudo guardar la reflexión.");
+    return false;
+  }
 
   /*
     **El reenvío** — `CTA-008`, Etapa B6.9.2. Mismo orden que la primera
@@ -157,6 +197,11 @@ function Pantalla({
     setEnCurso(true);
     setMotivo(null);
 
+    if (!(await guardarReflexionSiHace())) {
+      setEnCurso(false);
+      return;
+    }
+
     const nombre = props.nombreAdjuntoDemo;
     const firma = await enviar<{ evidenciaId: string; url: string }>(
       `/api/evidencia?firmar=${encodeURIComponent(nombre)}`,
@@ -194,12 +239,25 @@ function Pantalla({
     setMotivo(r.estado === "RECHAZADO" ? r.motivo : "No se pudo registrar la entrega.");
   }
 
+  /*
+    El servidor apaga la CTA cuando falta la reflexión requerida, y tiene razón
+    **hasta que el estudiante la escribe acá**: con texto en el campo, el
+    pedido ya puede salir. El bloqueo real sigue estando en el servidor — esto
+    sólo deja de impedir que la escriba.
+  */
+  const destrabadaPorReflexion =
+    props.reflection?.requerida === true && reflexion.trim().length > 0;
+
   return (
     <Evidencia
       {...props}
       aviso={motivo ?? props.aviso}
+      reflexionTexto={reflexion}
+      onReflexion={setReflexion}
       ctaPrimaria={
-        props.ctaPrimaria ? { ...props.ctaPrimaria, habilitada: !enCurso } : props.ctaPrimaria
+        props.ctaPrimaria
+          ? { ...props.ctaPrimaria, habilitada: !enCurso && (props.ctaPrimaria.habilitada || destrabadaPorReflexion) }
+          : props.ctaPrimaria
       }
       onAvanzar={entregar}
     />

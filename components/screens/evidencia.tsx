@@ -36,11 +36,33 @@ export function Evidencia({
   ctaPrimaria,
   adjuntoPrevio,
   onAvanzar,
-}: EvidenciaProps & { onAvanzar?: () => void }) {
+  reflexionTexto = "",
+  onReflexion,
+}: EvidenciaProps & {
+  onAvanzar?: () => void;
+  /**
+   * El texto de la reflexión y quién lo recibe — [ADR-045](../../docs/decisions.md#adr-045).
+   *
+   * **Controlado desde arriba a propósito.** La pantalla proyecta y avisa; no
+   * guarda una reflexión ni decide si alcanza. Persistirla y decidir si bloquea
+   * el envío son del servidor, desde la Fase B6.10 — y esta pantalla **no sabe
+   * por dónde**, que es lo que la mantiene siendo una proyección.
+   */
+  reflexionTexto?: string;
+  onReflexion?: (texto: string) => void;
+}) {
   // Estado local de sesión, no de dominio: un upload exitoso NO produce
   // SUBMITTED (AGENTS.md §2.3).
   const [adjunto, setAdjunto] = useState(false);
   const hayContenido = adjunto || adjuntoPrevio !== null;
+
+  /*
+    **Desplegada si es obligatoria, contraída si es opcional** (ADR-045). Lo
+    obligatorio se ve sin tener que buscarlo; lo opcional no le ocupa la
+    pantalla a quien no lo va a usar.
+  */
+  const [abierta, setAbierta] = useState(false);
+  const desplegada = reflection?.requerida === true || abierta;
 
   return (
     <div
@@ -135,10 +157,37 @@ export function Evidencia({
         )}
 
         {/*
-          La Reflection es un objeto separado de la Evidence. Si es requerida,
-          su ausencia bloquea sólo el submit dependiente.
+          La Reflection es un objeto separado de la Evidence —se escribe acá,
+          no en otra pantalla (ADR-045): *"forman parte de la misma intención
+          del estudiante"*— y si es requerida su ausencia bloquea **sólo el
+          submit dependiente**.
         */}
-        {reflection && <CTASecundaria>{reflection.titulo}</CTASecundaria>}
+        {reflection && !desplegada && (
+          <CTASecundaria onClick={() => setAbierta(true)}>{reflection.titulo}</CTASecundaria>
+        )}
+        {reflection && desplegada && (
+          <div style={{ marginTop: 10 }}>
+            <Eyebrow>{reflection.titulo}</Eyebrow>
+            <textarea
+              value={reflexionTexto}
+              onChange={(e) => onReflexion?.(e.target.value)}
+              placeholder={t("REFLEXION.CAMPO")}
+              rows={3}
+              style={{
+                width: "100%",
+                marginTop: 6,
+                padding: 8,
+                fontSize: "var(--text-label)",
+                lineHeight: 1.5,
+                color: "var(--foreground)",
+                background: "var(--background)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius)",
+                resize: "vertical",
+              }}
+            />
+          </div>
+        )}
         {/* Enviar no es suficiencia; suficiencia no es validación. */}
         <ReglaDeNegocio>{t("EVIDENCIA.ENVIAR_IMPLICA")}</ReglaDeNegocio>
         {ctaPrimaria && (

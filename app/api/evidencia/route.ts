@@ -42,7 +42,11 @@ export async function GET(request: Request) {
   if (!id) {
     const esperada = await entregaEsperadaDe(institutionId, studentId);
     if (esperada) {
-      return NextResponse.json({ ...esperada.props, compromiso: esperada.compromisoId });
+      return NextResponse.json({
+        ...esperada.props,
+        compromiso: esperada.compromisoId,
+        accion: esperada.accionId,
+      });
     }
   }
 

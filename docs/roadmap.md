@@ -58,7 +58,7 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 | Frente | Estado |
 |---|---|
-| **Fase B6.10 · la reflexión existe y se exige** | ✅ **Completa** — 4 de septiembre de 2026. El estudiante **puede reflexionar** —la tabla estaba desde la B1 y nadie la escribía— y el requisito que cerró [ADR-026](decisions.md#adr-026) **lo hace cumplir el servidor**, no un botón deshabilitado |
+| **Fase B6.10 · la reflexión existe y se exige** | ✅ **Completa, con su superficie** — 4 de septiembre de 2026. El requisito de [ADR-026](decisions.md#adr-026) **lo hace cumplir el servidor**, y desde [ADR-045](decisions.md#adr-045) el estudiante la escribe **dentro de `UX05`**: la reflexión y la entrega son la misma intención |
 | **Fase B6.9 · la salida del camino que no salió bien** | ✅ **Completa, 2 / 2** — 4 de septiembre de 2026. El **rescate** y el **reenvío** son alcanzables; con el primero, `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. **La renegociación queda fuera hasta `C01-010`** |
 | **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
 | **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
@@ -3204,22 +3204,36 @@ tener una Evidence previa. Es el mismo defecto que tenía `UX04` con un incumpli
 cuando el requisito era `REQUIRED`. Decirle *opcional* a lo que apaga el botón es decirle al
 estudiante lo contrario de lo que va a pasar.
 
-### ⚠️ Una decisión de copy que quedó levantada, no resuelta
+### ✅ La superficie, y la decisión de copy — resueltas el 4 de septiembre
+
+**El campo vive dentro de `UX05`** ([ADR-045](decisions.md#adr-045)): *"la reflexión y la evidencia
+forman parte de la misma intención del estudiante"*. Desplegado si es obligatoria, contraído detrás de
+la CTA secundaria si es opcional, y la CTA principal **no cambia**.
+
+**Verificado en navegador**, con una Action en `REQUIRED`: el campo aparece desplegado, *"Enviar
+evidencia"* arranca deshabilitada, **se habilita al escribir**, y el clic produce —en este orden—
+`POST /api/reflexion` → firma → `POST /api/evidencia`. La reflexión quedó escrita con su texto.
+
+⚠️ **El bloqueo real sigue en el servidor.** El campo no lo reemplaza: una pantalla que valide y un
+servidor que no es como estaba antes, al revés.
+
+### ~~Una decisión de copy que quedó levantada~~ — ✅ resuelta
 
 El fixture `FX-LOCAL-EVD-REFLECTION-REQUERIDA` —el diseño aprobado— dice **"Contanos cómo te fue
 (requerido)"**, y el guard `C-01` de `auditoria-conformidad` **prohíbe `Contanos`** en su lista de
 imperativos. Los dos no pueden tener razón: *contanos* **es** voseo (*contá* + *nos*), así que la
 lista del guard parece tener un defecto.
 
-**No se tocó el guard.** Aflojar un guard para que pase el cambio de uno es exactamente lo que un
-guard existe para impedir, y elegir la copy es de producto. Se usa mientras tanto **"Agregar
-reflexión (requerido)"**, que no estrena voz. **Lo decide una persona.**
+**No se tocó el guard, y esa fue la decisión correcta.** El Product Owner resolvió
+([ADR-044](decisions.md#adr-044)) que **la lista del guard era la equivocada**: se usa la copy del
+fixture y **`Contanos` sale de la lista** — *"el cambio debe ser específico: no se afloja el resto del
+control"*. Las otras cinco son tuteo y siguen prohibidas.
 
 ### Lo que esta fase NO hizo
 
 | Qué | Por qué |
 |---|---|
-| **La superficie para escribirla** | `components/screens/evidencia.tsx` renderiza `reflection.titulo` como CTA secundaria, **sin formulario**. Construirlo toca `components/screens/*` —regla 6— y necesita las capturas de `docs/diseño/`. **Hoy la reflexión se escribe por API** |
+| ~~**La superficie para escribirla**~~ | ✅ **Construida el 4 de septiembre** — [ADR-045](decisions.md#adr-045) la autorizó explícitamente, así que la regla 6 dejó de aplicar **a este cambio**, y el owner confirmó que **no hacía falta esperar un rediseño**: se reutiliza la composición existente |
 | **Emitir un evento de producto** | El Product Event Model **no declara ninguno** para `Reflection`, y `product_event` es append-only: inventar un nombre es lo que el guard de [ADR-027](decisions.md#adr-027) impide. Si la Bitácora tiene que mostrarla, es decisión de producto |
 | **Poner `REQUIRED` en algún lado** | ADR-026 fijó `OPTIONAL` como default del loop diario, y `REQUIRED` **sólo donde el contenido versionado lo declare** |
 
