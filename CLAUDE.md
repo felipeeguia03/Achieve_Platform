@@ -109,6 +109,25 @@ el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Post
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` se conectaron en la
 Fase B5.
 
+**Fase B6.9 — La salida del camino que no salió bien.** 🔵 **1 / 2** — 4 de septiembre de 2026. El
+loop tenía **sólo camino feliz**: el reloj llevaba un compromiso a `MISSED` y ahí el estudiante quedaba
+sin salida, porque la máquina no admite `MISSED → CONFIRMED` y `POST /api/compromiso` sólo crea el
+primero de una `Action`. **La B6.9.1 abrió el rescate** (`POST /api/rescate`, con JWT del estudiante).
+
+⚠️ **`RescueSucceeded` no era alcanzable por ningún camino**, y es uno de los cuatro eventos que
+[ADR-041](docs/decisions.md#adr-041) volvió cláusula del contrato. Ahora ocurre.
+
+⚠️ **Un `MISSED` ahora ofrece CTA, y no es la de confirmar.** Es `CTA-015` · «Retomar», que empieza
+**otro objeto**. El incumplido **sigue `MISSED` para siempre** y esa garantía no está en la ruta: está
+en `crear_rescate` y en la máquina de estados.
+
+⚠️ **Antes de tocar `propuestaDeCompromiso`:** un incumplimiento sin rescate **no es** *"todavía sin
+compromiso"*. Si volvés a proponer ahí, `UX04` ofrece una CTA que termina en `409`.
+
+⚠️ **La renegociación sigue sin cablear, y es a propósito.** `renegociar()` existe sin llamador porque
+`renegociacionElegible` **sólo vive en fixtures**: qué hace elegible a un compromiso es `C01-010`,
+`OPEN`. **No la inventes.**
+
 **Fase B6.8 — El camino de ejecución escribe en Postgres.** ✅ **COMPLETA, 5 / 5** — 3 de septiembre
 de 2026, decidida por el CTO ([ADR-040](docs/decisions.md#adr-040)). El ADE tiene disparador
 (`POST /api/recomendacion`), el `Commitment` nace de una confirmación explícita, la entrega crea una

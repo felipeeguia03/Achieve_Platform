@@ -137,6 +137,75 @@ async function crearRescateAtomico(
 const VIVOS = ["CONFIRMED", "DUE", "STARTED"];
 
 /**
+ * De quién es un compromiso — Etapa B6.9.1.
+ *
+ * `porId` scopea por institución, que alcanza para el reloj y para cualquier
+ * operación de servicio, y **no alcanza para una del estudiante**: dos alumnos
+ * de la misma institución comparten scope. Rescatar sí es del estudiante, así
+ * que hace falta poder preguntar de quién es el incumplimiento antes de dejar
+ * que alguien lo rescate.
+ *
+ * `null` ⇒ no existe, o no se pudo resolver su dueño. Las dos respuestas se
+ * tratan igual arriba: no autorizado.
+ */
+/**
+ * El incumplimiento **todavía sin rescate** de una `Action` — Etapa B6.9.1.
+ *
+ * Es lo que distingue *"esta acción todavía no tiene compromiso"* de *"esta
+ * acción tuvo uno y se incumplió"*. Sin esta pregunta, `UX04` ofrecía
+ * comprometerse de nuevo sobre una `Action` que ya está `COMMITTED`, y esa CTA
+ * **no podía funcionar**: `crearConfirmado` sólo admite `RECOMMENDED` o
+ * `ACCEPTED`.
+ *
+ * `null` ⇒ no hay incumplimiento pendiente: o nunca lo hubo, o ya fue
+ * rescatado. Los dos casos se tratan igual arriba.
+ */
+async function incumplidoSinRescateDeAccion(
+  institutionId: string,
+  actionId: string,
+): Promise<Compromiso | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("commitment")
+    .select(COLUMNAS)
+    .eq("institution_id", institutionId)
+    .eq("action_id", actionId)
+    .eq("state", "MISSED")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) throw new Error(`No se pudo leer el incumplimiento: ${error.message}`);
+
+  const filas = (data ?? []) as Record<string, unknown>[];
+  if (filas.length === 0) return null;
+  const incumplido = aDominio(filas[0]);
+
+  // Un rescate ya creado apunta al incumplido. Si existe, esto ya tuvo su
+  // salida y la pantalla del rescate manda.
+  const { data: rescate, error: errRescate } = await clienteDeServicio()
+    .from("commitment")
+    .select("id")
+    .eq("institution_id", institutionId)
+    .eq("rescues_commitment_id", incumplido.id)
+    .limit(1);
+  if (errRescate) throw new Error(`No se pudo leer el rescate: ${errRescate.message}`);
+
+  return (rescate ?? []).length > 0 ? null : incumplido;
+}
+
+async function duenioDe(institutionId: string, compromisoId: string): Promise<string | null> {
+  const { data, error } = await clienteDeServicio()
+    .from("commitment")
+    .select("id, action:action_id(course_enrollment:course_enrollment_id(student_id))")
+    .eq("institution_id", institutionId)
+    .eq("id", compromisoId)
+    .maybeSingle();
+  if (error) throw new Error(`No se pudo leer el dueño del compromiso: ${error.message}`);
+
+  const fila = data as Record<string, unknown> | null;
+  const accion = fila?.action as { course_enrollment?: { student_id?: string } } | null;
+  return accion?.course_enrollment?.student_id ?? null;
+}
+
+/**
  * La huella de la fila que ya usó una clave de idempotencia.
  *
  * Trae el dueño y el payload **para poder compararlos**, no para mostrarlos:
@@ -260,6 +329,8 @@ async function vivoDeAccion(institutionId: string, actionId: string): Promise<Co
 export const compromisosReal: RepositorioDeCompromisos & {
   porClaveDeIdempotencia: typeof porClaveDeIdempotencia;
   huellaDeClave: typeof huellaDeClave;
+  duenioDe: typeof duenioDe;
+  incumplidoSinRescateDeAccion: typeof incumplidoSinRescateDeAccion;
   crearConfirmado: typeof crearConfirmado;
   vivoDeAccion: typeof vivoDeAccion;
-} = { porId, cambiarEstadoSi, porClaveDeIdempotencia, renegociarAtomico, crearRescateAtomico, huellaDeClave, crearConfirmado, vivoDeAccion };
+} = { porId, cambiarEstadoSi, porClaveDeIdempotencia, renegociarAtomico, crearRescateAtomico, huellaDeClave, crearConfirmado, vivoDeAccion, duenioDe, incumplidoSinRescateDeAccion };

@@ -13,7 +13,9 @@ import type { CompromisoProps } from "@/lib/domain/view-models";
 
 /** Lo que el `GET` agrega cuando todavía no hay compromiso: qué confirmar. */
 type Propuesta = { accion: string; inicio: string; zona: string; minutos: number };
-type ConPropuesta = CompromisoProps & { propuesta?: Propuesta };
+/** Y cuando lo que hay es un incumplimiento: qué rescatar — Etapa B6.9.1. */
+type Rescate = { rescatado: string; inicio: string; zona: string; minutos: number };
+type ConPropuesta = CompromisoProps & { propuesta?: Propuesta; rescate?: Rescate | null };
 
 const DESTINO = rutaDeCta("CTA-004");
 
@@ -82,6 +84,44 @@ function Pantalla({
   clave.current ??= crypto.randomUUID();
   const [enCurso, setEnCurso] = useState(false);
   const [motivo, setMotivo] = useState<string | null>(null);
+  const rescate = props.rescate;
+
+  /*
+    **La salida de un incumplimiento** — Etapa B6.9.1. `CTA-015`: «Retomar» no
+    edita el compromiso incumplido, que sigue `MISSED` para siempre; crea otro
+    objeto que lo rescata. Por eso va a `/api/rescate` y no a `/api/compromiso`:
+    son dos cosas distintas y la ruta lo dice.
+  */
+  async function retomar() {
+    if (enCurso || !rescate) return;
+    setEnCurso(true);
+    setMotivo(null);
+
+    const r = await enviar<{ compromiso: string }>("/api/rescate", {
+      ...rescate,
+      clave: clave.current,
+    });
+
+    if (r.estado === "OK") {
+      if (destino) router.push(destino);
+      return;
+    }
+    setEnCurso(false);
+    setMotivo(r.estado === "RECHAZADO" ? r.motivo : "No se pudo crear el rescate. Probá de nuevo.");
+  }
+
+  if (rescate) {
+    return (
+      <Compromiso
+        {...props}
+        aviso={motivo ?? props.aviso}
+        ctaPrimaria={
+          props.ctaPrimaria ? { ...props.ctaPrimaria, habilitada: !enCurso } : props.ctaPrimaria
+        }
+        onAvanzar={retomar}
+      />
+    );
+  }
 
   // Sin propuesta la vista es un compromiso ya existente: la CTA sólo navega.
   if (!propuesta) {

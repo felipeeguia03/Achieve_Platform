@@ -50,7 +50,7 @@ Cada etapa, sin excepción:
 
 **Track A: cerrado.** **Track B: B1–B6.8 completas en su alcance disponible**, con B2b en 2/3.
 
-`lint`, `typecheck` y `build` en verde · **980 tests en 54 archivos** · **275 comprobaciones** históricas contra
+`lint`, `typecheck` y `build` en verde · **986 tests en 55 archivos** · **275 comprobaciones** históricas contra
 Postgres + comprobación funcional transaccional de B6.7.4 · **46 migraciones** · las **nueve superficies** del
 estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](decisions.md#adr-040)).
 
@@ -58,6 +58,7 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 | Frente | Estado |
 |---|---|
+| **Fase B6.9 · la salida del camino que no salió bien** | 🔵 **1 / 2** — 4 de septiembre de 2026. **El rescate ya es alcanzable**, y con él `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. Falta el reenvío |
 | **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
 | **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
 | **La puerta · `/login`** | ✅ **Hecha** el 3 de septiembre de 2026 ([ADR-039](decisions.md#adr-039), decidido por el Product Owner). **No es `UX10`** y no levanta el gate de [ADR-006](decisions.md#adr-006). Deja abierto el onboarding del spec §19 |
@@ -3038,6 +3039,83 @@ verificado el 3 de septiembre de 2026, con la cadena de eventos append-only de l
 
 ---
 
+## Fase B6.9 — La salida del camino que no salió bien · 🔵 EN CURSO
+
+**Estado:** 🔵 **1 / 2** — 4 de septiembre de 2026. Abierta por la directiva del Product Owner:
+*"primero se termina y verifica el loop actual del MVP de Plataforma"*
+([fuente](respuesta-po-flujos-crm-source.md)).
+
+**Por qué existe.** El loop de la [Fase B6.8](#fase-b68--el-camino-de-ejecución-escribe-en-postgres-·--completa)
+cerró **el camino feliz**. El otro no existía: tres operaciones del dominio estaban construidas,
+probadas y **sin un solo llamador** — el mismo patrón del reloj antes de la B4 y del ADE antes de la
+B6.8.
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.9.1 | **El rescate**: un incumplimiento vuelve a tener salida | ✅ **Completa** |
+| B6.9.2 | **El reenvío**: una entrega rechazada se puede volver a presentar | ⬜ |
+| — | ~~La renegociación~~ | 🔒 **Fuera de alcance**: ver abajo |
+
+⚠️ **La renegociación queda afuera, y se dice en vez de improvisarla.** `renegociar()` también existe
+sin llamador, pero `CTA-017` exige `renegociacionElegible`, y **eso sólo existe en fixtures: nada lo
+calcula**. Qué hace elegible a un compromiso es **`C01-010`, `OPEN`**. Cablearla obligaría a inventar
+la regla.
+
+### ✅ Etapa B6.9.1 — El rescate · COMPLETA · 4 de septiembre de 2026
+
+**Lo que estaba roto, y era peor que un hueco.** El reloj llevaba un compromiso a `DUE` y después a
+`MISSED`, y ahí el estudiante quedaba **sin ninguna salida**: la máquina no admite `MISSED →
+CONFIRMED` —es *No Cortar*, y está bien— y `POST /api/compromiso` sólo crea el **primer** compromiso
+de una `Action` `RECOMMENDED`/`ACCEPTED`. Con lo cual:
+
+⚠️ **`RescueSucceeded` no era alcanzable por ningún camino** — y es uno de los **cuatro eventos que
+[ADR-041](decisions.md#adr-041) volvió cláusula del contrato con el CRM**, firmada el día anterior.
+
+**Y había un defecto visible.** `UX01` decía `RESCUE_REQUIRED`; `UX04` proyectaba una **propuesta de
+compromiso con la CTA «Me comprometo» habilitada**, y esa CTA devolvía `409`. La pantalla ofrecía algo
+que el backend no podía hacer, porque `propuestaDeCompromiso` leía *"no hay compromiso vivo"* y un
+`MISSED` no está vivo.
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/rescate` | Con **JWT del estudiante**: decidir volver a comprometerse después de fallar es suyo, y de nadie más |
+| `rescatarCompromiso()` | Autorización —`porId` scopea por institución, y dos alumnos la comparten— e idempotencia por clave del cliente, la misma disciplina de `D2·A` |
+| `incumplidoSinRescateDeAccion()` | Distingue *"todavía no hay compromiso"* de *"hubo uno y se incumplió"*. Con un incumplimiento pendiente, `UX04` **deja de proponer** |
+| La proyección de `MISSED` | Pasa a ofrecer **`CTA-015` · «Retomar»** con su aviso. Hasta acá devolvía `null` y **contradecía al fixture `FX-LOCAL-COM-MISSED`**, que es el diseño aprobado |
+
+**Lo que no cambió, y es el punto:** el incumplido **sigue `MISSED` para siempre**. El rescate es otro
+objeto que lo apunta sin borrarlo, y esa garantía no está en la ruta: está en `crear_rescate` y en la
+máquina de estados, donde no se afloja por descuido.
+
+**Verificación de punta a punta, contra Postgres:**
+
+| Criterio | Resultado |
+|---|---|
+| Los cinco gates | ✅ `lint` · `typecheck` · `build` con `/api/rescate` registrada · **986 tests en 55 archivos** · **275 comprobaciones** |
+| El callejón, antes | ✅ Reproducido: `UX04` ofrecía «Me comprometo» y `POST /api/compromiso` devolvía `409` |
+| El circuito entero | ✅ compromiso → reloj → `MISSED` → **«Retomar»** → rescate → entrega → validación |
+| La Bitácora | ✅ *Te comprometiste · Compromiso incumplido · **Creaste un rescate** · Presentaste evidencia · … · **Recuperaste lo que habías incumplido*** |
+| El original | ✅ Sigue `MISSED`, y viaja como filas de sólo lectura en la pantalla del rescate |
+| Idempotencia | ✅ Misma clave y mismo payload → `200 duplicado`; otro payload → `409` **sin exponer la fila** |
+| Ajeno o inexistente | ✅ `404` seco, el mismo para los dos: distinguirlos sería un detector de compromisos de otros |
+| No incumplido | ✅ `409` nombrando el estado |
+
+**Sin migraciones.** `crear_rescate` existe desde la Fase B2; lo que faltaba era el camino hasta ella.
+
+### ⬜ Etapa B6.9.2 — El reenvío
+
+**El otro extremo del mismo hueco:** una entrega `INSUFFICIENT` no se puede volver a presentar.
+`resubmitir()` existe sin llamador, y **falta un eslabón antes**: `RESUBMISSION_REQUESTED` **no lo
+escribe nadie** — la validación deja `INSUFFICIENT` y ahí se corta. Pedir la reentrega es de quien
+evalúa, con el mismo secreto de servicio que valida.
+
+⚠️ **Tiene un requisito de forma que el rescate no tiene:** la entrega se hace en dos tiempos y la
+clave del objeto **se deriva del id de la evidencia**, pero `resubmitir_evidencia` genera el id
+adentro de la base. O el id lo elige quien llama —una migración nueva— o la fila nace antes que el
+archivo, que es lo que `D3·A` decidió no hacer. **Se resuelve al empezar la etapa, no antes.**
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**
@@ -3148,6 +3226,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
+| Fase B6.9 — La salida del camino que no salió bien | 🔵 **EN CURSO** — 4 de septiembre de 2026. El rescate es alcanzable y `RescueSucceeded` dejó de ser inalcanzable. Falta el reenvío; **la renegociación queda fuera hasta `C01-010`** | 1 / 2 |
 | Fase B6.8 — El camino de ejecución escribe en Postgres | ✅ **COMPLETA** — 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el camino principal escribe contra Postgres y **`C01-009` quedó cerrada**. Sin migraciones | 5 / 5 |
 | Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. `HP0-06-1` ya corre con criterio profesional; faltan `C01-021` para las otras dos reglas, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |

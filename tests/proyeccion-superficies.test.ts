@@ -136,10 +136,21 @@ describe("B2.6 · UX04 respeta el acuerdo, incluida su hora", () => {
     expect(p.notaEstimacion).toContain("Madrid");
   });
 
-  it("un MISSED no ofrece ninguna CTA que lo haga parecer cumplido", () => {
+  // Etapa B6.9.1: el MISSED pasó de no ofrecer nada a ofrecer la salida. Lo que
+  // el test protege no cambió — que ninguna CTA lo haga parecer cumplido—, pero
+  // ahora también protege que la salida exista: sin ella el estudiante que
+  // incumple se queda sin ningún camino, que es como estuvo hasta acá.
+  it("un MISSED ofrece retomar, y ninguna CTA que lo haga parecer cumplido", () => {
     const p = proyectarCompromiso({ ...compromiso, state: "MISSED" });
-    expect(p.ctaPrimaria).toBeNull();
+    expect(p.ctaPrimaria).toEqual({ texto: "Retomar", habilitada: true });
     expect(p.estadoResultante?.texto).toBe("Incumplido");
+    expect(p.aviso).toBe("Este compromiso no se edita. El rescate es un acuerdo nuevo.");
+  });
+
+  it("el aviso del incumplido es sólo suyo: los otros estados no avisan nada", () => {
+    for (const state of ["CONFIRMED", "DUE", "STARTED", "COMPLETED"] as const) {
+      expect(proyectarCompromiso({ ...compromiso, state }).aviso).toBeNull();
+    }
   });
 
   it("un rescate muestra el incumplido original, intacto y como lectura", () => {

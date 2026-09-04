@@ -26,6 +26,7 @@ import {
 import { transicionar as transicionarAccion } from "./servicios/accion";
 import {
   confirmarCompromiso as confirmarCompromisoPuro,
+  rescatar as rescatarPuro,
   transicionar as transicionarCompromiso,
   type ConfirmacionDeCompromiso,
   type ResultadoDeConfirmacion,
@@ -218,6 +219,107 @@ export async function confirmarCompromiso(
   await transicionarAccion(deps, institutionId, datos.actionId, "COMMITTED", {}, datos.estudianteId);
 
   return resultado;
+}
+
+/** Lo que el estudiante pide cuando rescata un incumplimiento. */
+export interface RescateSolicitado {
+  rescatadoId: string;
+  estudianteId: string;
+  startAt: string;
+  timezone: string;
+  plannedMinutes: number;
+  claveDeIdempotencia: string;
+}
+
+export type ResultadoDeRescate =
+  | { estado: "OK"; compromiso: { id: string }; duplicado: boolean }
+  /** No existe, o no es de quien lo pide. **Las dos respuestas son la misma.** */
+  | { estado: "NO_ES_SUYO" }
+  /** Existe y es suyo, pero no está incumplido: `I3` sólo deja rescatar un `MISSED`. */
+  | { estado: "NO_INCUMPLIDO"; desde: string }
+  /** Otro se adelantó: ya tiene rescate, o dejó de estar `MISSED`. */
+  | { estado: "CONFLICTO" }
+  /** La clave existe con otro dueño, otro incumplimiento u otro contenido. */
+  | { estado: "CONFLICTO_DE_CLAVE" };
+
+/**
+ * Rescatar un incumplimiento — **la salida del camino que no salió bien**.
+ *
+ * ## Por qué esto existía y no se podía usar
+ *
+ * `rescatar()` es transaccional desde la Fase B2 y **nadie lo llamaba**. El
+ * reloj llevaba un compromiso a `DUE` y después a `MISSED`, y ahí el estudiante
+ * quedaba sin ninguna salida: la máquina no admite `MISSED → CONFIRMED` —a
+ * propósito, es *No Cortar*— y `POST /api/compromiso` sólo crea el primer
+ * compromiso de una `Action` `RECOMMENDED`/`ACCEPTED`, nunca el segundo.
+ *
+ * Con lo cual **`RescueSucceeded` no era alcanzable por ningún camino**, y es
+ * uno de los cuatro eventos que [ADR-041](../../docs/decisions.md#adr-041)
+ * volvió cláusula del contrato con el CRM.
+ *
+ * ## Las dos cosas que agrega esta orquestación, y por qué no van en el Service
+ *
+ * **1 · Autorización.** `rescatar()` comprueba `MISSED` y nada más, porque el
+ * Service no sabe quién pide. `porId` scopea por institución, y dos alumnos de
+ * la misma institución comparten scope: sin esto, cualquiera podría rescatar el
+ * incumplimiento de otro y **quedarse con un compromiso que apunta a la falla
+ * ajena**.
+ *
+ * **2 · Idempotencia por clave del cliente**, la misma disciplina de `D2·A`:
+ * repetida con el mismo dueño, el mismo incumplimiento y el mismo payload
+ * devuelve la fila existente; con cualquier otra cosa es `CONFLICTO_DE_CLAVE`
+ * **sin exponer la fila**. Sin esto, un doble clic choca contra
+ * `UNIQUE(idempotency_key)` y sale como un `500` que no explica nada.
+ *
+ * **El incumplido no se toca, y esa garantía no está acá:** vive en
+ * `crear_rescate` y en la máquina de estados. Acá no se puede aflojar.
+ */
+export async function rescatarCompromiso(
+  institutionId: string,
+  datos: RescateSolicitado,
+): Promise<ResultadoDeRescate> {
+  const huella = await compromisosReal.huellaDeClave(institutionId, datos.claveDeIdempotencia);
+  if (huella) {
+    const mismo =
+      huella.estudianteId === datos.estudianteId &&
+      huella.compromiso.rescuesCommitmentId === datos.rescatadoId &&
+      huella.startAt === datos.startAt &&
+      huella.timezone === datos.timezone &&
+      huella.plannedMinutes === datos.plannedMinutes;
+    return mismo
+      ? { estado: "OK", compromiso: { id: huella.compromiso.id }, duplicado: true }
+      : { estado: "CONFLICTO_DE_CLAVE" };
+  }
+
+  // **Antes de mirar el estado.** Si no es suyo, que esté o no incumplido no es
+  // información que le corresponda: la respuesta es la misma que si no
+  // existiera.
+  const duenio = await compromisosReal.duenioDe(institutionId, datos.rescatadoId);
+  if (duenio !== datos.estudianteId) return { estado: "NO_ES_SUYO" };
+
+  const resultado = await rescatarPuro(
+    { repo: compromisosReal, eventos: eventosReal },
+    institutionId,
+    datos.rescatadoId,
+    {
+      startAt: datos.startAt,
+      timezone: datos.timezone,
+      plannedMinutes: datos.plannedMinutes,
+      claveDeIdempotencia: datos.claveDeIdempotencia,
+    },
+    datos.estudianteId,
+  );
+
+  switch (resultado.estado) {
+    case "OK":
+      return { estado: "OK", compromiso: { id: resultado.compromiso.id }, duplicado: false };
+    case "NO_ENCONTRADO":
+      return { estado: "NO_ES_SUYO" };
+    case "NO_INCUMPLIDO":
+      return { estado: "NO_INCUMPLIDO", desde: resultado.desde };
+    default:
+      return { estado: "CONFLICTO" };
+  }
 }
 
 /**
@@ -465,6 +567,53 @@ export async function compromisoDe(
 }
 
 /**
+ * El instante que se propone: la próxima media hora en punto.
+ *
+ * ⚠️ **`PROVISIONAL — REVISAR ANTES DE INCORPORAR ESTUDIANTES REALES`**,
+ * ratificado por el CTO para el MVP sintético. Lo comparten la propuesta de
+ * compromiso y la de rescate **a propósito**: son la misma regla, y escribirla
+ * dos veces es como se desincronizan.
+ *
+ * Es reversible sin migrar: lo que se persiste es el instante que el estudiante
+ * confirmó, no la regla que lo propuso.
+ */
+function proximaMediaHora(ahora: string): Date {
+  const inicio = new Date(ahora);
+  inicio.setSeconds(0, 0);
+  inicio.setMinutes(inicio.getMinutes() > 30 ? 60 : 30);
+  return inicio;
+}
+
+/**
+ * La propuesta de **rescate** — Etapa B6.9.1.
+ *
+ * Qué incumplimiento se puede rescatar y con qué acuerdo nuevo. No escribe
+ * nada: es la contraparte de `propuestaDeCompromiso` para el camino que no
+ * salió bien, y existe por la misma razón —`UX04` tiene que mostrar *algo* para
+ * que el estudiante confirme—.
+ *
+ * `null` ⇒ no hay incumplimiento pendiente de rescate en la acción vigente.
+ */
+export async function propuestaDeRescate(
+  institutionId: string,
+  studentId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<{ rescatado: string; inicio: string; zona: string; minutos: number } | null> {
+  const estado = await accionLecturaReal.estadoDeAccion(institutionId, studentId, ahora, null);
+  if (!estado) return null;
+
+  const incumplido = await compromisosReal.incumplidoSinRescateDeAccion(institutionId, estado.accionId);
+  if (!incumplido) return null;
+
+  return {
+    rescatado: incumplido.id,
+    inicio: proximaMediaHora(ahora).toISOString(),
+    zona: estado.zona,
+    minutos: estado.minutosMax ?? estado.minutosMin ?? 45,
+  };
+}
+
+/**
  * La **propuesta** de compromiso para una `Action` que todavía no tiene ninguno.
  *
  * ## Por qué existe, y qué no es
@@ -493,10 +642,17 @@ export async function propuestaDeCompromiso(
   const estado = await accionLecturaReal.estadoDeAccion(institutionId, studentId, ahora, null);
   if (!estado || estado.compromisoVivo) return null;
 
+  // **Un incumplimiento pendiente no es "todavía sin compromiso"** — Etapa
+  // B6.9.1. Un `MISSED` no está vivo, así que hasta acá esta función proponía
+  // comprometerse de nuevo sobre una `Action` que ya está `COMMITTED`, y esa
+  // CTA terminaba en `409`: la pantalla ofrecía algo que el backend no podía
+  // hacer. Con un incumplimiento sin rescate manda su propia pantalla, que es
+  // la que ofrece la salida.
+  const incumplido = await compromisosReal.incumplidoSinRescateDeAccion(institutionId, estado.accionId);
+  if (incumplido) return null;
+
   const zona = estado.zona;
-  const inicio = new Date(ahora);
-  inicio.setSeconds(0, 0);
-  inicio.setMinutes(inicio.getMinutes() > 30 ? 60 : 30);
+  const inicio = proximaMediaHora(ahora);
   const startAt = inicio.toISOString();
   const minutos = estado.minutosMax ?? estado.minutosMin ?? 45;
 

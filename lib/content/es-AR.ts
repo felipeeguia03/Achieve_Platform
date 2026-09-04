@@ -191,6 +191,9 @@ export const copy = {
   "CTA.CONTINUAR": "Continuar",
   "CTA.SUBIR_EVIDENCIA": "Subir evidencia",
   "CTA.RETOMAR": "Retomar",
+  // Etapa B6.9.1. El texto sale del fixture `FX-LOCAL-COM-MISSED`, que es el
+  // diseño aprobado de esa pantalla: no se estrena copy acá.
+  "COMPROMISO.AVISO_INCUMPLIDO": "Este compromiso no se edita. El rescate es un acuerdo nuevo.",
   "CTA.VER_MATERIAS": "Ver materias",
   // Los verbos que ADR-017 desambiguó a partir de VI.1 §3.2.
   "CTA.VER_COMPROMISO": "Ver compromiso",

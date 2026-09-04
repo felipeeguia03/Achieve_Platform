@@ -80,14 +80,27 @@ function estadoDe(e: EstadoDeCompromiso): EstadoCompromiso {
 /**
  * La CTA. **`null` ⇒ no se renderiza.**
  *
- * Un `MISSED`, un `COMPLETED`, un `CLOSED` y un `RENEGOTIATED` no ofrecen
- * confirmar: son terminales o casi. Un `MISSED` en particular **nunca** se edita
- * para parecer cumplido — el rescate es otro objeto, y llega por otra CTA.
+ * Un `COMPLETED`, un `CLOSED` y un `RENEGOTIATED` no ofrecen nada: son
+ * terminales o casi.
+ *
+ * ## El `MISSED` sí ofrece una, y no es la misma — Etapa B6.9.1
+ *
+ * **Nunca** ofrece confirmar: un incumplimiento no se edita para parecer
+ * cumplido. Ofrece **`CTA-015` · «Retomar»**, que empieza *otro objeto* —el
+ * rescate—, y por eso el texto es distinto y el destino también.
+ *
+ * Hasta acá esta función devolvía `null` para `MISSED`, y **eso contradecía al
+ * fixture `FX-LOCAL-COM-MISSED`**, que es el diseño aprobado de la pantalla y
+ * tiene la CTA. La consecuencia no era cosmética: el estudiante que incumplía
+ * **se quedaba sin ninguna salida** —la máquina no admite `MISSED → CONFIRMED`
+ * y `POST /api/compromiso` sólo crea el primero de una `Action`—, así que el
+ * loop terminaba ahí.
  */
 function ctaDe(estado: EstadoCompromiso): CompromisoProps["ctaPrimaria"] {
   if (estado === "DRAFT" || estado === "RENEGOCIACION" || estado === "RESCATE") {
     return { texto: t("CTA.CONFIRMAR_COMPROMISO"), habilitada: true };
   }
+  if (estado === "MISSED") return { texto: t("CTA.RETOMAR"), habilitada: true };
   if (estado === "CONFIRMED" || estado === "DUE") {
     return { texto: t("CTA.EMPEZAR"), habilitada: true };
   }
@@ -120,7 +133,9 @@ export function proyectarCompromiso(e: EstadoDeCompromiso): CompromisoProps {
     evidenciaEsperada: e.evidenciaEsperada,
     criterioCierre: e.criterioCierre,
     estadoResultante: CHIP[estado] ?? null,
-    aviso: null,
+    // El incumplido dice por qué su pantalla no se edita. Los demás estados no
+    // tienen nada que avisar, y un aviso vacío ocupa lugar sin decir nada.
+    aviso: estado === "MISSED" ? t("COMPROMISO.AVISO_INCUMPLIDO") : null,
     original: e.original ? originalDe(e.original, e.esRescate) : null,
     ctaPrimaria: ctaDe(estado),
   };

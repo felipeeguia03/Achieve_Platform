@@ -5,6 +5,7 @@ import {
   compromisoDe,
   confirmarCompromiso,
   propuestaDeCompromiso,
+  propuestaDeRescate,
   resolverSesion,
 } from "@/lib/server/composicion";
 
@@ -45,7 +46,17 @@ export async function GET(request: Request) {
   }
 
   const props = await compromisoDe(institutionId, studentId, pedido);
-  if (props) return NextResponse.json(props);
+  if (props) {
+    // La pantalla del incumplido lleva su salida: **qué** rescatar y con qué
+    // acuerdo. Va junto a los props por la misma razón que `propuesta` —el
+    // cliente no puede inventar ninguno de los dos— y sólo cuando hay algo que
+    // rescatar: un `MISSED` ya rescatado no vuelve a ofrecerlo.
+    if (props.estado === "MISSED" && !pedido) {
+      const rescate = await propuestaDeRescate(institutionId, studentId);
+      if (rescate) return NextResponse.json({ ...props, rescate });
+    }
+    return NextResponse.json(props);
+  }
 
   // Pedir uno puntual por `?compromiso=` y no encontrarlo sí es `404`: se pidió
   // una fila concreta.
