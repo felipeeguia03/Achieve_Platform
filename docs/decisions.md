@@ -90,6 +90,11 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-041](#adr-041) | Qué cuenta como «actividad» del estudiante a efectos de facturar | ✅ `ACCEPTED` *(4 sep 2026 · opción A: los cuatro eventos, como **cláusula del contrato**)* | — |
 | [ADR-042](#adr-042) | Dónde da el estudiante su WhatsApp, si es que lo da | ✅ `ACCEPTED` *(4 sep 2026 · opción A: **hay tramo de onboarding**, y el owner definió el alta entera)* | — |
 | [ADR-043](#adr-043) | El orden de los cinco flujos al descongelar, y el smoke test cross-sistema | ✅ `ACCEPTED` *(4 sep 2026 · **E/E′ primero**, D inmediatamente después; smoke test al empezar la integración)* | — |
+| [ADR-044](#adr-044) | «Contanos» es voseo: sale de la lista del guard, no se afloja el guard | ✅ `ACCEPTED` *(4 sep 2026 · **sólo esa palabra**; las otras cinco siguen prohibidas)* | — |
+| [ADR-045](#adr-045) | La reflexión se escribe dentro de la Evidencia | ✅ `ACCEPTED` *(4 sep 2026 · autoriza tocar `components/screens/evidencia.tsx`)* | — |
+| [ADR-046](#adr-046) | `C01-010`: cuándo una renegociación es elegible | ✅ `ACCEPTED` *(4 sep 2026 · cinco condiciones; **una sola por cadena**)* | — |
+| [ADR-047](#adr-047) | `C01-018`: el progreso no se infiere de una transición | ✅ `ACCEPTED` *(4 sep 2026 · ratifica lo que ya corre; `C01-018` `CLOSED`)* | — |
+| [ADR-048](#adr-048) | `C01-024`: la ventana de Modo Examen son 14 días | ✅ `ACCEPTED` *(4 sep 2026 · **no depende de readiness**; `C01-024` `CLOSED`)* | — |
 
 ---
 
@@ -3763,3 +3768,152 @@ ningún documento encuentra.
 - **No descongela ADR-035** para A, B y C.
 - **No habilita datos reales.** [ADR-006](#adr-006) sigue siendo bloqueo absoluto, y el smoke test
   usa alumno sintético **precisamente para no tocarlo**.
+
+---
+
+<a id="adr-044"></a>
+## ADR-044 — «Contanos» es voseo: sale de la lista del guard, no se afloja el guard
+
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner** (opción A).
+Fuente literal: [`respuesta-po-decisiones-abiertas-source.md`](respuesta-po-decisiones-abiertas-source.md) §1.
+**Toca:** `lib/content/es-AR.ts`, `tests/auditoria-conformidad.test.ts`.
+
+### La decisión
+
+**Se aprueba la copy del fixture: «Contanos cómo te fue (requerido)».** Y `Contanos` **sale de la
+lista de imperativos prohibidos** del guard `C-01`, *"porque es voseo correcto"*.
+
+⚠️ **Con un límite explícito, y es la mitad de la decisión:** *"el cambio debe ser específico: **no se
+afloja el resto del control** ni se modifican las otras palabras prohibidas"*. Las otras cinco
+—`Entrega`, `Sube`, `Resuelve`, `Elige`, `Agrega`— son tuteo y **siguen prohibidas**.
+
+### Por qué importa cómo se hizo
+
+El equipo detectó el conflicto y **no tocó el guard**: usó una copy provisional y levantó la decisión.
+Aflojar un control para que pase el cambio propio es lo que un control existe para impedir — y la
+diferencia entre eso y esto es que **acá la lista estaba equivocada y lo dijo su dueño**.
+
+---
+
+<a id="adr-045"></a>
+## ADR-045 — La reflexión se escribe dentro de la Evidencia, no en una pantalla nueva
+
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner**.
+Fuente literal: [`respuesta-po-decisiones-abiertas-source.md`](respuesta-po-decisiones-abiertas-source.md) §2.
+**Desbloquea:** la superficie que la [Fase B6.10](roadmap.md) dejó pendiente.
+**Toca:** `components/screens/evidencia.tsx` — **autorizado explícitamente**, y por eso deja de aplicar
+la regla 6 para este cambio.
+
+### La decisión
+
+**La reflexión se escribe dentro de `UX05`, como parte de la misma entrega.** El fundamento, textual:
+*"la reflexión y la evidencia forman parte de la misma intención del estudiante. **No se crea un flujo
+independiente ni una pantalla nueva**"*.
+
+| | Comportamiento aprobado |
+|---|---|
+| **Obligatoria** | El campo aparece **desplegado y visible antes del CTA principal** |
+| **Opcional** | Puede quedar **contraído** detrás de una acción secundaria |
+| **Copy del campo** | **«Contanos cómo te fue»** |
+| **CTA principal** | Sigue siendo **«Enviar evidencia»** — no cambia |
+| **Obligatoria y vacía** | La entrega **no se ejecuta** y se muestra: *"Contanos cómo te fue para enviar la evidencia."* |
+
+**Y no hace falta esperar un rediseño:** *"se reutiliza la composición visual existente de Evidencia y
+el fixture aprobado"*. Es lo que destraba el trabajo sin las capturas de `docs/diseño/`.
+
+⚠️ **Respetando las validaciones que ya existen en el servidor.** El bloqueo real vive en
+`entregarEvidencia` desde la Fase B6.10 ([ADR-026](#adr-026) hecho cumplir): **el campo desplegado no
+lo reemplaza**, lo acompaña. Una pantalla que valide y un servidor que no es como estaba antes, al
+revés.
+
+---
+
+<a id="adr-046"></a>
+## ADR-046 — `C01-010`: cuándo una renegociación es elegible
+
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner**.
+Fuente literal: [`respuesta-po-decisiones-abiertas-source.md`](respuesta-po-decisiones-abiertas-source.md) §3.
+**Responde:** `C01-010` → **`ANSWERED — RESIDUO ABIERTO`**: la regla *"se adopta para el MVP y deberá
+revisarse con evidencia de uso antes del piloto"*.
+**Desbloquea:** la última de las tres operaciones huérfanas que encontró la Fase B6.9.
+
+### Las cinco condiciones, todas obligatorias
+
+1. El compromiso está en **`CONFIRMED` o `DUE`**.
+2. Todavía **no pasó a `STARTED` ni `MISSED`**.
+3. **No fue renegociado antes:** una sola renegociación **por cadena de compromiso**.
+4. El nuevo horario empieza **al menos 15 minutos después** del momento en que se pide el cambio.
+5. El nuevo horario cae en el **mismo día calendario**, en la zona horaria de la institución.
+
+⚠️ **Y una aclaración que evita el error más probable:** *"**no se exige una anticipación mínima
+respecto del horario original**: un compromiso en `DUE` todavía puede renegociarse mientras no haya
+sido declarado `MISSED`"*. El límite es el estado, no el reloj del acuerdo viejo.
+
+### Persistencia — lo que ya garantizaba el schema, ratificado
+
+- **La fila original nunca se modifica** para representar el acuerdo nuevo.
+- La original pasa a **`RENEGOTIATED`**; el sucesor es otro `Commitment`, vinculado por
+  **`renegotiated_from_id`**.
+- **Atómica e idempotente**, como las demás.
+
+**Si ya hubo una renegociación, o el compromiso está `STARTED`/`MISSED`:** la salida es **continuar o
+entrar al rescate**, *"no volver a moverlo"*.
+
+---
+
+<a id="adr-047"></a>
+## ADR-047 — `C01-018`: el progreso no se infiere de una transición, nunca
+
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner**.
+Fuente literal: [`respuesta-po-decisiones-abiertas-source.md`](respuesta-po-decisiones-abiertas-source.md) §4.
+**Cierra:** `C01-018` → **`CLOSED`**.
+
+### La decisión
+
+**Se ratifica como definitivo el comportamiento que ya corre**, y eso es lo notable: no hubo que
+cambiar una línea. Las cinco reglas:
+
+1. **`VALIDATED` por sí solo no produce `ProgressUpdated`.**
+2. La operación autorizada de validación **recibe un resultado explícito** de progreso.
+3. Esa operación invoca `registrarProgreso` **como paso explícito y separado**.
+4. Informa **`changed_dimensions` o `explicit_no_change = TRUE`** — el invariante `I10`.
+5. **Una transición de Evidence nunca puede inferir por sí sola que existió progreso.**
+
+**La causa queda registrada** por la validación y la evidencia que la originaron.
+
+⚠️ **Y la puerta que deja abierta viene con su candado:** *"nuevas fuentes de progreso podrán
+agregarse después, pero **requerirán una causalidad explícita propia; no se incorporan por
+inferencia**"*.
+
+### Qué cambia en el código
+
+**Nada.** El guard estático que cubre los cuatro caminos y los triggers del schema pasa de proteger
+una regla provisional a proteger **una decisión cerrada**.
+
+---
+
+<a id="adr-048"></a>
+## ADR-048 — `C01-024`: la ventana de recomendación de Modo Examen son 14 días
+
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner**.
+Fuente literal: [`respuesta-po-decisiones-abiertas-source.md`](respuesta-po-decisiones-abiertas-source.md) §5.
+**Cierra:** `C01-024` → **`CLOSED`**.
+**Desbloquea:** `ExamPreparationRecommended`, el único evento `P0` del catálogo que esperaba una
+decisión y no una superficie.
+
+### Las cuatro condiciones
+
+1. Existe una **fecha de examen conocida y vigente**.
+2. Faltan **14 días calendario o menos, incluyendo el día 14**.
+3. **No existe ya** un Modo Examen activo o completado para ese mismo examen.
+4. La recomendación **no fue emitida antes** para ese intento.
+
+**Se emite una sola vez por intento**, y el cálculo usa la **zona horaria institucional**.
+
+### Las dos cosas que la decisión desacopla, y son las que evitan un error caro
+
+⚠️ **No depende de `PreparationReadiness`.** Textual: *"los umbrales de readiness continúan abiertos y
+**no deben bloquear este disparador**"*. Son dos decisiones distintas y `C01-029` sigue abierta.
+
+⚠️ **Sin fecha confiable no se emite, y no se inventa una.** *"El sistema no inventa una ni emite
+automáticamente el evento"*. La activación manual sigue disponible: **omitir, no inventar**.

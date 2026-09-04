@@ -6,8 +6,8 @@
 
 ## Qué es esto y qué no es
 
-Son 51 decisiones de negocio/producto (registro C01): **40 siguen `OPEN`**, 9 tienen respuesta con
-residuo abierto y 2 están cerradas. Ocho decisiones psicopedagógicas forman parte de esas 51
+Son 51 decisiones de negocio/producto (registro C01): **37 siguen `OPEN`**, 10 tienen respuesta con
+residuo abierto y 4 están cerradas. Ocho decisiones psicopedagógicas forman parte de esas 51
 (`HUMAN-P0-01…08`, dentro de C01-031…038). Ninguna bloquea generar el prototipo low-fi: para eso
 alcanzan fixtures y estados sintéticos. Sí bloquean los usos materiales indicados por su gate.
 
@@ -18,7 +18,7 @@ alcanzan fixtures y estados sintéticos. Sí bloquean los usos materiales indica
 **Gate material** (a partir de qué etapa deja de poder posponerse):
 `I` = antes de implementación productiva · `H` = antes de high-fidelity · `P` = antes de piloto institucional · `O` = fuera del MVP, no bloquea nada del corte actual.
 
-**40 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
+**37 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
 `ANSWERED — RESIDUO ABIERTO` el 31 de agosto de 2026, y `C01-051` el 1 de septiembre: su owner —una psicopedagoga real— respondió por
 escrito. Ver [ADR-025](decisions.md#adr-025) y la fuente literal en
 [`human-p0-source.md`](human-p0-source.md).
@@ -29,6 +29,12 @@ mecanismo quedó implementado el 2 de septiembre.
 `C01-009` quedó `CLOSED` el 3 de septiembre de 2026 por decisión del CTO
 ([ADR-040](decisions.md#adr-040)), con el camino de ejecución ya implementado contra Postgres el
 mismo día.
+
+**Y el 4 de septiembre el Product Owner cerró tres más** desde
+[`decisiones-abiertas.md`](decisiones-abiertas.md): `C01-018` y `C01-024` quedaron `CLOSED`
+([ADR-047](decisions.md#adr-047), [ADR-048](decisions.md#adr-048)) y `C01-010` pasó a
+`ANSWERED — RESIDUO ABIERTO` ([ADR-046](decisions.md#adr-046)), con la regla adoptada para el MVP y a
+revisar antes del piloto.
 
 Eso es exactamente lo que este anexo pedía: **una respuesta real de su owner, documentada, no una
 inferencia.** Ninguna reclasificación ni uso en el low-fi cierra una fila; sólo su owner.
@@ -49,7 +55,7 @@ construir contra él; lo que queda listado en la columna de residuo sigue sin po
 | C01-007 | Action: identidad, lifecycle y contexto inequívoco | Academic Decision Engine mantiene ownership; Action lifecycle consume CourseEnrollment y contexto ExamPreparation; C01-003/006/026 | OPEN; `C01-CF-03` gap, no contradicción | P1 | I |
 | C01-008 | Contenido ejecutable de Action y Resource | Action content owner; Hoy/Materia/Commitment/Evidence/Protocol; C01-006/007 | OPEN | P1 | H |
 | C01-009 | Mutaciones de Action e idempotencia | Action lifecycle owner; UX03/04/analytics; C01-007/023 | ✅ **`CLOSED`** — 3 de septiembre de 2026, por decisión del CTO ([ADR-040](decisions.md#adr-040)). Una `Action` pasa a `COMPLETED` cuando una operación autorizada valida como suficiente una `Evidence` vinculada a un `Commitment` de esa misma `Action`; la idempotencia es por clave del cliente, con `409` sin exponer la fila | P1 | I |
-| C01-010 | Commitment temporal, renegociación y rescate | Commitment owner; Hoy/Materia/Bitácora/CRM; C01-003/008 | OPEN | P1 | I |
+| C01-010 | Commitment temporal, renegociación y rescate | Commitment owner; Hoy/Materia/Bitácora/CRM; C01-003/008 | ✅ **`ANSWERED — RESIDUO ABIERTO`** — 4 de septiembre de 2026 ([ADR-046](decisions.md#adr-046)). Cinco condiciones de elegibilidad, **una sola renegociación por cadena**, +15 min y mismo día calendario. **Residuo:** *"se adopta para el MVP y deberá revisarse con evidencia de uso antes del piloto"* | P1 | I |
 | C01-011 | Coordinación observable Action–Commitment | Product lifecycle owner; UX01/03/04; C01-007/009/010/023 | OPEN | P1 | I |
 | C01-012 | Evidence content y pre-submission | Evidence System; UX05/Protocol; C01-001/008 | OPEN; Reflection config separada en C01-051 | P1 | I |
 | C01-013 | Criterios, validación y señales de Evidence | Evidence System/Product; Progress/Protocol/ADE; C01-008/012/035 | OPEN; semántica técnica abierta. **Confirmado por `HUMAN-P0-05 v1.0`:** `signal_execution`/`signal_production` son **evidencia de trabajo**; sólo `signal_domain` es **evidencia de aprendizaje** | P1 | I |
@@ -57,13 +63,13 @@ construir contra él; lo que queda listado en la columna de residuo sigue sin po
 | C01-015 | Idempotencia y normalización Web/WhatsApp de Evidence | Evidence Integration; UX05/auditoría; C01-012/014/023 | OPEN | P1 | I |
 | C01-016 | Instancia técnica de revisión R1 | Validation/Security; Evidence/R1; C01-013/030/036 | OPEN; R1 autorizada, R3 fallback, assignment técnico pendiente. `HUMAN-P0-06 v1.0` dice **cuándo** hace falta una persona, y el disparador es la situación del estudiante: por eso sus tres reglas viven en `risk_rule` y no en el lifecycle de `Evidence` ([ADR-032](decisions.md#adr-032)) | P1 | I |
 | C01-017 | Privacidad y retención de Evidence/Reflection | Product Privacy; estudiante/R1/institución; C01-001/030/051 | OPEN | P1 | I |
-| C01-018 | `ProgressUpdated`: payload, causalidad y no-cambio | Progress owner; UX06/08/09/ADE/Risk; C01-013/014/023 | OPEN | P1 | I |
+| C01-018 | `ProgressUpdated`: payload, causalidad y no-cambio | Progress owner; UX06/08/09/ADE/Risk; C01-013/014/023 | ✅ **`CLOSED`** — 4 de septiembre de 2026 ([ADR-047](decisions.md#adr-047)). Ratifica lo que ya corría: `VALIDATED` no lo produce, la validación lo invoca como paso separado, e informa `changed_dimensions` o `explicit_no_change`. **Una transición nunca lo infiere** | P1 | I |
 | C01-019 | TopicProgress y resumen de materia | Product Progress; Hoy/Materia/Bitácora/Risk; C01-003/018 | OPEN; semántica técnica pendiente | P1 | H |
 | C01-020 | ProgressEntry / Bitácora bundle | Progress/Event owner; Bitácora/Materia; C01-018/019/023 | OPEN; read model/materialización no decididos | P1 | I |
 | C01-021 | Risk Engine v1 y sujeto de RiskSignal | Risk owner; TodayView/CRM/ADE; C01-001/002/019/023/036 | OPEN. El sujeto quedó resuelto por schema. ✅ `HP0-06-1 v4.0-psicopedagogia` ya evalúa hechos comparables con el denominador y las condiciones profesionales de [ADR-037](decisions.md#adr-037); sus umbrales `2` y `3` viven en configuración. `HP0-06-2` y `HP0-06-3` siguen en modo `HUMANA`. Queda abierto definir su operación, severidad y calibración de piloto; no se inventan evaluadores para esas dos reglas | P1 | I |
 | C01-022 | Closed-loop Risk–Intervention–Outcome | Product Operations; CRM/Risk/institución; C01-021/039/044 | **CLOSED — 1 sep 2026**, [ADR-034](decisions.md#adr-034). ✅ Implementado el 2 sep: la Plataforma declara `INTERVENTION_REQUIRED`; `ACKNOWLEDGED` queda legacy en `RiskSignal` y hacerse cargo es un hecho de `Intervention`; `EXPIRED` sale sólo de `OPEN`; cerrar escribe outcome, intervención y `RESOLVED` en una transacción. Cerrar sin outcome no es un camino que exista | P1 | I |
 | C01-023 | Product Event Model | Product Event owner; analytics/servicios; C01-001 | OPEN; artifact ausente | P1 | I |
-| C01-024 | Recomendación/activación temporal de Modo Examen | Product/ADE; UX01/02/07; C01-005/006/023 | OPEN; default configurable | P1 | I |
+| C01-024 | Recomendación/activación temporal de Modo Examen | Product/ADE; UX01/02/07; C01-005/006/023 | ✅ **`CLOSED`** — 4 de septiembre de 2026 ([ADR-048](decisions.md#adr-048)). **14 días calendario o menos, incluido el 14**, una vez por intento, en huso institucional. **No depende de readiness**, y sin fecha confiable no se emite | P1 | I |
 | C01-025 | ExamPreparation: ownership y lifecycle | ExamPreparation owner; UX07–09; C01-005/023/024 | OPEN | P1 | I |
 | C01-026 | ExamProtocol instance y estado por paso | Exam Protocol owner; UX08/09/Evidence/ADE; C01-025 | OPEN. **Avanzado por [ADR-028](decisions.md#adr-028):** no hay estado por paso, hay hechos de completion, y son varios por paso | P1 | I |
 | C01-027 | Contenido/Resource versionado de ProtocolStep | Exam Protocol content owner; UX09/Evidence; C01-002/026/031–038/051 | OPEN. **La pauta de la cátedra ya tiene dónde vivir** ([ADR-029](decisions.md#adr-029)) y el contenido se carga rotulado ([ADR-030](decisions.md#adr-030)). Sigue abierto **el criterio de cierre**, y aparece un hecho nuevo: **el texto de los 20 pasos `PE-PSY` nunca se transcribió al repositorio** | P1 | I |

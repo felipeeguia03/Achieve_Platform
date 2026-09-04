@@ -23,10 +23,11 @@ Si el código y `docs/` discrepan, **el código es el defectuoso**.
 
 ### 1.1 No inventes reglas de negocio
 
-Este proyecto tiene **40 decisiones de negocio abiertas**. El registro va de `C01-001` a
-`C01-051`: 51 filas, de las cuales **40 siguen `OPEN`**, 9 están respondidas con residuo y dos están
-cerradas —`C01-022` ([ADR-034](docs/decisions.md#adr-034)) y `C01-009`
-([ADR-040](docs/decisions.md#adr-040), 3 de septiembre de 2026)—. Las **8 decisiones
+Este proyecto tiene **37 decisiones de negocio abiertas**. El registro va de `C01-001` a
+`C01-051`: 51 filas, de las cuales **37 siguen `OPEN`**, 10 están respondidas con residuo y **cuatro
+están cerradas** — `C01-022`, `C01-009`, `C01-018` y `C01-024`. Las tres últimas se cerraron el 3 y
+el 4 de septiembre de 2026; qué falta decidir y quién lo decide está en
+[`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md). Las **8 decisiones
 psicopedagógicas** (`HUMAN-P0-01`…`08`) **fueron respondidas** por la psicopedagoga real el 31 de agosto de 2026: se construye contra su criterio
 confirmado `v1.0`, **citándolo**, y sus residuos siguen abiertos. Todas están en
 [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md); las respuestas, en

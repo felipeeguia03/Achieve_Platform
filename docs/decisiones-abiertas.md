@@ -1,5 +1,25 @@
 # Decisiones que esperan a una persona · 4 de septiembre de 2026
 
+> ## ✅ El Product Owner respondió cinco — 4 de septiembre de 2026
+>
+> Fuente literal: [`respuesta-po-decisiones-abiertas-source.md`](respuesta-po-decisiones-abiertas-source.md).
+>
+> | # | Decisión | Cómo quedó |
+> |---|---|---|
+> | 1 | La copy de la reflexión | **Opción A**: se usa *"Contanos cómo te fue (requerido)"* y **`Contanos` sale de la lista del guard** — sólo esa palabra ([ADR-044](decisions.md#adr-044)) |
+> | 2 | La superficie de la reflexión | **Dentro de `UX05`**, no una pantalla nueva. Autoriza tocar `components/screens/evidencia.tsx` ([ADR-045](decisions.md#adr-045)) |
+> | 3 | `C01-010` · elegibilidad de renegociación | **Cinco condiciones**, una sola por cadena. `ANSWERED — RESIDUO ABIERTO`: se revisa antes del piloto ([ADR-046](decisions.md#adr-046)) |
+> | 6 | `C01-018` · causalidad de `ProgressUpdated` | **`CLOSED`.** Ratifica lo que ya corre ([ADR-047](decisions.md#adr-047)) |
+> | 7 | `C01-024` · ventana de Modo Examen | **`CLOSED`.** 14 días, y **no depende de readiness** ([ADR-048](decisions.md#adr-048)) |
+>
+> **Las diez restantes siguen abiertas**, con sus responsables. Sobre tres de ellas el owner además
+> dijo **cómo quiere que se le presenten**: ver §2.1, §2.2 y §2.5.
+>
+> ⚠️ **Y puso un límite a la ejecución:** autoriza implementar la reflexión, la renegociación y el
+> disparador de Modo Examen, y **pushear a la rama de trabajo**. **No** autoriza inventar umbrales de
+> readiness, definir identidades humanas, usar datos reales, adelantar la integración con el CRM,
+> mergear a `main` ni desplegar.
+
 **Documento:** `docs/decisiones-abiertas.md`
 **Rol:** el índice de **todo lo que un agente no puede cerrar**, ordenado por qué destraba.
 **Se actualiza:** cuando una decisión se cierra —con su ADR— o cuando el equipo levanta una nueva.
@@ -17,13 +37,13 @@
 
 | # | Decisión | Quién | Qué destraba | Urgencia real |
 |---|---|---|---|---|
-| 1 | La **copy** de la reflexión obligatoria | Product Owner | Que el texto deje de contradecir a un guard | 🔴 **Hay código esperándola** |
-| 2 | La **superficie** para escribir una reflexión | Product Owner + diseño | Que la reflexión se escriba desde el producto y no por API | 🔴 Hay código esperándola |
-| 3 | **`C01-010`** · qué hace *elegible* a una renegociación | Commitment owner | La última operación del loop sin cablear | 🔴 Hay código esperándola |
-| 4 | **`C01-029`** · los umbrales de readiness | Product | Que Modo Examen deje de tener una tabla que nadie escribe | 🟡 Hueco visible en la demo |
-| 5 | **`C01-019`** · las cinco dimensiones de progreso | Product Progress | Lo que `UX06` puede mostrar. Gate `H` | 🟡 Hueco visible |
-| 6 | **`C01-018`** · quién emite `ProgressUpdated` y con qué causalidad | Progress owner | Que el progreso deje de depender de una operación externa | 🟡 |
-| 7 | **`C01-024`** · cuándo se recomienda Modo Examen | Product + ADE | El único evento `P0` del catálogo que nadie dispara | 🟡 |
+| ~~1~~ | ~~La copy de la reflexión obligatoria~~ | Product Owner | ✅ **Respondida** — [ADR-044](decisions.md#adr-044) | ✅ |
+| ~~2~~ | ~~La superficie para escribir una reflexión~~ | Product Owner | ✅ **Respondida** — [ADR-045](decisions.md#adr-045) | ✅ |
+| ~~3~~ | ~~`C01-010` · qué hace *elegible* a una renegociación~~ | Product Owner | ✅ **Respondida** — [ADR-046](decisions.md#adr-046). Residuo: revisar antes del piloto | ✅ |
+| 4 | **`C01-029`** · los umbrales de readiness | Product | Que Modo Examen deje de tener una tabla que nadie escribe | 🟡 **Pidió un paquete antes de decidir** — §2.1 |
+| 5 | **`C01-019`** · las cinco dimensiones de progreso | Product Progress | Lo que `UX06` puede mostrar. Gate `H` | 🟡 **Pidió un paquete antes de decidir** — §2.2 |
+| ~~6~~ | ~~`C01-018` · quién emite `ProgressUpdated`~~ | Product Owner | ✅ **`CLOSED`** — [ADR-047](decisions.md#adr-047) | ✅ |
+| ~~7~~ | ~~`C01-024` · cuándo se recomienda Modo Examen~~ | Product Owner | ✅ **`CLOSED`** — [ADR-048](decisions.md#adr-048) | ✅ |
 | 8 | **`C01-030`** · quién valida, quién corrobora y quién pide un reenvío | Product Security / Privacy | **Tres operaciones ya construidas** que hoy corren con secreto de servicio y sin identidad | 🟡 |
 | 9 | **`C01-021`** · qué regla produce qué señal | Risk owner | Las dos reglas de riesgo todavía humanas | 🟠 Bloquea el cierre de la Fase B6 |
 | 10 | **`C01-044`** · playbooks y SLA | Product Operations | Los dos eslabones que le faltan al circuito de riesgo | 🟠 |
@@ -38,9 +58,10 @@ cierre de una fase · 🟡 el producto funciona, con un hueco declarado.
 
 ---
 
-## 1. Las tres que tienen código esperándolas
+## 1. Las tres que tenían código esperándolas — ✅ respondidas el 4 de septiembre
 
-Son las únicas con esa propiedad: **el trabajo está identificado y no arranca**.
+**Las tres se cerraron el mismo día en que se plantearon.** Lo que sigue es cómo se plantearon, que es
+lo que produjo las respuestas; **la decisión está en su ADR**, no acá.
 
 ### 1.1 · La copy de la reflexión obligatoria — **Product Owner**
 
@@ -62,7 +83,9 @@ lo que un guard existe para impedir. Y elegir la copy es de producto.
 | **A** | **Sacar `Contanos` de la lista del guard** y usar la copy del fixture | **Recomendada.** El guard queda diciendo la verdad y la pantalla usa el texto aprobado |
 | B | Dejar el guard y aprobar otra copy | Hoy se usa *"Agregar reflexión (requerido)"*, que no estrena voz. Funciona, y el fixture queda desalineado |
 
-**Mientras tanto** rige la B: nada está roto, y el fixture y la pantalla dicen cosas distintas.
+> ✅ **Respondida: opción A** ([ADR-044](decisions.md#adr-044)). Y con un límite que es la mitad de la
+> decisión: *"el cambio debe ser específico: **no se afloja el resto del control**"*. Las otras cinco
+> palabras siguen prohibidas.
 
 ### 1.2 · La superficie para escribir una reflexión — **Product Owner + diseño**
 
@@ -77,7 +100,11 @@ cumplir en el servidor**. Lo que no existe es el **formulario**:
 el roadmap lo pida— y el lenguaje visual sale de las capturas de `docs/diseño/`, **que no están
 versionadas** ([ADR-018](decisions.md#adr-018)).
 
-**Lo que hace falta:** que el roadmap lo pida, y las capturas.
+> ✅ **Respondida** ([ADR-045](decisions.md#adr-045)): **dentro de `UX05`**, porque *"la reflexión y la
+> evidencia forman parte de la misma intención del estudiante"*. Desplegada si es obligatoria,
+> contraída si es opcional, y **sin esperar un rediseño**: se reutiliza la composición existente.
+> Autoriza tocar `components/screens/evidencia.tsx`, así que la regla 6 deja de aplicar **a este
+> cambio**.
 
 ### 1.3 · `C01-010` — qué hace *elegible* a una renegociación — **Commitment owner**
 
@@ -92,8 +119,14 @@ nada lo calcula.
 `RENEGOTIATED`; **`STARTED` no** —renegociar es válido sólo antes de empezar— y **`MISSED` tampoco**,
 que para eso está el rescate.
 
-**Lo que falta es lo temporal:** hasta cuándo, cuántas veces, con qué anticipación. **No lo inferimos:
-sería inventar la regla.**
+> ✅ **Respondida** ([ADR-046](decisions.md#adr-046)): **cinco condiciones**, y las que faltaban eran
+> exactamente las temporales — **una sola renegociación por cadena**, el nuevo horario **al menos 15
+> minutos después** del pedido y **en el mismo día calendario**. Con una aclaración que evita el error
+> más probable: **no hay anticipación mínima respecto del horario original**; un `DUE` se renegocia
+> mientras no sea `MISSED`.
+>
+> **Residuo declarado:** la regla se adopta para el MVP y **se revisa con evidencia de uso antes del
+> piloto**.
 
 ---
 
@@ -107,22 +140,41 @@ El producto funciona con estos abiertos, y **cada uno se nota**.
 desde la Fase B5 y nadie la escribe**. Sin umbrales no hay card, ni score, ni porcentaje — y así
 está bien: **mostrar un número que nadie definió sería peor**. Lo que falta es decidir los umbrales.
 
+⚠️ **El owner dijo cómo quiere que se le presente, y es una instrucción, no una preferencia.** No fija
+umbrales sin ver: **las variables disponibles, la escala y fórmula actual, el efecto exacto de cada
+umbral, y tres ejemplos de estudiantes que quedarían en cada estado.** Un paquete breve, con
+recomendación y alternativas. **"No implementar porcentajes provisionales."**
+
 ### 2.2 · `C01-019` — las cinco dimensiones de progreso — **Product Progress** · gate `H`
 
 `UX06` muestra qué cambió y qué no, pero **mostrar las cinco dimensiones con sus valores** es esta
 decisión. Es una de las **dos filas con gate `H`** que quedan: bloquea pasar esa pantalla a
 high-fidelity.
 
-### 2.3 · `C01-018` — quién emite `ProgressUpdated` — **Progress owner**
+⚠️ **Lo que hay que llevarle:** nombres canónicos, **definición observable**, escala, fuente y un
+ejemplo **de cada dimensión**. Y una confirmación que destraba el presente: *"la implementación actual
+que distingue cambio de «sin cambio confirmado» **puede mantenerse**"*.
+
+### ~~2.3 · `C01-018` — quién emite `ProgressUpdated`~~ — ✅ `CLOSED`
 
 El Service **recibe** el resultado de progreso; no decide que hubo progreso. Hoy lo dispara la
 operación de validación ([ADR-040](decisions.md#adr-040)), y **`VALIDATED` sigue sin producirlo por
-sí solo**, que es correcto. Lo que falta es la causalidad definitiva.
+sí solo**.
 
-### 2.4 · `C01-024` — cuándo se recomienda Modo Examen — **Product + ADE**
+> ✅ **Cerrada** ([ADR-047](decisions.md#adr-047)), y lo notable es que **no hubo que cambiar una
+> línea**: el owner ratificó como definitivo el comportamiento que ya corría. La puerta que deja
+> abierta viene con su candado: nuevas fuentes de progreso **requieren causalidad explícita propia; no
+> se incorporan por inferencia**.
 
-`ExamPreparationRecommended` está en el catálogo `P0` y **nadie lo emite**: falta la ventana de
-recomendación. Es el único evento del catálogo que espera una decisión y no una superficie.
+### ~~2.4 · `C01-024` — cuándo se recomienda Modo Examen~~ — ✅ `CLOSED`
+
+`ExamPreparationRecommended` está en el catálogo `P0` y **nadie lo emite**: faltaba la ventana de
+recomendación.
+
+> ✅ **Cerrada** ([ADR-048](decisions.md#adr-048)): **14 días calendario o menos, incluido el 14**, una
+> vez por intento, en huso institucional. Con dos desacoples que evitan un error caro: **no depende de
+> `PreparationReadiness`** —que sigue abierta y **no debe bloquear el disparador**— y **sin fecha
+> confiable no se emite ni se inventa una**.
 
 ### 2.5 · `C01-030` — quién valida, corrobora y pide un reenvío — **Product Security / Privacy**
 
@@ -137,6 +189,12 @@ o a romper. Lo aprendimos con un `500` real.
 
 **Y el rol `R1` (Reviewer) sigue sin superficie**, por [ADR-033](decisions.md#adr-033): no está claro
 si vive acá o en el CRM.
+
+⚠️ **El owner ratificó el interinato, con su límite.** Mientras todo sea sintético: las operaciones
+**pueden seguir** con secreto de servicio, `reviewer_id`, `corroborated_by` y `actor_id` **pueden
+quedar en `NULL`**, el proceso **se identifica en el payload del evento**, y **no se fabrican UUID
+para representar personas inexistentes**. *"Esto no autoriza revisión de evidencia de estudiantes
+reales."*
 
 ---
 
