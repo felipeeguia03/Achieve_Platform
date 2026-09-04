@@ -58,7 +58,8 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 | Frente | Estado |
 |---|---|
-| **Fases B6.11 y B6.12 · las dos decisiones del 4 de septiembre, implementadas** | ✅ **Completas** — la **renegociación** es alcanzable ([ADR-046](decisions.md#adr-046)) y el **disparador de Modo Examen** existe ([ADR-048](decisions.md#adr-048)). En el medio apareció una contradicción con el schema y se resolvió con [ADR-049](decisions.md#adr-049): la institución **tiene zona horaria propia**. ⚠️ `UX04` **todavía no ofrece renegociar**: falta una decisión de diseño |
+| **Fase B6.13 · «Cambiar horario»** | ✅ **Completa** — 4 de septiembre de 2026 ([ADR-050](decisions.md#adr-050)). La renegociación es alcanzable **desde `UX04`**, como acción secundaria, y **«Renegociar» sale de la interfaz**. Verificada con los cuatro recorridos que pidió el owner |
+| **Fases B6.11 y B6.12 · las dos decisiones del 4 de septiembre, implementadas** | ✅ **Completas** — la **renegociación** es alcanzable ([ADR-046](decisions.md#adr-046)) y el **disparador de Modo Examen** existe ([ADR-048](decisions.md#adr-048)). En el medio apareció una contradicción con el schema y se resolvió con [ADR-049](decisions.md#adr-049): la institución **tiene zona horaria propia**. Y la decisión de diseño que dejaron abierta se cerró el mismo día: ver B6.13 |
 | **Fase B6.10 · la reflexión existe y se exige** | ✅ **Completa, con su superficie** — 4 de septiembre de 2026. El requisito de [ADR-026](decisions.md#adr-026) **lo hace cumplir el servidor**, y desde [ADR-045](decisions.md#adr-045) el estudiante la escribe **dentro de `UX05`**: la reflexión y la entrega son la misma intención |
 | **Fase B6.9 · la salida del camino que no salió bien** | ✅ **Completa, 2 / 2** — 4 de septiembre de 2026. El **rescate** y el **reenvío** son alcanzables; con el primero, `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. ~~La renegociación queda fuera hasta `C01-010`~~ → **cerrada en la B6.11** |
 | **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
@@ -3359,6 +3360,51 @@ inventar la fecha.
 
 ---
 
+## Fase B6.13 — «Cambiar horario»: la renegociación, en la pantalla · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026. Cierra el residuo que dejó la B6.11: la
+operación funcionaba y **no había por dónde llegar**.
+
+**La decisión** es [ADR-050](decisions.md#adr-050), del Product Owner, y tiene dos mitades. Una es
+dónde va: **acción secundaria debajo de «Empezar»**, con el bloque desplegándose en la misma
+pantalla, sin ruta nueva. La otra es de vocabulario: **«Renegociar» sale de la interfaz** — *"es
+lenguaje interno, no del estudiante"*.
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `cambioDeHorarioPosible()` | **Si hay alguna propuesta posible**, que no es lo mismo que juzgar una. A las 23:50 no queda ninguna, y ofrecer el botón sería prometer lo que el servidor rechaza |
+| `CompromisoProps.cambioDeHorario` | La oferta **o el motivo**. `null` sólo cuando no hay nada que decir |
+| `MOTIVO_DE_CAMBIO` en `es-AR.ts` | **Una sola tabla** motivo→copy, compartida por la proyección y la pantalla. Dos serían dos verdades |
+| El bloque en `UX04` | Horario actual de sólo lectura, selector, «Confirmar nuevo horario» y «Cancelar» |
+| `institution.timezone` en `estado_de_compromiso` | El dato de ADR-049 llega a la proyección. **`zona` no cambia**: sigue siendo la del estudiante |
+
+### Tres defectos que sólo aparecen al conectar algo
+
+**1 · La CTA principal salía del encuadre, no del lifecycle.** Un sucesor ya `CONFIRMED` ofrecía
+*«Confirmar compromiso»*, y uno incumplido seguía ofreciéndolo en vez de «Retomar». Se vio en la
+captura del recorrido, no en un test: el test no sabía qué debía decir.
+
+**2 · «Horario actualizado» se borraba solo.** Confirmar recarga, la vista devuelve `null` mientras
+tanto, y el mensaje se desmontaba con ella.
+
+**3 · Un solo `ESTADO_NO_RENEGOCIABLE` mentía.** La ruta mandaba el mismo código para `STARTED`,
+`MISSED` y `RENEGOTIATED`; la pantalla decía *«ya empezó»* de algo que se había incumplido.
+
+### Los cuatro recorridos que pidió el owner, contra Postgres
+
+| Recorrido | Resultado |
+|---|---|
+| Elegible y exitoso | ✅ `RENEGOTIATED` con su `start_at` **intacto**, **un** sucesor, **un** `CommitmentRenegotiated`, «Horario actualizado» y la principal de vuelta en «Empezar» |
+| Segunda vez | ✅ No ofrece cambiar, y explica: *«Ya cambiaste el horario de este compromiso una vez.»* |
+| Incumplido | ✅ No ofrece cambiar, dice que corresponde rescatarlo, y **conserva «Retomar»** |
+| `409` por elegibilidad cambiada | ✅ Estado de producto con su motivo canónico, **no** un error técnico |
+
+⚠️ **Lo que queda afuera a propósito:** *"no se agrega por ahora otra CTA en `UX01`/Hoy"*.
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**
@@ -3469,8 +3515,9 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
+| Fase B6.13 — «Cambiar horario» en `UX04` | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-050](decisions.md#adr-050)). La renegociación llega a la pantalla, y aparecieron tres defectos que sólo se ven al conectar algo: la CTA salía del encuadre y no del lifecycle, la confirmación se desmontaba con la recarga, y un único código de rechazo decía *«ya empezó»* de algo incumplido | 1 / 1 |
 | Fase B6.12 — El disparador de Modo Examen | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-048](decisions.md#adr-048)). `ExamPreparationRecommended` dejó de ser el único evento `P0` sin emisor. **No depende de readiness**, y un test guarda esa firma | 1 / 1 |
-| Fase B6.11 — La renegociación, alcanzable | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-046](decisions.md#adr-046)). La tercera operación huérfana de la B6.9 tiene llamador. Requirió [ADR-049](decisions.md#adr-049): la institución no tenía zona horaria. **Falta la CTA en `UX04`**, que es una decisión de diseño | 1 / 1 |
+| Fase B6.11 — La renegociación, alcanzable | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-046](decisions.md#adr-046)). La tercera operación huérfana de la B6.9 tiene llamador. Requirió [ADR-049](decisions.md#adr-049): la institución no tenía zona horaria. La CTA en `UX04` llegó en la B6.13 | 1 / 1 |
 | Fase B6.10 — La reflexión existe y se exige | ✅ **COMPLETA** — 4 de septiembre de 2026. El estudiante puede reflexionar y el requisito de [ADR-026](decisions.md#adr-026) lo hace cumplir el servidor. **Falta la superficie para escribirla**, que toca `components/screens/*` | 1 / 1 |
 | Fase B6.9 — La salida del camino que no salió bien | ✅ **COMPLETA** — 4 de septiembre de 2026. Rescate y reenvío alcanzables; `RescueSucceeded` dejó de ser inalcanzable. ~~La renegociación queda fuera hasta `C01-010`~~ → **cerrada en la B6.11** | 2 / 2 |
 | Fase B6.8 — El camino de ejecución escribe en Postgres | ✅ **COMPLETA** — 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el camino principal escribe contra Postgres y **`C01-009` quedó cerrada**. Sin migraciones | 5 / 5 |

@@ -96,6 +96,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-047](#adr-047) | `C01-018`: el progreso no se infiere de una transición | ✅ `ACCEPTED` *(4 sep 2026 · ratifica lo que ya corre; `C01-018` `CLOSED`)* | — |
 | [ADR-048](#adr-048) | `C01-024`: la ventana de Modo Examen son 14 días | ✅ `ACCEPTED` *(4 sep 2026 · **no depende de readiness**; `C01-024` `CLOSED`)* | — |
 | [ADR-049](#adr-049) | La institución tiene zona horaria propia, y no es la del estudiante | ✅ `ACCEPTED` *(4 sep 2026 · el dato que ADR-046 §5 y ADR-048 nombraban y no existía)* | — |
+| [ADR-050](#adr-050) | «Cambiar horario»: la renegociación llega a `UX04`, y no se llama así | ✅ `ACCEPTED` *(4 sep 2026 · acción secundaria; **«Renegociar» sale de la interfaz**)* | — |
 
 ---
 
@@ -3979,3 +3980,84 @@ Entra en la lista explícita de `servicio-progreso.test.ts` por la misma puerta 
 `senal_no_entra_a_acknowledged` ([ADR-034](#adr-034)), y **se anota**: el guard existe para forzar
 esa conversación, no para saltearla. `npm run db:verify` agrega además la comprobación sobre los
 datos, no sólo sobre el schema.
+
+---
+
+<a id="adr-050"></a>
+## ADR-050 — «Cambiar horario»: la renegociación llega a `UX04`, y no se llama así
+
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026, decidido por el Product Owner**.
+Fuente literal: [`respuesta-po-cta-renegociacion-source.md`](respuesta-po-cta-renegociacion-source.md).
+**Responde:** la fila 16 de [`decisiones-abiertas.md`](decisiones-abiertas.md), levantada al
+implementar [ADR-046](#adr-046).
+**Desbloquea:** que la renegociación sea alcanzable **desde la pantalla**, y que
+`FX-LOCAL-COM-RENEGOCIACION-NO-ELEGIBLE` deje de describir una pantalla que nadie podía ver.
+
+### La decisión, y la mitad que es de vocabulario
+
+`UX04` suma **una acción secundaria: «Cambiar horario»**, debajo de «Empezar», que conserva toda la
+jerarquía. Sin pantalla nueva, sin ruta nueva, y **sin otra CTA en `UX01` por ahora**: *"alcanzar
+`UX04` es suficiente para cerrar el recorrido del MVP"*.
+
+⚠️ **Y «Renegociar» sale de la interfaz.** Textual: *"es lenguaje interno, no del estudiante"*. El
+dominio, los eventos y los ADR siguen diciendo `renegociar`/`CommitmentRenegotiated` —son el
+vocabulario del sistema—; lo que el estudiante lee es lo que hace: cambiar la hora de algo que ya
+acordó.
+
+### El bloque, cuando se puede
+
+Se despliega **en la misma pantalla**: horario actual de sólo lectura, selector del nuevo horario,
+«Confirmar nuevo horario» y «Cancelar». El selector ofrece **sólo** horarios del mismo día
+institucional y a quince minutos o más de ahora.
+
+⚠️ **El frontend no replica las cinco reglas.** Los horarios y la elegibilidad se proyectan desde
+`lib/domain/renegociacion.ts`, y la validación final sigue siendo del servidor. Un test recorre cada
+horario ofrecido y lo pasa por `elegibilidadDeRenegociacion`: **ofrecer uno que el servidor rechaza
+sería prometer lo que no se puede cumplir**.
+
+### El bloque, cuando no se puede — y por qué no es un botón apagado
+
+*"No mostrar un botón deshabilitado sin explicación."* Se muestra
+**«Este compromiso ya no se puede cambiar.»** más el motivo, y **la acción que corresponde al estado
+queda intacta**: empezar, continuar o rescatar.
+
+| Motivo canónico | Lo que lee el estudiante |
+|---|---|
+| `CADENA_YA_RENEGOCIADA` | Ya cambiaste el horario de este compromiso una vez. |
+| `YA_EMPEZO` | Este compromiso ya empezó. |
+| `INCUMPLIDO` | Este compromiso se incumplió; ahora corresponde rescatarlo. |
+| `SIN_HORARIO_POSIBLE` | Ya no queda un horario válido dentro del día acordado. |
+| `ESTADO_TERMINAL` | **Nada.** A quien mira un compromiso cumplido o cerrado no hay que explicarle que no puede moverlo |
+
+**El `409` usa este mismo estado, no un error técnico.** Si la elegibilidad cambia entre la carga y
+la confirmación, el servidor manda su motivo canónico y la pantalla lo cuenta igual que si lo hubiera
+sabido antes.
+
+### Tres defectos que aparecieron al construirlo
+
+**1 · La CTA principal salía del encuadre, no del lifecycle.** `estadoDe()` hace ganar «rescate» y
+«renegociación» sobre el estado, y eso valía cuando el sucesor todavía no existía. Con el flujo
+adentro de `UX04` ese momento **ya no existe**: el sucesor nace `CONFIRMED`, así que la pantalla
+ofrecía *«Confirmar compromiso»* sobre algo ya confirmado — y, si el sucesor se incumplía, seguía
+ofreciéndolo en vez de «Retomar». La CTA ahora la decide el lifecycle; de dónde viene el compromiso
+lo sigue contando el bloque del original.
+
+**2 · «Horario actualizado» se borraba solo.** Confirmar vuelve a pedir el estado, y mientras la
+respuesta viaja la vista devuelve `null`: el mensaje se desmontaba con ella. Vive arriba del límite
+de recarga.
+
+**3 · Un solo `ESTADO_NO_RENEGOCIABLE` mentía.** La ruta mandaba el mismo código para `STARTED`,
+`MISSED` y `RENEGOTIATED`, y la pantalla tenía que elegir una copy para los tres: decía *«ya
+empezó»* de algo que se había incumplido. Ahora cada estado manda su motivo, y `RENEGOTIATED` manda
+`CADENA_YA_RENEGOCIADA`, que es literalmente lo que pasó.
+
+### Lo que esta decisión cambió del catálogo aprobado
+
+`FX-LOCAL-COM-CONFIRMED` tenía **«Renegociar» como CTA principal**. Queda corregido en las dos
+mitades —la principal es «Empezar» y el cambio baja a secundaria—, y la palabra sale de la interfaz.
+
+### Lo que NO autoriza
+
+- **No autoriza una CTA en `UX01`.** Queda explícitamente para después.
+- **No autoriza mergear a `main` ni desplegar.**
+- **No autoriza que la pantalla decida elegibilidad**: proyecta lo que el dominio resolvió.

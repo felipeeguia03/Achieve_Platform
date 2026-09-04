@@ -12,6 +12,10 @@
 > | 6 | `C01-018` · causalidad de `ProgressUpdated` | **`CLOSED`.** Ratifica lo que ya corre ([ADR-047](decisions.md#adr-047)) |
 > | 7 | `C01-024` · ventana de Modo Examen | **`CLOSED`.** 14 días, y **no depende de readiness** ([ADR-048](decisions.md#adr-048)) |
 >
+> **Y el mismo día respondió una sexta**, la que ésta implementación levantó: la CTA de
+> renegociación en `UX04` es **«Cambiar horario»**, acción secundaria debajo de «Empezar»
+> ([ADR-050](decisions.md#adr-050), [fuente](respuesta-po-cta-renegociacion-source.md)).
+>
 > **Las diez restantes siguen abiertas**, con sus responsables. Sobre tres de ellas el owner además
 > dijo **cómo quiere que se le presenten**: ver §2.1, §2.2 y §2.5.
 >
@@ -52,7 +56,7 @@
 | 13 | **`C01-042`** · el golden dataset y su autorización | Product Data + la institución | La Etapa B2b.3 y el piloto | 🟠 |
 | 14 | La **corrección del §2** del contrato congelado | CTO, con el CRM | Que la firma HMAC no esté especificada de dos maneras | 🟡 Externa |
 | 15 | Si el `202` de vinculación lleva `applied` | CTO, con el CRM | Lo que la pantalla de WhatsApp puede afirmar | 🟡 Externa |
-| 16 | **La CTA de renegociar en `UX04`** | Product Owner + Diseño | Que el estudiante pueda mover un compromiso **desde la pantalla**, no sólo por API | 🟡 Nueva — §2.7 |
+| ~~16~~ | ~~La CTA de renegociar en `UX04`~~ | Product Owner + Diseño | ✅ **Respondida** — [ADR-050](decisions.md#adr-050). Se llama **«Cambiar horario»** | ✅ |
 
 **Leyenda de urgencia.** 🔴 hay trabajo listo para empezar que no arranca sin esto · 🟠 bloquea el
 cierre de una fase · 🟡 el producto funciona, con un hueco declarado.
@@ -134,9 +138,9 @@ que para eso está el rescate.
 [ADR-049](decisions.md#adr-049): *"la zona horaria de la institución"* **no existía en el schema**, y
 sustituirla por la del estudiante habría cambiado la regla en silencio.
 
-⚠️ **Y deja una decisión nueva, de diseño:** `UX04` **todavía no ofrece renegociar**. `CTA-017`
-necesita un lugar y `CompromisoProps` tiene una sola CTA, que en `CONFIRMED` dice *"Empezar"*.
-Agregar una CTA secundaria no lo autoriza ningún ADR. Es la fila **16** de la tabla, y está en el §2.7.
+✅ **Y la decisión de diseño que dejó abierta se cerró el mismo día**
+([ADR-050](decisions.md#adr-050)): la acción secundaria de `UX04` es **«Cambiar horario»**. Ver
+el §2.7.
 
 ---
 
@@ -214,7 +218,7 @@ reales."*
 
 ---
 
-### 2.7 · La CTA de renegociar en `UX04` — **Product Owner + Diseño** — 🟡 nueva
+### ~~2.7 · La CTA de renegociar en `UX04`~~ — ✅ respondida
 
 **La pregunta:** ¿desde dónde aprieta el estudiante para mover su compromiso?
 
@@ -234,6 +238,17 @@ sigue sin poder producirse. Es un fixture que describe una pantalla que nadie pu
 
 **Lo que ya está resuelto y no hay que volver a decidir:** *cuándo* es elegible
 ([ADR-046](decisions.md#adr-046)) y qué pasa si no lo es. Falta **dónde se aprieta**.
+
+> ✅ **Respondida el mismo día** ([ADR-050](decisions.md#adr-050)): **«Cambiar horario»**, acción
+> secundaria debajo de «Empezar», con el bloque desplegándose en la misma pantalla. Y una mitad que
+> no estaba en la pregunta: **«Renegociar» sale de la interfaz** — *"es lenguaje interno, no del
+> estudiante"*.
+>
+> ✅ **Implementada y verificada** el 4 de septiembre de 2026 (Fase B6.13), con los cuatro recorridos
+> contra Postgres que el owner pidió. `FX-LOCAL-COM-RENEGOCIACION-NO-ELEGIBLE` dejó de describir una
+> pantalla que nadie podía ver.
+>
+> ⚠️ **Lo que queda afuera a propósito:** *"no se agrega por ahora otra CTA en `UX01`/Hoy"*.
 
 ---
 
