@@ -6,8 +6,9 @@
 
 ## Qué es esto y qué no es
 
-Son 51 decisiones de negocio/producto (registro C01): **37 siguen `OPEN`**, 10 tienen respuesta con
-residuo abierto y 4 están cerradas. Ocho decisiones psicopedagógicas forman parte de esas 51
+Son 52 decisiones de negocio/producto (registro C01): **38 siguen `OPEN`**, 10 tienen respuesta con
+residuo abierto y 4 están cerradas. La última en abrirse es `C01-052` —la corroboración del Plan 2016
+de la UCC— el 4 de septiembre de 2026, con [ADR-053](decisions.md#adr-053). Ocho decisiones psicopedagógicas forman parte de esas 51
 (`HUMAN-P0-01…08`, dentro de C01-031…038). Ninguna bloquea generar el prototipo low-fi: para eso
 alcanzan fixtures y estados sintéticos. Sí bloquean los usos materiales indicados por su gate.
 
@@ -97,6 +98,7 @@ construir contra él; lo que queda listado en la columna de residuo sigue sin po
 | C01-049 | Hardening de escala y automatización avanzada | Product Architecture/Data; escala | OPEN — DEFERRED | P2 | O |
 | C01-050 | `academic_context_blocker` | ADL posee contexto; ADE disponibilidad/prioridad; Materia/TodayView; C01-001/002/006 | OPEN; SCP antes omitido, no alias semántico | P1 | I |
 | C01-051 | Configuración y obligatoriedad funcional de Reflection | Product/Evidence configuration; Evidence/Protocol/Bitácora; C01-008/012/017/027 | **ANSWERED — RESIDUO ABIERTO** (1 sep 2026, [ADR-026](decisions.md#adr-026)): vive en la Action y en el paso, congelado al crear; ternario `NO_CONFIGURADA`/`OPTIONAL`/`REQUIRED`; default del loop diario `OPTIONAL`. **Residuo:** en qué pasos del protocolo es obligatoria — criterio pedagógico. Privacidad sigue en C01-017 | P1 | H |
+| C01-052 | **Corroboración del Plan 2016 de la UCC** | UCC / Product Data; el alta, el catálogo; C01-042/002 | **OPEN** (4 sep 2026, [ADR-053](decisions.md#adr-053)). Los 57 requisitos están cargados en `DRAFT` desde una transcripción anonimizada del analítico, con `needs_review = TRUE` en las 57. Falta **el plan de estudios oficial —PDF, CSV o resolución— con año y semestre por materia y los nombres completos**: sin él no se corrigen las nueve filas truncadas, no se confirma el año (el encabezado de la columna no era legible), no se resuelve si `SEMINARIO` es asignatura o cupo, y no se sabe qué materias satisfacen `ELECTIVA I` y `ELECTIVA II`. La autorización para usarlo es C01-042 | P1 | P |
 
 
 ## Detalle — las 8 decisiones psicopedagógicas (`HUMAN-P0-01…08`) — **RESPONDIDAS**

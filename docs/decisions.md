@@ -97,6 +97,9 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-048](#adr-048) | `C01-024`: la ventana de Modo Examen son 14 días | ✅ `ACCEPTED` *(4 sep 2026 · **no depende de readiness**; `C01-024` `CLOSED`)* | — |
 | [ADR-049](#adr-049) | La institución tiene zona horaria propia, y no es la del estudiante | ✅ `ACCEPTED` *(4 sep 2026 · el dato que ADR-046 §5 y ADR-048 nombraban y no existía)* | — |
 | [ADR-050](#adr-050) | «Cambiar horario»: la renegociación llega a `UX04`, y no se llama así | ✅ `ACCEPTED` *(4 sep 2026 · acción secundaria; **«Renegociar» sale de la interfaz**)* | — |
+| [ADR-051](#adr-051) | El catálogo curricular: no toda fila de un plan es una materia | ✅ `ACCEPTED` *(4 sep 2026 · `curriculum_requirement` con seis tipos; **`publication_status` ≠ `verification_status`**)* | — |
+| [ADR-052](#adr-052) | El tramo de alta: tres pantallas fuera de las nueve, y el gate a `HOY` | ✅ `ACCEPTED` *(4 sep 2026 · implementa [ADR-042](#adr-042); **el número de WhatsApp sigue sin escritor**)* | — |
+| [ADR-053](#adr-053) | El Plan 2016 de la UCC entra `DRAFT`, y lo que falta para publicarlo está escrito | ✅ `ACCEPTED` *(4 sep 2026 · 57 requisitos, `needs_review` en las 57; abre `C01-052`)* | — |
 
 ---
 
@@ -4061,3 +4064,338 @@ mitades —la principal es «Empezar» y el cambio baja a secundaria—, y la pa
 - **No autoriza una CTA en `UX01`.** Queda explícitamente para después.
 - **No autoriza mergear a `main` ni desplegar.**
 - **No autoriza que la pantalla decida elegibilidad**: proyecta lo que el dominio resolvió.
+
+---
+
+<a id="adr-051"></a>
+## ADR-051 — El catálogo curricular: no toda fila de un plan es una materia
+
+**Estado:** ✅ `ACCEPTED` · 4 de septiembre de 2026 · **decidido por el Product Owner**
+**Fecha de apertura:** 4 de septiembre de 2026
+**Origen:** el pedido de completar el onboarding académico del MVP, con el analítico del Plan 2016
+de Ingeniería de Sistemas y la página pública de Ingeniería en Informática como fuentes.
+**Desbloquea:** [ADR-052](#adr-052) (el tramo de alta) y la Etapa B6.14.
+**Relacionado:** [ADR-023](#adr-023), [ADR-029](#adr-029), [ADR-049](#adr-049),
+[ADR-006](#adr-006), `C01-001`, `C01-002`, `C01-003`, `C01-042`.
+**Toca:** `data-model.md` §7 y §8, `architecture.md`, `roadmap.md`, `pending-decisions-annex.md`.
+
+### El problema, en una línea
+
+**La estructura curricular existe en el schema y nadie la declara.** `academic_program` y
+`curriculum_plan` están desde la B1.2 y el único camino que los puebla es `ingerir_materia()`, que
+los fabrica como centinelas — con su motivo escrito en el propio SQL:
+
+> *"El ingestor asistido no conoce programa ni plan: el material de una materia no los trae. Se usa
+> un contenedor por institución, explícito y reconocible, **en vez de inventar una estructura
+> curricular que nadie declaró**."* — `20260830090000_ingesta_adl.sql:48`
+
+Ese comentario era correcto entonces. Ahora hay una estructura declarada, y hace falta dónde ponerla.
+
+### Lo que el spec ya pedía, y el schema no tenía
+
+`product-spec-source.md` §5.1 fija el grafo conceptual canónico:
+
+> `Universidad → Facultad → Carrera → Plan → Año → Semestre → Materia → Cátedra/Comisión → Profesor
+> → Evaluación → Tema → Recurso → Evidencia histórica`
+
+De esos trece eslabones, **tres no eran columna de nada**: `Facultad`, `Año` y `Semestre`. Y §7.1
+—*"Identidad mínima: Universidad/facultad. Carrera. Plan. Año. Semestre."*— los pide exactamente
+como los pasos del alta.
+
+### La decisión
+
+**1 · La facultad existe.** `academic_unit`, colgando de `institution`, y `academic_program` la
+referencia. Nullable: una institución puede no declararla, y **no se infiere**.
+
+**2 · El requisito curricular es una entidad propia, y no es la materia.** Tabla
+`curriculum_requirement`: la **fila del plan**. Seis tipos, más uno que declara ignorancia:
+
+| Tipo | Qué es |
+|---|---|
+| `COURSE` | Materia concreta. Es el único tipo que puede apuntar a un `course` |
+| `ELECTIVE_SLOT` | Un cupo abstracto del plan. **No es una materia** |
+| `SEMINAR_SLOT` | Un cupo de seminario |
+| `LANGUAGE_REQUIREMENT` | Una acreditación de idioma |
+| `PROFESSIONAL_PRACTICE` | Práctica profesional supervisada |
+| `CAPSTONE` | Trabajo final |
+| `UNKNOWN` | **La fuente no permite clasificarla.** No es un default: es un dato |
+
+> **Por qué hacía falta.** El Plan 2016 tiene 57 filas y **al menos seis no son materias**:
+> `ELECTIVA I`, `ELECTIVA II`, `SEMINARIO`, `ACRED. INGLES`, `PRACTICA PROF. SUPERVISADA` y
+> `TRABAJO FINAL`. Modelarlas como `course` haría que el alta le preguntara al estudiante *"¿estás
+> cursando Acreditación de Inglés?"* como si fuera una materia más, y que el ADE buscara unidades y
+> recursos de un trabajo final. **Cada una de esas seis va a necesitar su propia experiencia**, y
+> ninguna la va a poder tener si entra como materia.
+
+**3 · Seleccionar una opción electiva no modifica el catálogo.** `elective_option` es una relación
+N:N entre un `ELECTIVE_SLOT` y los `course` que pueden satisfacerlo. Una opción puede servir a varios
+cupos. **Lo que el estudiante elige no entra acá** — entra en su propia declaración
+([ADR-052](#adr-052)).
+
+**4 · El cupo se puede describir desde el día uno**, aunque hoy no se use: `min_options`,
+`max_options`, `required_credits`, `valid_from`, `valid_until` y procedencia. El Plan 2016 no
+requiere créditos en este recorrido, así que **quedan vacíos y declarados**, no en cero.
+
+**5 · El año nunca se infiere por posición.** `curriculum_year` es `NULL` cuando la fuente no lo
+declara, y `year_source` dice **qué se vio para afirmarlo**. `ordinal` conserva el orden de la
+fuente y **no es el año**: son dos columnas porque son dos datos.
+
+**6 · Un plan se publica; no se corrobora.** `curriculum_plan.publication_status` ∈
+`DRAFT | PUBLISHED | RETIRED`, con `plan_code`, `source_type`, `source_ref`, `observed_at` y
+`content_hash`. Un plan `PUBLISHED` **exige fuente y referencia** por `CHECK`. **Sólo un plan
+`PUBLISHED` se le ofrece a un estudiante.**
+
+### La distinción que este ADR se niega a colapsar
+
+**`publication_status` no es `verification_status`, y ninguna tabla nueva lleva el segundo.**
+
+Son dos preguntas distintas: *"¿esto se le puede mostrar a un estudiante?"* y *"¿alguien con
+autoridad verificó que es cierto?"*. Un plan puede estar publicado y sin corroborar —con su
+procedencia a la vista—, y puede estar corroborado y todavía sin publicar.
+
+Colapsarlas tendría un costo concreto: `verification_status` tiene **una sola escritura en todo el
+repositorio**, `corroborar_procedencia()` (invariante `I9`, Etapa B2b.2), con guard sobre las 50
+migraciones. Agregar una sexta tabla con el campo obliga a tocar el `CHECK` de
+`provenance_corroboration.subject_table` y el árbol de la función — y su propio SQL lo advierte:
+*"agregar una sexta tabla con Provenance es agregar un valor acá"*. **Este ADR no lo hace.** Es el
+mismo criterio por el que `resource` deliberadamente no lo lleva.
+
+Lo que sí lleva el catálogo es el resto de la Provenance —`source_type`, `source_ref`, `observed_at`,
+`confidence`— más `needs_review` y `label_truncated`, que dicen **qué parte del dato todavía no se
+puede afirmar**. Si más adelante hace falta corroborar un requisito fila por fila, es una decisión
+propia con su ADR.
+
+### Un duplicado latente que se arregla de paso
+
+`course_offering` tiene `UNIQUE (course_id, term, commission)` y en Postgres **dos `NULL` no
+chocan**: dos cursadas de la misma materia sin comisión declarada son dos filas distintas. Hoy lo
+esquiva `ingerir_materia()` leyendo con `IS NOT DISTINCT FROM` antes de insertar, que es una carrera.
+Pasa a `UNIQUE NULLS NOT DISTINCT`. **Es más estricto, nunca más permisivo**: no rompe nada que hoy
+funcione.
+
+### Alternativas descartadas
+
+| # | Alternativa | Por qué no |
+|---|---|---|
+| A | Agregar `curriculum_year` y `is_elective` a `course` | `course` es *materia concreta*. `ELECTIVA I` no es una materia con un año: es un requisito sin materia. Un booleano no distingue seis tipos, y `ACRED. INGLES` no entra en ninguno de los dos valores |
+| B | Una tabla `subject` canónica + junction con el plan | Forkea `course.curriculum_plan_id`, que es FK de `course_offering` y por transitividad de todo el modelo del estudiante. El costo es el modelo entero; el beneficio, cero para un MVP de una carrera. **Cuando haga falta materia canónica entre planes**, el patrón ya está en el repo: `canonical_id` + `is_current`, como `error_type` y `risk_rule` |
+| C | Cargar el plan como JSON en `institution.tenant_config` | La columna existe y no tiene un solo lector. Un plan en JSON no tiene FK, ni `UNIQUE`, ni RLS, ni se puede consultar por año |
+
+### Lo que este ADR **no** decide
+
+- **No decide qué universidad ni qué carrera son el golden dataset.** Eso es `C01-042`, y
+  [ADR-006](#adr-006) §5 dice textualmente que **no se puede adelantar**.
+- **No hace alcanzable `official`.** Sigue sin llegar nadie (`C01-030`).
+- **No define correlativas entre materias.** `topic_prerequisite` es entre temas; entre materias no
+  existe y **no se deriva del año ni del `ordinal`**.
+- **No define créditos, horas ni equivalencias entre planes.**
+
+---
+
+<a id="adr-052"></a>
+## ADR-052 — El tramo de alta: tres pantallas fuera de las nueve, y el gate a `HOY`
+
+**Estado:** ✅ `ACCEPTED` · 4 de septiembre de 2026 · **decidido por el Product Owner**
+**Fecha de apertura:** 4 de septiembre de 2026
+**Implementa:** el orden del alta que [ADR-042](#adr-042) aprobó y el hueco que
+[ADR-039](#adr-039) dejó declarado.
+**Relacionado:** [ADR-006](#adr-006), [ADR-033](#adr-033), [ADR-035](#adr-035),
+[ADR-040](#adr-040), [ADR-051](#adr-051), `C01-030`, `C01-050`.
+**Toca:** `product.md` §10.2, `architecture.md`, `data-model.md` §8, `roadmap.md`, `demo-mvp.md`.
+
+### El hueco, con su cita
+
+> *"entre el `authorized: true` del CRM y la primera acción del estudiante **no hay ninguna pantalla
+> definida** […] qué ve un estudiante recién habilitado que todavía no tiene cursadas. **Hoy caería
+> en el vacío de `UX01`, que dice «no hay una acción recomendada»: una afirmación sobre el mundo que
+> en ese caso nadie puede hacer.**"* — [ADR-039](#adr-039)
+
+[ADR-042](#adr-042) ya decidió el orden entero. Este ADR lo construye.
+
+### La decisión
+
+**1 · Tres pantallas, en el orden aprobado por ADR-042:**
+
+```
+/login  →  /alta/whatsapp  →  /alta/carrera  →  /alta/materias  →  /hoy
+```
+
+**2 · No son superficies de producto.** Igual que `/login` ([ADR-039](#adr-039)): **no entran al
+registro canónico de navegación**. `lib/navigation/` sigue teniendo nueve nodos, `UX10` sigue sin
+existir y los guards que lo verifican siguen verdes. Viven en `app/(alta)/` y
+`components/alta/` — **no en `components/screens/`**, así que la regla 6 de `CLAUDE.md` no se toca:
+ninguna de las nueve se reescribe.
+
+**3 · El gate es del backend, no del navegador.** Las nueve rutas de lectura devuelven
+`409 { error: "ALTA_INCOMPLETA", siguiente }` mientras el alta no esté confirmada, y el cliente
+redirige — el mismo mecanismo que ya tiene para el `401 → /login`. **Un gate que viva sólo en el
+cliente no es un gate**: es la misma lección de la Fase B6.10, donde el requisito de reflexión se
+hacía cumplir con un botón deshabilitado.
+
+**4 · El estado del alta es una columna, no una tabla nueva.** `enrollment` existe desde la B1.3
+—`(student, program, term)` con su `UNIQUE`— y **nadie la lee ni la escribe**. Se revive: gana
+`curriculum_plan_id`, `curriculum_year` y `confirmed_at`. **`confirmed_at IS NOT NULL` es el alta
+completa.** Crear una tabla `onboarding_state` al lado habría sido una segunda historia del mismo
+hecho.
+
+**5 · Confirmar el mapa académico es una transacción, y llama al ADE después.** Escribe
+`enrollment`, las `course_offering` por defecto, las `course_enrollment` y las
+`requirement_declaration`; emite **`AcademicMapMinimumReached`** —que estaba declarado en
+`lib/domain/product-events.ts` desde la B3 con `instrumentacion: pendiente("B2b · cuando el ADL
+declare suficiencia")`, y es exactamente esto— y **recién entonces** invoca a `recomendarPara()` en
+proceso, por cada cursada.
+
+> **El estudiante no autoriza una recomendación.** La Plataforma reacciona a un hecho de dominio, con
+> el mismo patrón que [ADR-040](#adr-040) ya usa: la validación cierra la Action y **después** invoca
+> al ADE. `POST /api/recomendacion` sigue siendo secreto de servicio; lo que se reusa es el Service.
+
+**6 · La idempotencia vive en la base, no en el handler.** `course_enrollment` ya tiene
+`UNIQUE (student_id, offering_id)` desde la B1.3, y `requirement_declaration` nace con
+`UNIQUE (student_id, curriculum_requirement_id)`. Un doble submit escribe las mismas filas.
+
+**7 · El estudiante sin materias deja de recibir un veredicto.** `estado_del_dia()` marca contexto
+incompleto también cuando **no hay cursadas activas**, y el Hero devuelve
+`CONTEXT_INCOMPLETE` con variante `PREPARANDO_INFORMACION`, cuyo copy es el **literal aprobado** por
+ADR-042:
+
+> **Estamos preparando tu información académica.**
+> Todavía no contamos con información suficiente para recomendarte una acción. Te avisaremos cuando
+> tu recorrido esté listo.
+
+⚠️ **Los nueve niveles siguen siendo nueve.** No se agrega un décimo: se agrega una **variante**, que
+es el mecanismo que [ADR-017](#adr-017) dejó exactamente para discriminar la CTA dentro de un nivel.
+El guard de `precedence.ts` no se toca.
+
+Y con eso, `"SIN ACCIONES POR AHORA"` **deja de alcanzar** a un estudiante sin materias, que es lo
+que ADR-042 prohíbe textualmente: *"no debe mostrarse «no hay una acción recomendada», porque el
+sistema todavía no está en condiciones de evaluar eso"*.
+
+### WhatsApp: se construye el tramo, no se escribe el número
+
+ADR-042 §4 autoriza construir y probar *"con identidades y teléfonos sintéticos"*. Pero el schema
+dice otra cosa, y es anterior:
+
+> `student.whatsapp` — *"**DATO PERSONAL.** Gateado por ADR-006: ninguna capa lo escribe mientras
+> siga `PENDING`."* — `20260830020000_capa_estudiante.sql:27`
+
+**Se resuelve sin elegir entre los dos:** la pantalla se construye, el consentimiento se persiste en
+`whatsapp_consent` —explícito, específico, **no premarcado**, y rechazable **sin perder el
+acceso**—, y **`student.whatsapp` sigue sin escritor**. La tabla de consentimiento **no tiene columna
+de teléfono**: no es que no se llene, es que no existe dónde.
+
+El día que ADR-006 tenga dictamen, entra el número. Hasta entonces el tramo está armado y **ningún
+texto del repositorio queda contradicho**.
+
+**Y la superficie no promete lo que no observa** (ADR-042 §5–6): dice *"Recibimos tu solicitud"* y
+**nunca** *"tu WhatsApp está vinculado"*, *"hay un operador asignado"* ni *"te van a escribir"*. El
+Flujo E hacia el CRM **no se emite**: sigue congelado por [ADR-035](#adr-035).
+
+### Lo que se omite del spec, declarado en vez de inventado
+
+`product-spec-source.md` §7.1 y `UF-S01` piden dos cosas que este tramo **no** hace:
+
+- **`Semestre`.** El alta pregunta año, no semestre. La columna `term` existe en
+  `curriculum_requirement` y queda `NULL`: **desconocido, no ausente.**
+- ***"Asignar acompañante"*.** [ADR-033](#adr-033) sacó al Operador de la Plataforma y ADR-042 §6
+  prohíbe afirmar que alguien va a escribir. **No se asigna nadie y no se menciona a nadie.**
+
+### Lo que este ADR **no** autoriza
+
+- **No autoriza escribir `student.whatsapp`.**
+- **No autoriza emitir los flujos E / E′ al CRM** ([ADR-035](#adr-035)).
+- **No autoriza la superficie «WhatsApp y privacidad»** —consultar, reemplazar, revocar— que ADR-042
+  también decidió. Es backlog #2 y sigue ahí.
+- **No autoriza el diagnóstico personal mínimo** del Golden Path A.
+- **No levanta el gate de [ADR-006](#adr-006)**, ni autoriza mergear a `main` ni desplegar.
+
+---
+
+<a id="adr-053"></a>
+## ADR-053 — El Plan 2016 de la UCC entra `DRAFT`, y lo que falta para publicarlo está escrito
+
+**Estado:** ✅ `ACCEPTED` · 4 de septiembre de 2026 · **decidido por el Product Owner**
+**Fecha de apertura:** 4 de septiembre de 2026
+**Relacionado:** [ADR-006](#adr-006) §5, [ADR-023](#adr-023), [ADR-024](#adr-024),
+[ADR-051](#adr-051), `C01-042`, `C01-052`.
+**Toca:** `pending-decisions-annex.md`, `roadmap.md`, `catalogo/README.md`.
+
+### El conflicto que hubo que resolver primero
+
+La instrucción inicial fue publicar el plan de la UCC junto con el sintético. **No se puede hoy**, y
+por dos textos que dicen lo mismo desde lados distintos:
+
+> *"`C01-042` está gateado «antes de piloto institucional». **No se puede elegir universidad y
+> carrera antes de saber con qué base legal se piden los datos** […] Lo que sí se puede hacer sin
+> decidir nada: **seguir con el catálogo sintético**."* — [ADR-006](#adr-006) §5
+
+Y la propia regla de publicación del pedido: un plan pasa a `PUBLISHED` **sólo** cuando estén
+corroborados *"las materias; sus códigos; su distribución por año; sus reglas electivas; la fuente
+institucional"*. **Ninguna de las cinco lo está.**
+
+**Se planteó, y el owner decidió la reconciliación:** se publican **dos instituciones sintéticas**
+—que dan aislamiento real entre instituciones y el caso de dos planes de carreras sucesoras que no se
+mezclan— y **la UCC se carga completa en `DRAFT`**.
+
+### La decisión
+
+**1 · UCC · Ingeniería de Sistemas · Plan 2016 se carga con sus 57 requisitos, en `DRAFT`.**
+No se le ofrece a ningún estudiante, y hay test de que no sale del Repository.
+
+**2 · Ingeniería en Informática es una carrera separada, también `DRAFT`**, con
+`curriculum_year = NULL` en todas sus filas. **No se mezcla con el Plan 2016**: son dos
+`academic_program` distintos. La web pública no demuestra el año, el semestre, cuántas flexibles se
+eligen, cuántas de Fe y Vida son obligatorias, las correlativas ni las equivalencias — y **nada de
+eso se completa**.
+
+**3 · El año del Plan 2016 se carga desde el marcador visible, y se dice que no está corroborado.**
+El analítico muestra una columna angosta con marcadores `1·2·3·4·5` alineados a las filas 1, 11, 22,
+35 y 46 — grupos de 10, 11, 13, 11 y 12, que suman 57. **El encabezado de esa columna no es
+legible.** Se carga el valor con `needs_review = TRUE` en las 57 filas y
+
+```
+year_source = 'agrupamiento visible en el analítico; encabezado de columna no legible'
+```
+
+> **Por qué se carga y no queda `NULL`.** Es un dato visible en la fuente, no una inferencia por
+> posición — que es lo que estaba prohibido. Lo que no se puede leer es **qué significa la columna**,
+> y eso queda escrito en el propio dato. Deja el plan a **una** corroboración de poder publicarse.
+
+**4 · Ningún dato personal cruza al repositorio.** El analítico contiene nombre, domicilio, matrícula
+y documento. **Se extrajo únicamente la estructura curricular.** El CSV no tiene una sola columna que
+pueda contenerlos, y hay test de que el archivo no contiene los encabezados del analítico.
+
+**5 · El texto truncado se conserva truncado.** Nueve filas están cortadas en la fuente y entran así,
+con `label_truncated = TRUE`. **No se completan por intuición**, ni siquiera las obvias.
+
+**6 · Los seis requisitos que no son materias**, clasificados según [ADR-051](#adr-051):
+
+| # | Código | Texto visible | Tipo |
+|---|---|---|---|
+| 31 | 20180 | `ELECTIVA I` | `ELECTIVE_SLOT` |
+| 38 | 10203 | `ELECTIVA II` | `ELECTIVE_SLOT` |
+| 54 | 20186 | `SEMINARIO` | **`UNKNOWN`** — no se sabe si es asignatura o cupo |
+| 55 | 00299 | `PRACTICA PROF. SUPERVISADA` | `PROFESSIONAL_PRACTICE` |
+| 56 | 00324 | `ACRED. INGLES` | `LANGUAGE_REQUIREMENT` |
+| 57 | 00301 | `TRABAJO FINAL` | `CAPSTONE` |
+
+Recuento: **51 `COURSE` + 2 `ELECTIVE_SLOT` + 1 `UNKNOWN` + 1 `LANGUAGE_REQUIREMENT` +
+1 `PROFESSIONAL_PRACTICE` + 1 `CAPSTONE` = 57.**
+
+⚠️ **Las dos de *Formación Humana* (47 y 51) no son el `SEMINARIO` de la 54.** Tienen códigos
+propios y entran como `COURSE`, con su numeral truncado y **sin asumir cuál es I y cuál es II**.
+
+### Lo que las imágenes no permiten determinar, y no se inventó
+
+El encabezado de la columna del año · el texto completo de las nueve filas truncadas · el numeral de
+las dos de Formación Humana · si `SEMINARIO` (54) es asignatura o cupo · el semestre de cualquier
+fila · correlativas · créditos · qué materias satisfacen `ELECTIVA I` y `ELECTIVA II` · equivalencias
+con Ingeniería en Informática.
+
+### Qué falta, exactamente, para publicar
+
+**El plan de estudios oficial del Plan 2016 de la UCC —PDF, CSV o resolución— con año y semestre por
+materia y los nombres completos.** Con eso se corrigen los truncados, se confirma o se corrige el
+año, se resuelve `SEMINARIO` y se levanta `needs_review`. La autorización institucional para usarlo
+es `C01-042`, y sigue siendo de una persona.
+
+Queda registrado como **`C01-052`** en [`pending-decisions-annex.md`](pending-decisions-annex.md).

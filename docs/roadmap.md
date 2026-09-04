@@ -3405,6 +3405,46 @@ tanto, y el mensaje se desmontaba con ella.
 
 ---
 
+## Fase B6.14 — El catálogo curricular y el tramo de alta · 🟡 EN CURSO
+
+**Estado:** 🟡 **en curso** — 4 de septiembre de 2026. Abierta por instrucción escrita del Product
+Owner, que reordenó la prioridad del backlog #1.
+
+**Por qué existe.** Es el **hueco más grande del producto**, y estaba declarado desde
+[ADR-039](decisions.md#adr-039): *"entre el `authorized: true` del CRM y la primera acción del
+estudiante no hay ninguna pantalla definida"*. [ADR-042](decisions.md#adr-042) decidió el orden
+entero del alta el 4 de septiembre y lo dejó en backlog con gate *"espera a que termine el loop"*.
+
+⚠️ **El gate se levantó por decisión del mismo owner**, por escrito y con alcance acotado: el loop
+está terminado y verificado (B6.8 → B6.13, las cinco corren en [`demo-mvp.md`](demo-mvp.md)).
+**No autoriza mergear a `main` ni desplegar**, y [ADR-006](decisions.md#adr-006) sigue plenamente
+vigente.
+
+**Las tres decisiones que la habilitan:** [ADR-051](decisions.md#adr-051) (el catálogo curricular),
+[ADR-052](decisions.md#adr-052) (el tramo de alta) y [ADR-053](decisions.md#adr-053) (el Plan 2016
+en `DRAFT`).
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.14.1 | **Las tres decisiones, escritas antes de codear** — ADR-051, ADR-052, ADR-053 y `C01-052` | ✅ |
+| B6.14.2 | **El requisito curricular existe**: `academic_unit`, `curriculum_requirement` con sus seis tipos, `elective_option`, `publication_status` | ⏳ |
+| B6.14.3 | **El importador y los cuatro datasets** — CSV administrativo, `ingerir_plan_de_estudios()`, UCC en `DRAFT` y dos instituciones sintéticas `PUBLISHED` | ⏳ |
+| B6.14.4 | **El mapa académico mínimo se confirma y se persiste** — Service, rutas, el gate `409 ALTA_INCOMPLETA` y la llamada al ADE | ⏳ |
+| B6.14.5 | **Las tres pantallas**, y el estudiante sin materias deja de recibir un veredicto | ⏳ |
+| B6.14.6 | **El recorrido, corrido de punta a punta** y documentado en `demo-mvp.md` | ⏳ |
+
+**Done cuando:** un estudiante sintético recién habilitado entra por `/login`, **no cae en `HOY`**,
+declara universidad, carrera y año, confirma sus materias —desmarcando una y agregando una de otro
+año—, y llega a `HOY` con una acción real del ADE. Con el doble submit sin duplicar, el reingreso sin
+repetir el alta, la carrera sin plan diciendo la verdad, y **cero respuestas ≥ 400** en el recorrido.
+
+⚠️ **Lo que esta fase NO hace:** no escribe `student.whatsapp` · no emite los flujos E/E′ al CRM
+([ADR-035](decisions.md#adr-035)) · no construye la superficie «WhatsApp y privacidad» (backlog #2) ·
+no construye el diagnóstico personal mínimo del Golden Path A · **no publica el plan de la UCC**,
+que es `C01-052` y espera un documento oficial.
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**
