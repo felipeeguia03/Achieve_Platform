@@ -46,7 +46,16 @@ describe("Bloque 2 · Contenido", () => {
 
   it("`C-01` — las formas imperativas usan voseo", () => {
     // "Entregá", "Subí", "Resolvé": acento en la última sílaba.
-    const imperativosProhibidos = /\b(Entrega|Sube|Resuelve|Contanos|Elige|Agrega)\b/;
+    //
+    // ⚠️ **`Contanos` salió de esta lista el 4 de septiembre de 2026**
+    // ([ADR-044](../docs/decisions.md#adr-044)), y la lista era la equivocada:
+    // *contanos* **es** voseo —`contá` + `nos`, que al enclitizarse pierde el
+    // acento—, a diferencia de `cuéntanos`. Las cinco que quedan son tuteo.
+    //
+    // **El cambio es específico y así se queda:** el owner fue explícito en que
+    // no se afloja el resto del control. Sacar otra palabra de acá exige su
+    // propia decisión.
+    const imperativosProhibidos = /\b(Entrega|Sube|Resuelve|Elige|Agrega)\b/;
     // Sin excepciones desde la Etapa 0.7: "Entrega:" de UX02 se unificó a
     // "Entregá:", la forma de UX01.
     const grietas = textos.filter(([, texto]) => imperativosProhibidos.test(texto));

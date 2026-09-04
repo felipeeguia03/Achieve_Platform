@@ -37,7 +37,8 @@ describe("B6.10 · el requisito de Reflection se hace cumplir, no se muestra", (
     expect(t("CTA.REFLEXION_REQUERIDA")).not.toMatch(/opcional/i);
     expect(t("CTA.AGREGAR_REFLEXION")).toMatch(/opcional/i);
     // Y la pantalla dice **por qué** no puede enviar, en vez de mostrar una CTA
-    // apagada sin explicación.
-    expect(t("EVIDENCIA.FALTA_REFLEXION")).toMatch(/reflexión/i);
+    // apagada sin explicación. La copy la aprobó el owner en ADR-044.
+    expect(t("EVIDENCIA.FALTA_REFLEXION")).toBe("Contanos cómo te fue para enviar la evidencia.");
+    expect(t("CTA.REFLEXION_REQUERIDA")).toBe("Contanos cómo te fue (requerido)");
   });
 });

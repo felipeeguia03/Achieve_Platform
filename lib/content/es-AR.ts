@@ -212,21 +212,15 @@ export const copy = {
     Etapa B6.10. Cuando la reflexión **bloquea el submit**, llamarla "opcional"
     le dice al estudiante lo contrario de lo que va a pasar.
 
-    ⚠️ **El texto no es el del fixture, y hay un conflicto sin resolver.**
-    `FX-LOCAL-EVD-REFLECTION-REQUERIDA` —el diseño aprobado— dice *"Contanos
-    cómo te fue (requerido)"*, y el guard `C-01` de `auditoria-conformidad`
-    **prohíbe `Contanos`** por su lista de imperativos. Los dos no pueden tener
-    razón: *contanos* es voseo (*contá* + *nos*), así que la lista del guard
-    parece tener un defecto — pero **aflojar un guard para que pase el cambio
-    de uno es exactamente lo que un guard existe para impedir**, y elegir la
-    copy es de producto.
-
-    Mientras tanto se usa la variante que no estrena voz: la misma frase que ya
-    estaba aprobada, con el paréntesis que corresponde. La decisión está
-    levantada en el roadmap.
+    La copy es la del fixture `FX-LOCAL-EVD-REFLECTION-REQUERIDA`, aprobada por
+    el Product Owner el 4 de septiembre de 2026
+    ([ADR-044](../../docs/decisions.md#adr-044)). El guard `C-01` la rechazaba
+    y **la lista del guard era la equivocada**: *contanos* es voseo.
   */
-  "CTA.REFLEXION_REQUERIDA": "Agregar reflexión (requerido)",
-  "EVIDENCIA.FALTA_REFLEXION": "Necesitás completar la reflexión para poder enviar.",
+  "CTA.REFLEXION_REQUERIDA": "Contanos cómo te fue (requerido)",
+  /** El campo, cuando la reflexión se escribe en la misma pantalla (ADR-045). */
+  "REFLEXION.CAMPO": "Contanos cómo te fue",
+  "EVIDENCIA.FALTA_REFLEXION": "Contanos cómo te fue para enviar la evidencia.",
   "CTA.VER_BITACORA": "Ver Bitácora",
 
   // ── UX02 · Materia / Cursado ──────────────────────────────────────────────
