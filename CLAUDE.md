@@ -73,6 +73,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Tocar estructura | [`docs/architecture.md`](docs/architecture.md) |
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
+| Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — las quince abiertas, por lo que destraban |
 | Escribir contenido del protocolo de examen | [`docs/roadmap-modo-examen-source.md`](docs/roadmap-modo-examen-source.md) — **los 20 pasos, su voz literal**. Y [`human-p0-source.md`](docs/human-p0-source.md) para las ocho reglas |
 | Buscar evidencia esperada de un paso | [`docs/cuadro-problemas-source.md`](docs/cuadro-problemas-source.md) — **propuesto, no cargado**: tiene preguntas abiertas de la autora |
 | Nombrar algo como lo nombra el oficio | [`docs/indice-psicopedagogico-source.md`](docs/indice-psicopedagogico-source.md) |

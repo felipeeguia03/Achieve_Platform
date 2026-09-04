@@ -71,6 +71,10 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 ### Lo que espera a una persona
 
+> 📋 **El índice completo, ordenado por qué destraba:**
+> [`decisiones-abiertas.md`](decisiones-abiertas.md) — las **quince** que un agente no puede cerrar,
+> con quién decide cada una y qué pasa si no se decide. **Tres tienen código esperándolas.**
+
 > ✅ **Las tres del Product Owner quedaron ratificadas el 4 de septiembre de 2026.** El brief
 > [`agenda-decisiones-po-crm.md`](agenda-decisiones-po-crm.md) las planteó; la respuesta literal está
 > en [`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md). **Ya no esperan a
