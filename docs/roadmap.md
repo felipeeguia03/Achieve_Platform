@@ -50,15 +50,15 @@ Cada etapa, sin excepción:
 
 **Track A: cerrado.** **Track B: B1–B6.8 completas en su alcance disponible**, con B2b en 2/3.
 
-`lint`, `typecheck` y `build` en verde · **986 tests en 55 archivos** · **275 comprobaciones** históricas contra
-Postgres + comprobación funcional transaccional de B6.7.4 · **46 migraciones** · las **nueve superficies** del
+`lint`, `typecheck` y `build` en verde · **991 tests en 56 archivos** · **276 comprobaciones** históricas contra
+Postgres + comprobación funcional transaccional de B6.7.4 · **47 migraciones** · las **nueve superficies** del
 estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](decisions.md#adr-040)).
 
 ### Estado inmediato
 
 | Frente | Estado |
 |---|---|
-| **Fase B6.9 · la salida del camino que no salió bien** | 🔵 **1 / 2** — 4 de septiembre de 2026. **El rescate ya es alcanzable**, y con él `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. Falta el reenvío |
+| **Fase B6.9 · la salida del camino que no salió bien** | ✅ **Completa, 2 / 2** — 4 de septiembre de 2026. El **rescate** y el **reenvío** son alcanzables; con el primero, `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. **La renegociación queda fuera hasta `C01-010`** |
 | **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
 | **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
 | **La puerta · `/login`** | ✅ **Hecha** el 3 de septiembre de 2026 ([ADR-039](decisions.md#adr-039), decidido por el Product Owner). **No es `UX10`** y no levanta el gate de [ADR-006](decisions.md#adr-006). Deja abierto el onboarding del spec §19 |
@@ -3039,9 +3039,9 @@ verificado el 3 de septiembre de 2026, con la cadena de eventos append-only de l
 
 ---
 
-## Fase B6.9 — La salida del camino que no salió bien · 🔵 EN CURSO
+## Fase B6.9 — La salida del camino que no salió bien · ✅ COMPLETA
 
-**Estado:** 🔵 **1 / 2** — 4 de septiembre de 2026. Abierta por la directiva del Product Owner:
+**Estado:** ✅ **2 / 2** — 4 de septiembre de 2026. Abierta por la directiva del Product Owner:
 *"primero se termina y verifica el loop actual del MVP de Plataforma"*
 ([fuente](respuesta-po-flujos-crm-source.md)).
 
@@ -3053,7 +3053,7 @@ B6.8.
 | # | Etapa | Estado |
 |---|---|---|
 | B6.9.1 | **El rescate**: un incumplimiento vuelve a tener salida | ✅ **Completa** |
-| B6.9.2 | **El reenvío**: una entrega rechazada se puede volver a presentar | ⬜ |
+| B6.9.2 | **El reenvío**: una entrega devuelta se puede volver a presentar | ✅ **Completa** |
 | — | ~~La renegociación~~ | 🔒 **Fuera de alcance**: ver abajo |
 
 ⚠️ **La renegociación queda afuera, y se dice en vez de improvisarla.** `renegociar()` también existe
@@ -3102,17 +3102,57 @@ máquina de estados, donde no se afloja por descuido.
 
 **Sin migraciones.** `crear_rescate` existe desde la Fase B2; lo que faltaba era el camino hasta ella.
 
-### ⬜ Etapa B6.9.2 — El reenvío
+### ✅ Etapa B6.9.2 — El reenvío · COMPLETA · 4 de septiembre de 2026
 
-**El otro extremo del mismo hueco:** una entrega `INSUFFICIENT` no se puede volver a presentar.
-`resubmitir()` existe sin llamador, y **falta un eslabón antes**: `RESUBMISSION_REQUESTED` **no lo
-escribe nadie** — la validación deja `INSUFFICIENT` y ahí se corta. Pedir la reentrega es de quien
-evalúa, con el mismo secreto de servicio que valida.
+**El otro extremo del mismo hueco:** una entrega `INSUFFICIENT` no se podía volver a presentar.
+`resubmitir()` existía sin llamador, y **faltaba un eslabón antes**: `RESUBMISSION_REQUESTED` **no lo
+escribía nadie** — la validación dejaba `INSUFFICIENT` y ahí se cortaba, con lo cual la operación que
+exige ese estado era inalcanzable.
 
-⚠️ **Tiene un requisito de forma que el rescate no tiene:** la entrega se hace en dos tiempos y la
-clave del objeto **se deriva del id de la evidencia**, pero `resubmitir_evidencia` genera el id
-adentro de la base. O el id lo elige quien llama —una migración nueva— o la fila nace antes que el
-archivo, que es lo que `D3·A` decidió no hacer. **Se resuelve al empezar la etapa, no antes.**
+**Son dos decisiones, no una**, y la máquina ya las tenía separadas: juzgar que algo no alcanza
+(`SUBMITTED → INSUFFICIENT`) **no obliga** a pedir otra cosa (`INSUFFICIENT →
+RESUBMISSION_REQUESTED`). Por eso son dos operaciones y dos rutas.
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/pedido-de-reenvio` | **Del que evalúa**, con secreto de servicio: nadie se pide a sí mismo que vuelva a entregar. **El motivo es obligatorio** |
+| `POST /api/reenvio` | **Del estudiante**, con su JWT. Firmar → subir → registrar, el mismo orden de `D3·A` |
+| `devueltaDe()` | A qué evidencia sucede el reenvío. No es contenido de la pantalla: es lo que el cliente no puede inventar |
+| `npm run pedir-reenvio` | El pedido a mano, para la demo |
+
+**La migración 47 — y por qué hubo que tocar una función que ya existía.** `resubmitir_evidencia`
+generaba el id de la fila nueva **adentro de la base**, y la clave del objeto en Storage **se deriva
+del id**: el cliente no tenía a qué ruta subir. O la fila nacía antes que el archivo —lo que `D3·A`
+decidió no hacer— o el reenvío no podía llevar nada. **Ahora el id entra por parámetro**, igual que en
+la primera entrega. Se reemplazó la función en vez de agregar una segunda: dos versiones de la misma
+operación es como se desincronizan.
+
+⚠️ **Y apareció un defecto que nadie podía ver mientras la función no tenía llamador:** el reenvío
+nacía con `signal_execution` y `signal_production` en **`NULL`**, mientras la primera entrega las
+escribe en `not_evaluated`. `NULL` es un cuarto significado que nadie definió. Corregido, con su
+comprobación en `db:verify`.
+
+⚠️ **Un `500` real, encontrado corriéndolo:** el primer intento aceptaba `pedidoPor` y lo pasaba como
+actor del evento. `product_event.actor_id` es `uuid` y quien evalúa es **identidad externa sin FK**
+(`C01-030`). **La ruta dejó de recibir esa identidad**: el actor es `null` —lo produjo un proceso— y
+lo que queda escrito es el motivo, en la fila. Es la misma decisión que tomó la validación en
+[ADR-040](decisions.md#adr-040).
+
+**Verificación de punta a punta, contra Postgres:**
+
+| Criterio | Resultado |
+|---|---|
+| Los cinco gates | ✅ `lint` · `typecheck` · `build` con las dos rutas · **991 tests en 56 archivos** · **276 comprobaciones** |
+| El circuito entero | ✅ entrega → **insuficiente** → **pedido con motivo** → reenvío → validación → progreso |
+| La Bitácora | ✅ *Presentaste evidencia · **Necesita cambios** · **Volviste a entregarla** · … · Cerraste el compromiso* |
+| La anterior | ✅ Conserva estado, contenido y fecha; las dos filas quedan enlazadas en los dos sentidos |
+| Pedir sin motivo | ✅ `400`, y **no escribe nada** |
+| Reenviar dos veces | ✅ `409`: la cadena es lineal |
+| Reenviar lo no devuelto | ✅ `409` nombrando el estado |
+| Ajena o inexistente | ✅ `404` seco, el mismo para las dos |
+
+⚠️ **Lo que esta etapa no hizo:** no define **quién** puede pedir un reenvío. `C01-030` sigue `OPEN`,
+y la ruta va con secreto de servicio como todas las demás de ese lado.
 
 ---
 
@@ -3226,7 +3266,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
-| Fase B6.9 — La salida del camino que no salió bien | 🔵 **EN CURSO** — 4 de septiembre de 2026. El rescate es alcanzable y `RescueSucceeded` dejó de ser inalcanzable. Falta el reenvío; **la renegociación queda fuera hasta `C01-010`** | 1 / 2 |
+| Fase B6.9 — La salida del camino que no salió bien | ✅ **COMPLETA** — 4 de septiembre de 2026. Rescate y reenvío alcanzables; `RescueSucceeded` dejó de ser inalcanzable. **La renegociación queda fuera hasta `C01-010`** | 2 / 2 |
 | Fase B6.8 — El camino de ejecución escribe en Postgres | ✅ **COMPLETA** — 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el camino principal escribe contra Postgres y **`C01-009` quedó cerrada**. Sin migraciones | 5 / 5 |
 | Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. `HP0-06-1` ya corre con criterio profesional; faltan `C01-021` para las otras dos reglas, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |

@@ -228,7 +228,10 @@ q "delete from action_recommendation;" >/dev/null
 
 echo "→ I4/I5. Evidence: resubmission preserva, y UNDER_REVIEW exige instancia"
 corre "insert into evidence (id,institution_id,action_id,lifecycle_state) values ('e1000000-0000-0000-0000-000000000001','$A','a7000000-0000-0000-0000-000000000001','RESUBMISSION_REQUESTED');"
-nueva=$(q "select id from public.resubmitir_evidencia('$A','e1000000-0000-0000-0000-000000000001','WEB');" | tr -d '[:space:]')
+# El id de la nueva lo elige quien llama desde la Etapa B6.9.2: la clave del
+# objeto en Storage se deriva de él y el archivo ya está arriba.
+nueva="e1000000-0000-0000-0000-000000000002"
+q "select id from public.resubmitir_evidencia('$A','e1000000-0000-0000-0000-000000000001','$nueva','WEB');" >/dev/null
 [ -n "$nueva" ] && ok "la resubmission creó una evidencia NUEVA" || mal "no creó nada"
 [ "$(q "select count(*) from evidence where id='e1000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "1" ] \
   && ok "la anterior SIGUE EXISTIENDO" || mal "la anterior desapareció"
@@ -238,8 +241,12 @@ nueva=$(q "select id from public.resubmitir_evidencia('$A','e1000000-0000-0000-0
   && ok "la nueva apunta a la anterior" || mal "no apunta"
 [ "$(q "select superseded_by_id from evidence where id='e1000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "$nueva" ] \
   && ok "y la anterior apunta a la nueva" || mal "el vínculo inverso falta"
-r2=$(q "select count(*) from public.resubmitir_evidencia('$A','e1000000-0000-0000-0000-000000000001','WEB');" | tr -d '[:space:]')
+r2=$(q "select count(*) from public.resubmitir_evidencia('$A','e1000000-0000-0000-0000-000000000001','e1000000-0000-0000-0000-000000000003','WEB');" | tr -d '[:space:]')
 [ "$r2" = "0" ] && ok "no se resubmite dos veces la misma" || mal "encadenó dos veces"
+# B6.9.2 · las tres señales de un reenvío entran igual que en la primera
+# entrega. `NULL` sería un cuarto significado que nadie definió.
+[ "$(q "select signal_execution||'/'||signal_production||'/'||signal_domain from evidence where id='$nueva';" | tr -d '[:space:]')" = "not_evaluated/not_evaluated/not_evaluated" ] \
+  && ok "el reenvío nace con las tres señales en not_evaluated" || mal "alguna señal quedó en NULL"
 
 # I5: UNDER_REVIEW exige una instancia REAL de revisión. Un método configurado
 # no alcanza — es literalmente el invariante que AGENTS.md §2.1 separa.

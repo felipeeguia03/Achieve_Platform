@@ -20,6 +20,8 @@ import {
 import { claveDeObjeto, urlFirmadaParaSubir } from "./repositorios/almacenamiento";
 import {
   entregarEvidencia as entregarEvidenciaPuro,
+  resubmitir as resubmitirPuro,
+  transicionar as transicionarEvidencia,
   type EntregaDeEvidencia,
   type ResultadoDeEntrega,
 } from "./servicios/evidencia";
@@ -219,6 +221,90 @@ export async function confirmarCompromiso(
   await transicionarAccion(deps, institutionId, datos.actionId, "COMMITTED", {}, datos.estudianteId);
 
   return resultado;
+}
+
+/**
+ * Pedir un reenvío — Etapa B6.9.2. **Del que evalúa, no del estudiante.**
+ *
+ * Es el eslabón que faltaba entre *"esta entrega no alcanza"* y *"entregá de
+ * nuevo"*, y son dos decisiones distintas: la máquina las tiene separadas
+ * —`SUBMITTED → INSUFFICIENT → RESUBMISSION_REQUESTED`— porque juzgar que algo
+ * no alcanza no obliga a pedir otra cosa.
+ *
+ * Hasta acá **nadie escribía `RESUBMISSION_REQUESTED`**: la validación dejaba
+ * la evidencia en `INSUFFICIENT` y ahí se cortaba, con lo cual `resubmitir()`
+ * —que exige ese estado— era inalcanzable.
+ *
+ * Va con **secreto de servicio**, como validar: nadie se pide a sí mismo que
+ * vuelva a entregar. Y **exige motivo**, por lo mismo que la corroboración: sin
+ * él el estudiante recibe una orden y ninguna pista de qué corregir.
+ */
+export async function pedirReenvio(institutionId: string, evidenciaId: string, motivo: string) {
+  return transicionarEvidencia(
+    { repo: evidenciasReal, eventos: eventosReal },
+    institutionId,
+    evidenciaId,
+    "RESUBMISSION_REQUESTED",
+    { motivo },
+    // **El actor es `null` a propósito.** `product_event.actor_id` es `uuid` y
+    // quien evalúa es identidad externa sin FK (`C01-030`): fabricar uno sería
+    // inventar una identidad. Lo produjo un proceso, y el motivo queda en la
+    // fila. Misma decisión que la validación en ADR-040.
+    null,
+  );
+}
+
+/**
+ * Reenviar — Etapa B6.9.2. **Del estudiante**, con su JWT.
+ *
+ * La contraparte del pedido, y la salida del otro extremo del camino que no
+ * salió bien: una entrega devuelta se puede volver a presentar.
+ *
+ * **La anterior se preserva** (`I4`): nace una fila nueva que la sucede, y la
+ * vieja conserva su estado, su contenido y su fecha. Es el registro de lo que
+ * se entregó primero, y borrarlo sería contar otra historia.
+ *
+ * Igual que la primera entrega, el archivo **ya está arriba** cuando esto
+ * corre: `?firmar=` reservó el id y la clave del objeto se deriva de él.
+ */
+export type ResultadoDeReenvio =
+  | { estado: "OK"; evidenciaId: string }
+  /** No existe, o no es de quien reenvía. **Las dos son la misma respuesta.** */
+  | { estado: "NO_ES_SUYA" }
+  /** Existe y es suya, pero nadie pidió que la reenviara. */
+  | { estado: "NO_DEVUELTA"; desde: string }
+  /** Ya tiene sucesora, o alguien se adelantó: una cadena de reenvíos es lineal. */
+  | { estado: "CONFLICTO" };
+
+export async function reenviarEvidencia(
+  institutionId: string,
+  datos: { anteriorId: string; nuevaId: string; estudianteId: string; claveDeIdempotencia: string },
+): Promise<ResultadoDeReenvio> {
+  // El dueño se comprueba contra la cadena causal que el repositorio ya sabe
+  // leer: la evidencia anterior tiene que ser de este estudiante.
+  const cadena = await contextoDeEvidencia(institutionId, datos.anteriorId);
+  if (!cadena || cadena.estudianteDeLaAccion !== datos.estudianteId) return { estado: "NO_ES_SUYA" };
+
+  const resultado = await resubmitirPuro(
+    { repo: evidenciasReal, eventos: eventosReal },
+    institutionId,
+    datos.anteriorId,
+    "WEB",
+    datos.claveDeIdempotencia,
+    datos.estudianteId,
+    datos.nuevaId,
+  );
+
+  switch (resultado.estado) {
+    case "OK":
+      return { estado: "OK", evidenciaId: resultado.evidencia.id };
+    case "NO_ENCONTRADA":
+      return { estado: "NO_ES_SUYA" };
+    case "TRANSICION_PROHIBIDA":
+      return { estado: "NO_DEVUELTA", desde: resultado.desde };
+    default:
+      return { estado: "CONFLICTO" };
+  }
 }
 
 /** Lo que el estudiante pide cuando rescata un incumplimiento. */
@@ -699,6 +785,24 @@ export async function evidenciaDe(
 ): Promise<EvidenciaProps | null> {
   const estado = await evidenciaLecturaReal.estadoDeEvidencia(institutionId, studentId, ahora, evidenceId);
   return estado ? proyectarEvidencia(estado) : null;
+}
+
+/**
+ * La entrega **devuelta**, si la hay — Etapa B6.9.2.
+ *
+ * Qué evidencia sucede el reenvío. No es contenido de la pantalla —`UX05` no
+ * muestra ids— sino lo que el cliente necesita para poder reenviar, igual que
+ * `compromiso` lo es para la primera entrega.
+ *
+ * `null` ⇒ no hay ninguna esperando reenvío.
+ */
+export async function devueltaDe(
+  institutionId: string,
+  studentId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<{ anteriorId: string } | null> {
+  const estado = await evidenciaLecturaReal.estadoDeEvidencia(institutionId, studentId, ahora, null);
+  return estado?.lifecycle === "RESUBMISSION_REQUESTED" ? { anteriorId: estado.evidenciaId } : null;
 }
 
 /**

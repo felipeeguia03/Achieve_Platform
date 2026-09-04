@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { tokenDelHeader } from "@/lib/server/http";
 import {
   compromisoVigenteDe,
+  devueltaDe,
   entregaEsperadaDe,
   entregarEvidencia,
   evidenciaDe,
@@ -52,7 +53,14 @@ export async function GET(request: Request) {
   // —`EvidenciaProps` no lo muestra—, es lo que el cliente necesita para poder
   // entregar. Sale de la misma lectura que ya proyecta `UX04`.
   const vigente = await compromisoVigenteDe(institutionId, studentId);
-  return NextResponse.json({ ...props, compromiso: vigente?.compromisoId ?? null });
+  // Y si lo que hay es una entrega **devuelta**, cuál es: el reenvío necesita a
+  // quién sucede, y el cliente no puede inventarlo — Etapa B6.9.2.
+  const devuelta = props.estado === "RESUBMISSION_REQUESTED" ? await devueltaDe(institutionId, studentId) : null;
+  return NextResponse.json({
+    ...props,
+    compromiso: vigente?.compromisoId ?? null,
+    ...(devuelta ? { anterior: devuelta.anteriorId } : {}),
+  });
 }
 
 /**

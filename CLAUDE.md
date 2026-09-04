@@ -109,7 +109,7 @@ el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Post
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` se conectaron en la
 Fase B5.
 
-**Fase B6.9 — La salida del camino que no salió bien.** 🔵 **1 / 2** — 4 de septiembre de 2026. El
+**Fase B6.9 — La salida del camino que no salió bien.** ✅ **COMPLETA, 2 / 2** — 4 de septiembre de 2026. El
 loop tenía **sólo camino feliz**: el reloj llevaba un compromiso a `MISSED` y ahí el estudiante quedaba
 sin salida, porque la máquina no admite `MISSED → CONFIRMED` y `POST /api/compromiso` sólo crea el
 primero de una `Action`. **La B6.9.1 abrió el rescate** (`POST /api/rescate`, con JWT del estudiante).
@@ -123,6 +123,15 @@ en `crear_rescate` y en la máquina de estados.
 
 ⚠️ **Antes de tocar `propuestaDeCompromiso`:** un incumplimiento sin rescate **no es** *"todavía sin
 compromiso"*. Si volvés a proponer ahí, `UX04` ofrece una CTA que termina en `409`.
+
+**La B6.9.2 abrió el reenvío**, que son **dos operaciones y dos rutas** porque son dos decisiones:
+`POST /api/pedido-de-reenvio` es del que evalúa —secreto de servicio, **motivo obligatorio**— y
+`POST /api/reenvio` es del estudiante. Juzgar que algo no alcanza no obliga a pedir otra cosa.
+
+⚠️ **Antes de tocar una ruta de servicio: no recibas identidades que no podés escribir.**
+`product_event.actor_id` es `uuid` y quien evalúa es identidad externa sin FK (`C01-030`). El actor va
+`null` —lo produjo un proceso— y lo que queda escrito es el motivo. Aceptar un `pedidoPor` costó un
+`500` real.
 
 ⚠️ **La renegociación sigue sin cablear, y es a propósito.** `renegociar()` existe sin llamador porque
 `renegociacionElegible` **sólo vive en fixtures**: qué hace elegible a un compromiso es `C01-010`,

@@ -213,11 +213,17 @@ async function resubmitirAtomico(
   anteriorId: string,
   canal: "WEB" | "WHATSAPP",
   claveDeIdempotencia?: string,
+  nuevaId?: string,
+  subidaPor?: string,
 ): Promise<Evidencia | null> {
   const { data, error } = await clienteDeServicio().rpc("resubmitir_evidencia", {
     p_institution_id: institutionId,
     p_anterior_id: anteriorId,
+    // El id lo elige quien llama, porque la clave del objeto se deriva de él y
+    // el archivo ya está arriba cuando esto corre.
+    p_nueva_id: nuevaId ?? crypto.randomUUID(),
     p_canal: canal,
+    p_uploaded_by: subidaPor ?? null,
     p_idempotency_key: claveDeIdempotencia ?? null,
   });
   if (error) throw new Error(`No se pudo resubmitir: ${error.message}`);

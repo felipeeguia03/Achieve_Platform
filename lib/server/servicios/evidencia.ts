@@ -39,12 +39,19 @@ export interface RepositorioDeEvidencias {
     nuevo: EvidenceState,
     columnas?: Readonly<Record<string, unknown>>,
   ): Promise<Evidencia | null>;
-  /** `I4`: crea la nueva y enlaza las dos, atómicamente. */
+  /**
+   * `I4`: crea la nueva y enlaza las dos, atómicamente.
+   *
+   * `nuevaId` lo elige quien llama porque la clave del objeto en Storage se
+   * deriva de él y el archivo ya está arriba cuando esto corre — Etapa B6.9.2.
+   */
   resubmitirAtomico(
     institutionId: string,
     anteriorId: string,
     canal: "WEB" | "WHATSAPP",
     claveDeIdempotencia?: string,
+    nuevaId?: string,
+    subidaPor?: string,
   ): Promise<Evidencia | null>;
 }
 
@@ -58,6 +65,11 @@ export type ResultadoDeEvidencia =
    * haber creado una revisión.
    */
   | { estado: "FALTA_INSTANCIA_DE_REVISION" }
+  /**
+   * Pedir un reenvío **exige decir por qué** — Etapa B6.9.2. Sin motivo, el
+   * estudiante recibe *"volvé a entregarla"* y nada que corregir.
+   */
+  | { estado: "FALTA_MOTIVO" }
   | { estado: "CONFLICTO" };
 
 /** `RESUBMISSION_REQUESTED` → `EvidenceResubmissionRequested`. Ver el guard. */
@@ -70,7 +82,7 @@ export async function transicionar(
   institutionId: string,
   id: string,
   hacia: EvidenceState,
-  extra: { reviewInstanceId?: string } = {},
+  extra: { reviewInstanceId?: string; motivo?: string } = {},
   actorId: string | null = null,
 ): Promise<ResultadoDeEvidencia> {
   const actual = await deps.repo.porId(institutionId, id);
@@ -87,8 +99,16 @@ export async function transicionar(
     return { estado: "FALTA_INSTANCIA_DE_REVISION" };
   }
 
+  // **Pedir un reenvío sin decir por qué es indistinguible de un clic.** El
+  // estudiante tiene que volver a entregar algo, y sin motivo no sabe qué
+  // corregir. Mismo criterio que `D5` de la corroboración.
+  if (hacia === "RESUBMISSION_REQUESTED" && !extra.motivo?.trim()) {
+    return { estado: "FALTA_MOTIVO" };
+  }
+
   const guardado = await deps.repo.cambiarEstadoSi(institutionId, id, actual.state, hacia, {
     ...(extra.reviewInstanceId ? { review_instance_id: extra.reviewInstanceId } : {}),
+    ...(hacia === "RESUBMISSION_REQUESTED" ? { resubmission_reason: extra.motivo } : {}),
     ...(hacia === "SUBMITTED" ? { submitted_at: new Date().toISOString() } : {}),
   });
   if (!guardado) return { estado: "CONFLICTO" };
@@ -203,6 +223,8 @@ export async function resubmitir(
   canal: "WEB" | "WHATSAPP",
   claveDeIdempotencia?: string,
   actorId: string | null = null,
+  /** El id reservado por `?firmar=`: la clave del objeto se deriva de él. */
+  nuevaId?: string,
 ): Promise<ResultadoDeEvidencia> {
   const anterior = await deps.repo.porId(institutionId, anteriorId);
   if (!anterior) return { estado: "NO_ENCONTRADA" };
@@ -222,6 +244,8 @@ export async function resubmitir(
     anteriorId,
     canal,
     claveDeIdempotencia,
+    nuevaId,
+    actorId ?? undefined,
   );
   if (!nueva) return { estado: "CONFLICTO" };
 

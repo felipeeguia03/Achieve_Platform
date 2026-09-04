@@ -11,8 +11,11 @@ import { enviar, subirEvidencia } from "@/lib/client/api";
 import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
 import type { EvidenciaProps } from "@/lib/domain/view-models";
 
-/** El compromiso al que se adjunta la entrega. No es contenido de la pantalla. */
-type ConCompromiso = EvidenciaProps & { compromiso?: string | null };
+/**
+ * El compromiso al que se adjunta la entrega, y —si la entrega fue devuelta— a
+ * qué evidencia sucede el reenvío. Ninguno es contenido de la pantalla.
+ */
+type ConCompromiso = EvidenciaProps & { compromiso?: string | null; anterior?: string | null };
 
 const DESTINO = rutaDeCta("CTA-007");
 
@@ -72,6 +75,7 @@ function Pantalla({
   const escenario = params.get("escenario");
   const destino = escenario ? (siguienteUrl("/evidencia", escenario) ?? DESTINO) : null;
   const compromiso = props.compromiso;
+  const anterior = props.anterior;
 
   // Una clave por pantalla, no por clic (D2·A): es lo que hace del doble clic
   // el mismo pedido.
@@ -79,6 +83,64 @@ function Pantalla({
   clave.current ??= crypto.randomUUID();
   const [enCurso, setEnCurso] = useState(false);
   const [motivo, setMotivo] = useState<string | null>(null);
+
+  /*
+    **El reenvío** — `CTA-008`, Etapa B6.9.2. Mismo orden que la primera
+    entrega —firmar, subir, registrar— porque la clave del objeto se deriva del
+    id reservado. Lo que cambia es a dónde va: `/api/reenvio` crea una fila
+    **que sucede a la anterior y la preserva** (`I4`), y eso no es lo mismo que
+    entregar por primera vez.
+  */
+  async function reenviar() {
+    if (enCurso || !anterior) return;
+    setEnCurso(true);
+    setMotivo(null);
+
+    const nombre = props.nombreAdjuntoDemo;
+    const firma = await enviar<{ evidenciaId: string; url: string }>(
+      `/api/evidencia?firmar=${encodeURIComponent(nombre)}`,
+      {},
+    );
+    if (firma.estado !== "OK") {
+      setEnCurso(false);
+      setMotivo("No se pudo preparar la subida. Probá de nuevo.");
+      return;
+    }
+
+    const subida = await subirEvidencia(firma.datos.url, `Corrección sintética · ${nombre}`);
+    if (!subida) {
+      setEnCurso(false);
+      setMotivo("No se pudo subir el archivo. Probá de nuevo.");
+      return;
+    }
+
+    const r = await enviar<{ evidencia: string }>("/api/reenvio", {
+      anterior,
+      evidencia: firma.datos.evidenciaId,
+      clave: clave.current,
+    });
+
+    setEnCurso(false);
+    if (r.estado === "OK") {
+      if (destino) router.push(destino);
+      else recargar?.();
+      return;
+    }
+    setMotivo(r.estado === "RECHAZADO" ? r.motivo : "No se pudo registrar el reenvío.");
+  }
+
+  if (anterior) {
+    return (
+      <Evidencia
+        {...props}
+        aviso={motivo ?? props.aviso}
+        ctaPrimaria={
+          props.ctaPrimaria ? { ...props.ctaPrimaria, habilitada: !enCurso } : props.ctaPrimaria
+        }
+        onAvanzar={reenviar}
+      />
+    );
+  }
 
   // Sin compromiso vivo no hay a qué adjuntar: la CTA sólo navega.
   if (!compromiso) {
