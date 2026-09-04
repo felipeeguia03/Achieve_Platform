@@ -75,6 +75,8 @@ const BASE: Compromiso = {
   actionId: "a-1",
   state: "CONFIRMED",
   rescuesCommitmentId: null,
+  renegotiatedFromId: null,
+  scheduledFor: "2026-09-02T14:00:00.000Z",
 };
 
 describe("B1.4 · el Service ejecuta la máquina de estados del dominio", () => {
@@ -214,10 +216,18 @@ describe("B1.5 · cada transición deja su hecho en `product_event`", () => {
 
 const ACUERDO = { startAt: "2026-09-02T19:00:00.000Z", timezone: "America/Argentina/Cordoba", plannedMinutes: 70 };
 
+/**
+ * El contexto que ADR-046 necesita: el instante del pedido y la zona **de la
+ * institución** —la de ADR-049, no la del estudiante—. `BASE` está acordado
+ * para las 11:00 de Córdoba del 2 de septiembre y la propuesta son las 16:00
+ * del mismo día: mismo día calendario y siete horas de anticipación.
+ */
+const CONTEXTO = { ahora: "2026-09-02T12:00:00.000Z", zonaInstitucional: "America/Argentina/Cordoba" };
+
 describe("B2.2 · I2 · renegociar crea una fila nueva", () => {
   it("el original queda RENEGOTIATED y devuelve el sucesor", async () => {
     const { deps, actual, publicados } = repoFalso(BASE);
-    const r = await renegociar(deps, "inst-A", "c-1", ACUERDO, "actor-1");
+    const r = await renegociar(deps, "inst-A", "c-1", ACUERDO, CONTEXTO, "actor-1");
 
     expect(r.estado).toBe("OK");
     expect(actual()?.state).toBe("RENEGOTIATED");
@@ -231,7 +241,7 @@ describe("B2.2 · I2 · renegociar crea una fila nueva", () => {
    */
   it("un compromiso ya empezado no se renegocia, y no llega a la base", async () => {
     const { deps, acuerdos, publicados } = repoFalso({ ...BASE, state: "STARTED" });
-    const r = await renegociar(deps, "inst-A", "c-1", ACUERDO);
+    const r = await renegociar(deps, "inst-A", "c-1", ACUERDO, CONTEXTO);
     expect(r).toEqual({ estado: "NO_RENEGOCIABLE", desde: "STARTED" });
     expect(acuerdos).toEqual([]);
     expect(publicados).toEqual([]);
@@ -239,14 +249,61 @@ describe("B2.2 · I2 · renegociar crea una fila nueva", () => {
 
   it("el estado esperado viaja a la operación atómica", async () => {
     const { deps, acuerdos } = repoFalso(BASE);
-    await renegociar(deps, "inst-A", "c-1", ACUERDO);
+    await renegociar(deps, "inst-A", "c-1", ACUERDO, CONTEXTO);
     expect(acuerdos[0]).toEqual({ tipo: "renegociar", esperado: "CONFIRMED" });
   });
 
   it("si otro se adelantó es CONFLICTO, y no publica", async () => {
     const { deps, publicados } = repoFalso(BASE, { seLoLlevanOtro: true });
-    expect((await renegociar(deps, "inst-A", "c-1", ACUERDO)).estado).toBe("CONFLICTO");
+    expect((await renegociar(deps, "inst-A", "c-1", ACUERDO, CONTEXTO)).estado).toBe("CONFLICTO");
     expect(publicados).toEqual([]);
+  });
+});
+
+describe("B6.11 · ADR-046 · la elegibilidad se aplica ANTES de escribir", () => {
+  /**
+   * Lo importante de estos tres no es el código de salida: es que `acuerdos`
+   * quede vacío. Una renegociación no elegible que igual llega a la base ya
+   * movió el original a `RENEGOTIATED`, y eso no se deshace.
+   */
+  it("otro día calendario: no se toca la base ni se publica", async () => {
+    const { deps, acuerdos, publicados } = repoFalso(BASE);
+    const r = await renegociar(
+      deps, "inst-A", "c-1",
+      { ...ACUERDO, startAt: "2026-09-05T19:00:00.000Z" },
+      CONTEXTO,
+    );
+    expect(r).toEqual({ estado: "NO_ELEGIBLE", motivo: "OTRO_DIA_CALENDARIO" });
+    expect(acuerdos).toEqual([]);
+    expect(publicados).toEqual([]);
+  });
+
+  it("dentro de los quince minutos: no se toca la base", async () => {
+    const { deps, acuerdos } = repoFalso(BASE);
+    const r = await renegociar(
+      deps, "inst-A", "c-1", ACUERDO,
+      { ...CONTEXTO, ahora: "2026-09-02T18:50:00.000Z" },
+    );
+    expect(r).toEqual({ estado: "NO_ELEGIBLE", motivo: "ANTICIPACION_INSUFICIENTE" });
+    expect(acuerdos).toEqual([]);
+  });
+
+  it("una cadena que ya se renegoció no se renegocia de nuevo", async () => {
+    const { deps, acuerdos } = repoFalso({ ...BASE, renegotiatedFromId: "c-0" });
+    const r = await renegociar(deps, "inst-A", "c-1", ACUERDO, CONTEXTO);
+    expect(r).toEqual({ estado: "NO_ELEGIBLE", motivo: "CADENA_YA_RENEGOCIADA" });
+    expect(acuerdos).toEqual([]);
+  });
+
+  /**
+   * El estado conserva su salida propia —`NO_RENEGOCIABLE` con el `desde`—
+   * porque la pantalla necesita saber desde dónde, no sólo que no se puede.
+   */
+  it("el estado sigue devolviendo NO_RENEGOCIABLE, no NO_ELEGIBLE", async () => {
+    const { deps } = repoFalso({ ...BASE, state: "STARTED" });
+    expect(await renegociar(deps, "inst-A", "c-1", ACUERDO, CONTEXTO)).toEqual({
+      estado: "NO_RENEGOCIABLE", desde: "STARTED",
+    });
   });
 });
 

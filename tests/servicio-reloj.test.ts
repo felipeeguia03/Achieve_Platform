@@ -32,7 +32,10 @@ function mundo(iniciales: Array<CompromisoConReloj>, opciones: { pierde?: boolea
     async porId(_inst: string, id: string): Promise<Compromiso | null> {
       const f = filas.get(id);
       return f
-        ? { id, institutionId: "inst-A", actionId: "a-1", state: f.state, rescuesCommitmentId: null }
+        ? {
+            id, institutionId: "inst-A", actionId: "a-1", state: f.state,
+            rescuesCommitmentId: null, renegotiatedFromId: null, scheduledFor: null,
+          }
         : null;
     },
     async cambiarEstadoSi(_i: string, id: string, esperado: CommitmentState, nuevo: CommitmentState) {

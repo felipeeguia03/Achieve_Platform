@@ -10,7 +10,8 @@ import { clienteDeServicio } from "../supabase";
  * **No decide permisos ni transiciones** — sólo persiste, con el guard atómico
  * que la decisión de arriba necesita para no perderse en una carrera.
  */
-const COLUMNAS = "id, institution_id, action_id, state, rescues_commitment_id";
+const COLUMNAS =
+  "id, institution_id, action_id, state, rescues_commitment_id, renegotiated_from_id, start_at";
 
 function aDominio(fila: Record<string, unknown>): Compromiso {
   return {
@@ -18,6 +19,8 @@ function aDominio(fila: Record<string, unknown>): Compromiso {
     institutionId: fila.institution_id as string,
     actionId: fila.action_id as string,
     rescuesCommitmentId: (fila.rescues_commitment_id as string | null) ?? null,
+    renegotiatedFromId: (fila.renegotiated_from_id as string | null) ?? null,
+    scheduledFor: fila.start_at ? new Date(fila.start_at as string).toISOString() : null,
     state: fila.state as CommitmentState,
   };
 }
@@ -253,7 +256,11 @@ async function crearConfirmado(
   institutionId: string,
   datos: ConfirmacionDeCompromiso,
 ): Promise<{ compromiso: Compromiso; comprometible: boolean; yaViva: boolean }> {
-  const vacio = { id: "", institutionId, actionId: datos.actionId, rescuesCommitmentId: null, state: "DRAFT" as CommitmentState };
+  const vacio = {
+    id: "", institutionId, actionId: datos.actionId,
+    rescuesCommitmentId: null, renegotiatedFromId: null, scheduledFor: null,
+    state: "DRAFT" as CommitmentState,
+  };
 
   const { data: accion, error: errAccion } = await clienteDeServicio()
     .from("action")

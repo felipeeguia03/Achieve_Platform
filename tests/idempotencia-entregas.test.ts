@@ -55,6 +55,8 @@ const HUELLA: HuellaDeCompromiso = {
     institutionId: INST,
     actionId: PEDIDO.actionId,
     rescuesCommitmentId: null,
+    renegotiatedFromId: null,
+    scheduledFor: PEDIDO.startAt,
     state: "CONFIRMED",
   },
   estudianteId: PEDIDO.estudianteId,

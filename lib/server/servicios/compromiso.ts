@@ -1,4 +1,8 @@
-import { canTransition, commitmentTransitions } from "@/lib/domain/state-machines";
+import { commitmentTransitions } from "@/lib/domain/state-machines";
+import {
+  elegibilidadDeRenegociacion,
+  type MotivoDeInelegibilidad,
+} from "@/lib/domain/renegociacion";
 import type { CommitmentState } from "@/lib/domain/types";
 import type { PublicadorDeEventos } from "./eventos";
 import {
@@ -30,6 +34,14 @@ export interface Compromiso extends EntidadConEstado<CommitmentState> {
    * que el producto quiere medir —la recuperación— no se puede registrar.
    */
   rescuesCommitmentId: string | null;
+  /**
+   * De qué compromiso es sucesor, si lo es. Lo necesita la condición 3 de
+   * [ADR-046](../../../docs/decisions.md#adr-046): **una sola renegociación
+   * por cadena**. Sin este dato la cadena no se puede contar.
+   */
+  renegotiatedFromId: string | null;
+  /** El instante acordado. `null` ⇒ todavía no hay acuerdo (`DRAFT`). */
+  scheduledFor: string | null;
 }
 
 /** Datos del compromiso nuevo. El original nunca se edita más allá del estado. */
@@ -135,10 +147,22 @@ export async function transicionar(
   return resultado;
 }
 
+/**
+ * Lo que la elegibilidad de ADR-046 necesita y el compromiso no sabe: el
+ * instante en que se pide el cambio y la zona **de la institución** —la que
+ * define el "día calendario" de la condición 5, y que no es la del estudiante
+ * (ADR-049).
+ */
+export interface ContextoDeRenegociacion {
+  ahora: string;
+  zonaInstitucional: string;
+}
+
 export type ResultadoDeAcuerdo =
   | { estado: "OK"; compromiso: Compromiso }
   | { estado: "NO_ENCONTRADO" }
   | { estado: "NO_RENEGOCIABLE"; desde: CommitmentState }
+  | { estado: "NO_ELEGIBLE"; motivo: MotivoDeInelegibilidad }
   | { estado: "NO_INCUMPLIDO"; desde: CommitmentState }
   | { estado: "CONFLICTO" };
 
@@ -264,13 +288,28 @@ export async function renegociar(
   institutionId: string,
   originalId: string,
   acuerdo: AcuerdoNuevo,
+  contexto: ContextoDeRenegociacion,
   actorId: string | null = null,
 ): Promise<ResultadoDeAcuerdo> {
   const original = await deps.repo.porId(institutionId, originalId);
   if (!original) return { estado: "NO_ENCONTRADO" };
 
-  if (!canTransition(commitmentTransitions, original.state, "RENEGOTIATED")) {
-    return { estado: "NO_RENEGOCIABLE", desde: original.state };
+  // Las cinco condiciones viven en el dominio, no acá: son la decisión del
+  // Product Owner, y el Service sólo las aplica. Ver ADR-046.
+  const elegibilidad = elegibilidadDeRenegociacion({
+    estado: original.state,
+    renegociadoDeId: original.renegotiatedFromId,
+    inicioOriginal: original.scheduledFor,
+    inicioPropuesto: acuerdo.startAt,
+    ahora: contexto.ahora,
+    zonaInstitucional: contexto.zonaInstitucional,
+  });
+  if (!elegibilidad.elegible) {
+    // El estado tiene su propia salida desde antes de ADR-046 y la conserva:
+    // la pantalla necesita saber DESDE dónde, no sólo que no se puede.
+    return elegibilidad.motivo === "ESTADO_NO_RENEGOCIABLE"
+      ? { estado: "NO_RENEGOCIABLE", desde: original.state }
+      : { estado: "NO_ELEGIBLE", motivo: elegibilidad.motivo };
   }
 
   const nuevo = await deps.repo.renegociarAtomico(

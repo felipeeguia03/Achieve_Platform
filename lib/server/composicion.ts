@@ -35,11 +35,13 @@ import {
 import { reflexionesReal } from "./repositorios/reflexion";
 import {
   confirmarCompromiso as confirmarCompromisoPuro,
+  renegociar as renegociarPuro,
   rescatar as rescatarPuro,
   transicionar as transicionarCompromiso,
   type ConfirmacionDeCompromiso,
   type ResultadoDeConfirmacion,
 } from "./servicios/compromiso";
+import type { MotivoDeInelegibilidad } from "@/lib/domain/renegociacion";
 import { hoyReal } from "./repositorios/hoy";
 import { materiaReal } from "./repositorios/materia";
 import { accionLecturaReal } from "./repositorios/accion-lectura";
@@ -48,6 +50,7 @@ import { evidenciaLecturaReal } from "./repositorios/evidencia-lectura";
 import { progresoLecturaReal } from "./repositorios/progreso-lectura";
 import { progresoEscrituraReal } from "./repositorios/progreso";
 import { institucionesReal } from "./repositorios/instituciones";
+import { institucionReal } from "./repositorios/institucion";
 import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
 import { senalesReal } from "./repositorios/riesgo";
@@ -410,6 +413,114 @@ export async function rescatarCompromiso(
       return { estado: "NO_ES_SUYO" };
     case "NO_INCUMPLIDO":
       return { estado: "NO_INCUMPLIDO", desde: resultado.desde };
+    default:
+      return { estado: "CONFLICTO" };
+  }
+}
+
+export interface RenegociacionSolicitada {
+  originalId: string;
+  estudianteId: string;
+  startAt: string;
+  timezone: string;
+  plannedMinutes: number;
+  claveDeIdempotencia: string;
+}
+
+export type ResultadoDeRenegociacion =
+  | { estado: "OK"; compromiso: { id: string }; duplicado: boolean }
+  /** No existe, o no es de quien lo pide. **Las dos respuestas son la misma.** */
+  | { estado: "NO_ES_SUYO" }
+  /** El estado ya no admite renegociar. La pantalla necesita el `desde`. */
+  | { estado: "NO_RENEGOCIABLE"; desde: string }
+  /**
+   * Alguna de las condiciones 3, 4 o 5 de ADR-046. El estado queda **fuera** a
+   * propósito: tiene su propia salida, con el `desde` que la pantalla necesita.
+   */
+  | { estado: "NO_ELEGIBLE"; motivo: Exclude<MotivoDeInelegibilidad, "ESTADO_NO_RENEGOCIABLE"> }
+  /** Otro se adelantó: el original cambió de estado entre la lectura y la escritura. */
+  | { estado: "CONFLICTO" }
+  /** La clave existe con otro dueño, otro original u otro contenido. */
+  | { estado: "CONFLICTO_DE_CLAVE" }
+  /** La institución no existe: sin su zona, la condición 5 no se puede evaluar. */
+  | { estado: "SIN_ZONA_INSTITUCIONAL" };
+
+/**
+ * Renegociar — **la tercera de las tres operaciones huérfanas** que encontró la
+ * Fase B6.9, y la última en conectarse.
+ *
+ * `renegociar()` es transaccional desde la Fase B2 y **nadie la llamaba**: un
+ * estudiante que no podía a la hora acordada no tenía por dónde moverla, y
+ * `CommitmentRenegotiated` no era alcanzable por ningún camino.
+ *
+ * ## Lo que agrega esta orquestación
+ *
+ * **1 · Autorización.** El Service comprueba la regla, no quién pide. Dos
+ * alumnos de la misma institución comparten scope: sin esto, cualquiera podría
+ * mover el compromiso de otro.
+ *
+ * **2 · La zona de la institución.** La condición 5 de
+ * [ADR-046](../../docs/decisions.md#adr-046) habla del *"mismo día calendario
+ * en la zona horaria de la institución"*, y esa zona es un dato de la
+ * institución ([ADR-049](../../docs/decisions.md#adr-049)) que el Service no
+ * tiene por qué ir a buscar. **Si falta, la operación no se hace**: evaluar la
+ * regla con otra zona sería aplicar otra regla.
+ *
+ * **3 · Idempotencia por clave del cliente**, igual que en el rescate.
+ */
+export async function renegociarCompromiso(
+  institutionId: string,
+  datos: RenegociacionSolicitada,
+  ahora: string = new Date().toISOString(),
+): Promise<ResultadoDeRenegociacion> {
+  const huella = await compromisosReal.huellaDeClave(institutionId, datos.claveDeIdempotencia);
+  if (huella) {
+    const mismo =
+      huella.estudianteId === datos.estudianteId &&
+      huella.compromiso.renegotiatedFromId === datos.originalId &&
+      huella.startAt === datos.startAt &&
+      huella.timezone === datos.timezone &&
+      huella.plannedMinutes === datos.plannedMinutes;
+    return mismo
+      ? { estado: "OK", compromiso: { id: huella.compromiso.id }, duplicado: true }
+      : { estado: "CONFLICTO_DE_CLAVE" };
+  }
+
+  // Antes de mirar el estado: si no es suyo, en qué estado está tampoco es
+  // información que le corresponda.
+  const duenio = await compromisosReal.duenioDe(institutionId, datos.originalId);
+  if (duenio !== datos.estudianteId) return { estado: "NO_ES_SUYO" };
+
+  const zonaInstitucional = await institucionReal.zonaHoraria(institutionId);
+  if (!zonaInstitucional) return { estado: "SIN_ZONA_INSTITUCIONAL" };
+
+  const resultado = await renegociarPuro(
+    { repo: compromisosReal, eventos: eventosReal },
+    institutionId,
+    datos.originalId,
+    {
+      startAt: datos.startAt,
+      timezone: datos.timezone,
+      plannedMinutes: datos.plannedMinutes,
+      claveDeIdempotencia: datos.claveDeIdempotencia,
+    },
+    { ahora, zonaInstitucional },
+    datos.estudianteId,
+  );
+
+  switch (resultado.estado) {
+    case "OK":
+      return { estado: "OK", compromiso: { id: resultado.compromiso.id }, duplicado: false };
+    case "NO_ENCONTRADO":
+      return { estado: "NO_ES_SUYO" };
+    case "NO_RENEGOCIABLE":
+      return { estado: "NO_RENEGOCIABLE", desde: resultado.desde };
+    case "NO_ELEGIBLE":
+      // El Service ya separó el estado en su propia rama; lo que llega acá son
+      // las condiciones 3, 4 y 5.
+      return resultado.motivo === "ESTADO_NO_RENEGOCIABLE"
+        ? { estado: "CONFLICTO" }
+        : { estado: "NO_ELEGIBLE", motivo: resultado.motivo };
     default:
       return { estado: "CONFLICTO" };
   }

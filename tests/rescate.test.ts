@@ -32,6 +32,8 @@ describe("B6.9.1 · el incumplimiento tiene salida, y no se edita", () => {
     institutionId: "inst-A",
     actionId: "a-1",
     rescuesCommitmentId: null,
+    renegotiatedFromId: null,
+    scheduledFor: "2026-09-02T19:00:00.000Z",
     state: "MISSED",
   };
 
