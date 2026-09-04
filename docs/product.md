@@ -761,7 +761,7 @@ institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`
 | `EvidenceSubmitted` | Evidencia recibida. **Una vez por Evidence canónica** |
 | `EvidenceValidated` | Evidencia validada |
 | `ProgressUpdated` | Cambió `TopicProgress`/`CourseProgress`. **Único evento que habilita mostrar un cambio confirmado** |
-| `ExamPreparationRecommended` | Modo Examen recomendado. **Sin emisor todavía:** cuándo aparece la señal es `C01-024` |
+| `ExamPreparationRecommended` | Modo Examen recomendado. ✅ Emitido desde la Etapa B6.12 por el reloj: **14 días calendario o menos, incluyendo el día 14**, una sola vez por intento ([ADR-048](decisions.md#adr-048)) |
 | `ExamPreparationActivated` | El alumno activó la preparación. ✅ Emitido desde la Fase B5 |
 | `ProtocolStepCompleted` | Hito cerrado. ✅ Emitido desde la Fase B5, **una vez por vuelta** ([ADR-028](decisions.md#adr-028)) |
 | `SimulationCompleted` | Simulación registrada |

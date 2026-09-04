@@ -159,10 +159,11 @@ export const catalogoP0: Readonly<Record<string, EventoDeProducto>> = {
   ExamPreparationRecommended: {
     uso: "Modo Examen recomendado.",
     nivel: "NEGOCIO",
-    // La preparación en `RECOMMENDED` es la señal, y **cuándo aparece** es
-    // `C01-024`: la ventana de recomendación sigue sin decidirse, así que nadie
-    // la emite todavía. La tabla existe desde la B5; el disparador no.
-    instrumentacion: pendiente("C01-024 · falta decidir la ventana de recomendación"),
+    // La preparación en `RECOMMENDED` es la señal, y **cuándo aparece** era
+    // `C01-024`. [ADR-048](../../docs/decisions.md#adr-048) lo cerró —14 días
+    // calendario incluyendo el día 14, una vez por intento— y el disparador vive
+    // en el reloj, que es lo que ya aplica las reglas que dependen del tiempo.
+    instrumentacion: emitido,
     enBitacora: false,
   },
   ExamPreparationActivated: {

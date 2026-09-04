@@ -54,9 +54,12 @@ if (!r.ok) {
   process.exit(1);
 }
 
-const { vencidos, incumplidos, conflictos } = await r.json();
+const { vencidos, incumplidos, examenesRecomendados, conflictos } = await r.json();
 console.log(`✓ Reloj corrido sobre ${institucion}`);
 console.log(`   ${vencidos} vencidos (→ DUE) · ${incumplidos} incumplidos (→ MISSED)`);
+// ADR-048: 14 días calendario o menos, una sola vez por intento. Si la corrida
+// anterior ya la creó, ésta no vuelve a recomendar ni a publicar el evento.
+console.log(`   ${examenesRecomendados} Modo Examen recomendados (ventana de 14 días)`);
 // Un conflicto no es un error: es que el estudiante movió su compromiso
 // mientras el reloj corría, y le ganó. La próxima corrida ve el estado nuevo.
 console.log(`   ${conflictos} conflictos — el estudiante le ganó al reloj, y está bien`);

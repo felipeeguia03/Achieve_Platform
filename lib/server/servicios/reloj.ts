@@ -2,6 +2,7 @@ import {
   transicionesPorTiempo,
   type CompromisoConReloj,
 } from "@/lib/domain/reloj-compromisos";
+import { ventanaDeExamen } from "@/lib/domain/ventana-de-examen";
 import type { PublicadorDeEventos } from "./eventos";
 import type { RepositorioDeCompromisos } from "./compromiso";
 import { transicionar } from "./compromiso";
@@ -44,6 +45,41 @@ export interface RepositorioDeReloj {
     ahora: string,
     limite: number,
   ): Promise<Array<{ id: string; status: "OPEN" }>>;
+
+  /**
+   * Evaluaciones **con fecha** y sin preparación, por estudiante — ADR-048.
+   *
+   * Entrega la fecha cruda; **no aplica la ventana**. Quién decide si faltan
+   * catorce días o menos es `ventanaDeExamen`, puro, con la zona institucional
+   * de ADR-049. Las que no tienen fecha no viajan: no se estima una.
+   */
+  candidatosDeModoExamen(
+    institutionId: string,
+    limite: number,
+  ): Promise<CandidatoDeModoExamen[]>;
+
+  /**
+   * Crea la preparación en `RECOMMENDED`, o `null` si ya existía.
+   *
+   * El `null` no es un error: es la condición 3 y la 4 de ADR-048 a la vez —
+   * `UNIQUE (student_id, assessment_id)` desde la B5—, y por eso el llamador
+   * **no publica el evento** cuando llega.
+   */
+  recomendarModoExamen(
+    institutionId: string,
+    candidato: CandidatoDeModoExamen,
+  ): Promise<{ id: string } | null>;
+
+  /** La zona de la institución (ADR-049). `null` ⇒ no existe la institución. */
+  zonaInstitucional(institutionId: string): Promise<string | null>;
+}
+
+export interface CandidatoDeModoExamen {
+  assessmentId: string;
+  studentId: string;
+  courseEnrollmentId: string;
+  /** `YYYY-MM-DD`. Nunca `null`: sin fecha la fila no viaja. */
+  fechaDeExamen: string;
 }
 
 export interface ResumenDeCorrida {
@@ -51,6 +87,8 @@ export interface ResumenDeCorrida {
   incumplidos: number;
   /** Señales que dejaron de ser relevantes (Fase B6). */
   senalesExpiradas: number;
+  /** Modos Examen recomendados en esta corrida (ADR-048). */
+  examenesRecomendados: number;
   /** Perdieron una carrera contra otra escritura. No es error: se reintenta. */
   conflictos: number;
 }
@@ -74,6 +112,7 @@ export async function correrReloj(
     vencidos: 0,
     incumplidos: 0,
     senalesExpiradas: 0,
+    examenesRecomendados: 0,
     conflictos: 0,
   };
 
@@ -119,6 +158,54 @@ export async function correrReloj(
     );
     if (r.estado === "OK") resumen.senalesExpiradas++;
     else if (r.estado === "CONFLICTO") resumen.conflictos++;
+  }
+
+  // ── El disparador de Modo Examen — ADR-048 ────────────────────────────────
+  //
+  // Vive en el reloj porque es exactamente lo que el reloj hace: aplicar una
+  // regla que depende del paso del tiempo y que **nadie apretó**. Un endpoint
+  // propio habría necesitado un segundo secreto y un segundo scheduler para
+  // hacer lo mismo un minuto después.
+  //
+  // ⚠️ **La zona se lee una vez y, si falta, no se recomienda nada.** Sin ella
+  // "faltan 14 días" no tiene un día contra el cual contarse, y contarlo con
+  // otra zona sería aplicar otra regla. El resto de la corrida no se interrumpe:
+  // los compromisos y las señales no dependen de este dato.
+  const zonaInstitucional = await deps.reloj.zonaInstitucional(institutionId);
+  if (zonaInstitucional) {
+    for (const c of await deps.reloj.candidatosDeModoExamen(institutionId, limite)) {
+      const ventana = ventanaDeExamen({
+        fechaDeExamen: c.fechaDeExamen,
+        ahora,
+        zonaInstitucional,
+      });
+      if (!ventana.recomendar) continue;
+
+      const creada = await deps.reloj.recomendarModoExamen(institutionId, c);
+      // `null` ⇒ ya existía. **No se publica**: un evento por corrida
+      // convertiría el registro de hechos en un latido.
+      if (!creada) continue;
+
+      await deps.eventos.publicar({
+        nombre: "ExamPreparationRecommended",
+        institutionId,
+        // Nadie apretó nada: lo produjo el paso del tiempo. Poner acá al
+        // estudiante diría en la auditoría que lo pidió él.
+        actorId: null,
+        sujetoTipo: "exam_preparation",
+        sujetoId: creada.id,
+        causa: `ventana:${ventana.diasRestantes}d`,
+        // Por qué apareció, en el hecho: la fecha que se usó y cuántos días
+        // faltaban. Sin esto, la recomendación no se puede explicar después.
+        payload: {
+          assessmentId: c.assessmentId,
+          fechaDeExamen: c.fechaDeExamen,
+          diasRestantes: ventana.diasRestantes,
+          zonaInstitucional,
+        },
+      });
+      resumen.examenesRecomendados++;
+    }
   }
 
   return resumen;

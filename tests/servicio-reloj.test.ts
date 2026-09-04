@@ -22,6 +22,11 @@ function mundo(iniciales: Array<CompromisoConReloj>, opciones: { pierde?: boolea
     async candidatosPorTiempo() {
       return iniciales.map((c) => ({ ...c, state: filas.get(c.id)!.state }));
     },
+    // Modo Examen tiene su propio bloque más abajo: acá no recomienda nada,
+    // para no mezclar dos disparadores en el mismo caso.
+    async candidatosDeModoExamen() { return []; },
+    async recomendarModoExamen() { return null; },
+    async zonaInstitucional() { return "America/Argentina/Cordoba"; },
     // Las señales tienen su propio test (`tests/servicio-riesgo.test.ts`): acá
     // el doble devuelve vacío para no mezclar dos lifecycles en un mismo caso.
     async senalesVencidas() {
@@ -148,7 +153,7 @@ describe("B4 · el reloj converge y no se repite", () => {
     expect(filas.get("c-1")!.state).toBe("MISSED");
 
     // Converge: un MISSED no lo toca nadie, y menos el reloj.
-    expect(await correrReloj(deps, "inst-A", AHORA)).toEqual({ vencidos: 0, incumplidos: 0, senalesExpiradas: 0, conflictos: 0 });
+    expect(await correrReloj(deps, "inst-A", AHORA)).toEqual({ examenesRecomendados: 0, vencidos: 0, incumplidos: 0, senalesExpiradas: 0, conflictos: 0 });
     expect(publicados).toHaveLength(2);
   });
 
@@ -175,6 +180,9 @@ describe("B6 · el reloj también expira las señales que dejaron de importar", 
     const reloj: RepositorioDeReloj = {
       async candidatosPorTiempo() { return []; },
       async senalesVencidas() { return estados; },
+      async candidatosDeModoExamen() { return []; },
+      async recomendarModoExamen() { return null; },
+      async zonaInstitucional() { return "America/Argentina/Cordoba"; },
     };
     const senales = {
       async porId(_i: string, id: string) {
@@ -238,5 +246,108 @@ describe("B6 · el reloj también expira las señales que dejaron de importar", 
     expect(r.senalesExpiradas).toBe(0);
     expect(m.filas.get("s-1")).toBe("INTERVENTION_REQUIRED");
     expect(m.publicados).toEqual([]);
+  });
+});
+
+/**
+ * El disparador de Modo Examen — [ADR-048](../docs/decisions.md#adr-048).
+ *
+ * Vive en el reloj porque es exactamente lo que el reloj hace: aplicar una
+ * regla que depende del paso del tiempo y que nadie apretó.
+ */
+describe("B6.12 · ADR-048 · el reloj recomienda Modo Examen", () => {
+  const CANDIDATO = {
+    assessmentId: "as-1",
+    studentId: "es-1",
+    courseEnrollmentId: "ce-1",
+    fechaDeExamen: "2026-09-18",
+  };
+
+  function mundoDeExamen(opciones: {
+    candidatos?: Array<typeof CANDIDATO>;
+    yaExistia?: boolean;
+    zona?: string | null;
+  } = {}) {
+    const publicados: EventoDeProducto[] = [];
+    const creados: string[] = [];
+    const reloj: RepositorioDeReloj = {
+      async candidatosPorTiempo() { return []; },
+      async senalesVencidas() { return []; },
+      async candidatosDeModoExamen() { return opciones.candidatos ?? [CANDIDATO]; },
+      async recomendarModoExamen(_i, c) {
+        if (opciones.yaExistia) return null;
+        creados.push(c.assessmentId);
+        return { id: `prep-${c.assessmentId}` };
+      },
+      async zonaInstitucional() {
+        return opciones.zona === undefined ? "America/Argentina/Cordoba" : opciones.zona;
+      },
+    };
+    const deps = {
+      reloj,
+      compromisos: { async porId() { return null; } } as never,
+      eventos: { async publicar(e: EventoDeProducto) { publicados.push(e); } },
+      senales: {} as never,
+      auditor: {} as never,
+    };
+    return { deps, publicados, creados };
+  }
+
+  /** 21:00 de Córdoba del 4 de septiembre: faltan catorce días para el 18. */
+  const AHORA_EXAMEN = "2026-09-05T00:00:00.000Z";
+
+  it("dentro de la ventana crea la preparación y publica el hecho", async () => {
+    const { deps, publicados, creados } = mundoDeExamen();
+    const resumen = await correrReloj(deps, "inst-A", AHORA_EXAMEN);
+
+    expect(resumen.examenesRecomendados).toBe(1);
+    expect(creados).toEqual(["as-1"]);
+    expect(publicados[0].nombre).toBe("ExamPreparationRecommended");
+    expect(publicados[0].sujetoTipo).toBe("exam_preparation");
+    // Nadie apretó nada: lo produjo el paso del tiempo.
+    expect(publicados[0].actorId).toBeNull();
+    // Por qué apareció, en el hecho: sin esto la recomendación no se explica.
+    expect(publicados[0].payload).toMatchObject({
+      assessmentId: "as-1", fechaDeExamen: "2026-09-18", diasRestantes: 14,
+    });
+  });
+
+  it("fuera de la ventana no escribe ni publica", async () => {
+    const { deps, publicados, creados } = mundoDeExamen({
+      candidatos: [{ ...CANDIDATO, fechaDeExamen: "2026-09-19" }],
+    });
+    const resumen = await correrReloj(deps, "inst-A", AHORA_EXAMEN);
+
+    expect(resumen.examenesRecomendados).toBe(0);
+    expect(creados).toEqual([]);
+    expect(publicados).toEqual([]);
+  });
+
+  /**
+   * La condición 3 y la 4 de ADR-048 son el mismo hecho, sostenido por
+   * `UNIQUE (student_id, assessment_id)`. Que el evento NO salga es lo que
+   * hace que "una sola vez por intento" sea verdad: publicar en cada corrida
+   * convertiría el registro de hechos en un latido.
+   */
+  it("si ya había preparación no publica nada, aunque la ventana esté abierta", async () => {
+    const { deps, publicados } = mundoDeExamen({ yaExistia: true });
+    const resumen = await correrReloj(deps, "inst-A", AHORA_EXAMEN);
+
+    expect(resumen.examenesRecomendados).toBe(0);
+    expect(publicados).toEqual([]);
+  });
+
+  /**
+   * Sin zona institucional (ADR-049) no hay día contra el cual contar los
+   * catorce, y contarlos con otra zona sería aplicar otra regla. **No se
+   * sustituye**: no se recomienda.
+   */
+  it("sin zona institucional no recomienda, y no inventa una", async () => {
+    const { deps, publicados, creados } = mundoDeExamen({ zona: null });
+    const resumen = await correrReloj(deps, "inst-A", AHORA_EXAMEN);
+
+    expect(resumen.examenesRecomendados).toBe(0);
+    expect(creados).toEqual([]);
+    expect(publicados).toEqual([]);
   });
 });
