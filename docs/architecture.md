@@ -404,18 +404,26 @@ comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda 
 un compromiso vencido pase a `DUE` y después a `MISSED` sin que nadie apriete nada. **Con qué
 frecuencia se lo llama es operación**, y [ADR-005](decisions.md#adr-005) la dejó `DEFERRED`.
 
-**Y ya no está solo.** Desde [ADR-040](decisions.md#adr-040) son **cinco los endpoints que corren con
-secreto de servicio y sin persona detrás** —`/api/reloj`, `/api/recomendacion`, `/api/validacion`,
-`/api/observacion` y `/api/corroboracion`—, más `/api/escalamiento`, que es sólo lectura y está
-apagado por defecto. **El criterio que los junta es siempre el mismo:** ninguno es una acción del
+**Y ya no está solo.** Desde [ADR-040](decisions.md#adr-040) y la Fase B6.9 son **seis los endpoints
+que corren con secreto de servicio y sin persona detrás** —`/api/reloj`, `/api/recomendacion`,
+`/api/validacion`, `/api/pedido-de-reenvio`, `/api/observacion` y `/api/corroboracion`—, más
+`/api/escalamiento`, que es sólo lectura y está apagado por defecto. **El criterio que los junta es siempre el mismo:** ninguno es una acción del
 estudiante, y darle un JWT de estudiante a cualquiera de ellos lo dejaría declarando sobre sí mismo
 —validando su propia evidencia, corroborando lo que él mismo cargó, registrando sus propios errores—.
-**Quién es esa identidad externa sigue sin definirse:** `C01-030` está `OPEN`, y ninguno de los cinco
+**Quién es esa identidad externa sigue sin definirse:** `C01-030` está `OPEN`, y ninguno de los seis
 la valida contra nada.
+
+⚠️ **Y por eso ninguno la recibe.** `product_event.actor_id` es `uuid`: aceptar un identificador que
+no es UUID obliga a fabricar uno —inventar una identidad— o revienta al publicar el hecho. En estas
+rutas **el actor del evento es `null`** —lo produjo un proceso, no una persona— y lo que queda escrito
+es **el motivo**, en la fila. Lo aprendió la validación en ADR-040 y lo repitió el pedido de reenvío
+con un `500` en la primera corrida.
 
 **Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment`, `Evidence`,
 `ExamPreparation`, `RiskSignal` e `Intervention`; **la creación del primer `Commitment` de una
-`Action` y la de una `Evidence` entregada** ([ADR-040](decisions.md#adr-040)); `registrar_progreso`;
+`Action` y la de una `Evidence` entregada** ([ADR-040](decisions.md#adr-040)); **el rescate de un
+`Commitment` incumplido y el reenvío de una `Evidence` devuelta** (Fase B6.9 — las dos crean **otra
+fila** y preservan la original, `I3` e `I4`); `registrar_progreso`;
 `completar_paso_de_protocolo`; replanificación y reentrada; `registrar_senal`, `abrir_intervencion`,
 `cerrar_intervencion` y `resolver_senal`; `materializar_recomendacion` del ADE;
 `ingerir_materia` y `corroborar_procedencia` del ADL. Todas publican su hecho en

@@ -372,7 +372,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **275 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **276 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de

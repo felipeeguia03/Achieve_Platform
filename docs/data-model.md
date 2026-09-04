@@ -158,6 +158,22 @@ const evidenceOwnerTransitions: Record<EvidenceState, EvidenceState[]> = {
 > en `RESUBMISSION_REQUESTED` con `superseded_by` apuntando a la nueva, que nace en `SUBMITTED` con
 > `supersedes` apuntando a la anterior.
 
+⚠️ **Dos precisiones que aparecieron al hacerlo alcanzable** — Fase B6.9.2, migración
+`20260911000000_reenvio.sql`:
+
+- **El id de la fila nueva lo elige quien llama.** La clave del objeto en Storage se deriva del id de
+  la Evidence, y el archivo se sube **antes** de que la fila exista (`D3·A`): si la base generara el
+  id, el cliente no tendría a qué ruta subir. `resubmitir_evidencia` lo recibe por parámetro, igual
+  que la primera entrega.
+- **Las tres señales entran en `not_evaluated`**, como en la primera entrega. `signal_execution` y
+  `signal_production` son nullables, y la versión anterior de la función no las escribía: un reenvío
+  nacía con `NULL`, que **no es** ninguno de los cinco valores que el modelo define. Nunca se notó
+  porque ninguna fila llegaba a existir por ese camino.
+
+⚠️ **Y quién pide el reenvío no se registra.** `resubmission_reason` guarda **por qué**; quién lo pidió
+es identidad externa sin FK (`C01-030`, `OPEN`) y no se fabrica un UUID para llenar una columna. El
+actor del hecho es `null`: lo produjo un proceso.
+
 ### 3.4 ExamPreparation
 
 ```ts

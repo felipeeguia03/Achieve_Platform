@@ -2,12 +2,17 @@
 
 **Documento:** `docs/demo-mvp.md`
 **Rol:** el guion reproducible del recorrido que la Fase B6.6 dejó demostrable.
-**Fecha:** 2 de septiembre de 2026 · **corrido y corregido el 3 de septiembre de 2026**
+**Fecha:** 2 de septiembre de 2026 · **corrido y corregido el 3 y el 4 de septiembre de 2026**
 
 > ⚠️ **Este documento se volvió a correr entero el 3 de septiembre**, y **tres cosas habían dejado de
 > ser ciertas**: el navegador ya no abre sesión solo ([ADR-039](decisions.md#adr-039)), `HOY` ahora
 > arranca vacío hasta que se corre el ADE, y el texto de la causa cambió al que produce la regla
 > vigente. Están corregidas abajo, en su lugar. **Un guion que no se corre deja de ser un guion.**
+>
+> ✅ **Y el 4 de septiembre se agregó lo que faltaba del otro lado.** Hasta la
+> [Fase B6.9](roadmap.md) el recorrido mostraba sólo el **camino feliz**. Ahora se puede mostrar qué
+> pasa cuando el estudiante **no cumple** y cuando su entrega **no alcanza**, que es la mitad del
+> producto sobre la que preguntan primero.
 
 > ⚠️ **Todo lo de acá corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue siendo
 > bloqueo absoluto para cualquier dato de una persona real.
@@ -105,6 +110,55 @@ hero.nivel    : NO_ACTION_AVAILABLE
 >
 > **Y el paso 4 usa secreto de servicio, nunca el JWT del estudiante.** Nadie valida su propia
 > evidencia.
+
+---
+
+## Los dos caminos que no salen bien — Fase B6.9
+
+**El loop de arriba es el camino feliz.** Éstos son los otros dos, y son los que muestran que el
+producto no abandona al estudiante cuando algo falla. Corren sobre el mismo mundo demo.
+
+### A · No cumplió: el rescate
+
+| # | Qué se hace | Qué pasa |
+|---|---|---|
+| 1 | Confirmar un compromiso con hora **ya pasada** | Queda `CONFIRMED` |
+| 2 | `npm run reloj -- <institución>`, dos veces | `CONFIRMED → DUE → `**`MISSED`**. `HOY` pasa a **`NECESITA RECUPERACIÓN`**, con el Hero en `RESCUE_REQUIRED` |
+| 3 | Abrir `UX04` | **`Incumplido`**, con el aviso *"Este compromiso no se edita. El rescate es un acuerdo nuevo."* y la CTA **«Retomar»** |
+| 4 | **Retomar** | Nace **otro compromiso** que apunta al incumplido. El incumplido **sigue `MISSED`** y viaja como filas de sólo lectura |
+| 5 | Entregar y validar, como en el loop diario | La Bitácora cierra con **«Recuperaste lo que habías incumplido»** |
+
+> **Lo que hay que mirar en el paso 4, porque es la regla del producto:** un compromiso incumplido
+> **nunca se edita para parecer cumplido**. El rescate es *otro objeto* que lo apunta sin borrarlo
+> —*No Cortar*—, y esa garantía no está en la pantalla ni en la ruta: está en `crear_rescate` y en la
+> máquina de estados, donde no se afloja por descuido.
+>
+> ⚠️ **Hasta el 4 de septiembre este camino no existía.** El reloj llevaba el compromiso a `MISSED` y
+> ahí el estudiante quedaba **sin ninguna salida**, con `UX04` ofreciendo una CTA que devolvía `409`.
+> Con lo cual **`RescueSucceeded` no era alcanzable** — y es uno de los cuatro eventos que
+> [ADR-041](decisions.md#adr-041) volvió cláusula del contrato con el CRM.
+
+### B · No alcanzó: el reenvío
+
+| # | Qué se hace | Qué pasa |
+|---|---|---|
+| 1 | Entregar, como siempre | La evidencia queda `SUBMITTED` |
+| 2 | `npm run validar -- <institución> <evidencia> --insuficiente` | `INSUFFICIENT`. **La `Action` sigue `COMMITTED`** y la entrega anterior no se toca |
+| 3 | `npm run pedir-reenvio -- <institución> <evidencia> "Faltan los ejercicios 15 a 18"` | `RESUBMISSION_REQUESTED`, **con el motivo escrito en la fila** |
+| 4 | Abrir `UX05` | *"Te pidieron volver a entregarla"*, con la CTA para reenviar |
+| 5 | Reenviar | Nace **otra evidencia** que sucede a la anterior. La vieja conserva estado, contenido y fecha |
+| 6 | Validar la corrección | La Bitácora: *Presentaste evidencia · **Necesita cambios** · **Volviste a entregarla** · La validaron* |
+
+> **Por qué el paso 3 es un comando aparte y no parte del paso 2.** Son **dos decisiones distintas**:
+> juzgar que una entrega no alcanza **no obliga** a pedir otra. La máquina las tiene separadas
+> —`SUBMITTED → INSUFFICIENT → RESUBMISSION_REQUESTED`— y la demo las muestra separadas.
+>
+> **Y el motivo es obligatorio.** Sin él el estudiante recibe *"volvé a entregarla"* y ninguna pista
+> de qué corregir, que es lo mismo que no pedirle nada.
+
+⚠️ **Validar y pedir un reenvío van con secreto de servicio, nunca con el JWT del estudiante.** Nadie
+valida su propia evidencia ni se pide a sí mismo que vuelva a entregar. **Quién es esa persona sigue
+sin definirse** (`C01-030`, `OPEN`): en la demo lo hace un script.
 
 ---
 
@@ -277,5 +331,8 @@ outbox ni `fetch`. El día que el destino sea un webhook firmado, el dominio no 
 - **La entrega.** Nada consume la cola.
 - **La revisión de evidencia.** Quién registra un error observado en producción depende del rol
   Reviewer `R1`, que [ADR-033](decisions.md#adr-033) dejó abierto. Acá lo hace el seed.
+- **La renegociación.** Mover un compromiso **antes** de que venza no está cableado: `renegociar()`
+  existe, pero qué hace *elegible* a un compromiso es `C01-010`, `OPEN`. Se puede mostrar el rescate
+  —después del incumplimiento— y no la renegociación —antes—.
 - **Los dos disparadores todavía humanos.** `HP0-06-2` y `HP0-06-3` no tienen automatización ni
   umbral inventado; `C01-021` sigue abierto para su operación.

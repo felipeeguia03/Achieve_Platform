@@ -3081,7 +3081,7 @@ que el backend no podía hacer, porque `propuestaDeCompromiso` leía *"no hay co
 | `POST /api/rescate` | Con **JWT del estudiante**: decidir volver a comprometerse después de fallar es suyo, y de nadie más |
 | `rescatarCompromiso()` | Autorización —`porId` scopea por institución, y dos alumnos la comparten— e idempotencia por clave del cliente, la misma disciplina de `D2·A` |
 | `incumplidoSinRescateDeAccion()` | Distingue *"todavía no hay compromiso"* de *"hubo uno y se incumplió"*. Con un incumplimiento pendiente, `UX04` **deja de proponer** |
-| La proyección de `MISSED` | Pasa a ofrecer **`CTA-015` · «Retomar»** con su aviso. Hasta acá devolvía `null` y **contradecía al fixture `FX-LOCAL-COM-MISSED`**, que es el diseño aprobado |
+| La proyección de `MISSED` | Pasa a ofrecer **`CTA-015` · «Retomar»** con su aviso. Hasta acá devolvía `null`, y eso **contradecía a `product.md` §10.2** —*"Commitment `MISSED` sin resolución → «Retomar»"*— y al fixture `FX-LOCAL-COM-MISSED`. **Los documentos decían lo correcto: el código era el defectuoso**, que es exactamente el orden que fija el SDD |
 
 **Lo que no cambió, y es el punto:** el incumplido **sigue `MISSED` para siempre**. El rescate es otro
 objeto que lo apunta sin borrarlo, y esa garantía no está en la ruta: está en `crear_rescate` y en la
