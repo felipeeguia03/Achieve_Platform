@@ -195,7 +195,21 @@ describe("B3.1 · nada deriva progreso de una Evidence", () => {
      * anotarlo acá, que es exactamente la conversación que este guard existe
      * para forzar.
      */
-    const SOLO_PROHIBEN = ["senal_no_entra_a_acknowledged"];
+    /**
+     * La segunda, de la misma naturaleza — Fase B6.11, ADR-049.
+     *
+     * `institution_zona_valida` **tampoco calcula ni escribe nada**: comprueba
+     * que `institution.timezone` sea un identificador que el motor conoce y,
+     * si no, levanta. Sería un `CHECK` si se pudiera —`pg_timezone_names` no es
+     * inmutable, así que Postgres no lo acepta—, y no puede vivir sólo en la
+     * aplicación porque `service_role` escribe la tabla directo.
+     *
+     * **No es una regla de negocio.** La regla de negocio es de qué día habla
+     * la condición 5 de ADR-046, y ésa está en `lib/domain/renegociacion.ts`,
+     * a la vista. Esto sólo impide que el dato sea basura: una zona mal
+     * escrita no falla al escribirla, falla meses después al comparar días.
+     */
+    const SOLO_PROHIBEN = ["senal_no_entra_a_acknowledged", "institution_zona_valida"];
     for (const t of triggers) {
       const prohibitivo = SOLO_PROHIBEN.find((f) => t.includes(f));
       if (prohibitivo) {

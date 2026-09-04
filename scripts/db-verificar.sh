@@ -58,6 +58,20 @@ else
   echo "   ✓ nadie puede UPDATE ni DELETE sobre el registro de hechos"
 fi
 
+echo "→ Zona horaria institucional (ADR-049)"
+zonas_malas=$(q "select coalesce(string_agg(i.name || ':' || i.timezone, ', '), '')
+                   from institution i
+                   left join pg_timezone_names z on z.name = i.timezone
+                  where z.name is null;")
+if [ -n "$zonas_malas" ]; then
+  echo "   ✗ instituciones con una zona que el motor no conoce: $zonas_malas"
+  echo "     Define el 'día calendario' de ADR-046 §5 y de la ventana de 14 días"
+  echo "     de ADR-048. Mal escrita no falla al escribirla: falla al comparar días."
+  fallos=$((fallos + 1))
+else
+  echo "   ✓ toda institución tiene una zona IANA que el motor reconoce"
+fi
+
 echo "→ Convenciones de §6 disponibles"
 for fn in set_updated_at tablas_sin_rls tablas_sin_acceso_de_servicio tablas_expuestas_al_cliente tablas_append_only_violadas; do
   if [ "$(q "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and proname='$fn';")" = "1" ]; then

@@ -95,6 +95,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-046](#adr-046) | `C01-010`: cuándo una renegociación es elegible | ✅ `ACCEPTED` *(4 sep 2026 · cinco condiciones; **una sola por cadena**)* | — |
 | [ADR-047](#adr-047) | `C01-018`: el progreso no se infiere de una transición | ✅ `ACCEPTED` *(4 sep 2026 · ratifica lo que ya corre; `C01-018` `CLOSED`)* | — |
 | [ADR-048](#adr-048) | `C01-024`: la ventana de Modo Examen son 14 días | ✅ `ACCEPTED` *(4 sep 2026 · **no depende de readiness**; `C01-024` `CLOSED`)* | — |
+| [ADR-049](#adr-049) | La institución tiene zona horaria propia, y no es la del estudiante | ✅ `ACCEPTED` *(4 sep 2026 · el dato que ADR-046 §5 y ADR-048 nombraban y no existía)* | — |
 
 ---
 
@@ -3917,3 +3918,64 @@ decisión y no una superficie.
 
 ⚠️ **Sin fecha confiable no se emite, y no se inventa una.** *"El sistema no inventa una ni emite
 automáticamente el evento"*. La activación manual sigue disponible: **omitir, no inventar**.
+
+---
+
+<a id="adr-049"></a>
+## ADR-049 — La institución tiene zona horaria propia, y no es la del estudiante
+
+**Estado:** ✅ `ACCEPTED` — **4 de septiembre de 2026**, resuelto con el owner al implementar
+ADR-046.
+**Origen:** una contradicción concreta entre dos decisiones cerradas y el schema, reportada y
+detenida en el punto exacto que la fuente del Product Owner pedía: *"si la implementación revela una
+contradicción concreta con el schema o una máquina de estados existente, detenerse **únicamente en
+esa contradicción** y reportarla"*.
+**Desbloquea:** [ADR-046](#adr-046) y [ADR-048](#adr-048), que no se podían implementar literalmente.
+
+### El problema
+
+[ADR-046](#adr-046) §5 dice que el nuevo horario de una renegociación cae *"en el mismo día
+calendario, en la **zona horaria de la institución**"*, y [ADR-048](#adr-048) dice que el corte de
+los 14 días *"usa la **zona horaria institucional**"*.
+
+**Esa zona no existía.** `institution` tenía cuatro columnas —`id`, `name`, `tenant_config` (vacío,
+sin un solo lector en `lib`, `scripts` ni migraciones) y `created_at`—. Lo único que el producto
+sabía eran otras dos zonas:
+
+| Dato | Qué significa | Dónde se usa |
+|---|---|---|
+| `student.timezone` | A qué hora ve el **estudiante** su propio día | Todas las superficies: `'zona', COALESCE(s.timezone, 'UTC')` |
+| `commitment.timezone_at_commit` | La **congelada en el acuerdo**, para reconstruir el horario histórico | `UX04`, y a propósito no se recalcula |
+| `institution.timezone` | El día calendario **de la institución** | Las dos reglas que la nombran, y nada más |
+
+### La decisión
+
+Se agrega **`institution.timezone TEXT NOT NULL DEFAULT 'America/Argentina/Cordoba'`**, con el
+**mismo default que `student.timezone` tiene desde la Fase B1.2**. No se elige un valor nuevo: se
+elige dónde vive un dato que las decisiones ya nombraban.
+
+**Por qué no se sustituyó por `student.timezone`, que era gratis.** Porque no es un sinónimo. Dos
+estudiantes de la misma institución en husos distintos tendrían distinto *"mismo día calendario"* y
+distinto día 14. Escribir las reglas con la zona del estudiante no habría sido implementarlas:
+habría sido **cambiarlas en silencio**, que es exactamente lo que el SDD existe para impedir.
+
+### Lo que esta decisión NO hace, y no es un olvido
+
+- **No cambia ninguna superficie.** Las que proyectan `'zona'` siguen proyectando la del estudiante,
+  porque muestran **su** día. La zona institucional es para las reglas, no para la pantalla.
+- **No define la zona de ninguna institución real.** El default es el mismo que ya regía; asignar
+  otra es un dato operativo, no una decisión de diseño.
+- **No admite un fallback.** Si la institución no tiene zona, la renegociación **no se hace**
+  (`SIN_ZONA_INSTITUCIONAL` → `503`). Evaluar la condición 5 con otra zona sería aplicar otra regla.
+
+### La consecuencia en el guard de triggers
+
+`institution_zona_valida` comprueba contra `pg_timezone_names` que la zona exista, y **sólo levanta
+una excepción**: no calcula ni escribe nada. Sería un `CHECK` si el motor lo permitiera —
+`pg_timezone_names` no es inmutable—, y no puede vivir sólo en la aplicación porque `service_role`
+escribe la tabla directo.
+
+Entra en la lista explícita de `servicio-progreso.test.ts` por la misma puerta que
+`senal_no_entra_a_acknowledged` ([ADR-034](#adr-034)), y **se anota**: el guard existe para forzar
+esa conversación, no para saltearla. `npm run db:verify` agrega además la comprobación sobre los
+datos, no sólo sobre el schema.
