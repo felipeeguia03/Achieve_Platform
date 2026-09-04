@@ -58,8 +58,9 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 | Frente | Estado |
 |---|---|
+| **Fases B6.11 y B6.12 · las dos decisiones del 4 de septiembre, implementadas** | ✅ **Completas** — la **renegociación** es alcanzable ([ADR-046](decisions.md#adr-046)) y el **disparador de Modo Examen** existe ([ADR-048](decisions.md#adr-048)). En el medio apareció una contradicción con el schema y se resolvió con [ADR-049](decisions.md#adr-049): la institución **tiene zona horaria propia**. ⚠️ `UX04` **todavía no ofrece renegociar**: falta una decisión de diseño |
 | **Fase B6.10 · la reflexión existe y se exige** | ✅ **Completa, con su superficie** — 4 de septiembre de 2026. El requisito de [ADR-026](decisions.md#adr-026) **lo hace cumplir el servidor**, y desde [ADR-045](decisions.md#adr-045) el estudiante la escribe **dentro de `UX05`**: la reflexión y la entrega son la misma intención |
-| **Fase B6.9 · la salida del camino que no salió bien** | ✅ **Completa, 2 / 2** — 4 de septiembre de 2026. El **rescate** y el **reenvío** son alcanzables; con el primero, `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. **La renegociación queda fuera hasta `C01-010`** |
+| **Fase B6.9 · la salida del camino que no salió bien** | ✅ **Completa, 2 / 2** — 4 de septiembre de 2026. El **rescate** y el **reenvío** son alcanzables; con el primero, `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. ~~La renegociación queda fuera hasta `C01-010`~~ → **cerrada en la B6.11** |
 | **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
 | **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
 | **La puerta · `/login`** | ✅ **Hecha** el 3 de septiembre de 2026 ([ADR-039](decisions.md#adr-039), decidido por el Product Owner). **No es `UX10`** y no levanta el gate de [ADR-006](decisions.md#adr-006). Deja abierto el onboarding del spec §19 |
@@ -3250,6 +3251,114 @@ control"*. Las otras cinco son tuteo y siguen prohibidas.
 
 ---
 
+## Fase B6.11 — La renegociación, alcanzable · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026. Cierra el trabajo que la B6.9 dejó explícitamente
+afuera: *"la renegociación queda fuera hasta `C01-010`"*.
+
+**Por qué existía y no se podía usar.** Cuarta aparición del mismo patrón, y la última de las tres
+operaciones huérfanas de la B6.9:
+
+| Qué | Estado antes de esta etapa |
+|---|---|
+| `renegociar()` y `renegociar_compromiso()` | Transaccionales y probadas desde la Fase B2, **llamadas sólo por sus tests** |
+| `CommitmentRenegotiated` | En el catálogo `P0`, **sin ningún camino que lo produjera** |
+| `CTA-017` | Exige `renegociacionElegible`, y **eso sólo existía en fixtures**: nada lo calculaba |
+
+Un estudiante que no podía a la hora que había acordado **no tenía por dónde moverla**. Su única
+salida real era dejar que venciera y rescatarlo después — es decir, incumplir a propósito.
+
+### La contradicción que apareció al implementar, y por qué se paró ahí
+
+[ADR-046](decisions.md#adr-046) §5 pide *"el mismo día calendario, **en la zona horaria de la
+institución**"*, y [ADR-048](decisions.md#adr-048) pide lo mismo para su ventana. **Esa zona no
+existía en el schema:** `institution` tenía `id`, `name`, `tenant_config` (vacío, sin lectores) y
+`created_at`. Lo único que el producto sabía era la zona del **estudiante** y la **congelada en el
+acuerdo**.
+
+Se detuvo la implementación y se reportó, que es literalmente lo que la fuente del Product Owner
+pedía: *"si la implementación revela una contradicción concreta con el schema (…), detenerse
+únicamente en esa contradicción y reportarla"*. Se resolvió con
+[ADR-049](decisions.md#adr-049): `institution.timezone`, con el mismo default que `student.timezone`
+tiene desde la B1.2.
+
+⚠️ **No se sustituyó por `student.timezone`, que era gratis.** Dos estudiantes de la misma institución
+en husos distintos tendrían distinto *"mismo día calendario"*. Habría sido cambiar la regla en
+silencio.
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `lib/domain/renegociacion.ts` | Las cinco condiciones, puras. Las dos primeras **no se reescriben**: son `commitmentTransitions` |
+| `POST /api/renegociacion` | Con JWT del estudiante. `404` seco si no es suyo; `409` distinguiendo lo que se arregla eligiendo otra hora de lo que no |
+| `renegociarCompromiso()` | Autorización, zona institucional e idempotencia por clave del cliente |
+| `institution.timezone` + `db:verify` | El dato, y una comprobación de que toda institución tiene una zona que el motor reconoce |
+
+**La condición 5 tenía una ambigüedad y se resolvió declarándola:** *"el mismo día calendario"* no
+dice contra qué día. Se lee **contra el del acuerdo original** —renegociar mueve la hora dentro del
+día prometido—, y está escrito en el módulo. La otra lectura obligaría a mover un compromiso de mañana
+a hoy.
+
+### Verificación contra Postgres
+
+| Caso | Resultado |
+|---|---|
+| Otro día calendario | ✅ `409 OTRO_DIA_CALENDARIO`, **sin tocar la base** |
+| Dentro de los 15 minutos | ✅ `409 ANTICIPACION_INSUFICIENTE`, sin tocar la base |
+| Otra hora del mismo día | ✅ `201`; original `RENEGOTIATED` **con su `start_at` intacto**, sucesor `CONFIRMED` apuntándolo |
+| Segunda renegociación de la cadena | ✅ `409 CADENA_YA_RENEGOCIADA` |
+| El hecho | ✅ **Un solo** `CommitmentRenegotiated`, con el sucesor en el payload |
+
+### Lo que esta etapa NO hace, y no es un olvido
+
+**`UX04` todavía no ofrece renegociar.** `CTA-017` necesita un lugar en la pantalla y `CompromisoProps`
+tiene **una sola CTA**; el fixture aprobado para `CONFIRMED` la usa para *"Empezar"*. Agregar una CTA
+secundaria es una decisión de diseño que ningún ADR autorizó, así que **queda declarada, no
+improvisada**. El estado `RENEGOCIACION_NO_ELEGIBLE` del fixture sigue, por lo mismo, sin producirse.
+
+---
+
+## Fase B6.12 — El disparador de Modo Examen · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026.
+
+**Por qué existe.** `ExamPreparationRecommended` está en el catálogo `P0` desde la Fase B5 y **nadie lo
+emitía**: no faltaba código, faltaba la ventana, que era `C01-024`.
+[ADR-048](decisions.md#adr-048) la cerró.
+
+### Dónde vive cada cosa, y por qué
+
+| Pieza | Dónde | Por qué ahí |
+|---|---|---|
+| La ventana de 14 días | `lib/domain/ventana-de-examen.ts`, pura | Es la decisión. En PL/pgSQL sería la regla invisible que `data-model.md` §11 prohíbe |
+| El disparador | **El reloj** | Es lo que el reloj hace: aplicar una regla que depende del tiempo y que nadie apretó. Un endpoint propio pedía otro secreto y otro scheduler para lo mismo |
+| «Una sola vez por intento» | `UNIQUE (student_id, assessment_id)` | Existe desde la B5 y es `I7`. Un contador aparte sería una segunda verdad sobre el mismo hecho |
+
+**Si ya había preparación, la función devuelve cero filas y el evento NO se publica.** Un
+`ExamPreparationRecommended` por corrida convertiría el registro de hechos en un latido.
+
+### Los dos desacoples que evitan un error caro
+
+⚠️ **No depende de `PreparationReadiness`.** El módulo no importa nada de readiness, y **un test guarda
+esa firma**: si alguien la agrega, deja de compilar y la conversación se reabre. `C01-029` sigue
+abierta y no bloquea este disparador.
+
+⚠️ **Sin fecha no se emite, y no se estima una.** `SIN_FECHA` es un motivo propio y no se confunde con
+`TODAVIA_LEJOS`: uno dice *no sabemos*, el otro *todavía no*. Colapsarlos sería el primer paso hacia
+inventar la fecha.
+
+### Verificación contra Postgres
+
+| Caso | Resultado |
+|---|---|
+| Evaluación a 10 días | ✅ `exam_preparation` en `RECOMMENDED` y un `ExamPreparationRecommended` con **actor `NULL`** —lo produjo el tiempo, no una persona— y el payload que lo explica |
+| Evaluación a 30 días | ✅ Nada |
+| Evaluación **sin fecha** | ✅ Nada, y ni siquiera viaja como candidata |
+| Segunda corrida del reloj | ✅ `0 recomendados`, y **sigue habiendo un solo evento** |
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**
@@ -3360,18 +3469,22 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
+| Fase B6.12 — El disparador de Modo Examen | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-048](decisions.md#adr-048)). `ExamPreparationRecommended` dejó de ser el único evento `P0` sin emisor. **No depende de readiness**, y un test guarda esa firma | 1 / 1 |
+| Fase B6.11 — La renegociación, alcanzable | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-046](decisions.md#adr-046)). La tercera operación huérfana de la B6.9 tiene llamador. Requirió [ADR-049](decisions.md#adr-049): la institución no tenía zona horaria. **Falta la CTA en `UX04`**, que es una decisión de diseño | 1 / 1 |
 | Fase B6.10 — La reflexión existe y se exige | ✅ **COMPLETA** — 4 de septiembre de 2026. El estudiante puede reflexionar y el requisito de [ADR-026](decisions.md#adr-026) lo hace cumplir el servidor. **Falta la superficie para escribirla**, que toca `components/screens/*` | 1 / 1 |
-| Fase B6.9 — La salida del camino que no salió bien | ✅ **COMPLETA** — 4 de septiembre de 2026. Rescate y reenvío alcanzables; `RescueSucceeded` dejó de ser inalcanzable. **La renegociación queda fuera hasta `C01-010`** | 2 / 2 |
+| Fase B6.9 — La salida del camino que no salió bien | ✅ **COMPLETA** — 4 de septiembre de 2026. Rescate y reenvío alcanzables; `RescueSucceeded` dejó de ser inalcanzable. ~~La renegociación queda fuera hasta `C01-010`~~ → **cerrada en la B6.11** | 2 / 2 |
 | Fase B6.8 — El camino de ejecución escribe en Postgres | ✅ **COMPLETA** — 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el camino principal escribe contra Postgres y **`C01-009` quedó cerrada**. Sin migraciones | 5 / 5 |
 | Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. `HP0-06-1` ya corre con criterio profesional; faltan `C01-021` para las otras dos reglas, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
-**Estado de los 51 contratos `C01`: 40 `OPEN`, 9 `ANSWERED — RESIDUO ABIERTO`, 2 `CLOSED`.** Ocho
-son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena es `C01-051`
-([ADR-026](decisions.md#adr-026)), el 1 de septiembre. `C01-022` cerró por
-[ADR-034](decisions.md#adr-034) y **`C01-009` por [ADR-040](decisions.md#adr-040)**, el 3 de
-septiembre. Ver [`pending-decisions-annex.md`](pending-decisions-annex.md).
+**Estado de los 51 contratos `C01`: 37 `OPEN`, 10 `ANSWERED — RESIDUO ABIERTO`, 4 `CLOSED`.** Ocho
+de las respondidas son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena es
+`C01-051` ([ADR-026](decisions.md#adr-026)), el 1 de septiembre; la décima es `C01-010`
+([ADR-046](decisions.md#adr-046)), el 4. `C01-022` cerró por [ADR-034](decisions.md#adr-034),
+**`C01-009` por [ADR-040](decisions.md#adr-040)** el 3 de septiembre, y **`C01-018` y `C01-024`**
+por [ADR-047](decisions.md#adr-047) y [ADR-048](decisions.md#adr-048) el 4. Ver
+[`pending-decisions-annex.md`](pending-decisions-annex.md).
 
 ### 3.1 Seguridad de dependencias — cerrada y firmada
 

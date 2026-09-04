@@ -52,6 +52,7 @@
 | 13 | **`C01-042`** · el golden dataset y su autorización | Product Data + la institución | La Etapa B2b.3 y el piloto | 🟠 |
 | 14 | La **corrección del §2** del contrato congelado | CTO, con el CRM | Que la firma HMAC no esté especificada de dos maneras | 🟡 Externa |
 | 15 | Si el `202` de vinculación lleva `applied` | CTO, con el CRM | Lo que la pantalla de WhatsApp puede afirmar | 🟡 Externa |
+| 16 | **La CTA de renegociar en `UX04`** | Product Owner + Diseño | Que el estudiante pueda mover un compromiso **desde la pantalla**, no sólo por API | 🟡 Nueva — §2.7 |
 
 **Leyenda de urgencia.** 🔴 hay trabajo listo para empezar que no arranca sin esto · 🟠 bloquea el
 cierre de una fase · 🟡 el producto funciona, con un hueco declarado.
@@ -128,6 +129,15 @@ que para eso está el rescate.
 > **Residuo declarado:** la regla se adopta para el MVP y **se revisa con evidencia de uso antes del
 > piloto**.
 
+✅ **Implementada** el 4 de septiembre de 2026 (Fase B6.11). Las cinco condiciones viven en
+`lib/domain/renegociacion.ts` y `POST /api/renegociacion` las aplica antes de escribir. Requirió
+[ADR-049](decisions.md#adr-049): *"la zona horaria de la institución"* **no existía en el schema**, y
+sustituirla por la del estudiante habría cambiado la regla en silencio.
+
+⚠️ **Y deja una decisión nueva, de diseño:** `UX04` **todavía no ofrece renegociar**. `CTA-017`
+necesita un lugar y `CompromisoProps` tiene una sola CTA, que en `CONFIRMED` dice *"Empezar"*.
+Agregar una CTA secundaria no lo autoriza ningún ADR. Es la fila **16** de la tabla, y está en el §2.7.
+
 ---
 
 ## 2. Los huecos visibles del loop
@@ -176,6 +186,12 @@ recomendación.
 > `PreparationReadiness`** —que sigue abierta y **no debe bloquear el disparador**— y **sin fecha
 > confiable no se emite ni se inventa una**.
 
+✅ **Implementada** el 4 de septiembre de 2026 (Fase B6.12). La ventana vive en
+`lib/domain/ventana-de-examen.ts` y el disparador en el **reloj**, que es lo que ya aplica las reglas
+que dependen del tiempo. *"Una sola vez por intento"* lo sostiene `UNIQUE (student_id, assessment_id)`,
+que existe desde la B5. **Un test guarda que el módulo no mire readiness**: si alguien lo agrega, deja
+de compilar.
+
 ### 2.5 · `C01-030` — quién valida, corrobora y pide un reenvío — **Product Security / Privacy**
 
 **La más acumulada:** ya son **tres operaciones construidas** que corren con secreto de servicio y
@@ -195,6 +211,29 @@ si vive acá o en el CRM.
 quedar en `NULL`**, el proceso **se identifica en el payload del evento**, y **no se fabrican UUID
 para representar personas inexistentes**. *"Esto no autoriza revisión de evidencia de estudiantes
 reales."*
+
+---
+
+### 2.7 · La CTA de renegociar en `UX04` — **Product Owner + Diseño** — 🟡 nueva
+
+**La pregunta:** ¿desde dónde aprieta el estudiante para mover su compromiso?
+
+**Estado:** la operación **existe y funciona** desde la Fase B6.11 —`POST /api/renegociacion`,
+verificado contra Postgres—, pero **no hay por dónde llegar**. `CTA-017` está en el registro desde el
+Track A con origen `UX01`/`UX04`, y `CompromisoProps` tiene **una sola CTA**: en `CONFIRMED` y `DUE`
+esa CTA dice *"Empezar"*, que es lo correcto.
+
+**Por qué no se resolvió solo.** Agregar una CTA secundaria a `UX04` cambia el diseño aprobado, y
+ningún fixture la tiene. [ADR-045](decisions.md#adr-045) autorizó tocar `evidencia.tsx` **para la
+reflexión**, y ese ADR existió justamente porque hacía falta: no hay equivalente para esto.
+Inventarla sería decidir diseño sin owner.
+
+**Consecuencia de no decidirla:** la renegociación queda alcanzable sólo por API, y el estado
+`RENEGOCIACION_NO_ELEGIBLE` —que **sí tiene fixture aprobado**, `FX-LOCAL-COM-RENEGOCIACION-NO-ELEGIBLE`—
+sigue sin poder producirse. Es un fixture que describe una pantalla que nadie puede ver.
+
+**Lo que ya está resuelto y no hay que volver a decidir:** *cuándo* es elegible
+([ADR-046](decisions.md#adr-046)) y qué pasa si no lo es. Falta **dónde se aprieta**.
 
 ---
 
