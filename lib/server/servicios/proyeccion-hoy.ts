@@ -51,8 +51,12 @@ export interface EstadoDelDia {
   /**
    * `cursadaId` es `course_enrollment.id` —**la cursada**, no la materia del
    * catálogo—: es lo que identifica *esta materia para este estudiante*, y lo
-   * que ya aceptan `estado_de_materia()` y `GET /api/materia`. Igual que
-   * `accion.id`, **no llega a la pantalla**.
+   * que ya aceptan `estado_de_materia()` y `GET /api/materia`.
+   *
+   * ⚠️ **Desde [ADR-054](../../../docs/decisions.md#adr-054) sí llega a la
+   * pantalla**, a diferencia de `accion.id`. `VI.2` §5.2 exige que entrar desde
+   * Hoy abra *el `CourseEnrollment` seleccionado*, y para eso la fila tiene que
+   * saber cuál es.
    */
   materias: Array<
     Omit<MateriaResumen, "ultimoAvance"> & { cursadaId: string; ultimoAvanceEn: string | null }
@@ -262,6 +266,9 @@ export function proyectarDia(e: EstadoDelDia): HoyProps {
           chip: null,
         },
     materias: e.materias.map((m) => ({
+      // ADR-054: el id **llega a la pantalla**. Antes se descartaba acá —la base
+      // ya lo devolvía— y `CTA-001` navegaba sin decir a cuál materia.
+      cursadaId: m.cursadaId,
       nombre: m.nombre,
       estado: m.estado,
       tono: m.tono,

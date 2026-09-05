@@ -64,9 +64,9 @@ export const FX_DAY_BASE: Escenario = {
       chip: null,
     },
     materias: [
-      { nombre: "Programación", estado: "Bajo control", ultimoAvance: "hoy", tono: "neutral" },
-      { nombre: "Análisis Matemático II", estado: "Necesita atención", ultimoAvance: "hace 2 días", tono: "urgencia" },
-      { nombre: "Álgebra", estado: "Bajo control", ultimoAvance: null, tono: "neutral" },
+      { cursadaId: null, nombre: "Programación", estado: "Bajo control", ultimoAvance: "hoy", tono: "neutral" },
+      { cursadaId: null, nombre: "Análisis Matemático II", estado: "Necesita atención", ultimoAvance: "hace 2 días", tono: "urgencia" },
+      { cursadaId: null, nombre: "Álgebra", estado: "Bajo control", ultimoAvance: null, tono: "neutral" },
     ],
   },
 
@@ -191,8 +191,8 @@ export const FX_LOCAL_DAY_IN_PROGRESS: Escenario = {
       chip: null,
     },
     materias: [
-      { nombre: "Análisis Matemático II", estado: "En curso", ultimoAvance: "hoy", tono: "neutral" },
-      { nombre: "Programación", estado: "Bajo control", ultimoAvance: "ayer", tono: "neutral" },
+      { cursadaId: null, nombre: "Análisis Matemático II", estado: "En curso", ultimoAvance: "hoy", tono: "neutral" },
+      { cursadaId: null, nombre: "Programación", estado: "Bajo control", ultimoAvance: "ayer", tono: "neutral" },
     ],
   },
 };
@@ -235,7 +235,7 @@ export const FX_EVD_BASE: Escenario = {
       chip: null,
     },
     materias: [
-      { nombre: "Análisis Matemático II", estado: "Falta evidencia", ultimoAvance: "hoy", tono: "urgencia" },
+      { cursadaId: null, nombre: "Análisis Matemático II", estado: "Falta evidencia", ultimoAvance: "hoy", tono: "urgencia" },
     ],
   },
 
@@ -297,7 +297,7 @@ export const FX_MISSED: Escenario = {
       chip: { tono: "urgencia", texto: "Análisis II · Compromiso incumplido" },
     },
     materias: [
-      { nombre: "Análisis Matemático II", estado: "Compromiso incumplido", ultimoAvance: "hace 2 días", tono: "urgencia" },
+      { cursadaId: null, nombre: "Análisis Matemático II", estado: "Compromiso incumplido", ultimoAvance: "hace 2 días", tono: "urgencia" },
     ],
   },
 };
@@ -340,7 +340,7 @@ export const FX_ADE_NONE: Escenario = {
       chip: null,
     },
     materias: [
-      { nombre: "Programación", estado: "Bajo control", ultimoAvance: "hoy", tono: "neutral" },
+      { cursadaId: null, nombre: "Programación", estado: "Bajo control", ultimoAvance: "hoy", tono: "neutral" },
     ],
   },
 };

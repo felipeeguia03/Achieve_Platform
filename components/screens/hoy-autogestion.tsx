@@ -103,7 +103,16 @@ function MateriasQueue({
   onVerMateria,
 }: {
   materias: MateriaResumen[];
-  onVerMateria?: () => void;
+  /**
+   * Recibe **la cursada de la fila visible**, no un aviso de que se tocó algo
+   * ([ADR-054](../../docs/decisions.md#adr-054)). `VI.2` §5.2 exige abrir *el
+   * `CourseEnrollment` seleccionado*, y sin este dato la pantalla no podía
+   * decir cuál era: el destino elegía por su cuenta.
+   *
+   * **La pantalla sigue sin decidir nada.** Pasa el id de la fila que el
+   * estudiante está mirando; a dónde lleva eso lo resuelve el registro de CTAs.
+   */
+  onVerMateria?: (cursadaId: string | null) => void;
 }) {
   const [index, setIndex] = useState(0);
   const multiple = materias.length > 1;
@@ -148,7 +157,7 @@ function MateriasQueue({
         )}
       </div>
       <button
-        onClick={onVerMateria}
+        onClick={() => onVerMateria?.(actual.cursadaId)}
         className="flex w-full items-center justify-between text-left"
         style={{ fontSize: "var(--text-body)" }}
       >
@@ -226,7 +235,7 @@ export function HoyAutogestion({
   onVerProgreso,
 }: HoyProps & {
   onAvanzar?: () => void;
-  onVerMateria?: () => void;
+  onVerMateria?: (cursadaId: string | null) => void;
   onVerProgreso?: () => void;
 }) {
   return (

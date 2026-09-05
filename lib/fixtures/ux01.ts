@@ -16,8 +16,8 @@ import type { HeroContenido } from "./types";
 import type { MateriaResumen } from "@/lib/domain/view-models";
 
 const MATERIAS: MateriaResumen[] = [
-  { nombre: "Análisis Matemático II", estado: "En curso", ultimoAvance: "hoy", tono: "neutral" },
-  { nombre: "Programación", estado: "Bajo control", ultimoAvance: "ayer", tono: "neutral" },
+  { cursadaId: null, nombre: "Análisis Matemático II", estado: "En curso", ultimoAvance: "hoy", tono: "neutral" },
+  { cursadaId: null, nombre: "Programación", estado: "Bajo control", ultimoAvance: "ayer", tono: "neutral" },
 ];
 
 const nada: HeroInput = {

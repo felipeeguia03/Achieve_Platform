@@ -7,7 +7,7 @@ import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
-import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
+import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
 import type { HoyProps } from "@/lib/domain/view-models";
 
 // Los tres destinos salen del registro canónico, no de un recorrido escrito a
@@ -79,7 +79,17 @@ function Pantalla({
     <HoyAutogestion
       {...props}
       onAvanzar={destino ? () => router.push(destino) : undefined}
-      onVerMateria={A_MATERIA ? () => router.push(A_MATERIA) : undefined}
+      /*
+        ADR-054, opción `B`: se abre **la cursada de la fila que se tocó**, no la
+        que el backend elija. El nombre del parámetro sale del registro canónico
+        —`rutaDeCtaCon` lo lee de `CTA-001`—, así que esta página no lo conoce.
+
+        Sin cursada, la ruta queda pelada y el backend elige como antes: es el
+        Track A, donde el escenario no tiene `course_enrollment` que nombrar.
+      */
+      onVerMateria={
+        A_MATERIA ? (cursadaId) => router.push(rutaDeCtaCon("CTA-001", cursadaId) ?? A_MATERIA) : undefined
+      }
       onVerProgreso={A_PROGRESO ? () => router.push(A_PROGRESO) : undefined}
     />
   );

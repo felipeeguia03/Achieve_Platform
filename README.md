@@ -114,7 +114,7 @@ el catálogo de otra institución. **No borra el catálogo, ni la sesión, ni lo
 llega al HTML**. **No se declara en producción**, y la ruta se borra cuando
 [ADR-006](docs/decisions.md#adr-006) abra.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1131 tests en 62 archivos**
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1143 tests en 63 archivos**
 corre sin Docker, en cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack
 levantado.
 

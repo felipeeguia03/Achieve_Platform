@@ -75,6 +75,36 @@ export interface Cta {
   estadoError: string;
   /** Columna *Escenario de aceptación*. Trazabilidad con el spec. */
   escenarios: readonly string[];
+  /**
+   * **Qué objeto transporta la CTA hasta su destino.**
+   * `undefined` ⇒ no transporta nada, que es el caso de las dieciocho restantes.
+   *
+   * ── No es una columna del spec, y por eso está declarada ─────────────────
+   *
+   * El registro es la transcripción ejecutable de la tabla de `Parte III §5`, y
+   * esa tabla **no tiene columna de parámetro**. Éste es el segundo campo que no
+   * transcribe nada —el primero fue `CTA-019`, [ADR-016](../../docs/decisions.md#adr-016)—
+   * y entra por [ADR-054](../../docs/decisions.md#adr-054), decidido por el
+   * Product Owner el 5 de septiembre de 2026:
+   *
+   * > *"`CTA-001` debe transportar el `CourseEnrollment` seleccionado y abrir
+   * > exactamente la materia desde la cual se originó la navegación."*
+   *
+   * **El motivo es una línea del spec que el código contradecía.** `VI.2` §5.2:
+   * *"al entrar desde Hoy **se abre el `CourseEnrollment` seleccionado**"*. Sin
+   * transportar cuál, `estado_de_materia()` elegía con `LIMIT 1` y abrir la
+   * séptima materia de la cola abría la primera.
+   *
+   * **El nombre del parámetro vive acá y no en la pantalla**: `rutaDeCtaCon()`
+   * lo lee de esta fila. Si mañana se renombra, se renombra en un solo lugar y
+   * las páginas no se enteran.
+   */
+  parametro?: {
+    /** El nombre en la query string. */
+    nombre: string;
+    /** Qué identifica, para que la fila se lea sin abrir el código. */
+    que: string;
+  };
   /** Si NO se cumple, la CTA no se renderiza. */
   aparece: (c: ContextoCTA) => boolean;
   /** Si se cumple `aparece` pero esto no, se renderiza deshabilitada. */
@@ -94,6 +124,8 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     fallback: { nodo: "UX01", descripcion: "conservar Hoy" },
     estadoError: "Course no disponible: empty/reintento",
     escenarios: ["SC-DAY-01"],
+    // ADR-054, opción `B`. Ver `Cta.parametro`.
+    parametro: { nombre: "cursada", que: "el CourseEnrollment de la fila que se tocó" },
     aparece: (c) => c.courseVisible,
     habilitada: siempre,
   },

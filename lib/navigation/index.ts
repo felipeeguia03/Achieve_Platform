@@ -49,3 +49,25 @@ export function rutaDeCta(id: CtaId): string | null {
   const destino = ctaRegistry[id].destino;
   return destino === null ? null : rutaDe(destino);
 }
+
+/**
+ * La ruta de una CTA **con el objeto que transporta** —
+ * [ADR-054](../../docs/decisions.md#adr-054).
+ *
+ * El nombre del parámetro sale de `Cta.parametro`, no de la página: así el
+ * contrato de qué viaja vive en el registro canónico y renombrarlo se hace en un
+ * solo lugar.
+ *
+ * **`valor` en `null` devuelve la ruta pelada**, y eso no es un caso degradado:
+ * es el Track A, donde un escenario declara un mundo y **no hay
+ * `course_enrollment` que nombrar**. Inventar un id para completar la URL sería
+ * exactamente lo que *omitir, no inventar* prohíbe.
+ *
+ * Devuelve `null` si la CTA no navega, igual que `rutaDeCta`.
+ */
+export function rutaDeCtaCon(id: CtaId, valor: string | null): string | null {
+  const ruta = rutaDeCta(id);
+  const parametro = ctaRegistry[id].parametro;
+  if (ruta === null || valor === null || parametro === undefined) return ruta;
+  return `${ruta}?${parametro.nombre}=${encodeURIComponent(valor)}`;
+}

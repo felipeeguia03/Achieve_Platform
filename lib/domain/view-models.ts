@@ -106,6 +106,21 @@ export interface HeroProjection {
 }
 
 export interface MateriaResumen {
+  /**
+   * **Cuál cursada es ésta** — `course_enrollment.id`, [ADR-054](../../docs/decisions.md#adr-054).
+   *
+   * `VI.2` §5.2 es literal: *"al entrar desde Hoy **se abre el `CourseEnrollment`
+   * seleccionado**"*. Sin este id, `CTA-001` navegaba a `/materia` sin decir a
+   * cuál, y la lectura elegía por su cuenta con un `LIMIT 1`: abrir la séptima
+   * materia de la cola abría la primera. **No era una ausencia — era una
+   * respuesta equivocada.**
+   *
+   * `null` ⇒ **no hay una cursada persistida detrás**, que es el caso del Track
+   * A: un escenario declara un mundo y no tiene `course_enrollment`. Ahí la CTA
+   * navega sin parámetro y el backend elige, como antes. **No se inventa un id
+   * para completar el tipo.**
+   */
+  cursadaId: string | null;
   nombre: string;
   /**
    * El estado general de la materia. **`null` ⇒ no hay lectura y la línea no se

@@ -50,7 +50,7 @@ Cada etapa, sin excepción:
 
 **Track A: cerrado.** **Track B: B1–B6.14 completas en su alcance disponible**, con B2b en 2/3.
 
-`lint`, `typecheck` y `build` en verde · **1131 tests en 62 archivos** · **59 migraciones** · las
+`lint`, `typecheck` y `build` en verde · **1143 tests en 63 archivos** · **59 migraciones** · las
 **nueve superficies** del estudiante leen de la base **y el camino principal escribe en ella**
 ([ADR-040](decisions.md#adr-040)), y desde la B6.14 **el estudiante declara él mismo qué cursa**.
 
@@ -210,9 +210,23 @@ Con un estudiante sintético de **nueve cursadas activas**, contra Postgres:
 séptima materia de la cola de `HOY` **abre la primera**: `onVerMateria` navega a `/materia` sin
 `?cursada=` y la proyección descarta el `cursadaId` que la base sí devuelve.
 
-⚠️ **La mitad de la corrección ya existe:** `?cursada=` funciona en `GET /api/materia` y en
-`estado_de_materia()`. Lo que falta pasa por el **registro canónico de CTAs**, que es contrato
-([ADR-016](decisions.md#adr-016)), y por `components/screens/*`. **Por eso no se implementó.**
+✅ **Cerrado el mismo día, con la opción `B`** ([ADR-054](decisions.md#adr-054), Product Owner) e
+**implementado**: `CTA-001` transporta el `CourseEnrollment` seleccionado y `/materia` abre
+exactamente ése.
+
+**Lo que cambió, y por qué es poco:** el `cursadaId` que la base ya devolvía dejó de descartarse en la
+proyección, `MateriaResumen` lo lleva, la fila de la cola lo pasa al tocarla, y el **registro canónico
+de CTAs gana un campo `parametro`** —el segundo que no transcribe la tabla del spec, después de
+`CTA-019`— para que el nombre de la query string viva ahí y no en la página.
+
+⚠️ **Lo que quedó afuera es deliberado.** El owner fue explícito: *"esto no autoriza construir todavía
+una nueva superficie de listado «Materias» ni cambiar el nombre del ítem del menú"*. El ítem sigue en
+plural sobre una superficie de una sola, y el área que la Parte II §10 nombra sigue sin construirse:
+son las opciones `A` y `C`, **fila 18 de [`decisiones-abiertas.md`](decisiones-abiertas.md)**.
+
+⚠️ **Un guard tuvo que cambiar, y se cambió declarándolo.** `proyeccion-hoy.test.ts` exigía que
+**ningún** identificador llegara a la pantalla. Ahora exige que **`accion.id` no llegue y que
+`cursadaId` sí**: la pantalla sigue sin renderizarlo — lo transporta la CTA.
 
 **El spec se leyó el mismo día, a pedido del owner, y cambió el peso del hallazgo.** Está entero en
 [ADR-054](decisions.md#adr-054); lo que hay que saber acá:

@@ -334,11 +334,16 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
     );
   });
 
-  it("los identificadores de §7.6 no llegan a la pantalla", () => {
+  it("el id de la Action no llega a la pantalla; el de la cursada sí, y por decisión", () => {
     // ADR-034 §7.6: `estado_del_dia()` los devuelve para el flujo C del
-    // contrato con el CRM. `UX01` no los necesita, y lo que la pantalla no
-    // necesita no viaja: el día que alguien renderice un UUID va a ser porque
-    // estaba a mano.
+    // contrato con el CRM. Lo que la pantalla no necesita no viaja: el día que
+    // alguien renderice un UUID va a ser porque estaba a mano.
+    //
+    // ⚠️ **`cursadaId` dejó de estar en ese grupo el 5 de septiembre de 2026.**
+    // [ADR-054](../docs/decisions.md#adr-054), opción `B`: `VI.2` §5.2 exige que
+    // entrar desde Hoy abra *el `CourseEnrollment` seleccionado*, y la fila no
+    // puede decir cuál es sin llevarlo. **La pantalla sigue sin renderizarlo** —
+    // lo transporta `CTA-001`—, y `accion.id` sigue sin viajar.
     const p = proyectarDia({
       ...vacio,
       accion: { ...vacio.accion!, id: "acc-1" },
@@ -347,7 +352,7 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
       ],
     });
     expect(JSON.stringify(p)).not.toContain("acc-1");
-    expect(JSON.stringify(p)).not.toContain("ce-1");
+    expect(p.materias[0].cursadaId).toBe("ce-1");
   });
 
   it("el riesgo no entra a la matriz de precedencia", () => {
