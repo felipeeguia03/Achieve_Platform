@@ -48,7 +48,7 @@ export interface RepositorioDelAlta {
     curriculumYear: number;
     term: string;
     selecciones: SeleccionDeRequisito[];
-  }): Promise<{ inscripcionId: string; cursadas: number; declaraciones: number }>;
+  }): Promise<{ inscripcionId: string; cursadas: number; declaraciones: number; esPrimera: boolean }>;
   cursadasActivas(institutionId: string, studentId: string): Promise<string[]>;
 }
 
@@ -251,16 +251,23 @@ export async function confirmarMapaAcademico(
    * `actorId` va `null`: `product_event.actor_id` es un `uuid` sin FK a
    * `student`, y meter ahí el id del estudiante sería inventar una relación que
    * el schema no declara (`C01-030`). Quién lo causó viaja en `causa`.
+   *
+   * ⚠️ **Sólo la primera vez.** Reconfirmar no vuelve a alcanzar el mapa
+   * mínimo: ya estaba alcanzado. `product_event` es append-only, así que dos
+   * emisiones serían dos hechos donde ocurrió uno — y duplicarían las
+   * activaciones en cualquier análisis del piloto.
    */
-  await deps.eventos.publicar({
-    nombre: "AcademicMapMinimumReached",
-    institutionId,
-    actorId: null,
-    sujetoTipo: "enrollment",
-    sujetoId: escrito.inscripcionId,
-    causa: `alta:${studentId}`,
-    payload: { cursadas: escrito.cursadas, declaraciones: escrito.declaraciones },
-  });
+  if (escrito.esPrimera) {
+    await deps.eventos.publicar({
+      nombre: "AcademicMapMinimumReached",
+      institutionId,
+      actorId: null,
+      sujetoTipo: "enrollment",
+      sujetoId: escrito.inscripcionId,
+      causa: `alta:${studentId}`,
+      payload: { cursadas: escrito.cursadas, declaraciones: escrito.declaraciones },
+    });
+  }
 
   // El ADE, sobre cada cursada. Una que no pueda recomendar **no es un fallo
   // del alta**: el alta ya ocurrió y quedó escrita.

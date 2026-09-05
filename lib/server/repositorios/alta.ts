@@ -100,7 +100,7 @@ async function confirmar(args: {
   curriculumYear: number;
   term: string;
   selecciones: SeleccionDeRequisito[];
-}): Promise<{ inscripcionId: string; cursadas: number; declaraciones: number }> {
+}): Promise<{ inscripcionId: string; cursadas: number; declaraciones: number; esPrimera: boolean }> {
   const { data, error } = await clienteDeServicio().rpc("confirmar_mapa_academico", {
     p_institution_id: args.institutionId,
     p_student_id: args.studentId,
@@ -120,11 +120,13 @@ async function confirmar(args: {
     inscripcion_id: string;
     cursadas: number;
     declaraciones: number;
+    es_primera: boolean;
   }[];
   return {
     inscripcionId: fila.inscripcion_id,
     cursadas: fila.cursadas,
     declaraciones: fila.declaraciones,
+    esPrimera: fila.es_primera,
   };
 }
 

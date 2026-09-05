@@ -214,6 +214,7 @@ function baseFalsa() {
     },
     async confirmar(args) {
       const previo = inscripciones.get(args.studentId);
+      const yaEstaba = previo?.confirmadaEn != null;
       inscripciones.set(args.studentId, {
         plan: args.curriculumPlanId,
         anio: args.curriculumYear,
@@ -231,6 +232,7 @@ function baseFalsa() {
         inscripcionId: `insc-${args.studentId}`,
         cursadas: cursadas.size,
         declaraciones: declaraciones.size,
+        esPrimera: !yaEstaba,
       };
     },
     async cursadasActivas(_i, studentId) {
@@ -588,6 +590,25 @@ describe("B6.14 · el hecho que el spec §7.3 define", () => {
       "est-1",
       { curriculumPlanId: "plan-pub", curriculumYear: 2, term: "2026-2", selecciones: SELECCION },
     );
+    expect(eventosPublicados).toEqual(["AcademicMapMinimumReached"]);
+  });
+
+  it("reconfirmar NO lo vuelve a emitir: el mapa mínimo se alcanza una vez", async () => {
+    /*
+      `product_event` es append-only, así que dos emisiones serían dos hechos
+      donde ocurrió uno — y duplicarían las activaciones del piloto. Las filas
+      ya no se duplicaban; el evento sí.
+    */
+    const { alta, catalogo, eventos, eventosPublicados } = baseFalsa();
+    const deps = { alta, catalogo, eventos, recomendar: recomendarSiempre };
+    const entrada = {
+      curriculumPlanId: "plan-pub",
+      curriculumYear: 2,
+      term: "2026-2",
+      selecciones: SELECCION,
+    };
+    await confirmarMapaAcademico(deps, "inst-1", "est-1", entrada);
+    await confirmarMapaAcademico(deps, "inst-1", "est-1", entrada);
     expect(eventosPublicados).toEqual(["AcademicMapMinimumReached"]);
   });
 
