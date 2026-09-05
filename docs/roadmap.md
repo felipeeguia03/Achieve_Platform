@@ -54,8 +54,8 @@ Cada etapa, sin excepción:
 **nueve superficies** del estudiante leen de la base **y el camino principal escribe en ella**
 ([ADR-040](decisions.md#adr-040)), y desde la B6.14 **el estudiante declara él mismo qué cursa**.
 
-⚠️ **`npm run db:verify` no corre — y es uno de los cinco comandos de verificación.** No es un
-hallazgo de producto: es el verificador, roto por su propia limpieza. Ver
+✅ **`npm run db:verify` volvió a correr entero** — **320 comprobaciones, cero fallos**. Estuvo roto
+por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto de orden. Los dos, en
 [§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre).
 
 ### Estado inmediato
@@ -264,13 +264,16 @@ de la demo no se tocó—:
 | `curriculum_requirement` | B6.14.2 | **antes de `course`** |
 | `academic_unit` | B6.14.2 | **entre `academic_program` e `institution`** |
 
-⚠️ **Correr `db:verify` vacía la base de negocio, y eso es de diseño** — el script lo dice de frente.
-Después hay que volver a sembrar con `npm run db:demo`. Por eso la comprobación de que la corrida
-entera vuelve a verde **queda para cuando el recorrido a mano termine**, y no se hizo por
-adelantado.
+✅ **Corregido y verificado el 5 de septiembre de 2026: 320 comprobaciones, cero fallos.**
 
-⚠️ **Y mientras tanto, ninguna etapa nueva puede declarar su Done.** La regla 4 de
-[`CLAUDE.md`](../CLAUDE.md) pide los cinco comandos, y **`db:verify` es uno de los cinco**.
+⚠️ **Y arreglarlo destapó un segundo defecto, que el primero tapaba.** Con la limpieza funcionando,
+`db-aislamiento.sh` —tercero de los cinco— **vacía el catálogo que `db-catalogo.sh` necesita para
+correr quinto**, y el suite moría en *"El catálogo está vacío"*. Antes no se notaba porque la
+limpieza no borraba nada. **`db:verify` ahora importa el catálogo entre los dos**, y por eso son
+cinco scripts y seis pasos.
+
+⚠️ **Correr `db:verify` sigue vaciando la base de negocio, y eso es de diseño** — el script lo dice
+de frente. Después hay que volver a sembrar con `npm run db:demo`.
 
 ### 🛠️ Lo que el recorrido dejó construido · el dock de **modo prueba**
 

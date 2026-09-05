@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# ⚠️ **`db:verify` importa el catálogo justo antes de llamar a este script.** No es
+# comodidad: `db-aislamiento.sh` corre tercero y **vacía el mundo académico**, así
+# que para cuando llega este verificador el catálogo ya no está. Antes esto no se
+# notaba porque la limpieza de aislamiento fallaba en silencio y no borraba nada;
+# al arreglarla apareció el orden real.
 # Achieve Platform · Etapa B6.14 — el catálogo curricular y el alta, contra Postgres.
 #
 # `npm test` prueba el **dominio** con dobles: qué se preselecciona, qué versión

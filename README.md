@@ -125,10 +125,10 @@ convive con `db:demo`**: después de verificar hay que volver a sembrar con
 lo suyo también al empezar y por `trap EXIT`, para que una corrida que falla no arrastre a la
 siguiente.
 
-⚠️ **Esa limpieza se rompió con la Fase B6.14 y ya está corregida**, pero **la corrida entera todavía
-no se volvió a correr**: le faltaban las cinco tablas nuevas y, como las 40 sentencias van en una
-sola transacción, una FK abortaba todo y `db:verify` moría con un *"no se pudieron cargar"* que no
-nombra la causa. Ver [`docs/roadmap.md`](docs/roadmap.md) §0.2.
+✅ **Esa limpieza se rompió con la Fase B6.14 y ya está corregida**, con la corrida entera en verde:
+**320 comprobaciones, cero fallos**. Eran dos defectos encadenados —le faltaban las cinco tablas
+nuevas a `limpiar_mundo`, y arreglarlo destapó que `db-aislamiento.sh` vacía el catálogo que
+`db-catalogo.sh` necesita después—. Ver [`docs/roadmap.md`](docs/roadmap.md) §0.2.
 
 ⚠️ **Este entorno corre sólo con datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PROVISIONAL — LEGAL CONFIRMATION REQUIRED` y es bloqueo absoluto para cualquier dato de una persona real — que

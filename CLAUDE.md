@@ -106,12 +106,11 @@ nombra sigue sin construirse. Son las opciones `A` y `C`, **decisión de diseño
 fue explícito: *"esto no autoriza construir todavía una nueva superficie de listado «Materias» ni
 cambiar el nombre del ítem del menú"*. **No las adelantes.**
 
-⚠️ **`npm run db:verify` estaba roto, y es uno de los cinco comandos de verificación.** A
-`limpiar_mundo` le faltaban las cinco tablas de la B6.14; como las 40 sentencias van en **una sola
-transacción**, una FK abortaba todo y no se borraba nada. **Ya está corregido en
-`scripts/db-aislamiento.sh`**, y verificado con la limpieza entera dentro de un `rollback`. **La
-corrida completa todavía no se corrió**: vacía la base de negocio a propósito, así que va cuando el
-recorrido a mano termine — y después `npm run db:demo`.
+✅ **`npm run db:verify` volvió a correr entero: 320 comprobaciones, cero fallos.** Estaba roto desde
+la B6.14 —a `limpiar_mundo` le faltaban cinco tablas y, como las 40 sentencias van en **una sola
+transacción**, una FK abortaba todo y no se borraba nada—. Arreglarlo destapó un segundo defecto que
+el primero tapaba: `db-aislamiento.sh` **vacía el catálogo que `db-catalogo.sh` necesita después**,
+así que `db:verify` ahora lo reimporta entre los dos.
 
 ⚠️ **Regla que salió de ahí:** toda tabla nueva que referencie a las del mundo académico **se agrega
 a `limpiar_mundo` en el mismo commit**. Si no, el verificador deja de correr y el error no nombra la
@@ -460,11 +459,9 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — las comprobaciones contra Postgres que `npm test` no
-puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **El conteo queda
-sin cifra hasta que la corrida entera vuelva a verde** (ver el hallazgo 2, arriba): el número viejo
-—314— es de antes de que la limpieza se rompiera, y afirmarlo ahora sería declarar un Done que nadie
-volvió a correr.
+**Verificación de base:** `npm run db:verify` — **320 comprobaciones** contra Postgres que `npm test`
+no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
+de negocio a propósito:** después hay que volver a sembrar con `npm run db:demo`.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de
 cierre de la B2 —los 12 invariantes de `data-model.md` §11— contra el propio documento. **Los doce
