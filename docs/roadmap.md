@@ -46,18 +46,24 @@ Cada etapa, sin excepción:
 
 ---
 
-## 0.1 Dónde estamos · 4 de septiembre de 2026
+## 0.1 Dónde estamos · 5 de septiembre de 2026
 
-**Track A: cerrado.** **Track B: B1–B6.8 completas en su alcance disponible**, con B2b en 2/3.
+**Track A: cerrado.** **Track B: B1–B6.14 completas en su alcance disponible**, con B2b en 2/3.
 
-`lint`, `typecheck` y `build` en verde · **995 tests en 57 archivos** · **276 comprobaciones** históricas contra
-Postgres + comprobación funcional transaccional de B6.7.4 · **47 migraciones** · las **nueve superficies** del
-estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](decisions.md#adr-040)).
+`lint`, `typecheck` y `build` en verde · **1131 tests en 62 archivos** · **59 migraciones** · las
+**nueve superficies** del estudiante leen de la base **y el camino principal escribe en ella**
+([ADR-040](decisions.md#adr-040)), y desde la B6.14 **el estudiante declara él mismo qué cursa**.
+
+⚠️ **`npm run db:verify` no corre — y es uno de los cinco comandos de verificación.** No es un
+hallazgo de producto: es el verificador, roto por su propia limpieza. Ver
+[§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre).
 
 ### Estado inmediato
 
 | Frente | Estado |
 |---|---|
+| **Fase B6.14 · el catálogo curricular y el tramo de alta** | ✅ **Completa, 6 / 6** — 5 de septiembre de 2026 ([ADR-051](decisions.md#adr-051), [ADR-052](decisions.md#adr-052), [ADR-053](decisions.md#adr-053)). Cierra el hueco que ADR-039 había dejado escrito: entre el `authorized: true` del CRM y la primera acción **ya hay pantallas**. ⚠️ **Y le movió el mundo debajo a una decisión de la B2.6**: ver [ADR-054](decisions.md#adr-054) |
+| **El recorrido a mano · 5 de septiembre** | 🔴 **Dos hallazgos abiertos**, ninguno de los dos en el camino que la B6.14 verificó: el apartado «Materias» y `db:verify`. Los dos en [§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre) |
 | **Fase B6.13 · «Cambiar horario»** | ✅ **Completa** — 4 de septiembre de 2026 ([ADR-050](decisions.md#adr-050)). La renegociación es alcanzable **desde `UX04`**, como acción secundaria, y **«Renegociar» sale de la interfaz**. Verificada con los cuatro recorridos que pidió el owner |
 | **Fases B6.11 y B6.12 · las dos decisiones del 4 de septiembre, implementadas** | ✅ **Completas** — la **renegociación** es alcanzable ([ADR-046](decisions.md#adr-046)) y el **disparador de Modo Examen** existe ([ADR-048](decisions.md#adr-048)). En el medio apareció una contradicción con el schema y se resolvió con [ADR-049](decisions.md#adr-049): la institución **tiene zona horaria propia**. Y la decisión de diseño que dejaron abierta se cerró el mismo día: ver B6.13 |
 | **Fase B6.10 · la reflexión existe y se exige** | ✅ **Completa, con su superficie** — 4 de septiembre de 2026. El requisito de [ADR-026](decisions.md#adr-026) **lo hace cumplir el servidor**, y desde [ADR-045](decisions.md#adr-045) el estudiante la escribe **dentro de `UX05`**: la reflexión y la entrega son la misma intención |
@@ -74,8 +80,18 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 ### Lo que espera a una persona
 
 > 📋 **El índice completo, ordenado por qué destraba:**
-> [`decisiones-abiertas.md`](decisiones-abiertas.md) — las **quince** que un agente no puede cerrar,
-> con quién decide cada una y qué pasa si no se decide. **Tres tienen código esperándolas.**
+> [`decisiones-abiertas.md`](decisiones-abiertas.md) — **dieciocho filas, seis abiertas**, con quién
+> decide cada una y qué pasa si no se decide.
+
+> ✅ **El Product Owner respondió seis el 5 de septiembre de 2026.** El planteo fue
+> [`agenda-decisiones-abiertas-po.md`](agenda-decisiones-abiertas-po.md); la respuesta literal,
+> [`respuesta-po-agenda-decisiones-source.md`](respuesta-po-agenda-decisiones-source.md); su lectura,
+> [ADR-054](decisions.md#adr-054) … [ADR-059](decisions.md#adr-059).
+>
+> **Las seis que quedaban del lado del owner ya no esperan a nadie.** Las que siguen abiertas
+> —`ADR-006`, las dos frases de la psicopedagoga, `C01-042`/`C01-052` y las dos del CTO con el CRM—
+> **no se deciden: se piden**. Y quedó **una nueva**: el área «Materias» y el nombre del ítem del
+> menú, que son las opciones `A` y `C` que ADR-054 dejó fuera a propósito.
 
 > ✅ **Las tres del Product Owner quedaron ratificadas el 4 de septiembre de 2026.** El brief
 > [`agenda-decisiones-po-crm.md`](agenda-decisiones-po-crm.md) las planteó; la respuesta literal está
@@ -84,9 +100,10 @@ estudiante leen de la base **y el camino principal escribe en ella** ([ADR-040](
 
 | Qué | Quién | Qué destraba |
 |---|---|---|
+| El **área «Materias»** y el nombre del ítem del menú — opciones `A` y `C` de [ADR-054](decisions.md#adr-054) | **Product Owner + Diseño** | 🟡 Que el estudiante llegue a **todas** sus materias. Con la opción `B` implementada el producto ya no contesta con la materia equivocada; **sigue sin haber lista**. La Parte II §10 del spec **nombra el área** y nunca la especifica |
 | **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | ✅ **Respondida** el 2 de septiembre de 2026: 6 `CAMBIAR` + 1 `APROBAR` ([ADR-037](decisions.md#adr-037)). Los umbrales quedaron; **cambió qué cuenta como repetición**. Sigue `OPEN` para datos reales: condicionada a piloto |
-| **`C01-021`** · qué regla produce qué señal y con qué severidad | Risk owner | 🟡 Una regla corre, ahora con **criterio profesional con modificaciones**. Las otras dos siguen sin umbral |
-| **`C01-044`** · playbooks y SLA | Product Operations | El playbook y el SLA del circuito, que hoy son `null` y el circuito lo declara |
+| ~~**`C01-021`**~~ · qué regla produce qué señal | Risk owner | ✅ **Respondida** el 5 de septiembre de 2026 ([ADR-055](decisions.md#adr-055)): las otras dos quedan en **modo humano hasta el piloto**, y sus umbrales salen de datos observados ahí |
+| ~~**`C01-044`**~~ · playbooks y SLA | Product Operations | ✅ **Respondida** el 5 de septiembre de 2026 ([ADR-056](decisions.md#adr-056)): playbook y SLA **provisionales**. ⬜ Sigue abierto **de qué sistema es** el playbook, y no hay tabla de ventana operativa |
 | **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
 | Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |
 | ~~**[ADR-042](decisions.md#adr-042)**~~ · dónde da el estudiante su WhatsApp | Product Owner | ✅ **Respondida** el 4 de septiembre de 2026, y con más alcance del que se preguntó: **definió el alta entera**, la superficie de revocación y el estado del estudiante sin materias |
@@ -159,6 +176,138 @@ timestamp + body original"*; la v0.2 del CRM dice `${timestamp}.${rawBody}`, **c
 que *"no es concatenación directa"*. **Es un solo middleware y un solo secreto para A, D, E y E′**, y
 el modo de falla es un `401` mudo que no dice cuál de las tres cosas falló. **Gana el punto**, y hay
 que corregir el §2 en la próxima versión del contrato.
+
+---
+
+## 0.2 El recorrido a mano del 5 de septiembre
+
+**Qué es esto.** Terminada la B6.14, el owner recorrió el producto a mano —no un test, no un script—
+para ver qué hay hecho. **Apareció lo mismo que apareció al conectar el alta:** los defectos que
+ningún camino automatizado toca son los del uso normal. Tres se corrigieron el mismo día; **dos
+quedan abiertos y están acá.**
+
+| # | Corregido ese día | Dónde |
+|---|---|---|
+| 1 | El mapa mínimo se alcanza **una sola vez**, y su evento también | [ADR-052](decisions.md#adr-052) · migración `20260915060000` |
+| 2 | **La institución no se pregunta**: la fija el padrón. Y un `404` deja de decirse como error de red | [ADR-052](decisions.md#adr-052) · migración `20260915070000` |
+| 3 | `db:demo` conserva la identidad y deja de acumular recursos; `db:sesion` espera al proveedor de auth | [`demo-mvp.md`](demo-mvp.md) |
+
+### 🔴 Hallazgo 1 · El apartado «Materias» muestra una sola materia
+
+**Es la fila 17 de [`decisiones-abiertas.md`](decisiones-abiertas.md) y su decisión es
+[ADR-054](decisions.md#adr-054), `PENDING`.** Acá va sólo lo verificado; el análisis y las opciones
+están en el ADR.
+
+Con un estudiante sintético de **nueve cursadas activas**, contra Postgres:
+
+| Qué se preguntó | Qué devolvió |
+|---|---|
+| `estado_del_dia(…)->'materias'` | **9** |
+| `estado_de_materia(…, p_course_enrollment_id => NULL)` | **1** · `Álgebra Sintética` |
+
+**El alta escribe bien: las nueve `course_enrollment` están.** Lo que falta es por dónde verlas —el
+ítem «Materias» del menú lleva a `UX02`, que es el cursado de **una**— y, sobre todo, que abrir la
+séptima materia de la cola de `HOY` **abre la primera**: `onVerMateria` navega a `/materia` sin
+`?cursada=` y la proyección descarta el `cursadaId` que la base sí devuelve.
+
+⚠️ **La mitad de la corrección ya existe:** `?cursada=` funciona en `GET /api/materia` y en
+`estado_de_materia()`. Lo que falta pasa por el **registro canónico de CTAs**, que es contrato
+([ADR-016](decisions.md#adr-016)), y por `components/screens/*`. **Por eso no se implementó.**
+
+**El spec se leyó el mismo día, a pedido del owner, y cambió el peso del hallazgo.** Está entero en
+[ADR-054](decisions.md#adr-054); lo que hay que saber acá:
+
+- **La Parte II §10 define dos áreas, y las colapsamos en una:** *«Materias · espacios persistentes
+  de cursado y evaluaciones»* y *«Materia > Cursado · ritmo, unidades, progreso, recursos, acciones y
+  Bitácora»*. El ítem del menú se llama como la primera y lleva a la segunda.
+- **`VI.2` §5.2 es literal:** *"Al entrar desde Hoy **se abre el `CourseEnrollment` seleccionado**"*.
+  Con `LIMIT 1` eso **no se cumple**: deja de ser un hueco y pasa a ser un incumplimiento del spec.
+- **La cola de `HOY` tampoco es la que `DD7` resolvió**: se pedía que la lista *"se vuelva
+  paginable"* y se construyó **una materia por vez**.
+- **El vacío, en cambio, está bien.** `VI.2` §12.3 fija qué mostrar cuando falta cada fuente y la
+  proyección lo cumple. Lo que se ve vacío es un problema de datos: **una materia recién declarada en
+  el alta no tiene un solo `topic` cargado**, porque el mundo demo ingiere una sola por el ADL.
+
+### 🔴 Hallazgo 2 · `npm run db:verify` no corre, y es un gate
+
+**No es un defecto del producto: es del verificador.** `scripts/db-aislamiento.sh` es *"dueño de la
+base local"* y arranca vaciándola. Su función `limpiar_mundo` borra 40 tablas en **un solo `psql -c`**
+—es decir, **una sola transacción implícita**—, y desde la Fase B6.14
+le faltan las tablas nuevas de la **Fase B6.14**:
+
+```
+delete from course           →  ✗  curriculum_requirement_course_id_fkey
+delete from institution      →  ✗  academic_unit_institution_id_fkey
+```
+
+**Una sola de esas FK aborta la transacción entera, así que no se borra nada.** Después el script
+siembra su mundo con UUID que comparte con el seed de la demo —`a5000000-…`, y está escrito en el
+propio script— y choca por clave duplicada:
+
+```
+→ Dos instituciones con datos propios
+   ✗ no se pudieron cargar
+```
+
+**El síntoma engaña dos veces.** El error dice *"no se pudieron cargar"*, que suena a permisos o a
+stack caído, y no menciona la limpieza que falló en silencio doce líneas antes. Y **no falla siempre**:
+sólo cuando hay datos de demo puestos, que es exactamente después de recorrer el producto a mano.
+
+**Faltan cinco `delete`**, verificados uno por uno dentro de una transacción con `rollback` —la base
+de la demo no se tocó—:
+
+| Tabla | De dónde salió | Dónde va en el orden |
+|---|---|---|
+| `requirement_declaration` | B6.14.4 | arriba de todo |
+| `whatsapp_consent` | B6.14.4 | ídem |
+| `elective_option` | B6.14.2 | antes de `curriculum_requirement` |
+| `curriculum_requirement` | B6.14.2 | **antes de `course`** |
+| `academic_unit` | B6.14.2 | **entre `academic_program` e `institution`** |
+
+⚠️ **Correr `db:verify` vacía la base de negocio, y eso es de diseño** — el script lo dice de frente.
+Después hay que volver a sembrar con `npm run db:demo`. Por eso la comprobación de que la corrida
+entera vuelve a verde **queda para cuando el recorrido a mano termine**, y no se hizo por
+adelantado.
+
+⚠️ **Y mientras tanto, ninguna etapa nueva puede declarar su Done.** La regla 4 de
+[`CLAUDE.md`](../CLAUDE.md) pide los cinco comandos, y **`db:verify` es uno de los cinco**.
+
+### 🛠️ Lo que el recorrido dejó construido · el dock de **modo prueba**
+
+**Recorrer el alta una vez no alcanza para verla**, y volver a empezar costaba bajar a la terminal a
+correr `npm run db:demo`, que vuelve a sembrar el mundo entero. Con **`MODO_PRUEBA=1`** hay un dock al
+pie de las nueve superficies y del alta que deja al estudiante como antes de empezar y lo manda al
+primer paso. El recorrido está en [`demo-mvp.md`](demo-mvp.md).
+
+**No es una fase ni una etapa: es andamio**, y se documenta acá para que se sepa que existe y cuándo
+se saca.
+
+| Pieza | Qué hace |
+|---|---|
+| `reiniciar_alta_de_prueba()` | Una transacción. Borra lo que el alta escribió y lo que el ADE materializó encima —por `ON DELETE CASCADE` desde `course_enrollment`, no por una lista a mano— |
+| `instituciones_de_prueba()` | Las instituciones **con plan publicado**. La UCC no aparece, y no por una lista negra: su Plan 2016 está `DRAFT` ([ADR-053](decisions.md#adr-053)) |
+| `POST /api/prueba/alta` | Tres cerrojos: `404` sin la variable, **JWT del estudiante** —nunca secreto de servicio: sólo puede sobre sí mismo— y sin gate de alta, porque el caso que más se repite es reiniciar **a mitad del alta** |
+| `components/prueba/panel.tsx` | El dock. **No entra al grafo**: las superficies siguen siendo nueve, las CTAs diecinueve, y su texto **no entra al copy del producto** |
+
+**Lo que no toca, y hay guard de cada cosa:** el catálogo · `student` y su `auth_user_id` —perderlo
+devolvía un `403 SIN_PADRON` que no tenía que ver con el padrón— · **`product_event` y `audit_log`**,
+append-only por `I12`.
+
+⚠️ **Reiniciar no emite ningún evento de producto.** No es un hecho del dominio: es deshacer una
+corrida de prueba. Declararlo en `lib/domain/product-events.ts` metería una herramienta de
+laboratorio en el modelo de eventos, que tiene guard en las dos direcciones.
+
+⚠️ **Consecuencia declarada:** `enrollment.confirmed_at` vuelve a `NULL`, así que la próxima
+confirmación emite **otro** `AcademicMapMinimumReached`. Es correcto —esa alta volvió a ocurrir— y a
+la vez significa que **en una base con reinicios el conteo de activaciones no mide nada**.
+
+⚠️ **El selector de institución simula el padrón, no reabre [ADR-052](decisions.md#adr-052).** El
+alta sigue ofreciendo **sólo** la institución del padrón; el dock mueve la ficha, como haría un
+backoffice, y sólo a una con plan publicado.
+
+⚠️ **Se borra cuando [ADR-006](decisions.md#adr-006) abra.** Con personas reales, *«borrarle a
+alguien lo que declaró»* es una operación de privacidad con su propio contrato (`C01-017`), no un
+botón.
 
 ---
 
@@ -3586,6 +3735,7 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
 | Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
 | Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
+| Fase B6.14 — Catálogo curricular y tramo de alta | ✅ **COMPLETA** — 5 de septiembre de 2026 ([ADR-051](decisions.md#adr-051), [ADR-052](decisions.md#adr-052), [ADR-053](decisions.md#adr-053)). El estudiante declara qué cursa y llega a `HOY` con una acción real. ⚠️ **Y le movió el mundo debajo a una decisión de la B2.6**: el apartado «Materias» sigue mostrando una sola — [ADR-054](decisions.md#adr-054), `PENDING` | 6 / 6 |
 | Fase B6.13 — «Cambiar horario» en `UX04` | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-050](decisions.md#adr-050)). La renegociación llega a la pantalla, y aparecieron tres defectos que sólo se ven al conectar algo: la CTA salía del encuadre y no del lifecycle, la confirmación se desmontaba con la recarga, y un único código de rechazo decía *«ya empezó»* de algo incumplido | 1 / 1 |
 | Fase B6.12 — El disparador de Modo Examen | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-048](decisions.md#adr-048)). `ExamPreparationRecommended` dejó de ser el único evento `P0` sin emisor. **No depende de readiness**, y un test guarda esa firma | 1 / 1 |
 | Fase B6.11 — La renegociación, alcanzable | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-046](decisions.md#adr-046)). La tercera operación huérfana de la B6.9 tiene llamador. Requirió [ADR-049](decisions.md#adr-049): la institución no tenía zona horaria. La CTA en `UX04` llegó en la B6.13 | 1 / 1 |
@@ -3596,7 +3746,13 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 | Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
 | Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
-**Estado de los 51 contratos `C01`: 37 `OPEN`, 10 `ANSWERED — RESIDUO ABIERTO`, 4 `CLOSED`.** Ocho
+**Estado de los 51 contratos `C01`: 32 `OPEN`, 13 `ANSWERED — RESIDUO ABIERTO`, 5 `CLOSED`, 1
+`DEFERRED`.** ⬅️ **Cinco se movieron el 5 de septiembre de 2026**, con la respuesta del Product Owner
+a la agenda de decisiones abiertas ([fuente](respuesta-po-agenda-decisiones-source.md)): `C01-029`
+cerró ([ADR-058](decisions.md#adr-058)); `C01-019`, `C01-021` y `C01-044` pasaron a
+`ANSWERED — RESIDUO ABIERTO` ([ADR-059](decisions.md#adr-059), [ADR-055](decisions.md#adr-055),
+[ADR-056](decisions.md#adr-056)); y `C01-030` quedó **`DEFERRED` con motivo** hasta
+[ADR-006](decisions.md#adr-006) ([ADR-057](decisions.md#adr-057)). Ocho
 de las respondidas son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena es
 `C01-051` ([ADR-026](decisions.md#adr-026)), el 1 de septiembre; la décima es `C01-010`
 ([ADR-046](decisions.md#adr-046)), el 4. `C01-022` cerró por [ADR-034](decisions.md#adr-034),

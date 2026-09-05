@@ -2,7 +2,7 @@
 
 **Documento:** `docs/decisions.md`
 **Rol:** owner canónico de las decisiones tomadas y pendientes de este repositorio.
-**Última actualización:** 4 de septiembre de 2026
+**Última actualización:** 5 de septiembre de 2026
 
 ---
 
@@ -100,6 +100,12 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-051](#adr-051) | El catálogo curricular: no toda fila de un plan es una materia | ✅ `ACCEPTED` *(4 sep 2026 · `curriculum_requirement` con seis tipos; **`publication_status` ≠ `verification_status`**)* | — |
 | [ADR-052](#adr-052) | El tramo de alta: tres pantallas fuera de las nueve, y el gate a `HOY` | ✅ `ACCEPTED` *(4 sep 2026 · implementa [ADR-042](#adr-042); **el número de WhatsApp sigue sin escritor**)* | — |
 | [ADR-053](#adr-053) | El Plan 2016 de la UCC entra `DRAFT`, y lo que falta para publicarlo está escrito | ✅ `ACCEPTED` *(4 sep 2026 · 57 requisitos, `needs_review` en las 57; abre `C01-052`)* | — |
+| [ADR-054](#adr-054) | El apartado «Materias» muestra una sola materia | ✅ `ACCEPTED` *(5 sep 2026 · **opción `B`**: `CTA-001` transporta la cursada. `A` y `C` quedan como decisión de diseño aparte)* | — |
+| [ADR-055](#adr-055) | `C01-021` · las dos reglas de riesgo sin umbral quedan en modo humano hasta el piloto | ✅ `ACCEPTED` *(5 sep 2026 · `C01-021` pasa a `ANSWERED — RESIDUO ABIERTO`)* | — |
+| [ADR-056](#adr-056) | `C01-044` · playbook y SLA provisionales del circuito de riesgo | ✅ `ACCEPTED` *(5 sep 2026 · provisionales y rotulados; no definen identidad ni superficie)* | — |
+| [ADR-057](#adr-057) | `C01-030` · la identidad de quien revisa queda diferida hasta ADR-006 | ✅ `ACCEPTED` *(5 sep 2026 · `DEFERRED` con motivo; el interinato sigue vigente)* | — |
+| [ADR-058](#adr-058) | `C01-029` · la regla determinística de readiness | ✅ `ACCEPTED` *(5 sep 2026 · tres estados, sin score ni porcentaje)* | — |
+| [ADR-059](#adr-059) | `C01-019` · se conserva lo actual; la semántica completa es residuo de piloto | ✅ `ACCEPTED` *(5 sep 2026 · **no bloquea el MVP**; el gate `H` de `UX06` sigue)* | — |
 
 ---
 
@@ -4287,6 +4293,28 @@ igual que la facultad y que la versión del plan — la misma regla que este ADR
 Y `404` deja de decirse como un error de red. `ResultadoDeEnvio` gana `NO_ENCONTRADO`, porque *"probá
 de nuevo en un momento"* sobre algo permanente le pide al estudiante que insista contra una pared.
 
+### El modo prueba mueve la ficha del padrón, y no reabre esta decisión
+
+**Agregado el 5 de septiembre de 2026**, del mismo recorrido a mano. Recorrer el alta una vez no
+alcanza para verla: hay que volver a entrar y elegir distinto, incluso contra el catálogo de otra
+institución. Con `MODO_PRUEBA=1` hay un dock que reinicia el alta, y su selector permite dejar al
+estudiante sintético asignado a **otra institución**.
+
+**Eso no le devuelve al estudiante la elección que este ADR le sacó.** La pregunta *"¿dónde
+estudiás?"* sigue sin existir y el alta sigue ofreciendo **sólo** la institución del padrón: lo que el
+dock hace es **mover la ficha del padrón**, que es lo que haría un backoffice, y sólo hacia una
+institución **con plan publicado** — dejarlo en una sin plan es el pozo del que salió la corrección
+de arriba.
+
+Y se mueve **después** de borrar todo lo académico, nunca antes: mover a un estudiante que conserva
+cursadas de la institución vieja rompe `I11` en silencio.
+
+⚠️ **Apagado por defecto y con fecha de vencimiento.** Sin la variable, `POST /api/prueba/alta`
+responde `404` y el componente no llega al HTML. Cuando [ADR-006](#adr-006) abra, la ruta **se
+borra**: con personas reales, *"borrarle a alguien lo que declaró"* es una operación de privacidad
+con su propio contrato (`C01-017`), no un botón. El detalle vive en
+[`roadmap.md`](roadmap.md) §0.2 y en [`demo-mvp.md`](demo-mvp.md).
+
 ### WhatsApp: se construye el tramo, no se escribe el número
 
 ADR-042 §4 autoriza construir y probar *"con identidades y teléfonos sintéticos"*. Pero el schema
@@ -4418,3 +4446,356 @@ año, se resuelve `SEMINARIO` y se levanta `needs_review`. La autorización inst
 es `C01-042`, y sigue siendo de una persona.
 
 Queda registrado como **`C01-052`** en [`pending-decisions-annex.md`](pending-decisions-annex.md).
+
+---
+
+## ADR-054 — El apartado «Materias» muestra una sola materia
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-agenda-decisiones-source.md)
+**Fecha de apertura:** 5 de septiembre de 2026 · **lo abrió el recorrido del producto a mano**
+
+> ### La decisión: opción `B`, y sólo `B`
+>
+> > *"Elijo `B` ahora. `CTA-001` debe transportar el `CourseEnrollment` seleccionado y abrir
+> > exactamente la materia desde la cual se originó la navegación. Autorizo agregar el identificador
+> > necesario a `MateriaResumen`, parametrizar la CTA y registrar el cambio en el registro canónico."*
+>
+> ⚠️ **Y delimitó el alcance con la misma firmeza:**
+>
+> > *"Esto no autoriza construir todavía una nueva superficie de listado «Materias» ni cambiar el
+> > nombre del ítem del menú. Las opciones `A` y `C` quedan como una decisión de diseño separada."*
+>
+> **Lo que eso deja cerrado:** el incumplimiento de `VI.2` §5.2 —*"al entrar desde Hoy se abre el
+> `CourseEnrollment` seleccionado"*—, que era el único punto del hallazgo que producía **una
+> respuesta equivocada** en vez de una ausencia.
+>
+> **Lo que eso deja abierto, y es deliberado:** el ítem del menú **sigue llamándose «Materias» en
+> plural sobre una superficie de una sola**, y el área que la Parte II §10 nombra sigue sin
+> construirse. Son `A` y `C`, y **no son residuos de este ADR**: son una decisión de diseño propia,
+> que se toma con las capturas delante.
+**Relacionado:** [ADR-016](#adr-016) (el registro canónico de CTAs), [ADR-018](#adr-018) (las
+capturas), [ADR-051](#adr-051), [ADR-052](#adr-052), Etapa B2.6 del [roadmap](roadmap.md).
+**Toca:** `lib/navigation/menu.ts`, `lib/navigation/cta-registry.ts`,
+`lib/server/servicios/proyeccion-hoy.ts`, `app/(student)/hoy/page.tsx`,
+`components/screens/hoy-autogestion.tsx`, `design-system.md` §1.4.
+
+### El hallazgo
+
+**El alta persiste todas las materias; la superficie muestra una.** Verificado contra Postgres con un
+estudiante sintético que tiene **nueve cursadas activas**:
+
+| Qué se preguntó | Qué devolvió |
+|---|---|
+| `estado_del_dia(…)->'materias'` | **9** |
+| `estado_de_materia(…, p_course_enrollment_id => NULL)` | **1** · `Álgebra Sintética` |
+
+**El dato está. Lo que falta es por dónde verlo.** Son tres cosas distintas, y la tercera es la peor:
+
+**1 · El ítem «Materias» del menú lateral lleva a una sola materia.** `menu.ts` lo declara plural y
+apunta a `UX02`, que es la superficie de **cursado de una materia**: `estado_de_materia()` cierra su
+CTE con `LIMIT 1` —la cursada de la `Action` viva, y si no hay, la más antigua—. Con nueve cursadas
+devuelve una, siempre la misma, y no hay control para cambiarla.
+
+**2 · La lista completa existe sólo en `HOY`, debajo del fold y de a una.** Es la cola paginable que
+`design-system.md` §1.4 arbitró para `DD7` —«1 de 9», con flechas—. Está bien que sea así en `UX01`:
+lo que no existe es el lugar donde estén todas.
+
+**3 · Y desde esa cola, cualquier materia abre la misma pantalla.** `onVerMateria` navega a
+`/materia` **sin `?cursada=`**, y `proyeccion-hoy.ts` descarta el `cursadaId` que la base sí devuelve.
+Abrir la séptima materia de la cola muestra la primera.
+
+> ⚠️ **El punto 3 no es una ausencia: es una respuesta equivocada.** El estudiante pidió una materia y
+> la pantalla le contesta con otra, sin decirlo. *Omitir, no inventar* cubre lo primero; esto es lo
+> segundo, y es lo que *"la UI proyecta, nunca decide"* existe para impedir.
+
+### Qué dice el spec — leído el 5 de septiembre, a pedido del owner
+
+**El spec define dos áreas distintas, y el producto las colapsó en una.** Parte II §10,
+*Arquitectura de información provisional*:
+
+| Área | Responsabilidad, textual |
+|---|---|
+| **Materias** | *"Espacios persistentes de cursado y evaluaciones."* |
+| **Materia > Cursado** | *"Ritmo, unidades, progreso, recursos, acciones y Bitácora."* |
+
+**El ítem del menú se llama como la primera y lleva a la segunda.**
+
+Y `VI.2` §5.1 lista, entre las entradas válidas a Cursado, **«área existente Materias»**: el spec la
+**da por existente**. Pero **no la especifica en ningún lado** — `VI.2` es el wireframe de *Cursado*,
+su §5.3 cierra con *"No se agrega una navegación global nueva en este sprint"*, y la propia §10 se
+declara **provisional**. Hay un nombre y una responsabilidad de una línea; no hay wireframe, ni
+contenido, ni CTA en el registro canónico.
+
+⚠️ **Eso mueve la opción `C`:** una superficie de lista **no sería inventar una décima**, sería
+construir un área que la arquitectura de información ya nombra. Sigue necesitando decisión y
+capturas, pero deja de ser una idea nueva.
+
+**Y hay una línea del spec que el código contradice hoy.** `VI.2` §5.2, *Contexto preservado*:
+
+> *"Al entrar desde Hoy: **se abre el `CourseEnrollment` seleccionado**"*
+
+`CTA-001` no lleva cuál, y `estado_de_materia()` elige con `LIMIT 1`. **El punto 3 del hallazgo deja
+de ser un hueco y pasa a ser un incumplimiento literal.**
+
+**La cola de `HOY` tampoco es lo que `DD7` resolvió.** El texto dice que *"esa lista deja de ser plana
+y se vuelve **paginable**"*; lo construido muestra **una materia por vez**, así que la lista dejó de
+ser lista. El disparador tampoco coincide: el spec dice *"cuando hay más de una materia **con algo
+pendiente el mismo día**"*, y `MateriasQueue` pagina por `materias.length > 1` sobre **todas** las
+cursadas activas.
+
+> ℹ️ **Lo que sí está bien es el vacío.** `VI.2` §12.3 fija qué mostrar cuando falta cada fuente, y la
+> proyección lo cumple: sin `TopicProgress` dice *"sin avance registrado"* y no cero, sin señal de
+> riesgo no dice *"Bajo control"*, y con `contextoIncompleto` no inventa nada.
+>
+> ⚠️ **Pero el `LIMIT 1` hace que ese caso se vea peor de lo que es.** Una materia recién declarada en
+> el alta **no tiene un solo `topic` cargado** —el mundo demo ingiere una sola por el ADL—, así que un
+> estudiante con 16 cursadas ve **una**, elegida por antigüedad, **vacía**, y ninguna forma de mirar
+> las otras 15. La pantalla dice la verdad; lo que falla es a cuántas materias deja llegar.
+
+**Lo que el spec NO pide, y conviene no confundir:** el layout *"2/3 Hero + 1/3 Materias"* de la
+`VI.1` está en su §14, **REVERSIBLE UX ASSUMPTIONS**, con la nota de que cambiarlo *"no debe alterar
+la precedencia, los loops ni el contrato de verdad"*. **No es contrato**, y que `HOY` sea una columna
+no es un incumplimiento.
+
+### Por qué esto no lo cierra un agente
+
+**El `LIMIT 1` fue deliberado**, y su motivo está escrito en la propia migración de la Etapa B2.6:
+
+> *"`/materia` no lleva id en la URL y agregarle uno **toca el registro canónico de CTAs, que es
+> contrato**."*
+
+**Lo que cambió es la premisa, y nadie la revisó.** Cuando se escribió eso, un estudiante sintético
+tenía una o dos cursadas sembradas a mano, y *"la de la Action viva"* era la respuesta correcta a
+*"¿qué materia?"*. Desde la [Fase B6.14](roadmap.md) el alta lo deja declarar **cuantas curse**, y la
+misma decisión pasó de razonable a hueco. **La decisión no se rompió: se le movió el mundo debajo.**
+
+Y lo que hay que decidir toca tres cosas que un agente no puede resolver solo:
+
+- **El registro canónico de CTAs.** `CTA-001` declara `origen: UX01 → destino: UX02`. [ADR-016](#adr-016)
+  fijó que **toda fila que no transcriba la tabla del spec necesita un ADR `ACCEPTED` detrás**, y hay
+  test.
+- **`components/screens/*`**, que la regla 6 de [`CLAUDE.md`](../CLAUDE.md) protege.
+- **El lenguaje visual**, que sale de `docs/diseño/` ([ADR-018](#adr-018)) y no se improvisa.
+
+### Las tres opciones, sin elegir ninguna
+
+| | Opción | Qué corrige | Qué cuesta |
+|---|---|---|---|
+| **A** | **El menú se llama como lo que hay** — «Materia», singular | Nada del hallazgo; deja de prometer una lista que no existe | Una etiqueta. **No toca el punto 3** |
+| **B** | **`/materia` recibe la cursada, y la cola se la pasa** — `?cursada=` **ya funciona** en `GET /api/materia` y en `estado_de_materia()`; falta que `cursadaId` llegue a la pantalla y que `CTA-001` admita el parámetro | El punto 3, entero. El 2 queda como está y el 1 sigue abierto | Un campo en `MateriaResumen`, la CTA con parámetro y **una nota en el registro canónico** |
+| **C** | **El área «Materias» que la IA del spec ya nombra** (§10) — la lista de espacios persistentes de cursado | Los tres | **Una superficie sin wireframe.** El spec la nombra en una línea y nunca la especifica; el registro dice que las superficies son nueve y que *"no existe `UX10`"*, con guard |
+
+**Recomendación del agente: `B`, y sólo `B`.** Es lo único que convierte una respuesta equivocada en
+la correcta sin estrenar superficie ni mover el conteo de nodos, y la mitad del camino ya está
+construida. **`A` y `C` son decisiones de producto y de diseño, y se toman con las capturas delante.**
+
+### Lo que no se hizo, a propósito
+
+**Ninguna de las tres.** No se tocó `menu.ts`, ni el registro de CTAs, ni una pantalla. Se dejó
+escrito el hallazgo con su verificación, que es lo que la regla 1 pide cuando falta una regla.
+
+---
+
+## ADR-055 — `C01-021`: las dos reglas de riesgo sin umbral quedan en modo humano hasta el piloto
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-agenda-decisiones-source.md)
+**Relacionado:** [ADR-032](#adr-032), [ADR-037](#adr-037), `C01-021`, `C01-036`.
+**Toca:** `pending-decisions-annex.md`, `decisiones-abiertas.md`, `roadmap.md`.
+
+### La decisión
+
+> *"`HP0-06-2` y `HP0-06-3` permanecen en modo humano hasta disponer de evidencia del piloto.
+> Registrar `C01-021` como `ANSWERED — RESIDUO ABIERTO`, con la condición explícita de que sus
+> umbrales se definirán a partir de datos observados durante el piloto."*
+>
+> *"No autoriza implementar evaluadores automáticos ni inventar umbrales provisionales."*
+
+### Qué cambia, y qué no
+
+**No cambia una línea de código.** `HP0-06-1 v4.0-psicopedagogia` sigue siendo la única regla que
+evalúa, con sus umbrales `2` y `3` en configuración, y el **guard estático que rompe si alguien
+agrega un evaluador para las otras dos sigue en pie** — ahora respaldado por una decisión y no sólo
+por prudencia.
+
+**Cambia el estado de la fila.** `C01-021` deja de ser un `OPEN` sin fecha y pasa a
+`ANSWERED — RESIDUO ABIERTO` con condición nombrada: *evidencia del piloto*. Es la misma forma con
+la que la psicopedagoga cerró `C01-036`.
+
+⚠️ **Y desbloquea el cierre de la Fase B6 sin inventar nada.** La fase estaba trabada por una
+decisión que **hoy no tiene evidencia sobre la cual tomarse**; ahora la condición para tomarla está
+escrita. Lo que queda de la fase sigue esperando a [ADR-056](#adr-056) y al contrato v2 del CTO.
+
+---
+
+## ADR-056 — `C01-044`: playbook y SLA provisionales del circuito de riesgo
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-agenda-decisiones-source.md)
+**Relacionado:** [ADR-032](#adr-032), [ADR-033](#adr-033), `C01-022`, `C01-030`, `C01-044`.
+**Toca:** `pending-decisions-annex.md`, `decisiones-abiertas.md`, `roadmap.md`.
+
+### La decisión, textual
+
+**Playbook provisional:**
+
+> *"Ante una señal `INTERVENTION_REQUIRED`, el rol operativo asignado debe revisar el contexto
+> disponible, realizar un primer intento de contacto por WhatsApp, identificar el bloqueo, acordar
+> una única próxima acción o activar el protocolo de rescate/no cortar, y registrar obligatoriamente
+> el outcome y el próximo seguimiento."*
+
+**SLA provisional:**
+
+> *"Primer intento de contacto dentro de cuatro horas hábiles del horario operativo vigente. Si la
+> señal se produce fuera de ese horario, el plazo comienza en la siguiente ventana operativa."*
+
+### Lo que la decisión dice que NO decide
+
+> *"Una intervención no puede cerrarse sin outcome. Esto no define todavía la identidad técnica de la
+> persona ni autoriza construir superficies de operador dentro de Plataforma."*
+
+⚠️ **«Una intervención no puede cerrarse sin outcome» ya se garantiza por construcción**
+([ADR-032](#adr-032)): cerrar sin outcome **no es un camino que exista**. La decisión lo ratifica; no
+lo introduce.
+
+⚠️ **Sigue sin resolverse dónde vive el playbook.** `C01-044` arrastra una propuesta abierta —que
+playbook y SLA sean canónicos del **CRM**, no de la Plataforma, porque el spec pone el Intervention
+Engine de ese lado—. [ADR-033](#adr-033) no la cerró a propósito y **esta decisión tampoco**: fija
+*qué dice* el playbook, no *de qué sistema es*. Si más adelante se acepta que es del CRM, la tabla
+`playbook` de la Plataforma sobra y su `sla_at` pasa a ser referencia externa.
+
+⚠️ **«Cuatro horas hábiles» exige un horario operativo que la Plataforma no tiene.** No hay tabla de
+ventana operativa ni de feriados, y **no se inventa una**: hasta que exista, el SLA es un texto del
+playbook y no un plazo que el sistema calcule. Convertirlo en `sla_at` computado es trabajo propio,
+con su propia decisión sobre de dónde sale el calendario.
+
+---
+
+## ADR-057 — `C01-030`: la identidad de quien revisa queda diferida hasta ADR-006
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-agenda-decisiones-source.md)
+**Relacionado:** [ADR-006](#adr-006), [ADR-023](#adr-023), [ADR-033](#adr-033), [ADR-040](#adr-040),
+`C01-030`.
+**Toca:** `pending-decisions-annex.md`, `decisiones-abiertas.md`, `roadmap.md`.
+
+### La decisión
+
+> *"La definición permanente de identidad queda diferida hasta el cierre de `ADR-006`. Mientras todo
+> siga siendo sintético, se mantiene el interinato ya ratificado: las operaciones pueden ejecutarse
+> mediante identidad de servicio, identificando el proceso en el evento y sin fabricar UUID de
+> personas inexistentes."*
+>
+> *"Esto no autoriza revisar, corroborar ni pedir reenvíos sobre evidencia de estudiantes reales."*
+>
+> *"Registrar la decisión como diferida con motivo y retirar la fila de los pendientes activos
+> inmediatos."*
+
+### Por qué diferir es una respuesta y no una postergación
+
+Las tres operaciones que esperaban esta decisión —validar una evidencia, corroborar una procedencia,
+pedir un reenvío— **no pueden tocar a una persona real hasta que el dictamen legal esté**. Elegir
+ahora entre *"la identidad vive en el CRM"* y *"la identidad vive en Achieve"* sería elegir sin el
+dato que lo decide.
+
+**Lo que se conserva sin cambios:** `reviewer_id` y `corroborated_by` quedan `NULL`, el actor del
+evento es `null` —lo produjo un proceso—, el proceso se identifica en el payload, y las tres rutas
+van con secreto de servicio.
+
+⚠️ **`product_event.actor_id` es `uuid` y sigue sin poder recibir una identidad externa.** Aceptar un
+identificador que no se puede escribir obliga a fabricar un UUID —inventar una identidad— o a romper.
+Costó un `500` real, y esta decisión **no lo cambia**.
+
+⚠️ **A `official` sigue sin llegar nadie**, y sigue sin ser un olvido: significa que la institución lo
+afirma, y la Plataforma no puede autenticar a una institución.
+
+---
+
+## ADR-058 — `C01-029`: la regla determinística de readiness
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-agenda-decisiones-source.md)
+**Relacionado:** [ADR-011](#adr-011), [ADR-048](#adr-048), `C01-029`.
+**Toca:** `pending-decisions-annex.md`, `decisiones-abiertas.md`, `roadmap.md`, `data-model.md`.
+
+### Lo primero que la decisión fija
+
+> *"No se implementará un porcentaje ni una predicción de aprobación. `READY_BY_PROTOCOL` significa
+> únicamente que la preparación cumplió el protocolo."*
+
+### La regla, textual
+
+| Estado | Condición |
+|---|---|
+| **`READY_BY_PROTOCOL`** | *"todos los `required_steps` están completos; la evidencia se encuentra en un estado canónico suficiente o validado; `autonomous_practice = true`; `simulation = true`; y `critical_gaps` está vacío"* |
+| **`NOT_READY`** | *"existe al menos un `critical_gap`, o todavía no existe ninguna señal observable de avance"* |
+| **`BUILDING`** | *"cualquier caso restante; existe avance observable, pero todavía no se cumplen todas las condiciones de `READY_BY_PROTOCOL`"* |
+
+**Y define qué cuenta como avance**, que es lo que hace decidible la frontera entre `NOT_READY` y
+`BUILDING`:
+
+> *"Se considera señal observable de avance: al menos un paso requerido completado, evidencia
+> recibida o en proceso, práctica autónoma realizada o simulación realizada."*
+
+**Con dos obligaciones de escritura:**
+
+> *"Toda escritura debe completar `explanation` indicando qué condición se cumplió y cuáles faltan.
+> Usar únicamente los estados canónicos existentes; esta decisión no autoriza crear estados nuevos."*
+
+### Consecuencias
+
+**El schema ya sostiene las dos obligaciones.** `explanation` es `NOT NULL` desde la Fase B5 y
+`state` tiene `CHECK` con los tres estados: no hay que migrar nada para cumplirlas.
+
+⚠️ **`C01-029` queda respondida; la tabla sigue sin escritor.** Escribir `preparation_readiness` es
+trabajo de implementación con su propia etapa. **Hasta que exista, `UX08` sigue sin card, sin score y
+sin porcentaje** — y eso ya no es un hueco por falta de decisión.
+
+⚠️ **Un residuo real, y hay que decirlo:** *"la evidencia se encuentra en un estado canónico
+suficiente o validado"* nombra dos estados del lifecycle de `Evidence`, y `preparation_readiness`
+lleva `evidence_status` como `text` **sin `CHECK`**. Qué valores admite esa columna, y cómo se derivan
+del lifecycle real, **no lo fija esta decisión**: se resuelve al implementarla, sin inventar estados
+nuevos —la propia decisión lo prohíbe—.
+
+⚠️ **Esto no cambia cuándo aparece Modo Examen.** [ADR-048](#adr-048) desacopló el disparador de
+readiness —14 días calendario— y **hay un test que rompe si alguien vuelve a acoplarlos**.
+
+---
+
+## ADR-059 — `C01-019`: se conserva lo actual, y la semántica completa es residuo de piloto
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-agenda-decisiones-source.md)
+**Relacionado:** [ADR-026](#adr-026), [ADR-047](#adr-047), `C01-019`, `C01-032`.
+**Toca:** `pending-decisions-annex.md`, `decisiones-abiertas.md`, `roadmap.md`.
+
+### La decisión
+
+> *"La implementación actual, que distingue un cambio de un «sin cambio confirmado», puede
+> mantenerse."*
+>
+> *"Esto autoriza conservar el comportamiento actual de `UX06` y que `UX02` omita dimensiones cuya
+> semántica todavía no esté aprobada. No autoriza mostrar valores internos, porcentajes aprendidos,
+> promedios de dimensiones ni equivalencias entre confianza y dominio."*
+>
+> *"Registrar la definición completa de nombres observables y escalas como residuo abierto para
+> validación con evidencia del piloto. No debe bloquear el MVP actual."*
+
+### Qué queda ratificado
+
+**Lo que `UX02` ya hace, y ahora está autorizado:** omite toda dimensión medida, porque existe el
+número y no existe la unidad en la que expresarlo. `VI.2` §8.6 lo permite textualmente —*"si no existe
+semántica aprobada para mostrar una dimensión, omite la síntesis o muestra un hecho comprensible;
+nunca expone un valor interno bruto"*— y la decisión lo confirma.
+
+**Las cuatro prohibiciones son las del spec**, y siguen teniendo guard: nada de `% aprendido`, de
+promediar las cinco, de convertir confianza en dominio, ni de estados generales como *"consolidada"*
+en lugar de nombrar la dimensión.
+
+⚠️ **El gate `H` de `C01-019` no se levanta.** La decisión dice que **no bloquea el MVP**, que es
+otra cosa: llevar `UX06` a high-fidelity sigue necesitando los nombres observables y las escalas, y
+eso quedó como residuo para el piloto. `C01-019` pasa a `ANSWERED — RESIDUO ABIERTO`, no a `CLOSED`.
+
+⚠️ **Y el residuo de `C01-032` sigue vivo:** reconciliar los dos vocabularios de dimensiones es
+exactamente lo que esta decisión difiere al piloto.

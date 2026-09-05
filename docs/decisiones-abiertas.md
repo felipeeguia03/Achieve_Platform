@@ -1,4 +1,25 @@
-# Decisiones que esperan a una persona · 4 de septiembre de 2026
+# Decisiones que esperan a una persona · 5 de septiembre de 2026
+
+> ## ✅ El Product Owner respondió seis — 5 de septiembre de 2026
+>
+> Fuente literal: [`respuesta-po-agenda-decisiones-source.md`](respuesta-po-agenda-decisiones-source.md).
+> Salieron de [`agenda-decisiones-abiertas-po.md`](agenda-decisiones-abiertas-po.md).
+>
+> | # | Decisión | Cómo quedó |
+> |---|---|---|
+> | 17 | **ADR-054** · el apartado «Materias» | **Opción `B`:** `CTA-001` transporta el `CourseEnrollment` seleccionado. ⚠️ **`A` y `C` quedan como decisión de diseño separada** — el menú no se renombra y el listado no se construye ([ADR-054](decisions.md#adr-054)) |
+> | 9 | `C01-021` · las dos reglas sin umbral | **Modo humano hasta el piloto.** `ANSWERED — RESIDUO ABIERTO` ([ADR-055](decisions.md#adr-055)) |
+> | 10 | `C01-044` · playbooks y SLA | **Provisionales y rotulados**, con contacto dentro de **cuatro horas hábiles** ([ADR-056](decisions.md#adr-056)) |
+> | 8 | `C01-030` · quién valida y corrobora | **`DEFERRED` con motivo** hasta [ADR-006](decisions.md#adr-006); el interinato sigue ([ADR-057](decisions.md#adr-057)) |
+> | 4 | `C01-029` · readiness | **`CLOSED`.** Regla determinística, **sin porcentaje ni predicción de aprobación** ([ADR-058](decisions.md#adr-058)) |
+> | 5 | `C01-019` · las cinco dimensiones | **Se conserva lo actual**; la semántica completa es residuo de piloto y **no bloquea el MVP** ([ADR-059](decisions.md#adr-059)) |
+>
+> **Quedan cinco abiertas, y las cinco dependen de otra persona** — §4 y §5. Lo que falta ahí no es
+> decidir: es **pedirlas**.
+>
+> ⚠️ **Y puso un límite a la ejecución:** autoriza implementar **sólo** `ADR-054` opción `B`, en un
+> commit aparte del de trazabilidad. **No** autoriza construir el listado «Materias», cambiar el menú,
+> agregar superficies, entidades, engines ni migraciones, ni hacer push, merge o deploy.
 
 > ## ✅ El Product Owner respondió cinco — 4 de septiembre de 2026
 >
@@ -24,6 +45,11 @@
 > readiness, definir identidades humanas, usar datos reales, adelantar la integración con el CRM,
 > mergear a `main` ni desplegar.
 
+>  📝 **Para responderlas, usá [`agenda-decisiones-abiertas-po.md`](agenda-decisiones-abiertas-po.md)**
+> — 5 de septiembre de 2026. Este documento dice *qué* falta decidir; **ése trae lo que hace falta
+> para decidirlo**: opciones, recomendación y un lugar donde escribir la respuesta. Incluye adentro
+> los dos paquetes que el owner pidió antes de fijar nada (`C01-029` y `C01-019`).
+
 **Documento:** `docs/decisiones-abiertas.md`
 **Rol:** el índice de **todo lo que un agente no puede cerrar**, ordenado por qué destraba.
 **Se actualiza:** cuando una decisión se cierra —con su ADR— o cuando el equipo levanta una nueva.
@@ -44,19 +70,22 @@
 | ~~1~~ | ~~La copy de la reflexión obligatoria~~ | Product Owner | ✅ **Respondida** — [ADR-044](decisions.md#adr-044) | ✅ |
 | ~~2~~ | ~~La superficie para escribir una reflexión~~ | Product Owner | ✅ **Respondida** — [ADR-045](decisions.md#adr-045) | ✅ |
 | ~~3~~ | ~~`C01-010` · qué hace *elegible* a una renegociación~~ | Product Owner | ✅ **Respondida** — [ADR-046](decisions.md#adr-046). Residuo: revisar antes del piloto | ✅ |
-| 4 | **`C01-029`** · los umbrales de readiness | Product | Que Modo Examen deje de tener una tabla que nadie escribe | 🟡 **Pidió un paquete antes de decidir** — §2.1 |
-| 5 | **`C01-019`** · las cinco dimensiones de progreso | Product Progress | Lo que `UX06` puede mostrar. Gate `H` | 🟡 **Pidió un paquete antes de decidir** — §2.2 |
+| ~~4~~ | ~~`C01-029` · los umbrales de readiness~~ | Product Owner | ✅ **`CLOSED`** — [ADR-058](decisions.md#adr-058). Regla determinística, sin score. **La tabla sigue sin escritor**: eso es implementación | ✅ |
+| ~~5~~ | ~~`C01-019` · las cinco dimensiones de progreso~~ | Product Owner | 🟡 **`ANSWERED — RESIDUO ABIERTO`** — [ADR-059](decisions.md#adr-059). Se conserva lo actual y **no bloquea el MVP**. ⚠️ **El gate `H` sigue** para high-fidelity | ✅ |
 | ~~6~~ | ~~`C01-018` · quién emite `ProgressUpdated`~~ | Product Owner | ✅ **`CLOSED`** — [ADR-047](decisions.md#adr-047) | ✅ |
 | ~~7~~ | ~~`C01-024` · cuándo se recomienda Modo Examen~~ | Product Owner | ✅ **`CLOSED`** — [ADR-048](decisions.md#adr-048) | ✅ |
-| 8 | **`C01-030`** · quién valida, quién corrobora y quién pide un reenvío | Product Security / Privacy | **Tres operaciones ya construidas** que hoy corren con secreto de servicio y sin identidad | 🟡 |
-| 9 | **`C01-021`** · qué regla produce qué señal | Risk owner | Las dos reglas de riesgo todavía humanas | 🟠 Bloquea el cierre de la Fase B6 |
-| 10 | **`C01-044`** · playbooks y SLA | Product Operations | Los dos eslabones que le faltan al circuito de riesgo | 🟠 |
+| ~~8~~ | ~~`C01-030` · quién valida, quién corrobora y quién pide un reenvío~~ | Product Owner | ⏸️ **`DEFERRED` con motivo** — [ADR-057](decisions.md#adr-057). Se retoma con [ADR-006](decisions.md#adr-006); el interinato sigue vigente | ✅ |
+| ~~9~~ | ~~`C01-021` · qué regla produce qué señal~~ | Product Owner | 🟡 **`ANSWERED — RESIDUO ABIERTO`** — [ADR-055](decisions.md#adr-055). Modo humano hasta el piloto | ✅ |
+| ~~10~~ | ~~`C01-044` · playbooks y SLA~~ | Product Owner | 🟡 **`ANSWERED — RESIDUO ABIERTO`** — [ADR-056](decisions.md#adr-056). Provisionales. ⬜ Sigue abierto **de qué sistema es** el playbook | ✅ |
 | 11 | Las **dos confirmaciones** del protocolo de examen | Psicopedagoga | Que los veinte pasos dejen de decir *"vigencia sin confirmar"* | 🟠 |
 | 12 | **[ADR-006](decisions.md#adr-006)** · el dictamen legal | Asesoría jurídica | **Toda la Fase B7, y B7 destraba B8** | 🔴 **Bloqueo absoluto** |
 | 13 | **`C01-042`** · el golden dataset y su autorización | Product Data + la institución | La Etapa B2b.3 y el piloto | 🟠 |
 | 14 | La **corrección del §2** del contrato congelado | CTO, con el CRM | Que la firma HMAC no esté especificada de dos maneras | 🟡 Externa |
 | 15 | Si el `202` de vinculación lleva `applied` | CTO, con el CRM | Lo que la pantalla de WhatsApp puede afirmar | 🟡 Externa |
 | ~~16~~ | ~~La CTA de renegociar en `UX04`~~ | Product Owner + Diseño | ✅ **Respondida** — [ADR-050](decisions.md#adr-050). Se llama **«Cambiar horario»** | ✅ |
+| ~~17~~ | ~~[ADR-054](decisions.md#adr-054) · qué es el apartado «Materias»~~ | Product Owner + Diseño | ✅ **Respondida** — **opción `B`**: `CTA-001` transporta la cursada. ⚠️ **`A` y `C` siguen abiertas como decisión de diseño**: el menú sigue en plural sobre una superficie de una sola | ✅ |
+
+| 18 | El **área «Materias»** y el nombre del ítem del menú — opciones `A` y `C` de [ADR-054](decisions.md#adr-054) | Product Owner + Diseño | Que el estudiante llegue a **todas** sus materias, no sólo a la de la fila que tocó. La Parte II §10 del spec **nombra el área** y nunca la especifica | 🟡 Con `B` implementada, el producto ya no contesta mal; **sigue sin haber lista** |
 
 **Leyenda de urgencia.** 🔴 hay trabajo listo para empezar que no arranca sin esto · 🟠 bloquea el
 cierre de una fase · 🟡 el producto funciona, con un hueco declarado.

@@ -73,7 +73,11 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Tocar estructura | [`docs/architecture.md`](docs/architecture.md) |
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
-| Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — las quince abiertas, por lo que destraban |
+| Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — dieciocho filas, **seis abiertas**, por lo que destraban |
+| **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
+| Qué decidió el owner el 5 de septiembre | [`docs/respuesta-po-agenda-decisiones-source.md`](docs/respuesta-po-agenda-decisiones-source.md) — **fuente literal**, manda sobre cualquier paráfrasis |
+| Saber qué levantó el recorrido a mano | [`docs/roadmap.md`](docs/roadmap.md) §0.2 — los dos hallazgos del 5 de septiembre, y el dock de **modo prueba** |
+| Volver a recorrer el alta desde cero | `MODO_PRUEBA=1` y el dock al pie — [`docs/demo-mvp.md`](docs/demo-mvp.md) |
 | Escribir contenido del protocolo de examen | [`docs/roadmap-modo-examen-source.md`](docs/roadmap-modo-examen-source.md) — **los 20 pasos, su voz literal**. Y [`human-p0-source.md`](docs/human-p0-source.md) para las ocho reglas |
 | Buscar evidencia esperada de un paso | [`docs/cuadro-problemas-source.md`](docs/cuadro-problemas-source.md) — **propuesto, no cargado**: tiene preguntas abiertas de la autora |
 | Nombrar algo como lo nombra el oficio | [`docs/indice-psicopedagogico-source.md`](docs/indice-psicopedagogico-source.md) |
@@ -88,6 +92,36 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 ---
 
 ## Estado actual
+
+🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
+[`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
+
+✅ **El apartado «Materias» quedó decidido** el 5 de septiembre de 2026:
+[ADR-054](docs/decisions.md#adr-054), **opción `B`** — `CTA-001` transporta el `CourseEnrollment`
+seleccionado y la pantalla abre exactamente ése. El incumplimiento de `VI.2` §5.2 está cerrado.
+
+⚠️ **Y lo que quedó afuera es deliberado, no un olvido:** el ítem del menú **sigue diciendo
+«Materias» en plural sobre una superficie de una sola**, y el área que la Parte II §10 del spec
+nombra sigue sin construirse. Son las opciones `A` y `C`, **decisión de diseño separada**, y el owner
+fue explícito: *"esto no autoriza construir todavía una nueva superficie de listado «Materias» ni
+cambiar el nombre del ítem del menú"*. **No las adelantes.**
+
+⚠️ **`npm run db:verify` estaba roto, y es uno de los cinco comandos de verificación.** A
+`limpiar_mundo` le faltaban las cinco tablas de la B6.14; como las 40 sentencias van en **una sola
+transacción**, una FK abortaba todo y no se borraba nada. **Ya está corregido en
+`scripts/db-aislamiento.sh`**, y verificado con la limpieza entera dentro de un `rollback`. **La
+corrida completa todavía no se corrió**: vacía la base de negocio a propósito, así que va cuando el
+recorrido a mano termine — y después `npm run db:demo`.
+
+⚠️ **Regla que salió de ahí:** toda tabla nueva que referencie a las del mundo académico **se agrega
+a `limpiar_mundo` en el mismo commit**. Si no, el verificador deja de correr y el error no nombra la
+causa.
+
+🛠️ **Y hay andamio nuevo: el dock de «modo prueba»** (`MODO_PRUEBA=1`), que reinicia el alta del
+estudiante sintético sin volver a sembrar el mundo. **No es producto.** Apagado por defecto —sin la
+variable la ruta responde `404` y el componente no llega al HTML—, no agrega superficies ni CTAs, no
+emite eventos y no toca `product_event`, `audit_log` ni el catálogo. **Su selector de institución
+simula el padrón; no reabre [ADR-052](docs/decisions.md#adr-052).** Se borra cuando ADR-006 abra.
 
 **Fase 0 — Cerrar el Track A.** ✅ **COMPLETA.** Las nueve superficies existen, todos los estados
 críticos son alcanzables, el Golden Path se recorre por clic y **el test de comprensión de 10
@@ -426,8 +460,11 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **314 comprobaciones** contra Postgres que `npm test`
-no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
+**Verificación de base:** `npm run db:verify` — las comprobaciones contra Postgres que `npm test` no
+puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **El conteo queda
+sin cifra hasta que la corrida entera vuelva a verde** (ver el hallazgo 2, arriba): el número viejo
+—314— es de antes de que la limpieza se rompiera, y afirmarlo ahora sería declarar un Done que nadie
+volvió a correr.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de
 cierre de la B2 —los 12 invariantes de `data-model.md` §11— contra el propio documento. **Los doce
