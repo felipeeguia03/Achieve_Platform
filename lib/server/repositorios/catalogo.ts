@@ -18,7 +18,13 @@ import { clienteDeServicio } from "../supabase";
 export interface InstitucionOfrecible {
   institucionId: string;
   nombre: string;
-  carreras: { carreraId: string; nombre: string; facultad: string | null }[];
+  carreras: {
+    carreraId: string;
+    nombre: string;
+    facultad: string | null;
+    /** `false` ⇒ existe y **todavía no tiene plan publicado**. Se muestra y no se sigue. */
+    tienePlan: boolean;
+  }[];
 }
 
 export interface PlanPublicado {

@@ -6,6 +6,7 @@ import {
   type PlanCandidato,
 } from "@/lib/domain/alta";
 import type { EstadoDelAltaEnBase, SeleccionDeRequisito } from "../repositorios/alta";
+import type { PublicadorDeEventos } from "./eventos";
 import type { PlanPublicado, RequisitoDelPlan } from "../repositorios/catalogo";
 
 /**
@@ -207,6 +208,7 @@ export async function confirmarMapaAcademico(
       institutionId: string,
       courseEnrollmentId: string,
     ) => Promise<{ estado: string }>;
+    eventos: PublicadorDeEventos;
   },
   institutionId: string,
   studentId: string,
@@ -234,6 +236,30 @@ export async function confirmarMapaAcademico(
     curriculumYear: entrada.curriculumYear,
     term: entrada.term,
     selecciones: utiles,
+  });
+
+  /**
+   * **`AcademicMapMinimumReached`** — el hecho que el spec §7.3 define como
+   * *"suficiente información para producir al menos una próxima acción
+   * académica real"*.
+   *
+   * Va **antes** de llamar al ADE y no después, porque no depende de que el
+   * ADE encuentre algo: el mapa mínimo lo alcanza el estudiante al declarar su
+   * cursado. Que después no haya nada que recomendar es otra cosa, y tiene su
+   * propio estado.
+   *
+   * `actorId` va `null`: `product_event.actor_id` es un `uuid` sin FK a
+   * `student`, y meter ahí el id del estudiante sería inventar una relación que
+   * el schema no declara (`C01-030`). Quién lo causó viaja en `causa`.
+   */
+  await deps.eventos.publicar({
+    nombre: "AcademicMapMinimumReached",
+    institutionId,
+    actorId: null,
+    sujetoTipo: "enrollment",
+    sujetoId: escrito.inscripcionId,
+    causa: `alta:${studentId}`,
+    payload: { cursadas: escrito.cursadas, declaraciones: escrito.declaraciones },
   });
 
   // El ADE, sobre cada cursada. Una que no pueda recomendar **no es un fallo

@@ -168,10 +168,25 @@ describe("Bloque 6 · Interacción", () => {
       La excepción no es "la raíz": es **no ser una superficie de producto**.
       La raíz sólo redirige, y `/login` es la puerta —no tiene estados críticos
       que compartir, y aceptar `?escenario=` ahí sería ofrecer una demo de un
-      formulario de ingreso—. Se nombran las dos para que una superficie real
+      formulario de ingreso—. Se nombran todas para que una superficie real
       que se olvide de `?escenario=` siga rompiendo este test.
+
+      **Las tres del alta entran por el mismo motivo que `/login`** — Fase
+      B6.14, [ADR-052](../docs/decisions.md#adr-052). No están en el registro
+      canónico de navegación, que sigue teniendo nueve nodos, y sus estados no
+      son compartibles: dependen de **qué contestó este estudiante**, no de un
+      escenario. Un `?escenario=` ahí ofrecería una demo de un alta ajena.
+
+      ⚠️ Si alguna vez se agrega una superficie de producto nueva, **no va acá**:
+      va con su `?escenario=`, como las nueve.
     */
-    const NO_SON_SUPERFICIE = ["app/page.tsx", "app/login/page.tsx"];
+    const NO_SON_SUPERFICIE = [
+      "app/page.tsx",
+      "app/login/page.tsx",
+      "app/alta/whatsapp/page.tsx",
+      "app/alta/carrera/page.tsx",
+      "app/alta/materias/page.tsx",
+    ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))
       .filter((p) => !NO_SON_SUPERFICIE.includes(p));

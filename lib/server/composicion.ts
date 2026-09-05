@@ -258,6 +258,7 @@ export function confirmarMapaAcademico(
       alta: altaReal,
       catalogo: catalogoReal,
       recomendar: (inst, cursada) => recomendarPara(inst, cursada),
+      eventos: eventosReal,
     },
     institutionId,
     studentId,

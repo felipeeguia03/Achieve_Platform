@@ -8,25 +8,51 @@ C="supabase_db_achieve-platform"
 docker exec "$C" true 2>/dev/null || { echo "✗ stack apagado: npm run db:start"; exit 1; }
 q() { docker exec -i "$C" psql -U postgres -d postgres -tAX -c "$1" 2>&1; }
 
-INST=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 EST=a5000000-0000-0000-0000-000000000001
+# El segundo estudiante — Fase B6.14. **Sin consentimiento, sin carrera y sin
+# materias**: es el que recorre el alta entera.
+NUEVO=a5000000-0000-0000-0000-000000000002
 
-echo "→ Limpiando"
+# El catálogo curricular tiene que estar cargado: desde la B6.14 el mundo demo
+# cuelga de una institución con plan **publicado**, no de una inventada acá.
+INST=$(q "select id from institution where key='SYN-U';" | tr -d '[:space:]')
+if [ -z "$INST" ]; then
+  echo "✗ Falta el catálogo. Corré 'npm run db:catalogo' antes que esto."
+  exit 1
+fi
+
+echo "→ Limpiando lo del estudiante (el catálogo NO se toca)"
+# ⚠️ **No se borran `institution`, `academic_program`, `curriculum_plan`,
+# `curriculum_requirement` ni `course`.** Son el catálogo, y lo carga
+# `db:catalogo`: borrarlos acá dejaría el mundo sin nada que ofrecer en el alta.
 q "delete from escalation_sink; delete from error_observation; delete from intervention_outcome; delete from intervention; delete from risk_signal;
    delete from protocol_step_completion; delete from protocol_artifact;
    delete from preparation_readiness; delete from exam_preparation; delete from assessment_criterion;
    delete from action_recommendation; delete from action_resource; delete from action;
-   delete from topic_progress; delete from course_enrollment; delete from availability;
-   delete from student; delete from resource; delete from assessment; delete from topic_prerequisite;
-   delete from topic; delete from course_offering; delete from course; delete from curriculum_plan;
-   delete from academic_program; delete from institution_crm_ref; delete from institution;" >/dev/null
+   delete from requirement_declaration; delete from topic_progress; delete from course_enrollment;
+   delete from availability; delete from whatsapp_consent; delete from enrollment;
+   delete from learning_objective; delete from student;" >/dev/null
 
-echo "→ Institución y estudiante sintéticos"
-q "insert into institution (id,name) values ('$INST','Universidad SYN');
-   insert into student (id,institution_id,timezone) values ('$EST','$INST','America/Argentina/Cordoba');
-   insert into availability (student_id,day_of_week,capacity_min,source) values ('$EST',1,45,'declared');" >/dev/null
+echo "→ Dos estudiantes sintéticos en la institución del catálogo"
+# El primero recorre el loop (ya tiene su materia). El segundo recorre el alta.
+q "insert into student (id,institution_id,timezone) values ('$EST','$INST','America/Argentina/Cordoba');
+   insert into student (id,institution_id,timezone) values ('$NUEVO','$INST','America/Argentina/Cordoba');
+   insert into availability (student_id,day_of_week,capacity_min,source) values ('$EST',1,45,'declared');
+   insert into availability (student_id,day_of_week,capacity_min,source) values ('$NUEVO',1,45,'declared');" >/dev/null
 
-echo "→ Ingiriendo la materia (ADL, fuente declarada, todo unverified)"
+# El plan publicado contra el que corre todo el mundo demo — Fase B6.14.
+PLAN=$(q "select cp.id from curriculum_plan cp join academic_program ap on ap.id=cp.program_id
+           where ap.key='SYN-ING-A' and cp.version='SYN-2016';" | tr -d '[:space:]')
+
+echo "→ Ingiriendo el material de una materia DEL PLAN (ADL, fuente declarada, todo unverified)"
+# ⚠️ **Cuelga del plan declarado**, no del contenedor `Sin programa declarado`.
+# Es para lo que la B6.14.3 le agregó `p_curriculum_plan_id` al ingestor: sin
+# eso, la materia que el estudiante elige en el alta y la que tiene unidades
+# cargadas serían dos filas distintas con el mismo nombre.
+#
+# Y **sin comisión**, igual que las cursadas por defecto que crea el alta: con
+# una comisión distinta, confirmar crearía una segunda cursada de la misma
+# materia.
 U='[{"codigo":"U1","nombre":"Límites y continuidad","orden":1},
     {"codigo":"U2","nombre":"Derivadas","orden":2},
     {"codigo":"U3","nombre":"Integrales","orden":3},
@@ -35,11 +61,26 @@ P='[{"unidad":"Derivadas","requiere":"Límites y continuidad"},
     {"unidad":"Integrales","requiere":"Derivadas"}]'
 E='[{"tipo":"parcial","titulo":"Parcial 1","fecha":"2026-09-15","modalidad":"practico","alcance":"U1 a U2"},
     {"tipo":"final","titulo":"Final","modalidad":"oral"}]'
-OFF=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-analisis-2.pdf',now(),0.7,'MAT-201','Análisis Matemático II','2026-2','A','$U'::jsonb,'$P'::jsonb,'$E'::jsonb);" | tr -d '[:space:]')
+MATERIA=$(q "select code from curriculum_requirement
+              where curriculum_plan_id='$PLAN' and label='Cálculo Avanzado';" | tr -d '[:space:]')
+OFF=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-calculo-avanzado.pdf',now(),0.7,'$MATERIA','Cálculo Avanzado','2026-2',NULL,'$U'::jsonb,'$P'::jsonb,'$E'::jsonb,'$PLAN');" | tr -d '[:space:]')
 echo "   cursada: $OFF"
 
 q "insert into course_enrollment (id,institution_id,student_id,offering_id)
    values ('a6000000-0000-0000-0000-000000000001','$INST','$EST','$OFF');" >/dev/null
+
+# El alta del estudiante del loop, **ya ocurrida**. Desde la B6.14 las nueve
+# superficies devuelven `409` mientras el alta no esté confirmada, así que sin
+# esto el recorrido del loop empezaría mandando al tramo de alta.
+q "insert into whatsapp_consent (institution_id,student_id,decision,policy_version)
+   values ('$INST','$EST','DECLINED','whatsapp-v1-sintetica');
+   insert into enrollment (student_id,program_id,term,institution_id,curriculum_plan_id,curriculum_year,confirmed_at)
+   select '$EST', cp.program_id, '2026-2', '$INST', cp.id, 2, now()
+     from curriculum_plan cp where cp.id='$PLAN';
+   insert into requirement_declaration (institution_id,student_id,curriculum_requirement_id,course_enrollment_id)
+   select '$INST','$EST', cr.id, 'a6000000-0000-0000-0000-000000000001'
+     from curriculum_requirement cr
+    where cr.curriculum_plan_id='$PLAN' and cr.label='Cálculo Avanzado';" >/dev/null
 
 echo "→ Material por unidad (sin recurso no hay acción ejecutable)"
 q "insert into resource (offering_id,topic_id,resource_type,title,source_type,rights_status)
@@ -146,6 +187,12 @@ echo "   curl -s -X POST http://localhost:3000/api/observacion \\"
 echo "     -H \"Authorization: Bearer \$RELOJ_SHARED_SECRET\" -H 'Content-Type: application/json' \\"
 echo "     -d '{\"institucionId\":\"$INST\",\"preparacionId\":\"$PREP\",\"tipoDeErrorId\":\"$TIPO\",\"corroborada\":true,\"evidenciaId\":\"ad000001-0000-0000-0000-000000000001\",\"trasAccionId\":\"ae000001-0000-0000-0000-000000000001\",\"objetivoId\":\"$OBJ\",\"calidadDeEvidencia\":\"suficiente_para_identificar_error\",\"errorIdentificable\":true,\"confianzaDeClasificacion\":\"alta\",\"claveDeIdempotencia\":\"demo-obs-3\"}'"
 echo "   → la tercera aparición produce la señal, y /hoy pasa a \"Necesita recuperación\""
+echo
+echo
+echo "→ El estudiante recién habilitado ($NUEVO) queda SIN alta:"
+q "select '   consentimiento: ' || (public.estado_del_alta('$INST','$NUEVO')->>'consentimientoRespondido') ||
+          ' · carrera: ' || (public.estado_del_alta('$INST','$NUEVO')->>'carreraDeclarada') ||
+          ' · materias: ' || (public.estado_del_alta('$INST','$NUEVO')->>'materiasConfirmadas');"
 echo
 echo "✓ Mundo listo. Cursada: a6000000-0000-0000-0000-000000000001"
 q "select '   ' || (select count(*) from topic where offering_id='$OFF') || ' unidades · ' ||

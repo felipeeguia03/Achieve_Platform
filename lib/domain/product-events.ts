@@ -87,9 +87,18 @@ export const catalogoP0: Readonly<Record<string, EventoDeProducto>> = {
   AcademicMapMinimumReached: {
     uso: "Existe información suficiente para conducción.",
     nivel: "NEGOCIO",
-    // La ingesta del ADL emite `AcademicDataIngested`, que es otra cosa: dice
-    // que entró material, no que ya alcance para conducir.
-    instrumentacion: pendiente("B2b · cuando el ADL declare suficiencia"),
+    /**
+     * ✅ **Se emite desde la Fase B6.14** ([ADR-052](../../docs/decisions.md#adr-052)):
+     * lo produce `confirmarMapaAcademico` cuando el estudiante confirma su
+     * cursado, que es el momento exacto en que el spec dice que el mapa mínimo
+     * se alcanzó (§7.3).
+     *
+     * La ingesta del ADL emite `AcademicDataIngested`, que es otra cosa: dice
+     * que entró material, no que ya alcance para conducir. **Este dice que un
+     * estudiante concreto declaró lo suyo**, y por eso su sujeto es la
+     * inscripción y no el plan.
+     */
+    instrumentacion: emitido,
     enBitacora: false,
   },
   CourseViewed: {

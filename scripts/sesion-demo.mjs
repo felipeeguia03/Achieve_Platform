@@ -26,10 +26,28 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 
-// El `student` que siembra `scripts/db-demo.sh`.
-const ESTUDIANTE = "a5000000-0000-0000-0000-000000000001";
-const EMAIL = "estudiante.sintetico@achieve.local";
-const PASSWORD = "achieve-demo-sintetica";
+/**
+ * Los dos `student` que siembra `scripts/db-demo.sh`.
+ *
+ * El segundo existe desde la Fase B6.14: es el **recién habilitado**, sin
+ * consentimiento, sin carrera y sin materias. Es con el que se recorre el alta
+ * ([ADR-052](../docs/decisions.md#adr-052)); el primero ya la tiene completa y
+ * entra directo a `HOY`.
+ */
+const IDENTIDADES = [
+  {
+    id: "a5000000-0000-0000-0000-000000000001",
+    email: "estudiante.sintetico@achieve.local",
+    password: "achieve-demo-sintetica",
+    rotulo: "con el alta completa · entra a HOY",
+  },
+  {
+    id: "a5000000-0000-0000-0000-000000000002",
+    email: "estudiante.nuevo@achieve.local",
+    password: "achieve-demo-alta",
+    rotulo: "recién habilitado · recorre el alta",
+  },
+];
 
 // `.env.local` a mano: este script corre fuera de Next, que es quien
 // normalmente lo carga.
@@ -61,37 +79,39 @@ const admin = createClient(url, servicio, { auth: { persistSession: false } });
 
 // Idempotente: correrlo dos veces no crea dos identidades. Si el usuario ya
 // existe se reusa, porque el email es único en `auth.users`.
-let { data: creado, error } = await admin.auth.admin.createUser({
-  email: EMAIL,
-  password: PASSWORD,
-  email_confirm: true,
-});
+console.log("✓ Sesiones sintéticas listas\n");
 
-let authUserId = creado?.user?.id;
-if (error) {
-  const { data: lista } = await admin.auth.admin.listUsers();
-  authUserId = lista?.users?.find((u) => u.email === EMAIL)?.id;
-  if (!authUserId) {
-    console.error(`✗ No se pudo crear ni encontrar la identidad: ${error.message}`);
+for (const identidad of IDENTIDADES) {
+  let { data: creado, error } = await admin.auth.admin.createUser({
+    email: identidad.email,
+    password: identidad.password,
+    email_confirm: true,
+  });
+
+  let authUserId = creado?.user?.id;
+  if (error) {
+    const { data: lista } = await admin.auth.admin.listUsers();
+    authUserId = lista?.users?.find((u) => u.email === identidad.email)?.id;
+    if (!authUserId) {
+      console.error(`✗ No se pudo crear ni encontrar la identidad: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
+  const { error: ataduraFallida } = await admin
+    .from("student")
+    .update({ auth_user_id: authUserId })
+    .eq("id", identidad.id);
+
+  if (ataduraFallida) {
+    console.error(`✗ No se pudo atar la identidad al padrón: ${ataduraFallida.message}`);
+    console.error("  ¿Corriste 'npm run db:demo' antes? Los student los siembra ese script.");
     process.exit(1);
   }
-  console.log("→ La identidad ya existía, se reusa");
+
+  console.log(`   ${identidad.email}`);
+  console.log(`   ${identidad.password}`);
+  console.log(`   → ${identidad.rotulo}\n`);
 }
 
-const { error: ataduraFallida } = await admin
-  .from("student")
-  .update({ auth_user_id: authUserId })
-  .eq("id", ESTUDIANTE);
-
-if (ataduraFallida) {
-  console.error(`✗ No se pudo atar la identidad al padrón: ${ataduraFallida.message}`);
-  console.error("  ¿Corriste 'npm run db:demo' antes? El student sintético lo siembra ese script.");
-  process.exit(1);
-}
-
-console.log("✓ Sesión sintética lista");
-console.log(`   email:    ${EMAIL}`);
-console.log(`   password: ${PASSWORD}`);
-console.log("   Escribilas en /login: desde ADR-039 el navegador ya no abre sesión solo.");
-console.log("   En .env.local van como NEXT_PUBLIC_DEMO_EMAIL y NEXT_PUBLIC_DEMO_PASSWORD,");
-console.log("   que hoy son sólo el recordatorio de qué tipear — ya no autentican nada.");
+console.log("   Se escriben en /login: desde ADR-039 el navegador ya no abre sesión solo.");

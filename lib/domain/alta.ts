@@ -159,3 +159,18 @@ export function siguientePaso(estado: {
   if (!estado.materiasConfirmadas) return "MATERIAS";
   return null;
 }
+
+/**
+ * El período de cursado, derivado de la fecha.
+ *
+ * ⚠️ **Es una convención de la demo, no una regla académica.** El calendario de
+ * una institución no se infiere de un mes: cuándo empieza y termina cada
+ * cuatrimestre es un dato que la institución declara, y todavía no lo tenemos
+ * — `curriculum_requirement.term` existe y queda `NULL`. Cuando exista, esto
+ * sale del catálogo y no de acá.
+ *
+ * `ahora` entra por parámetro, como todo lo demás de este módulo.
+ */
+export function periodoDeCursado(ahora: Date = new Date()): string {
+  return `${ahora.getFullYear()}-${ahora.getMonth() < 6 ? 1 : 2}`;
+}

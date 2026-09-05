@@ -483,6 +483,68 @@ export const copy = {
   "LOGIN.ERROR.RED": "No pudimos verificar tus datos. Probá de nuevo en un momento.",
   "LOGIN.SALIR": "Salir",
 
+  // ── El alta · Fase B6.14 (ADR-052) ───────────────────────────────────────
+  //
+  // Tres pantallas entre `/login` y `HOY`, en el orden que aprobó
+  // [ADR-042](../../docs/decisions.md#adr-042). **Cero jerga interna:** el
+  // estudiante no lee «catálogo», «versión curricular», «requisito curricular»
+  // ni ningún enum. Lee *dónde estudia*, *qué carrera* y *qué materias cursa*.
+
+  "ALTA.PASOS": "Empezar en Achieve",
+
+  // WhatsApp. ⚠️ La confirmación **sólo puede decir lo que el estudiante hizo**
+  // (ADR-042 §5-6). Nunca que el número quedó vinculado, que hay alguien
+  // asignado o que van a escribirle: la Plataforma **no observa** ese estado.
+  "ALTA.WHATSAPP.TITULO": "¿Querés que te acompañemos por WhatsApp?",
+  "ALTA.WHATSAPP.EXPLICACION":
+    "Sirve para avisarte de tus compromisos sin que tengas que entrar a mirar. Podés decir que no, y seguís igual: no perdés nada de Achieve.",
+  "ALTA.WHATSAPP.CONSENTIMIENTO":
+    "Sí, quiero que me acompañen por WhatsApp y autorizo que guarden mi número para eso.",
+  "ALTA.WHATSAPP.REGLA": "Podés cambiar esta decisión cuando quieras.",
+  "ALTA.WHATSAPP.CTA": "Continuar",
+  "ALTA.WHATSAPP.OMITIR": "Ahora no",
+  "ALTA.WHATSAPP.RECIBIDO": "Recibimos tu solicitud.",
+
+  // Carrera y año.
+  // El título dice de qué es la pantalla; los tres rótulos preguntan. Repetir
+  // la primera pregunta arriba dejaba "¿Dónde estudiás?" dos veces seguidas.
+  "ALTA.CARRERA.TITULO": "Tu carrera",
+  "ALTA.CARRERA.INSTITUCION": "¿Dónde estudiás?",
+  "ALTA.CARRERA.CARRERA": "¿Qué carrera estudiás?",
+  "ALTA.CARRERA.ANIO": "¿Qué año estás cursando?",
+  "ALTA.CARRERA.FACULTAD": "Facultad:",
+  // Se muestra para confirmar, no para preguntar: si hay una sola versión
+  // vigente el sistema no agrega un paso que puede contestar solo.
+  "ALTA.CARRERA.PLAN_UNICO": "Plan:",
+  "ALTA.CARRERA.PLAN_VARIOS": "¿Con qué plan estás cursando?",
+  "ALTA.CARRERA.PLAN_AYUDA":
+    "Hay más de un plan vigente para esta carrera. Elegí el tuyo: si empezaste hace unos años, seguramente sea el más viejo.",
+  // ⚠️ Estado honesto: **no se inventan materias** y no se sigue.
+  "ALTA.CARRERA.SIN_PLAN": "Todavía no tenemos el plan de esta carrera.",
+  "ALTA.CARRERA.SIN_PLAN_QUE_SIGUE":
+    "Podés elegir otra carrera por ahora. Cuando lo carguemos, vas a poder cambiarla.",
+  "ALTA.CARRERA.CTA": "Continuar",
+
+  // Materias.
+  "ALTA.MATERIAS.TITULO": "Estas son las materias de ese año. Marcá cuáles cursás.",
+  "ALTA.MATERIAS.REGLA": "Podés desmarcar las que no estés cursando y sumar de otros años.",
+  "ALTA.MATERIAS.OTROS_ANIOS": "Agregar materias de otros años",
+  "ALTA.MATERIAS.OCULTAR_OTROS": "Ocultar las de otros años",
+  "ALTA.MATERIAS.ANIO": "Año",
+  "ALTA.MATERIAS.ELECTIVAS": "¿Estás cursando alguna electiva?",
+  "ALTA.MATERIAS.ELECTIVA_AYUDA":
+    "Si todavía no elegiste, dejalo en blanco: podés completarlo después.",
+  "ALTA.MATERIAS.ELECTIVA_SIN_OPCIONES": "Escribí el nombre de la materia que elegiste.",
+  "ALTA.MATERIAS.ELECTIVA_NO_ENCONTRADA":
+    "No encontramos esa materia en el plan. Podés agregarla y la dejaremos pendiente de verificación.",
+  "ALTA.MATERIAS.ELECTIVA_NINGUNA": "Ninguna por ahora",
+  "ALTA.MATERIAS.CTA": "Confirmar y empezar",
+  "ALTA.MATERIAS.GUARDANDO": "Guardando…",
+  // El nombre viene cortado de la fuente y **no se completa** (ADR-053).
+  "ALTA.MATERIAS.NOMBRE_CORTADO": "Nombre incompleto en el plan que recibimos.",
+  "ALTA.MATERIAS.SIN_SELECCION": "Marcá al menos una materia para poder empezar.",
+  "ALTA.ERROR.RED": "No pudimos guardar tu respuesta. Probá de nuevo en un momento.",
+
   "CARGA.SIN_PADRON.TITULO": "Tu cuenta todavía no está habilitada",
   "CARGA.SIN_PADRON.CUERPO":
     "Te reconocemos, pero tu institución todavía no te habilitó en el padrón. Cuando lo haga, acá vas a ver tu día.",

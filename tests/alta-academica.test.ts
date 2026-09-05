@@ -179,6 +179,7 @@ function baseFalsa() {
   // `UNIQUE (student_id, offering_id)` y `UNIQUE (student_id, curriculum_requirement_id)`.
   const cursadas = new Set<string>();
   const declaraciones = new Map<string, string>();
+  const eventosPublicados: string[] = [];
 
   const alta: RepositorioDelAlta = {
     async estado(_i, studentId) {
@@ -253,7 +254,13 @@ function baseFalsa() {
     },
   };
 
-  return { alta, catalogo, consentimientos, cursadas, declaraciones, inscripciones };
+  const eventos = {
+    async publicar(e: { nombre: string }) {
+      eventosPublicados.push(e.nombre);
+    },
+  };
+
+  return { alta, catalogo, eventos, consentimientos, cursadas, declaraciones, inscripciones, eventosPublicados };
 }
 
 const recomendarSiempre = async () => ({ estado: "RECOMENDADA" });
@@ -276,10 +283,10 @@ describe("B6.14 · el estado del alta y el reingreso", () => {
   });
 
   it("al reingresar con el alta completa, no se repite ningún paso", async () => {
-    const { alta, catalogo } = baseFalsa();
+    const { alta, catalogo, eventos } = baseFalsa();
     await decidirWhatsapp(alta, "inst-1", "est-1", "GRANTED");
     await confirmarMapaAcademico(
-      { alta, catalogo, recomendar: recomendarSiempre },
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
       "inst-1",
       "est-1",
       { curriculumPlanId: "plan-pub", curriculumYear: 2, term: "2026-2", selecciones: SELECCION },
@@ -304,7 +311,7 @@ describe("B6.14 · el estado del alta y el reingreso", () => {
 
 describe("B6.14 · idempotencia: el doble submit no duplica", () => {
   it("dos confirmaciones idénticas dejan las mismas filas", async () => {
-    const { alta, catalogo, cursadas, declaraciones } = baseFalsa();
+    const { alta, catalogo, eventos, cursadas, declaraciones } = baseFalsa();
     const entrada = {
       curriculumPlanId: "plan-pub",
       curriculumYear: 2,
@@ -314,7 +321,7 @@ describe("B6.14 · idempotencia: el doble submit no duplica", () => {
         { requisitoId: "req-2", materiaId: "mat-2" },
       ],
     };
-    const deps = { alta, catalogo, recomendar: recomendarSiempre };
+    const deps = { alta, catalogo, eventos, recomendar: recomendarSiempre };
 
     const a = await confirmarMapaAcademico(deps, "inst-1", "est-1", entrada);
     const b = await confirmarMapaAcademico(deps, "inst-1", "est-1", entrada);
@@ -326,8 +333,8 @@ describe("B6.14 · idempotencia: el doble submit no duplica", () => {
   });
 
   it("reconfirmar no mueve la fecha del alta: ocurrió una sola vez", async () => {
-    const { alta, catalogo, inscripciones } = baseFalsa();
-    const deps = { alta, catalogo, recomendar: recomendarSiempre };
+    const { alta, catalogo, eventos, inscripciones } = baseFalsa();
+    const deps = { alta, catalogo, eventos, recomendar: recomendarSiempre };
     const entrada = {
       curriculumPlanId: "plan-pub",
       curriculumYear: 2,
@@ -343,8 +350,8 @@ describe("B6.14 · idempotencia: el doble submit no duplica", () => {
 
 describe("B6.14 · aislamiento entre estudiantes e instituciones", () => {
   it("lo que confirma un estudiante no aparece en el otro", async () => {
-    const { alta, catalogo } = baseFalsa();
-    const deps = { alta, catalogo, recomendar: recomendarSiempre };
+    const { alta, catalogo, eventos } = baseFalsa();
+    const deps = { alta, catalogo, eventos, recomendar: recomendarSiempre };
     await confirmarMapaAcademico(deps, "inst-1", "est-1", {
       curriculumPlanId: "plan-pub",
       curriculumYear: 2,
@@ -357,14 +364,14 @@ describe("B6.14 · aislamiento entre estudiantes e instituciones", () => {
   });
 
   it("un plan de otra institución no se puede declarar ni confirmar", async () => {
-    const { alta, catalogo } = baseFalsa();
+    const { alta, catalogo, eventos } = baseFalsa();
     const entrada = { curriculumPlanId: "plan-de-otra", curriculumYear: 1, term: "2026-2" };
 
     expect((await declararCarrera({ alta, catalogo }, "inst-1", "est-1", entrada)).estado).toBe(
       "OTRA_INSTITUCION",
     );
     const r = await confirmarMapaAcademico(
-      { alta, catalogo, recomendar: recomendarSiempre },
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
       "inst-1",
       "est-1",
       { ...entrada, selecciones: SELECCION },
@@ -385,9 +392,9 @@ describe("B6.14 · un plan DRAFT no se le ofrece a nadie (ADR-051)", () => {
   });
 
   it("no se puede confirmar contra un borrador", async () => {
-    const { alta, catalogo, cursadas } = baseFalsa();
+    const { alta, catalogo, eventos, cursadas } = baseFalsa();
     const r = await confirmarMapaAcademico(
-      { alta, catalogo, recomendar: recomendarSiempre },
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
       "inst-1",
       "est-1",
       {
@@ -421,9 +428,9 @@ describe("B6.14 · un plan DRAFT no se le ofrece a nadie (ADR-051)", () => {
 
 describe("B6.14 · la electiva informada por el estudiante no toca el catálogo", () => {
   it("un nombre escrito a mano se declara y no crea una materia", async () => {
-    const { alta, catalogo, cursadas, declaraciones } = baseFalsa();
+    const { alta, catalogo, eventos, cursadas, declaraciones } = baseFalsa();
     const r = await confirmarMapaAcademico(
-      { alta, catalogo, recomendar: recomendarSiempre },
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
       "inst-1",
       "est-1",
       {
@@ -440,9 +447,9 @@ describe("B6.14 · la electiva informada por el estudiante no toca el catálogo"
   });
 
   it("una opción verificada del catálogo sí crea la cursada", async () => {
-    const { alta, catalogo, cursadas } = baseFalsa();
+    const { alta, catalogo, eventos, cursadas } = baseFalsa();
     await confirmarMapaAcademico(
-      { alta, catalogo, recomendar: recomendarSiempre },
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
       "inst-1",
       "est-1",
       {
@@ -456,9 +463,9 @@ describe("B6.14 · la electiva informada por el estudiante no toca el catálogo"
   });
 
   it("confirmar sin ninguna selección útil se rechaza", async () => {
-    const { alta, catalogo } = baseFalsa();
+    const { alta, catalogo, eventos } = baseFalsa();
     const r = await confirmarMapaAcademico(
-      { alta, catalogo, recomendar: recomendarSiempre },
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
       "inst-1",
       "est-1",
       {
@@ -474,13 +481,14 @@ describe("B6.14 · la electiva informada por el estudiante no toca el catálogo"
 
 describe("B6.14 · el ADE corre después de confirmar, nunca antes", () => {
   it("se invoca una vez por cursada activa, con las cursadas ya escritas", async () => {
-    const { alta, catalogo, cursadas } = baseFalsa();
+    const { alta, catalogo, eventos, cursadas } = baseFalsa();
     const vistas: string[] = [];
 
     const r = await confirmarMapaAcademico(
       {
         alta,
         catalogo,
+        eventos,
         recomendar: async (_i, cursada) => {
           // Si corriera antes de escribir, acá no habría ninguna.
           expect(cursadas.size).toBeGreaterThan(0);
@@ -506,11 +514,12 @@ describe("B6.14 · el ADE corre después de confirmar, nunca antes", () => {
   });
 
   it("una cursada sin contexto no rompe el alta: ya ocurrió y quedó escrita", async () => {
-    const { alta, catalogo } = baseFalsa();
+    const { alta, catalogo, eventos } = baseFalsa();
     const r = await confirmarMapaAcademico(
       {
         alta,
         catalogo,
+        eventos,
         recomendar: async () => ({ estado: "SIN_RECOMENDACION" }),
       },
       "inst-1",
@@ -567,5 +576,29 @@ describe("B6.14 · resolverPlan, del Service", () => {
     const { catalogo } = baseFalsa();
     const r = await resolverPlan(catalogo, "prog-1", AHORA);
     expect(r.estado).toBe("OK");
+  });
+});
+
+describe("B6.14 · el hecho que el spec §7.3 define", () => {
+  it("confirmar emite `AcademicMapMinimumReached`, y una sola vez por confirmación", async () => {
+    const { alta, catalogo, eventos, eventosPublicados } = baseFalsa();
+    await confirmarMapaAcademico(
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
+      "inst-1",
+      "est-1",
+      { curriculumPlanId: "plan-pub", curriculumYear: 2, term: "2026-2", selecciones: SELECCION },
+    );
+    expect(eventosPublicados).toEqual(["AcademicMapMinimumReached"]);
+  });
+
+  it("no lo emite si el plan no está publicado: no hubo mapa que alcanzar", async () => {
+    const { alta, catalogo, eventos, eventosPublicados } = baseFalsa();
+    await confirmarMapaAcademico(
+      { alta, catalogo, eventos, recomendar: recomendarSiempre },
+      "inst-1",
+      "est-1",
+      { curriculumPlanId: "plan-draft", curriculumYear: 2, term: "2026-2", selecciones: SELECCION },
+    );
+    expect(eventosPublicados).toEqual([]);
   });
 });
