@@ -164,6 +164,12 @@ import {
   type ResultadoDeConfirmacion as ResultadoDeConfirmacionDeAlta,
   type ResultadoDeDeclaracion,
 } from "./servicios/alta";
+import { pruebaReal, RechazoDePrueba } from "./repositorios/prueba";
+import {
+  reiniciarAlta as reiniciarAltaPuro,
+  type InstitucionDePrueba,
+  type ResultadoDelReinicio,
+} from "./servicios/prueba";
 
 /**
  * Composition root: el **único** lugar donde las implementaciones concretas se
@@ -1468,6 +1474,31 @@ export function registrarDisparadorTempranoDeEstudiante(entrada: DisparadorTempr
  */
 export function colaPendienteDeDemo(institutionId: string) {
   return colaPendiente(institutionId);
+}
+
+/**
+ * ⚠️⚠️ **MODO PRUEBA.** Las dos de abajo no son capacidades del producto: la
+ * ruta que las llama responde `404` sin `MODO_PRUEBA=1`. Ver
+ * `lib/server/servicios/prueba.ts` para los tres cerrojos.
+ */
+export function institucionesDePrueba(): Promise<InstitucionDePrueba[]> {
+  return pruebaReal.instituciones();
+}
+
+export function reiniciarAltaDePrueba(
+  institutionId: string,
+  studentId: string,
+  nuevaInstitucion: string | null,
+): Promise<ResultadoDelReinicio> {
+  return reiniciarAltaPuro(
+    pruebaReal,
+    institutionId,
+    studentId,
+    nuevaInstitucion,
+    // El Service no sabe de `postgres-js`: quién reconoce un rechazo de la base
+    // es el composition root, que es el que ató este repositorio.
+    (e) => (e instanceof RechazoDePrueba ? e.motivo : null),
+  );
 }
 
 /**

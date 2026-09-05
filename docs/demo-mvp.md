@@ -122,6 +122,39 @@ el orden entero. Ahora se recorre.
 | 4 | **Confirmar y empezar** | Una transacción: la inscripción, **6 cursadas**, 6 declaraciones y `AcademicMapMinimumReached` **una sola vez**. Después —nunca antes— corre el ADE sobre cada cursada |
 | 5 | `HOY` | **`BAJO CONTROL`**, con *"Cálculo Avanzado · Límites y continuidad · Porque: Entra en Parcial 1 · 45 min · Entregá: Producción de la práctica"*. **El alta terminó en una acción real** |
 
+### Volver a empezar: el dock de **modo prueba**
+
+**Recorrer el alta una vez no alcanza para verla.** Hace falta volver a entrar y elegir distinto —
+otras materias, otro año, el catálogo de la otra institución— y hasta el 5 de septiembre la única
+forma era bajar a la terminal y correr `npm run db:demo`, que **vuelve a sembrar el mundo entero** y
+se lleva puesto lo que uno estaba mirando.
+
+Con `MODO_PRUEBA=1` en `.env.local` aparece un **dock al pie de las nueve superficies y del alta**:
+*«modo prueba» → «Reiniciar el alta y volver a empezar»*. Deja al estudiante como antes de empezar y
+lo manda al primer paso.
+
+| Qué borra | Qué **no** toca |
+|---|---|
+| El consentimiento, la inscripción de carrera, las cursadas y las declaraciones de requisito | `student` y su `auth_user_id`: **la sesión sigue abierta**. Reiniciar el alta no es cerrar sesión |
+| Lo que el ADE materializó encima —`Action`, `Commitment`, `Evidence`, `Reflection`, progreso—, por `ON DELETE CASCADE` desde `course_enrollment` | **El catálogo entero.** Sin él el alta no tendría qué ofrecer, y lo carga `db:catalogo` |
+| | **`product_event` y `audit_log`.** Son append-only (`I12`) y **no se intenta**: lo que ocurrió, ocurrió |
+
+⚠️ **Consecuencia declarada.** Como `enrollment.confirmed_at` vuelve a `NULL`, la próxima
+confirmación emite **otro** `AcademicMapMinimumReached`. Es correcto —esa alta volvió a ocurrir— y a
+la vez significa que **en una base con reinicios el conteo de activaciones no mide nada**. Por eso el
+modo prueba no se declara donde se mire un embudo.
+
+**Y el selector de institución simula el padrón.** No le devuelve al estudiante una elección que
+[ADR-052](decisions.md#adr-052) le sacó —el alta sigue ofreciendo **sólo** la del padrón—: mueve la
+ficha, que es lo que haría un backoffice, y **sólo a una institución con plan publicado**. Con eso se
+recorre el alta contra el catálogo de `Instituto SYN-2` sin volver a sembrar nada. La UCC no aparece,
+y no por una lista negra: su Plan 2016 está en `DRAFT`.
+
+⚠️ **Apagado por defecto, y se borra cuando `ADR-006` abra.** Sin la variable, `/api/prueba/alta`
+responde `404` y el componente **no llega al HTML** — no es un botón oculto, no existe. Con personas
+reales, *«borrarle a alguien lo que declaró»* es una operación de privacidad con su propio contrato
+(`C01-017`), no un botón.
+
 ### Los cuatro casos que no son el camino feliz
 
 | Caso | Cómo se ve |

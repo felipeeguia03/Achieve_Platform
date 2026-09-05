@@ -10,6 +10,19 @@
  * nueve destinos que este estudiante todavía no puede visitar — las nueve
  * devuelven `409 ALTA_INCOMPLETA` y lo traerían de vuelta acá.
  */
+import { PanelDePrueba } from "@/components/prueba/panel";
+
 export default function AltaLayout({ children }: { children: React.ReactNode }) {
-  return <div style={{ background: "var(--background)" }}>{children}</div>;
+  return (
+    <div style={{ background: "var(--background)" }}>
+      {children}
+      {/*
+        ⚠️ **MODO PRUEBA.** Va también acá, y no es de más: el caso que más se
+        repite es querer volver a empezar **a mitad del alta**, después de ver
+        cómo toma una carrera y querer probar otra. Sin la variable de entorno
+        el componente no llega al HTML.
+      */}
+      {process.env.MODO_PRUEBA === "1" && <PanelDePrueba />}
+    </div>
+  );
 }

@@ -103,16 +103,32 @@ no está. `db:demo` ya **no borra** el catálogo — sólo lo del estudiante.
 
 Copiá [`.env.local.example`](.env.local.example) a `.env.local` con lo que imprime `db:start`.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1105 tests en 61 archivos**
+### Modo prueba: reiniciar el alta sin volver a sembrar
+
+Con **`MODO_PRUEBA=1`** en `.env.local` aparece un dock al pie —*«modo prueba»*— que deja al
+estudiante como antes del alta y lo manda al primer paso, para recorrerla muchas veces y probar con
+el catálogo de otra institución. **No borra el catálogo, ni la sesión, ni los eventos ya emitidos**
+(append-only, `I12`). El detalle está en [`docs/demo-mvp.md`](docs/demo-mvp.md).
+
+⚠️ **Apagado por defecto.** Sin la variable, `/api/prueba/alta` responde `404` y el componente **no
+llega al HTML**. **No se declara en producción**, y la ruta se borra cuando
+[ADR-006](docs/decisions.md#adr-006) abra.
+
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1131 tests en 62 archivos**
 corre sin Docker, en cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack
 levantado.
 
 ⚠️ **`db:verify` es dueño de la base local y la deja vacía de datos de negocio**, así que **no
 convive con `db:demo`**: después de verificar hay que volver a sembrar con
 `npm run db:catalogo && npm run db:demo && npm run db:sesion`. Desde la Fase B6.14 el quinto script
-—`db-catalogo.sh`— **necesita el catálogo importado** y corta si no está. Las **314
-comprobaciones** limpian lo suyo también al empezar y por `trap EXIT`, para que una corrida que
-falla no arrastre a la siguiente.
+—`db-catalogo.sh`— **necesita el catálogo importado** y corta si no está. Las comprobaciones limpian
+lo suyo también al empezar y por `trap EXIT`, para que una corrida que falla no arrastre a la
+siguiente.
+
+⚠️ **Esa limpieza se rompió con la Fase B6.14 y ya está corregida**, pero **la corrida entera todavía
+no se volvió a correr**: le faltaban las cinco tablas nuevas y, como las 40 sentencias van en una
+sola transacción, una FK abortaba todo y `db:verify` moría con un *"no se pudieron cargar"* que no
+nombra la causa. Ver [`docs/roadmap.md`](docs/roadmap.md) §0.2.
 
 ⚠️ **Este entorno corre sólo con datos sintéticos.** [ADR-006](docs/decisions.md#adr-006) sigue
 `PROVISIONAL — LEGAL CONFIRMATION REQUIRED` y es bloqueo absoluto para cualquier dato de una persona real — que

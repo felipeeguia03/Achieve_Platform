@@ -27,8 +27,19 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # La limpieza va también al principio, y por `trap EXIT`: la corrida que se va
 # por `exit 1` es justo la que dejaba el mundo a medio poner, y así garantizaba
 # que la siguiente también fallara.
+# ⚠️ **Las 40 sentencias van en un solo `psql -c`, y eso es una sola transacción
+# implícita**: si una falla por FK, **no se borra nada** y el `insert` de abajo
+# choca por clave duplicada diciendo *"no se pudieron cargar"* — un error que no
+# nombra la causa y que sólo aparece con datos de demo puestos. Por eso, **cada
+# tabla nueva que referencie a estas se agrega acá en el mismo commit**: las
+# cinco de la Fase B6.14 faltaban, y `curriculum_requirement` → `course` bastaba
+# para dejar el verificador sin correr (roadmap.md §0.2).
 limpiar_mundo() {
-  q "delete from provenance_corroboration; \
+  q "delete from requirement_declaration; \
+   delete from whatsapp_consent; \
+   delete from elective_option; \
+   delete from curriculum_requirement; \
+   delete from provenance_corroboration; \
    delete from error_classification_correction; \
    delete from support_need_observation; \
    delete from escalation_sink; \
@@ -67,6 +78,7 @@ limpiar_mundo() {
    delete from course; \
    delete from curriculum_plan; \
    delete from academic_program; \
+   delete from academic_unit; \
    delete from institution_crm_ref; \
    delete from institution;" >/dev/null 2>&1
 }

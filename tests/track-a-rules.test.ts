@@ -9,9 +9,14 @@ import { describe, expect, it } from "vitest";
  *
  * `components/ui/` queda fuera: es un registro shadcn vendorizado que no se
  * edita y que no participa del dominio.
+ *
+ * `components/prueba/` **sí entra**, y no por completitud: es el dock del modo
+ * prueba, y una herramienta que se salta el guard es exactamente donde
+ * reaparecería un `fetch` suelto. Que no sea producto no la exime — la regla es
+ * *la presentación no habla por red*, y esto es presentación.
  */
 const ROOT = process.cwd();
-const SCANNED = ["app", "components/screens", "lib", "hooks", "tests"];
+const SCANNED = ["app", "components/screens", "components/prueba", "lib", "hooks", "tests"];
 // El propio guard se excluye: contiene los patrones prohibidos como regex.
 const SELF = "tests/track-a-rules.test.ts";
 
