@@ -4364,8 +4364,10 @@ year_source = 'agrupamiento visible en el analítico; encabezado de columna no l
 y documento. **Se extrajo únicamente la estructura curricular.** El CSV no tiene una sola columna que
 pueda contenerlos, y hay test de que el archivo no contiene los encabezados del analítico.
 
-**5 · El texto truncado se conserva truncado.** Nueve filas están cortadas en la fuente y entran así,
-con `label_truncated = TRUE`. **No se completan por intuición**, ni siquiera las obvias.
+**5 · El texto truncado se conserva truncado.** **Diez filas** están cortadas en la fuente y entran
+así, con `label_truncated = TRUE`. **No se completan por intuición**, ni siquiera las obvias — y dos
+pares comparten texto visible con códigos distintos (`LABORATORIO DE COMPUTACION (…` y `ARQUITECTURA
+COMPUTADORAS`), que es justamente lo que el numeral cortado no deja resolver.
 
 **6 · Los seis requisitos que no son materias**, clasificados según [ADR-051](#adr-051):
 
@@ -4386,7 +4388,7 @@ propios y entran como `COURSE`, con su numeral truncado y **sin asumir cuál es 
 
 ### Lo que las imágenes no permiten determinar, y no se inventó
 
-El encabezado de la columna del año · el texto completo de las nueve filas truncadas · el numeral de
+El encabezado de la columna del año · el texto completo de las diez filas truncadas · el numeral de
 las dos de Formación Humana · si `SEMINARIO` (54) es asignatura o cupo · el semestre de cualquier
 fila · correlativas · créditos · qué materias satisfacen `ELECTIVA I` y `ELECTIVA II` · equivalencias
 con Ingeniería en Informática.

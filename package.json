@@ -21,6 +21,7 @@
     "db:verify": "./scripts/db-verificar.sh && ./scripts/db-invariantes.sh && ./scripts/db-aislamiento.sh && ./scripts/db-superficies.sh",
     "db:studio": "open http://127.0.0.1:54423",
     "db:demo": "./scripts/db-demo.sh",
+    "db:catalogo": "node ./scripts/importar-catalogo.mjs",
     "db:sesion": "node ./scripts/sesion-demo.mjs",
     "reloj": "node ./scripts/reloj.mjs",
     "recomendar": "node ./scripts/recomendar.mjs",
