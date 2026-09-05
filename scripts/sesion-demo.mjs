@@ -77,23 +77,59 @@ if (!url || !servicio) {
 
 const admin = createClient(url, servicio, { auth: { persistSession: false } });
 
+/**
+ * El proveedor de auth **tarda en volver después de `db:reset`**.
+ *
+ * `supabase db reset` reinicia los contenedores, y durante unos segundos el
+ * gateway contesta *"An invalid response was received from the upstream
+ * server"*: no es que la identidad no exista, es que auth todavía no está
+ * atendiendo. Sin esta espera el script fallaba y había que volver a correrlo
+ * a mano — o peor, parecía un problema del padrón.
+ *
+ * Se reintenta con espera creciente y **se distingue del error real**: si
+ * después de todos los intentos sigue sin responder, lo dice como lo que es.
+ */
+async function conEspera(descripcion, intentar) {
+  const ESPERAS = [0, 1000, 2000, 3000, 5000, 8000];
+  let ultimo;
+  for (const espera of ESPERAS) {
+    if (espera > 0) await new Promise((r) => setTimeout(r, espera));
+    const { data, error } = await intentar();
+    if (!error) return { data, error: null };
+    ultimo = error;
+    // Sólo se reintenta lo que parece el gateway todavía levantándose. Un
+    // error de verdad —credenciales, permisos— no mejora esperando.
+    if (!/upstream|fetch failed|ECONNREFUSED|502|503|504/i.test(error.message ?? "")) break;
+    if (espera === 0) console.log(`   … esperando a que el proveedor de auth vuelva (${descripcion})`);
+  }
+  return { data: null, error: ultimo };
+}
+
 // Idempotente: correrlo dos veces no crea dos identidades. Si el usuario ya
 // existe se reusa, porque el email es único en `auth.users`.
 console.log("✓ Sesiones sintéticas listas\n");
 
 for (const identidad of IDENTIDADES) {
-  let { data: creado, error } = await admin.auth.admin.createUser({
-    email: identidad.email,
-    password: identidad.password,
-    email_confirm: true,
-  });
+  const { data: creado, error } = await conEspera(identidad.email, () =>
+    admin.auth.admin.createUser({
+      email: identidad.email,
+      password: identidad.password,
+      email_confirm: true,
+    }),
+  );
 
   let authUserId = creado?.user?.id;
   if (error) {
-    const { data: lista } = await admin.auth.admin.listUsers();
+    // El caso normal: el usuario ya existía. El email es único en `auth.users`.
+    const { data: lista } = await conEspera("listado", () => admin.auth.admin.listUsers());
     authUserId = lista?.users?.find((u) => u.email === identidad.email)?.id;
     if (!authUserId) {
       console.error(`✗ No se pudo crear ni encontrar la identidad: ${error.message}`);
+      if (/upstream|fetch failed|ECONNREFUSED/i.test(error.message ?? "")) {
+        console.error("  El proveedor de auth no está respondiendo. Suele pasar justo después de");
+        console.error("  `db:reset`. Probá de nuevo, o:");
+        console.error("  docker restart supabase_auth_achieve-platform supabase_kong_achieve-platform");
+      }
       process.exit(1);
     }
   }

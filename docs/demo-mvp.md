@@ -52,9 +52,10 @@ npm run db:sesion       # las dos identidades sintéticas
 npm run dev
 ```
 
-⚠️ **Después de `db:reset`, el contenedor de auth tarda en volver.** Si `db:sesion` responde
-*"An invalid response was received from the upstream server"*, esperá unos segundos y repetilo; si
-insiste, `docker restart supabase_auth_achieve-platform supabase_kong_achieve-platform`. Es del
+⚠️ **Después de `db:reset`, el proveedor de auth tarda unos segundos en volver**, y mientras tanto
+contesta *"An invalid response was received from the upstream server"*. **`db:sesion` lo espera solo**
+desde la Fase B6.14 —reintenta con espera creciente y lo dice mientras espera—, así que la cadena
+entera corre de una. Si aun así falla, el mensaje trae el `docker restart` que lo destraba. Es del
 stack local, no del producto.
 
 ⚠️ **`db:catalogo` va antes que `db:demo`, y el orden importa** — Fase B6.14. Desde que existe el
