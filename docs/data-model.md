@@ -22,10 +22,13 @@
 
 ```
 Institution
- └─ AcademicProgram
-     └─ CurriculumPlan
-         └─ Course
-             └─ CourseOffering
+ └─ AcademicUnit                    (facultad · opcional)
+     └─ AcademicProgram
+         └─ CurriculumPlan
+             ├─ CurriculumRequirement   (la fila del plan · no toda fila es una materia)
+             │   └─ ElectiveOption      (qué materia puede satisfacer un cupo)
+             └─ Course
+                 └─ CourseOffering
                  ├─ Instructor
                  ├─ ClassSession
                  ├─ Topic
@@ -33,7 +36,9 @@ Institution
                  └─ Assessment
 
 Student
- └─ Enrollment
+ ├─ WhatsAppConsent                 (append-only · sin número, ADR-052)
+ └─ Enrollment                      (la carrera · `confirmed_at` = alta completa)
+     ├─ RequirementDeclaration      (qué requisito satisface cada cosa que cursa)
      └─ CourseEnrollment
          ├─ TopicProgress
          ├─ Action
@@ -318,19 +323,86 @@ CREATE TABLE institution (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE academic_program (
+-- Facultad. Agregada por la B6.14.2 ([ADR-051](decisions.md#adr-051)): es el eslabón
+-- `Universidad → Facultad → Carrera` del grafo canónico del spec §5.1.
+CREATE TABLE academic_unit (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
-  name           TEXT NOT NULL
+  key            TEXT NOT NULL,
+  name           TEXT NOT NULL,
+  UNIQUE (institution_id, key)
+);
+
+CREATE TABLE academic_program (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id   UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  name             TEXT NOT NULL,
+  -- B6.14.2. Nullable: si la fuente no declara facultad, se omite. No se infiere.
+  academic_unit_id UUID REFERENCES academic_unit(id) ON DELETE RESTRICT,
+  key              TEXT   -- clave estable para importación; índice UNIQUE parcial
 );
 
 CREATE TABLE curriculum_plan (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id  UUID NOT NULL REFERENCES academic_program(id) ON DELETE RESTRICT,
-  version     TEXT NOT NULL,
+  version     TEXT NOT NULL,             -- el `plan_code` del CSV administrativo
   valid_from  DATE,
   valid_until DATE,
-  UNIQUE (program_id, version)
+  -- B6.14.2. **`publication_status` NO es `verification_status`**: la primera pregunta
+  -- es si esto se le puede mostrar a un estudiante; la segunda, si alguien con autoridad
+  -- lo verificó. Ninguna capa las reconcilia. Sólo un plan `PUBLISHED` se ofrece.
+  publication_status TEXT NOT NULL DEFAULT 'DRAFT'
+                       CHECK (publication_status IN ('DRAFT','PUBLISHED','RETIRED')),
+  published_at       TIMESTAMPTZ,
+  source_type        TEXT,               -- mismo enum de Provenance (§4)
+  source_ref         TEXT,               -- URL o documento
+  observed_at        TIMESTAMPTZ,
+  content_hash       TEXT,               -- identificador de versión del contenido
+  UNIQUE (program_id, version),
+  CONSTRAINT plan_publicado_con_fuente CHECK (
+    publication_status <> 'PUBLISHED'
+    OR (source_type IS NOT NULL AND source_ref IS NOT NULL AND length(btrim(source_ref)) > 0)),
+  CONSTRAINT plan_publicado_con_fecha CHECK (
+    publication_status <> 'PUBLISHED' OR published_at IS NOT NULL)
+);
+
+-- La fila del plan. **No toda fila es una materia** ([ADR-051](decisions.md#adr-051)):
+-- el Plan 2016 tiene 57 y al menos seis no lo son.
+CREATE TABLE curriculum_requirement (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  curriculum_plan_id UUID NOT NULL REFERENCES curriculum_plan(id) ON DELETE RESTRICT,
+  ordinal            INTEGER NOT NULL,   -- el orden de la fuente. **NO es el año**
+  code               TEXT NOT NULL,
+  label              TEXT NOT NULL,      -- el texto VISIBLE, sin completar
+  requirement_type   TEXT NOT NULL CHECK (requirement_type IN
+    ('COURSE','ELECTIVE_SLOT','SEMINAR_SLOT','LANGUAGE_REQUIREMENT',
+     'PROFESSIONAL_PRACTICE','CAPSTONE','UNKNOWN')),
+  curriculum_year SMALLINT,              -- NULL = UNKNOWN. Nunca se infiere por posición
+  year_source     TEXT,                  -- qué se vio para afirmarlo, y qué no
+  term            TEXT,                  -- el "Semestre" del §5.1. NULL = desconocido
+  is_annual       BOOLEAN,
+  course_id       UUID REFERENCES course(id) ON DELETE RESTRICT,
+  min_options SMALLINT, max_options SMALLINT, required_credits NUMERIC,
+  valid_from DATE, valid_until DATE,
+  label_truncated BOOLEAN NOT NULL DEFAULT FALSE,
+  needs_review    BOOLEAN NOT NULL DEFAULT TRUE,
+  -- Provenance **sin `verification_status`**, igual que `resource`
+  source_type TEXT NOT NULL, source_ref TEXT NOT NULL,
+  observed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  confidence  NUMERIC(3,2) CHECK (confidence BETWEEN 0 AND 1),
+  UNIQUE (curriculum_plan_id, ordinal),
+  UNIQUE (curriculum_plan_id, code),
+  CONSTRAINT curso_solo_si_es_course CHECK (course_id IS NULL OR requirement_type = 'COURSE')
+);
+
+-- Qué materia concreta puede satisfacer un cupo. N:N. Lo que el estudiante declara
+-- **no entra acá**: seleccionar una opción no modifica el catálogo.
+CREATE TABLE elective_option (
+  curriculum_requirement_id UUID NOT NULL REFERENCES curriculum_requirement(id) ON DELETE CASCADE,
+  course_id                 UUID NOT NULL REFERENCES course(id) ON DELETE RESTRICT,
+  source_type TEXT NOT NULL, source_ref TEXT NOT NULL,
+  observed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (curriculum_requirement_id, course_id)
 );
 
 CREATE TABLE course (
@@ -487,12 +559,57 @@ CREATE TABLE student (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- La carrera del estudiante. Existía desde la B1.3 y **nadie la leía ni la escribía**;
+-- la B6.14.2 la revive en vez de crear una tabla de onboarding al lado
+-- ([ADR-052](decisions.md#adr-052)): habría sido una segunda historia del mismo hecho.
 CREATE TABLE enrollment (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
-  program_id UUID NOT NULL REFERENCES academic_program(id) ON DELETE RESTRICT,
-  term       TEXT NOT NULL,
-  UNIQUE (student_id, program_id, term)
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id         UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+  program_id         UUID NOT NULL REFERENCES academic_program(id) ON DELETE RESTRICT,
+  term               TEXT NOT NULL,
+  institution_id     UUID REFERENCES institution(id) ON DELETE RESTRICT,
+  curriculum_plan_id UUID REFERENCES curriculum_plan(id) ON DELETE RESTRICT,
+  curriculum_year    SMALLINT,
+  -- **El estado del alta.** NOT NULL = el mapa académico mínimo está confirmado.
+  confirmed_at       TIMESTAMPTZ,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (student_id, program_id, term),
+  CONSTRAINT alta_confirmada_completa CHECK (
+    confirmed_at IS NULL
+    OR (curriculum_plan_id IS NOT NULL AND curriculum_year IS NOT NULL
+        AND institution_id IS NOT NULL))
+);
+
+-- El consentimiento de WhatsApp (ADR-042 §1-2, [ADR-052](decisions.md#adr-052)).
+-- Append-only: retirarlo es un hecho nuevo, nunca un UPDATE del original.
+-- ⚠️ **Sin columna de teléfono.** `student.whatsapp` sigue sin escritor mientras
+-- ADR-006 siga `PROVISIONAL`; acá no hay dónde ponerlo, y es a propósito.
+CREATE TABLE whatsapp_consent (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  student_id     UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+  decision       TEXT NOT NULL CHECK (decision IN ('GRANTED','DECLINED','WITHDRAWN')),
+  policy_version TEXT NOT NULL,
+  decided_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Qué requisito del plan satisface cada cosa que el estudiante declaró cursar.
+-- **No es una segunda historia de `course_enrollment`**: apunta a ella. Y resuelve el
+-- caso que aquélla no puede — la electiva que el estudiante nombra y que **no está en
+-- el catálogo**, que se guarda sin agregar nada al catálogo.
+CREATE TABLE requirement_declaration (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  student_id     UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+  curriculum_requirement_id UUID NOT NULL REFERENCES curriculum_requirement(id) ON DELETE RESTRICT,
+  course_enrollment_id UUID REFERENCES course_enrollment(id) ON DELETE CASCADE,
+  declared_label       TEXT,
+  source_type TEXT NOT NULL DEFAULT 'student',
+  source_ref  TEXT,
+  observed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (student_id, curriculum_requirement_id),   -- la idempotencia del doble submit
+  CONSTRAINT una_sola_forma CHECK (num_nonnulls(course_enrollment_id, declared_label) = 1)
 );
 
 CREATE TABLE course_enrollment (

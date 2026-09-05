@@ -209,7 +209,26 @@ describe("B3.1 · nada deriva progreso de una Evidence", () => {
      * a la vista. Esto sólo impide que el dato sea basura: una zona mal
      * escrita no falla al escribirla, falla meses después al comparar días.
      */
-    const SOLO_PROHIBEN = ["senal_no_entra_a_acknowledged", "institution_zona_valida"];
+    /**
+     * La tercera, de la misma naturaleza — Fase B6.14.2, ADR-051.
+     *
+     * `elective_option_solo_sobre_cupo` comprueba que una opción electiva cuelgue
+     * de un `ELECTIVE_SLOT` o un `SEMINAR_SLOT`, y si no, levanta. Una opción
+     * colgada de una materia concreta no significa nada.
+     *
+     * Sería un `CHECK` si se pudiera: un `CHECK` **no puede mirar otra tabla**, y
+     * el tipo del requisito vive en `curriculum_requirement`. Y no puede vivir
+     * sólo en la aplicación porque `service_role` escribe la tabla directo —el
+     * mismo argumento que `institution_zona_valida`.
+     *
+     * **No es una regla de negocio.** La regla de negocio es qué materias
+     * satisfacen un cupo, y eso es `C01-052`: no se infiere, se carga.
+     */
+    const SOLO_PROHIBEN = [
+      "senal_no_entra_a_acknowledged",
+      "institution_zona_valida",
+      "elective_option_solo_sobre_cupo",
+    ];
     for (const t of triggers) {
       const prohibitivo = SOLO_PROHIBEN.find((f) => t.includes(f));
       if (prohibitivo) {
