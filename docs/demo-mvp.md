@@ -45,11 +45,24 @@ Los seis puntos que el owner fijó como definición del MVP, en un solo recorrid
 
 ```bash
 npm run db:start        # Docker tiene que estar corriendo
-npm run db:reset        # 46 migraciones desde cero
-npm run db:demo         # el mundo sintético
-npm run db:sesion       # la identidad del estudiante sintético
+npm run db:reset        # 54 migraciones desde cero
+npm run db:catalogo     # el catálogo curricular — VA ANTES que db:demo
+npm run db:demo         # el mundo sintético, sobre ese catálogo
+npm run db:sesion       # las dos identidades sintéticas
 npm run dev
 ```
+
+⚠️ **`db:catalogo` va antes que `db:demo`, y el orden importa** — Fase B6.14. Desde que existe el
+catálogo curricular, el mundo demo **cuelga de una institución con plan publicado** en vez de una
+inventada por el seed: `db:demo` corta si el catálogo no está. Y `db:demo` ya **no borra** el
+catálogo, sólo lo del estudiante.
+
+**Ahora hay dos estudiantes sintéticos**, y son dos recorridos distintos:
+
+| Credenciales | Quién es |
+|---|---|
+| `estudiante.sintetico@achieve.local` / `achieve-demo-sintetica` | **Con el alta completa.** Entra directo a `HOY` y recorre el loop de abajo |
+| `estudiante.nuevo@achieve.local` / `achieve-demo-alta` | **Recién habilitado.** Sin consentimiento, sin carrera y sin materias: recorre el alta |
 
 **Y después hay que entrar**, que es lo que cambió el 3 de septiembre
 ([ADR-039](decisions.md#adr-039)): **el navegador ya no abre sesión solo.** `npm run db:sesion`
@@ -80,7 +93,51 @@ npm run recomendar -- <institution-id> <course-enrollment-id>
 
 ---
 
-## El loop diario, primero — Fase B6.8
+## El alta, primero de todo — Fase B6.14
+
+**Esto no estaba hasta el 5 de septiembre**, y era el hueco más grande del producto:
+[ADR-039](decisions.md#adr-039) lo dejó escrito —*"entre el `authorized: true` del CRM y la primera
+acción del estudiante no hay ninguna pantalla definida"*— y [ADR-042](decisions.md#adr-042) decidió
+el orden entero. Ahora se recorre.
+
+**Se entra con el segundo estudiante:** `estudiante.nuevo@achieve.local` / `achieve-demo-alta`.
+
+| # | Qué se hace | Qué pasa |
+|---|---|---|
+| 0 | Pedir `/hoy` | **No entra.** `GET /api/hoy` responde `409 ALTA_INCOMPLETA` con la ruta a la que ir, y el cliente redirige a `/alta/whatsapp`. El gate vive en el backend: uno que viviera sólo en el navegador no sería un gate |
+| 1 | `/alta/whatsapp` | El consentimiento **arranca vacío** y la CTA está deshabilitada. **«Ahora no» también sigue** — rechazar no quita acceso (ADR-042 §2). ⚠️ **No hay campo de teléfono:** `student.whatsapp` sigue sin escritor hasta el dictamen de [ADR-006](decisions.md#adr-006) |
+| 2 | `/alta/carrera` | Universidad → carrera. La **facultad** y el **plan** se infieren y se muestran para confirmar; el plan sólo se pregunta si hay más de uno vigente. Después, el año |
+| 3 | `/alta/materias` | Las **cinco materias del año llegan marcadas**. Se desmarca *Modelos y Simulación*; **«Agregar materias de otros años»** suma *Cálculo Avanzado* (2.º); *Electiva I* aparece aparte y **sin marcar**, y se elige *Computación Cuántica* |
+| 4 | **Confirmar y empezar** | Una transacción: la inscripción, **6 cursadas**, 6 declaraciones y `AcademicMapMinimumReached`. Después —nunca antes— corre el ADE sobre cada cursada |
+| 5 | `HOY` | **`BAJO CONTROL`**, con *"Cálculo Avanzado · Límites y continuidad · Porque: Entra en Parcial 1 · 45 min · Entregá: Producción de la práctica"*. **El alta terminó en una acción real** |
+
+### Los cuatro casos que no son el camino feliz
+
+| Caso | Cómo se ve |
+|---|---|
+| **Doble submit** | Repetir el `POST /api/alta/materias` idéntico deja **las mismas filas**. La idempotencia está en `UNIQUE (student_id, offering_id)` y `UNIQUE (student_id, curriculum_requirement_id)`, no en el handler |
+| **Reingreso** | Cerrar sesión y volver a entrar va **directo a `HOY`**. El alta no se repite: `enrollment.confirmed_at` ya está |
+| **Carrera sin plan** | Elegir *Ingeniería Sintética Experimental* muestra **«Todavía no tenemos el plan de esta carrera»** y no sigue. No se inventa una materia |
+| **Sin materias** | Un estudiante con el alta confirmada y sin cursadas ve **«Estamos preparando tu información académica»**, el texto que aprobó el owner — y **nunca** *"no hay una acción recomendada"*, que es lo que ADR-042 prohíbe. **Sin CTA:** no hay nada que apretar |
+
+⚠️ **Los planes de la UCC están cargados y en `DRAFT`**, así que no aparecen en el selector:
+`Universidad SYN (sintética)` e `Instituto SYN-2 (sintético)` son las dos que sí. Por qué, en
+[ADR-053](decisions.md#adr-053) y en [`catalogo/README.md`](../catalogo/README.md).
+
+```bash
+# Qué hay cargado, y en qué estado
+docker exec supabase_db_achieve-platform psql -U postgres -d postgres -c "
+  select i.key, ap.key as carrera, cp.version, cp.publication_status,
+         count(cr.*) as requisitos, count(cr.course_id) as materias
+    from institution i join academic_program ap on ap.institution_id=i.id
+    join curriculum_plan cp on cp.program_id=ap.id
+    left join curriculum_requirement cr on cr.curriculum_plan_id=cp.id
+   group by 1,2,3,4 order by 1,2;"
+```
+
+---
+
+## El loop diario — Fase B6.8
 
 **Esto no estaba en la versión del 2 de septiembre, y sin ello el recorrido de abajo no se entiende:**
 hasta la [Fase B6.8](roadmap.md) el camino del estudiante **no escribía**, así que la demo empezaba

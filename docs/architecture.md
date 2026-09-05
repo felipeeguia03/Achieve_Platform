@@ -519,6 +519,24 @@ persona**.
 
 ---
 
+### El alta, y por qué su gate está en el Controller — Fase B6.14
+
+`resolverSesion()` devuelve el estado del alta junto con la identidad, y **las nueve rutas de lectura
+lo traducen a `409 ALTA_INCOMPLETA`** con la ruta a la que ir. Va en la sesión y no en cada
+Controller porque es la misma pregunta para las nueve, y resolverla nueve veces serían nueve lugares
+donde olvidarse; lo que cada Controller decide es qué hacer con ella.
+
+**Las rutas del propio alta no la aplican.** Si el alta se gateara a sí misma, no habría forma de
+completarla.
+
+**`409` y no `403`:** `403` ya significa *sin habilitación de padrón*, que el estudiante no puede
+resolver. Éste sí puede, y la salida viaja en la respuesta.
+
+⚠️ **Confirmar el mapa académico llama al ADE desde el Service, no desde la ruta.** El estudiante no
+autoriza una recomendación: la Plataforma reacciona a un hecho de dominio, con el mismo patrón que
+[ADR-040](decisions.md#adr-040) usa tras cerrar una `Action`. `POST /api/recomendacion` sigue siendo
+secreto de servicio.
+
 ## 4. Contratos pendientes que bloquean implementación
 
 El spec marca decenas de necesidades funcionales aprobadas cuyo campo, owner técnico o mutación exacta

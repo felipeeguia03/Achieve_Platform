@@ -3405,10 +3405,10 @@ tanto, y el mensaje se desmontaba con ella.
 
 ---
 
-## Fase B6.14 — El catálogo curricular y el tramo de alta · 🟡 EN CURSO
+## Fase B6.14 — El catálogo curricular y el tramo de alta · ✅ COMPLETA
 
-**Estado:** 🟡 **en curso** — 4 de septiembre de 2026. Abierta por instrucción escrita del Product
-Owner, que reordenó la prioridad del backlog #1.
+**Estado:** ✅ **COMPLETA, 6 / 6** — 5 de septiembre de 2026. Abierta por instrucción escrita del
+Product Owner, que reordenó la prioridad del backlog #1.
 
 **Por qué existe.** Es el **hueco más grande del producto**, y estaba declarado desde
 [ADR-039](decisions.md#adr-039): *"entre el `authorized: true` del CRM y la primera acción del
@@ -3427,11 +3427,42 @@ en `DRAFT`).
 | # | Etapa | Estado |
 |---|---|---|
 | B6.14.1 | **Las tres decisiones, escritas antes de codear** — ADR-051, ADR-052, ADR-053 y `C01-052` | ✅ |
-| B6.14.2 | **El requisito curricular existe**: `academic_unit`, `curriculum_requirement` con sus seis tipos, `elective_option`, `publication_status` | ⏳ |
-| B6.14.3 | **El importador y los cuatro datasets** — CSV administrativo, `ingerir_plan_de_estudios()`, UCC en `DRAFT` y dos instituciones sintéticas `PUBLISHED` | ⏳ |
-| B6.14.4 | **El mapa académico mínimo se confirma y se persiste** — Service, rutas, el gate `409 ALTA_INCOMPLETA` y la llamada al ADE | ⏳ |
-| B6.14.5 | **Las tres pantallas**, y el estudiante sin materias deja de recibir un veredicto | ⏳ |
-| B6.14.6 | **El recorrido, corrido de punta a punta** y documentado en `demo-mvp.md` | ⏳ |
+| B6.14.2 | **El requisito curricular existe**: `academic_unit`, `curriculum_requirement` con sus siete tipos, `elective_option`, `publication_status` | ✅ |
+| B6.14.3 | **El importador y los cinco datasets** — CSV administrativo, `ingerir_plan_de_estudios()`, UCC en `DRAFT` y dos instituciones sintéticas `PUBLISHED` | ✅ |
+| B6.14.4 | **El mapa académico mínimo se confirma y se persiste** — Service, rutas, el gate `409 ALTA_INCOMPLETA` y la llamada al ADE | ✅ |
+| B6.14.5 | **Las tres pantallas**, y el estudiante sin materias deja de recibir un veredicto | ✅ |
+| B6.14.6 | **El recorrido, corrido de punta a punta** y documentado en `demo-mvp.md` | ✅ |
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `curriculum_requirement` | La fila del plan, con **siete tipos**. `UNKNOWN` declara ignorancia en vez de fingir un default |
+| `elective_option` | Qué materia concreta puede satisfacer un cupo. **Lo que el estudiante elige no entra acá** |
+| `curriculum_plan.publication_status` | `DRAFT`/`PUBLISHED`/`RETIRED`. **No es `verification_status`**, y ninguna tabla nueva lleva el segundo |
+| `ingerir_plan_de_estudios()` + `publicar_plan_de_estudios()` | Ingerir y publicar son dos operaciones. Publicar exige motivo y **rechaza un plan con `needs_review`** |
+| `scripts/importar-catalogo.mjs` + `catalogo/*.csv` | La *"importación institucional CSV"* del spec §26.2. Parser propio, sin dependencia nueva |
+| `enrollment.confirmed_at` | El estado del alta. La tabla existía desde la B1.3 **sin un solo lector** |
+| `whatsapp_consent` | Append-only, **sin columna de teléfono** |
+| `requirement_declaration` | Qué requisito satisface cada cosa que el estudiante declaró — incluida la electiva que escribió a mano |
+| `confirmar_mapa_academico()` | Una transacción. La idempotencia la dan los `UNIQUE` que ya existían |
+| `409 ALTA_INCOMPLETA` en las nueve rutas | El gate, en el backend. Uno que viva sólo en el cliente no es un gate |
+| `app/alta/*` + `components/alta/*` | Tres pantallas **fuera** del registro canónico, como `/login` |
+| Variante `PREPARANDO_INFORMACION` | Los nueve niveles siguen siendo nueve |
+| `scripts/db-catalogo.sh` | **33 comprobaciones** contra Postgres, dentro de `db:verify` |
+
+### Tres defectos que sólo aparecieron al conectarlo
+
+**1 · `periodoActual` se exportaba desde un `page.tsx`** y lo importaba otro. Next no lo admite, y la
+navegación a `/alta/materias` rebotaba **sin decir nada**. La función es pura: vive en el dominio.
+
+**2 · El redirect de `/alta/materias` corría en fase de render.** `useSearchParams()` devuelve vacío
+en el primer render dentro de `Suspense`, así que la pantalla se saltaba sola. React lo avisaba.
+
+**3 · La carrera sin plan era inalcanzable**, y era un caso que el propio pedido exigía. El selector
+listaba sólo carreras con plan publicado. **No aparecer es peor que aparecer sin plan:** el
+estudiante concluye que Achieve no cubre su universidad cuando lo que pasa es que todavía no
+cargamos su plan.
 
 **Done cuando:** un estudiante sintético recién habilitado entra por `/login`, **no cae en `HOY`**,
 declara universidad, carrera y año, confirma sus materias —desmarcando una y agregando una de otro

@@ -110,6 +110,38 @@ el submit dependiente—. **La Etapa B2.6 cerró:** `UX01`–`UX06` leen de Post
 función de lectura propia, y ninguna cae al fixture en silencio. `UX07`–`UX09` se conectaron en la
 Fase B5.
 
+**Fase B6.14 — El catálogo curricular y el tramo de alta.** ✅ **COMPLETA, 6 / 6** — 5 de septiembre
+de 2026. Cierra **el hueco más grande del producto**, que [ADR-039](docs/decisions.md#adr-039) había
+dejado escrito: *"entre el `authorized: true` del CRM y la primera acción del estudiante no hay
+ninguna pantalla definida"*. Tres decisiones: [ADR-051](docs/decisions.md#adr-051) (el catálogo),
+[ADR-052](docs/decisions.md#adr-052) (el alta) y [ADR-053](docs/decisions.md#adr-053) (el Plan 2016).
+
+⚠️ **No toda fila de un plan es una materia.** `curriculum_requirement` tiene **siete tipos**: el
+Plan 2016 tiene 57 filas y **sólo 51 son materias**. `ELECTIVA I` es un cupo, `ACRED. INGLES` una
+acreditación y `TRABAJO FINAL` un capstone; modelarlas como `course` haría que el alta preguntara si
+las cursás y que el ADE les buscara unidades.
+
+⚠️ **`publication_status` NO es `verification_status`, y no se colapsan.** *"¿Se le puede mostrar a
+un estudiante?"* y *"¿alguien con autoridad lo verificó?"* son dos preguntas. La segunda tiene **una
+sola escritura en todo el repo** (`corroborar_procedencia`, `I9`) y **ninguna tabla nueva la lleva**.
+
+⚠️ **Antes de tocar el alta:** el gate vive en el **backend**. Las nueve rutas devuelven
+`409 ALTA_INCOMPLETA` con la ruta a la que ir. Un gate que viva sólo en el cliente no es un gate —
+es la lección de la B6.10, donde el requisito de reflexión lo hacía cumplir un botón deshabilitado.
+
+⚠️ **`student.whatsapp` sigue sin escritor.** Se persiste el **consentimiento**, y
+`whatsapp_consent` **no tiene columna de teléfono**: no es que no se llene, es que no existe dónde.
+ADR-042 §4 autoriza teléfonos sintéticos; el schema dice que nadie escribe esa columna hasta el
+dictamen de ADR-006, y ADR-052 eligió **no contradecir a ninguno de los dos**.
+
+⚠️ **Los planes de la UCC están cargados y en `DRAFT`.** No se le ofrecen a nadie, y hay test.
+Publicarlos es `C01-052` y necesita el plan oficial; [ADR-006](docs/decisions.md#adr-006) §5 dice que
+*"no se puede elegir universidad y carrera antes de saber con qué base legal se piden los datos"*.
+
+⚠️ **`"SIN ACCIONES POR AHORA"` ya no alcanza a un estudiante sin materias.** Ahora dice *"Estamos
+preparando tu información académica"* — el texto literal que aprobó el owner — y **sin CTA**. Los
+nueve niveles de precedencia **siguen siendo nueve**: es una variante.
+
 **Fase B6.10 — La reflexión existe y se exige.** ✅ **COMPLETA** — 4 de septiembre de 2026. La tabla
 `reflection` existía desde la B1 y **nadie la escribía**; el estudiante no tenía por dónde reflexionar.
 Ahora hay `POST /api/reflexion` con su JWT.
@@ -394,7 +426,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **276 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **314 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de

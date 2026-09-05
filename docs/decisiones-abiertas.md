@@ -250,6 +250,28 @@ sigue sin poder producirse. Es un fixture que describe una pantalla que nadie pu
 >
 > ⚠️ **Lo que queda afuera a propósito:** *"no se agrega por ahora otra CTA en `UX01`/Hoy"*.
 
+### 2.8 · `C01-052` — corroborar el Plan 2016 de la UCC — 🟡 nueva
+
+**La pregunta:** ¿el plan que transcribimos es el plan?
+
+**Estado:** los **57 requisitos** están cargados desde el 5 de septiembre de 2026
+([ADR-053](decisions.md#adr-053)), en `DRAFT` y con `needs_review = TRUE` en las 57. **No se le
+ofrece a ningún estudiante**, y hay test contra Postgres de que no sale de las funciones de lectura.
+
+**Por qué no se publica solo.** [ADR-006](decisions.md#adr-006) §5 lo dice textual: *"**No se puede
+elegir universidad y carrera antes de saber con qué base legal se piden los datos**"*. Y la regla de
+publicación exige cinco corroboraciones —materias, códigos, distribución por año, reglas electivas y
+fuente institucional— de las que **no hay ninguna**.
+
+**Lo que falta, concreto:** el plan de estudios oficial del Plan 2016 —PDF, CSV o resolución— **con
+año y semestre por materia y los nombres completos**. Con eso se corrigen las diez filas truncadas,
+se confirma o se corrige el año (el marcador del analítico se leyó, pero **el encabezado de su
+columna no**), se resuelve si `SEMINARIO` es asignatura o cupo, y se cargan las opciones de
+`ELECTIVA I` y `ELECTIVA II`, que hoy existen como cupos vacíos.
+
+**Consecuencia de no cerrarla:** ninguna. El alta corre entera sobre el catálogo sintético, que es
+exactamente lo que ADR-006 §5 dice que sí se puede hacer.
+
 ---
 
 ## 3. Lo que bloquea el cierre de una fase

@@ -319,6 +319,15 @@ En el Track B, hoy:
   declaralo ahí.
 - **B2b va 1/3**, y el ADE v1, su materialización y el reloj del lifecycle se construyeron por
   adelantado en B4.
+- **El alta existe** desde la Fase B6.14: `/login → /alta/whatsapp → /alta/carrera → /alta/materias
+  → /hoy`. Las tres pantallas **no** entran al registro canónico —el precedente es `/login`— y el
+  gate es un `409 ALTA_INCOMPLETA` **del backend**, no del navegador.
+- **El catálogo curricular es una entidad propia.** `curriculum_requirement` con siete tipos:
+  ⚠️ **no toda fila de un plan es una materia**. Y `publication_status` (`DRAFT`/`PUBLISHED`)
+  **no es** `verification_status`: son dos preguntas distintas y ninguna capa las reconcilia.
+- ⚠️ **`student.whatsapp` sigue sin escritor**, y `whatsapp_consent` no tiene columna de teléfono.
+- ⚠️ **Los planes reales de una institución entran `DRAFT`** y no se le ofrecen a nadie.
+  Publicarlos exige corroboración (`C01-052`) y autorización (`C01-042`).
 
 Dónde vive cada cosa hoy:
 

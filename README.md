@@ -89,20 +89,28 @@ locales son **54420–54429** para que los dos stacks puedan correr al mismo tie
 ```bash
 npm run db:start     # levanta el stack local (necesita Docker corriendo)
 npm run db:reset     # tira abajo y re-aplica todas las migraciones desde cero
-npm run db:verify    # migraciones, deny-by-default de §6 y los 12 invariantes de §7
+npm run db:catalogo  # importa el catálogo curricular — VA ANTES que db:demo
+npm run db:demo      # el mundo sintético, sobre ese catálogo
+npm run db:sesion    # las dos identidades sintéticas (una con alta, una sin)
+npm run db:verify    # migraciones, deny-by-default de §6, los 12 invariantes y el catálogo
 npm run db:studio    # http://127.0.0.1:54423
 npm run db:stop
 ```
 
+⚠️ **`db:catalogo` va antes que `db:demo`** desde la Fase B6.14: el mundo demo cuelga de una
+institución con **plan publicado**, no de una que invente el seed, y `db:demo` corta si el catálogo
+no está. `db:demo` ya **no borra** el catálogo — sólo lo del estudiante.
+
 Copiá [`.env.local.example`](.env.local.example) a `.env.local` con lo que imprime `db:start`.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de **953 tests en 52 archivos**
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1105 tests en 61 archivos**
 corre sin Docker, en cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack
 levantado.
 
-⚠️ **`db:verify` es dueño de la base local y la deja vacía de datos de negocio.** Comparte UUID con
-`db:demo` a propósito —`aaaaaaaa-…` es la misma institución en los dos—, así que **no pueden
-convivir**: después de verificar hay que volver a sembrar con `npm run db:demo`. Las **275
+⚠️ **`db:verify` es dueño de la base local y la deja vacía de datos de negocio**, así que **no
+convive con `db:demo`**: después de verificar hay que volver a sembrar con
+`npm run db:catalogo && npm run db:demo && npm run db:sesion`. Desde la Fase B6.14 el quinto script
+—`db-catalogo.sh`— **necesita el catálogo importado** y corta si no está. Las **314
 comprobaciones** limpian lo suyo también al empezar y por `trap EXIT`, para que una corrida que
 falla no arrastre a la siguiente.
 

@@ -890,3 +890,22 @@ Lista consolidada de frases que el producto **no dice nunca**, con la razón:
 | *"Hacé dos cambios para el próximo examen"* | `HUMAN-P0-08 v1.0`: la cantidad de ajustes **no es fija**; salen del análisis o no salen |
 | *"No incorpores ningún contenido nuevo"* como prohibición absoluta a menos de 24 h | `HUMAN-P0-04 v1.0`: un contenido central nunca trabajado **puede** abordarse, con expectativas realistas |
 | *"Dormí 8 horas"* como requisito | `HUMAN-P0-04 v1.0`: el descanso se cuida en **efectividad**, no en una cantidad fija de horas |
+| *"No hay una acción recomendada"* **a un estudiante sin materias** | [ADR-042](decisions.md#adr-042): *"el sistema todavía no está en condiciones de evaluar eso"*. Es la misma disciplina de *sin datos no es cero*: **no evaluado no es lo mismo que evaluado y vacío**. El texto que sí corresponde está en §13.1 |
+| *"Tu WhatsApp está vinculado"* / *"Hay un operador asignado"* / *"Te van a escribir"* | [ADR-042](decisions.md#adr-042) §5-6: la Plataforma **no observa** el estado del CRM. La confirmación sólo puede decir *"Guardamos tu número"* o *"Recibimos tu solicitud"* |
+
+### 13.1 · El estudiante recién dado de alta, sin materias
+
+**Texto aprobado por el Product Owner**, literal ([ADR-042](decisions.md#adr-042); fuente:
+[`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md)). Entró al inventario con la
+Fase B6.14, que es cuando la etapa se construyó:
+
+> **Estamos preparando tu información académica.**
+> Todavía no contamos con información suficiente para recomendarte una acción. Te avisaremos cuando
+> tu recorrido esté listo.
+
+⚠️ **No lleva CTA.** No hay nada que el estudiante pueda apretar: el propio texto dice que le vamos a
+avisar. Ofrecer *«Ver materias»* cuando no hay materias sería una CTA que lleva a un vacío, y
+`AGENTS.md` §2.2 es explícito — una CTA cuya condición de aparición no se cumple **no se renderiza**.
+
+En el código vive en `lib/content/es-AR.ts` (`HOY.PREPARANDO.*`) y lo produce la variante
+`PREPARANDO_INFORMACION` del nivel 7. **Los nueve niveles de §10.2 siguen siendo nueve.**
