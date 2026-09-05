@@ -46,10 +46,19 @@ export interface RequisitoDelPlan {
   declarado: { cursadaId: string | null; nombreEscrito: string | null } | null;
 }
 
-async function ofrecible(): Promise<InstitucionOfrecible[]> {
-  const { data, error } = await clienteDeServicio().rpc("catalogo_ofrecible");
+/**
+ * Las carreras de **la** institución del estudiante.
+ *
+ * `institutionId` sale de la sesión, nunca del request: es la raíz del
+ * aislamiento, y el padrón ya la fijó. Ofrecer otra sería ofrecer algo que
+ * `confirmarMapaAcademico` va a rechazar siempre.
+ */
+async function ofrecible(institutionId: string): Promise<InstitucionOfrecible | null> {
+  const { data, error } = await clienteDeServicio().rpc("catalogo_ofrecible", {
+    p_institution_id: institutionId,
+  });
   if (error) throw new Error(`No se pudo leer el catálogo: ${error.message}`);
-  return (data ?? []) as InstitucionOfrecible[];
+  return (data ?? null) as InstitucionOfrecible | null;
 }
 
 async function planesDeCarrera(programId: string): Promise<PlanPublicado[]> {

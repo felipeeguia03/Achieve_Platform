@@ -196,9 +196,14 @@ export function estadoDelAlta(institutionId: string, studentId: string): Promise
   return estadoDelAltaPuro(altaReal, institutionId, studentId);
 }
 
-/** El catálogo que se puede ofrecer. **Nunca un plan `DRAFT`** (ADR-051). */
-export function catalogoOfrecible(): Promise<InstitucionOfrecible[]> {
-  return catalogoReal.ofrecible();
+/**
+ * El catálogo que se le puede ofrecer a **este** estudiante.
+ *
+ * **Nunca un plan `DRAFT`** (ADR-051), y **nunca otra institución**: la suya la
+ * fijó el padrón y es la raíz del aislamiento (ADR-052).
+ */
+export function catalogoOfrecible(institutionId: string): Promise<InstitucionOfrecible | null> {
+  return catalogoReal.ofrecible(institutionId);
 }
 
 export function resolverPlanDeCarrera(

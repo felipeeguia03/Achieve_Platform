@@ -123,7 +123,16 @@ export type ResultadoDeEnvio<T> =
    * copy con `t()`: así el texto que lee el estudiante vive en `es-AR.ts` y no
    * en el mensaje de error de una API — ADR-050.
    */
-  | { estado: "RECHAZADO"; motivo: string; codigo?: string };
+  | { estado: "RECHAZADO"; motivo: string; codigo?: string }
+  /**
+   * `404` — **lo que se pidió ya no está**, y reintentar no lo va a traer.
+   *
+   * Se separa de `ERROR` porque las dos cosas se ven igual y no lo son: un
+   * `ERROR` es *"probá de nuevo en un momento"*, y esto es permanente. Mostrar
+   * el mensaje de red sobre un `404` le pide al estudiante que insista contra
+   * algo que nunca va a funcionar.
+   */
+  | { estado: "NO_ENCONTRADO" };
 
 export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<ResultadoDeEnvio<T>> {
   let token: string | null;
@@ -142,6 +151,7 @@ export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<Resultad
     });
     if (r.status === 401) return { estado: "SIN_SESION" };
     if (r.status === 403) return { estado: "SIN_PADRON" };
+    if (r.status === 404) return { estado: "NO_ENCONTRADO" };
     if (r.status === 409) {
       const cuerpo = (await r.json().catch(() => ({}))) as { error?: string; motivo?: string };
       return {

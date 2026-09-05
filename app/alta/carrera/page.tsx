@@ -16,7 +16,8 @@ import { useSuperficie } from "@/lib/client/superficie";
  */
 interface RespuestaDelAlta {
   alta: { completa: boolean; siguiente: string | null };
-  instituciones: InstitucionElegible[];
+  /** **La** del estudiante, no una lista: la fijó el padrón. */
+  institucion: InstitucionElegible;
 }
 
 export default function AltaCarreraPage() {
@@ -35,7 +36,7 @@ export default function AltaCarreraPage() {
 
   return (
     <AltaCarrera
-      instituciones={respuesta.datos.instituciones}
+      institucion={respuesta.datos.institucion}
       onResolverPlan={async (carreraId) => {
         const r = await pedir<PlanResuelto>(`/api/alta/carrera?carrera=${encodeURIComponent(carreraId)}`);
         return r.estado === "OK" ? r.datos : null;
@@ -57,9 +58,10 @@ export default function AltaCarreraPage() {
           anio,
           periodo: periodoDeCursado(),
         });
-        if (r.estado !== "OK") return { ok: false };
+        if (r.estado === "NO_ENCONTRADO") return { ok: false as const, fallo: "NO_DISPONIBLE" as const };
+        if (r.estado !== "OK") return { ok: false as const, fallo: "RED" as const };
         router.replace(`/alta/materias?plan=${encodeURIComponent(planId)}&anio=${anio}`);
-        return { ok: true };
+        return { ok: true as const };
       }}
     />
   );

@@ -15,6 +15,10 @@ import { catalogoOfrecible, resolverSesion } from "@/lib/server/composicion";
  * Devuelve el catálogo junto con el estado porque las dos cosas se usan en la
  * misma pantalla y en el mismo instante. **Nunca un plan `DRAFT`:** el filtro
  * vive en `catalogo_ofrecible()`, no en este archivo.
+ *
+ * ⚠️ **Y nunca otra institución que la suya.** `student.institution_id` lo fija
+ * el padrón y es la raíz del aislamiento; ofrecer otra sería ofrecer algo que
+ * la confirmación va a rechazar siempre.
  */
 export async function GET(request: Request) {
   const sesion = await resolverSesion(tokenDelHeader(request.headers.get("authorization")));
@@ -26,8 +30,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Sin habilitación de padrón" }, { status: 403 });
   }
 
-  return NextResponse.json({
-    alta: sesion.alta,
-    instituciones: await catalogoOfrecible(),
-  });
+  // La institución sale de la sesión. Un `?institucion=` en el request sería
+  // exactamente el agujero que el aislamiento existe para cerrar.
+  const institucion = await catalogoOfrecible(sesion.estudiante.institutionId);
+  if (institucion === null) {
+    // El padrón lo puso en una institución que no existe. No es del estudiante,
+    // y no hay nada que pueda hacer al respecto.
+    return NextResponse.json({ error: "No encontramos tu institución" }, { status: 404 });
+  }
+
+  return NextResponse.json({ alta: sesion.alta, institucion });
 }

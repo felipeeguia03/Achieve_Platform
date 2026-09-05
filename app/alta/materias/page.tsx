@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AltaMaterias, type RequisitoElegible } from "@/components/alta/materias";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { enviar } from "@/lib/client/api";
+import { t } from "@/lib/content/es-AR";
 import { useSuperficie } from "@/lib/client/superficie";
 import { periodoDeCursado } from "@/lib/domain/alta";
 
@@ -69,6 +70,8 @@ function Pantalla() {
           selecciones,
         });
         if (r.estado === "RECHAZADO") return { ok: false, motivo: r.motivo };
+        // Un `404` no se arregla insistiendo.
+        if (r.estado === "NO_ENCONTRADO") return { ok: false, motivo: t("ALTA.ERROR.NO_DISPONIBLE") };
         if (r.estado !== "OK") return { ok: false };
         /*
           `replace` y no `push`: el alta ya ocurrió, y dejarla en el historial

@@ -4270,6 +4270,23 @@ Y con eso, `"SIN ACCIONES POR AHORA"` **deja de alcanzar** a un estudiante sin m
 que ADR-042 prohíbe textualmente: *"no debe mostrarse «no hay una acción recomendada», porque el
 sistema todavía no está en condiciones de evaluar eso"*.
 
+### La institución no se pregunta: la fijó el padrón
+
+**Corregido el 5 de septiembre de 2026, recorriendo el alta a mano.** El selector ofrecía *todas*
+las instituciones con plan publicado, y elegir una distinta de la propia terminaba en un `404` que la
+pantalla mostraba como *"No pudimos guardar tu respuesta. Probá de nuevo en un momento"*.
+
+**Dos cosas mal, y la segunda es peor.** Ofrecer algo que siempre falla — y después mentir sobre por
+qué: reintentar no iba a funcionar nunca.
+
+`student.institution_id` **lo fija el padrón** y es la raíz del aislamiento institucional
+(`data-model.md` §7): un estudiante pertenece a una institución y no puede elegir otra. Así que
+*"¿dónde estudiás?"* no era una pregunta: era un dato que ya teníamos. **Se muestra para confirmar**,
+igual que la facultad y que la versión del plan — la misma regla que este ADR ya aplicaba dos veces.
+
+Y `404` deja de decirse como un error de red. `ResultadoDeEnvio` gana `NO_ENCONTRADO`, porque *"probá
+de nuevo en un momento"* sobre algo permanente le pide al estudiante que insista contra una pared.
+
 ### WhatsApp: se construye el tramo, no se escribe el número
 
 ADR-042 §4 autoriza construir y probar *"con identidades y teléfonos sintéticos"*. Pero el schema

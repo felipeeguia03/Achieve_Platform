@@ -544,6 +544,15 @@ export const copy = {
   "ALTA.MATERIAS.NOMBRE_CORTADO": "Nombre incompleto en el plan que recibimos.",
   "ALTA.MATERIAS.SIN_SELECCION": "Marcá al menos una materia para poder empezar.",
   "ALTA.ERROR.RED": "No pudimos guardar tu respuesta. Probá de nuevo en un momento.",
+  /**
+   * ⚠️ **`404` no es un error de red, y no se dicen igual.**
+   *
+   * *"Probá de nuevo en un momento"* sobre algo que ya no existe le pide al
+   * estudiante que insista contra una pared. Este texto dice qué pasó y qué
+   * hacer, que es lo único que le sirve.
+   */
+  "ALTA.ERROR.NO_DISPONIBLE":
+    "Esa carrera ya no está disponible. Elegí otra, o volvé a entrar en un rato.",
 
   "CARGA.SIN_PADRON.TITULO": "Tu cuenta todavía no está habilitada",
   "CARGA.SIN_PADRON.CUERPO":

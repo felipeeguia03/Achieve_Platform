@@ -46,22 +46,34 @@ export type PlanResuelto =
   | { estado: "AMBIGUA"; planes: readonly { id: string; version: string }[] }
   | { estado: "SIN_PLAN" };
 
+/** Qué salió mal. `RED` se reintenta; `NO_DISPONIBLE` no. */
+export type FalloAlContinuar = "RED" | "NO_DISPONIBLE";
+
 export interface CarreraProps {
-  instituciones: InstitucionElegible[];
+  /**
+   * **La** institución del estudiante, no una lista.
+   *
+   * `student.institution_id` lo fija el padrón y es la raíz del aislamiento: no
+   * es algo que el estudiante elija. Se muestra para confirmar, igual que la
+   * facultad y que el plan.
+   */
+  institucion: InstitucionElegible;
   /** Resuelve la versión del plan de una carrera. Lo decide el servidor. */
   onResolverPlan: (carreraId: string) => Promise<PlanResuelto | null>;
   /** Los años que ese plan declara. `[]` ⇒ el plan no declara ninguno. */
   onAniosDelPlan: (planId: string) => Promise<number[]>;
-  onContinuar: (datos: { planId: string; anio: number }) => Promise<{ ok: boolean }>;
+  onContinuar: (datos: {
+    planId: string;
+    anio: number;
+  }) => Promise<{ ok: true } | { ok: false; fallo: FalloAlContinuar }>;
 }
 
 export function AltaCarrera({
-  instituciones,
+  institucion,
   onResolverPlan,
   onAniosDelPlan,
   onContinuar,
 }: CarreraProps) {
-  const [institucionId, setInstitucionId] = useState("");
   const [carreraId, setCarreraId] = useState("");
   const [planElegido, setPlanElegido] = useState("");
   const [anio, setAnio] = useState("");
@@ -82,8 +94,7 @@ export function AltaCarrera({
   );
   const [aniosCargados, setAniosCargados] = useState<{ clave: string; a: number[] } | null>(null);
 
-  const institucion = instituciones.find((i) => i.institucionId === institucionId) ?? null;
-  const carrera = institucion?.carreras.find((c) => c.carreraId === carreraId) ?? null;
+  const carrera = institucion.carreras.find((c) => c.carreraId === carreraId) ?? null;
 
   useEffect(() => {
     if (!carreraId) return;
@@ -134,55 +145,39 @@ export function AltaCarrera({
     setError(null);
     const r = await onContinuar({ planId: planActivo, anio: Number(anio) });
     if (!r.ok) {
-      setError(t("ALTA.ERROR.RED"));
+      // Un `404` no se arregla insistiendo, y decirle que insista es peor que
+      // no decirle nada.
+      setError(t(r.fallo === "NO_DISPONIBLE" ? "ALTA.ERROR.NO_DISPONIBLE" : "ALTA.ERROR.RED"));
       setEnCurso(false);
     }
   }
 
   return (
     <MarcoDelAlta paso={2} titulo={t("ALTA.CARRERA.TITULO")} ancho={560}>
+      {/* Del padrón, no de una pregunta. Se muestra para confirmar. */}
+      <ReglaDeNegocio>
+        {t("ALTA.CARRERA.INSTITUCION")} {institucion.nombre}
+      </ReglaDeNegocio>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <Label htmlFor="institucion">{t("ALTA.CARRERA.INSTITUCION")}</Label>
+        <Label htmlFor="carrera">{t("ALTA.CARRERA.CARRERA")}</Label>
         <NativeSelect
-          id="institucion"
-          value={institucionId}
+          id="carrera"
+          value={carreraId}
           onChange={(e) => {
-            setInstitucionId(e.target.value);
-            setCarreraId("");
+            setCarreraId(e.target.value);
             setPlanElegido("");
             setAnio("");
           }}
         >
           <option value="" />
-          {instituciones.map((i) => (
-            <option key={i.institucionId} value={i.institucionId}>
-              {i.nombre}
+          {institucion.carreras.map((c) => (
+            <option key={c.carreraId} value={c.carreraId}>
+              {c.nombre}
             </option>
           ))}
         </NativeSelect>
       </div>
-
-      {institucion && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <Label htmlFor="carrera">{t("ALTA.CARRERA.CARRERA")}</Label>
-          <NativeSelect
-            id="carrera"
-            value={carreraId}
-            onChange={(e) => {
-              setCarreraId(e.target.value);
-              setPlanElegido("");
-              setAnio("");
-            }}
-          >
-            <option value="" />
-            {institucion.carreras.map((c) => (
-              <option key={c.carreraId} value={c.carreraId}>
-                {c.nombre}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
-      )}
 
       {/* Inferida y mostrada para confirmar. Sin dato, la línea desaparece. */}
       {carrera?.facultad && (

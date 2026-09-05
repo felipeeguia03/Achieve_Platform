@@ -112,7 +112,7 @@ el orden entero. Ahora se recorre.
 |---|---|---|
 | 0 | Pedir `/hoy` | **No entra.** `GET /api/hoy` responde `409 ALTA_INCOMPLETA` con la ruta a la que ir, y el cliente redirige a `/alta/whatsapp`. El gate vive en el backend: uno que viviera sólo en el navegador no sería un gate |
 | 1 | `/alta/whatsapp` | El consentimiento **arranca vacío** y la CTA está deshabilitada. **«Ahora no» también sigue** — rechazar no quita acceso (ADR-042 §2). ⚠️ **No hay campo de teléfono:** `student.whatsapp` sigue sin escritor hasta el dictamen de [ADR-006](decisions.md#adr-006) |
-| 2 | `/alta/carrera` | Universidad → carrera. La **facultad** y el **plan** se infieren y se muestran para confirmar; el plan sólo se pregunta si hay más de uno vigente. Después, el año |
+| 2 | `/alta/carrera` | **La institución no se pregunta**: la fijó el padrón y se muestra. Se elige la **carrera**; la **facultad** y el **plan** se infieren y se muestran para confirmar —el plan sólo se pregunta si hay más de uno vigente—. Después, el año |
 | 3 | `/alta/materias` | Las **cinco materias del año llegan marcadas**. Se desmarca *Modelos y Simulación*; **«Agregar materias de otros años»** suma *Cálculo Avanzado* (2.º); *Electiva I* aparece aparte y **sin marcar**, y se elige *Computación Cuántica* |
 | 4 | **Confirmar y empezar** | Una transacción: la inscripción, **6 cursadas**, 6 declaraciones y `AcademicMapMinimumReached` **una sola vez**. Después —nunca antes— corre el ADE sobre cada cursada |
 | 5 | `HOY` | **`BAJO CONTROL`**, con *"Cálculo Avanzado · Límites y continuidad · Porque: Entra en Parcial 1 · 45 min · Entregá: Producción de la práctica"*. **El alta terminó en una acción real** |

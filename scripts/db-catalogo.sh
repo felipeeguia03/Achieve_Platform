@@ -65,7 +65,8 @@ igual "el Plan 2016 sigue en borrador" \
 igual "requisitos_del_plan devuelve NULL para un borrador, no una lista vacía" \
   "$(q "select public.requisitos_del_plan('$PLAN2016', gen_random_uuid()) is null;")" "t"
 igual "la UCC no aparece en el catálogo ofrecible" \
-  "$(q "select count(*) from jsonb_array_elements(public.catalogo_ofrecible()) x where x->>'nombre' like '%Católica%';")" "0"
+  "$(q "select count(*) from institution i
+         where i.key='UCC' and public.catalogo_ofrecible(i.id)->'carreras' @> '[{\"tienePlan\": true}]';")" "0"
 igual "publicar un plan con requisitos sin corroborar se rechaza" \
   "$(q "select 1 from (select public.publicar_plan_de_estudios('$PLAN2016','probando')) t;" | grep -ci "no se publica")" "1"
 
@@ -82,6 +83,26 @@ igual "Ingeniería en Informática es otra carrera que el Plan 2016" \
 igual "la web no declara el año de ninguna materia, y no se inventa" \
   "$(q "select count(*) from curriculum_requirement cr join curriculum_plan cp on cp.id=cr.curriculum_plan_id
         where cp.version='web-2026' and cr.curriculum_year is not null;")" "0"
+
+echo "→ B6.14 · el alta sólo ofrece la institución del estudiante"
+# `student.institution_id` lo fija el padrón. Ofrecer otra sería ofrecer algo que
+# `confirmar_mapa_academico` rechaza siempre — y la pantalla lo mostraba como un
+# error de red, pidiéndole al estudiante que insistiera contra una pared.
+SYNU=$(q "select id from institution where key='SYN-U';" | tr -d '[:space:]')
+SYNI2=$(q "select id from institution where key='SYN-I2';" | tr -d '[:space:]')
+igual "el catálogo de SYN-U es SYN-U, y sólo SYN-U" \
+  "$(q "select public.catalogo_ofrecible('$SYNU')->>'institucionId' = '$SYNU';")" "t"
+igual "y trae sus tres carreras, incluida la que no tiene plan" \
+  "$(q "select jsonb_array_length(public.catalogo_ofrecible('$SYNU')->'carreras');")" "3"
+igual "una de ellas se ofrece SIN plan, para poder decirlo" \
+  "$(q "select count(*) from jsonb_array_elements(public.catalogo_ofrecible('$SYNU')->'carreras') c
+         where (c->>'tienePlan')::boolean is false;")" "1"
+igual "el de SYN-I2 no incluye ninguna carrera de SYN-U" \
+  "$(q "select count(*) from jsonb_array_elements(public.catalogo_ofrecible('$SYNI2')->'carreras') c
+         where c->>'nombre' like 'Ingeniería Sintética%' and c->>'nombre' not like '%del Instituto';")" "0"
+igual "el contenedor 'Sin programa declarado' no se ofrece nunca" \
+  "$(q "select count(*) from institution i, jsonb_array_elements(public.catalogo_ofrecible(i.id)->'carreras') c
+         where c->>'nombre' = 'Sin programa declarado';")" "0"
 
 echo "→ B6.14 · el alta escribe, y los UNIQUE impiden duplicar"
 INST=$(q "select id from institution where key='SYN-U';" | tr -d '[:space:]')
@@ -111,9 +132,15 @@ igual "ni declaraciones" \
   "$(q "select count(*) from requirement_declaration where student_id='$EST';")" "$PRIMERA"
 igual "ni inscripciones a la carrera" \
   "$(q "select count(*) from enrollment where student_id='$EST';")" "1"
+# ⚠️ Se cuentan **las materias que este script eligió**, no las del plan entero:
+# las cursadas por defecto son del catálogo y las comparten todos los
+# estudiantes, así que un conteo global lo ensucia cualquier otra corrida.
 igual "ni cursadas por defecto de la misma materia" \
-  "$(q "select count(*) from course_offering co join course c on c.id=co.course_id
-        where c.curriculum_plan_id='$PLAN' and co.term='2026-2' and co.commission is null;")" "$PRIMERA"
+  "$(q "select count(*) from course_offering co
+         where co.term='2026-2' and co.commission is null
+           and co.course_id in (select cr.course_id from curriculum_requirement cr
+                                 where cr.curriculum_plan_id='$PLAN'
+                                   and cr.curriculum_year=2 and cr.requirement_type='COURSE');")" "$PRIMERA"
 igual "reconfirmar no mueve la fecha del alta" \
   "$(q "select count(distinct confirmed_at) from enrollment where student_id='$EST';")" "1"
 
