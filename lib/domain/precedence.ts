@@ -54,7 +54,22 @@ export type HeroVariante =
   /** Evidence `SUBMITTED`/`UNDER_REVIEW` sin acción posterior → `Ver evidencia`. */
   | "EVIDENCIA_ENVIADA"
   /** Evidence `VALIDATED` sin acción posterior → `Ver avance`. */
-  | "EVIDENCIA_VALIDADA";
+  | "EVIDENCIA_VALIDADA"
+  /**
+   * El estudiante confirmó su alta y **todavía no tiene ninguna cursada
+   * activa** — Fase B6.14, [ADR-052](../../docs/decisions.md#adr-052).
+   *
+   * Sin esta variante caía en `NO_ACTION_AVAILABLE`, que dice *"no hay una
+   * acción recomendada"*: una afirmación sobre el mundo que el sistema **no
+   * está en condiciones de hacer**, y que [ADR-042](../../docs/decisions.md#adr-042)
+   * prohíbe con todas las letras.
+   *
+   * ⚠️ **Los nueve niveles siguen siendo nueve.** Esto es una variante, que es
+   * el mecanismo que [ADR-017](../../docs/decisions.md#adr-017) dejó
+   * exactamente para discriminar dentro de un nivel. Un décimo nivel habría
+   * cambiado la matriz de `product.md` §10.2, que tiene otro owner.
+   */
+  | "PREPARANDO_INFORMACION";
 
 export interface ResultadoHero {
   nivel: HeroLevel;
@@ -82,6 +97,14 @@ export type HeroInput = {
   rescate: RescueCondition;
   actionRecommended: boolean;
   contextIncomplete: boolean;
+  /**
+   * El estudiante no tiene **ninguna** cursada activa — B6.14.
+   *
+   * Opcional para no romper a quien arma un `HeroInput` sin saberlo: ausente se
+   * comporta como antes. Gana sobre `contextIncomplete` porque es más grave y
+   * más honesto: no hay contexto que completar todavía.
+   */
+  sinMaterias?: boolean;
   /** El lifecycle de una Evidence informativa, sin acción posterior válida. */
   evidenciaInformativa: "NONE" | "ENVIADA" | "VALIDADA";
 };
@@ -108,6 +131,10 @@ export function selectHeroLevel(input: HeroInput): ResultadoHero {
   if (input.rescate === "REQUIRED") return { nivel: "RESCUE_REQUIRED", variante: null };
   if (input.commitment === "MISSED") return { nivel: "COMMITMENT_MISSED", variante: null };
   if (input.actionRecommended) return { nivel: "ACTION_RECOMMENDED", variante: null };
+  // Nivel 7. **Sin cursadas y con cursadas sin unidades no son lo mismo**: el
+  // primero es un recorrido que todavía no arrancó, el segundo un contexto
+  // incompleto que el estudiante puede completar.
+  if (input.sinMaterias) return { nivel: "CONTEXT_INCOMPLETE", variante: "PREPARANDO_INFORMACION" };
   if (input.contextIncomplete) return { nivel: "CONTEXT_INCOMPLETE", variante: null };
 
   // Nivel 8 — el discriminador es el lifecycle de la Evidence.

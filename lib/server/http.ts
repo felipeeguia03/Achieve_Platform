@@ -46,3 +46,29 @@ export function esSecretoDeServicio(recibido: string | null, esperado: string | 
   }
   return diferencia === 0;
 }
+
+/**
+ * El gate del alta — Etapa B6.14.4,
+ * [ADR-052](../../docs/decisions.md#adr-052).
+ *
+ * Devuelve el cuerpo del `409` cuando el estudiante todavía no completó el alta,
+ * y `null` cuando puede pasar.
+ *
+ * **Por qué en el backend y no en el navegador.** Un gate que viva sólo en el
+ * cliente no es un gate: es la misma lección de la Fase B6.10, donde el
+ * requisito de reflexión se hacía cumplir con un botón deshabilitado y
+ * `POST /api/evidencia` nunca lo consultaba.
+ *
+ * **Por qué `409` y no `403`.** `403` ya significa *sin habilitación de padrón*,
+ * y la pantalla lo trata como un error que el estudiante no puede resolver. Éste
+ * sí puede: es un conflicto de estado con una salida concreta, y la salida viaja
+ * en la respuesta.
+ */
+export const CODIGO_ALTA_INCOMPLETA = "ALTA_INCOMPLETA";
+
+export function altaPendiente(alta: { completa: boolean; siguiente: string | null }):
+  | { error: string; siguiente: string }
+  | null {
+  if (alta.completa || alta.siguiente === null) return null;
+  return { error: CODIGO_ALTA_INCOMPLETA, siguiente: alta.siguiente };
+}

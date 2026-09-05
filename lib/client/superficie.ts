@@ -28,9 +28,20 @@ import { pedir, type Respuesta } from "./api";
  *
  * ⚠️ Con `?escenario=` no redirige. El catálogo sintético no necesita sesión, y
  * mandar al login desde una demo del Track A rompería el recorrido del focus
- * group, que corre sin backend.
+ * group, que corre sin backend. Lo mismo vale para el alta: una demo con
+ * escenario explícito no pide nada, así que no puede recibir un `409`.
  */
-export type EstadoDeSuperficie<T> = Respuesta<T> | { estado: "CARGANDO" };
+/**
+ * Lo que una pantalla puede recibir.
+ *
+ * **`ALTA_INCOMPLETA` no está, y no es un olvido:** el hook redirige antes de
+ * guardarlo, así que ninguna superficie lo ve nunca. Dejarlo en el tipo
+ * obligaría a las nueve a manejar una rama inalcanzable, y `NoSePudoCargar`
+ * tendría que aprender un motivo que no es un fallo.
+ */
+export type EstadoDeSuperficie<T> =
+  | Exclude<Respuesta<T>, { estado: "ALTA_INCOMPLETA" }>
+  | { estado: "CARGANDO" };
 
 export function useSuperficie<T>(ruta: string, opciones: { omitir?: boolean } = {}) {
   const omitir = opciones.omitir ?? false;
@@ -52,7 +63,10 @@ export function useSuperficie<T>(ruta: string, opciones: { omitir?: boolean } = 
    * vigencia no cubría: una respuesta vieja no puede quedar en pantalla bajo una
    * ruta nueva, porque su clave ya no coincide.
    */
-  const [resultado, setResultado] = useState<{ clave: string; r: Respuesta<T> } | null>(null);
+  const [resultado, setResultado] = useState<{
+    clave: string;
+    r: Exclude<Respuesta<T>, { estado: "ALTA_INCOMPLETA" }>;
+  } | null>(null);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -64,6 +78,17 @@ export function useSuperficie<T>(ruta: string, opciones: { omitir?: boolean } = 
       if (!vigente) return;
       if (r.estado === "SIN_SESION") {
         router.replace(`/login?volver=${encodeURIComponent(pathname)}`);
+        return;
+      }
+      /*
+        El alta primero — B6.14, ADR-052.
+
+        Va junto al `401` y por el mismo motivo: es **el único lugar** donde vive
+        esa redirección. `siguiente` lo decide el backend, no la pantalla; el
+        cliente no calcula en qué paso está nadie.
+      */
+      if (r.estado === "ALTA_INCOMPLETA") {
+        router.replace(r.siguiente);
         return;
       }
       // Sin esta guarda se setea estado sobre un componente que ya se fue.

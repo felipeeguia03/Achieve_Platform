@@ -48,7 +48,26 @@ const ctaPorVariante: Record<HeroVariante, CopyId> = {
   RESCATE_STARTABLE: "CTA.EMPEZAR_RESCATE",
   EVIDENCIA_ENVIADA: "CTA.VER_EVIDENCIA",
   EVIDENCIA_VALIDADA: "CTA.VER_AVANCE",
+  // Nunca se muestra: `ofreceCta` devuelve `false` para esta variante. Está
+  // para que el `Record` siga siendo total y el compilador siga avisando
+  // cuando se agregue una variante nueva.
+  PREPARANDO_INFORMACION: "CTA.VER_MATERIAS",
 };
+
+/**
+ * Hay un estado sin CTA, y es a propósito.
+ *
+ * *"Estamos preparando tu información académica"* no ofrece nada que apretar
+ * porque **no hay nada que el estudiante pueda hacer**: el texto aprobado dice
+ * *"te avisaremos cuando tu recorrido esté listo"*. Ofrecer «Ver materias»
+ * cuando no hay materias sería una CTA que lleva a un vacío.
+ *
+ * `AGENTS.md` §2.2: una CTA cuya condición de aparición no se cumple **no se
+ * renderiza**. No deshabilitada, no en gris: no está.
+ */
+export function ofreceCta(_nivel: HeroLevel, variante: HeroVariante | null = null): boolean {
+  return variante !== "PREPARANDO_INFORMACION";
+}
 
 export function estadoGeneralPara(nivel: HeroLevel): string {
   return t(estadoGeneralPorNivel[nivel]);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { tokenDelHeader } from "@/lib/server/http";
+import { altaPendiente, tokenDelHeader } from "@/lib/server/http";
 import { completarPasoDeProtocolo, pasoDe, resolverSesion } from "@/lib/server/composicion";
 
 /** `GET /api/examen/paso?preparacion=<uuid>&paso=<uuid>` — Controller de `UX09`. */
@@ -12,6 +12,11 @@ export async function GET(request: Request) {
   if (sesion.estado === "SIN_PADRON") {
     return NextResponse.json({ error: "Sin habilitación de padrón" }, { status: 403 });
   }
+
+  // El alta primero (ADR-052). El estudiante que no la completó no cae en un
+  // HOY que afirma cosas sobre un recorrido que todavía no existe.
+  const pendiente = altaPendiente(sesion.alta);
+  if (pendiente) return NextResponse.json(pendiente, { status: 409 });
 
   const params = new URL(request.url).searchParams;
   const preparacion = params.get("preparacion");
@@ -49,6 +54,11 @@ export async function POST(request: Request) {
   if (sesion.estado === "SIN_PADRON") {
     return NextResponse.json({ error: "Sin habilitación de padrón" }, { status: 403 });
   }
+
+  // El alta primero (ADR-052). El estudiante que no la completó no cae en un
+  // HOY que afirma cosas sobre un recorrido que todavía no existe.
+  const pendiente = altaPendiente(sesion.alta);
+  if (pendiente) return NextResponse.json(pendiente, { status: 409 });
 
   const cuerpo = (await request.json().catch(() => null)) as
     | { preparacion?: string; paso?: string; tema?: string; clave?: string }

@@ -164,6 +164,24 @@ export const copy = {
   "HOY.ESTADO.EVIDENCE_INFO": "SIN ACCIÓN PENDIENTE",
   "HOY.ESTADO.DEFECTO": "SIN ACCIONES POR AHORA",
 
+  /**
+   * El estudiante recién dado de alta, todavía sin cursadas — Fase B6.14.
+   *
+   * **Texto aprobado por el Product Owner**, literal, en
+   * [ADR-042](../../docs/decisions.md#adr-042). Fuente:
+   * [`respuesta-po-flujos-crm-source.md`](../../docs/respuesta-po-flujos-crm-source.md).
+   *
+   * ⚠️ **No se edita para acortarlo.** Y en particular no se reemplaza por
+   * `HOY.VACIO`: el owner prohibió mostrar *"no hay una acción recomendada"*
+   * en este caso *"porque el sistema todavía no está en condiciones de evaluar
+   * eso"*. Es la misma disciplina de *sin datos no es cero*: **no evaluado no
+   * es lo mismo que evaluado y vacío.**
+   */
+  "HOY.ESTADO.PREPARANDO": "PREPARANDO TU INFORMACIÓN",
+  "HOY.PREPARANDO.TITULO": "Estamos preparando tu información académica.",
+  "HOY.PREPARANDO.QUE_SIGUE":
+    "Todavía no contamos con información suficiente para recomendarte una acción. Te avisaremos cuando tu recorrido esté listo.",
+
   // ── Recuperación · lo que el estudiante ve de su propia señal (B6.6.2) ────
   //
   // `VI.2` §8.6 y la matriz de visibilidad §4.1: al estudiante le corresponde

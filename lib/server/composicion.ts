@@ -151,6 +151,19 @@ import type {
 } from "@/lib/domain/view-models";
 import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
+import { altaReal, type SeleccionDeRequisito } from "./repositorios/alta";
+import { catalogoReal, type InstitucionOfrecible, type RequisitoDelPlan } from "./repositorios/catalogo";
+import {
+  confirmarMapaAcademico as confirmarMapaAcademicoPuro,
+  decidirWhatsapp as decidirWhatsappPuro,
+  declararCarrera as declararCarreraPuro,
+  estadoDelAlta as estadoDelAltaPuro,
+  resolverPlan as resolverPlanPuro,
+  type EstadoDelAlta,
+  type ResolucionDeCarrera,
+  type ResultadoDeConfirmacion as ResultadoDeConfirmacionDeAlta,
+  type ResultadoDeDeclaracion,
+} from "./servicios/alta";
 
 /**
  * Composition root: el **único** lugar donde las implementaciones concretas se
@@ -164,7 +177,92 @@ import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./
  * Cambiar de proveedor de auth o de base se hace acá, y en ningún otro lado.
  */
 export function resolverSesion(token: string | null): Promise<ResultadoDeSesion> {
-  return resolverSesionPuro({ identidad: identidadReal, estudiantes: estudiantesReal }, token);
+  return resolverSesionPuro(
+    {
+      identidad: identidadReal,
+      estudiantes: estudiantesReal,
+      // El estado del alta viaja con la sesión (ADR-052): es la misma pregunta
+      // para las nueve superficies, y resolverla nueve veces sería nueve
+      // lugares donde olvidarse.
+      alta: (institutionId, studentId) => estadoDelAltaPuro(altaReal, institutionId, studentId),
+    },
+    token,
+  );
+}
+
+// ── El alta académica · Etapa B6.14.4 (ADR-052) ──────────────────────────────
+
+export function estadoDelAlta(institutionId: string, studentId: string): Promise<EstadoDelAlta> {
+  return estadoDelAltaPuro(altaReal, institutionId, studentId);
+}
+
+/** El catálogo que se puede ofrecer. **Nunca un plan `DRAFT`** (ADR-051). */
+export function catalogoOfrecible(): Promise<InstitucionOfrecible[]> {
+  return catalogoReal.ofrecible();
+}
+
+export function resolverPlanDeCarrera(
+  programId: string,
+  ahora: string = new Date().toISOString(),
+): Promise<ResolucionDeCarrera> {
+  return resolverPlanPuro(catalogoReal, programId, ahora);
+}
+
+export function requisitosDelPlan(
+  curriculumPlanId: string,
+  studentId: string,
+): Promise<{ planId: string; requisitos: RequisitoDelPlan[] } | null> {
+  return catalogoReal.requisitos(curriculumPlanId, studentId);
+}
+
+export function decidirWhatsapp(
+  institutionId: string,
+  studentId: string,
+  decision: "GRANTED" | "DECLINED" | "WITHDRAWN",
+): Promise<{ estado: "OK" }> {
+  return decidirWhatsappPuro(altaReal, institutionId, studentId, decision);
+}
+
+export function declararCarrera(
+  institutionId: string,
+  studentId: string,
+  entrada: { curriculumPlanId: string; curriculumYear: number; term: string },
+): Promise<ResultadoDeDeclaracion> {
+  return declararCarreraPuro(
+    { alta: altaReal, catalogo: catalogoReal },
+    institutionId,
+    studentId,
+    entrada,
+  );
+}
+
+/**
+ * Confirmar el mapa académico mínimo, y **después** invocar al ADE.
+ *
+ * El ADE entra por el Service, no por `POST /api/recomendacion`: el estudiante
+ * no autoriza una recomendación, la Plataforma reacciona a un hecho de dominio.
+ * Mismo patrón que la validación en [ADR-040](../../docs/decisions.md#adr-040).
+ */
+export function confirmarMapaAcademico(
+  institutionId: string,
+  studentId: string,
+  entrada: {
+    curriculumPlanId: string;
+    curriculumYear: number;
+    term: string;
+    selecciones: SeleccionDeRequisito[];
+  },
+): Promise<ResultadoDeConfirmacionDeAlta> {
+  return confirmarMapaAcademicoPuro(
+    {
+      alta: altaReal,
+      catalogo: catalogoReal,
+      recomendar: (inst, cursada) => recomendarPara(inst, cursada),
+    },
+    institutionId,
+    studentId,
+    entrada,
+  );
 }
 
 /**

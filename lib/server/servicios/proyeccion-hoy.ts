@@ -105,6 +105,15 @@ function aEntradaDeHero(e: EstadoDelDia): HeroInput {
     // Hay recomendación cuando el ADE dejó una Action en `RECOMMENDED`.
     actionRecommended: s === "RECOMMENDED",
     contextIncomplete: e.contextoIncompleto,
+    /**
+     * **Ninguna cursada activa** — Fase B6.14, ADR-052.
+     *
+     * Se calcula acá y no en SQL porque `estado_del_dia()` ya trae la lista:
+     * una función de lectura más que contestara lo mismo sería una segunda
+     * verdad sobre la misma pantalla. Y `contextoIncompleto` no lo cubre: ése
+     * mira cursadas **sin unidades**, y sin cursadas no hay ninguna que mirar.
+     */
+    sinMaterias: e.materias.length === 0,
     evidenciaInformativa: e.evidencia,
   };
 }
@@ -117,6 +126,7 @@ const ESTADO: Record<string, string> = {
   COMMITMENT_NEXT: t("HOY.ESTADO.COMMITMENT_NEXT"),
   COMMITMENT_MISSED: t("HOY.ESTADO.COMMITMENT_MISSED"),
   CONTEXT_INCOMPLETE: t("HOY.ESTADO.CONTEXT_INCOMPLETE"),
+  PREPARANDO: t("HOY.ESTADO.PREPARANDO"),
   EVIDENCE_INFO: t("HOY.ESTADO.EVIDENCE_INFO"),
   NO_ACTION: t("HOY.ESTADO.DEFECTO"),
 };
@@ -196,6 +206,14 @@ export function proyectarDia(e: EstadoDelDia): HoyProps {
   const necesitaRecuperacion = e.riesgo?.necesitaPersona === true;
   const recuperacion = proyectarRecuperacion(e);
 
+  /**
+   * El alta terminó y todavía no hay nada que recomendar — ADR-042.
+   *
+   * ⚠️ **Nunca `"SIN ACCIONES POR AHORA"` acá.** Ese texto afirma que el ADE
+   * evaluó y no encontró nada, y en este caso no evaluó: no tiene sobre qué.
+   */
+  const preparandoInformacion = variante === "PREPARANDO_INFORMACION";
+
   // La línea operativa: tiempo si lo hay, estado si la Action ya arrancó.
   const tiempoOEstado =
     e.accion?.status === "IN_PROGRESS"
@@ -211,20 +229,38 @@ export function proyectarDia(e: EstadoDelDia): HoyProps {
     // son dos lugares donde arreglar el próximo cambio de copy.
     estadoGeneral: necesitaRecuperacion
       ? ESTADO.RESCUE_REQUIRED
-      : (ESTADO[nivel] ?? ESTADO.NO_ACTION),
+      : preparandoInformacion
+        ? ESTADO.PREPARANDO
+        : (ESTADO[nivel] ?? ESTADO.NO_ACTION),
     recuperacion,
-    hero: {
-      nivel,
-      variante,
-      contexto: e.accion?.contexto ?? null,
-      titulo: e.accion?.objetivo ?? null,
-      razon: e.accion?.razon ?? null,
-      tiempoOEstado,
-      evidenciaEsperada: e.accion?.evidenciaEsperada ?? null,
-      // El texto es dato; el prefijo "Después:" es copy (`C-07`).
-      queSigue: e.accion?.queSigue ? { texto: e.accion.queSigue, conPrefijo: true } : null,
-      chip: null,
-    },
+    hero: preparandoInformacion
+      ? {
+          nivel,
+          variante,
+          contexto: null,
+          titulo: t("HOY.PREPARANDO.TITULO"),
+          // **No hay razón que dar.** El estudiante no está esperando por algo
+          // que hizo mal: el sistema todavía no tiene sobre qué decidir.
+          razon: null,
+          tiempoOEstado: null,
+          evidenciaEsperada: null,
+          // Sin prefijo "Después:": no es lo que sigue a una acción, es lo que
+          // pasa mientras tanto.
+          queSigue: { texto: t("HOY.PREPARANDO.QUE_SIGUE"), conPrefijo: false },
+          chip: null,
+        }
+      : {
+          nivel,
+          variante,
+          contexto: e.accion?.contexto ?? null,
+          titulo: e.accion?.objetivo ?? null,
+          razon: e.accion?.razon ?? null,
+          tiempoOEstado,
+          evidenciaEsperada: e.accion?.evidenciaEsperada ?? null,
+          // El texto es dato; el prefijo "Después:" es copy (`C-07`).
+          queSigue: e.accion?.queSigue ? { texto: e.accion.queSigue, conPrefijo: true } : null,
+          chip: null,
+        },
     materias: e.materias.map((m) => ({
       nombre: m.nombre,
       estado: m.estado,

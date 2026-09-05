@@ -23,8 +23,27 @@ const vacio: EstadoDelDia = {
   bitacoraDisponible: true,
 };
 
+/**
+ * **Un día sin acción no es un estudiante sin cursadas** — B6.14, ADR-042.
+ *
+ * Hasta esta fase eran el mismo estado, y por eso a alguien recién dado de alta
+ * se le decía *"no hay una acción recomendada"*: una afirmación que el sistema
+ * no está en condiciones de hacer. `vacio` **no tiene cursadas**, así que ahora
+ * proyecta *"Estamos preparando tu información académica"*; los casos que
+ * quieren decir *"tiene materias y hoy no hay nada"* usan `conCursada`.
+ */
+const unaCursada = {
+  cursadaId: "ce-1",
+  nombre: "Análisis II",
+  estado: null,
+  tono: "neutral" as const,
+  ultimoAvanceEn: null,
+};
+
+const conCursada: EstadoDelDia = { ...vacio, materias: [unaCursada] };
+
 const conAccion: EstadoDelDia = {
-  ...vacio,
+  ...conCursada,
   accion: {
     id: "acc-1",
     status: "RECOMMENDED",
@@ -58,10 +77,30 @@ describe("B2.5 · la precedencia es la misma de siempre", () => {
     expect(r.hero.nivel).toBe("COMMITMENT_MISSED");
   });
 
-  it("sin nada, el estado es el de defecto y no hay título", () => {
-    const r = proyectarDia(vacio);
+  it("con cursadas y sin acción, el estado es el de defecto y no hay título", () => {
+    // La ausencia **confirmada**: el ADE tenía sobre qué decidir y no hay nada.
+    const r = proyectarDia(conCursada);
     expect(r.hero.titulo).toBeNull();
     expect(r.estadoGeneral).toBe("SIN ACCIONES POR AHORA");
+  });
+
+  it("sin ninguna cursada, no dice que no hay acción: dice que está preparando", () => {
+    /*
+      ADR-042, textual: *"no debe mostrarse «no hay una acción recomendada»,
+      porque el sistema todavía no está en condiciones de evaluar eso"*.
+
+      Es la misma disciplina de *sin datos no es cero*: no evaluado no es lo
+      mismo que evaluado y vacío.
+    */
+    const r = proyectarDia(vacio);
+    expect(r.hero.variante).toBe("PREPARANDO_INFORMACION");
+    expect(r.hero.nivel).toBe("CONTEXT_INCOMPLETE");
+    expect(r.estadoGeneral).toBe("PREPARANDO TU INFORMACIÓN");
+    expect(r.estadoGeneral).not.toBe("SIN ACCIONES POR AHORA");
+    expect(r.hero.titulo).toBe("Estamos preparando tu información académica.");
+    expect(r.hero.queSigue?.conPrefijo).toBe(false);
+    // Sin razón y sin CTA: no está esperando por algo que hizo.
+    expect(r.hero.razon).toBeNull();
   });
 });
 
@@ -246,10 +285,10 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
   it("no inventa una acción ni una CTA por riesgo", () => {
     // *"Riesgo alto sin Action/Commitment/Rescue → Hero = fallback honesto…
     // RiskSignal no inventa una acción"* (`VI.1` §3.4).
-    const p = proyectarDia({ ...vacio, riesgo: riesgoAlto });
+    const p = proyectarDia({ ...conCursada, riesgo: riesgoAlto });
     expect(p.hero.titulo).toBeNull();
     expect(p.hero.razon).toBeNull();
-    expect(p.materias).toEqual([]);
+    expect(p.materias).toHaveLength(1);
   });
 
   it("no reordena materias por riesgo", () => {

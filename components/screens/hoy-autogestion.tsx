@@ -25,7 +25,7 @@ import {
   TituloDePanel,
 } from "./design-system";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
-import { ctaPara } from "@/lib/content/hero";
+import { ctaPara, ofreceCta } from "@/lib/content/hero";
 import type {
   HeroProjection,
   HoyProps,
@@ -80,7 +80,15 @@ function HeroContent({ hero, onAvanzar }: { hero: HeroProjection; onAvanzar?: ()
           {hero.queSigue.texto}
         </ReglaDeNegocio>
       )}
-      <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
+      {/*
+        Hay un estado sin CTA — B6.14, ADR-042: "Estamos preparando tu
+        información académica" no ofrece nada que apretar porque no hay nada que
+        el estudiante pueda hacer. **No deshabilitada, no en gris: no está**
+        (AGENTS.md §2.2).
+      */}
+      {ofreceCta(hero.nivel, hero.variante) && (
+        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
+      )}
     </HeroCard>
   );
 }

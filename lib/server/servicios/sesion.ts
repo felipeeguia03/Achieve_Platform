@@ -1,4 +1,5 @@
 import type { RepositorioDeIdentidad } from "../repositorios/identidad";
+import type { EstadoDelAlta } from "./alta";
 
 /**
  * Service de sesión: resuelve **quién** hace la request y con qué alcance
@@ -22,7 +23,17 @@ export interface RepositorioDeEstudiantes {
 }
 
 export type ResultadoDeSesion =
-  | { estado: "OK"; estudiante: EstudianteDeSesion }
+  /**
+   * `alta` viaja con la sesión — Etapa B6.14.4,
+   * [ADR-052](../../../docs/decisions.md#adr-052).
+   *
+   * **Va acá y no en cada Controller** porque es la misma pregunta para las
+   * nueve superficies, y resolverla nueve veces sería nueve lugares donde
+   * olvidarse. Lo que cada Controller decide es qué hacer con ella: las nueve
+   * devuelven `409`; las rutas del propio alta no, o el estudiante no podría
+   * completarla nunca.
+   */
+  | { estado: "OK"; estudiante: EstudianteDeSesion; alta: EstadoDelAlta }
   /** Token ausente, vencido o inválido. */
   | { estado: "NO_AUTENTICADO" }
   /**
@@ -33,7 +44,12 @@ export type ResultadoDeSesion =
   | { estado: "SIN_PADRON"; authUserId: string };
 
 export async function resolverSesion(
-  deps: { identidad: RepositorioDeIdentidad; estudiantes: RepositorioDeEstudiantes },
+  deps: {
+    identidad: RepositorioDeIdentidad;
+    estudiantes: RepositorioDeEstudiantes;
+    /** Cómo se lee el estado del alta. Inyectado, como todo lo demás (§3.2). */
+    alta: (institutionId: string, studentId: string) => Promise<EstadoDelAlta>;
+  },
   token: string | null,
 ): Promise<ResultadoDeSesion> {
   if (!token) return { estado: "NO_AUTENTICADO" };
@@ -44,5 +60,6 @@ export async function resolverSesion(
   const estudiante = await deps.estudiantes.porIdentidadDeAuth(usuario.authUserId);
   if (!estudiante) return { estado: "SIN_PADRON", authUserId: usuario.authUserId };
 
-  return { estado: "OK", estudiante };
+  const alta = await deps.alta(estudiante.institutionId, estudiante.id);
+  return { estado: "OK", estudiante, alta };
 }

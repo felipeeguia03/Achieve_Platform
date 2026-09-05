@@ -33,6 +33,15 @@ export type Respuesta<T> =
   | { estado: "SIN_SESION" }
   /** Identidad válida sin `student` en el padrón (`403`). */
   | { estado: "SIN_PADRON" }
+  /**
+   * El alta todavía no está completa (`409`) — B6.14, ADR-052.
+   *
+   * **No es un error y no se dibuja.** Es el backend diciendo a dónde va este
+   * estudiante, y `siguiente` es la ruta concreta. Colapsarlo con `ERROR`
+   * mostraría un *"no se pudo cargar"* sobre algo que sí se pudo: lo que falta
+   * es que el estudiante termine de darse de alta.
+   */
+  | { estado: "ALTA_INCOMPLETA"; siguiente: string }
   /** El backend no contestó, o contestó cualquier otra cosa. */
   | { estado: "ERROR" };
 
@@ -82,6 +91,13 @@ export async function pedir<T>(ruta: string): Promise<Respuesta<T>> {
     const r = await fetch(ruta, { headers: { Authorization: `Bearer ${token}` } });
     if (r.status === 401) return { estado: "SIN_SESION" };
     if (r.status === 403) return { estado: "SIN_PADRON" };
+    if (r.status === 409) {
+      const cuerpo = (await r.json().catch(() => ({}))) as { error?: string; siguiente?: string };
+      if (cuerpo.error === "ALTA_INCOMPLETA" && cuerpo.siguiente) {
+        return { estado: "ALTA_INCOMPLETA", siguiente: cuerpo.siguiente };
+      }
+      return { estado: "ERROR" };
+    }
     if (!r.ok) return { estado: "ERROR" };
     return { estado: "OK", datos: (await r.json()) as T };
   } catch {
