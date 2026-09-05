@@ -91,7 +91,7 @@ npm run db:start     # levanta el stack local (necesita Docker corriendo)
 npm run db:reset     # tira abajo y re-aplica todas las migraciones desde cero
 npm run db:catalogo  # importa el catálogo curricular — VA ANTES que db:demo
 npm run db:demo      # el mundo sintético, sobre ese catálogo
-npm run db:sesion    # las dos identidades sintéticas (una con alta, una sin)
+npm run db:sesion    # las dos identidades sintéticas (sólo la primera vez)
 npm run db:verify    # migraciones, deny-by-default de §6, los 12 invariantes y el catálogo
 npm run db:studio    # http://127.0.0.1:54423
 npm run db:stop

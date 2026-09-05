@@ -21,6 +21,19 @@ if [ -z "$INST" ]; then
   exit 1
 fi
 
+# ── La atadura de identidad, conservada ──────────────────────────────────────
+#
+# `db:demo` borra los `student` para sembrar el mundo de nuevo, y con ellos se
+# iba `auth_user_id`. El efecto era un `403 SIN_PADRON` en `/login` —*"Tu cuenta
+# todavía no está habilitada"*— que **no tenía nada que ver con el padrón**:
+# había que acordarse de correr `db:sesion` después.
+#
+# "Acordate de correr otra cosa" no es una garantía. Se guardan las ataduras y
+# se reponen: `db:demo` queda idempotente respecto de la sesión, y el orden deja
+# de importar.
+AUTH1=$(q "select coalesce(auth_user_id::text,'') from student where id='$EST';" | tr -d '[:space:]')
+AUTH2=$(q "select coalesce(auth_user_id::text,'') from student where id='$NUEVO';" | tr -d '[:space:]')
+
 echo "→ Limpiando lo del estudiante (el catálogo NO se toca)"
 # ⚠️ **No se borran `institution`, `academic_program`, `curriculum_plan`,
 # `curriculum_requirement` ni `course`.** Son el catálogo, y lo carga
@@ -35,8 +48,10 @@ q "delete from escalation_sink; delete from error_observation; delete from inter
 
 echo "→ Dos estudiantes sintéticos en la institución del catálogo"
 # El primero recorre el loop (ya tiene su materia). El segundo recorre el alta.
-q "insert into student (id,institution_id,timezone) values ('$EST','$INST','America/Argentina/Cordoba');
-   insert into student (id,institution_id,timezone) values ('$NUEVO','$INST','America/Argentina/Cordoba');
+q "insert into student (id,institution_id,timezone,auth_user_id)
+   values ('$EST','$INST','America/Argentina/Cordoba', nullif('$AUTH1','')::uuid);
+   insert into student (id,institution_id,timezone,auth_user_id)
+   values ('$NUEVO','$INST','America/Argentina/Cordoba', nullif('$AUTH2','')::uuid);
    insert into availability (student_id,day_of_week,capacity_min,source) values ('$EST',1,45,'declared');
    insert into availability (student_id,day_of_week,capacity_min,source) values ('$NUEVO',1,45,'declared');" >/dev/null
 
@@ -83,6 +98,11 @@ q "insert into whatsapp_consent (institution_id,student_id,decision,policy_versi
     where cr.curriculum_plan_id='$PLAN' and cr.label='Cálculo Avanzado';" >/dev/null
 
 echo "→ Material por unidad (sin recurso no hay acción ejecutable)"
+# ⚠️ **Se borra lo de esta cursada antes de insertar.** `ingerir_materia()` es
+# reemplazo por cursada para unidades y evaluaciones, pero los recursos los
+# siembra este script: sin este `delete` se acumulaban en cada corrida —y los
+# viejos quedaban con `topic_id NULL`, apuntando a unidades que ya no existen.
+q "delete from resource where offering_id='$OFF';" >/dev/null
 q "insert into resource (offering_id,topic_id,resource_type,title,source_type,rights_status)
    select '$OFF', t.id, 'apunte', 'Guía de ' || t.name, 'instructor', 'unknown'
      from topic t where t.offering_id='$OFF';" >/dev/null
@@ -194,6 +214,12 @@ q "select '   consentimiento: ' || (public.estado_del_alta('$INST','$NUEVO')->>'
           ' · carrera: ' || (public.estado_del_alta('$INST','$NUEVO')->>'carreraDeclarada') ||
           ' · materias: ' || (public.estado_del_alta('$INST','$NUEVO')->>'materiasConfirmadas');"
 echo
+if [ -n "$AUTH1" ] && [ -n "$AUTH2" ]; then
+  echo "   (las identidades de /login se conservaron; no hace falta db:sesion)"
+else
+  echo "   ⚠️  Todavía sin identidad de auth: corré 'npm run db:sesion' para poder entrar."
+fi
+
 echo "✓ Mundo listo. Cursada: a6000000-0000-0000-0000-000000000001"
 q "select '   ' || (select count(*) from topic where offering_id='$OFF') || ' unidades · ' ||
           (select count(*) from assessment where offering_id='$OFF') || ' evaluaciones · ' ||

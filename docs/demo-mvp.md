@@ -94,8 +94,13 @@ En `.env.local` hacen falta `RELOJ_SHARED_SECRET` y, **sólo para el paso 9**,
 npm run recomendar -- <institution-id> <course-enrollment-id>
 ```
 
-> `npm run db:verify` **deja la base vacía** de datos de negocio y comparte UUID con `db:demo`.
-> Después de verificar hay que volver a sembrar.
+> `npm run db:verify` **deja la base vacía** de datos de negocio. Después de verificar hay que volver
+> a sembrar: `npm run db:catalogo && npm run db:demo`.
+>
+> ✅ **`db:demo` ya no desata las identidades.** Hasta la Fase B6.14 borraba los `student` y con ellos
+> `auth_user_id`, y el efecto era un `403` en `/login` —*"Tu cuenta todavía no está habilitada"*— que
+> **no tenía nada que ver con el padrón**. Ahora las guarda y las repone, así que `db:sesion` sólo
+> hace falta la primera vez. *"Acordate de correr otra cosa"* no era una garantía.
 
 ---
 
