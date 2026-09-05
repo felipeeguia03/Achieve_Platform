@@ -183,6 +183,49 @@ rechaza "una fuente sin referencia concreta" \
   "insert into curriculum_requirement (curriculum_plan_id,ordinal,code,label,requirement_type,source_type,source_ref)
    values ('$PLAN',9998,'Y','Y','COURSE','institution','   ');"
 
+echo "→ ADR-061 · el período académico es vocabulario cerrado"
+
+# El valor canónico y sus dos negativos legítimos. Cualquier otra cosa es una
+# grafía que se coló sin normalizar, y son las que el ADR vino a impedir.
+FUERA=$(q "select count(*) from curriculum_requirement cr
+             join curriculum_plan cp on cp.id = cr.curriculum_plan_id
+            where cp.publication_status = 'PUBLISHED'
+              and cr.term is not null
+              and cr.term not in ('FIRST_SEMESTER','SECOND_SEMESTER');")
+igual "ningún plan publicado guarda un período fuera del vocabulario" "$FUERA" "0"
+
+# La regla que más fácil se rompe: una anual NO se dicta en un semestre.
+ANUAL_CON_SEM=$(q "select count(*) from curriculum_requirement
+                    where coalesce(is_annual,false) and term is not null;")
+igual "ninguna anual lleva semestre: aparece en los dos" "$ANUAL_CON_SEM" "0"
+
+# Y que el dato exista de verdad en los sintéticos: sin esto, el corte 2 no
+# tendría contra qué agrupar y el verificador pasaría en verde sobre nada.
+for PERIODO in FIRST_SEMESTER SECOND_SEMESTER; do
+  N=$(q "select count(*) from curriculum_requirement cr
+           join curriculum_plan cp on cp.id = cr.curriculum_plan_id
+          where cp.publication_status='PUBLISHED' and cr.term='$PERIODO';" | tr -d '[:space:]')
+  igual "hay materias de $PERIODO en planes publicados" "$([ "${N:-0}" -gt 0 ] && echo sí || echo no)" "sí"
+done
+N_ANUAL=$(q "select count(*) from curriculum_requirement cr
+               join curriculum_plan cp on cp.id = cr.curriculum_plan_id
+              where cp.publication_status='PUBLISHED' and coalesce(cr.is_annual,false);")
+igual "hay materias anuales en planes publicados" "$([ "${N_ANUAL:-0}" -gt 0 ] && echo sí || echo no)" "sí"
+
+rechaza "un período de dictado que es una clave calendario" \
+  "insert into curriculum_requirement (curriculum_plan_id,ordinal,code,label,requirement_type,term,source_type,source_ref)
+   values ('$PLAN',9997,'P1','P1','COURSE','2026-1','institution','x');"
+rechaza "una anual con semestre declarado" \
+  "insert into curriculum_requirement (curriculum_plan_id,ordinal,code,label,requirement_type,term,is_annual,source_type,source_ref)
+   values ('$PLAN',9996,'P2','P2','COURSE','FIRST_SEMESTER',true,'institution','x');"
+rechaza "un semestre «anual» en la inscripción del estudiante" \
+  "update enrollment set semester='ANNUAL' where student_id='$EST';"
+
+echo "→ ADR-061 · el alta guarda año lectivo y semestre en columnas propias"
+DER=$(q "select coalesce(academic_year::text,'—')||'/'||coalesce(semester,'—')
+           from enrollment where student_id='$EST' limit 1;")
+igual "'2026-2' quedó como 2026 + SECOND_SEMESTER" "$DER" "2026/SECOND_SEMESTER"
+
 q "delete from requirement_declaration where student_id in ('$EST','$OTRO');
    delete from course_enrollment where student_id in ('$EST','$OTRO');
    delete from enrollment where student_id in ('$EST','$OTRO');

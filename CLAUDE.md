@@ -107,7 +107,7 @@ nombra sigue sin construirse. Son las opciones `A` y `C`, **decisión de diseño
 fue explícito: *"esto no autoriza construir todavía una nueva superficie de listado «Materias» ni
 cambiar el nombre del ítem del menú"*. **No las adelantes.**
 
-✅ **`npm run db:verify` volvió a correr entero: 320 comprobaciones, cero fallos.** Estaba roto desde
+✅ **`npm run db:verify` volvió a correr entero: 330 comprobaciones, cero fallos.** Estaba roto desde
 la B6.14 —a `limpiar_mundo` le faltaban cinco tablas y, como las 40 sentencias van en **una sola
 transacción**, una FK abortaba todo y no se borraba nada—. Arreglarlo destapó un segundo defecto que
 el primero tapaba: `db-aislamiento.sh` **vacía el catálogo que `db-catalogo.sh` necesita después**,
@@ -482,7 +482,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **320 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **330 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
 de negocio a propósito:** después hay que volver a sembrar con `npm run db:demo`.
 

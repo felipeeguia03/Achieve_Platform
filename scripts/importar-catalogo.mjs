@@ -140,6 +140,43 @@ for (const archivo of archivos) {
   }
   const col = (fila, nombre) => fila[encabezado.indexOf(nombre)];
 
+  /**
+   * El período de dictado, canónico — ADR-061.
+   *
+   * Un CSV administrativo trae lo que trae: `1`, `S1`, `primer semestre`. Se
+   * normaliza **acá, en la entrada**, y se guarda un solo valor. Lo que no se
+   * reconoce **corta la importación** en vez de entrar como texto libre: es la
+   * misma regla que ya rige para `requirement_type`.
+   *
+   * ⚠️ **`2026-1` se rechaza a propósito.** Es una clave de período calendario,
+   * no un período de dictado. La fila del plan dice «esta materia se dicta en el
+   * primer semestre», de cualquier año.
+   */
+  const GRAFIAS_DE_PERIODO = new Map([
+    ["1", "FIRST_SEMESTER"], ["s1", "FIRST_SEMESTER"], ["1c", "FIRST_SEMESTER"],
+    ["primer semestre", "FIRST_SEMESTER"], ["primer cuatrimestre", "FIRST_SEMESTER"],
+    ["first_semester", "FIRST_SEMESTER"],
+    ["2", "SECOND_SEMESTER"], ["s2", "SECOND_SEMESTER"], ["2c", "SECOND_SEMESTER"],
+    ["segundo semestre", "SECOND_SEMESTER"], ["segundo cuatrimestre", "SECOND_SEMESTER"],
+    ["second_semester", "SECOND_SEMESTER"],
+    ["anual", "ANNUAL"], ["annual", "ANNUAL"],
+  ]);
+
+  const periodoDeDictado = (crudo, ordinal) => {
+    const clave = (crudo ?? "").trim().toLowerCase();
+    if (clave === "") return null;
+    const canonico = GRAFIAS_DE_PERIODO.get(clave);
+    if (canonico === undefined) {
+      console.error(
+        `✗ ${archivo} · fila ${ordinal}: período de dictado desconocido "${crudo}". ` +
+          `Valores aceptados: ${[...GRAFIAS_DE_PERIODO.keys()].join(", ")}. ` +
+          `Una clave calendario como 2026-1 NO es un período de dictado (ADR-061).`,
+      );
+      process.exit(1);
+    }
+    return canonico;
+  };
+
   // Un archivo puede traer varios planes. Se agrupan por su clave natural.
   const planes = new Map();
   for (const fila of filas.slice(1)) {
@@ -152,6 +189,8 @@ for (const archivo of archivos) {
       process.exit(1);
     }
 
+    const periodo = periodoDeDictado(col(fila, "term"), col(fila, "requirement_ordinal"));
+
     planes.get(clave).requisitos.push({
       ordinal: Number(col(fila, "requirement_ordinal")),
       code: vacioEsNull(col(fila, "subject_code")),
@@ -159,8 +198,10 @@ for (const archivo of archivos) {
       requirement_type: tipo,
       curriculum_year: vacioEsNull(col(fila, "curriculum_year")),
       year_source: vacioEsNull(col(fila, "year_source")),
-      term: vacioEsNull(col(fila, "term")),
-      is_annual: booleano(col(fila, "is_annual")),
+      // ANNUAL no se guarda en `term`: es `is_annual = true` con `term` en NULL,
+      // y hay CHECK en la base. Una anual aparece en los dos semestres.
+      term: periodo === "ANNUAL" ? null : periodo,
+      is_annual: periodo === "ANNUAL" ? true : booleano(col(fila, "is_annual")),
       min_options: vacioEsNull(col(fila, "min_options")),
       max_options: vacioEsNull(col(fila, "max_options")),
       label_truncated: booleano(col(fila, "label_truncated")) ?? false,

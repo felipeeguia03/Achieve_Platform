@@ -114,7 +114,7 @@ el catálogo de otra institución. **No borra el catálogo, ni la sesión, ni lo
 llega al HTML**. **No se declara en producción**, y la ruta se borra cuando
 [ADR-006](docs/decisions.md#adr-006) abra.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1143 tests en 63 archivos**
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1160 tests en 64 archivos**
 corre sin Docker, en cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack
 levantado.
 
@@ -126,7 +126,7 @@ lo suyo también al empezar y por `trap EXIT`, para que una corrida que falla no
 siguiente.
 
 ✅ **Esa limpieza se rompió con la Fase B6.14 y ya está corregida**, con la corrida entera en verde:
-**320 comprobaciones, cero fallos**. Eran dos defectos encadenados —le faltaban las cinco tablas
+**330 comprobaciones, cero fallos**. Eran dos defectos encadenados —le faltaban las cinco tablas
 nuevas a `limpiar_mundo`, y arreglarlo destapó que `db-aislamiento.sh` vacía el catálogo que
 `db-catalogo.sh` necesita después—. Ver [`docs/roadmap.md`](docs/roadmap.md) §0.2.
 

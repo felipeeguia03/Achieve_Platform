@@ -31,9 +31,23 @@ Tres hallazgos del informe, y el más importante apareció después:
 
 ---
 
-## Corte 1 · Vocabulario del período y fixtures sintéticos
+## Corte 1 · Vocabulario del período y fixtures sintéticos — ✅ HECHO
 
-**Ejecuta:** [ADR-061](decisions.md#adr-061) §4.
+**Ejecuta:** [ADR-061](decisions.md#adr-061) §4. **Completado el 5 de septiembre de 2026.**
+
+> ✅ **Cómo cerró.** `lib/domain/periodo.ts` (vocabulario + normalizador + `seDictaEn`), una migración
+> con los tres `CHECK` y el backfill, el importador normalizando **tres dialectos distintos** —los
+> CSV traen `1`/`2`/`anual` y `S1`/`S2`/`ANUAL` a propósito—, y **9 comprobaciones nuevas** contra
+> Postgres. Las dos funciones del alta derivan año y semestre de `p_term`: **ningún contrato cambió**.
+>
+> **Y apareció un defecto que no era de este corte:** el `jsonb_agg` de `materias` en
+> `estado_del_dia()` **era el único agregado sin `ORDER BY`**. Con una materia no se notaba; con
+> dieciséis y desde [ADR-054](decisions.md#adr-054) —que hace que `CTA-001` abra la cursada de la
+> fila visible— significaba que el estudiante podía abrir una materia distinta de la que vio. Se
+> corrigió **en su propio commit**, y el check que lo cazó comparaba contra la posición `0` en vez de
+> contra el orden: también se arregló.
+>
+> `lint` · `typecheck` · `build` · **1160 tests** · **`db:verify` 330 ✓, exit 0**.
 
 | | |
 |---|---|

@@ -379,7 +379,13 @@ CREATE TABLE curriculum_requirement (
      'PROFESSIONAL_PRACTICE','CAPSTONE','UNKNOWN')),
   curriculum_year SMALLINT,              -- NULL = UNKNOWN. Nunca se infiere por posición
   year_source     TEXT,                  -- qué se vio para afirmarlo, y qué no
-  term            TEXT,                  -- el "Semestre" del §5.1. NULL = desconocido
+  -- El período de **DICTADO** de la materia en el plan — ADR-061, vocabulario
+  -- cerrado. `NULL` = no se sabe, que es el estado de las 57 filas del Plan 2016
+  -- (ADR-053). ⚠️ **NUNCA una clave calendario como `2026-1`**: eso es el período
+  -- del estudiante y vive en `enrollment`. Son dos conceptos distintos.
+  term            TEXT,
+  -- Se dicta todo el año: **aparece en los DOS semestres**. Excluyente con
+  -- `term` — una anual no se dicta en uno solo.
   is_annual       BOOLEAN,
   course_id       UUID REFERENCES course(id) ON DELETE RESTRICT,
   min_options SMALLINT, max_options SMALLINT, required_credits NUMERIC,
@@ -392,7 +398,12 @@ CREATE TABLE curriculum_requirement (
   confidence  NUMERIC(3,2) CHECK (confidence BETWEEN 0 AND 1),
   UNIQUE (curriculum_plan_id, ordinal),
   UNIQUE (curriculum_plan_id, code),
-  CONSTRAINT curso_solo_si_es_course CHECK (course_id IS NULL OR requirement_type = 'COURSE')
+  CONSTRAINT curso_solo_si_es_course CHECK (course_id IS NULL OR requirement_type = 'COURSE'),
+  -- ADR-061
+  CONSTRAINT periodo_de_dictado_canonico CHECK (
+    term IS NULL OR term IN ('FIRST_SEMESTER','SECOND_SEMESTER')),
+  CONSTRAINT anual_no_lleva_semestre CHECK (
+    NOT (COALESCE(is_annual, FALSE) AND term IS NOT NULL))
 );
 
 -- Qué materia concreta puede satisfacer un cupo. N:N. Lo que el estudiante declara
@@ -566,10 +577,22 @@ CREATE TABLE enrollment (
   id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id         UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
   program_id         UUID NOT NULL REFERENCES academic_program(id) ON DELETE RESTRICT,
+  -- La clave compuesta del período calendario: `'2026-2'`. **Se conserva** porque
+  -- la UNIQUE de abajo depende de ella; el año y el semestre viven además en
+  -- columnas propias desde ADR-061, y `claveDePeriodo()` produce las dos formas
+  -- para que no puedan discrepar.
   term               TEXT NOT NULL,
   institution_id     UUID REFERENCES institution(id) ON DELETE RESTRICT,
   curriculum_plan_id UUID REFERENCES curriculum_plan(id) ON DELETE RESTRICT,
+  -- El año **de la carrera** (1.º, 2.º…). No confundir con el año lectivo.
   curriculum_year    SMALLINT,
+  -- ADR-061. El año lectivo (2026) y el semestre en el que cursa el estudiante.
+  -- ⚠️ `semester` **no admite un valor «anual»**: la anualidad es una propiedad
+  -- de la materia, no del alumno. Una persona puede estar en el segundo semestre
+  -- y cursar materias anuales al mismo tiempo.
+  academic_year      SMALLINT CHECK (academic_year IS NULL OR academic_year >= 2000),
+  semester           TEXT CHECK (semester IS NULL OR
+                        semester IN ('FIRST_SEMESTER','SECOND_SEMESTER')),
   -- **El estado del alta.** NOT NULL = el mapa académico mínimo está confirmado.
   confirmed_at       TIMESTAMPTZ,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -17,6 +17,8 @@
  * clasificar la fila. Colapsarlo con `COURSE` haría que el alta le preguntara
  * al estudiante si cursa algo que nadie sabe qué es.
  */
+import { claveDePeriodo } from "./periodo";
+
 export type TipoDeRequisito =
   | "COURSE"
   | "ELECTIVE_SLOT"
@@ -163,14 +165,22 @@ export function siguientePaso(estado: {
 /**
  * El período de cursado, derivado de la fecha.
  *
- * ⚠️ **Es una convención de la demo, no una regla académica.** El calendario de
- * una institución no se infiere de un mes: cuándo empieza y termina cada
- * cuatrimestre es un dato que la institución declara, y todavía no lo tenemos
- * — `curriculum_requirement.term` existe y queda `NULL`. Cuando exista, esto
- * sale del catálogo y no de acá.
+ * ⚠️ **Sigue siendo una convención de la demo, y sigue estando mal.** El
+ * calendario de una institución no se infiere de un mes.
+ * [ADR-061](../../docs/decisions.md#adr-061) decidió **preguntarlo**, y eso es el
+ * corte 2 del [plan](../../docs/plan-periodo-comision-horarios.md): hasta
+ * entonces esta función es la única fuente y se conserva para que el alta siga
+ * funcionando.
+ *
+ * **Lo que sí cambió en el corte 1:** la clave la arma `claveDePeriodo()`, así
+ * que la forma compuesta `'2026-2'` y el par (año lectivo, semestre) **no pueden
+ * discrepar** — es el mismo código el que produce las dos.
  *
  * `ahora` entra por parámetro, como todo lo demás de este módulo.
  */
 export function periodoDeCursado(ahora: Date = new Date()): string {
-  return `${ahora.getFullYear()}-${ahora.getMonth() < 6 ? 1 : 2}`;
+  return claveDePeriodo(
+    ahora.getFullYear(),
+    ahora.getMonth() < 6 ? "FIRST_SEMESTER" : "SECOND_SEMESTER",
+  );
 }
