@@ -1,5 +1,15 @@
 # Decisiones que esperan a una persona · 5 de septiembre de 2026
 
+> ## 🆕 Período, comisión y horarios — decidido el 5 de septiembre de 2026
+>
+> El owner incorporó al MVP el **período académico**, la **comisión/cátedra** y los **horarios de
+> cursada**: [ADR-060](decisions.md#adr-060) … [ADR-065](decisions.md#adr-065),
+> [fuente](respuesta-po-periodo-comision-horarios-source.md). El impacto está en
+> [`informe-periodo-comision-horarios.md`](informe-periodo-comision-horarios.md) y el plan por siete
+> cortes verificables en [`plan-periodo-comision-horarios.md`](plan-periodo-comision-horarios.md).
+>
+> **Dejó dos preguntas nuevas** —filas **19** y **20**—, y ninguna bloquea el primer corte.
+
 > ## ✅ El Product Owner respondió seis — 5 de septiembre de 2026
 >
 > Fuente literal: [`respuesta-po-agenda-decisiones-source.md`](respuesta-po-agenda-decisiones-source.md).
@@ -86,6 +96,9 @@
 | ~~17~~ | ~~[ADR-054](decisions.md#adr-054) · qué es el apartado «Materias»~~ | Product Owner + Diseño | ✅ **Respondida** — **opción `B`**: `CTA-001` transporta la cursada. ⚠️ **`A` y `C` siguen abiertas como decisión de diseño**: el menú sigue en plural sobre una superficie de una sola | ✅ |
 
 | 18 | El **área «Materias»** y el nombre del ítem del menú — opciones `A` y `C` de [ADR-054](decisions.md#adr-054) | Product Owner + Diseño | Que el estudiante llegue a **todas** sus materias, no sólo a la de la fila que tocó. La Parte II §10 del spec **nombra el área** y nunca la especifica | 🟡 Con `B` implementada, el producto ya no contesta mal; **sigue sin haber lista** |
+
+| 19 | ¿Un **cambio de comisión** es un hecho del dominio con evento propio? | Product Owner | Que mover una cursada de comisión deje rastro. Hoy sería un `UPDATE` mudo, y `product_event` es append-only con guard en las dos direcciones | 🟡 No bloquea el corte 1 del [plan](plan-periodo-comision-horarios.md) |
+| 20 | ¿El **semestre** entra en la clave de `enrollment`? | Product Owner | Hoy `UNIQUE (student_id, program_id, term)` hace que un año nuevo sea una inscripción nueva. Con año y semestre en columnas propias hay que decidirlo | 🟡 Ídem |
 
 **Leyenda de urgencia.** 🔴 hay trabajo listo para empezar que no arranca sin esto · 🟠 bloquea el
 cierre de una fase · 🟡 el producto funciona, con un hueco declarado.

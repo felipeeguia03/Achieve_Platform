@@ -63,6 +63,7 @@ por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto 
 | Frente | Estado |
 |---|---|
 | **Fase B6.14 · el catálogo curricular y el tramo de alta** | ✅ **Completa, 6 / 6** — 5 de septiembre de 2026 ([ADR-051](decisions.md#adr-051), [ADR-052](decisions.md#adr-052), [ADR-053](decisions.md#adr-053)). Cierra el hueco que ADR-039 había dejado escrito: entre el `authorized: true` del CRM y la primera acción **ya hay pantallas**. ⚠️ **Y le movió el mundo debajo a una decisión de la B2.6**: ver [ADR-054](decisions.md#adr-054) |
+| **Período, comisión y horarios de cursada** | 🆕 **Decidido el 5 de septiembre de 2026, sin implementar** — [ADR-060](decisions.md#adr-060) … [ADR-065](decisions.md#adr-065). El temario pasa a ser **de la materia** (el progreso sobrevive a un cambio de comisión), la comisión gana **cuatro estados en la cursada**, el período se pregunta en `/alta/carrera` con vocabulario cerrado, y la superposición con clase se valida **en el `Commitment`, no en el ADE**. Plan por **siete cortes** en [`plan-periodo-comision-horarios.md`](plan-periodo-comision-horarios.md) |
 | **El recorrido a mano · 5 de septiembre** | 🔴 **Dos hallazgos abiertos**, ninguno de los dos en el camino que la B6.14 verificó: el apartado «Materias» y `db:verify`. Los dos en [§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre) |
 | **Fase B6.13 · «Cambiar horario»** | ✅ **Completa** — 4 de septiembre de 2026 ([ADR-050](decisions.md#adr-050)). La renegociación es alcanzable **desde `UX04`**, como acción secundaria, y **«Renegociar» sale de la interfaz**. Verificada con los cuatro recorridos que pidió el owner |
 | **Fases B6.11 y B6.12 · las dos decisiones del 4 de septiembre, implementadas** | ✅ **Completas** — la **renegociación** es alcanzable ([ADR-046](decisions.md#adr-046)) y el **disparador de Modo Examen** existe ([ADR-048](decisions.md#adr-048)). En el medio apareció una contradicción con el schema y se resolvió con [ADR-049](decisions.md#adr-049): la institución **tiene zona horaria propia**. Y la decisión de diseño que dejaron abierta se cerró el mismo día: ver B6.13 |
@@ -80,7 +81,7 @@ por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto 
 ### Lo que espera a una persona
 
 > 📋 **El índice completo, ordenado por qué destraba:**
-> [`decisiones-abiertas.md`](decisiones-abiertas.md) — **dieciocho filas, seis abiertas**, con quién
+> [`decisiones-abiertas.md`](decisiones-abiertas.md) — **veinte filas, ocho abiertas**, con quién
 > decide cada una y qué pasa si no se decide.
 
 > ✅ **El Product Owner respondió seis el 5 de septiembre de 2026.** El planteo fue

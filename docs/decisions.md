@@ -106,6 +106,12 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-057](#adr-057) | `C01-030` · la identidad de quien revisa queda diferida hasta ADR-006 | ✅ `ACCEPTED` *(5 sep 2026 · `DEFERRED` con motivo; el interinato sigue vigente)* | — |
 | [ADR-058](#adr-058) | `C01-029` · la regla determinística de readiness | ✅ `ACCEPTED` *(5 sep 2026 · tres estados, sin score ni porcentaje)* | — |
 | [ADR-059](#adr-059) | `C01-019` · se conserva lo actual; la semántica completa es residuo de piloto | ✅ `ACCEPTED` *(5 sep 2026 · **no bloquea el MVP**; el gate `H` de `UX06` sigue)* | — |
+| [ADR-060](#adr-060) | El temario es de la materia, no de la cátedra | ✅ `ACCEPTED` *(5 sep 2026 · el progreso sobrevive a un cambio de comisión **por construcción**)* | — |
+| [ADR-061](#adr-061) | Período académico: año lectivo, semestre y anualidad con vocabulario cerrado | ✅ `ACCEPTED` *(5 sep 2026 · se pregunta en `/alta/carrera`; **el alta pasa a cuatro pasos**)* | — |
+| [ADR-062](#adr-062) | La asignación de comisión: cuatro estados canónicos, en la cursada | ✅ `ACCEPTED` *(5 sep 2026 · `CONFIRMED`/`UNKNOWN`/`NOT_LISTED`/`NOT_APPLICABLE`)* | — |
+| [ADR-063](#adr-063) | Horarios: dos propietarios, procedencia obligatoria y estado explícito | ✅ `ACCEPTED` *(5 sep 2026 · se usan sin corroborar y **no se elevan**)* | — |
+| [ADR-064](#adr-064) | La superposición con una clase se valida en el `Commitment`, no en el ADE | ✅ `ACCEPTED` *(5 sep 2026 · el ADE no agenda)* | — |
+| [ADR-065](#adr-065) | La electiva todavía no elegida persiste como `PENDING_SELECTION` | ✅ `ACCEPTED` *(5 sep 2026 · exige relajar el `CHECK` `una_sola_forma`)* | — |
 
 ---
 
@@ -4799,3 +4805,276 @@ eso quedó como residuo para el piloto. `C01-019` pasa a `ANSWERED — RESIDUO A
 
 ⚠️ **Y el residuo de `C01-032` sigue vivo:** reconciliar los dos vocabularios de dimensiones es
 exactamente lo que esta decisión difiere al piloto.
+
+---
+
+## ADR-060 — El temario es de la materia, no de la cátedra
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-periodo-comision-horarios-source.md) §1
+**Relacionado:** [ADR-029](#adr-029), [ADR-037](#adr-037), [ADR-051](#adr-051), `C01-019`.
+**Toca:** `data-model.md`, `architecture.md`, la ingesta del ADL, `estado_de_materia()`,
+`estado_del_dia()`, el contexto del ADE.
+
+### La decisión
+
+> *"Para el MVP, el temario canónico pertenece a la **materia**, no a cada comisión."*
+>
+> *"El progreso del estudiante continúa asociado a los temas de la materia y debe sobrevivir
+> íntegramente a un cambio de comisión."*
+
+**Lo que la cátedra sí aporta**, textual: *"ritmo y orden de recorrido, fechas, evaluaciones,
+recursos, clases realizadas, indicaciones específicas del docente"*. Lo que **no** puede hacer:
+*"crear automáticamente un universo nuevo e incompatible de temas"*.
+
+⚠️ **Y puso el límite de lo que esto autoriza:** si aparece evidencia de temarios sustancialmente
+distintos, se diseñará *"una relación explícita entre el temario base y sus variaciones"*, y eso
+**queda fuera del MVP**: *"no autoriza ahora un sistema de overrides o remapeos"*.
+
+### El schema ya lo permite, y eso cambia el tamaño del trabajo
+
+**`topic` ya tiene las dos columnas**, con un `CHECK` que exige al menos una:
+
+```sql
+topic (id, offering_id NULL, course_id NULL, parent_id, code, name, sequence)
+CHECK (offering_id IS NOT NULL OR course_id IS NOT NULL)   -- topic_belongs_somewhere
+```
+
+**Hoy los cuatro topics del mundo demo cuelgan de `offering_id` y ninguno de `course_id`**, porque
+las dos funciones que los escriben —`ingerir_material_del_adl()` e `ingerir_plan_de_estudios()`—
+usan la offering. **No hay columna que agregar ni que borrar:** hay que mover dónde se escribe y
+dónde se lee.
+
+**Los lectores que resuelven el temario por offering son cuatro**, y todos con la misma forma
+(`WHERE tp.offering_id = …`): la comprobación de `contextoIncompleto` de `estado_del_dia()`, la de
+`estado_de_materia()`, y el contexto del ADE.
+
+⚠️ **`topic.offering_id` NO se elimina**, por instrucción explícita: *"no eliminar todavía
+`topic.offering_id` sin analizar impacto y migración"*. Queda para lo que sí es de la cátedra —una
+unidad que una comisión agrega y otra no— y su retiro, si alguna vez ocurre, es decisión propia.
+
+### Consecuencia sobre el progreso
+
+`topic_progress` guarda `(course_enrollment_id, topic_id)`. Con el temario colgado del `course`,
+**mover `course_enrollment.offering_id` de una comisión a otra no cambia el conjunto de temas**, así
+que el progreso, las acciones, las evidencias y la bitácora sobreviven **por construcción** y no por
+una migración de datos. Era la pregunta que el informe marcó como la que condiciona todo lo demás.
+
+---
+
+## ADR-061 — Período académico: año lectivo, semestre y anualidad, con vocabulario cerrado
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-periodo-comision-horarios-source.md) §3 y §4
+**Relacionado:** [ADR-051](#adr-051), [ADR-052](#adr-052), [ADR-053](#adr-053).
+**Toca:** `lib/domain/alta.ts`, `/alta/carrera`, `/alta/materias`, `catalogo/*.csv`,
+`importar-catalogo.mjs`, `confirmar_mapa_academico()`, `data-model.md`.
+
+### Tres conceptos que dejan de ser uno
+
+> *"Separar conceptualmente: año lectivo · semestre actual del estudiante `FIRST_SEMESTER` o
+> `SECOND_SEMESTER` · período de dictado de una materia: primer semestre, segundo semestre o anual."*
+
+⚠️ **La anualidad no es un tercer valor del semestre del estudiante.** Textual: *"una persona puede
+estar en el segundo semestre y cursar simultáneamente materias anuales"*. Es una propiedad de **la
+materia**, no del alumno, y una anual *"debe poder aparecer durante ambos semestres del mismo año
+lectivo"*.
+
+### Se acaba la inferencia por el mes
+
+> *"No continuar usando texto libre ni inferir el período según el mes actual."*
+
+`periodoDeCursado()` deriva hoy `'2026-2'` de `Date.getMonth()`, con su propio comentario diciendo
+que *"es una convención de la demo, no una regla académica"*. **Ese comentario se cumple: se
+pregunta.**
+
+### Vocabulario cerrado, y la razón está dicha
+
+> *"Debe evitar que valores como `1`, `primer semestre`, `2026-1` y `S1` representen el mismo
+> concepto de maneras diferentes."*
+
+Hoy `enrollment.term` y `course_offering.term` son `text` **sin `CHECK`**, y
+`curriculum_requirement.term` e `is_annual` **existen y están en `NULL` en las 213 filas** — el
+importador de CSV ya las lee.
+
+### Dónde se pregunta
+
+> *"El año lectivo y el semestre actual se preguntan dentro de `/alta/carrera`. No crear una pantalla
+> independiente exclusivamente para el período y no agregar un quinto paso."*
+
+**El alta pasa de tres pasos a cuatro** —el cuarto es comisión y horarios ([ADR-062](#adr-062),
+[ADR-063](#adr-063))—, no a cinco. Y `/alta/materias` **agrupa por período**: primero las del
+semestre elegido, las anuales en un grupo aparte, y la salida a otros años y períodos.
+
+⚠️ *"No asumir que el alumno cursa todas las materias sugeridas por el plan"* — es la regla de
+`UF-S02` que el alta ya cumple, y se ratifica.
+
+---
+
+## ADR-062 — La asignación de comisión: cuatro estados canónicos, en la cursada
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-periodo-comision-horarios-source.md) §2
+**Relacionado:** [ADR-051](#adr-051), [ADR-052](#adr-052), [ADR-060](#adr-060).
+**Toca:** `course_enrollment`, `catalogo_ofrecible()`, `confirmar_mapa_academico()`,
+`GET /api/alta`, `POST /api/alta/materias`, la cuarta pantalla del alta.
+
+### Los cuatro estados
+
+| Estado | Qué dice |
+|---|---|
+| `CONFIRMED` | *"el estudiante confirmó una comisión existente"* |
+| `UNKNOWN` | *"el estudiante todavía no sabe cuál es su comisión"* |
+| `NOT_LISTED` | *"conoce su comisión, pero no aparece en el catálogo"* |
+| `NOT_APPLICABLE` | *"la materia no utiliza comisiones"* |
+
+> *"El estado pertenece a `course_enrollment`, porque describe la situación del estudiante."*
+
+**Eso resuelve la ambigüedad que el informe marcó:** hoy `course_offering.commission IS NULL`
+significa a la vez *"la institución no declara comisiones"* y *"el alumno no sabe la suya"*. El
+primero sigue siendo un hecho del catálogo; el segundo pasa a ser `UNKNOWN` en la cursada. **Son dos
+columnas en dos tablas, y por eso dejan de colapsarse.**
+
+### Las cinco reglas, textuales
+
+- *"`UNKNOWN` debe permitir continuar el alta."*
+- *"`NOT_LISTED` debe permitir escribir como mínimo el nombre declarado por el estudiante y
+  conservarlo como dato no verificado."*
+- *"`NOT_APPLICABLE` no es equivalente a `UNKNOWN`."*
+- *"**Nunca seleccionar automáticamente la primera comisión.**"*
+- *"Debe existir una acción global `No sé mis comisiones todavía`, que marque como `UNKNOWN` las
+  cursadas correspondientes sin bloquear el alta."*
+
+⚠️ **`NOT_LISTED` necesita dónde guardar el nombre**, y `course_enrollment` no tiene una columna de
+texto libre. Es la única consecuencia de schema que este ADR agrega más allá del estado.
+
+⚠️ **Y lo que la comisión habilita, no lo decide este ADR.** Con `CONFIRMED` se puede usar el ritmo,
+las evaluaciones y los recursos **de esa cátedra**; con los otros tres, la Plataforma trabaja con
+información general de la materia — que desde [ADR-060](#adr-060) es donde vive el temario.
+
+---
+
+## ADR-063 — Horarios: dos propietarios, procedencia obligatoria y estado explícito
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-periodo-comision-horarios-source.md) §6, §7 y §8
+**Relacionado:** [ADR-006](#adr-006), [ADR-029](#adr-029), [ADR-057](#adr-057), `C01-030`, `I9`.
+**Toca:** una entidad nueva, `course_enrollment`, la cuarta pantalla del alta, `data-model.md`.
+
+### Dos hechos distintos, y ninguno se disfraza del otro
+
+> *"1. El horario publicado de una comisión pertenece a `course_offering`. 2. El horario declarado
+> personalmente por un estudiante que todavía no conoce su comisión pertenece a
+> `course_enrollment`."*
+>
+> *"**No crear una comisión ficticia** ni utilizar la offering con `commission IS NULL` para guardar
+> el horario personal."*
+
+Y el caso que la representación tiene que sostener, textual: **«comisión desconocida, pero días y
+horarios conocidos»**. Con dos prohibiciones de forma: *"deben mantenerse las FK reales, la
+procedencia y la diferencia semántica. **No usar JSON opaco ni identificadores fabricados**"*.
+
+### El estado va en la cursada, no en una fila negativa
+
+> *"No crear una fila horaria negativa para representar desconocimiento. Guardar el estado explícito
+> en la cursada y las filas de horario únicamente cuando exista al menos un bloque conocido."*
+
+**Y comisión y horario son independientes**, con sus cuatro combinaciones declaradas: comisión
+conocida sin horarios · comisión desconocida con horarios · ambos · ninguno.
+
+⚠️ **La ausencia de horarios nunca se lee como disponibilidad.** Es el invariante *sin datos no es
+cero* aplicado a esto, y por eso el negativo tiene que ser explícito.
+
+⚠️ **Los bloques de clase no se mezclan con `availability`:** *"uno expresa cuándo está cursando y el
+otro cuándo puede estudiar"*. `availability` sigue siendo del estudiante y sigue alimentando
+`minutosDisponibles`.
+
+### Un horario declarado se usa sin corroborar, y eso no lo eleva
+
+> *"Un horario declarado por el estudiante puede usarse inmediatamente como una restricción personal
+> para sus compromisos, con `source_type = student` y `verification_status = unverified`."*
+>
+> *"Usarlo como restricción personal no significa presentarlo como horario oficial de la
+> institución."*
+
+**Hasta cerrar ADR-006 y `C01-030`:** nadie lo promueve a `verified` u `official`, no hace falta
+corroboración humana para que el propio estudiante lo use, y **no se publica ni se reutiliza
+automáticamente para otros estudiantes**.
+
+> **Por qué esto no rompe `I9`.** El invariante dice que **elevar** un `verification_status` es una
+> operación explícita y única (`corroborar_procedencia()`). Esta decisión **no eleva nada**: usa el
+> dato en el estado en que está, para quien lo declaró. La identidad de quien corrobora sigue
+> diferida por [ADR-057](#adr-057).
+
+---
+
+## ADR-064 — La superposición con una clase se valida en el `Commitment`, no en el ADE
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-periodo-comision-horarios-source.md) §5
+**Relacionado:** [ADR-004](#adr-004), [ADR-040](#adr-040), [ADR-046](#adr-046), [ADR-063](#adr-063).
+**Toca:** `POST /api/compromiso`, `propuestaDeCompromiso()`, `UX04`, `lib/domain/`.
+
+### La decisión, y por qué importa dónde va
+
+> *"La restricción horaria pertenece a la propuesta y validación del `Commitment`, no al ADE."*
+>
+> *"El ADE continúa decidiendo qué hacer, sobre qué materia o unidad, cuántos minutos dedicar. **El
+> flujo de `Commitment` decide cuándo hacerlo.**"*
+
+**Es la corrección que el informe planteó, aceptada.** El ADE nunca agenda: elige unidad y dimensiona
+el bloque con `MIN(availability.capacity_min)` —una duración, sin día y sin hora—, y el `start_at` lo
+manda el cliente. Poner la regla en el ADE no habría cambiado nada visible.
+
+### Qué pasa cuando hay conflicto
+
+> *"No confirmar silenciosamente el compromiso. Mostrar el conflicto. Pedir que elija otro horario o
+> que corrija el bloque de clase si ya no corresponde."*
+
+**Las dos salidas son del estudiante**, y la segunda importa: un bloque de clase puede estar
+desactualizado, y la pantalla no puede asumir que el equivocado es él.
+
+⚠️ **Un conflicto no es un error técnico.** Sigue el patrón de `RENEGOCIACION_NO_ELEGIBLE`
+([ADR-050](#adr-050)): un estado de producto con motivo canónico, que la superficie resuelve con
+`t()` — no un `500`, y no un botón apagado sin explicación.
+
+⚠️ **Y sólo se valida contra horarios conocidos.** Con el estado en *desconocido*
+([ADR-063](#adr-063)) no hay contra qué comparar, y **no se bloquea nada**: la ausencia no es
+disponibilidad, pero tampoco es un impedimento.
+
+---
+
+## ADR-065 — La electiva todavía no elegida persiste como `PENDING_SELECTION`
+
+**Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
+[fuente literal](respuesta-po-periodo-comision-horarios-source.md) §9
+**Relacionado:** [ADR-051](#adr-051), [ADR-052](#adr-052).
+**Toca:** `requirement_declaration`, `confirmar_mapa_academico()`, `components/alta/materias.tsx`.
+
+### La decisión
+
+> *"La declaración debe poder sobrevivir con estado `PENDING_SELECTION` aunque todavía no tenga
+> `course_enrollment_id` ni nombre escrito."*
+>
+> *"`confirmar_mapa_academico()` **no debe borrar esa declaración** durante una reconfirmación."*
+
+Con las tres salidas del estudiante: elegir una opción existente · declarar una que no aparece ·
+**«Todavía no elegí mi electiva»**. Ninguna bloquea el alta.
+
+### El `CHECK` que hoy lo impide, y hay que decirlo
+
+`requirement_declaration` lleva:
+
+```sql
+CHECK (num_nonnulls(course_enrollment_id, declared_label) = 1)   -- una_sola_forma
+```
+
+**Una fila con los dos en `NULL` es imposible hoy por constraint**, no por descuido: el `CHECK` se
+escribió para que una declaración siempre dijera *algo*. `PENDING_SELECTION` es un tercer valor
+legítimo de *"algo"*, y el constraint tiene que admitirlo **sin dejar de rechazar el caso que
+prevenía** —una fila con las dos formas a la vez—.
+
+⚠️ **Y el borrado de la reconfirmación es el otro bloqueo.** `confirmar_mapa_academico()` elimina las
+declaraciones del plan que no vengan en la selección; una electiva pendiente no viene, así que hoy se
+borraría en la siguiente confirmación. **La función tiene que distinguir «no lo eligió» de «no me lo
+mandaron».**

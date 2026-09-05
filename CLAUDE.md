@@ -73,7 +73,8 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Tocar estructura | [`docs/architecture.md`](docs/architecture.md) |
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
-| Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — dieciocho filas, **seis abiertas**, por lo que destraban |
+| Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — veinte filas, **ocho abiertas**, por lo que destraban |
+| Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
 | Qué decidió el owner el 5 de septiembre | [`docs/respuesta-po-agenda-decisiones-source.md`](docs/respuesta-po-agenda-decisiones-source.md) — **fuente literal**, manda sobre cualquier paráfrasis |
 | Saber qué levantó el recorrido a mano | [`docs/roadmap.md`](docs/roadmap.md) §0.2 — los dos hallazgos del 5 de septiembre, y el dock de **modo prueba** |
@@ -121,6 +122,28 @@ estudiante sintético sin volver a sembrar el mundo. **No es producto.** Apagado
 variable la ruta responde `404` y el componente no llega al HTML—, no agrega superficies ni CTAs, no
 emite eventos y no toca `product_event`, `audit_log` ni el catálogo. **Su selector de institución
 simula el padrón; no reabre [ADR-052](docs/decisions.md#adr-052).** Se borra cuando ADR-006 abra.
+
+🆕 **Período, comisión y horarios de cursada: decidido el 5 de septiembre, NO implementado.**
+[ADR-060](docs/decisions.md#adr-060) … [ADR-065](docs/decisions.md#adr-065). Antes de tocar nada de
+esto, tres cosas que ya se verificaron contra el schema y ahorran trabajo:
+
+⚠️ **La comisión ya existe** — `course_offering.commission` + `instructor_id`, con
+`UNIQUE (course_id, term, commission)`. El alta la crea siempre en `NULL`. **No inventes una entidad.**
+
+⚠️ **El semestre y la anualidad ya existen** — `curriculum_requirement.term` e `is_annual`, y el
+importador de CSV **ya los lee**. Están en `NULL` en las 213 filas: falta el dato, no la columna.
+
+⚠️ **`topic.course_id` ya existe**, con `CHECK (offering_id IS NOT NULL OR course_id IS NOT NULL)`.
+Por eso [ADR-060](docs/decisions.md#adr-060) —*el temario es de la materia*— es un backfill y no una
+migración riesgosa. **`topic.offering_id` NO se elimina**, por instrucción explícita del owner.
+
+⚠️ **La única entidad nueva es el bloque horario**, y tiene **dos dueños posibles y excluyentes**: la
+offering (horario publicado) o la cursada (horario que el estudiante declara sin saber su comisión).
+**Nunca una comisión ficticia, nunca JSON opaco.** Y **no se mezcla con `availability`**: una dice
+cuándo cursa, la otra cuándo puede estudiar.
+
+⚠️ **El ADE no agenda, y sigue sin hacerlo.** La superposición con una clase se valida en el
+`Commitment` ([ADR-064](docs/decisions.md#adr-064)).
 
 **Fase 0 — Cerrar el Track A.** ✅ **COMPLETA.** Las nueve superficies existen, todos los estados
 críticos son alcanzables, el Golden Path se recorre por clic y **el test de comprensión de 10
