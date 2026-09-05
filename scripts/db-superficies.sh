@@ -97,8 +97,26 @@ igual "ninguna materia trae estado" \
   "$(q "select coalesce((public.estado_del_dia('$INS','$EST',now())->'materias'->0->>'estado'),'NULO');")" "NULO"
 
 echo "→ estado_del_dia · los identificadores del flujo C (ADR-034 §7.6)"
+# **No se pregunta por la posición 0.** Lo que este check afirma es que el id
+# viaja, no en qué orden — mezclarlos hacía que un cambio de orden se reportara
+# como «la cursada no viaja», que es otra cosa. El orden tiene su propio check.
 igual "la cursada viaja con su id" \
-  "$(q "select (public.estado_del_dia('$INS','$EST',now())->'materias'->0->>'cursadaId');")" "$CE"
+  "$(q "select exists (select 1 from jsonb_array_elements(
+          public.estado_del_dia('$INS','$EST',now())->'materias') m
+         where m->>'cursadaId' = '$CE');")" "t"
+# Compararla consigo misma pasaría siempre. Se compara contra el orden que la
+# función **declara**: alta de la cursada, después nombre, después id.
+igual "las materias salen en el orden declarado (ADR-054)" \
+  "$(q "select (select jsonb_agg(m->>'cursadaId')
+                  from jsonb_array_elements(
+                    public.estado_del_dia('$INS','$EST',now())->'materias')
+                  with ordinality as t(m, i)) =
+               (select jsonb_agg(ce.id::text order by ce.created_at, c.name, ce.id)
+                  from course_enrollment ce
+                  join course_offering o on o.id = ce.offering_id
+                  join course c on c.id = o.course_id
+                 where ce.student_id='$EST' and ce.institution_id='$INS'
+                   and ce.status='active');")" "t"
 igual "y la acción con el suyo" \
   "$(q "select (public.estado_del_dia('$INS','$EST',now())->'accion'->>'id') = (select id::text from action where institution_id='$INS' order by created_at desc limit 1);")" "t"
 # El id que viaja es el de la **cursada**, no el de la materia del catálogo: es
