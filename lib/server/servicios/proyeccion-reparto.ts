@@ -47,6 +47,11 @@ export interface InsumosDeReparto {
    * haría que una mala semana le reduzca el presupuesto.
    */
   observaciones: Observacion[];
+  /**
+   * `false` ⇒ el estudiante apagó el ajuste de duración
+   * ([ADR-075](../../../docs/decisions.md#adr-075) §B4).
+   */
+  calibracionActiva: boolean;
   materias: Array<{
     cursadaId: string;
     nombre: string;
@@ -114,7 +119,7 @@ export function proyectarReparto(i: InsumosDeReparto): RepartoProjection | null 
   // lleva el tema para cualquiera— y el multiplicador es Personal Engine —cuánto
   // te lleva a vos—. Se multiplican acá y nunca antes, para que cada mitad se
   // pueda explicar por separado ([ADR-068](../../../docs/decisions.md#adr-068)).
-  const mult = multiplicadorDe(i.observaciones ?? []);
+  const mult = multiplicadorDe(i.observaciones ?? [], i.calibracionActiva !== false);
 
   const materias: MateriaEnElReparto[] = i.materias.map((m) => ({
     cursadaId: m.cursadaId,

@@ -4154,14 +4154,53 @@ columna dejó de existir; el otro, `C-02`, exigió justificar la palabra *activi
 
 `lint` · `typecheck` · `build` · **1285 tests** · **`db:verify` 388 ✓, 0 ✗, exit 0**.
 
-#### Corte 3 — El multiplicador: comparabilidad y transparencia
+#### ✅ Corte 3 — El multiplicador: comparabilidad y transparencia · COMPLETO · 7 de septiembre de 2026
 
-**Ejecuta §B.** El piso y el techo se mantienen. Lo que falta: exigir **3 días distintos** y el mismo
-tipo de actividad (§B3), la señal de **revisión de calibración** ante `≥2` en 3 de 5 (§B2), y que el
-estudiante **pueda ver qué actividades produjeron el ajuste, corregir un tiempo y desactivarlo** (§B4).
+**Ejecuta §B.** El piso `1,0` y el techo `2,0` **se mantienen**: los confirmó los dos.
 
-⚠️ *"Psicopedagogía no debe ser el primer destino automático de un error de tiempo."* La señal va
-primero al owner académico de la estimación.
+| | |
+|---|---|
+| **Migración** | `20260925000000_calibracion_apagable.sql`. `student.time_calibration_enabled`, y las observaciones ganan **día** y **tipo de actividad** |
+| **Dominio** | `porTipo()`, `validas()`, `revisionDeCalibracion()` y la `Confianza` interna |
+| **Pruebas** | 6 comprobaciones nuevas contra Postgres y 11 de dominio |
+
+**§B3 — comparabilidad, no sólo cantidad.** *"Importa tanto la calidad y comparabilidad de las
+observaciones como la cantidad."*
+
+- **Tres días distintos como mínimo.** Cinco registros de una misma tarde describen una tarde, no una
+  tendencia — y hay un test que lo fija.
+- **El mismo tipo general de actividad.** Sale de `action.verb`, que es el vocabulario que el ADE ya
+  usa: **inventar una taxonomía nueva sería exactamente lo que ella advirtió** sobre las etiquetas.
+- **La confianza es `baja` entre 5 y 9 observaciones, y es interna.** *"No exponer ese rótulo como
+  evaluación personal."*
+
+**§B4 — el interruptor.** *"Un sistema que cambia la carga sin explicar por qué puede parecer
+arbitrario."*
+
+El estudiante puede **apagar el ajuste**, y apagarlo **no borra la historia**: volver a encenderlo no
+empieza de cero. Si se perdiera, pagaría por haber querido entender qué estaba pasando.
+
+**§B2 — la señal de revisión de calibración.** No basta con superar el techo una vez: `≥2` en **3 de
+las últimas 5** observaciones válidas, **en al menos dos días**. Un tramo malo viejo, ya superado, no
+convoca a nadie hoy.
+
+> ⚠️ **La señal se detecta y todavía no tiene a dónde ir, y eso se dice en vez de improvisarlo.**
+> `risk_signal.student_id` es `NOT NULL`: el sujeto de una señal de riesgo es siempre el estudiante.
+> Y ella fue explícita en que el primer destino es **el owner académico de la estimación** —*"puede
+> señalar un error de estimación, una tarea mal definida, interrupciones, registro inexacto, material
+> insuficiente o ayuda no contabilizada"*— y en que **«psicopedagogía no debe ser el primer destino
+> automático de un error de tiempo»**.
+>
+> Meterla en `risk_signal` la convertiría en lo que ella dijo que no fuera. Es el mismo hueco que
+> [ADR-071](decisions.md#adr-071): **no existe una superficie de owner académico**, y cablear una
+> señal a nadie es peor que dejarla detectada y anotada.
+
+⚠️ **Y dos exclusiones de §B2 no se pueden implementar todavía**, porque el dato no existe: *"no
+computar registros corregidos […] ni sesiones con interrupción declarada"*. `reflection` no tiene ni
+marca de corrección ni de interrupción, y **tampoco hay un camino para corregir un tiempo**, que §B4
+pide explícitamente. Queda como lo que falta, no como algo que se olvidó.
+
+`lint` · `typecheck` · `build` · **1296 tests** · **`db:verify` 394 ✓, 0 ✗, exit 0**.
 
 #### Corte 4 — El `1,5` baja al último escalón
 

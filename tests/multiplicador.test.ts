@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   MINIMO_DE_OBSERVACIONES,
   TECHO,
+  porTipo,
+  revisionDeCalibracion,
   conMultiplicador,
   estimacionCentral,
   multiplicadorDe,
@@ -19,14 +21,21 @@ import {
  * menos.
  */
 
-const o = (minutosReales: number, min: number | null = 40, max: number | null = 60): Observacion => ({
-  minutosReales,
-  estimadoMin: min,
-  estimadoMax: max,
-});
+const o = (
+  minutosReales: number,
+  min: number | null = 40,
+  max: number | null = 60,
+  dia = "2026-09-01",
+  tipo = "resolver",
+): Observacion => ({ minutosReales, estimadoMin: min, estimadoMax: max, dia, tipo });
 
-/** Cinco observaciones idénticas: el mínimo para que calibre. */
-const cinco = (minutosReales: number) => Array.from({ length: 5 }, () => o(minutosReales));
+/**
+ * Cinco observaciones: el mínimo para que calibre, **en días distintos**.
+ * ADR-075 §B3 exige al menos tres — cinco registros de una misma tarde
+ * describen una tarde, no una tendencia.
+ */
+const cinco = (minutosReales: number) =>
+  Array.from({ length: 5 }, (_, i) => o(minutosReales, 40, 60, `2026-09-0${i + 1}`));
 
 describe("El piso de 1.0 (ADR-070)", () => {
   it("quien tarda la MITAD de lo estimado igual queda en 1.0", () => {
@@ -123,10 +132,128 @@ describe("Los dos factores quedan separados", () => {
 describe("Lo que el módulo no puede hacer", () => {
   it("no recibe nada de otro estudiante: el tipo no lo admite", () => {
     const obs: Observacion = o(60);
-    expect(Object.keys(obs).sort()).toEqual(["estimadoMax", "estimadoMin", "minutosReales"]);
+    expect(Object.keys(obs).sort()).toEqual([
+      "dia",
+      "estimadoMax",
+      "estimadoMin",
+      "minutosReales",
+      "tipo",
+    ]);
   });
 
   it("declara con qué regla se calculó", () => {
     expect(multiplicadorDe(cinco(60)).regla).toBe("multiplicador-v1");
+  });
+});
+
+describe("Comparabilidad, no sólo cantidad (ADR-075 §B3)", () => {
+  it("cinco registros del MISMO día no calibran: son una tarde", () => {
+    // *"Importa tanto la calidad y comparabilidad de las observaciones como la
+    // cantidad."*
+    const mismaTarde = Array.from({ length: 5 }, () => o(75, 40, 60, "2026-09-01"));
+    const m = multiplicadorDe(mismaTarde);
+    expect(m.estado).toBe("SIN_HISTORIA");
+    if (m.estado !== "SIN_HISTORIA") return;
+    expect(m.motivo).toBe("POCOS_DIAS");
+    // Y aun así se cuentan: no calibrar no es no tener datos.
+    expect(m.observaciones).toBe(5);
+  });
+
+  it("con tres días distintos ya calibra", () => {
+    const tresDias = [
+      o(75, 40, 60, "2026-09-01"),
+      o(75, 40, 60, "2026-09-01"),
+      o(75, 40, 60, "2026-09-02"),
+      o(75, 40, 60, "2026-09-03"),
+      o(75, 40, 60, "2026-09-03"),
+    ];
+    expect(multiplicadorDe(tresDias).estado).toBe("CALIBRADO");
+  });
+
+  it("la confianza es baja entre 5 y 9, y NO se expone al estudiante", () => {
+    // *"Rotular internamente la confianza como baja entre 5 y 9; no exponer ese
+    // rótulo como evaluación personal."*
+    const m5 = multiplicadorDe(cinco(75));
+    expect(m5.confianza).toBe("baja");
+
+    const diez = Array.from({ length: 10 }, (_, i) => o(75, 40, 60, `2026-09-0${(i % 5) + 1}`));
+    expect(multiplicadorDe(diez).confianza).toBe("suficiente");
+  });
+
+  it("las observaciones se pueden separar por tipo de actividad", () => {
+    // Comparar una lectura con un laboratorio no compara nada.
+    const mezcla = [...cinco(75), o(30, 40, 60, "2026-09-01", "leer")];
+    const grupos = porTipo(mezcla);
+    expect(grupos.get("resolver")).toHaveLength(5);
+    expect(grupos.get("leer")).toHaveLength(1);
+  });
+});
+
+describe("La revisión de calibración (ADR-075 §B2)", () => {
+  /**
+   * ⚠️ **No es una señal de riesgo del estudiante.** Superar el techo *"puede
+   * señalar un error de estimación, una tarea mal definida, interrupciones,
+   * registro inexacto, material insuficiente o ayuda no contabilizada"*.
+   */
+  it("una sola vez por encima del techo no dispara nada", () => {
+    const casi = [o(50), o(50), o(50), o(50), o(200, 40, 60, "2026-09-05")];
+    expect(revisionDeCalibracion(casi).estado).toBe("NO_CORRESPONDE");
+  });
+
+  it("tres de las últimas cinco, en dos días distintos, sí", () => {
+    const patron = [
+      o(50, 40, 60, "2026-09-01"),
+      o(50, 40, 60, "2026-09-02"),
+      o(200, 40, 60, "2026-09-03"),
+      o(200, 40, 60, "2026-09-03"),
+      o(200, 40, 60, "2026-09-04"),
+    ];
+    const r = revisionDeCalibracion(patron);
+    expect(r.estado).toBe("CORRESPONDE");
+    if (r.estado !== "CORRESPONDE") return;
+    expect(r.ocurrencias).toBe(3);
+    expect(r.desdeElDia).toBe("2026-09-03");
+  });
+
+  it("tres veces el MISMO día no alcanza: una tarde mala no es un patrón", () => {
+    const unaTarde = [
+      o(50, 40, 60, "2026-09-01"),
+      o(50, 40, 60, "2026-09-02"),
+      o(200, 40, 60, "2026-09-03"),
+      o(200, 40, 60, "2026-09-03"),
+      o(200, 40, 60, "2026-09-03"),
+    ];
+    expect(revisionDeCalibracion(unaTarde).estado).toBe("NO_CORRESPONDE");
+  });
+
+  it("mira las últimas cinco, no toda la historia", () => {
+    // Un mal tramo viejo, ya superado, no puede convocar a nadie hoy.
+    const viejo = [
+      o(200, 40, 60, "2026-08-01"),
+      o(200, 40, 60, "2026-08-02"),
+      o(200, 40, 60, "2026-08-03"),
+      o(50, 40, 60, "2026-09-01"),
+      o(50, 40, 60, "2026-09-02"),
+      o(50, 40, 60, "2026-09-03"),
+      o(50, 40, 60, "2026-09-04"),
+      o(50, 40, 60, "2026-09-05"),
+    ];
+    expect(revisionDeCalibracion(viejo).estado).toBe("NO_CORRESPONDE");
+  });
+});
+
+describe("El estudiante puede desactivar el ajuste (ADR-075 §B4)", () => {
+  it("desactivado devuelve 1.0 con su motivo", () => {
+    const m = multiplicadorDe(cinco(75), false);
+    expect(m.valor).toBe(1);
+    expect(m.estado).toBe("SIN_HISTORIA");
+    if (m.estado !== "SIN_HISTORIA") return;
+    expect(m.motivo).toBe("DESACTIVADO");
+  });
+
+  it("apagarlo NO borra la historia: las observaciones se siguen contando", () => {
+    // Si se perdieran, volver a encenderlo empezaría de cero, y el estudiante
+    // pagaría por haber querido entender qué estaba pasando.
+    expect(multiplicadorDe(cinco(75), false).observaciones).toBe(5);
   });
 });

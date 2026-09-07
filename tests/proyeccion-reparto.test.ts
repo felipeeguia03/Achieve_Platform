@@ -35,13 +35,14 @@ describe("El alcance declarado recorta lo que hace falta", () => {
   it("sin alcance declarado, cuenta la materia entera", () => {
     // Misma salida que `contexto_del_ade()`: el alcance se declara, nunca se
     // infiere del texto de `scope`.
-    const r = proyectarReparto({ minutosPorSemana: 600, observaciones: [], materias: [materia()] })!;
+    const r = proyectarReparto({ minutosPorSemana: 600, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
     expect(r.requerido).toBe("20 h"); // 1200 min en una semana
   });
 
   it("con alcance declarado, sólo lo que entra en la próxima evaluación", () => {
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: [],
       materias: [materia({ alcance: ["u1"] })],
     })!;
@@ -51,6 +52,7 @@ describe("El alcance declarado recorta lo que hace falta", () => {
   it("lo ya trabajado no vuelve a pedirse", () => {
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: [],
       materias: [
         materia({
@@ -67,7 +69,7 @@ describe("El alcance declarado recorta lo que hace falta", () => {
 
 describe("Las dos cifras, y ninguna conclusión", () => {
   it("cuando falta tiempo, `falta` es true y no hay ningún veredicto", () => {
-    const r = proyectarReparto({ minutosPorSemana: 60, observaciones: [], materias: [materia()] })!;
+    const r = proyectarReparto({ minutosPorSemana: 60, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
     expect(r.disponible).toBe("1 h");
     expect(r.requerido).toBe("20 h");
     expect(r.falta).toBe(true);
@@ -90,12 +92,12 @@ describe("Las dos cifras, y ninguna conclusión", () => {
   });
 
   it("cuando sobra, `falta` es false y tampoco hay veredicto", () => {
-    const r = proyectarReparto({ minutosPorSemana: 3000, observaciones: [], materias: [materia()] })!;
+    const r = proyectarReparto({ minutosPorSemana: 3000, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
     expect(r.falta).toBe(false);
   });
 
   it("sin disponibilidad declarada, no se compara nada", () => {
-    const r = proyectarReparto({ minutosPorSemana: null, observaciones: [], materias: [materia()] })!;
+    const r = proyectarReparto({ minutosPorSemana: null, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
     expect(r.disponible).toBeNull();
     expect(r.falta).toBeNull();
     expect(r.materias[0].asignado).toBeNull();
@@ -107,6 +109,7 @@ describe("Cargar una materia reorganiza a las demás", () => {
   it("dos materias iguales parten el presupuesto por la mitad", () => {
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: [],
       materias: [materia(), materia({ cursadaId: "ce-2", nombre: "Física" })],
     })!;
@@ -118,6 +121,7 @@ describe("Cargar una materia reorganiza a las demás", () => {
     // abandonarla.
     const r = proyectarReparto({
       minutosPorSemana: 60,
+      calibracionActiva: true,
       observaciones: [],
       materias: [materia(), materia({ cursadaId: "ce-2" }), materia({ cursadaId: "ce-3" })],
     })!;
@@ -129,6 +133,7 @@ describe("Sin datos no es cero", () => {
   it("una materia sin clases no pide nada, y el motivo lo dice", () => {
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: [],
       materias: [materia({ clases: [] })],
     })!;
@@ -139,7 +144,7 @@ describe("Sin datos no es cero", () => {
 
   it("sin materias no se dibuja la sección", () => {
     // Una sección vacía diciendo «no hay nada» es peor que no dibujarla.
-    expect(proyectarReparto({ minutosPorSemana: 600, observaciones: [], materias: [] })).toBeNull();
+    expect(proyectarReparto({ minutosPorSemana: 600, calibracionActiva: true, observaciones: [], materias: [] })).toBeNull();
   });
 });
 
@@ -153,20 +158,23 @@ describe("El formato no finge precisión", () => {
 
 describe("El multiplicador personal entra al reparto (ADR-074)", () => {
   /** Cinco observaciones de 75 sobre un central de 50: 1,5×. */
-  const lento = Array.from({ length: 5 }, () => ({
+  const lento = Array.from({ length: 5 }, (_, i) => ({
     minutosReales: 75,
     estimadoMin: 40,
     estimadoMax: 60,
+    dia: `2026-09-0${i + 1}`,
+    tipo: "resolver",
   }));
 
   it("sin historia, el reparto no cambia", () => {
-    const r = proyectarReparto({ minutosPorSemana: 600, observaciones: [], materias: [materia()] })!;
+    const r = proyectarReparto({ minutosPorSemana: 600, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
     expect(r.requerido).toBe("20 h");
   });
 
   it("con historia, pide más tiempo — nunca menos", () => {
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: lento,
       materias: [materia()],
     })!;
@@ -176,13 +184,16 @@ describe("El multiplicador personal entra al reparto (ADR-074)", () => {
   it("a quien tarda MENOS de lo estimado no se le promete menos", () => {
     // ADR-070: el Personal Engine puede pedir más tiempo; no puede prometer que
     // vas a necesitar menos. El piso de 1.0 lo hace cumplir.
-    const rapido = Array.from({ length: 5 }, () => ({
+    const rapido = Array.from({ length: 5 }, (_, i) => ({
       minutosReales: 20,
       estimadoMin: 40,
       estimadoMax: 60,
+      dia: `2026-09-0${i + 1}`,
+      tipo: "resolver",
     }));
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: rapido,
       materias: [materia()],
     })!;
@@ -193,6 +204,7 @@ describe("El multiplicador personal entra al reparto (ADR-074)", () => {
     // El multiplicador escala lo que hay; no convierte un `null` en un número.
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: lento,
       materias: [materia({ clases: [] })],
     })!;
@@ -209,6 +221,7 @@ describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
   const conDemanda = (minutosPorSemana: number) =>
     proyectarReparto({
       minutosPorSemana,
+      calibracionActiva: true,
       observaciones: [],
       // 1200 min pendientes en una semana ⇒ demanda 1200/semana.
       materias: [materia()],
@@ -250,6 +263,7 @@ describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
     // ausente"*. Media comparación es peor que ninguna.
     const r = proyectarReparto({
       minutosPorSemana: null,
+      calibracionActiva: true,
       observaciones: [],
       materias: [materia()],
     })!;
@@ -262,6 +276,7 @@ describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
   it("sin nada estimable, tampoco", () => {
     const r = proyectarReparto({
       minutosPorSemana: 600,
+      calibracionActiva: true,
       observaciones: [],
       materias: [materia({ clases: [] })],
     })!;
@@ -272,7 +287,7 @@ describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
 
 describe("Lo que el copy tiene prohibido decir (ADR-075 §A1–A2)", () => {
   const todos = [1200, 800, 300, 0].map((d) =>
-    proyectarReparto({ minutosPorSemana: d, observaciones: [], materias: [materia()] })!,
+    proyectarReparto({ minutosPorSemana: d, calibracionActiva: true, observaciones: [], materias: [materia()] })!,
   );
 
   it("ninguna frase dice «no vas a llegar», «deberías poder» ni «estás atrasado»", () => {
@@ -309,5 +324,32 @@ describe("Lo que el copy tiene prohibido decir (ADR-075 §A1–A2)", () => {
     for (const r of todos) {
       expect(r.aclaracion).toBe("Es una estimación para organizarte; no predice tu resultado.");
     }
+  });
+});
+
+describe("El interruptor de la calibración (ADR-075 §B4)", () => {
+  const lento = Array.from({ length: 5 }, (_, i) => ({
+    minutosReales: 75,
+    estimadoMin: 40,
+    estimadoMax: 60,
+    dia: `2026-09-0${i + 1}`,
+    tipo: "resolver",
+  }));
+
+  it("apagado, el reparto vuelve a los minutos base", () => {
+    const con = proyectarReparto({
+      minutosPorSemana: 600,
+      calibracionActiva: true,
+      observaciones: lento,
+      materias: [materia()],
+    })!;
+    const sin = proyectarReparto({
+      minutosPorSemana: 600,
+      calibracionActiva: false,
+      observaciones: lento,
+      materias: [materia()],
+    })!;
+    expect(con.requerido).toBe("30 h");
+    expect(sin.requerido).toBe("20 h");
   });
 });

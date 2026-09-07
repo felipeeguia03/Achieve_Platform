@@ -1292,6 +1292,42 @@ corre "delete from evidence where action_id in ('c9000000-0000-0000-0000-0000000
 corre "delete from action where id in ('c9000000-0000-0000-0000-000000000001','c9000000-0000-0000-0000-000000000002');"
 corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
 
+echo "→ ADR-075 §B3/§B4 · comparabilidad y el interruptor de la calibración"
+
+EST4=a5000000-0000-0000-0000-000000000001
+
+# Nace encendida: la calibración **existe** y lo que se ofrece es apagarla.
+[ "$(q "select time_calibration_enabled::text from student where id='$EST4';" | tr -d '[:space:]')" = "true" ] \
+  && ok "la calibración nace encendida" || mal "nació apagada"
+
+corre "update action set estimated_minutes_min=40, estimated_minutes_max=60, verb='resolver' where id='a7000000-0000-0000-0000-000000000001';"
+corre "insert into reflection (institution_id,action_id,actual_minutes,created_at) values
+  ('$A','a7000000-0000-0000-0000-000000000001',75, now() - interval '3 days'),
+  ('$A','a7000000-0000-0000-0000-000000000001',80, now() - interval '2 days');"
+
+X=$(q "select (o->>'dia') || '|' || (o->>'tipo')
+  from jsonb_array_elements(insumos_de_reparto('$A','$EST4')->'observaciones') o limit 1;" | tr -d '[:space:]')
+echo "$X" | grep -q "|resolver" \
+  && ok "cada observación viaja con su día y su tipo de actividad" || mal "faltan día o tipo: $X"
+
+# ⚠️ §B2 mira **las últimas cinco**: el orden cronológico es parte del contrato.
+D1=$(q "select o->>'dia' from jsonb_array_elements(insumos_de_reparto('$A','$EST4')->'observaciones') o limit 1;" | tr -d '[:space:]')
+D2=$(q "select o->>'dia' from jsonb_array_elements(insumos_de_reparto('$A','$EST4')->'observaciones') o offset 1 limit 1;" | tr -d '[:space:]')
+[ "$D1" \< "$D2" ] && ok "las observaciones viajan en orden cronológico" || mal "el orden no es cronológico: $D1 luego $D2"
+
+[ "$(q "select (insumos_de_reparto('$A','$EST4')->>'calibracionActiva')::text;" | tr -d '[:space:]')" = "true" ] \
+  && ok "el estado del interruptor viaja con los insumos" || mal "no viajó el interruptor"
+
+# Apagarlo no borra nada: volver a encenderlo no empieza de cero.
+corre "update student set time_calibration_enabled=false where id='$EST4';"
+[ "$(q "select (insumos_de_reparto('$A','$EST4')->>'calibracionActiva')::text;" | tr -d '[:space:]')" = "false" ] \
+  && ok "apagada, el interruptor lo dice" || mal "el apagado no se refleja"
+[ "$(q "select jsonb_array_length(insumos_de_reparto('$A','$EST4')->'observaciones')::text;" | tr -d '[:space:]')" = "2" ] \
+  && ok "y las observaciones siguen ahí: apagarlo no borra la historia" || mal "se perdieron las observaciones"
+
+corre "update student set time_calibration_enabled=true where id='$EST4';"
+corre "delete from reflection where action_id='a7000000-0000-0000-0000-000000000001';"
+
 limpiar_mundo
 ok "limpiado"
 

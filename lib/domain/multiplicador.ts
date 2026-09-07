@@ -33,6 +33,25 @@ export const REGLA_DE_MULTIPLICADOR = "multiplicador-v1";
 export const MINIMO_DE_OBSERVACIONES = 5;
 
 /**
+ * Debajo de esto la calibración es **provisional**, no un patrón estable.
+ *
+ * [ADR-075](../../docs/decisions.md#adr-075) §B3: *"Con 5 observaciones válidas,
+ * permitir calibración provisional; con menos de 10, **no describirla como
+ * patrón estable**."*
+ *
+ * ⚠️ **El rótulo es interno.** Textual: *"no exponer ese rótulo como evaluación
+ * personal"*.
+ */
+export const OBSERVACIONES_PARA_PATRON_ESTABLE = 10;
+
+/**
+ * Días distintos que tienen que aportar las observaciones — §B3.
+ *
+ * Cinco registros del mismo día son una tarde, no una tendencia.
+ */
+export const DIAS_DISTINTOS_MINIMOS = 3;
+
+/**
  * El techo, y **tiene significado**.
  *
  * Que a alguien le lleve sistemáticamente más del doble de lo estimado no es un
@@ -48,15 +67,45 @@ export interface Observacion {
   /** La estimación de la `Action`. `null` en cualquiera de las dos ⇒ no compara. */
   estimadoMin: number | null;
   estimadoMax: number | null;
+  /**
+   * El día en que se registró, `YYYY-MM-DD`. Sirve para exigir **días
+   * distintos** ([ADR-075](../../docs/decisions.md#adr-075) §B3): cinco
+   * registros del mismo día son una tarde, no una tendencia.
+   */
+  dia: string;
+  /**
+   * El tipo general de actividad. §B3 exige que las observaciones sean **del
+   * mismo tipo**: comparar una lectura con un laboratorio no compara nada.
+   */
+  tipo: string;
 }
 
+/**
+ * Qué tan lejos está la calibración de ser un patrón — §B3.
+ *
+ * ⚠️ **Es interno y no se muestra.** *"No exponer ese rótulo como evaluación
+ * personal."* Existe para que quien lea el dato adentro del sistema sepa cuánto
+ * pesa, no para devolvérselo al estudiante.
+ */
+export type Confianza = "sin_historia" | "baja" | "suficiente";
+
 export type Multiplicador =
-  | { estado: "CALIBRADO"; valor: number; observaciones: number; regla: string }
+  | {
+      estado: "CALIBRADO";
+      valor: number;
+      observaciones: number;
+      /** `baja` entre 5 y 9. **Interno**: no se le muestra al estudiante. */
+      confianza: Confianza;
+      regla: string;
+    }
   | {
       estado: "SIN_HISTORIA";
       /** **`1.0`, no `null`.** Sin historia no se penaliza ni se premia a nadie. */
       valor: 1;
       observaciones: number;
+      confianza: Confianza;
+      /** Por qué no calibró. Sirve para explicarlo, no para juzgar a nadie. */
+      motivo: "POCAS" | "POCOS_DIAS" | "DESACTIVADO";
       regla: string;
     };
 
@@ -84,33 +133,150 @@ function mediana(xs: readonly number[]): number {
  * reales en cero o negativos: no son datos malos, son datos que no comparan
  * nada.
  */
-export function multiplicadorDe(observaciones: readonly Observacion[]): Multiplicador {
-  const ratios: number[] = [];
-  for (const o of observaciones) {
+/** Las que sí comparan algo: con estimación y con minutos reales positivos. */
+export function validas(observaciones: readonly Observacion[]): Observacion[] {
+  return observaciones.filter((o) => {
     const central = estimacionCentral(o);
-    if (central === null || central <= 0) continue;
-    if (!Number.isFinite(o.minutosReales) || o.minutosReales <= 0) continue;
-    ratios.push(o.minutosReales / central);
-  }
+    if (central === null || central <= 0) return false;
+    return Number.isFinite(o.minutosReales) && o.minutosReales > 0;
+  });
+}
 
-  if (ratios.length < MINIMO_DE_OBSERVACIONES) {
+function ratio(o: Observacion): number {
+  return o.minutosReales / estimacionCentral(o)!;
+}
+
+/**
+ * El multiplicador del estudiante, **por tipo de actividad**.
+ *
+ * ⚠️ **Una observación sin estimación no cuenta**, y tampoco una con minutos
+ * reales en cero o negativos: no son datos malos, son datos que no comparan
+ * nada.
+ *
+ * @param activo `false` ⇒ el estudiante desactivó el ajuste (§B4). Devuelve
+ *   `1.0` con motivo, **sin dejar de contar las observaciones**: apagarlo no
+ *   borra la historia.
+ */
+export function multiplicadorDe(
+  observaciones: readonly Observacion[],
+  activo = true,
+): Multiplicador {
+  const utiles = validas(observaciones);
+
+  if (!activo) {
     return {
       estado: "SIN_HISTORIA",
       valor: 1,
-      observaciones: ratios.length,
+      observaciones: utiles.length,
+      confianza: "sin_historia",
+      motivo: "DESACTIVADO",
+      regla: REGLA_DE_MULTIPLICADOR,
+    };
+  }
+
+  if (utiles.length < MINIMO_DE_OBSERVACIONES) {
+    return {
+      estado: "SIN_HISTORIA",
+      valor: 1,
+      observaciones: utiles.length,
+      confianza: "sin_historia",
+      motivo: "POCAS",
+      regla: REGLA_DE_MULTIPLICADOR,
+    };
+  }
+
+  // ⚠️ **Días distintos, no sólo cantidad** — §B3. Cinco registros de una misma
+  // tarde describen una tarde: *"importa tanto la calidad y comparabilidad de
+  // las observaciones como la cantidad"*.
+  if (new Set(utiles.map((o) => o.dia)).size < DIAS_DISTINTOS_MINIMOS) {
+    return {
+      estado: "SIN_HISTORIA",
+      valor: 1,
+      observaciones: utiles.length,
+      confianza: "sin_historia",
+      motivo: "POCOS_DIAS",
       regla: REGLA_DE_MULTIPLICADOR,
     };
   }
 
   // El piso es `1.0` y el techo es `TECHO`. El piso no es una precaución
   // numérica: es ADR-070. El techo no es una precaución tampoco — ver arriba.
-  const valor = Math.min(TECHO, Math.max(1, mediana(ratios)));
+  const valor = Math.min(TECHO, Math.max(1, mediana(utiles.map(ratio))));
 
   return {
     estado: "CALIBRADO",
     valor,
-    observaciones: ratios.length,
+    observaciones: utiles.length,
+    confianza: utiles.length >= OBSERVACIONES_PARA_PATRON_ESTABLE ? "suficiente" : "baja",
     regla: REGLA_DE_MULTIPLICADOR,
+  };
+}
+
+/**
+ * Agrupa por tipo de actividad — §B3: *"exigir que provengan … del mismo tipo
+ * general de actividad"*.
+ *
+ * Comparar una lectura con un laboratorio no compara nada, y §B3 pide además
+ * *"reiniciar o separar la serie cuando cambia sustancialmente el tipo de
+ * tarea"*.
+ */
+export function porTipo(observaciones: readonly Observacion[]): Map<string, Observacion[]> {
+  const m = new Map<string, Observacion[]>();
+  for (const o of observaciones) m.set(o.tipo, [...(m.get(o.tipo) ?? []), o]);
+  return m;
+}
+
+// ── La señal de revisión de calibración · §B2 ────────────────────────────────
+
+/** Cuántas de las últimas cinco tienen que superar el techo. */
+export const OCURRENCIAS_PARA_REVISION = 3;
+/** Sobre cuántas se mira. */
+export const VENTANA_DE_REVISION = 5;
+/** Y en cuántos días distintos, para que no sea una sola tarde mala. */
+export const DIAS_MINIMOS_PARA_REVISION = 2;
+
+export type RevisionDeCalibracion =
+  | { estado: "NO_CORRESPONDE" }
+  | {
+      estado: "CORRESPONDE";
+      /** Cuántas de las últimas cinco superaron el techo. */
+      ocurrencias: number;
+      /** Las observaciones que la produjeron. §B4 exige poder verlas. */
+      desdeElDia: string;
+    };
+
+/**
+ * ¿Corresponde revisar la calibración? — [ADR-075](../../docs/decisions.md#adr-075) §B2.
+ *
+ * ⚠️ **No es una señal de riesgo del estudiante, y la diferencia no es de
+ * matiz.** Textual: *"Crear una señal de **revisión de calibración**, no una
+ * etiqueta de riesgo personal"*, y superar el techo una vez *"puede señalar un
+ * error de estimación, una tarea mal definida, interrupciones, registro
+ * inexacto, material insuficiente o ayuda no contabilizada"*.
+ *
+ * > *"**Psicopedagogía no debe ser el primer destino automático de un error de
+ * > tiempo.**"* Primero el owner académico de la estimación; después un
+ * > referente humano; evaluación psicopedagógica **sólo si convergen otras
+ * > señales**.
+ *
+ * @param observaciones En orden cronológico. Se miran **las últimas cinco**.
+ */
+export function revisionDeCalibracion(
+  observaciones: readonly Observacion[],
+): RevisionDeCalibracion {
+  const ultimas = validas(observaciones).slice(-VENTANA_DE_REVISION);
+  const superan = ultimas.filter((o) => ratio(o) >= TECHO);
+
+  if (superan.length < OCURRENCIAS_PARA_REVISION) return { estado: "NO_CORRESPONDE" };
+
+  // *"realizadas en al menos dos días"*: una sola tarde mala no es un patrón.
+  const dias = new Set(superan.map((o) => o.dia));
+  if (dias.size < DIAS_MINIMOS_PARA_REVISION) return { estado: "NO_CORRESPONDE" };
+
+  return {
+    estado: "CORRESPONDE",
+    ocurrencias: superan.length,
+    desdeElDia: [...dias].sort()[0],
   };
 }
 
