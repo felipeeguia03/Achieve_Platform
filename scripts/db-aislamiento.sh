@@ -1127,6 +1127,52 @@ ORDEN3=$(q "select string_agg(x->>'nombre', ',') from jsonb_array_elements(
 corre "delete from class_session where offering_id='a4000000-0000-0000-0000-000000000001';"
 corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
 
+echo "→ ADR-073 · la disponibilidad se declara, y «no sé» es una respuesta"
+
+EST1=a5000000-0000-0000-0000-000000000001
+
+# Antes de contestar: cero bloques y la columna en NULL. Son dos cosas
+# distintas y hasta ADR-073 se veían igual.
+[ "$(q "select (availability_declared_at is null)::text from student where id='$EST1';" | tr -d '[:space:]')" = "true" ] \
+  && ok "un estudiante nuevo no contestó: la marca está en NULL" || mal "la marca no arranca vacía"
+
+N=$(q "select declarar_disponibilidad('$A','$EST1','[{\"dia\":2,\"desde\":\"18:00\",\"hasta\":\"19:30\",\"minutos\":90},{\"dia\":4,\"minutos\":60}]'::jsonb);" | tr -d '[:space:]')
+[ "$N" = "2" ] && ok "declaró dos bloques" || mal "no se guardaron los bloques: $N"
+
+[ "$(q "select sum(capacity_min)::text from availability where student_id='$EST1' and source='declared';" | tr -d '[:space:]')" = "150" ] \
+  && ok "los minutos semanales suman 150" || mal "la suma salió mal"
+
+# La hora es opcional: «60 minutos los jueves» es una respuesta completa.
+[ "$(q "select (start_time is null)::text from availability where student_id='$EST1' and day_of_week=4;" | tr -d '[:space:]')" = "true" ] \
+  && ok "un bloque sin hora es legítimo: se sabe cuánto, no cuándo" || mal "la hora ausente no sobrevivió"
+
+# Reemplazo, no acumulación: declarar es decir cómo es tu semana.
+corre "select declarar_disponibilidad('$A','$EST1','[{\"dia\":1,\"minutos\":45}]'::jsonb);"
+[ "$(q "select count(*)::text from availability where student_id='$EST1' and source='declared';" | tr -d '[:space:]')" = "1" ] \
+  && ok "redeclarar reemplaza: corregir un horario no duplica la semana" || mal "los bloques viejos quedaron"
+
+# ⚠️ Y no toca los de otro origen: `observed` es del Personal Engine.
+corre "insert into availability (student_id,day_of_week,capacity_min,source) values ('$EST1',3,30,'observed');"
+corre "select declarar_disponibilidad('$A','$EST1','[]'::jsonb);"
+[ "$(q "select count(*)::text from availability where student_id='$EST1' and source='observed';" | tr -d '[:space:]')" = "1" ] \
+  && ok "declarar no borra lo observado: son dos orígenes distintos" || mal "se borró lo observado"
+
+# ⚠️ La comprobación que sostiene «no bloquea el alta».
+[ "$(q "select count(*)::text from availability where student_id='$EST1' and source='declared';" | tr -d '[:space:]')" = "0" ] \
+  && ok "una lista vacía no deja bloques" || mal "la lista vacía dejó filas"
+[ "$(q "select (availability_declared_at is not null)::text from student where id='$EST1';" | tr -d '[:space:]')" = "true" ] \
+  && ok "y aun así queda contestada: «no sé» no se vuelve a preguntar" || mal "el «no sé» no quedó registrado"
+
+[ "$(q "select (estado_del_alta('$A','$EST1')->>'disponibilidadRespondida')::text;" | tr -d '[:space:]')" = "true" ] \
+  && ok "el alta lo ve contestado y no repite el paso" || mal "el alta seguiría preguntando"
+
+# Un estudiante de otra institución no se toca.
+[ -z "$(q "select declarar_disponibilidad('$A','b5000000-0000-0000-0000-000000000001','[]'::jsonb);" | tr -d '[:space:]')" ] \
+  && ok "un estudiante de otra institución devuelve NULL, sin escribir" || mal "escribió sobre un estudiante ajeno"
+
+corre "delete from availability where student_id='$EST1';"
+corre "update student set availability_declared_at=null where id='$EST1';"
+
 limpiar_mundo
 ok "limpiado"
 

@@ -16,6 +16,13 @@
 
 import { t } from "@/lib/content/es-AR";
 
+/**
+ * Cuántas pantallas tiene el alta. Cuatro desde
+ * [ADR-073](../../docs/decisions.md#adr-073): WhatsApp, carrera, materias y
+ * disponibilidad.
+ */
+export const PASOS_DEL_ALTA = 4;
+
 export function MarcoDelAlta({
   paso,
   titulo,
@@ -23,7 +30,7 @@ export function MarcoDelAlta({
   children,
   ancho = 560,
 }: {
-  paso: 1 | 2 | 3;
+  paso: 1 | 2 | 3 | 4;
   titulo: string;
   /** La razón, pegada a la decisión (`P-01`). `null` ⇒ la línea desaparece. */
   ayuda?: string | null;
@@ -51,10 +58,14 @@ export function MarcoDelAlta({
       >
         <header style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {/*
-            Tres pasos, y se dicen. No es el "paso 5 de 12" que el protocolo de
-            examen tiene prohibido: allá el total no está determinado y afirmarlo
-            sería falso; acá el alta tiene exactamente tres pantallas y saber
+            El total se dice. No es el "paso 5 de 12" que el protocolo de examen
+            tiene prohibido: allá el total no está determinado y afirmarlo sería
+            falso; acá el alta tiene un número exacto de pantallas y saber
             cuántas faltan es lo que hace que se sienta breve.
+
+            ⚠️ **Son cuatro desde ADR-073**, no tres. El número vive en una
+            constante y no repetido en cada pantalla: agregar un paso y olvidarse
+            de actualizar el denominador le mostraría al estudiante "4/3".
           */}
           <p
             style={{
@@ -65,7 +76,7 @@ export function MarcoDelAlta({
               margin: 0,
             }}
           >
-            {t("ALTA.PASOS")} · {paso}/3
+            {t("ALTA.PASOS")} · {paso}/{PASOS_DEL_ALTA}
           </p>
           <h1 style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: 0 }}>{titulo}</h1>
           {ayuda && (

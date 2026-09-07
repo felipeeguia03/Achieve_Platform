@@ -107,7 +107,7 @@ export async function reiniciarAlta(
   const paso = siguientePaso({
     consentimientoRespondido: false,
     carreraDeclarada: false,
-    materiasConfirmadas: false,
+    materiasConfirmadas: false, disponibilidadRespondida: false,
   });
   if (paso === null) {
     // Inalcanzable por construcción, y por eso se dice en vez de devolver una

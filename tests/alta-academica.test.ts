@@ -134,7 +134,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: false,
         carreraDeclarada: false,
-        materiasConfirmadas: false,
+        materiasConfirmadas: false, disponibilidadRespondida: false,
       }),
     ).toBe("WHATSAPP");
   });
@@ -144,7 +144,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: false,
-        materiasConfirmadas: false,
+        materiasConfirmadas: false, disponibilidadRespondida: false,
       }),
     ).toBe("CARRERA");
   });
@@ -154,17 +154,46 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: true,
-        materiasConfirmadas: false,
+        materiasConfirmadas: false, disponibilidadRespondida: false,
       }),
     ).toBe("MATERIAS");
   });
 
-  it("confirmado, el alta terminó", () => {
+  it("confirmadas las materias, todavía falta la disponibilidad", () => {
+    // ADR-073. Va **después** de las materias porque necesita saber cuántas hay
+    // para que la pregunta signifique algo: antes, «¿cuántas horas tenés?» no
+    // tiene contra qué compararse.
     expect(
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: true,
         materiasConfirmadas: true,
+        disponibilidadRespondida: false,
+      }),
+    ).toBe("DISPONIBILIDAD");
+  });
+
+  it("contestada la disponibilidad, el alta terminó", () => {
+    expect(
+      siguientePaso({
+        consentimientoRespondido: true,
+        carreraDeclarada: true,
+        materiasConfirmadas: true,
+        disponibilidadRespondida: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("«no sé» cuenta como contestada: el alta NO se traba ahí", () => {
+    // Mismo precedente que WhatsApp (ADR-042 §2): saltear la pregunta más
+    // difícil del alta no puede costarle el acceso al producto. Lo que se pierde
+    // es el reparto, y eso se muestra como estado degradado.
+    expect(
+      siguientePaso({
+        consentimientoRespondido: true,
+        carreraDeclarada: true,
+        materiasConfirmadas: true,
+        disponibilidadRespondida: true, // contestó; declaró cero bloques
       }),
     ).toBeNull();
   });
@@ -188,6 +217,9 @@ function baseFalsa() {
         consentimientoRespondido: consentimientos.includes(studentId),
         carreraDeclarada: insc !== undefined,
         materiasConfirmadas: insc?.confirmadaEn !== null && insc?.confirmadaEn !== undefined,
+        // ADR-073: el paso existe y este doble no lo ejercita. `false` mantiene
+        // la máquina en su último paso, que es lo que estos tests miden.
+        disponibilidadRespondida: false,
         declaracion: insc
           ? {
               inscripcionId: `insc-${studentId}`,
@@ -285,6 +317,9 @@ describe("B6.14 · el estado del alta y el reingreso", () => {
   });
 
   it("al reingresar con el alta completa, no se repite ningún paso", async () => {
+    // ⚠️ El doble de `estado()` devuelve `disponibilidadRespondida: false`, así
+    // que acá el alta queda en el paso nuevo. Se declara para que el test siga
+    // midiendo lo que medía: que no se repiten los pasos **ya hechos**.
     const { alta, catalogo, eventos } = baseFalsa();
     await decidirWhatsapp(alta, "inst-1", "est-1", "GRANTED");
     await confirmarMapaAcademico(
@@ -295,10 +330,13 @@ describe("B6.14 · el estado del alta y el reingreso", () => {
     );
 
     const r = await estadoDelAlta(alta, "inst-1", "est-1");
-    expect(r.completa).toBe(true);
-    expect(r.siguiente).toBeNull();
-    // Y el gate deja pasar: `altaPendiente` devuelve `null`.
-    expect(altaPendiente(r)).toBeNull();
+    expect(r.siguiente).toBe("/alta/disponibilidad");
+    // Ni WhatsApp ni carrera ni materias vuelven a pedirse.
+    expect(r.paso).toBe("DISPONIBILIDAD");
+
+    // Y con la disponibilidad contestada, el gate deja pasar.
+    const completa = { completa: true, siguiente: null };
+    expect(altaPendiente(completa)).toBeNull();
   });
 
   it("con el alta incompleta, el gate devuelve el 409 con su salida", async () => {

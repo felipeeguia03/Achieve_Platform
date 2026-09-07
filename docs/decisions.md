@@ -119,6 +119,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-070](#adr-070) | El factor de estudio es un **piso** versionado, no un valor | ✅ `ACCEPTED` *(7 sep 2026 · `1.5`, constante y no tabla)* | — |
 | [ADR-071](#adr-071) | Los prerequisitos los aprueba el estudiante sobre su cursada | ✅ `ACCEPTED` *(7 sep 2026)* | — |
 | [ADR-072](#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | ✅ `ACCEPTED` *(7 sep 2026 · cobertura ≠ readiness)* | — |
+| [ADR-073](#adr-073) | La disponibilidad se declara, y el reparto entre materias es una proyección | ✅ `ACCEPTED` *(7 sep 2026 · **no bloquea el alta**)* | — |
 
 ---
 
@@ -5621,3 +5622,95 @@ no que lo hayas hecho bien. Que la evidencia no alcance es una afirmación de su
 suficiencia no es cobertura — el mismo corte que separa `preparar ≠ enviar ≠ suficiencia ≠
 validación ≠ dominio`. Bajarle la barra a alguien porque su entrega no alcanzó sería usarla como
 nota, que es justo lo que la nota al pie niega.
+
+
+---
+
+<a id="adr-073"></a>
+
+## ADR-073 — La disponibilidad se declara, y el reparto entre materias es una proyección
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decidido por el Product Owner**
+**Relacionado:** [ADR-042](#adr-042), [ADR-052](#adr-052), [ADR-058](#adr-058), [ADR-064](#adr-064),
+[ADR-072](#adr-072).
+**Toca:** `availability`, `student`, el tramo de alta, `lib/domain/`, `UX01`.
+
+### El pedido
+
+> *"Me gustaría que pueda empezar de cero con los usuarios y se vaya actualizando el engine: que cada
+> materia que carga vaya reorganizando las horas a partir de cuántas horas requiere cada materia."*
+
+Es una capa **entre materias**. Todo lo de la Fase B6.15 es **por materia**: cuánto lleva ésta,
+cuánto cubriste de ésta. Repartir introduce algo que el producto no tenía: **un presupuesto finito**.
+
+### El agujero, otra vez el mismo
+
+**`availability` no tiene escritor.** La tabla existe desde la Fase B1 con `day_of_week`,
+`start_time`, `end_time`, `capacity_min` y `source`. Ninguna ruta la escribe; sólo la siembra
+`db-demo.sh`. Y el ADE la lee así:
+
+```sql
+SELECT MIN(av.capacity_min) FROM availability av WHERE av.student_id = ce.student_id
+```
+
+**El mínimo, nunca la suma.** Sirve para dimensionar *un* bloque y no sabe cuánto tiempo hay por
+semana. Para un estudiante real eso es `NULL`, porque no tiene filas.
+
+Es el mismo patrón que [ADR-067](#adr-067) encontró con `assessment`: una tabla completa que nadie
+llena.
+
+### Las tres decisiones
+
+**1 · La disponibilidad se declara en el alta**, como un paso más junto a carrera y materias. Entra
+como `source = 'declared'`.
+
+La columna ya prevé `observed` e `inferred`: **el Personal Engine la corrige después**, con lo que el
+estudiante efectivamente cumplió. Nadie estima bien sus propias horas, y la declarada es el punto de
+partida, no la verdad.
+
+**2 · Cuando no alcanza, se muestra el hueco como hecho y sin veredicto.**
+
+> *"Tenés 6 h por semana. De acá al parcial, lo cargado suma 14 h."*
+
+Dos cifras, ninguna conclusión. **Ni «no llegás» ni «apurate».** Cualquiera de las dos es una
+predicción, y [ADR-058](#adr-058) las cerró.
+
+⚠️ **Y el sistema no elige qué materia recortar.** Decidir cuál se sacrifica es una decisión de vida;
+hoy no hay ni datos ni validación para sostenerla, y proponerla sería exactamente el tipo de
+afirmación que el producto se prohíbe.
+
+⚠️ **El copy exacto tiene que pasar por la psicopedagoga antes del piloto.** Mostrar un déficit puede
+aplastar aunque sea cierto, y la regla de la casa es *"el sistema debe reconocer patrones, no
+etiquetar personas"*. El hecho es correcto; **cómo se dice, no está validado**.
+
+**3 · El reparto es una proyección. No crea nada.**
+
+No genera `Commitment`, no agenda y no reemplaza al ADE, que sigue proponiendo **una acción por vez**.
+[ADR-064](#adr-064) fijó que el ADE decide *qué* y *cuánto* y el `Commitment` decide *cuándo*; un
+presupuesto entre materias es un tercer objeto y **no se mete en esa frontera**.
+
+### La consecuencia que no estaba en la pregunta, y se decide acá
+
+⚠️ **No declarar la disponibilidad NO bloquea el alta.**
+
+El precedente es explícito. [ADR-042](#adr-042) §2, sobre WhatsApp: *"el estudiante puede rechazar u
+omitir sin perder el acceso"*, y `siguientePaso()` lo comenta: *"un alta que se trabara en `DECLINED`
+sería exactamente lo que esa regla prohíbe"*.
+
+Trabar las nueve superficies hasta que alguien diga cuántas horas tiene sería peor: es la pregunta más
+difícil de contestar del alta, y la que más gente contestaría mal con tal de pasar.
+
+**Se pregunta, se puede saltear, y saltear cuenta como contestado.** La consecuencia es que el reparto
+no corre, y eso se muestra como todos los demás estados degradados de esta fase: con su motivo y con
+la CTA que lo arregla.
+
+⚠️ **Hace falta distinguir «no contestó» de «no tiene bloques».** Cero filas en `availability` hoy
+significa las dos cosas a la vez. Por eso `student.availability_declared_at`: **cuándo contestó la
+pregunta, haya declarado bloques o no.** Sin esa columna, el alta le volvería a preguntar para siempre
+al que ya dijo que no sabe.
+
+### Lo que esto no decide
+
+- **Cómo se calibra desde lo observado.** `source = 'observed'` es Personal Engine y necesita historia
+  que no existe.
+- **El copy del déficit.** Ver arriba: el hecho está decidido, la formulación no.

@@ -544,6 +544,17 @@ export const copy = {
   // El nombre viene cortado de la fuente y **no se completa** (ADR-053).
   "ALTA.MATERIAS.NOMBRE_CORTADO": "Nombre incompleto en el plan que recibimos.",
   "ALTA.MATERIAS.SIN_SELECCION": "Marcá al menos una materia para poder empezar.",
+  "ALTA.DISPONIBILIDAD.TITULO": "¿Cuánto tiempo tenés por semana?",
+  "ALTA.DISPONIBILIDAD.EXPLICACION":
+    "Sirve para repartir las horas entre tus materias. Es una estimación tuya: después se ajusta " +
+    "sola con lo que vayas haciendo.",
+  "ALTA.DISPONIBILIDAD.REGLA":
+    "No es un compromiso ni una agenda. Nada se agenda desde acá.",
+  "ALTA.DISPONIBILIDAD.CTA": "Guardar y terminar",
+  "ALTA.DISPONIBILIDAD.OMITIR": "Todavía no sé",
+  "ALTA.DISPONIBILIDAD.OMITIR_REGLA":
+    "Podés seguir sin contestar. Sin esto no podemos repartir las horas entre tus materias, " +
+    "y te lo vamos a decir en la pantalla.",
   "ALTA.ERROR.RED": "No pudimos guardar tu respuesta. Probá de nuevo en un momento.",
   /**
    * ⚠️ **`404` no es un error de red, y no se dicen igual.**

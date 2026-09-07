@@ -17,6 +17,8 @@ export interface EstadoDelAltaEnBase {
   consentimientoRespondido: boolean;
   carreraDeclarada: boolean;
   materiasConfirmadas: boolean;
+  /** Contestó la pregunta de disponibilidad, **haya declarado bloques o no**. */
+  disponibilidadRespondida: boolean;
   declaracion: {
     inscripcionId: string;
     carreraId: string;
@@ -148,4 +150,30 @@ export const altaReal = {
   declararCarrera,
   confirmar,
   cursadasActivas,
+  declararDisponibilidad,
 };
+
+/**
+ * La disponibilidad declarada — [ADR-073](../../../docs/decisions.md#adr-073).
+ *
+ * Reemplaza los bloques `declared` del estudiante: declarar la disponibilidad
+ * es decir **cómo es tu semana**, no agregar un bloque más. Los `observed` e
+ * `inferred` no se tocan — son de otro origen y de otra decisión.
+ *
+ * ⚠️ **Una lista vacía es una respuesta válida.** Marca
+ * `availability_declared_at` y no deja filas: es el «no sé» del ADR, y no
+ * bloquea el alta.
+ */
+async function declararDisponibilidad(
+  institutionId: string,
+  studentId: string,
+  bloques: ReadonlyArray<{ dia: number; desde?: string; hasta?: string; minutos: number }>,
+): Promise<number | null> {
+  const { data, error } = await clienteDeServicio().rpc("declarar_disponibilidad", {
+    p_institution_id: institutionId,
+    p_student_id: studentId,
+    p_bloques: bloques,
+  });
+  if (error) throw new Error(`No se pudo declarar la disponibilidad: ${error.message}`);
+  return (data as number | null) ?? null;
+}

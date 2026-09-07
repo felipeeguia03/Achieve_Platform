@@ -3854,6 +3854,103 @@ es decisión del owner.
 
 ---
 
+<a id="fase-b616--el-reparto-de-horas-entre-materias"></a>
+
+## Fase B6.16 — El reparto de horas entre materias · 🟡 EN CURSO
+
+**Qué es.** Que el estudiante empiece de cero y **cada materia que carga reorganice las horas de las
+demás**, a partir de cuánto requiere cada una. Pedido literal del owner el 7 de septiembre.
+
+**Decide:** [ADR-073](decisions.md#adr-073).
+
+> ⚠️ **Es una capa nueva.** Toda la Fase B6.15 es **por materia**: cuánto lleva ésta, cuánto cubriste
+> de ésta. Esto es **entre materias**, y por eso introduce algo que el producto no tenía: **un
+> presupuesto finito que se reparte**.
+
+### El agujero, otra vez el mismo
+
+**`availability` no tenía escritor.** La tabla existe desde la Fase B1 con `day_of_week`,
+`start_time`, `end_time`, `capacity_min` y `source`; ninguna ruta la escribía y sólo la sembraba
+`db-demo.sh`. Y el ADE la leía así:
+
+```sql
+SELECT MIN(av.capacity_min) FROM availability av WHERE av.student_id = ce.student_id
+```
+
+**El mínimo, nunca la suma.** Sirve para dimensionar *un* bloque y no sabe cuánto tiempo hay por
+semana. Para un estudiante real eso era `NULL`, porque no tenía filas. Mismo patrón que
+[ADR-067](decisions.md#adr-067) encontró con `assessment`.
+
+---
+
+#### ✅ Corte 1 — La disponibilidad se declara · COMPLETO · 7 de septiembre de 2026
+
+| | |
+|---|---|
+| **Migración** | `20260922000000_disponibilidad_declarada.sql`. `student.availability_declared_at`, `declarar_disponibilidad()`, y `estado_del_alta()` conoce el paso nuevo |
+| **Dominio** | `siguientePaso()` gana `DISPONIBILIDAD`; `validarBloques()` y `minutosPorSemana()` en el servicio del alta |
+| **Contrato** | `POST /api/alta/disponibilidad` · `201` incluso con lista vacía |
+| **Pantalla** | `/alta/disponibilidad`, el **cuarto** paso del alta. `PASOS_DEL_ALTA` pasa a vivir en una constante |
+| **Pruebas** | 10 comprobaciones nuevas contra Postgres y 15 de dominio |
+
+**Las tres decisiones, y la cuarta que no estaba en la pregunta:**
+
+1. **Se declara en el alta**, como `source = 'declared'`. La columna ya prevé `observed` e
+   `inferred`: el Personal Engine la corrige después con lo que el estudiante efectivamente cumplió,
+   porque nadie estima bien sus propias horas.
+2. **Cuando no alcanza, el hueco se muestra como hecho y sin veredicto.** Ni *"no llegás"* ni
+   *"apurate"*: las dos son predicciones y [ADR-058](decisions.md#adr-058) las cerró.
+3. **El reparto es una proyección.** No crea `Commitment` y no agenda: [ADR-064](decisions.md#adr-064)
+   deja el *cuándo* en el compromiso.
+4. ⚠️ **No declarar la disponibilidad NO bloquea el alta.** No estaba en la pregunta y se decidió por
+   precedente: [ADR-042](decisions.md#adr-042) §2 dice que rechazar WhatsApp no quita acceso, y
+   `siguientePaso()` ya comentaba que *"un alta que se trabara en `DECLINED` sería exactamente lo que
+   esa regla prohíbe"*. Trabar las nueve superficies hasta que alguien diga cuántas horas tiene sería
+   peor: es la pregunta más difícil del alta y la que más gente contestaría mal con tal de pasar.
+
+> ⚠️ **Y hubo que distinguir «no contestó» de «no tiene bloques».** Cero filas en `availability`
+> significaba las dos cosas a la vez, así que el alta le habría vuelto a preguntar para siempre al que
+> ya dijo que no sabe. De ahí `student.availability_declared_at`: **cuándo contestó, haya declarado
+> bloques o no.** Es la misma forma con que `whatsapp_consent` resolvió su equivalente.
+
+**Dos guards del alta rompieron, y era lo correcto:** la máquina de pasos cambió y los tests que
+afirmaban *"confirmado, el alta terminó"* dejaron de ser ciertos. Se actualizaron declarando el paso
+nuevo, más uno que fija que **«no sé» cuenta como contestada**. Y `I-01` de la auditoría de
+conformidad exigió sumar `/alta/disponibilidad` a las rutas que **no** son superficie: es un paso del
+alta, sus estados dependen de qué contestó este estudiante, y un `?escenario=` ahí ofrecería una demo
+de un alta ajena.
+
+`lint` · `typecheck` · `build` · **1234 tests** · **`db:verify` 374 ✓, 0 ✗, exit 0**.
+
+---
+
+#### Corte 2 — El reparto, visible en `UX01`
+
+⚠️ **`lib/domain/reparto.ts` ya existe y está probado, y todavía no lo consume nadie.** Se dice acá
+en vez de dejarlo pasar: es exactamente la situación que [ADR-067](decisions.md#adr-067) documentó
+sobre `assessment` y `ingerirMateria`.
+
+| | |
+|---|---|
+| **Contrato** | `estado_del_dia()` tiene que devolver, por materia, los insumos de duración y los días hasta la evaluación — lo mismo que `estado_de_materia()` ya devuelve para una |
+| **Pantalla** | `UX01`, junto a las tarjetas de materia que ya están |
+| **Copy** | ⚠️ **El del déficit tiene que pasar por la psicopedagoga antes del piloto.** Mostrar un hueco puede aplastar aunque sea cierto, y la regla de la casa es *"reconocer patrones, no etiquetar personas"*. El hecho está decidido; **cómo se dice, no** |
+
+**Lo que el dominio ya fija, y los tests lo protegen:**
+
+- **Cargar una materia le baja la asignación a las demás.** Es el pedido, hecho test: con una, se
+  lleva las 600; con dos de la misma urgencia, 300 cada una.
+- **La urgencia manda.** El mismo pendiente con el examen cuatro veces más cerca pesa cuatro veces
+  más.
+- **Cuando no alcanza, todas se achican en la misma proporción.** El sistema **no elige cuál se
+  sacrifica**: si una recibiera cero, eso sería proponer abandonarla.
+- **Sin fecha, el horizonte es una constante declarada** (12 semanas). Dejarla fuera diría que no hay
+  que estudiarla; estimarle una fecha sería inventarla por la puerta de atrás.
+- **Una materia degradada entra sin pedir nada, y se dice.** `SIN_ESTIMACION` no es *"no necesita
+  tiempo"*: es que no sabemos cuánto.
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**

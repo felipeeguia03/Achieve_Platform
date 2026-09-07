@@ -171,10 +171,11 @@ describe("Bloque 6 · Interacción", () => {
       formulario de ingreso—. Se nombran todas para que una superficie real
       que se olvide de `?escenario=` siga rompiendo este test.
 
-      **Las tres del alta entran por el mismo motivo que `/login`** — Fase
-      B6.14, [ADR-052](../docs/decisions.md#adr-052). No están en el registro
-      canónico de navegación, que sigue teniendo nueve nodos, y sus estados no
-      son compartibles: dependen de **qué contestó este estudiante**, no de un
+      **Las cuatro del alta entran por el mismo motivo que `/login`** — Fase
+      B6.14, [ADR-052](../docs/decisions.md#adr-052), y la cuarta por
+      [ADR-073](../docs/decisions.md#adr-073). No están en el registro canónico
+      de navegación, que sigue teniendo nueve nodos, y sus estados no son
+      compartibles: dependen de **qué contestó este estudiante**, no de un
       escenario. Un `?escenario=` ahí ofrecería una demo de un alta ajena.
 
       ⚠️ Si alguna vez se agrega una superficie de producto nueva, **no va acá**:
@@ -186,6 +187,7 @@ describe("Bloque 6 · Interacción", () => {
       "app/alta/whatsapp/page.tsx",
       "app/alta/carrera/page.tsx",
       "app/alta/materias/page.tsx",
+      "app/alta/disponibilidad/page.tsx",
     ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))

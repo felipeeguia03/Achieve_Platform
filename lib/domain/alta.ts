@@ -131,12 +131,13 @@ export function aniosDelPlan(requisitos: readonly { curriculumYear: number | nul
 }
 
 /** Los tres pasos del alta, en el orden que aprobó ADR-042. */
-export type PasoDelAlta = "WHATSAPP" | "CARRERA" | "MATERIAS";
+export type PasoDelAlta = "WHATSAPP" | "CARRERA" | "MATERIAS" | "DISPONIBILIDAD";
 
 export const RUTA_DEL_PASO: Record<PasoDelAlta, string> = {
   WHATSAPP: "/alta/whatsapp",
   CARRERA: "/alta/carrera",
   MATERIAS: "/alta/materias",
+  DISPONIBILIDAD: "/alta/disponibilidad",
 };
 
 /**
@@ -153,12 +154,21 @@ export function siguientePaso(estado: {
   consentimientoRespondido: boolean;
   /** Hay `enrollment` con plan y año, todavía sin confirmar. */
   carreraDeclarada: boolean;
-  /** `enrollment.confirmed_at IS NOT NULL`. El alta terminó. */
+  /** `enrollment.confirmed_at IS NOT NULL`. */
   materiasConfirmadas: boolean;
+  /**
+   * `student.availability_declared_at IS NOT NULL` — **contestó la pregunta**,
+   * haya declarado bloques o no ([ADR-073](../../docs/decisions.md#adr-073)).
+   */
+  disponibilidadRespondida: boolean;
 }): PasoDelAlta | null {
   if (!estado.consentimientoRespondido) return "WHATSAPP";
   if (!estado.carreraDeclarada) return "CARRERA";
   if (!estado.materiasConfirmadas) return "MATERIAS";
+  // Va última porque necesita saber **cuántas materias** para que la pregunta
+  // signifique algo. Antes de las materias, «¿cuántas horas tenés?» no tiene
+  // contra qué compararse.
+  if (!estado.disponibilidadRespondida) return "DISPONIBILIDAD";
   return null;
 }
 

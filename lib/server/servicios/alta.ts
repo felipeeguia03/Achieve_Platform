@@ -63,6 +63,63 @@ export interface RepositorioDelCatalogo {
   ): Promise<{ institutionId: string; programId: string } | null>;
 }
 
+/** Un bloque de la semana, tal como lo declara el estudiante. */
+export interface BloqueDeclarado {
+  /** `0`–`6`, domingo a sábado, como `availability.day_of_week`. */
+  dia: number;
+  /** `HH:MM`. Opcional: puede decir *"90 minutos los martes"* sin decir cuándo. */
+  desde?: string;
+  hasta?: string;
+  minutos: number;
+}
+
+export type ResultadoDeDisponibilidad =
+  | { estado: "OK"; bloques: number }
+  | { estado: "DATOS_INVALIDOS"; motivo: string }
+  | { estado: "ESTUDIANTE_DESCONOCIDO" };
+
+/**
+ * Valida los bloques sin tocar la base.
+ *
+ * ⚠️ **Una lista vacía es válida, y es el punto.** Es el *"no sé"* de
+ * [ADR-073](../../../docs/decisions.md#adr-073): la pregunta más difícil del
+ * alta tiene que poder saltearse, y saltearla cuenta como contestada.
+ */
+export function validarBloques(bloques: readonly BloqueDeclarado[]): string | null {
+  for (const b of bloques) {
+    if (!Number.isInteger(b.dia) || b.dia < 0 || b.dia > 6) {
+      return "el día va de 0 (domingo) a 6 (sábado)";
+    }
+    // Un bloque de cero minutos no es un rato corto: es un bloque que no existe,
+    // y sumaría una fila que después dice que hay disponibilidad donde no hay.
+    if (!Number.isFinite(b.minutos) || b.minutos <= 0) {
+      return "un bloque de cero minutos no es un bloque";
+    }
+    for (const h of [b.desde, b.hasta]) {
+      if (h !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(h)) {
+        return "la hora va en formato HH:MM";
+      }
+    }
+    // Una hora de fin sin una de inicio no ubica nada. Al revés sí sirve:
+    // *"desde las 18, no sé hasta cuándo"* es una respuesta.
+    if (b.hasta !== undefined && b.desde === undefined) {
+      return "una hora de fin sin hora de inicio no ubica el bloque";
+    }
+    if (b.desde && b.hasta && b.hasta <= b.desde) {
+      return "el bloque termina antes de empezar";
+    }
+  }
+  return null;
+}
+
+/** Los minutos semanales que salen de los bloques declarados. */
+export function minutosPorSemana(bloques: readonly BloqueDeclarado[]): number | null {
+  // ⚠️ **Cero bloques es `null`, no `0`.** «No sé cuántas horas tengo» y «no
+  // tengo ninguna» son cosas distintas, y el reparto necesita distinguirlas.
+  if (bloques.length === 0) return null;
+  return bloques.reduce((a, b) => a + b.minutos, 0);
+}
+
 export interface EstadoDelAlta {
   completa: boolean;
   paso: PasoDelAlta | null;
@@ -278,4 +335,32 @@ export async function confirmarMapaAcademico(
   }
 
   return { estado: "OK", ...escrito, recomendadas };
+}
+
+/**
+ * La disponibilidad declarada — [ADR-073](../../../docs/decisions.md#adr-073).
+ *
+ * **No bloquea el alta.** El precedente es explícito: ADR-042 §2 dice que
+ * rechazar WhatsApp no quita acceso, y `siguientePaso()` comenta que *"un alta
+ * que se trabara en `DECLINED` sería exactamente lo que esa regla prohíbe"*.
+ * Trabar las nueve superficies hasta que alguien diga cuántas horas tiene sería
+ * peor: es la pregunta más difícil del alta, y la que más gente contestaría mal
+ * con tal de pasar.
+ *
+ * Lo que se pierde al saltearla es el reparto entre materias, y eso se muestra
+ * como todos los demás estados degradados: con su motivo.
+ */
+export async function declararDisponibilidad(
+  repo: { declararDisponibilidad(i: string, s: string, b: readonly BloqueDeclarado[]): Promise<number | null> },
+  institutionId: string,
+  studentId: string,
+  bloques: readonly BloqueDeclarado[],
+): Promise<ResultadoDeDisponibilidad> {
+  const motivo = validarBloques(bloques);
+  if (motivo) return { estado: "DATOS_INVALIDOS", motivo };
+
+  const n = await repo.declararDisponibilidad(institutionId, studentId, bloques);
+  if (n === null) return { estado: "ESTUDIANTE_DESCONOCIDO" };
+
+  return { estado: "OK", bloques: n };
 }

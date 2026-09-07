@@ -55,6 +55,19 @@ q "insert into student (id,institution_id,timezone,auth_user_id)
    insert into availability (student_id,day_of_week,capacity_min,source) values ('$EST',1,45,'declared');
    insert into availability (student_id,day_of_week,capacity_min,source) values ('$NUEVO',1,45,'declared');" >/dev/null
 
+# ── La semana declarada · ADR-073 ────────────────────────────────────────────
+#
+# La fila de arriba existía desde la B1 y alcanzaba para `MIN(capacity_min)` —el
+# ADE dimensiona **un** bloque—. El reparto entre materias necesita la suma, así
+# que el estudiante del loop declara una semana entera.
+#
+# ⚠️ **El estudiante nuevo NO la declara**, a propósito: es el que sirve para ver
+# el alta desde cero, y desde ADR-073 tiene un paso más.
+q "select declarar_disponibilidad('$INST','$EST',
+     '[{\"dia\":1,\"desde\":\"18:00\",\"hasta\":\"19:30\",\"minutos\":90},
+       {\"dia\":3,\"desde\":\"18:00\",\"hasta\":\"19:30\",\"minutos\":90},
+       {\"dia\":6,\"desde\":\"10:00\",\"hasta\":\"12:00\",\"minutos\":120}]'::jsonb);" >/dev/null
+
 # El plan publicado contra el que corre todo el mundo demo — Fase B6.14.
 PLAN=$(q "select cp.id from curriculum_plan cp join academic_program ap on ap.id=cp.program_id
            where ap.key='SYN-ING-A' and cp.version='SYN-2016';" | tr -d '[:space:]')

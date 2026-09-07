@@ -163,6 +163,9 @@ import {
   confirmarMapaAcademico as confirmarMapaAcademicoPuro,
   decidirWhatsapp as decidirWhatsappPuro,
   declararCarrera as declararCarreraPuro,
+  declararDisponibilidad as declararDisponibilidadPuro,
+  type BloqueDeclarado,
+  type ResultadoDeDisponibilidad,
   estadoDelAlta as estadoDelAltaPuro,
   resolverPlan as resolverPlanPuro,
   type EstadoDelAlta,
@@ -230,6 +233,23 @@ export function requisitosDelPlan(
   studentId: string,
 ): Promise<{ planId: string; requisitos: RequisitoDelPlan[] } | null> {
   return catalogoReal.requisitos(curriculumPlanId, studentId);
+}
+
+/**
+ * La disponibilidad del estudiante — [ADR-073](../../docs/decisions.md#adr-073).
+ *
+ * Cierra el mismo tipo de hueco que ADR-067: `availability` existía desde la
+ * Fase B1 y **ninguna ruta la escribía**. El ADE la leía como
+ * `MIN(capacity_min)` —el mínimo, nunca la suma— así que sabía dimensionar un
+ * bloque y no cuánto tiempo hay por semana; para un estudiante real eso era
+ * `NULL`, porque no tenía filas.
+ */
+export function declararDisponibilidad(
+  institutionId: string,
+  studentId: string,
+  bloques: readonly BloqueDeclarado[],
+): Promise<ResultadoDeDisponibilidad> {
+  return declararDisponibilidadPuro(altaReal, institutionId, studentId, bloques);
 }
 
 export function decidirWhatsapp(
