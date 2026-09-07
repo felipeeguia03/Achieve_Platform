@@ -37,6 +37,28 @@ export const REGLA_DE_COBERTURA = "cobertura-v1";
  * Bajarle la barra a alguien porque su entrega no alcanzó sería usarla como
  * nota, que es justo lo que la nota al pie niega.
  */
+/**
+ * Los cuatro estados de una unidad — [ADR-075](../../docs/decisions.md#adr-075) §C2.
+ *
+ * ⚠️ **Eran dos, y la psicopedagoga corrigió la pregunta antes de contestarla:**
+ * *"La pregunta actual fuerza una elección falsa porque **mezcla dos
+ * constructos**: actividad y calidad del resultado."*
+ *
+ * Una entrega insuficiente es **trabajo intentado** y **no** contenido cubierto.
+ * No reconocerla *"invisibiliza el esfuerzo y castiga dos veces"*; contarla como
+ * cobertura plena *"puede producir una falsa sensación de preparación"*. Por eso
+ * son cuatro valores y no un booleano.
+ */
+export type EstadoDeUnidad =
+  /** Nadie entregó nada. */
+  | "sin_evidencia"
+  /** Hay entrega y todavía nadie juzgó su suficiencia. **No se infiere calidad.** */
+  | "enviada"
+  /** Hubo entrega y no alcanzó. Cuenta como actividad, **nunca como criterio**. */
+  | "requiere_revision"
+  /** Suficiente o validada. Es lo único que completa el criterio. */
+  | "criterio_alcanzado";
+
 export const ESTADOS_QUE_CUENTAN = [
   "SUBMITTED",
   "UNDER_REVIEW",
@@ -56,16 +78,48 @@ export interface TemaConCobertura {
   id: string;
   /** `null` = no se sabe cuánto lleva. **No es cero.** */
   minutos: number | null;
-  /** Si tiene al menos una evidencia en un estado que cuenta. */
-  trabajado: boolean;
+  estado: EstadoDeUnidad;
+}
+
+/** ¿Hubo trabajo registrado? Es lo que mide la barra: actividad, no calidad. */
+export function hayActividad(e: EstadoDeUnidad): boolean {
+  return e !== "sin_evidencia";
+}
+
+/** ¿Se alcanzó el criterio? **Sólo `criterio_alcanzado`.** */
+export function alcanzaCriterio(e: EstadoDeUnidad): boolean {
+  return e === "criterio_alcanzado";
+}
+
+/**
+ * De un `lifecycle_state` de `Evidence` al estado de la unidad.
+ *
+ * Cuando una unidad tiene varias entregas, gana la mejor: haber alcanzado el
+ * criterio una vez no se pierde porque después haya otra entrega en revisión.
+ */
+export function estadoDeEvidencia(lifecycle: string): EstadoDeUnidad {
+  if (lifecycle === "SUFFICIENT" || lifecycle === "VALIDATED") return "criterio_alcanzado";
+  if (lifecycle === "INSUFFICIENT" || lifecycle === "RESUBMISSION_REQUESTED") {
+    return "requiere_revision";
+  }
+  // `EXPECTED` es una evidencia que se espera, no una que llegó.
+  return lifecycle === "EXPECTED" ? "sin_evidencia" : "enviada";
 }
 
 export type Cobertura =
   | {
       estado: "OK";
-      /** `0..1`, ponderada por horas. La barra se dibuja con esto. */
+      /**
+       * `0..1` del **tiempo estimado con evidencia asociada**, ponderado por
+       * horas. Es *actividad registrada*, no comprensión ni nota.
+       */
       fraccionDeHoras: number;
+      /** Temas con **alguna** actividad registrada. */
       temasTrabajados: number;
+      /** Temas que **alcanzaron el criterio**. Siempre `≤ temasTrabajados`. */
+      temasConCriterio: number;
+      /** Entregas que no alcanzaron y esperan revisión. `0` ⇒ la línea no se muestra. */
+      entregasQueRequierenRevision: number;
       /** Sólo los temas **con minutos conocidos**: son los del denominador. */
       temasContados: number;
       /** Los que quedaron afuera por no tener minutos. Se dice, no se esconde. */
@@ -78,6 +132,8 @@ export type Cobertura =
       motivo: "sin_temas_declarados" | "sin_minutos_conocidos";
       /** Aunque no haya barra, el conteo de temas sí se puede mostrar. */
       temasTrabajados: number;
+      temasConCriterio: number;
+      entregasQueRequierenRevision: number;
       temasDeclarados: number;
     };
 
@@ -94,13 +150,17 @@ export type Cobertura =
  * la próxima evaluación. La nota al pie lo dice: *"sobre el total cargado"*.
  */
 export function coberturaDeMateria(temas: readonly TemaConCobertura[]): Cobertura {
-  const trabajados = temas.filter((t) => t.trabajado).length;
+  const trabajados = temas.filter((t) => hayActividad(t.estado)).length;
+  const conCriterio = temas.filter((t) => alcanzaCriterio(t.estado)).length;
+  const enRevision = temas.filter((t) => t.estado === "requiere_revision").length;
 
   if (temas.length === 0) {
     return {
       estado: "SIN_DATOS",
       motivo: "sin_temas_declarados",
       temasTrabajados: 0,
+      temasConCriterio: 0,
+      entregasQueRequierenRevision: 0,
       temasDeclarados: 0,
     };
   }
@@ -113,12 +173,16 @@ export function coberturaDeMateria(temas: readonly TemaConCobertura[]): Cobertur
       estado: "SIN_DATOS",
       motivo: "sin_minutos_conocidos",
       temasTrabajados: trabajados,
+      temasConCriterio: conCriterio,
+      entregasQueRequierenRevision: enRevision,
       temasDeclarados: temas.length,
     };
   }
 
   const total = conMinutos.reduce((a, t) => a + t.minutos!, 0);
-  const cubierto = conMinutos.filter((t) => t.trabajado).reduce((a, t) => a + t.minutos!, 0);
+  const cubierto = conMinutos
+    .filter((t) => hayActividad(t.estado))
+    .reduce((a, t) => a + t.minutos!, 0);
 
   return {
     estado: "OK",
@@ -126,6 +190,8 @@ export function coberturaDeMateria(temas: readonly TemaConCobertura[]): Cobertur
     // El conteo es sobre **todos** los temas, no sólo los del denominador: el
     // estudiante trabajó sobre ellos aunque no sepamos cuánto duran.
     temasTrabajados: trabajados,
+    temasConCriterio: conCriterio,
+    entregasQueRequierenRevision: enRevision,
     temasContados: temas.length,
     temasSinMinutos: temas.length - conMinutos.length,
     regla: `${REGLA_DE_COBERTURA}+${REGLA_DE_DURACION}`,
@@ -164,5 +230,13 @@ export function porcentajeDeHoras(c: Cobertura): number | null {
 export function minutosPendientes(temas: readonly TemaConCobertura[]): number | null {
   const conMinutos = temas.filter((t) => t.minutos !== null && t.minutos > 0);
   if (conMinutos.length === 0) return null;
-  return conMinutos.filter((t) => !t.trabajado).reduce((a, t) => a + t.minutos!, 0);
+  // ⚠️ **Sigue midiéndose sobre «hubo actividad», no sobre «alcanzó el
+  // criterio»**, y es deliberado. Cambiarlo haría que una entrega insuficiente
+  // vuelva a costar el estimado completo, y el déficit crecería — justo el eje
+  // sobre el que la psicopedagoga advirtió. Su §C es sobre **cómo se
+  // representa** la barra, no sobre cómo se estima el tiempo restante.
+  //
+  // Queda anotado para preguntárselo: no hay dato de avance parcial, así que
+  // ninguna de las dos opciones es obviamente correcta.
+  return conMinutos.filter((t) => !hayActividad(t.estado)).reduce((a, t) => a + t.minutos!, 0);
 }

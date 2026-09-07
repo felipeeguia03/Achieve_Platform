@@ -33,7 +33,7 @@ const BASE: EstadoDeMateria = {
   actividadReciente: [],
 };
 
-const u = (id: string, trabajado = false) => ({
+const u = (id: string, evidencia: "sin_evidencia" | "enviada" | "requiere_revision" | "criterio_alcanzado" = "sin_evidencia") => ({
   id,
   codigo: id.toUpperCase(),
   nombre: id,
@@ -42,13 +42,13 @@ const u = (id: string, trabajado = false) => ({
   practica: null,
   recorrido: null,
   peso: null,
-  trabajado,
+  evidencia,
 });
 
 describe("Con clases cargadas: los dos números, y no coinciden", () => {
   const e: EstadoDeMateria = {
     ...BASE,
-    unidades: [u("u1", true), u("u2")],
+    unidades: [u("u1", "enviada"), u("u2")],
     clases: [
       { minutos: 360, tipo: "clase", temas: ["u1"] },
       { minutos: 60, tipo: "clase", temas: ["u2"] },
@@ -60,12 +60,17 @@ describe("Con clases cargadas: los dos números, y no coinciden", () => {
     // 1 de 2 temas es 50% por conteo; por horas es 86%. Ésa es la razón de que
     // el pie muestre los dos.
     expect(g.barra).toBe(86);
-    expect(g.pie).toBe("1 de 2 temas · 86% de las horas");
+    expect(g.pie).toBe("1 de 2 temas tiene alguna evidencia · 86% del tiempo estimado tiene evidencia asociada");
   });
 
-  it("la aclaración del owner acompaña al número, textual", () => {
+  it("la aclaración dice qué SÍ mide, no sólo qué no es", () => {
+    // ⚠️ La versión del Product Owner —«No es una nota ni una predicción»— la
+    // reescribió la psicopedagoga (ADR-075 §C1): negar que sea una nota no
+    // alcanza si no se dice qué mide.
     expect(ganttDeMateria(e).aclaracion).toBe(ACLARACION_DE_COBERTURA);
-    expect(ACLARACION_DE_COBERTURA).toContain("No es una nota ni una predicción");
+    expect(ACLARACION_DE_COBERTURA).toContain("trabajo registrado");
+    expect(ACLARACION_DE_COBERTURA).toContain("No mide comprensión");
+    expect(ACLARACION_DE_COBERTURA).toContain("no predice el resultado");
   });
 
   it("cada unidad lleva sus minutos derivados", () => {
@@ -78,7 +83,7 @@ describe("El total declarado manda y el libro reparte", () => {
   it("la carga horaria del programa escala el reparto observado", () => {
     const g = ganttDeMateria({
       ...BASE,
-      unidades: [u("u1", true), u("u2")],
+      unidades: [u("u1", "enviada"), u("u2")],
       clases: [
         { minutos: 120, tipo: "clase", temas: ["u1"] },
         { minutos: 60, tipo: "clase", temas: ["u2"] },
@@ -93,7 +98,7 @@ describe("El total declarado manda y el libro reparte", () => {
   it("un parcial no le atribuye minutos a los temas que evaluó", () => {
     const g = ganttDeMateria({
       ...BASE,
-      unidades: [u("u1", true), u("u2")],
+      unidades: [u("u1", "enviada"), u("u2")],
       clases: [
         { minutos: 100, tipo: "clase", temas: ["u1"] },
         { minutos: 120, tipo: "parcial", temas: ["u1", "u2"] },
@@ -103,7 +108,7 @@ describe("El total declarado manda y el libro reparte", () => {
     // `u2` no entra al denominador, así que `u1` es todo lo que se puede medir.
     expect(g.barra).toBe(100);
     // Pero el conteo NO miente: son 1 de 2, no 1 de 1.
-    expect(g.pie).toBe("1 de 2 temas · 100% de las horas");
+    expect(g.pie).toBe("1 de 2 temas tiene alguna evidencia · 100% del tiempo estimado tiene evidencia asociada");
   });
 });
 
@@ -118,9 +123,9 @@ describe("Sin barra, el pie sigue diciendo algo verdadero", () => {
   });
 
   it("con temas pero sin clases: el conteo sí, las horas no", () => {
-    const g = ganttDeMateria({ ...BASE, unidades: [u("u1", true), u("u2"), u("u3")] });
+    const g = ganttDeMateria({ ...BASE, unidades: [u("u1", "enviada"), u("u2"), u("u3")] });
     expect(g.barra).toBeNull();
-    expect(g.pie).toBe("1 de 3 temas · sin clases cargadas, no puedo estimar las horas");
+    expect(g.pie).toBe("1 de 3 temas tiene alguna evidencia · sin clases cargadas, no puedo estimar el tiempo");
     expect(g.aclaracion).toBeNull();
   });
 
@@ -133,7 +138,7 @@ describe("Sin barra, el pie sigue diciendo algo verdadero", () => {
       clases: [{ minutos: 120, tipo: "clase", temas: ["u1", "u2"] }],
     });
     expect(g.barra).toBe(0);
-    expect(g.pie).toBe("0 de 2 temas · 0% de las horas");
+    expect(g.pie).toBe("0 de 2 temas tiene alguna evidencia · 0% del tiempo estimado tiene evidencia asociada");
     expect(g.aclaracion).toBe(ACLARACION_DE_COBERTURA);
   });
 });
@@ -145,5 +150,39 @@ describe("El orden llega dado, y la proyección no lo toca", () => {
     // duplicaría la decisión en dos lugares.
     const g = ganttDeMateria({ ...BASE, unidades: [u("u2"), u("u1"), u("u3")] });
     expect(g.unidades.map((x) => x.id)).toEqual(["u2", "u1", "u3"]);
+  });
+});
+
+describe("Cuatro estados, no dos (ADR-075 §C2)", () => {
+  const base = { ...BASE, clases: [{ minutos: 120, tipo: "clase" as const, temas: ["u1", "u2"] }] };
+
+  it("una entrega insuficiente cuenta como actividad y NO como criterio", () => {
+    // Las dos mitades de la corrección: no reconocerla «invisibiliza el
+    // esfuerzo y castiga dos veces»; contarla como cobertura plena «puede
+    // producir una falsa sensación de preparación».
+    const g = ganttDeMateria({ ...base, unidades: [u("u1", "requiere_revision"), u("u2")] });
+    expect(g.pie).toContain("1 de 2 temas tiene alguna evidencia");
+    expect(g.criterioAlcanzado).toBe(0);
+    expect(g.enRevision).toBe(1);
+  });
+
+  it("una entrega suficiente sí alcanza el criterio", () => {
+    const g = ganttDeMateria({ ...base, unidades: [u("u1", "criterio_alcanzado"), u("u2")] });
+    expect(g.criterioAlcanzado).toBe(1);
+    expect(g.enRevision).toBe(0);
+  });
+
+  it("una entrega sin juicio de suficiencia no infiere calidad", () => {
+    // §C2: *"Una actividad puede no tener evaluación de suficiencia; en ese caso
+    // mostrar sólo `evidencia enviada`, sin inferir calidad."*
+    const g = ganttDeMateria({ ...base, unidades: [u("u1", "enviada"), u("u2")] });
+    expect(g.criterioAlcanzado).toBe(0);
+    expect(g.enRevision).toBe(0);
+    expect(g.pie).toContain("1 de 2 temas tiene alguna evidencia");
+  });
+
+  it("sin entregas en revisión, la línea no se dibuja", () => {
+    // Decir «0 pendientes» inventa una tranquilidad que nadie afirmó.
+    expect(ganttDeMateria({ ...base, unidades: [u("u1"), u("u2")] }).enRevision).toBe(0);
   });
 });

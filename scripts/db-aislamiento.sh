@@ -1119,10 +1119,11 @@ ORDEN3=$(q "select string_agg(x->>'nombre', ',') from jsonb_array_elements(
 [ "$(q "select jsonb_array_length(estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'clases')::text;" | tr -d '[:space:]')" = "3" ] \
   && ok "las clases viajan crudas: la función NO reparte los minutos" || mal "no viajaron las clases"
 
-# `trabajado` es un hecho: hay evidencia posterior al envío anclada al tema.
-[ "$(q "select bool_or((x->>'trabajado')::boolean)::text from jsonb_array_elements(
-  estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x;" | tr -d '[:space:]')" = "false" ] \
-  && ok "sin evidencia, ningún tema figura como trabajado" || mal "un tema sin evidencia salió trabajado"
+# El estado de la evidencia es un hecho. **Cuatro valores desde ADR-075 §C2**:
+# este check leía `trabajado` y lo cazó el día que la columna dejó de existir.
+[ "$(q "select bool_and(x->>'evidencia' = 'sin_evidencia')::text from jsonb_array_elements(
+  estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x;" | tr -d '[:space:]')" = "true" ] \
+  && ok "sin entregas, ningún tema tiene evidencia" || mal "un tema sin entregas salió con evidencia"
 
 corre "delete from class_session where offering_id='a4000000-0000-0000-0000-000000000001';"
 corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
@@ -1253,6 +1254,43 @@ corre "update commitment set state='COMPLETED', completed_at=now() where id='a80
 
 corre "delete from reflection where action_id='a7000000-0000-0000-0000-000000000001';"
 corre "update commitment set state='CONFIRMED', completed_at=null where id='a8000000-0000-0000-0000-000000000001';"
+
+echo "→ ADR-075 §C2 · cuatro estados por unidad, no un booleano"
+
+corre "insert into topic (id,offering_id,name,sequence) values
+  ('c8000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','E1',1),
+  ('c8000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001','E2',2),
+  ('c8000000-0000-0000-0000-000000000003','a4000000-0000-0000-0000-000000000001','E3',3);"
+corre "insert into action (id,institution_id,course_enrollment_id,topic_id,objective,verb,scope) values
+  ('c9000000-0000-0000-0000-000000000001','$A','a6000000-0000-0000-0000-000000000001','c8000000-0000-0000-0000-000000000001','o','resolver','u'),
+  ('c9000000-0000-0000-0000-000000000002','$A','a6000000-0000-0000-0000-000000000001','c8000000-0000-0000-0000-000000000002','o','resolver','u');"
+corre "insert into evidence (id,institution_id,action_id,lifecycle_state) values
+  ('ca000000-0000-0000-0000-000000000001','$A','c9000000-0000-0000-0000-000000000001','INSUFFICIENT'),
+  ('ca000000-0000-0000-0000-000000000002','$A','c9000000-0000-0000-0000-000000000002','VALIDATED');"
+
+E=$(q "select string_agg(x->>'nombre' || '=' || (x->>'evidencia'), ',' order by x->>'nombre')
+  from jsonb_array_elements(estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x
+ where x->>'nombre' like 'E%';" | tr -d '[:space:]')
+[ "$E" = "E1=requiere_revision,E2=criterio_alcanzado,E3=sin_evidencia" ] \
+  && ok "una insuficiente es requiere_revision; una validada, criterio_alcanzado" || mal "los estados salieron mal: $E"
+
+# ⚠️ Gana el mejor: haber alcanzado el criterio no se pierde por una entrega
+# posterior en revisión.
+corre "insert into evidence (id,institution_id,action_id,lifecycle_state) values
+  ('ca000000-0000-0000-0000-000000000003','$A','c9000000-0000-0000-0000-000000000002','INSUFFICIENT');"
+[ "$(q "select x->>'evidencia' from jsonb_array_elements(estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x where x->>'nombre'='E2';" | tr -d '[:space:]')" = "criterio_alcanzado" ] \
+  && ok "el criterio alcanzado no se pierde por una entrega posterior" || mal "una entrega nueva borró el criterio"
+
+# Y las dos funciones dicen lo mismo del mismo tema.
+[ "$(q "select u->>'evidencia'
+    from jsonb_array_elements(insumos_de_reparto('$A','a5000000-0000-0000-0000-000000000001')->'materias') m,
+         jsonb_array_elements(m->'unidades') u
+   where u->>'id'='c8000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "requiere_revision" ] \
+  && ok "insumos_de_reparto() dice lo mismo: el Gantt y el reparto no se contradicen" || mal "las dos funciones discrepan"
+
+corre "delete from evidence where action_id in ('c9000000-0000-0000-0000-000000000001','c9000000-0000-0000-0000-000000000002');"
+corre "delete from action where id in ('c9000000-0000-0000-0000-000000000001','c9000000-0000-0000-0000-000000000002');"
+corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
 
 limpiar_mundo
 ok "limpiado"

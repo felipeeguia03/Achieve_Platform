@@ -21,8 +21,8 @@ const materia = (over: Partial<InsumosDeReparto["materias"][number]> = {}) => ({
   alcance: [] as string[],
   cargaDeclarada: null,
   unidades: [
-    { id: "u1", peso: null, trabajado: false },
-    { id: "u2", peso: null, trabajado: false },
+    { id: "u1", peso: null, evidencia: "sin_evidencia" as const },
+    { id: "u2", peso: null, evidencia: "sin_evidencia" as const },
   ],
   clases: [
     { minutos: 600, tipo: null, temas: ["u1"] },
@@ -55,8 +55,8 @@ describe("El alcance declarado recorta lo que hace falta", () => {
       materias: [
         materia({
           unidades: [
-            { id: "u1", peso: null, trabajado: true },
-            { id: "u2", peso: null, trabajado: false },
+            { id: "u1", peso: null, evidencia: "enviada" as const },
+            { id: "u2", peso: null, evidencia: "sin_evidencia" as const },
           ],
         }),
       ],

@@ -79,9 +79,26 @@ describe("Bloque 2 · Contenido", () => {
      */
     const DEL_SPEC = new Set(["MATERIA.ACTIVIDAD"]);
 
+    /**
+     * La segunda excepción, y tampoco es una concesión: **`actividad
+     * registrada` es el rótulo que fijó la psicopedagoga**
+     * ([ADR-075](../docs/decisions.md#adr-075) §C1), textual: *"si se conserva
+     * una barra, su rótulo visible debe ser `actividad registrada`, no
+     * `dominio`, `nivel`, `rendimiento` ni `avance de aprendizaje`"*.
+     *
+     * No es otro nombre para una `Action`: nombra **trabajo registrado**, que es
+     * justamente el constructo que ella separó de la calidad del resultado. Su
+     * fuente se verifica en el test de abajo.
+     */
+    const DE_LA_PSICOPEDAGOGA = new Set([
+      "MATERIA.GANTT",
+      "MATERIA.GANTT.REVISION",
+      "HOY.REPARTO.MOTIVO.SIN_ESTIMACION",
+    ]);
+
     for (const [concepto, patron] of derivas) {
       const grietas = textos.filter(
-        ([id, texto]) => patron.test(texto) && !DEL_SPEC.has(id),
+        ([id, texto]) => patron.test(texto) && !DEL_SPEC.has(id) && !DE_LA_PSICOPEDAGOGA.has(id),
       );
       expect(grietas.map(([id]) => id), `deriva de ${concepto}`).toEqual([]);
     }
@@ -91,6 +108,30 @@ describe("Bloque 2 · Contenido", () => {
     // Sin esto, "está en el spec" sería una afirmación de un comentario.
     const spec = readFileSync(resolve(process.cwd(), "docs/product-spec-source.md"), "utf8");
     expect(spec).toContain("Actividad reciente");
+  });
+
+  it("y la otra, porque la psicopedagoga la nombró así", () => {
+    // Mismo criterio: una excepción de vocabulario tiene que poder señalar el
+    // documento que la autoriza, no un comentario que lo afirme.
+    const fuente = readFileSync(
+      resolve(process.cwd(), "docs/respuesta-psicopedagoga-tiempo-y-carga-source.md"),
+      "utf8",
+    );
+    expect(fuente).toContain("actividad registrada");
+    // Y lo que prohibió, para que no vuelva por otro lado.
+    for (const prohibido of ["dominio", "nivel", "rendimiento", "avance de\naprendizaje"]) {
+      expect(fuente).toContain(prohibido);
+    }
+  });
+
+  it("el rótulo de la barra no usa ninguna de las palabras que ella prohibió", () => {
+    // `dominio`, `nivel`, `rendimiento` y `avance de aprendizaje`: un porcentaje
+    // con cualquiera de esos rótulos se lee como calificación.
+    const rotulos = textos.filter(([id]) => id.startsWith("MATERIA.GANTT"));
+    expect(rotulos.length).toBeGreaterThan(0);
+    for (const [id, texto] of rotulos) {
+      expect(texto, id).not.toMatch(/\b(dominio|nivel|rendimiento|avance de aprendizaje)\b/i);
+    }
   });
 
   it("`C-03` — ningún placeholder genérico", () => {

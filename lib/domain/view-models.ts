@@ -81,12 +81,24 @@ export interface GanttProjection {
   pie: string;
   /** La nota al pie. `null` cuando no hay número que aclarar. */
   aclaracion: string | null;
+  /**
+   * Entregas que no alcanzaron el criterio — [ADR-075](../../docs/decisions.md#adr-075)
+   * §C1. `0` ⇒ **la línea no se dibuja**: decir «0 pendientes» inventa una
+   * tranquilidad que nadie afirmó.
+   */
+  enRevision: number;
+  /** Temas que alcanzaron el criterio. Es la tercera medida, y **no** la barra. */
+  criterioAlcanzado: number;
   /** Las unidades **en el orden dictado**. La pantalla no las reordena. */
   unidades: ReadonlyArray<{
     nombre: string;
     /** `null` ⇒ no se sabe cuánto lleva. La fila se dibuja sin barra propia. */
     minutos: number | null;
-    trabajado: boolean;
+    /**
+     * Cuatro estados, no un booleano. Una entrega insuficiente es **actividad
+     * registrada** y **no** criterio alcanzado (§C2).
+     */
+    estado: "sin_evidencia" | "enviada" | "requiere_revision" | "criterio_alcanzado";
   }>;
 }
 

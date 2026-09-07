@@ -1,5 +1,5 @@
 import { minutosPorTema, type SesionDeClase, type TipoDeClase } from "@/lib/domain/duracion";
-import { minutosPendientes } from "@/lib/domain/cobertura";
+import { minutosPendientes, type EstadoDeUnidad } from "@/lib/domain/cobertura";
 import {
   conMultiplicador,
   multiplicadorDe,
@@ -57,7 +57,7 @@ export interface InsumosDeReparto {
      */
     alcance: string[];
     cargaDeclarada: { minutos: number; texto: string } | null;
-    unidades: Array<{ id: string; peso: number | null; trabajado: boolean }>;
+    unidades: Array<{ id: string; peso: number | null; evidencia: EstadoDeUnidad }>;
     clases: Array<{ minutos: number | null; tipo: TipoDeClase | null; temas: string[] }>;
   }>;
 }
@@ -94,7 +94,7 @@ function pendientesDe(m: InsumosDeReparto["materias"][number]): number | null {
     enAlcance.map((u) => ({
       id: u.id,
       minutos: reparto.minutos[u.id] ?? null,
-      trabajado: u.trabajado,
+      estado: u.evidencia,
     })),
   );
 }

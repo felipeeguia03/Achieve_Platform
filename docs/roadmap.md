@@ -4096,17 +4096,63 @@ horizontes distintos reintroduce el defecto que este corte corrige.
 
 ---
 
-#### Corte 2 — La barra: tres medidas, no una
+#### ✅ Corte 2 — La barra: tres medidas, no una · COMPLETO · 7 de septiembre de 2026
 
-**Ejecuta §C.** *"La aclaración sola no alcanza: un porcentaje grande junto a una barra suele adquirir
-significado evaluativo aunque el texto inferior lo niegue."*
+**Ejecuta §C.**
+
+> *"La aclaración sola no alcanza: un porcentaje grande junto a una barra suele adquirir significado
+> evaluativo aunque el texto inferior lo niegue."*
 
 Y encontró algo que el equipo había justificado como virtud: *"«1 de 9 temas» y «26% de las horas»
 usan **denominadores diferentes** y pueden parecer dos medidas contradictorias."*
 
-Se separa en `actividad registrada` / `tiempo con evidencia` / `entregas que requieren revisión`, el
-rótulo deja de ser *progreso*, y **una entrega insuficiente pasa a ser intento y no criterio
-alcanzado** — tres estados visuales, no dos.
+| | |
+|---|---|
+| **Migración** | `20260924000000_estados_de_unidad.sql`. `trabajado BOOLEAN` → `evidencia` con **cuatro valores**, en las **dos** funciones de lectura |
+| **Dominio** | `EstadoDeUnidad`, `hayActividad()`, `alcanzaCriterio()` y `estadoDeEvidencia()` en `cobertura.ts` |
+| **Copy** | El rótulo pasa de *Preparación* a **`Actividad registrada`**, y la aclaración la reescribió ella |
+| **Pantalla** | Cuatro marcas por unidad, línea de *entregas que requieren revisión*, sin colores de calificación |
+| **Pruebas** | 3 comprobaciones nuevas contra Postgres y 9 de dominio |
+
+**§C2 corrigió la pregunta antes de contestarla:**
+
+> *"La pregunta actual fuerza una elección falsa porque **mezcla dos constructos**: actividad y
+> calidad del resultado."*
+
+Un booleano no podía expresar eso. Ahora son cuatro estados —`sin_evidencia` · `enviada` ·
+`requiere_revision` · `criterio_alcanzado`— y una entrega insuficiente es **trabajo intentado** y
+**no** contenido cubierto: no reconocerla *"invisibiliza el esfuerzo y castiga dos veces"*; contarla
+como cobertura plena *"puede producir una falsa sensación de preparación"*.
+
+**Lo que se ve ahora en la demo:**
+
+```
+ACTIVIDAD REGISTRADA
+1 de 4 temas tiene alguna evidencia · 22% del tiempo estimado tiene evidencia asociada
+Entregas que requieren revisión: 1
+Esto muestra trabajo registrado. No mide comprensión, no es una nota y no predice el resultado.
+
+○ Límites y continuidad   17 h
+○ Derivadas               23 h
+◑ Integrales              13 h
+○ Series                   7 h
+```
+
+⚠️ **El rótulo lo fijó ella**, y hay un guard que lo protege: no puede decir `dominio`, `nivel`,
+`rendimiento` ni `avance de aprendizaje`. Y como *"actividad"* es una palabra que el guard `C-02`
+persigue como deriva de `Action`, la excepción entró **con su fuente verificada**, igual que la del
+spec: hay un test que comprueba que la frase está en el documento que la autoriza.
+
+⚠️ **Y `minutosPendientes` NO cambió de base, deliberadamente.** Sigue midiendo sobre *"hubo
+actividad"*, no sobre *"alcanzó el criterio"*. Cambiarlo haría que una entrega insuficiente vuelva a
+costar el estimado completo y el déficit crecería — justo el eje sobre el que ella advirtió—, y no
+hay dato de avance parcial que permita cobrar sólo una parte. **Su §C es sobre cómo se representa la
+barra, no sobre cómo se estima el tiempo restante.** Queda anotado para preguntárselo.
+
+**Dos guards viejos rompieron, y era lo correcto:** uno leía `trabajado` y lo cazó el día que la
+columna dejó de existir; el otro, `C-02`, exigió justificar la palabra *actividad*.
+
+`lint` · `typecheck` · `build` · **1285 tests** · **`db:verify` 388 ✓, 0 ✗, exit 0**.
 
 #### Corte 3 — El multiplicador: comparabilidad y transparencia
 

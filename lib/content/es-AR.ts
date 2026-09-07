@@ -291,7 +291,11 @@ export const copy = {
   "MATERIA.TITULO": "Cursado",
   "MATERIA.AHORA": "Ahora",
   "MATERIA.CATEDRA_Y_VOS": "Cátedra y vos",
-  "MATERIA.GANTT": "Preparación",
+  // ⚠️ **El rótulo lo fijó la psicopedagoga** (ADR-075 §C1): *"si se conserva
+  // una barra, su rótulo visible debe ser `actividad registrada`, no `dominio`,
+  // `nivel`, `rendimiento` ni `avance de aprendizaje`"*. Decía «Preparación».
+  "MATERIA.GANTT": "Actividad registrada",
+  "MATERIA.GANTT.REVISION": "Entregas que requieren revisión:",
   "MATERIA.UNIDADES": "Unidades",
   "MATERIA.DIMENSIONES": "Cómo venís",
   /** `VI.2` §8.7. Preview de la Bitácora, no un historial aparte. */

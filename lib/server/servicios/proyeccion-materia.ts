@@ -1,6 +1,11 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
 import { minutosPorTema, type SesionDeClase, type TipoDeClase } from "@/lib/domain/duracion";
-import { coberturaDeMateria, porcentajeDeHoras, type Cobertura } from "@/lib/domain/cobertura";
+import {
+  coberturaDeMateria,
+  porcentajeDeHoras,
+  type Cobertura,
+  type EstadoDeUnidad,
+} from "@/lib/domain/cobertura";
 import { t } from "@/lib/content/es-AR";
 import { aEntradaVisible, type HechoPersistido } from "./hechos";
 import { fechaDeCalendario, haceCuanto } from "./tiempo";
@@ -47,10 +52,11 @@ export interface UnidadPersistida {
   /** El peso declarado. `null` = no declarado, **no `1.0`**. */
   peso: number | null;
   /**
-   * Hay al menos una `Evidence` posterior al envío anclada a este tema.
-   * **Es un hecho, no una estimación** ([ADR-072](../../../docs/decisions.md#adr-072)).
+   * En qué estado está la evidencia de este tema — cuatro valores, no un
+   * booleano ([ADR-075](../../../docs/decisions.md#adr-075) §C2).
+   * **Es un hecho, no una estimación.**
    */
-  trabajado: boolean;
+  evidencia: EstadoDeUnidad;
 }
 
 /** Una sesión del libro de temas, cruda. El reparto lo hace `lib/domain/duracion.ts`. */
@@ -303,20 +309,31 @@ export interface GanttDeMateria {
     id: string;
     nombre: string;
     minutos: number | null;
-    trabajado: boolean;
+    estado: EstadoDeUnidad;
   }>;
   /** `0..100`, ya redondeado. `null` ⇒ no se dibuja barra. */
   barra: number | null;
   /** El texto de abajo de la barra. Siempre hay uno. */
   pie: string;
+  /** Entregas que no alcanzaron. `0` ⇒ **la línea no se dibuja**. */
+  enRevision: number;
+  /** Temas que alcanzaron el criterio. Siempre `≤` los que tienen actividad. */
+  criterioAlcanzado: number;
   /** La nota al pie del owner, literal. `null` cuando no hay barra que aclarar. */
   aclaracion: string | null;
   cobertura: Cobertura;
 }
 
 /** La nota al pie, textual del Product Owner. No se reescribe. */
+/**
+ * La aclaración, **reescrita por la psicopedagoga** (ADR-075 §C1).
+ *
+ * La versión anterior era del Product Owner —*"temas marcados por vos sobre el
+ * total cargado. No es una nota ni una predicción"*— y ella la objetó: no
+ * alcanza con negar que sea una nota, hay que decir **qué sí mide**.
+ */
 export const ACLARACION_DE_COBERTURA =
-  "temas marcados por vos sobre el total cargado. No es una nota ni una predicción.";
+  "Esto muestra trabajo registrado. No mide comprensión, no es una nota y no predice el resultado.";
 
 export function ganttDeMateria(e: EstadoDeMateria): GanttDeMateria {
   const sesiones: SesionDeClase[] = e.clases.map((c) => ({
@@ -338,31 +355,40 @@ export function ganttDeMateria(e: EstadoDeMateria): GanttDeMateria {
     id: u.id,
     nombre: u.nombre,
     minutos: minutosDe(u.id),
-    trabajado: u.trabajado,
+    estado: u.evidencia,
   }));
 
-  const cobertura = coberturaDeMateria(
-    unidades.map((u) => ({ id: u.id, minutos: u.minutos, trabajado: u.trabajado })),
-  );
+  const cobertura = coberturaDeMateria(unidades);
 
   const barra = porcentajeDeHoras(cobertura);
   const trabajados = cobertura.temasTrabajados;
   const total = e.unidades.length;
+  const enRevision = cobertura.entregasQueRequierenRevision;
 
   // El pie siempre dice algo verdadero. Cuando hay barra, los dos números —y no
   // coinciden a propósito: la ponderación por horas es el motivo de que existan
   // los dos. Cuando no la hay, el conteo solo, que sigue siendo un hecho.
+  // ⚠️ **Tres medidas, no una barra ambigua** — ADR-075 §C1. Textual: *"un
+  // porcentaje grande junto a una barra suele adquirir significado evaluativo
+  // aunque el texto inferior lo niegue"*, y *"«1 de 9 temas» y «26% de las
+  // horas» usan denominadores diferentes y pueden parecer dos medidas
+  // contradictorias"*.
   const pie =
     barra !== null
-      ? `${trabajados} de ${total} temas · ${barra}% de las horas`
+      ? `${trabajados} de ${total} temas tiene alguna evidencia · ${barra}% del tiempo estimado tiene evidencia asociada`
       : cobertura.estado === "SIN_DATOS" && cobertura.motivo === "sin_temas_declarados"
         ? "sin temas cargados — no puedo estimar"
-        : `${trabajados} de ${total} temas · sin clases cargadas, no puedo estimar las horas`;
+        : `${trabajados} de ${total} temas tiene alguna evidencia · sin clases cargadas, no puedo estimar el tiempo`;
 
   return {
     unidades,
     barra,
     pie,
+    // §C1: *"Entregas que requieren revisión: X, cuando corresponda"*. En cero
+    // la línea **no se dibuja**: una sección que dice «0 pendientes» inventa
+    // una tranquilidad que nadie afirmó.
+    enRevision,
+    criterioAlcanzado: cobertura.temasConCriterio,
     // La aclaración acompaña al número. Sin número no hay nada que aclarar, y
     // ponerla igual sería explicar una barra que no está.
     aclaracion: barra !== null ? ACLARACION_DE_COBERTURA : null,
@@ -380,10 +406,12 @@ function aGantt(e: EstadoDeMateria): GanttProjection {
     // El orden llega dado por `estado_de_materia()` —el dictado, con el
     // declarado de respaldo— y la proyección **no lo toca**: reordenar acá
     // duplicaría la decisión en dos lugares.
+    enRevision: g.enRevision,
+    criterioAlcanzado: g.criterioAlcanzado,
     unidades: g.unidades.map((u) => ({
       nombre: u.nombre,
       minutos: u.minutos,
-      trabajado: u.trabajado,
+      estado: u.estado,
     })),
   };
 }

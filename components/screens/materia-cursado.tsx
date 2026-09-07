@@ -42,6 +42,14 @@ function Gantt({ gantt }: { gantt: GanttProjection }) {
     <div data-gantt>
       <Eyebrow>{t("MATERIA.GANTT")}</Eyebrow>
 
+      {/*
+        ⚠️ **Sin colores de calificación.** Textual de la psicopedagoga: *"evitar
+        colores propios de calificación —rojo/verde— para el porcentaje de
+        actividad"*. La barra usa el color de texto, que no significa nada.
+
+        Y el rótulo visible es **`actividad registrada`**, no `dominio`, `nivel`,
+        `rendimiento` ni `avance de aprendizaje` (ADR-075 §C1).
+      */}
       {gantt.barra !== null && (
         <div
           role="img"
@@ -71,7 +79,18 @@ function Gantt({ gantt }: { gantt: GanttProjection }) {
         separa «26% de las horas» de una nota, y sin ella el número viola
         ADR-058, que cerró la readiness sin porcentaje y sin predicción.
       */}
-      {gantt.aclaracion && <ReglaDeNegocio>* {gantt.aclaracion}</ReglaDeNegocio>}
+      {/*
+        §C1: *"Entregas que requieren revisión: X, cuando corresponda"*. En cero
+        **no se dibuja**: una línea que dice «0 pendientes» inventa una
+        tranquilidad que nadie afirmó.
+      */}
+      {gantt.enRevision > 0 && (
+        <p style={{ fontSize: "var(--text-body)" }}>
+          {t("MATERIA.GANTT.REVISION")} {gantt.enRevision}
+        </p>
+      )}
+
+      {gantt.aclaracion && <ReglaDeNegocio>{gantt.aclaracion}</ReglaDeNegocio>}
 
       <div style={{ marginTop: 10 }}>
         {gantt.unidades.map((u) => (
@@ -79,8 +98,21 @@ function Gantt({ gantt }: { gantt: GanttProjection }) {
             key={u.nombre}
             style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0" }}
           >
+            {/*
+              Cuatro estados, no dos. Una entrega insuficiente es **actividad
+              registrada** y **no** criterio alcanzado: mostrarlas iguales
+              *"puede producir una falsa sensación de preparación"*, y no
+              mostrar la insuficiente *"invisibiliza el esfuerzo y castiga dos
+              veces"* (ADR-075 §C2).
+            */}
             <span aria-hidden style={{ fontSize: "var(--text-meta)" }}>
-              {u.trabajado ? "●" : "○"}
+              {u.estado === "criterio_alcanzado"
+                ? "●"
+                : u.estado === "requiere_revision"
+                  ? "◑"
+                  : u.estado === "enviada"
+                    ? "◔"
+                    : "○"}
             </span>
             <span style={{ fontSize: "var(--text-body)", flex: 1 }}>{u.nombre}</span>
             {/*

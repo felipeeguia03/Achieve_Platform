@@ -50,8 +50,8 @@ const conProgreso: EstadoDeMateria = {
   ...conAccion,
   ultimoAvanceEn: "2026-08-29T12:00:00.000Z",
   unidades: [
-    { id: "u1", codigo: "U1", nombre: "Integrales", ultimoAvanceEn: "2026-08-29T12:00:00.000Z", dominio: "not_evaluated", practica: "value", recorrido: "value", peso: null, trabajado: true },
-    { id: "u2", codigo: "U2", nombre: "Series", ultimoAvanceEn: null, dominio: "not_evaluated", practica: "no_information", recorrido: "no_information", peso: null, trabajado: false },
+    { id: "u1", codigo: "U1", nombre: "Integrales", ultimoAvanceEn: "2026-08-29T12:00:00.000Z", dominio: "not_evaluated", practica: "value", recorrido: "value", peso: null, evidencia: "enviada" as const },
+    { id: "u2", codigo: "U2", nombre: "Series", ultimoAvanceEn: null, dominio: "not_evaluated", practica: "no_information", recorrido: "no_information", peso: null, evidencia: "sin_evidencia" as const },
   ],
   dimensiones: {
     unidades: 2,
