@@ -52,7 +52,9 @@ export type CtaId =
   | "CTA-007" | "CTA-008" | "CTA-009" | "CTA-010" | "CTA-011" | "CTA-012"
   | "CTA-013" | "CTA-014" | "CTA-015" | "CTA-016" | "CTA-017" | "CTA-018"
   /** Corrección aprobada del registro. Ver ADR-016. */
-  | "CTA-019";
+  | "CTA-019"
+  /** El alta de evaluación del estudiante. Ver ADR-067. */
+  | "CTA-020";
 
 export interface Cta {
   id: CtaId;
@@ -427,6 +429,52 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     escenarios: ["SC-EX-01"],
     aparece: (c) => c.assessmentElegible,
     habilitada: () => true,
+  },
+
+  /**
+   * **El alta de evaluación** — [ADR-067](../../docs/decisions.md#adr-067).
+   *
+   * La segunda entrada del registro que **no transcribe el spec**. La primera
+   * fue `CTA-019`; ésta entra porque el spec asumía que las evaluaciones
+   * llegaban de la institución, y esa vía está cerrada por
+   * [ADR-006](../../docs/decisions.md#adr-006) hasta el dictamen legal.
+   *
+   * ## Por qué aparece siempre y `CTA-019` no
+   *
+   * `CTA-019` exige una `Assessment` elegible: sin evaluación, no se renderiza.
+   * **Ésta es justamente la que resuelve ese caso**, así que condicionarla a
+   * que exista una evaluación la volvería inalcanzable exactamente cuando hace
+   * falta. Aparece con que haya cursada.
+   *
+   * ## Lo que no hace
+   *
+   * **No navega.** `UX02 → UX02`: el alta ocurre en la materia y la superficie
+   * se queda donde está — por eso `destino` es `null`, igual que en las otras
+   * CTAs que cambian estado sin mover al estudiante.
+   *
+   * **No crea `ExamPreparation`.** Declarar que existe un final no es empezar a
+   * prepararlo: eso sigue siendo `CTA-011`, con confirmación explícita.
+   *
+   * **No eleva procedencia.** La fila entra `unverified` y se queda ahí hasta
+   * que exista quién corrobore — diferido por
+   * [ADR-057](../../docs/decisions.md#adr-057).
+   */
+  "CTA-020": {
+    id: "CTA-020",
+    origen: ["UX02"],
+    condicion: "Cursada abierta",
+    accionSolicitada: "dar de alta una evaluación",
+    // No navega: el alta pasa dentro de UX02.
+    destino: null,
+    resultadoAutoritativo: "Assessment creada, `unverified`, con `declared_by` = el estudiante",
+    fallback: { nodo: "UX02", descripcion: "permanecer en la materia sin crear nada" },
+    estadoError: "cursada ajena o datos inválidos: mostrar el motivo; no presumir creación",
+    // Vacío **a propósito**: el spec no tiene escenario para esto porque no
+    // preveía que el estudiante declarara sus evaluaciones. Inventar un `SC-`
+    // sería fabricar trazabilidad hacia un documento que no lo dice.
+    escenarios: [],
+    aparece: (c) => c.courseVisible,
+    habilitada: siempre,
   },
 } as const;
 

@@ -908,6 +908,59 @@ else
   ok "un DRAFT no puede tener completed_at"
 fi
 
+echo "→ ADR-067 · el estudiante da de alta su evaluación, y sólo él la ve"
+
+# Un segundo estudiante en la MISMA comisión. Es el caso que ADR-067 decide:
+# `assessment` cuelga del offering, así que sin `declared_by` los dos verían
+# la misma fila.
+corre "insert into student (id,institution_id) values ('a5000000-0000-0000-0000-000000000002','$A');"
+corre "insert into course_enrollment (id,institution_id,student_id,offering_id) values
+  ('a6000000-0000-0000-0000-000000000002','$A','a5000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001');"
+
+EV1=$(q "select declarar_evaluacion('$A','a5000000-0000-0000-0000-000000000001','a6000000-0000-0000-0000-000000000001','final','Final declarado', current_date + 30);" | tr -d '[:space:]')
+[ -n "$EV1" ] && ok "declarar_evaluacion() devolvió el id de la fila creada" || mal "no creó nada"
+
+# `I9`: nada se auto-eleva, y la autoría queda registrada.
+[ "$(q "select verification_status || '|' || source_type || '|' || (declared_by = 'a5000000-0000-0000-0000-000000000001')::text from assessment where id='$EV1';" | tr -d '[:space:]')" = "unverified|student|true" ]   && ok "entra unverified, source_type student y con declared_by" || mal "la procedencia o la autoría salieron mal"
+
+# La cursada ajena: la función no distingue «no existe» de «no es tuya».
+[ -z "$(q "select declarar_evaluacion('$A','a5000000-0000-0000-0000-000000000001','b6000000-0000-0000-0000-000000000001','final','De otra institución');" | tr -d '[:space:]')" ]   && ok "una cursada que no es suya devuelve NULL, sin escribir" || mal "escribió sobre una cursada ajena"
+
+[ "$(q "select count(*)::text from assessment where title='De otra institución';" | tr -d '[:space:]')" = "0" ]   && ok "y no dejó fila" || mal "quedó una fila de la cursada ajena"
+
+# El vocabulario cerrado del CHECK.
+if corre "insert into assessment (offering_id,assessment_type,title,source_type) values ('a4000000-0000-0000-0000-000000000001','otro','X','institution');"; then
+  mal "un assessment_type fuera del vocabulario entró"
+else
+  ok "el vocabulario de tipos es cerrado: 'otro' se rechaza"
+fi
+
+# La visibilidad, que es el punto entero de la decisión.
+[ "$(q "select estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'examen'->>'titulo';" | tr -d '[:space:]')" = "Finaldeclarado" ]   && ok "quien la declaró la ve en su materia" || mal "el que la cargó no la ve"
+
+# ⚠️ El otro estudiante comparte comisión y NO debe verla. Sin el predicado de
+# `declared_by`, esta comprobación pasa a ver «Final declarado».
+OTRO=$(q "select estado_de_materia('$A','a5000000-0000-0000-0000-000000000002',now(),'a6000000-0000-0000-0000-000000000002')->'examen'->>'titulo';" | tr -d '[:space:]')
+[ "$OTRO" != "Finaldeclarado" ]   && ok "otro estudiante de la misma comisión NO ve la evaluación ajena" || mal "la evaluación de uno se le mostró al otro"
+
+# Y el contrapunto: `declared_by IS NULL` es de la cursada y la ven los dos.
+corre "insert into assessment (id,offering_id,assessment_type,title,assessment_date,source_type) values
+  ('ea000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','final','Final de la cátedra', current_date + 5,'institution');"
+[ "$(q "select estado_de_materia('$A','a5000000-0000-0000-0000-000000000002',now(),'a6000000-0000-0000-0000-000000000002')->'examen'->>'titulo';" | tr -d '[:space:]')" = "Finaldelacátedra" ]   && ok "una evaluación sin declarante la ve toda la comisión" || mal "la evaluación institucional no llegó"
+
+# Duplicados: no hay UNIQUE, y es a propósito. Fusionarlas es corroborar, y
+# quién corrobora sigue diferido por ADR-057.
+corre "select declarar_evaluacion('$A','a5000000-0000-0000-0000-000000000002','a6000000-0000-0000-0000-000000000002','final','Final declarado', current_date + 30);"
+[ "$(q "select count(*)::text from assessment where title='Final declarado';" | tr -d '[:space:]')" = "2" ]   && ok "dos estudiantes declaran el mismo final y las dos filas conviven" || mal "se perdió una de las dos declaraciones"
+
+# La fecha es opcional: es la decisión de ADR-067 que más fácil se pierde.
+EV2=$(q "select declarar_evaluacion('$A','a5000000-0000-0000-0000-000000000001','a6000000-0000-0000-0000-000000000001','final','Sé que rindo, no sé cuándo');" | tr -d '[:space:]')
+[ "$(q "select (assessment_date is null)::text from assessment where id='$EV2';" | tr -d '[:space:]')" = "true" ]   && ok "una evaluación sin fecha se guarda, y la fecha queda NULL" || mal "la fecha ausente no sobrevivió"
+
+corre "delete from assessment where declared_by is not null or id='ea000000-0000-0000-0000-000000000001';"
+corre "delete from course_enrollment where id='a6000000-0000-0000-0000-000000000002';"
+corre "delete from student where id='a5000000-0000-0000-0000-000000000002';"
+
 limpiar_mundo
 ok "limpiado"
 

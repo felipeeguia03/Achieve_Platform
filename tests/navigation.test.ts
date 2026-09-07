@@ -47,12 +47,17 @@ describe("Las nueve superficies", () => {
 });
 
 describe("Registro canónico de CTAs", () => {
-  it("son exactamente 19, de CTA-001 a CTA-019", () => {
+  it("son exactamente 20, de CTA-001 a CTA-020", () => {
     // Eran 18 hasta el 1 de septiembre de 2026. `CTA-019` es la corrección
     // aprobada por ADR-016: el spec describía la entrada manual `UX02 → UX07` y
     // el registro no la tenía.
-    expect(ctaIds).toHaveLength(19);
-    for (let n = 1; n <= 19; n++) {
+    //
+    // `CTA-020` entró el 7 de septiembre por ADR-067: el alta de evaluación del
+    // estudiante. Es la segunda entrada que **no transcribe el spec**, y por el
+    // mismo motivo que la primera — el spec asumía que las evaluaciones venían
+    // de la institución, y ADR-006 cerró esa vía.
+    expect(ctaIds).toHaveLength(20);
+    for (let n = 1; n <= 20; n++) {
       expect(ctaIds).toContain(`CTA-${String(n).padStart(3, "0")}` as CtaId);
     }
   });
@@ -70,7 +75,10 @@ describe("Registro canónico de CTAs", () => {
       expect(cta.resultadoAutoritativo.length, id).toBeGreaterThan(0);
       expect(cta.fallback.descripcion.length, id).toBeGreaterThan(0);
       expect(cta.estadoError.length, id).toBeGreaterThan(0);
-      expect(cta.escenarios.length, id).toBeGreaterThan(0);
+      // Los escenarios son la trazabilidad **hacia el spec**. Una CTA que el
+      // spec no contiene no puede citar uno sin fabricarlo: su trazabilidad es
+      // el ADR que la introdujo, y la verifica el test de más abajo.
+      if (!CORRECCIONES.includes(id)) expect(cta.escenarios.length, id).toBeGreaterThan(0);
     }
   });
 
@@ -89,7 +97,15 @@ describe("Registro canónico de CTAs", () => {
    * Se la excluye acá y se la verifica contra el ADR en el test siguiente, que
    * es su fuente.
    */
-  const CORRECCIONES: CtaId[] = ["CTA-019"];
+  const CORRECCION_DE: Readonly<Record<string, string>> = {
+    // ADR-016: el spec describía la entrada manual `UX02 → UX07` y el registro
+    // no la tenía.
+    "CTA-019": "ADR-016",
+    // ADR-067: el spec asumía que las evaluaciones llegaban de la institución,
+    // y ADR-006 cerró esa vía hasta el dictamen legal.
+    "CTA-020": "ADR-067",
+  };
+  const CORRECCIONES = Object.keys(CORRECCION_DE) as CtaId[];
 
   it("la condición y los escenarios de aceptación son los del spec", () => {
     // El spec es explícito: ningún otro artifact mantiene copia normativa.
@@ -110,13 +126,19 @@ describe("Registro canónico de CTAs", () => {
    */
   it("toda CTA que no está en el spec la respalda un ADR aceptado", () => {
     const adrs = readFileSync(resolve(process.cwd(), "docs/decisions.md"), "utf8");
-    for (const id of CORRECCIONES) {
-      expect(ctaIds).toContain(id);
-      expect(adrs, `${id} no aparece en decisions.md`).toContain(id);
-      // Y el ADR que la introduce tiene que estar aceptado, no pendiente.
-      const adr016 = adrs.slice(adrs.indexOf("## ADR-016"), adrs.indexOf("## ADR-017"));
-      expect(adr016).toContain(id);
-      expect(adr016).toContain("ACCEPTED");
+    for (const [id, adr] of Object.entries(CORRECCION_DE)) {
+      expect(ctaIds).toContain(id as CtaId);
+
+      // El ADR que la introduce tiene que **nombrarla** y estar aceptado, no
+      // pendiente. Se recorta hasta el ADR siguiente para que una mención en
+      // otro no alcance.
+      const desde = adrs.indexOf(`## ${adr} `);
+      expect(desde, `${adr} no está en decisions.md`).toBeGreaterThan(-1);
+      const siguiente = adrs.indexOf("\n## ADR-", desde + 1);
+      const cuerpo = adrs.slice(desde, siguiente === -1 ? undefined : siguiente);
+
+      expect(cuerpo, `${adr} no menciona ${id}`).toContain(id);
+      expect(cuerpo, `${adr} no está ACCEPTED`).toContain("ACCEPTED");
     }
   });
 
@@ -205,8 +227,8 @@ function alcanzaAlgunEscenario(id: CtaId): boolean {
 describe("Alcance: toda CTA tiene un escenario que la alcanza", () => {
   const exigibles = ctaIds.filter((id) => !(id in bloqueadasPorEtapa));
 
-  it("las 19 CTAs son exigibles: ninguna superficie de origen falta ya", () => {
-    expect(exigibles).toHaveLength(19);
+  it("las 20 CTAs son exigibles: ninguna superficie de origen falta ya", () => {
+    expect(exigibles).toHaveLength(20);
     expect(Object.keys(bloqueadasPorEtapa)).toHaveLength(0);
   });
 

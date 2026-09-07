@@ -492,7 +492,7 @@ cierre de la B2 —los 12 invariantes de `data-model.md` §11— contra el propi
 tienen test** desde que la B5 migró `exam_preparation`: `I7` era el único pendiente, y el guard rompió
 solo el día que la migración entró, que es para lo que estaba escrito.
 
-La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 19 CTAs) →
+La frontera ya existe: `lib/domain/` (puro) → `lib/navigation/` (grafo + 20 CTAs) →
 `lib/fixtures/` (catálogo) → `app/(student)/` proyecta → `components/screens/` recibe props tipadas.
 **Ninguna pantalla importa un fixture** y **`lib/navigation/` no importa `lib/fixtures/`**; hay tests
 estáticos que lo verifican.
@@ -530,13 +530,14 @@ resultado y la exposición real, en [`brief-adr-008-seguridad.md`](docs/brief-ad
 §10; el resumen, en `roadmap.md` §3.1.
 
 Superficies: `UX01`–`UX09`. **Las nueve existen** como componente real con ruta propia bajo
-`app/(student)/`. **No existe `UX10`.** Las 19 CTAs son alcanzables y todos sus destinos tienen
+`app/(student)/`. **No existe `UX10`.** Las 20 CTAs son alcanzables y todos sus destinos tienen
 pantalla.
 
-El registro canónico tiene **19 CTAs**: `CTA-019` (`UX02 → UX07`) se agregó el 1 de septiembre de
-2026 por [ADR-016](docs/decisions.md#adr-016). Es la única fila que no transcribe la tabla del spec
-—es una corrección aprobada— y hay un test que exige que toda CTA fuera del spec tenga un ADR
-`ACCEPTED` detrás.
+El registro canónico tiene **20 CTAs**, y **dos no transcriben la tabla del spec**: `CTA-019`
+(`UX02 → UX07`) entró el 1 de septiembre de 2026 por [ADR-016](docs/decisions.md#adr-016), y
+`CTA-020` (el alta de evaluación, dentro de `UX02`) el 7 de septiembre por
+[ADR-067](docs/decisions.md#adr-067). Las dos son correcciones aprobadas, y hay un test que exige que
+toda CTA fuera del spec tenga un ADR `ACCEPTED` que la nombre.
 
 Para ver cualquier estado crítico sin panel de debug: `?escenario=<ID>` en **cualquiera** de las
 nueve rutas.

@@ -161,7 +161,9 @@ describe("El modo prueba no se convierte en producto", () => {
   });
 
   it("no agrega CTAs al registro canónico", () => {
-    expect(Object.keys(ctaRegistry)).toHaveLength(19);
+    // Son 20 desde el 7 de septiembre de 2026 (ADR-067, `CTA-020`). Lo que este
+    // guard vigila no es el número: es que **el modo prueba** no lo mueva.
+    expect(Object.keys(ctaRegistry)).toHaveLength(20);
   });
 
   it("el panel no entra al grafo de navegación ni al registro de CTAs", () => {

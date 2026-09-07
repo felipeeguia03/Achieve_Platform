@@ -142,7 +142,7 @@ Achieve_Platform/
 │   ├── utils.ts                 ← cn() · REUSADO
 │   ├── domain/                  ← tipos y máquinas de estado (puras, sin I/O)
 │   ├── content/                 ← el copy, con ID tipado (regla C-07)
-│   ├── navigation/              ← grafo del Golden Path + registro de las 19 CTAs
+│   ├── navigation/              ← grafo del Golden Path + registro de las 20 CTAs
 │   └── fixtures/                ← catálogo de escenarios sintéticos
 │
 └── hooks/

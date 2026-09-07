@@ -33,6 +33,12 @@ import {
   type ReflexionEntregada,
 } from "./servicios/reflexion";
 import { reflexionesReal } from "./repositorios/reflexion";
+import { evaluacionesReal } from "./repositorios/evaluacion";
+import {
+  validarEvaluacion,
+  type EvaluacionDeclarada,
+  type ResultadoDeAlta,
+} from "./servicios/evaluacion";
 import {
   confirmarCompromiso as confirmarCompromisoPuro,
   renegociar as renegociarPuro,
@@ -802,6 +808,50 @@ export async function registrarReflexion(
 
   const creada = await reflexionesReal.crear(institutionId, datos);
   return { estado: "OK", reflexionId: creada.id };
+}
+
+/**
+ * **El alta de evaluación del estudiante** — [ADR-067](../../docs/decisions.md#adr-067).
+ *
+ * ## Por qué existe
+ *
+ * `assessment_date` sostiene la cuenta regresiva del Gantt,
+ * `estado_de_materia().examen`, `contexto_del_ade().proximaEvaluacion`, la
+ * aparición de `CTA-019` y la ventana de 14 días de
+ * [ADR-048](../../docs/decisions.md#adr-048). Y **ninguna ruta llegaba a un
+ * escritor**: las únicas filas las insertaban los scripts de verificación.
+ *
+ * El diseño asumía que las evaluaciones llegaban de la institución. Esa vía
+ * está cerrada por [ADR-006](../../docs/decisions.md#adr-006), así que la carga
+ * la hace el estudiante — el mismo principio que ya rige para las cátedras.
+ *
+ * ## Lo que no hace
+ *
+ * **No crea `ExamPreparation`.** Declarar que existe un final no es empezar a
+ * prepararlo: eso sigue siendo `CTA-011`, con confirmación explícita.
+ *
+ * **No emite evento de producto.** `AcademicDataIngested` es *"un hecho de la
+ * plataforma, no del estudiante"*, y esto es lo contrario. Inventar un nombre
+ * es lo que el guard de [ADR-027](../../docs/decisions.md#adr-027) impide.
+ *
+ * **No deduplica.** Dos estudiantes de la misma comisión van a cargar el mismo
+ * parcial y las dos filas conviven `unverified`: fusionarlas es corroborar, y
+ * quién corrobora sigue diferido por [ADR-057](../../docs/decisions.md#adr-057).
+ */
+export async function declararEvaluacion(
+  institutionId: string,
+  estudianteId: string,
+  datos: EvaluacionDeclarada,
+): Promise<ResultadoDeAlta> {
+  const motivo = validarEvaluacion(datos);
+  if (motivo) return { estado: "DATOS_INVALIDOS", motivo };
+
+  // La pertenencia la comprueba `declarar_evaluacion()` en la misma operación
+  // que el `INSERT`. Repetirla acá abriría una ventana entre las dos.
+  const id = await evaluacionesReal.declarar(institutionId, estudianteId, datos);
+  if (!id) return { estado: "CURSADA_AJENA" };
+
+  return { estado: "OK", evaluacionId: id };
 }
 
 /**
