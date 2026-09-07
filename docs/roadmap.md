@@ -2158,6 +2158,8 @@ que eso.
 
 ---
 
+<a id="fase-b2b--ingesta-del-academic-data-layer--en-curso"></a>
+
 ## Fase B2b — Ingesta del Academic Data Layer · 🟡 EN CURSO
 
 **Estado:** 🟡 **2 / 3.** Abierta por [ADR-023](decisions.md#adr-023) el 30 de agosto de 2026, a
@@ -3641,6 +3643,157 @@ repetir el alta, la carrera sin plan diciendo la verdad, y **cero respuestas ≥
 ([ADR-035](decisions.md#adr-035)) · no construye la superficie «WhatsApp y privacidad» (backlog #2) ·
 no construye el diagnóstico personal mínimo del Golden Path A · **no publica el plan de la UCC**,
 que es `C01-052` y espera un documento oficial.
+
+---
+
+<a id="fase-b615--el-gantt-de-preparacion"></a>
+
+## Fase B6.15 — El Gantt de preparación · 🟡 EN CURSO
+
+**Qué es.** Que `UX02 · Materia / Cursado` conteste su propia pregunta canónica
+—*"¿Cómo vengo en esta materia y qué hago?"*— con una línea de tiempo en vez de una lista: qué temas
+entran, cuáles tienen evidencia enviada, y cuántos minutos quedan hasta la evaluación.
+
+**Fuentes:** [`gantt-de-preparacion.md`](gantt-de-preparacion.md) ·
+[`inventario-corpus.md`](inventario-corpus.md) · [ADR-066](decisions.md#adr-066) …
+[ADR-069](decisions.md#adr-069).
+
+> ⚠️ **No es una superficie nueva.** [ADR-066](decisions.md#adr-066): *"es lo que Materia debería
+> haber sido siempre"*. No se crea `UX10`, no hay wireframe nuevo, no hay ruta nueva. El registro de
+> CTAs se toca **una sola vez**, por `CTA-020`.
+
+### Lo que hizo corta esta fase
+
+La capa académica ya estaba entera —`topic` con `parent_id`, `topic_prerequisite` explícita,
+`class_session_topic` muchos a muchos, `assessment_topic`, `learning_objective`, `topic_progress` con
+sus cinco dimensiones— y `estado_de_materia()` ya devolvía el examen ordenado `ASC NULLS LAST`, las
+unidades por `sequence`, y `contextoIncompleto` como hecho de la base.
+
+**Faltaban dos cosas: el tiempo, y un escritor de `assessment`.**
+
+### Los ADR que la sostienen
+
+| ADR | Qué cerró | Quién |
+|---|---|---|
+| [ADR-066](decisions.md#adr-066) | El Gantt es `UX02` | Owner |
+| [ADR-067](decisions.md#adr-067) | El estudiante da de alta su evaluación · `CTA-020` | Owner |
+| [ADR-068](decisions.md#adr-068) | La duración entra al modelo · los minutos por tema **no se persisten** | Equipo |
+| [ADR-069](decisions.md#adr-069) | `session_kind` se propone, no se importa | Equipo |
+
+**Tres siguen abiertos y son del owner:** el factor de estudio `1.5` como configuración versionada,
+los prerequisitos desde el orden dictado, y **qué número muestra la barra** —el que roza
+[ADR-058](decisions.md#adr-058), que cerró la readiness *sin porcentaje y sin predicción de
+aprobación*—.
+
+---
+
+#### ✅ Corte 1 — El alta de evaluación · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-067](decisions.md#adr-067).**
+
+**El agujero que tapa.** Ninguna ruta llegaba a un escritor de `assessment`, y `assessment_date`
+sostiene la cuenta regresiva del Gantt, `estado_de_materia().examen`,
+`contexto_del_ade().proximaEvaluacion`, la aparición de `CTA-019` y la ventana de 14 días de
+[ADR-048](decisions.md#adr-048). Las únicas filas las insertaban los scripts de verificación.
+
+> ⚠️ **Una corrección del mismo día, anotada porque cambia lo que hay que creer.** La primera lectura
+> concluyó que *"no existe ningún escritor de `assessment`"*. **Es falso:** `ingerirMateria()` escribe
+> evaluaciones —servicio, repositorio y la RPC `ingerir_materia`, con tests— y la búsqueda no lo
+> encontró porque el `INSERT` vive dentro de una función de Postgres. Lo que sí es cierto es que
+> **ninguna ruta lo alcanza**, y que no serviría igual: `ingerir_materia` **reemplaza** las unidades y
+> las evaluaciones de la cursada entera. Usarlo para agregar un final borraría el temario.
+
+| | |
+|---|---|
+| **Migración** | `20260919000000_alta_de_evaluacion.sql`. `assessment.declared_by` (sin FK, como `class_session.uploaded_by`), el `CHECK` del vocabulario de tipos, `declarar_evaluacion()`, y **el predicado de visibilidad en las cuatro funciones que leen `assessment`** |
+| **Dominio** | `lib/server/servicios/evaluacion.ts` — el vocabulario y la validación. **La fecha es opcional**, y una hora sin fecha se rechaza |
+| **Contrato** | `POST /api/evaluacion` · `201` con el id · `400` con el motivo en castellano · `404` si la cursada no es suya |
+| **Registro** | **`CTA-020`**, `UX02 → UX02`. El registro pasa de 19 a 20 |
+| **Pruebas** | 10 comprobaciones nuevas contra Postgres y 12 de dominio |
+
+**Las cuatro decisiones que se materializaron, y por qué cada una:**
+
+1. **Sólo la ve quien la cargó.** `assessment` cuelga del offering, así que sin `declared_by` una
+   fecha equivocada de un compañero aparecería en la pantalla de otro como propia. `NULL` = no la
+   declaró un estudiante: es de la cursada, y la ve toda la comisión.
+2. **Un `declared_by` que no se filtra al leer es una mentira.** Por eso el predicado entra en
+   `estado_de_materia()`, `estado_de_activacion()`, `contexto_del_ade()` y
+   `candidatos_de_modo_examen()` en la misma migración. `estado_de_preparacion()`, `estado_de_paso()`
+   y `protocolo_vigente()` **no se tocan**: llegan por `exam_preparation`, que ya es por estudiante.
+3. **La fecha es opcional, y es el punto.** Quien sabe que rinde pero no cuándo tiene que poder
+   registrarlo. Sin fecha no hay Modo Examen —la ventana de ADR-048 necesita contra qué contar— y
+   `CTA-019` no aparece, que es lo correcto y no un error.
+4. **Se aceptan duplicados.** No hay `UNIQUE`: lo haría que el error de tipeo de uno le bloquee la
+   carga al otro. Fusionar dos declaraciones `unverified` es corroborar, y quién corrobora sigue
+   diferido por [ADR-057](decisions.md#adr-057).
+
+> ⚠️ **Y un guard tuvo que generalizarse, no relajarse.** El registro exigía que **toda** CTA citara
+> un escenario del spec. `CTA-020` no puede: el spec no la contiene, porque asumía que las
+> evaluaciones llegaban de la institución. La trazabilidad de una corrección es **su ADR**, y el test
+> que lo verificaba estaba cableado a `ADR-016`. Ahora es un mapa `CTA → ADR` que comprueba que el ADR
+> exista, la nombre y esté `ACCEPTED`. **Exigir un escenario del spec habría obligado a fabricar uno.**
+
+`lint` · `typecheck` · `build` · **1172 tests** · **`db:verify` 340 ✓, 0 ✗, exit 0**.
+
+---
+
+#### ✅ Corte 2 — La duración entra al modelo · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-068](decisions.md#adr-068) y [ADR-069](decisions.md#adr-069).**
+
+| | |
+|---|---|
+| **Migraciones** | Dos. `20260920000000_duracion_y_tipo_de_clase.sql`: `class_session` gana `duration_min`, `session_time`, `stream` (**tres** valores) y `session_kind`; `course_offering` gana `declared_total_min` + `declared_total_source`; `topic` gana `weight`. Y `20260920010000_ingesta_de_clases.sql`, que **corrige un defecto y le da escritor a todo lo anterior** |
+| **Dominio** | `lib/domain/duracion.ts` — la reconciliación entre el total declarado y la distribución observada, versionada por `REGLA_DE_DURACION`. **No hay SQL en esto**: es una regla de producto que va a cambiar |
+| **Ingesta** | `GuiaDeMateria` gana `clases[]` y `cargaHoraria`. `ingerir_materia` escribe `class_session` y `class_session_topic` |
+| **Pruebas** | 17 comprobaciones nuevas contra Postgres y 23 de dominio |
+
+**Las cuatro decisiones que se materializaron:**
+
+1. **No hay columna de minutos por tema, y hay un guard que lo vigila.** El reparto es una derivación
+   y se calcula al leer. Persistirla la congelaría como un hecho y **se volvería mentira sola**:
+   cuando una clase posterior vuelve sobre el mismo tema, el reparto anterior deja de ser correcto y
+   nadie lo recalcula. El guard consulta `information_schema` y **se verificó que rompe** agregando
+   una columna a mano.
+2. **`stream` lleva tres valores.** El corpus usa `TEORICO-PRACTICO` mezclado dentro de una misma
+   corrida; con dos habría que elegir uno y perder el dato.
+3. **El importador no clasifica.** `session_kind` sólo entra si la guía lo trae, y la guía lo trae
+   sólo si una persona lo confirmó — la columna de tipo del libro dice `NORMAL` en 988 de ~1016 filas
+   y el parcial vive en texto libre con **25% de falsos positivos medidos**. Ausente queda `NULL`, que
+   el dominio cuenta como clase: se elige el error chico.
+4. **El denominador de la reconciliación es lo atribuible, no todo lo observado.** Una clase sin temas
+   es tiempo que no se puede repartir; si contara en el denominador, cada tema recibiría menos de lo
+   que le toca — una dilución que nadie podría explicar mirando la pantalla.
+
+> ⚠️ **Y un defecto que el corte 1 había introducido sin que nadie lo viera.** `ingerir_materia` hacía
+> `DELETE FROM assessment WHERE offering_id = ...` antes de cargar el material nuevo. Con
+> `declared_by` —que llegó el mismo día—, **una ingesta de material de cátedra le borraba al
+> estudiante el final que él había cargado**, sin aviso y sin rastro.
+>
+> La regla ahora es **la ingesta reemplaza lo que la ingesta trajo**. Y la comprobación que lo
+> sostiene tuvo que reescribirse: la primera versión declaraba la evaluación sobre *otra* comisión que
+> la ingesta nunca tocaba, así que **pasaba sin probar nada**. Ahora prueba las dos mitades — que el
+> `DELETE` corre, y que la fila del estudiante sobrevive.
+
+⚠️ **Lo que este corte NO hace:** aplicar el factor de estudio. Los minutos de `duracion.ts` son
+**minutos de clase**; convertirlos a minutos de estudio es el `1.5` que sigue abierto, y va versionado
+aparte para que se pueda saber cuál de los dos números cambió.
+
+⚠️ **El docente no se carga.** Los 80 libros del corpus traen nombre y legajo en cada fila.
+`class_session` no tiene dónde ponerlos y **no hay que agregarle un lugar**.
+
+`lint` · `typecheck` · `build` · **1195 tests** · **`db:verify` 359 ✓, 0 ✗, exit 0**.
+
+#### Corte 3 — El Gantt en `UX02`
+
+**Bloqueado por los tres ADR de producto.** El componente se puede empezar; **la barra no se puede
+terminar** hasta que esté decidido qué número muestra.
+
+| | |
+|---|---|
+| **Contrato** | Tres campos nuevos en `estado_de_materia()`: `minutosBase` por unidad, `cobertura` ponderada, y los días —derivables en el cliente desde `fechaEn` e `instante`, que ya viajan— |
+| **Pantalla** | `components/screens/materia-cursado.tsx`. Sin ruta nueva y sin `UX10` |
+| **Degradación** | ⚠️ **13 de 36 materias del corpus (36%) entran degradadas.** No es la vista principal, pero tampoco un caso borde: se diseña en serio |
 
 ---
 

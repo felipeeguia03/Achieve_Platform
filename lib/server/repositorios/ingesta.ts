@@ -5,8 +5,14 @@ import { clienteDeServicio } from "../supabase";
 
 /**
  * Ingesta del ADL. Todo pasa por `ingerir_materia`, que hace curso, cursada,
- * unidades, prerequisitos y evaluaciones **en una transacción**: media materia
- * cargada es peor que ninguna, porque nadie sabe qué falta.
+ * unidades, prerequisitos, evaluaciones **y las sesiones del libro de temas**
+ * en una transacción: media materia cargada es peor que ninguna, porque nadie
+ * sabe qué falta.
+ *
+ * ⚠️ **La ingesta reemplaza lo que la ingesta trajo, y nada más.** Desde
+ * [ADR-067](../../../docs/decisions.md#adr-067) una `assessment` puede tener
+ * `declared_by`, y esas filas **sobreviven** a una ingesta: barrerlas le
+ * borraría al estudiante el final que él cargó.
  *
  * **`verification_status` no viaja como parámetro.** Queda en su default
  * `unverified` (`I9`).
@@ -36,6 +42,9 @@ export const ingestaReal: RepositorioDeIngesta = {
       p_unidades: guia.unidades,
       p_prerequisitos: guia.prerequisitos ?? [],
       p_evaluaciones: guia.evaluaciones ?? [],
+      p_clases: guia.clases ?? [],
+      p_carga_min: guia.cargaHoraria?.minutos ?? null,
+      p_carga_texto: guia.cargaHoraria?.texto ?? null,
     });
     if (error) throw new Error(`No se pudo ingerir la materia: ${error.message}`);
     const fila = ((data ?? []) as Record<string, unknown>[])[0];
@@ -44,6 +53,7 @@ export const ingestaReal: RepositorioDeIngesta = {
       cursadaId: fila.cursada_id as string,
       unidades: Number(fila.unidades),
       evaluaciones: Number(fila.evaluaciones),
+      clases: Number(fila.clases),
     };
   },
 };

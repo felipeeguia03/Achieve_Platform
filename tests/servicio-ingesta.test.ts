@@ -34,7 +34,12 @@ function falso(opciones: { institucionExiste?: boolean } = {}) {
     },
     async ingerirMateria(_inst, guia) {
       ingeridas.push(guia);
-      return { cursadaId: "off-1", unidades: guia.unidades.length, evaluaciones: guia.evaluaciones?.length ?? 0 };
+      return {
+        cursadaId: "off-1",
+        unidades: guia.unidades.length,
+        evaluaciones: guia.evaluaciones?.length ?? 0,
+        clases: guia.clases?.length ?? 0,
+      };
     },
   };
   const eventos: PublicadorDeEventos = { async publicar(e) { publicados.push(e); } };
@@ -144,6 +149,56 @@ describe("B2b · el hecho queda registrado con su fuente", () => {
       nombre: "AcademicDataIngested",
       causa: "public_web:https://facultad.example/programa.pdf",
     });
+  });
+});
+
+describe("Las sesiones del libro de temas (ADR-068 y ADR-069)", () => {
+  const CON_CLASES = {
+    ...GUIA,
+    clases: [{ fecha: "2026-03-16", hora: "13:00", minutos: 120, corrida: "practico" as const, temas: [GUIA.unidades[0].nombre] }],
+    cargaHoraria: { minutos: 3600, texto: "60 horas" },
+  };
+
+  it("una guía con clases y carga horaria pasa la validación", () => {
+    expect(validarGuia(CON_CLASES)).toBeNull();
+  });
+
+  it("una clase que cita una unidad que no está en la guía se rechaza", () => {
+    // La función de base la ignora en silencio; acá se dice, porque un vínculo
+    // colgado en la ingesta es material mal leído, no un caso del mundo.
+    const r = validarGuia({ ...CON_CLASES, clases: [{ fecha: "2026-03-16", temas: ["Unidad fantasma"] }] });
+    expect(r).toContain("que no está en la guía");
+  });
+
+  it("una clase de cero minutos se rechaza: no es una clase corta", () => {
+    expect(validarGuia({ ...CON_CLASES, clases: [{ fecha: "2026-03-16", minutos: 0 }] })).toContain(
+      "cero minutos",
+    );
+  });
+
+  it("una clase sin duración es legítima: NULL es desconocido", () => {
+    // Es el caso de las 12 materias del corpus sin `Horario:` ni carga horaria.
+    expect(validarGuia({ ...CON_CLASES, clases: [{ fecha: "2026-03-16" }] })).toBeNull();
+  });
+
+  it("la carga horaria necesita el texto literal que se leyó", () => {
+    // Un total sin fuente es un número que nadie puede auditar. El CHECK de la
+    // base lo exige igual; acá el error se entiende.
+    expect(validarGuia({ ...CON_CLASES, cargaHoraria: { minutos: 3600, texto: "  " } })).toContain(
+      "el texto que se leyó",
+    );
+  });
+
+  it("el tipo de clase es opcional, y ausente NO se inventa", () => {
+    // ADR-069: el importador no clasifica. La guía trae `tipo` sólo si una
+    // persona lo confirmó, y el 25% de falsos positivos medidos es el motivo.
+    const sinTipo = { ...CON_CLASES, clases: [{ fecha: "2026-03-16", minutos: 120 }] };
+    expect(validarGuia(sinTipo)).toBeNull();
+    expect(sinTipo.clases[0]).not.toHaveProperty("tipo");
+  });
+
+  it("una guía sin clases sigue siendo válida: son opcionales", () => {
+    expect(validarGuia(GUIA)).toBeNull();
   });
 });
 

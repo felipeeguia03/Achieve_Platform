@@ -55,10 +55,42 @@ export interface GuiaDeMateria {
     modalidad?: "practico" | "teorico_escrito" | "oral" | "mixta" | "otra";
     alcance?: string;
   }>;
+  /**
+   * Las sesiones del libro de temas — [ADR-068](../../../docs/decisions.md#adr-068).
+   *
+   * ⚠️ **`tipo` sólo viaja si una persona lo confirmó.** El importador no
+   * clasifica: la columna de tipo del libro dice `NORMAL` en 988 de ~1016 filas
+   * y el parcial vive en texto libre, con **25% de falsos positivos medidos**
+   * —*"Derivadas parciales"* es un tema de análisis, *"Repaso para el parcial"*
+   * es la clase anterior—. Ausente queda `NULL`, que el dominio cuenta como
+   * clase ([ADR-069](../../../docs/decisions.md#adr-069)).
+   *
+   * ⚠️ **El docente no entra.** El libro lo trae en cada fila y `class_session`
+   * no tiene dónde ponerlo. La regla 3 del encabezado de este módulo ya lo
+   * decía para los programas; vale igual acá.
+   */
+  clases?: Array<{
+    /** `YYYY-MM-DD`. */
+    fecha: string;
+    hora?: string;
+    /** Duración observada. Ausente ⇒ no se sabe, **no cero**. */
+    minutos?: number;
+    corrida?: "teorico" | "practico" | "teorico_practico";
+    tipo?: "clase" | "parcial" | "recuperatorio" | "consulta" | "no_dictada";
+    /** Nombres de unidades **de esta guía**. Una que no esté no crea un tema. */
+    temas?: string[];
+  }>;
+  /**
+   * La carga horaria declarada por el programa: los minutos normalizados **y el
+   * texto literal que se leyó**. Van juntos o no van — el `CHECK`
+   * `carga_declarada_completa_o_ausente` lo exige, y el motivo es que un total
+   * sin fuente es un número que nadie puede auditar.
+   */
+  cargaHoraria?: { minutos: number; texto: string };
 }
 
 export type ResultadoDeIngesta =
-  | { estado: "OK"; cursadaId: string; unidades: number; evaluaciones: number }
+  | { estado: "OK"; cursadaId: string; unidades: number; evaluaciones: number; clases: number }
   | { estado: "FUENTE_INVALIDA"; motivo: string }
   | { estado: "GUIA_INVALIDA"; motivo: string }
   /** La institución tiene que existir antes. No se crea sola (ADR-005 ítem 6). */
@@ -73,7 +105,7 @@ export interface RepositorioDeIngesta {
   ingerirMateria(
     institutionId: string,
     guia: GuiaDeMateria,
-  ): Promise<{ cursadaId: string; unidades: number; evaluaciones: number }>;
+  ): Promise<{ cursadaId: string; unidades: number; evaluaciones: number; clases: number }>;
 }
 
 /** `0..1`, y `NaN` no es un número válido aunque `typeof` diga que sí. */
@@ -99,6 +131,24 @@ export function validarGuia(g: GuiaDeMateria): string | null {
 
   const nombres = new Set(g.unidades.map((u) => u.nombre));
   if (nombres.size !== g.unidades.length) return "hay unidades repetidas";
+
+  for (const c of g.clases ?? []) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(c.fecha)) return `la clase "${c.fecha}" no trae fecha válida`;
+    // Cero minutos no es una clase corta: es un dato mal cargado, y el CHECK de
+    // la base lo rechaza igual. Se caza acá para dar un error entendible.
+    if (c.minutos !== undefined && c.minutos <= 0) return "una clase no puede durar cero minutos";
+    for (const t of c.temas ?? []) {
+      // Un tema que no está en la guía sería un vínculo colgado. La función de
+      // base lo ignora en silencio; acá se dice.
+      if (!nombres.has(t)) return `la clase del ${c.fecha} cita la unidad "${t}", que no está en la guía`;
+    }
+  }
+
+  if (g.cargaHoraria !== undefined) {
+    if (g.cargaHoraria.minutos <= 0) return "la carga horaria declarada tiene que ser positiva";
+    // El texto literal es lo que permite auditar la normalización después.
+    if (!g.cargaHoraria.texto?.trim()) return "la carga horaria necesita el texto que se leyó";
+  }
 
   for (const p of g.prerequisitos ?? []) {
     // Un prerequisito hacia una unidad que no está en la guía sería un vínculo

@@ -961,6 +961,123 @@ corre "delete from assessment where declared_by is not null or id='ea000000-0000
 corre "delete from course_enrollment where id='a6000000-0000-0000-0000-000000000002';"
 corre "delete from student where id='a5000000-0000-0000-0000-000000000002';"
 
+echo "→ ADR-068/069 · la duración entra al modelo, y lo que la base rechaza"
+
+# `class_session` necesita procedencia; el mundo mínimo para probar los CHECK.
+corre "insert into class_session (id,offering_id,session_date,source_type,duration_min,session_time,stream,session_kind)
+  values ('c1000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001', current_date,'institution',120,'14:00','teorico_practico','clase');"
+[ "$(q "select duration_min || '|' || stream || '|' || session_kind from class_session where id='c1000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "120|teorico_practico|clase" ] \
+  && ok "una sesión guarda duración, hora, corrida y tipo" || mal "no se guardaron las columnas nuevas"
+
+# ⚠️ Tres valores, no dos: el corpus usa TEORICO-PRACTICO.
+if corre "insert into class_session (offering_id,session_date,source_type,stream) values ('a4000000-0000-0000-0000-000000000001',current_date,'institution','mixto');"; then
+  mal "un stream fuera del vocabulario entró"
+else
+  ok "el vocabulario de stream es cerrado, y admite teorico_practico"
+fi
+
+if corre "insert into class_session (offering_id,session_date,source_type,session_kind) values ('a4000000-0000-0000-0000-000000000001',current_date,'institution','feriado');"; then
+  mal "un session_kind fuera del vocabulario entró"
+else
+  ok "el vocabulario de session_kind es cerrado"
+fi
+
+# Desconocido es legítimo: la mitad del corpus no lo dice.
+corre "insert into class_session (id,offering_id,session_date,source_type) values ('c1000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001',current_date,'institution');"
+[ "$(q "select (duration_min is null and stream is null and session_kind is null)::text from class_session where id='c1000000-0000-0000-0000-000000000002';" | tr -d '[:space:]')" = "true" ] \
+  && ok "una sesión sin duración ni corrida ni tipo es legítima: NULL es desconocido" || mal "el desconocido no sobrevivió"
+
+if corre "insert into class_session (offering_id,session_date,source_type,duration_min) values ('a4000000-0000-0000-0000-000000000001',current_date,'institution',0);"; then
+  mal "una clase de cero minutos entró"
+else
+  ok "cero minutos se rechaza: no es una clase corta, es un dato mal cargado"
+fi
+
+# La carga declarada va con su fuente, o no va.
+if corre "update course_offering set declared_total_min = 3600 where id='a4000000-0000-0000-0000-000000000001';"; then
+  mal "un total declarado entró sin decir de dónde salió"
+else
+  ok "un total sin su texto de origen se rechaza"
+fi
+corre "update course_offering set declared_total_min = 3600, declared_total_source = '60 horas' where id='a4000000-0000-0000-0000-000000000001';"
+[ "$(q "select declared_total_source from course_offering where id='a4000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "60horas" ] \
+  && ok "el total se guarda junto al texto literal que se leyó" || mal "no se guardó la fuente declarada"
+corre "update course_offering set declared_total_min = null, declared_total_source = null where id='a4000000-0000-0000-0000-000000000001';"
+
+# El peso del tema: NULL es ausencia, no 1.0. La regla de todo-o-nada vive en
+# lib/domain/duracion.ts; acá sólo se comprueba que la columna admita las dos.
+corre "insert into topic (id,offering_id,name,sequence,weight) values ('c2000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','Con peso',1,3);"
+corre "insert into topic (id,offering_id,name,sequence) values ('c2000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001','Sin peso',2);"
+[ "$(q "select count(*)::text from topic where offering_id='a4000000-0000-0000-0000-000000000001' and weight is null;" | tr -d '[:space:]')" != "0" ] \
+  && ok "un tema sin peso declarado es legítimo: NULL no es 1.0" || mal "el peso ausente no sobrevivió"
+if corre "insert into topic (offering_id,name,weight) values ('a4000000-0000-0000-0000-000000000001','Peso cero',0);"; then
+  mal "un peso cero entró"
+else
+  ok "un peso de cero se rechaza"
+fi
+
+# ⚠️ La comprobación que sostiene ADR-068: no hay dónde persistir minutos por tema.
+[ "$(q "select count(*)::text from information_schema.columns
+        where (table_name in ('topic','class_session_topic') and column_name like '%minut%')
+           or (table_name in ('topic','class_session_topic') and column_name like '%duration%');" | tr -d '[:space:]')" = "0" ] \
+  && ok "no existe columna de minutos por tema: el reparto es derivación, no dato" || mal "alguien persistió el reparto"
+
+corre "delete from class_session where offering_id='a4000000-0000-0000-0000-000000000001';"
+corre "delete from topic where id in ('c2000000-0000-0000-0000-000000000001','c2000000-0000-0000-0000-000000000002');"
+
+echo "→ La ingesta reemplaza lo que la ingesta trajo, y nada más"
+
+# ⚠️ El defecto que el corte 1 introdujo sin querer: `ingerir_materia` borraba
+# TODAS las evaluaciones del offering antes de cargar las nuevas. Con
+# `declared_by`, eso le borraba al estudiante el final que él cargó.
+# Primero la ingesta, para que la cursada del estudiante sea LA MISMA que la
+# ingesta va a reemplazar: si declarara sobre otra comisión, la comprobación
+# de más abajo no probaría nada.
+CURS=$(q "select cursada_id from ingerir_materia('$A','public_web','programa 2026', now(), null,
+  'MAT-1','Materia con libro','2026', null,
+  '[{\"nombre\":\"U1\",\"orden\":1},{\"nombre\":\"U2\",\"orden\":2}]'::jsonb,
+  '[]'::jsonb,
+  '[{\"tipo\":\"parcial\",\"titulo\":\"P1 de la cátedra\"}]'::jsonb,
+  null,
+  '[{\"fecha\":\"2026-03-16\",\"hora\":\"13:00\",\"minutos\":120,\"corrida\":\"practico\",\"temas\":[\"U1\"]},
+    {\"fecha\":\"2026-03-23\",\"minutos\":120,\"temas\":[\"U1\",\"U2\"]}]'::jsonb,
+  3600,'60 horas');" | tr -d '[:space:]')
+[ -n "$CURS" ] && ok "ingerir_materia() cargó unidades, evaluación y sesiones" || mal "la ingesta no devolvió cursada"
+
+# El estudiante se inscribe EN ESA comisión y declara su propio final.
+corre "insert into student (id,institution_id) values ('a5000000-0000-0000-0000-000000000003','$A');"
+corre "insert into course_enrollment (id,institution_id,student_id,offering_id) values
+  ('a6000000-0000-0000-0000-000000000003','$A','a5000000-0000-0000-0000-000000000003','$CURS');"
+MIO=$(q "select declarar_evaluacion('$A','a5000000-0000-0000-0000-000000000003','a6000000-0000-0000-0000-000000000003','final','El final que cargué yo', current_date + 40);" | tr -d '[:space:]')
+[ -n "$MIO" ] && ok "el estudiante declara su final sobre la comisión ingerida" || mal "no pudo declarar"
+
+[ "$(q "select count(*)::text from class_session where offering_id='$CURS';" | tr -d '[:space:]')" = "2" ] \
+  && ok "las dos sesiones del libro quedaron guardadas" || mal "no se escribieron las sesiones"
+[ "$(q "select count(*)::text from class_session_topic cst join class_session cs on cs.id=cst.class_session_id where cs.offering_id='$CURS';" | tr -d '[:space:]')" = "3" ] \
+  && ok "una sesión cubre varios temas: tres vínculos de dos clases" || mal "los vínculos clase↔tema salieron mal"
+[ "$(q "select duration_min || '|' || coalesce(stream,'-') || '|' || coalesce(session_kind,'-') from class_session where offering_id='$CURS' order by session_date limit 1;" | tr -d '[:space:]')" = "120|practico|-" ] \
+  && ok "el tipo ausente queda NULL: el importador NO clasifica (ADR-069)" || mal "el importador inventó un tipo"
+[ "$(q "select declared_total_min || '|' || declared_total_source from course_offering where id='$CURS';" | tr -d '[:space:]')" = "3600|60horas" ] \
+  && ok "la carga horaria declarada entró con su texto literal" || mal "no se guardó la carga declarada"
+
+# Una segunda ingesta sobre la misma cursada: reemplaza lo suyo.
+corre "select ingerir_materia('$A','public_web','programa 2026 v2', now(), null,'MAT-1','Materia con libro','2026', null,
+  '[{\"nombre\":\"U1\",\"orden\":1}]'::jsonb,'[]'::jsonb,'[]'::jsonb, null, '[]'::jsonb, null, null);"
+[ "$(q "select count(*)::text from class_session where offering_id='$CURS';" | tr -d '[:space:]')" = "0" ] \
+  && ok "una ingesta nueva reemplaza las sesiones que trajo la anterior" || mal "las sesiones viejas quedaron"
+
+# ⚠️ Y las dos que sostienen el arreglo. La primera prueba que el DELETE
+# **corre de verdad** — sin ella, la segunda sería vacua.
+[ "$(q "select count(*)::text from assessment where offering_id='$CURS' and declared_by is null;" | tr -d '[:space:]')" = "0" ] \
+  && ok "la ingesta nueva sí reemplazó la evaluación que trajo la cátedra" || mal "el DELETE no corrió: la comprobación siguiente no probaría nada"
+
+[ "$(q "select count(*)::text from assessment where id='$MIO';" | tr -d '[:space:]')" = "1" ] \
+  && ok "y la que declaró el estudiante SOBREVIVE a la ingesta" || mal "la ingesta le borró el final al estudiante"
+
+corre "delete from class_session where offering_id='$CURS'; delete from assessment where offering_id in ('$CURS','a4000000-0000-0000-0000-000000000001');"
+corre "delete from course_enrollment where id='a6000000-0000-0000-0000-000000000003'; delete from student where id='a5000000-0000-0000-0000-000000000003';"
+corre "delete from topic where offering_id='$CURS'; delete from course_offering where id='$CURS';"
+
 limpiar_mundo
 ok "limpiado"
 
