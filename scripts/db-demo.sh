@@ -263,10 +263,14 @@ for n in 1 2 3 4 5; do
   q "insert into action (id,institution_id,course_enrollment_id,objective,verb,scope,status,estimated_minutes_min,estimated_minutes_max)
      values ('af20000$n-0000-0000-0000-000000000001','$INST','a6000000-0000-0000-0000-000000000001',
              'Práctica de la unidad','resolver','tema','COMPLETED',40,60);
-     insert into reflection (institution_id,action_id,actual_minutes,difficulty)
-     values ('$INST','af20000$n-0000-0000-0000-000000000001',75,'mas_dificil');" >/dev/null
+     insert into reflection (institution_id,action_id,actual_minutes,difficulty,created_at)
+     values ('$INST','af20000$n-0000-0000-0000-000000000001',75,'mas_dificil', now() - (interval '1 day' * $n));" >/dev/null
 done
-echo "   cinco reflexiones de 75 min sobre una estimación de 40-60 → multiplicador 1,5×"
+# ⚠️ **En días distintos, y no es cosmético.** ADR-075 §B3 exige al menos tres:
+# cinco registros de una misma tarde describen una tarde, no una tendencia. Con
+# todos el mismo día el motor **se niega a calibrar**, que es lo correcto — y es
+# lo que pasaba antes de este arreglo.
+echo "   cinco reflexiones de 75 min en cinco días, sobre 40-60 estimados → multiplicador 1,5×"
 
 echo "→ El estudiante recién habilitado ($NUEVO) queda SIN alta:"
 q "select '   consentimiento: ' || (public.estado_del_alta('$INST','$NUEVO')->>'consentimientoRespondido') ||

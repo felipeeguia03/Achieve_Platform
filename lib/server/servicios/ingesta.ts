@@ -87,6 +87,15 @@ export interface GuiaDeMateria {
    * sin fuente es un número que nadie puede auditar.
    */
   cargaHoraria?: { minutos: number; texto: string };
+  /**
+   * Las horas de **trabajo autónomo** que declara el programa, si las declara —
+   * [ADR-075](../../../docs/decisions.md#adr-075) §D.
+   *
+   * Es el primer escalón del factor de estudio, y hace que el `1,5` no se use:
+   * *"no encontré respaldo para afirmar que sea una constante psicopedagógica
+   * universal"*.
+   */
+  cargaDeEstudio?: { minutos: number; texto: string };
 }
 
 export type ResultadoDeIngesta =
@@ -144,10 +153,14 @@ export function validarGuia(g: GuiaDeMateria): string | null {
     }
   }
 
-  if (g.cargaHoraria !== undefined) {
-    if (g.cargaHoraria.minutos <= 0) return "la carga horaria declarada tiene que ser positiva";
+  for (const [nombre, c] of [
+    ["la carga horaria", g.cargaHoraria],
+    ["la carga de estudio", g.cargaDeEstudio],
+  ] as const) {
+    if (c === undefined) continue;
+    if (c.minutos <= 0) return `${nombre} declarada tiene que ser positiva`;
     // El texto literal es lo que permite auditar la normalización después.
-    if (!g.cargaHoraria.texto?.trim()) return "la carga horaria necesita el texto que se leyó";
+    if (!c.texto?.trim()) return `${nombre} necesita el texto que se leyó`;
   }
 
   for (const p of g.prerequisitos ?? []) {

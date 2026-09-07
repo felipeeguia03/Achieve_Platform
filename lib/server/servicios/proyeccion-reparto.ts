@@ -1,4 +1,10 @@
-import { minutosPorTema, type SesionDeClase, type TipoDeClase } from "@/lib/domain/duracion";
+import {
+  factorDeEstudio,
+  minutosDeEstudio,
+  minutosPorTema,
+  type SesionDeClase,
+  type TipoDeClase,
+} from "@/lib/domain/duracion";
 import { minutosPendientes, type EstadoDeUnidad } from "@/lib/domain/cobertura";
 import {
   conMultiplicador,
@@ -62,6 +68,8 @@ export interface InsumosDeReparto {
      */
     alcance: string[];
     cargaDeclarada: { minutos: number; texto: string } | null;
+    /** Trabajo autónomo declarado por la cátedra. Primer escalón del factor (§D). */
+    cargaDeEstudio: { minutos: number; texto: string } | null;
     unidades: Array<{ id: string; peso: number | null; evidencia: EstadoDeUnidad }>;
     clases: Array<{ minutos: number | null; tipo: TipoDeClase | null; temas: string[] }>;
   }>;
@@ -85,6 +93,12 @@ function pendientesDe(m: InsumosDeReparto["materias"][number]): number | null {
   );
   if (reparto.estado !== "OK") return null;
 
+  // ⚠️ **El factor de estudio se aplica acá, y por primera vez** — §D. Hasta
+  // este corte `duracion.ts` devolvía **minutos de clase** y nadie los
+  // convertía. El `1,5` ya no es «el» número: si la cátedra declaró cuántas
+  // horas de trabajo autónomo espera, manda eso.
+  const factor = factorDeEstudio(m.cargaDeEstudio, m.cargaDeclarada?.minutos ?? null);
+
   // ⚠️ **Sólo lo que entra en la próxima evaluación.** Sin este corte, un
   // parcial que cubre dos unidades exigiría la materia entera y el número
   // saldría al doble.
@@ -95,12 +109,15 @@ function pendientesDe(m: InsumosDeReparto["materias"][number]): number | null {
   const enAlcance =
     m.alcance.length === 0 ? m.unidades : m.unidades.filter((u) => m.alcance.includes(u.id));
 
-  return minutosPendientes(
-    enAlcance.map((u) => ({
-      id: u.id,
-      minutos: reparto.minutos[u.id] ?? null,
-      estado: u.evidencia,
-    })),
+  return minutosDeEstudio(
+    minutosPendientes(
+      enAlcance.map((u) => ({
+        id: u.id,
+        minutos: reparto.minutos[u.id] ?? null,
+        estado: u.evidencia,
+      })),
+    ),
+    factor,
   );
 }
 

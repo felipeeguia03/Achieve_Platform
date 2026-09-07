@@ -1328,6 +1328,25 @@ corre "update student set time_calibration_enabled=false where id='$EST4';"
 corre "update student set time_calibration_enabled=true where id='$EST4';"
 corre "delete from reflection where action_id='a7000000-0000-0000-0000-000000000001';"
 
+echo "→ ADR-075 §D · el 1,5 baja al último escalón"
+
+# La carga de estudio va con su texto, o no va: un número sin fuente no se
+# puede auditar.
+if corre "update course_offering set declared_study_min = 5400 where id='a4000000-0000-0000-0000-000000000001';"; then
+  mal "una carga de estudio entró sin decir de dónde salió"
+else
+  ok "una carga de estudio sin su texto de origen se rechaza"
+fi
+
+corre "update course_offering set declared_study_min = 5400, declared_study_source = 'trabajo autónomo: 90 horas' where id='a4000000-0000-0000-0000-000000000001';"
+[ "$(q "select estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'cargaDeEstudio'->>'texto';" | tr -d '[:space:]')" = "trabajoautónomo:90horas" ] \
+  && ok "la carga de estudio viaja con su texto literal" || mal "no viajó la carga de estudio"
+
+[ "$(q "select m->'cargaDeEstudio'->>'minutos' from jsonb_array_elements(insumos_de_reparto('$A','a5000000-0000-0000-0000-000000000001')->'materias') m;" | tr -d '[:space:]')" = "5400" ] \
+  && ok "y también en los insumos del reparto: las dos funciones coinciden" || mal "el reparto no la ve"
+
+corre "update course_offering set declared_study_min = null, declared_study_source = null where id='a4000000-0000-0000-0000-000000000001';"
+
 limpiar_mundo
 ok "limpiado"
 

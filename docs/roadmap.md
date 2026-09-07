@@ -4035,7 +4035,7 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 <a id="fase-b617--la-respuesta-de-la-psicopedagoga"></a>
 
-## Fase B6.17 — La respuesta de la psicopedagoga · 🟡 EN CURSO
+## Fase B6.17 — La respuesta de la psicopedagoga · ✅ COMPLETA *(salvo §E, fuera del MVP)*
 
 **Decide:** [ADR-075](decisions.md#adr-075) ·
 [fuente literal](respuesta-psicopedagoga-tiempo-y-carga-source.md).
@@ -4202,10 +4202,50 @@ pide explícitamente. Queda como lo que falta, no como algo que se olvidó.
 
 `lint` · `typecheck` · `build` · **1296 tests** · **`db:verify` 394 ✓, 0 ✗, exit 0**.
 
-#### Corte 4 — El `1,5` baja al último escalón
+#### ✅ Corte 4 — El `1,5` baja al último escalón · COMPLETO · 7 de septiembre de 2026
 
-**Ejecuta §D.** *"No encontré respaldo para afirmar que sea una constante psicopedagógica universal."*
-Pasa a ser el último de cuatro fuentes, y siempre se guarda cuál se usó.
+**Ejecuta §D.**
+
+> *"No encontré respaldo para afirmar que **1,5 horas de estudio autónomo por cada hora de clase** sea
+> una constante psicopedagógica universal."*
+
+Y trajo la normativa: la [Resolución 2598/2023](https://www.argentina.gob.ar/normativa/nacional/resoluci%C3%B3n-2598-2023-393382/actualizacion)
+define el Crédito de Referencia del Estudiante en 25–30 horas por crédito y **no prescribe una
+relación fija de 1,5 a 1**.
+
+| | |
+|---|---|
+| **Migración** | `20260926000000_factor_de_estudio.sql`. `course_offering.declared_study_min` + `declared_study_source`, y `ingerir_materia` los escribe |
+| **Dominio** | `factorDeEstudio()`, `minutosDeEstudio()` y `FACTOR_DE_ESTUDIO_FALLBACK` en `duracion.ts` |
+| **Pruebas** | 3 comprobaciones nuevas contra Postgres y 6 de dominio |
+
+⚠️ **Y acá el `1,5` se aplica por primera vez.** Hasta este corte `duracion.ts` devolvía **minutos de
+clase** y nadie los convertía a minutos de estudio: el factor estaba decidido desde
+[ADR-070](decisions.md#adr-070) y **no lo usaba nadie**.
+
+**Los cuatro escalones de §D, y dónde vive cada uno:**
+
+| Escalón | Dónde está |
+|---|---|
+| 1 · Carga institucional o de cátedra | 🆕 `course_offering.declared_study_min`, con su texto literal |
+| 2 · Estimación por actividad concreta | Ya existía: `action.estimated_minutes_*`, que produce el ADE **por Action**. `duracion.ts` estima **temas**, no tareas |
+| 3 · Mediana histórica de comparables | Ya existía: es el multiplicador de [ADR-074](decisions.md#adr-074), y se aplica **aparte** |
+| 4 · Fallback `1,5` | El último recurso, rotulado como tal |
+
+⚠️ **Los escalones 2 y 3 no se reimplementaron, y eso se dice en vez de omitirlo.** Plegar el 3 dentro
+del factor lo contaría dos veces: el multiplicador ya multiplica.
+
+**Lo que cambió en la demo, y una lección de paso.** El número pasó de 52,5 a **79 h por semana**…
+pero no sólo por el factor. Las cinco reflexiones de la demo se sembraban **todas el mismo día**, así
+que la regla de comparabilidad del corte 3 **se negaba a calibrar** — correctamente. Corregido el
+seed para que abarquen cinco días, el multiplicador vuelve a `1,5×` y los dos factores se componen.
+
+⚠️ **79 h por semana es correcto y es un caso extremo**: un parcial en ocho días, cuarenta horas de
+contenido sin tocar y cinco horas declaradas. El tramo `CRITICA` hace lo que ella pidió —el mensaje
+primero, el número como detalle— pero **la validación del copy sigue pendiente**, y este número la
+hace más urgente.
+
+`lint` · `typecheck` · `build` · **1302 tests** · **`db:verify` 397 ✓, 0 ✗, exit 0**.
 
 #### Fuera del MVP — §E, el método
 

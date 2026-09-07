@@ -45,6 +45,8 @@ export const ingestaReal: RepositorioDeIngesta = {
       p_clases: guia.clases ?? [],
       p_carga_min: guia.cargaHoraria?.minutos ?? null,
       p_carga_texto: guia.cargaHoraria?.texto ?? null,
+      p_estudio_min: guia.cargaDeEstudio?.minutos ?? null,
+      p_estudio_texto: guia.cargaDeEstudio?.texto ?? null,
     });
     if (error) throw new Error(`No se pudo ingerir la materia: ${error.message}`);
     const fila = ((data ?? []) as Record<string, unknown>[])[0];

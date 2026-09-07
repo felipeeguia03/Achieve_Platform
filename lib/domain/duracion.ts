@@ -26,11 +26,6 @@
  *
  * ## Lo que este módulo no hace
  *
- * **No aplica el factor de estudio.** Los minutos de acá son **minutos de
- * clase**; convertirlos a minutos de estudio es el `1.5` que sigue abierto y
- * que va a ser configuración versionada aparte. Mezclarlos haría imposible
- * saber cuál de los dos números cambió.
- *
  * **No sabe nada del estudiante.** Esto es Academic Engine puro: qué tan largo
  * es un tema para cualquiera. El multiplicador personal se aplica después, y se
  * guarda separado para que la pantalla pueda explicar de dónde sale cada mitad.
@@ -202,4 +197,88 @@ export function minutosPorTema(
 export function minutosDeLaMateria(r: MinutosPorTema): number | null {
   if (r.estado !== "OK") return null;
   return Object.values(r.minutos).reduce((a, b) => a + b, 0);
+}
+
+// ── El factor de estudio · ADR-075 §D ────────────────────────────────────────
+//
+// > *"No encontré respaldo para afirmar que **1,5 horas de estudio autónomo por
+// > cada hora de clase** sea una constante psicopedagógica universal."*
+//
+// La psicopedagoga trajo además la normativa: la Resolución 2598/2023 define el
+// Crédito de Referencia del Estudiante en 25–30 horas por crédito y **no
+// prescribe una relación fija de 1,5 a 1** entre trabajo autónomo y clase.
+//
+// El `1,5` deja de ser **el** número y pasa a ser **el último recurso**.
+
+/**
+ * El fallback, y sólo eso.
+ *
+ * ⚠️ **No es una constante con respaldo.** Se usa cuando no hay nada mejor, y
+ * cada estimación guarda que se usó éste para poder auditarlo después.
+ */
+export const FACTOR_DE_ESTUDIO_FALLBACK = 1.5;
+
+/**
+ * De dónde salió el factor — el orden que fijó §D.
+ *
+ * ⚠️ **Dos de los cuatro escalones de la respuesta no viven acá, y conviene
+ * decir dónde sí**, para que no parezca que se omitieron:
+ *
+ * - *"estimación por actividad concreta"* ya existe: son
+ *   `action.estimated_minutes_min/max`, que produce el ADE por Action. Este
+ *   módulo estima **temas**, no tareas.
+ * - *"mediana histórica de actividades comparables"* ya existe: es el
+ *   multiplicador de [ADR-074](../../docs/decisions.md#adr-074), y se aplica
+ *   **aparte**. Plegarlo acá lo contaría dos veces.
+ */
+export type FuenteDelFactor =
+  /** La cátedra declaró cuántas horas de trabajo autónomo espera. Manda. */
+  | "institucional"
+  /** No hay nada mejor. Es el `1,5`, y se rotula como lo que es. */
+  | "fallback";
+
+export interface FactorDeEstudio {
+  valor: number;
+  fuente: FuenteDelFactor;
+  /** El texto literal que lo respalda, cuando lo hay. §D: *"guardar siempre la fuente"*. */
+  respaldo: string | null;
+  regla: string;
+}
+
+/**
+ * Cuántos minutos de estudio por minuto de clase.
+ *
+ * @param estudioDeclarado Minutos de trabajo autónomo que declara la cátedra.
+ * @param claseDeclarada   Minutos de clase sobre los que se declaran.
+ */
+export function factorDeEstudio(
+  estudioDeclarado: { minutos: number; texto: string } | null,
+  claseDeclarada: number | null,
+): FactorDeEstudio {
+  if (estudioDeclarado && claseDeclarada && claseDeclarada > 0) {
+    return {
+      valor: estudioDeclarado.minutos / claseDeclarada,
+      fuente: "institucional",
+      respaldo: estudioDeclarado.texto,
+      regla: REGLA_DE_DURACION,
+    };
+  }
+  return {
+    valor: FACTOR_DE_ESTUDIO_FALLBACK,
+    fuente: "fallback",
+    // Sin respaldo, y **eso es el dato**: que nadie lo declaró.
+    respaldo: null,
+    regla: REGLA_DE_DURACION,
+  };
+}
+
+/**
+ * Minutos de clase → minutos de estudio.
+ *
+ * Función aparte, y por el mismo motivo que `conMultiplicador`: los factores se
+ * aplican de a uno y en su lugar, para que la pantalla pueda explicar de dónde
+ * sale cada mitad ([ADR-068](../../docs/decisions.md#adr-068)).
+ */
+export function minutosDeEstudio(minutosDeClase: number | null, f: FactorDeEstudio): number | null {
+  return minutosDeClase === null ? null : minutosDeClase * f.valor;
 }

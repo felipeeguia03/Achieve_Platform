@@ -19,7 +19,8 @@ const materia = (over: Partial<InsumosDeReparto["materias"][number]> = {}) => ({
   nombre: "Cálculo",
   diasHastaEvaluacion: 7,
   alcance: [] as string[],
-  cargaDeclarada: null,
+  cargaDeclarada: null as { minutos: number; texto: string } | null,
+  cargaDeEstudio: null as { minutos: number; texto: string } | null,
   unidades: [
     { id: "u1", peso: null, evidencia: "sin_evidencia" as const },
     { id: "u2", peso: null, evidencia: "sin_evidencia" as const },
@@ -36,7 +37,7 @@ describe("El alcance declarado recorta lo que hace falta", () => {
     // Misma salida que `contexto_del_ade()`: el alcance se declara, nunca se
     // infiere del texto de `scope`.
     const r = proyectarReparto({ minutosPorSemana: 600, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
-    expect(r.requerido).toBe("20 h"); // 1200 min en una semana
+    expect(r.requerido).toBe("30 h"); // 1200 min de clase × 1,5
   });
 
   it("con alcance declarado, sólo lo que entra en la próxima evaluación", () => {
@@ -46,7 +47,7 @@ describe("El alcance declarado recorta lo que hace falta", () => {
       observaciones: [],
       materias: [materia({ alcance: ["u1"] })],
     })!;
-    expect(r.requerido).toBe("10 h"); // la mitad: `u2` no entra en este parcial
+    expect(r.requerido).toBe("15 h"); // la mitad: `u2` no entra en este parcial
   });
 
   it("lo ya trabajado no vuelve a pedirse", () => {
@@ -63,7 +64,7 @@ describe("El alcance declarado recorta lo que hace falta", () => {
         }),
       ],
     })!;
-    expect(r.requerido).toBe("10 h");
+    expect(r.requerido).toBe("15 h");
   });
 });
 
@@ -71,7 +72,7 @@ describe("Las dos cifras, y ninguna conclusión", () => {
   it("cuando falta tiempo, `falta` es true y no hay ningún veredicto", () => {
     const r = proyectarReparto({ minutosPorSemana: 60, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
     expect(r.disponible).toBe("1 h");
-    expect(r.requerido).toBe("20 h");
+    expect(r.requerido).toBe("30 h");
     expect(r.falta).toBe(true);
     // El objeto no trae ninguna clave que afirme algo sobre el resultado del
     // examen. `tramo` decide jerarquía visual, no predice nada.
@@ -168,7 +169,8 @@ describe("El multiplicador personal entra al reparto (ADR-074)", () => {
 
   it("sin historia, el reparto no cambia", () => {
     const r = proyectarReparto({ minutosPorSemana: 600, calibracionActiva: true, observaciones: [], materias: [materia()] })!;
-    expect(r.requerido).toBe("20 h");
+    // 30 h: el factor de estudio sí se aplica; el personal, no.
+    expect(r.requerido).toBe("30 h");
   });
 
   it("con historia, pide más tiempo — nunca menos", () => {
@@ -178,7 +180,9 @@ describe("El multiplicador personal entra al reparto (ADR-074)", () => {
       observaciones: lento,
       materias: [materia()],
     })!;
-    expect(r.requerido).toBe("30 h"); // 20 h × 1,5
+    // 30 h de estudio × 1,5 personal. Los dos factores se aplican de a uno y
+    // en su lugar: el de estudio es del material, el personal es de la persona.
+    expect(r.requerido).toBe("45 h");
   });
 
   it("a quien tarda MENOS de lo estimado no se le promete menos", () => {
@@ -197,7 +201,9 @@ describe("El multiplicador personal entra al reparto (ADR-074)", () => {
       observaciones: rapido,
       materias: [materia()],
     })!;
-    expect(r.requerido).toBe("20 h");
+    // Queda en 30 h —el factor de estudio, sin ajuste personal a la baja—, y
+    // **no** en 20: el piso de 1.0 impide que ir rápido reduzca la estimación.
+    expect(r.requerido).toBe("30 h");
   });
 
   it("una materia sin estimación sigue sin pedir nada, multiplicador o no", () => {
@@ -228,7 +234,8 @@ describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
     })!;
 
   it("`≤1` entra, y no promete resultados", () => {
-    const r = conDemanda(1200);
+    // 1200 min de clase × 1,5 = 1800 de estudio.
+    const r = conDemanda(1800);
     expect(r.tramo).toBe("ENTRA");
     expect(r.titulo).toBe("Tu plan entra en el tiempo que declaraste.");
     // Nada que reorganizar: no se ofrecen acciones por ofrecer.
@@ -238,13 +245,13 @@ describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
   });
 
   it("`1–2` muestra las dos cifras en primer plano y ofrece reorganizar", () => {
-    const r = conDemanda(800); // 1200/800 = 1,5
+    const r = conDemanda(1200); // 1800/1200 = 1,5
     expect(r.tramo).toBe("AJUSTABLE");
     expect(r.acciones).toHaveLength(3);
   });
 
   it("`>2` pone el mensaje primero y el número como detalle", () => {
-    const r = conDemanda(300); // 1200/300 = 4
+    const r = conDemanda(300); // 1800/300 = 6
     expect(r.tramo).toBe("CRITICA");
     expect(r.titulo).toBe("Tu plan no entra completo en el tiempo disponible.");
     // El número sigue estando —no se oculta—, pero baja de jerarquía en la
@@ -286,7 +293,7 @@ describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
 });
 
 describe("Lo que el copy tiene prohibido decir (ADR-075 §A1–A2)", () => {
-  const todos = [1200, 800, 300, 0].map((d) =>
+  const todos = [1800, 1200, 300, 0].map((d) =>
     proyectarReparto({ minutosPorSemana: d, calibracionActiva: true, observaciones: [], materias: [materia()] })!,
   );
 
@@ -349,7 +356,48 @@ describe("El interruptor de la calibración (ADR-075 §B4)", () => {
       observaciones: lento,
       materias: [materia()],
     })!;
-    expect(con.requerido).toBe("30 h");
-    expect(sin.requerido).toBe("20 h");
+    expect(con.requerido).toBe("45 h");
+    expect(sin.requerido).toBe("30 h");
+  });
+});
+
+describe("El factor de estudio y su fuente (ADR-075 §D)", () => {
+  it("sin declaración de la cátedra, se usa el fallback 1,5 y se rotula como tal", () => {
+    // *"No encontré respaldo para afirmar que sea una constante psicopedagógica
+    // universal."* El 1,5 es el último recurso, no el número.
+    const r = proyectarReparto({
+      minutosPorSemana: 600,
+      calibracionActiva: true,
+      observaciones: [],
+      materias: [materia()],
+    })!;
+    expect(r.requerido).toBe("30 h"); // 1200 min de clase × 1,5
+  });
+
+  it("si la cátedra declara el trabajo autónomo, manda eso y no el 1,5", () => {
+    // 1200 min de clase declarados y 2400 de estudio ⇒ factor 2, no 1,5.
+    const r = proyectarReparto({
+      minutosPorSemana: 600,
+      calibracionActiva: true,
+      observaciones: [],
+      materias: [
+        materia({
+          cargaDeclarada: { minutos: 1200, texto: "20 horas" },
+          cargaDeEstudio: { minutos: 2400, texto: "trabajo autónomo: 40 horas" },
+        }),
+      ],
+    })!;
+    expect(r.requerido).toBe("40 h");
+  });
+
+  it("una declaración de estudio sin carga de clase no puede producir un factor", () => {
+    // No hay sobre qué dividir: se cae al fallback en vez de inventar una razón.
+    const r = proyectarReparto({
+      minutosPorSemana: 600,
+      calibracionActiva: true,
+      observaciones: [],
+      materias: [materia({ cargaDeEstudio: { minutos: 2400, texto: "40 horas" } })],
+    })!;
+    expect(r.requerido).toBe("30 h");
   });
 });

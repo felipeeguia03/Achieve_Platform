@@ -206,3 +206,27 @@ function readFileSyncSeguro(ruta: string): string {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   return require("node:fs").readFileSync(require("node:path").resolve(process.cwd(), ruta), "utf8");
 }
+
+describe("La carga de estudio declarada (ADR-075 §D)", () => {
+  const CON_ESTUDIO = {
+    ...GUIA,
+    cargaHoraria: { minutos: 3600, texto: "60 horas" },
+    cargaDeEstudio: { minutos: 5400, texto: "trabajo autónomo: 90 horas" },
+  };
+
+  it("una guía con las dos cargas pasa la validación", () => {
+    expect(validarGuia(CON_ESTUDIO)).toBeNull();
+  });
+
+  it("la carga de estudio también necesita su texto literal", () => {
+    // §D: *"guardar siempre la fuente y versión de la estimación"*. Un número
+    // sin fuente es un número que nadie puede auditar.
+    expect(
+      validarGuia({ ...CON_ESTUDIO, cargaDeEstudio: { minutos: 5400, texto: "  " } }),
+    ).toContain("el texto que se leyó");
+  });
+
+  it("es opcional: la mayoría de los programas no la declaran", () => {
+    expect(validarGuia({ ...GUIA, cargaHoraria: { minutos: 3600, texto: "60 horas" } })).toBeNull();
+  });
+});
