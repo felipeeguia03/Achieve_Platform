@@ -245,6 +245,8 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) | Los **siete cortes** de ADR-060…ADR-065, y cuál está hecho | Antes de tocar período, comisión u horarios |
 | [`docs/informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) | El impacto de esas seis decisiones sobre el schema vigente | Junto con el plan de arriba |
 | [`docs/demo-mvp.md`](docs/demo-mvp.md) | Cómo levantar el mundo sintético y recorrer el alta, incluido el dock de **modo prueba** | Antes de correr la demo a mano |
+| [`docs/gantt-de-preparacion.md`](docs/gantt-de-preparacion.md) | 🆕 El Gantt de preparación: qué del modelo académico ya existe, qué falta (**el tiempo**), y los cinco ADR que siguen abiertos | Antes de tocar temas, clases, duración o la superficie del Gantt |
+| [`docs/inventario-corpus.md`](docs/inventario-corpus.md) | 🆕 Los 113 PDF medidos: 36 materias, **13 degradadas**, y por qué la mitad del corpus no se atribuye sola | Antes de escribir cualquier importador de libros de temas |
 | [`docs/guion-focus-group.md`](docs/guion-focus-group.md) | El recorrido de sesión y el test de 10 segundos por pantalla | Antes de correr un focus group |
 
 ### Documentos de referencia — **no se editan**
@@ -346,7 +348,7 @@ Dónde vive cada cosa hoy:
 |---|---|
 | `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, y los view models de `UX01`–`UX06`. **Puro:** sin React, sin I/O |
 | `lib/content/` | El copy con ID tipado (regla `C-07`) |
-| `lib/navigation/` | El grafo del Golden Path y el registro de las 19 CTAs. **No importa `lib/fixtures/`** |
+| `lib/navigation/` | El grafo del Golden Path y el registro de las 20 CTAs. **No importa `lib/fixtures/`** |
 | `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |
 | `components/screens/` | Las 9 superficies, con props tipadas |
 | `app/(student)/` | Una URL por superficie; la ruta lee el escenario y lo proyecta |

@@ -112,6 +112,10 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-063](#adr-063) | Horarios: dos propietarios, procedencia obligatoria y estado explícito | ✅ `ACCEPTED` *(5 sep 2026 · se usan sin corroborar y **no se elevan**)* | — |
 | [ADR-064](#adr-064) | La superposición con una clase se valida en el `Commitment`, no en el ADE | ✅ `ACCEPTED` *(5 sep 2026 · el ADE no agenda)* | — |
 | [ADR-065](#adr-065) | La electiva todavía no elegida persiste como `PENDING_SELECTION` | ✅ `ACCEPTED` *(5 sep 2026 · exige relajar el `CHECK` `una_sola_forma`)* | — |
+| [ADR-066](#adr-066) | El Gantt de preparación es `UX02`, no una superficie nueva | ✅ `ACCEPTED` *(7 sep 2026 · no se crea `UX10`; el registro de CTAs no se toca)* | — |
+| [ADR-067](#adr-067) | El estudiante da de alta su propia evaluación | ✅ `ACCEPTED` *(7 sep 2026 · reabre la Etapa 0.4 · **`CTA-020`: el registro pasa a 20**)* | — |
+| [ADR-068](#adr-068) | La duración entra al modelo académico | ✅ `ACCEPTED` *(7 sep 2026 · cinco columnas · **los minutos por tema no se persisten**)* | — |
+| [ADR-069](#adr-069) | `session_kind` se propone, no se importa | ✅ `ACCEPTED` *(7 sep 2026 · 25% de falsos positivos medidos)* | — |
 
 ---
 
@@ -4455,6 +4459,8 @@ Queda registrado como **`C01-052`** en [`pending-decisions-annex.md`](pending-de
 
 ---
 
+<a id="adr-054"></a>
+
 ## ADR-054 — El apartado «Materias» muestra una sola materia
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -4603,6 +4609,8 @@ escrito el hallazgo con su verificación, que es lo que la regla 1 pide cuando f
 
 ---
 
+<a id="adr-055"></a>
+
 ## ADR-055 — `C01-021`: las dos reglas de riesgo sin umbral quedan en modo humano hasta el piloto
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -4634,6 +4642,8 @@ decisión que **hoy no tiene evidencia sobre la cual tomarse**; ahora la condici
 escrita. Lo que queda de la fase sigue esperando a [ADR-056](#adr-056) y al contrato v2 del CTO.
 
 ---
+
+<a id="adr-056"></a>
 
 ## ADR-056 — `C01-044`: playbook y SLA provisionales del circuito de riesgo
 
@@ -4678,6 +4688,8 @@ con su propia decisión sobre de dónde sale el calendario.
 
 ---
 
+<a id="adr-057"></a>
+
 ## ADR-057 — `C01-030`: la identidad de quien revisa queda diferida hasta ADR-006
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -4717,6 +4729,8 @@ Costó un `500` real, y esta decisión **no lo cambia**.
 afirma, y la Plataforma no puede autenticar a una institución.
 
 ---
+
+<a id="adr-058"></a>
 
 ## ADR-058 — `C01-029`: la regla determinística de readiness
 
@@ -4769,6 +4783,8 @@ readiness —14 días calendario— y **hay un test que rompe si alguien vuelve 
 
 ---
 
+<a id="adr-059"></a>
+
 ## ADR-059 — `C01-019`: se conserva lo actual, y la semántica completa es residuo de piloto
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -4807,6 +4823,8 @@ eso quedó como residuo para el piloto. `C01-019` pasa a `ANSWERED — RESIDUO A
 exactamente lo que esta decisión difiere al piloto.
 
 ---
+
+<a id="adr-060"></a>
 
 ## ADR-060 — El temario es de la materia, no de la cátedra
 
@@ -4862,6 +4880,8 @@ una migración de datos. Era la pregunta que el informe marcó como la que condi
 
 ---
 
+<a id="adr-061"></a>
+
 ## ADR-061 — Período académico: año lectivo, semestre y anualidad, con vocabulario cerrado
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -4911,6 +4931,8 @@ semestre elegido, las anuales en un grupo aparte, y la salida a otros años y pe
 
 ---
 
+<a id="adr-062"></a>
+
 ## ADR-062 — La asignación de comisión: cuatro estados canónicos, en la cursada
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -4953,6 +4975,8 @@ las evaluaciones y los recursos **de esa cátedra**; con los otros tres, la Plat
 información general de la materia — que desde [ADR-060](#adr-060) es donde vive el temario.
 
 ---
+
+<a id="adr-063"></a>
 
 ## ADR-063 — Horarios: dos propietarios, procedencia obligatoria y estado explícito
 
@@ -5008,6 +5032,8 @@ automáticamente para otros estudiantes**.
 
 ---
 
+<a id="adr-064"></a>
+
 ## ADR-064 — La superposición con una clase se valida en el `Commitment`, no en el ADE
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -5044,6 +5070,8 @@ disponibilidad, pero tampoco es un impedimento.
 
 ---
 
+<a id="adr-065"></a>
+
 ## ADR-065 — La electiva todavía no elegida persiste como `PENDING_SELECTION`
 
 **Estado:** ✅ `ACCEPTED` · 5 de septiembre de 2026 · **decidido por el Product Owner** —
@@ -5078,3 +5106,346 @@ prevenía** —una fila con las dos formas a la vez—.
 declaraciones del plan que no vengan en la selección; una electiva pendiente no viene, así que hoy se
 borraría en la siguiente confirmación. **La función tiene que distinguir «no lo eligió» de «no me lo
 mandaron».**
+
+
+---
+
+<a id="adr-066"></a>
+
+## ADR-066 — El Gantt de preparación es `UX02`, no una superficie nueva
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decidido por el Product Owner**
+**Relacionado:** [ADR-016](#adr-016), [ADR-054](#adr-054), [ADR-058](#adr-058).
+**Toca:** [`gantt-de-preparacion.md`](gantt-de-preparacion.md) §7, `estado_de_materia()`,
+`components/` de `UX02`. **No toca** `lib/navigation/`.
+
+### El contexto
+
+Dos pares de mockups del owner propusieron una vista de línea de tiempo por materia —temas, fecha de
+evaluación, cobertura, minutos pendientes— dentro de una navegación de cinco secciones. La lectura
+inicial del equipo fue que hacía falta **una superficie nueva**, con todo lo que eso arrastra:
+un `UX10` que el registro prohíbe explícitamente, un wireframe, una ruta, y CTAs nuevas que
+[ADR-054](#adr-054) dejó establecido que **las autoriza el owner, una por una**.
+
+### La decisión
+
+> *"es lo que Materia debería haber sido siempre"*
+
+**El Gantt no es una pantalla nueva: es el contenido correcto de `UX02 · Materia / Cursado`.**
+
+No se crea `UX10`. El registro sigue en **nueve superficies y 19 CTAs**. Los guards de navegación,
+el conteo de nodos y el mapeo `WF-S*` **no se tocan**.
+
+### Por qué no es sólo la opción barata
+
+La pregunta canónica de `UX02`, fijada mucho antes de esta conversación, es
+***"¿Cómo vengo en esta materia y qué hago?"***. Es exactamente la pregunta que el Gantt contesta.
+`UX02` venía respondiéndola con una lista de unidades; pasa a responderla con una línea de tiempo.
+**El alcance de la superficie no cambia — cambia su representación.**
+
+### Lo que ya estaba resuelto y nadie había mirado
+
+`estado_de_materia()` ya devuelve la mayor parte del payload, y con las reglas correctas ya
+implementadas:
+
+- El examen más próximo **ordenado `ASC NULLS LAST`**: una fecha desconocida no se estima.
+- Las unidades por `sequence ASC NULLS LAST`: sin `sequence` van al final, **no se les inventa
+  posición**.
+- Por unidad, **el estado de cada dimensión y nunca su valor** (`dominio`, `practica`, `recorrido`).
+- `contextoIncompleto` como **hecho de la base**, no inferencia — el estado degradado ya existe.
+
+Faltan **tres campos**: `minutosBase` por unidad, `cobertura` ponderada, y los días hasta el examen
+—estos últimos derivables en el cliente desde `fechaEn` e `instante`, que ya viajan—.
+
+Y las CTAs principales del mockup ya están registradas: `CTA-001` abre la materia llevando la cursada
+de la fila tocada ([ADR-054](#adr-054)), `CTA-019` es la entrada manual a Modo Examen desde `UX02`
+([ADR-016](#adr-016)), y `CTA-002` y `CTA-009` ya tienen origen en `UX02`.
+
+### Consecuencias
+
+⚠️ **`CTA-019` colisiona con el estado degradado, y esto queda abierto.** La CTA aparece sólo si la
+materia tiene una evaluación elegible, *porque el estudiante no puede crear una `Assessment` desde
+`UX02`* —la Etapa 0.4 lo dejó sin implementar—. El estado degradado *"sin fecha de evaluación"*
+proponía justamente ofrecer agendarla. **O esa CTA no entra al MVP, o hay que reabrir la Etapa 0.4.**
+
+⚠️ **Esta decisión no decide la navegación.** Las cinco secciones del mockup —incluidas `Formación` y
+`Mi seguimiento`— siguen sin decidir. No son parte del Gantt: son dos productos separados que
+aparecieron en el mismo mockup.
+
+⚠️ **Y no habilita la barra.** Qué muestra y qué tiene prohibido mostrar —la tensión con
+[ADR-058](#adr-058), que cerró la readiness *sin porcentaje y sin predicción de aprobación*— sigue
+abierta en el ADR de cobertura propuesto en [`gantt-de-preparacion.md`](gantt-de-preparacion.md) §11.
+
+
+---
+
+<a id="adr-067"></a>
+
+## ADR-067 — El estudiante da de alta su propia evaluación
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decidido por el Product Owner**
+**Relacionado:** [ADR-006](#adr-006), [ADR-029](#adr-029), [ADR-048](#adr-048), [ADR-054](#adr-054),
+[ADR-057](#adr-057), [ADR-066](#adr-066). **Reabre la Etapa 0.4.**
+**Toca:** `app/api/evaluacion/`, `lib/navigation/cta-registry.ts`, `estado_de_materia()`, `UX02`,
+[`gantt-de-preparacion.md`](gantt-de-preparacion.md) §7,
+[`roadmap.md`](roadmap.md#fase-b2b--ingesta-del-academic-data-layer--en-curso).
+
+### El agujero
+
+**Ninguna ruta de la aplicación llega a un escritor de `assessment`.** El estudiante no tiene por
+dónde declarar que tiene un final.
+
+> ⚠️ **Corrección del 7 de septiembre, el mismo día.** Este ADR decía primero que *"no existe ningún
+> escritor de `assessment`, ni la ingesta asistida de B2b"*. **La segunda mitad es falsa.**
+> `ingerirMateria()` sí escribe evaluaciones —servicio, repositorio y la RPC `ingerir_materia`, con
+> tests—, y la primera búsqueda no la encontró porque el `INSERT` vive dentro de una función de
+> Postgres y el cliente la llama por `.rpc()`.
+>
+> **Lo que sigue en pie es el hecho que importa:** `grep -rn "ingerirMateria" app/` no devuelve nada.
+> Es un escritor completo **que ninguna ruta alcanza**.
+>
+> Y no sirve para esto aunque se expusiera: `ingerir_materia` **reemplaza** las unidades y las
+> evaluaciones de la cursada entera. Es ingesta con forma de guía —*"acá está la materia completa"*—,
+> no *"agregá esta evaluación"*. Usarla para dar de alta un final borraría el temario.
+
+Y `assessment_date` sostiene todo lo demás: la cuenta regresiva del Gantt, `estado_de_materia().examen`,
+`contexto_del_ade().proximaEvaluacion`, la aparición de `CTA-019`, y la ventana de 14 días de
+[ADR-048](#adr-048).
+
+El diseño asumía que las evaluaciones llegaban de la institución. **Esa vía está cerrada por
+[ADR-006](#adr-006)** y va a seguir cerrada hasta el dictamen legal. La Etapa 0.4 registró el hueco y
+decidió no taparlo —*"dar de alta una evaluación no registrada no se implementa"*—. En agosto era
+razonable porque nada dependía de ello. Con el Gantt, sí.
+
+### La decisión
+
+**El estudiante da de alta sus evaluaciones desde `UX02`.** Es el mismo principio que ya rige para
+las cátedras —*"en un principio el alumno se autoagenda"*— extendido a las evaluaciones.
+
+| | |
+|---|---|
+| **Dónde** | `POST /api/evaluacion`, con `CTA-020` desde `UX02` |
+| **Procedencia** | `source_type = 'student'`, `verification_status = 'unverified'`, `confidence` `NULL` |
+| **Obligatorio** | `assessment_type` y `title` |
+| **Opcional** | `assessment_date`, `assessment_time`, `modality`, `scope`, y el alcance en `assessment_topic` |
+
+### Las cinco cosas que esto decide, y por qué
+
+**1 · La fecha es opcional, y eso es el punto.**
+
+`assessment.assessment_date` es `NULL`-able a propósito: *"una fecha desconocida NO se estima: la
+línea desaparece"*. Un estudiante que sabe que tiene final pero no cuándo **tiene que poder
+registrarlo**: con eso ya hay temas y alcance, que es la mitad del Gantt. Obligar la fecha lo forzaría
+a inventar una, que es exactamente lo que la columna previene.
+
+⚠️ **Sin fecha no hay Modo Examen.** La ventana de [ADR-048](#adr-048) necesita una fecha para
+contar. La evaluación existe, el Gantt la muestra, y `CTA-019` **no aparece** — que es lo correcto y
+no un error.
+
+**2 · No crea `ExamPreparation`, y no activa nada.**
+
+Igual que `CTA-019`, que lleva a `UX07` pero no activa: eso lo hace `CTA-011` con confirmación
+explícita. Dar de alta una evaluación es registrar un hecho del mundo, no empezar a prepararla.
+
+**3 · Se aceptan duplicados. Deduplicar es corroborar, y eso está diferido.**
+
+Dos estudiantes de la misma comisión van a cargar el mismo parcial y van a quedar dos filas sobre el
+mismo `offering_id`. **No se agrega un `UNIQUE`**: un `UNIQUE` haría que el error de tipeo de uno le
+bloquee la carga al otro. Y no se fusionan solas: fusionar dos declaraciones `unverified` en una es
+un acto de corroboración, y **quién corrobora sigue diferido por [ADR-057](#adr-057)**.
+
+Las filas conviven `unverified` hasta que haya quién las eleve. Es lo mismo que
+[ADR-029](#adr-029) ya estableció para todo lo que carga el estudiante.
+
+**4 · La modalidad se guarda entera, aunque P0 no la cubra.**
+
+`modality` admite `oral` y `mixta`, y `C01-047` las deja fuera de P0. Se **almacenan igual**, sin
+mapearlas a una modalidad P0. Si el estudiante declara un oral, `POST /api/examen/activacion`
+devuelve `SIN_PROTOCOLO` con `409` — que la ruta ya trata como *"un estado legítimo del mundo, no una
+falla"*.
+
+**5 · No lo bloquea [ADR-006](#adr-006).**
+
+Una evaluación es un hecho académico sobre una comisión, no un dato personal. Se construye **hoy**,
+sobre el mundo sintético, como todo lo demás.
+
+### La consecuencia que hay que decir fuerte
+
+⚠️ **El registro canónico de CTAs pasa de 19 a 20.**
+
+`CTA-020` · `UX02 → UX02` · *dar de alta una evaluación*. Aparece **siempre** que haya cursada —a
+diferencia de `CTA-019`, que exige una evaluación existente—, porque es justamente la CTA que resuelve
+el caso en que no hay ninguna.
+
+Esto toca los guards de navegación y el conteo de nodos. Es la **única** entrada nueva al registro que
+el Gantt necesita: [ADR-066](#adr-066) evitó todas las demás.
+
+⚠️ **Y el estado degradado *"sin fecha de evaluación"* de `gantt-de-preparacion.md` §6 queda
+resuelto**: su CTA es `CTA-020`, no una CTA nueva.
+
+> ⚠️ **Un defecto que este ADR introdujo, encontrado y corregido el 7 de septiembre.**
+> `ingerir_materia` hacía `DELETE FROM assessment WHERE offering_id = ...` antes de cargar el material
+> nuevo. Con `declared_by`, **una ingesta de material de cátedra le borraba al estudiante el final que
+> él había cargado**, sin aviso.
+>
+> No era un defecto antes de este ADR: nadie podía declarar evaluaciones. Lo pasó a ser en el mismo
+> commit que dio el alta. La corrección está en `20260920010000_ingesta_de_clases.sql`, y la regla es
+> **la ingesta reemplaza lo que la ingesta trajo**: `AND declared_by IS NULL`.
+
+### Lo que esto no decide
+
+- **Quién eleva una evaluación a `corroborated` u `official`.** Sigue en [ADR-057](#adr-057).
+- **Si el alcance se propone desde el libro de temas.** La derivación `tema → parcial` está descrita
+  en [`gantt-de-preparacion.md`](gantt-de-preparacion.md) §3.1 y necesita su propio ADR.
+- **Editar o borrar una evaluación ya cargada.** El alta es lo que desbloquea el Gantt; la corrección
+  entra después, y por el patrón versionado de `class_event_record` —una corrección crea fila nueva,
+  no sobrescribe— y no por `UPDATE`.
+
+
+---
+
+<a id="adr-068"></a>
+
+## ADR-068 — La duración entra al modelo académico
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decisión técnica del equipo**
+**Relacionado:** [ADR-053](#adr-053), [ADR-066](#adr-066), [ADR-069](#adr-069).
+**Toca:** `class_session`, `course_offering`, `topic`, `lib/domain/`, `estado_de_materia()`.
+**Fuente:** [`inventario-corpus.md`](inventario-corpus.md), [`gantt-de-preparacion.md`](gantt-de-preparacion.md) §4.
+
+### El contexto
+
+La capa académica está completa salvo por una cosa: **no hay duración en ninguna parte**.
+`class_session` guarda `session_date` y nada más. `topic` no tiene peso ni minutos. `course` no tiene
+carga horaria. Sin eso, el Gantt puede decir *qué* falta pero no *cuánto*.
+
+### La decisión — cinco columnas
+
+| Tabla | Columna | Qué guarda |
+|---|---|---|
+| `class_session` | `duration_min INTEGER` | Los minutos **observados** de esa sesión |
+| `class_session` | `session_time TIME` | La hora. El libro la trae en cada fila y hoy se descarta |
+| `class_session` | `stream TEXT` | `'teorico'` \| `'practico'` \| `'teorico_practico'`. `NULL` = desconocido |
+| `course_offering` | `declared_total_min INTEGER` | La carga horaria **declarada** por el programa |
+| `course_offering` | `declared_total_source TEXT` | **El texto literal que se leyó** para afirmarla |
+
+⚠️ **`stream` lleva tres valores, no dos.** El corpus usa `TEORICO-PRACTICO` mezclado dentro de una
+misma corrida. Modelarlo con dos valores obligaría a elegir uno de los dos y perder el dato.
+
+Y `topic.weight NUMERIC` **nullable**, para el peso que pidió el owner.
+
+### Las tres cosas que esto decide de verdad
+
+**1 · Los minutos por tema NO se persisten.**
+
+Una clase cubre varios temas (`class_session_topic`). Repartir sus minutos entre ellos es una
+**derivación**, y se calcula al leer, versionada por la regla que la produjo. No lleva columna.
+
+Dos razones, y la segunda es la que manda:
+
+- Persistir una estimación la congela como si fuera un hecho.
+- **Se vuelve mentira sola.** Cuando una clase posterior vuelve sobre el mismo tema, el reparto
+  anterior deja de ser correcto y nadie lo recalcula.
+
+Es el mismo criterio que ya rige en `topic_progress`: *"No hay columna de score agregado y no se
+agrega: DD5 y P-03 prohíben la magnitud de máquina visible."*
+
+**2 · `declared_total_source` guarda el texto, no la interpretación.**
+
+El programa declara la carga horaria en formatos que no se parecen entre sí —`60 horas`, `30 horas`,
+`26 Hs`, `3 horas prácticas + 2 teóricas semanales`, `Instancias Supervisadas: 30 horas`—. Se guardan
+**las dos cosas**: los minutos normalizados y la cadena que se leyó.
+
+Precedente directo: `curriculum_requirement.year_source`, *"qué se vio para afirmar el año, y qué no
+se pudo leer"*. Cuando la normalización esté mal, se va a poder ver por qué sin volver al PDF.
+
+**3 · El peso es todo-o-nada por materia.**
+
+Si alguna unidad de una materia tiene `weight` declarado y otra no, **la materia se trata como sin
+pesos** y todas las unidades pesan igual.
+
+Un `weight` faltante **no es `1.0`**: es ausencia de dato, y mezclar pesos declarados con defaults
+inventados produce un reparto que parece medido y no lo es. *Sin datos no es cero.*
+
+### Lo que no cambia
+
+⚠️ **El conteo de clases del encabezado sigue sin usarse.** `[ 30 CLASE/S ]` es inservible y ahora hay
+números: `ANÁLISIS MATEMÁTICO I` declara 60 y registra 24; `INGENIERÍA DE SOFTWARE I` declara 30 y
+registra 14; `ÁLGEBRA` declara 30 y registra 31. **No hay factor de corrección** — se leen las filas.
+
+⚠️ **La reconciliación vive en `lib/domain/`, no en SQL.** Combinar el total declarado con la
+distribución observada es una regla de producto que va a cambiar; una función de base la volvería
+difícil de versionar.
+
+---
+
+<a id="adr-069"></a>
+
+## ADR-069 — `session_kind` se propone, no se importa
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decisión técnica del equipo**
+**Relacionado:** [ADR-029](#adr-029), [ADR-057](#adr-057), [ADR-067](#adr-067), [ADR-068](#adr-068).
+**Toca:** `class_session`, el importador de libros de temas, `lib/domain/`.
+
+### El problema
+
+Un parcial aparece en el libro de temas como una fila más, con su fecha. Si el importador lo trata
+como una clase, el Gantt cuenta el examen como tiempo de cursada **y le atribuye los temas que el
+parcial evaluaba**.
+
+Entonces hace falta distinguirlos. **Y el dato para distinguirlos no está donde debería.**
+
+### Lo que dice el corpus, medido
+
+La columna de tipo del libro **no marca el parcial**:
+
+| Valor de la columna `tipo` | Filas |
+|---|---|
+| `NORMAL` | **988** |
+| `RECUPERATORIO` | 18 |
+| `CONSULTA` | 9 |
+| `PARCIAL` | 1 |
+| `FERIADO` | 1 |
+
+**988 de ~1016 filas dicen `NORMAL`.** El parcial vive en el **texto libre del tema** —*"Primer
+parcial"*, *"Parcial 1"*, *"1er parcial escrito teórico/práctico"*— y ese texto es ambiguo:
+
+> **De 88 filas cuyo tema menciona una evaluación, 22 no son una evaluación: el 25%.**
+
+| Texto | Qué es en realidad |
+|---|---|
+| *"Derivación. **Derivadas parciales**. Diferenciación."* | Un tema de análisis matemático |
+| *"**Repaso para el parcial**. Lenguajes regulares, autómatas"* | La clase **anterior** al parcial |
+| *"**entrega de parciales** — cuantificadores lógicos"* | La clase **posterior**, devolviendo notas |
+| *"**Consulta** para parcial — Generación de netlist"* | Una consulta |
+
+Las tres últimas **sí dictaron tema**. Marcarlas como parcial borraría contenido real del Gantt.
+
+### La decisión
+
+**`class_session.session_kind`** con `'clase'` \| `'parcial'` \| `'recuperatorio'` \| `'consulta'`
+\| `'no_dictada'`, y `NULL` = desconocido.
+
+**El importador nunca lo escribe solo.** Propone una clasificación y **una persona la confirma**, con
+la fila entrando como `'clase'` hasta que alguien diga otra cosa. Es la misma forma que los
+prerequisitos: el motor propone, una persona aprueba.
+
+Con 25% de falsos positivos medidos, un importador automático marcaría *"Derivadas parciales"* como
+examen: **borraría un tema e inventaría una fecha límite**. Los dos errores en la misma fila.
+
+### Las dos reglas que se derivan
+
+**1 · Sólo `'clase'` aporta minutos.** Un parcial ocupa el aula pero no dicta tema. Un
+`'recuperatorio'` y una `'consulta'`, tampoco.
+
+**2 · `NULL` cuenta como clase, y hay que decirlo.** El 97% de las filas son clases; tratar lo
+desconocido como no-clase perdería casi todo el tiempo de cursada. **Se elige el error chico**: contar
+un parcial mal clasificado suma unos minutos de más; descartar todo lo no confirmado dejaría el Gantt
+vacío.
+
+### Lo que queda afuera
+
+- `'no_dictada'` **no sale de la columna `tipo`**: sale del asterisco que el pie del libro define como
+  *"\* = CLASE NO DICTADA"*. Es otro parser y entra después.
+- **Quién confirma la clasificación** sigue diferido por [ADR-057](#adr-057). Mientras tanto la
+  confirma el estudiante sobre su propia cursada, como en [ADR-067](#adr-067).
