@@ -1,6 +1,11 @@
 import { minutosPorTema, type SesionDeClase, type TipoDeClase } from "@/lib/domain/duracion";
 import { minutosPendientes } from "@/lib/domain/cobertura";
 import {
+  conMultiplicador,
+  multiplicadorDe,
+  type Observacion,
+} from "@/lib/domain/multiplicador";
+import {
   demandaSemanal,
   faltaTiempo,
   repartir,
@@ -31,6 +36,15 @@ import type { RepartoProjection } from "@/lib/domain/view-models";
 export interface InsumosDeReparto {
   /** `null` ⇒ **no contestó la pregunta**, que no es lo mismo que cero. */
   minutosPorSemana: number | null;
+  /**
+   * Lo que el estudiante declaró que tardó, contra lo que la `Action` estimaba
+   * ([ADR-074](../../../docs/decisions.md#adr-074)).
+   *
+   * ⚠️ **Sale de `reflection`, no de los `Commitment` cumplidos.** Lo primero
+   * mide la tarea frente a la persona; lo segundo, su conducta. Confundirlas
+   * haría que una mala semana le reduzca el presupuesto.
+   */
+  observaciones: Observacion[];
   materias: Array<{
     cursadaId: string;
     nombre: string;
@@ -94,10 +108,16 @@ export function proyectarReparto(i: InsumosDeReparto): RepartoProjection | null 
   // nada» es peor que no dibujarla.
   if (i.materias.length === 0) return null;
 
+  // ⚠️ **Los dos factores, separados.** `pendientesDe` es Academic Engine —cuánto
+  // lleva el tema para cualquiera— y el multiplicador es Personal Engine —cuánto
+  // te lleva a vos—. Se multiplican acá y nunca antes, para que cada mitad se
+  // pueda explicar por separado ([ADR-068](../../../docs/decisions.md#adr-068)).
+  const mult = multiplicadorDe(i.observaciones ?? []);
+
   const materias: MateriaEnElReparto[] = i.materias.map((m) => ({
     cursadaId: m.cursadaId,
     nombre: m.nombre,
-    minutosPendientes: pendientesDe(m),
+    minutosPendientes: conMultiplicador(pendientesDe(m), mult),
     diasHastaEvaluacion: m.diasHastaEvaluacion,
   }));
 

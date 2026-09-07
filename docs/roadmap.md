@@ -3967,6 +3967,57 @@ dice, no** — eso es de la psicopedagoga, antes del piloto.
 
 `lint` · `typecheck` · `build` · **1245 tests** · **`db:verify` 380 ✓, 0 ✗, exit 0**.
 
+---
+
+#### ✅ Corte 3 — El Personal Engine calibra · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-074](decisions.md#adr-074), que empieza corrigiendo lo que este roadmap había
+anotado.**
+
+> ⚠️ **La corrección.** El corte 1 dejó escrito que `availability.source = 'observed'` era el paso
+> siguiente: *"el Personal Engine la corrige con lo que el estudiante efectivamente cumplió"*.
+> **Estaba mal planteado.**
+>
+> `availability` es **cuándo podés estudiar** —capacidad—. Un `Commitment` cumplido es **cuándo
+> estudiaste** —conducta—. Derivar lo primero de lo segundo tiene una consecuencia concreta: un
+> estudiante con cinco horas que tuvo una mala semana y estudió dos **no perdió disponibilidad, no la
+> usó**. Escribirle `observed = 2 h` le reduciría el presupuesto por haber tenido una mala semana, y
+> después le repartiría menos porque hizo menos. **Es un espiral, y lo construiría el producto.**
+>
+> `observed` queda sin escribir hasta que exista una señal que mida capacidad de verdad.
+
+**Lo que sí se calibra: cuánto te lleva a vos el trabajo, comparado con lo estimado.** Sale de
+`reflection.actual_minutes` contra la estimación de la `Action`.
+
+| | |
+|---|---|
+| **Dominio** | `lib/domain/multiplicador.ts`, versionado por `REGLA_DE_MULTIPLICADOR` |
+| **Migración** | `insumos_de_reparto()` devuelve también `observaciones` |
+| **Proyección** | Los dos factores se multiplican **en la proyección y nunca antes**, para que cada mitad se pueda explicar por separado |
+| **Pruebas** | 5 comprobaciones nuevas contra Postgres y 18 de dominio |
+
+**Las cuatro reglas que lo hacen usable:**
+
+1. **Nunca baja de `1.0`.** [ADR-070](decisions.md#adr-070) fijó el `1.5` como **piso**: el Personal
+   Engine puede pedir más tiempo, nunca prometer que vas a necesitar menos. Hay un test que lo fija
+   con un estudiante que tarda la mitad de lo estimado y **sigue en `1.0`**.
+2. **Mediana, no promedio.** Una sesión de tres horas que se fue de cauce no mueve las demás.
+3. **Con menos de cinco observaciones, `1.0` y `SIN_HISTORIA`.** Con dos, la mediana es ruido con
+   forma de dato.
+4. **Techo en `2.0`, y el techo significa algo.** Más del doble sistemáticamente **no es un caso de
+   calibración**: es que algo más está pasando, y eso lo tiene que ver una persona.
+
+⚠️ **El multiplicador no se le muestra al estudiante como un número sobre él.** *"Tardás 1,8× lo
+normal"* es etiquetar. Se ve el efecto —más minutos— no el coeficiente.
+
+**En la demo**, con cinco reflexiones de 75 minutos sobre una estimación de 40–60, el multiplicador
+queda en `1,5×` y lo requerido pasa de 35 h a **52,5 h por semana**.
+
+⚠️ **Ese número es correcto y es durísimo**, y refuerza lo que ya estaba anotado: el copy del déficit
+no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión de la psicopedagoga.**
+
+`lint` · `typecheck` · `build` · **1264 tests** · **`db:verify` 385 ✓, 0 ✗, exit 0**.
+
 **Lo que el dominio ya fija, y los tests lo protegen:**
 
 - **Cargar una materia le baja la asignación a las demás.** Es el pedido, hecho test: con una, se

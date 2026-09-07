@@ -1220,6 +1220,40 @@ corre "delete from class_session where offering_id='a4000000-0000-0000-0000-0000
 corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
 corre "delete from availability where student_id='$EST2'; update student set availability_declared_at=null where id='$EST2';"
 
+echo "→ ADR-074 · el Personal Engine observa el trabajo, no la vida"
+
+EST3=a5000000-0000-0000-0000-000000000001
+
+# La observación sale de `reflection`, y necesita la estimación de la Action.
+corre "update action set estimated_minutes_min=40, estimated_minutes_max=60 where id='a7000000-0000-0000-0000-000000000001';"
+corre "insert into reflection (institution_id,action_id,actual_minutes) values ('$A','a7000000-0000-0000-0000-000000000001',75);"
+
+[ "$(q "select jsonb_array_length(insumos_de_reparto('$A','$EST3')->'observaciones')::text;" | tr -d '[:space:]')" = "1" ] \
+  && ok "la reflexión con minutos reales viaja como observación" || mal "no viajó la observación"
+
+X=$(q "select (x->>'minutosReales') || '|' || (x->>'estimadoMin') || '|' || (x->>'estimadoMax')
+  from jsonb_array_elements(insumos_de_reparto('$A','$EST3')->'observaciones') x;" | tr -d '[:space:]')
+[ "$X" = "75|40|60" ] && ok "trae los reales y las dos puntas de la estimación" || mal "la observación salió mal: $X"
+
+# ⚠️ Una reflexión sin minutos declarados no es una observación.
+corre "insert into reflection (institution_id,action_id,note) values ('$A','a7000000-0000-0000-0000-000000000001','sin minutos');"
+[ "$(q "select jsonb_array_length(insumos_de_reparto('$A','$EST3')->'observaciones')::text;" | tr -d '[:space:]')" = "1" ] \
+  && ok "una reflexión sin minutos reales no cuenta como observación" || mal "entró una reflexión sin minutos"
+
+# ⚠️ **La comprobación que sostiene la corrección de ADR-074.** Un Commitment
+# cumplido NO produce disponibilidad observada: capacidad y conducta son cosas
+# distintas, y confundirlas haría que una mala semana reduzca el presupuesto.
+corre "update commitment set state='COMPLETED', completed_at=now() where id='a8000000-0000-0000-0000-000000000001';"
+[ "$(q "select count(*)::text from availability where student_id='$EST3' and source='observed';" | tr -d '[:space:]')" = "0" ] \
+  && ok "un compromiso cumplido NO escribe disponibilidad observada" || mal "se derivó capacidad de conducta"
+
+# Y no se mezclan estudiantes: la observación de uno no es la de otro.
+[ "$(q "select jsonb_array_length(insumos_de_reparto('$B','b5000000-0000-0000-0000-000000000001')->'observaciones')::text;" | tr -d '[:space:]')" = "0" ] \
+  && ok "las observaciones no cruzan de un estudiante a otro" || mal "se filtraron observaciones ajenas"
+
+corre "delete from reflection where action_id='a7000000-0000-0000-0000-000000000001';"
+corre "update commitment set state='CONFIRMED', completed_at=null where id='a8000000-0000-0000-0000-000000000001';"
+
 limpiar_mundo
 ok "limpiado"
 

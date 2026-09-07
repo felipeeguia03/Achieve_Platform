@@ -250,6 +250,24 @@ echo "     -d '{\"institucionId\":\"$INST\",\"preparacionId\":\"$PREP\",\"tipoDe
 echo "   → la tercera aparición produce la señal, y /hoy pasa a \"Necesita recuperación\""
 echo
 echo
+echo "→ Historia para el Personal Engine (ADR-074): cinco reflexiones con minutos reales"
+# ⚠️ **Sale de `reflection`, no de los Commitment cumplidos.** Lo primero mide
+# la tarea frente a la persona; lo segundo, su conducta. Confundirlas haría que
+# una mala semana le reduzca el presupuesto al estudiante.
+#
+# Cinco es el mínimo de ADR-074: con menos, la mediana es ruido con forma de
+# dato. Los minutos reales están por encima de la estimación a propósito, para
+# que el multiplicador se vea calibrando hacia arriba — que es la única
+# dirección en la que puede moverse (ADR-070).
+for n in 1 2 3 4 5; do
+  q "insert into action (id,institution_id,course_enrollment_id,objective,verb,scope,status,estimated_minutes_min,estimated_minutes_max)
+     values ('af20000$n-0000-0000-0000-000000000001','$INST','a6000000-0000-0000-0000-000000000001',
+             'Práctica de la unidad','resolver','tema','COMPLETED',40,60);
+     insert into reflection (institution_id,action_id,actual_minutes,difficulty)
+     values ('$INST','af20000$n-0000-0000-0000-000000000001',75,'mas_dificil');" >/dev/null
+done
+echo "   cinco reflexiones de 75 min sobre una estimación de 40-60 → multiplicador 1,5×"
+
 echo "→ El estudiante recién habilitado ($NUEVO) queda SIN alta:"
 q "select '   consentimiento: ' || (public.estado_del_alta('$INST','$NUEVO')->>'consentimientoRespondido') ||
           ' · carrera: ' || (public.estado_del_alta('$INST','$NUEVO')->>'carreraDeclarada') ||

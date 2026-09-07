@@ -120,6 +120,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-071](#adr-071) | Los prerequisitos los aprueba el estudiante sobre su cursada | ✅ `ACCEPTED` *(7 sep 2026)* | — |
 | [ADR-072](#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | ✅ `ACCEPTED` *(7 sep 2026 · cobertura ≠ readiness)* | — |
 | [ADR-073](#adr-073) | La disponibilidad se declara, y el reparto entre materias es una proyección | ✅ `ACCEPTED` *(7 sep 2026 · **no bloquea el alta**)* | — |
+| [ADR-074](#adr-074) | El Personal Engine calibra **el trabajo**, no la vida del estudiante | ✅ `ACCEPTED` *(7 sep 2026 · el multiplicador nunca baja de `1.0`)* | — |
 
 ---
 
@@ -5714,3 +5715,87 @@ al que ya dijo que no sabe.
 - **Cómo se calibra desde lo observado.** `source = 'observed'` es Personal Engine y necesita historia
   que no existe.
 - **El copy del déficit.** Ver arriba: el hecho está decidido, la formulación no.
+
+
+---
+
+<a id="adr-074"></a>
+
+## ADR-074 — El Personal Engine calibra **el trabajo**, no la vida del estudiante
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decisión técnica del equipo, con una
+corrección de diseño que hay que dejar escrita**
+**Relacionado:** [ADR-058](#adr-058), [ADR-068](#adr-068), [ADR-070](#adr-070), [ADR-073](#adr-073).
+**Toca:** `lib/domain/`, `reflection`, `availability`.
+
+### La corrección, primero
+
+[ADR-073](#adr-073) dejó anotado que `availability.source = 'observed'` era el paso siguiente: *"el
+Personal Engine la corrige después, con lo que el estudiante efectivamente cumplió"*.
+
+**Eso estaba mal planteado, y conviene decir por qué en vez de corregirlo en silencio.**
+
+| | Qué significa |
+|---|---|
+| `availability` | **Cuándo podés estudiar.** Es capacidad. |
+| Un `Commitment` cumplido | **Cuándo estudiaste.** Es conducta. |
+
+Derivar lo primero de lo segundo las confunde, y la consecuencia es concreta: **un estudiante con
+cinco horas disponibles que tuvo una mala semana y estudió dos no perdió disponibilidad — no la
+usó.** Escribirle `observed = 2 h` haría que el sistema le reduzca el presupuesto por haber tenido
+una mala semana, y después le reparta menos porque hizo menos. Es un espiral, y lo construiría el
+producto.
+
+> **Decisión: `availability.source = 'observed'` NO se escribe desde los cumplimientos.** La columna
+> se conserva para una señal que mida capacidad de verdad —bloques declarados que el estudiante
+> corrige, un calendario conectado—, y hasta que exista, la disponibilidad es sólo la declarada.
+
+### Lo que sí es honesto calibrar
+
+**Cuánto te lleva a vos el trabajo, comparado con lo estimado.** Eso es una propiedad de la tarea y
+de la persona frente a la tarea, no de su vida, y el owner lo había pedido con esas palabras: *"el
+personal engine, que sabe **cuánto tardás en estudiar vos**"*.
+
+```
+multiplicador = mediana( reflection.actual_minutes ÷ estimación central de la Action )
+```
+
+### Las cuatro reglas que lo hacen usable
+
+**1 · Nunca baja de `1.0`.** [ADR-070](#adr-070) fijó que el `1.5` es un **piso**: *"el Personal
+Engine puede pedir más tiempo; no puede prometer que vas a necesitar menos"*. Un multiplicador de
+`0.7` le diría a alguien que estudie menos de lo que la cátedra supone, y eso no es calibrar: es una
+promesa que el sistema no puede sostener.
+
+**2 · Mediana, no promedio.** Una sesión de tres horas que se fue de cauce no puede mover la
+estimación de todas las demás.
+
+**3 · Con menos de cinco observaciones, `1.0`.** Con dos, la mediana es ruido con forma de dato.
+Debajo del piso el motivo viaja como `SIN_HISTORIA` y **no se calibra nada**: es el mismo *sin datos
+no es cero* de siempre.
+
+**4 · Tiene techo, y el techo tiene significado.** Se corta en `2.0`. Que a alguien le lleve más del
+doble de lo estimado, sistemáticamente, **no es un caso de calibración**: es que algo más está
+pasando —el material no alcanza, la estimación está mal, hay una dificultad que nadie miró— y eso lo
+tiene que ver una persona, no un coeficiente que sigue creciendo.
+
+### Lo que este ADR prohíbe
+
+⚠️ **El multiplicador no se le muestra al estudiante como un número sobre él.** *"Tardás 1,8× lo
+normal"* es exactamente lo que la regla de la casa prohíbe: *"el sistema debe reconocer patrones, **no
+etiquetar personas**"*. Lo que se ve es el efecto —más minutos estimados— no el coeficiente.
+
+⚠️ **No se compara entre estudiantes.** No hay percentiles, no hay «más lento que el promedio», y la
+función no recibe nada de otro estudiante.
+
+⚠️ **No entra al Hero ni al riesgo.** Un multiplicador alto no es una señal de riesgo:
+[ADR-055](#adr-055) dejó las reglas del Risk Engine en modo humano hasta el piloto, e inventar acá
+una cuarta sería saltear ese circuito.
+
+### Lo que no decide
+
+- **Qué método te sirve más.** La otra mitad del Personal Engine que pidió el owner necesita
+  `reflection.difficulty` y `result`, y una semántica que la psicopedagoga todavía no fijó.
+- **Si el multiplicador debe ser por materia.** Hoy es del estudiante. Que a alguien le cueste
+  Análisis y no Historia es probable, pero partirlo por materia multiplica la muestra necesaria por
+  el número de materias, y hoy no hay ni la primera.

@@ -51,6 +51,28 @@ LANGUAGE sql STABLE AS $$
              END
         FROM student s WHERE s.id = p_student_id),
 
+    -- ── Las observaciones del Personal Engine · ADR-074 ─────────────────────
+    --
+    -- Lo que el estudiante declaró que tardó, contra lo que la `Action`
+    -- estimaba. **Es una propiedad de la tarea frente a la persona**, no de su
+    -- vida: por eso sale de `reflection`, y NO de los `Commitment` cumplidos.
+    --
+    -- ⚠️ Derivar la disponibilidad de lo cumplido confundiría capacidad con
+    -- conducta: una mala semana reduciría el presupuesto, y el reparto daría
+    -- menos porque se hizo menos. `availability.source = 'observed'` **queda sin
+    -- escribir** hasta que exista una señal que mida capacidad de verdad.
+    'observaciones', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+               'minutosReales', rf.actual_minutes,
+               'estimadoMin', ac2.estimated_minutes_min,
+               'estimadoMax', ac2.estimated_minutes_max))
+        FROM reflection rf
+        JOIN action ac2 ON ac2.id = rf.action_id
+        JOIN course_enrollment ce2 ON ce2.id = ac2.course_enrollment_id
+       WHERE ce2.student_id = p_student_id
+         AND ce2.institution_id = p_institution_id
+         AND rf.actual_minutes IS NOT NULL), '[]'::jsonb),
+
     'materias', COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
         'cursadaId', cu.id,
