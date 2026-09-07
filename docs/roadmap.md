@@ -4033,6 +4033,102 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+<a id="fase-b617--la-respuesta-de-la-psicopedagoga"></a>
+
+## Fase B6.17 — La respuesta de la psicopedagoga · 🟡 EN CURSO
+
+**Decide:** [ADR-075](decisions.md#adr-075) ·
+[fuente literal](respuesta-psicopedagoga-tiempo-y-carga-source.md).
+
+> *"La pantalla, tal como está escrita, **no debería aprobarse todavía**."*
+
+Es lo primero que contestó, sobre el mensaje del déficit. **Y tenía razón, aunque no exactamente por
+lo que dedujo.**
+
+Su lectura fue que podía estar comparando una tasa semanal con un total acumulado.
+⚠️ **La aritmética ya estaba sobre el mismo horizonte** —`demandaSemanal()` divide los pendientes por
+las semanas que quedan, así que las dos cifras eran tasas semanales—. **El defecto era del copy:**
+sólo una de las dos decía «por semana».
+
+**Eso no salva la pantalla: la confirma.** Si la persona con autoridad profesional sobre el mensaje
+leyó una comparación inválida, un estudiante también.
+
+---
+
+#### ✅ Corte 1 — El déficit, reescrito · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-075](decisions.md#adr-075) §A.**
+
+| | |
+|---|---|
+| **Dominio** | `tramoDeBrecha()` y `UMBRAL_DE_BRECHA_CRITICA` en `reparto.ts`; `Reparto` lleva `demandaSemanalTotal` |
+| **Copy** | El bloque entero reescrito con sus palabras |
+| **Proyección** | `tramo`, `titulo`, `cifras`, `aclaracion` y `acciones` |
+| **Pantalla** | En `CRITICA`, el mensaje va primero y **el número baja a detalle secundario** |
+| **Pruebas** | 11 nuevas, seis de ellas sobre **lo que el copy tiene prohibido decir** |
+
+**Los tres tramos, por `requerido / disponible`:**
+
+| Tramo | Qué muestra |
+|---|---|
+| `≤1` **ENTRA** | *"Tu plan entra en el tiempo que declaraste."* Sin prometer resultados, y sin acciones: no hay nada que reorganizar |
+| `1–2` **AJUSTABLE** | Las dos cifras en primer plano, y las tres acciones |
+| `>2` **CRITICA** | El mensaje cualitativo primero; el número **sigue estando** pero baja de jerarquía |
+| — **SIN_DATOS** | *"Faltan datos para estimar tus horas."* **No se muestra media comparación** |
+
+**Lo que cambió en las palabras, y por qué:**
+
+- Las dos cifras **llevan su período las dos**: *"Esta semana declaraste 5 h disponibles. El trabajo
+  pendiente estimado es de 52,5 h."*
+- **«Las materias no piden».** Esa personificación *"puede sonar a exigencia"*; se dice *"trabajo
+  pendiente estimado"*.
+- **Siempre hay una salida cuando falta tiempo** — *Elegir qué priorizar · Revisar mis horas · Pedir
+  ayuda*—, porque un déficit sin acción *"puede sentirse como un veredicto y favorecer evitación"*.
+- Hay un test que verifica que **ninguna frase** diga *"no vas a llegar"*, *"deberías poder"* o
+  *"estás atrasado"*, y que **ninguna acción** proponga abandonar una materia.
+
+⚠️ **El horizonte elegido difiere de su ejemplo, y queda para confirmarle.** Ella escribió el mensaje
+sobre *"hasta el parcial del 15 de septiembre"* y admitió las dos opciones. **Se eligió la semanal**
+porque con varias materias y varias fechas no existe un único *"hasta la evaluación"*, y sumar sobre
+horizontes distintos reintroduce el defecto que este corte corrige.
+
+`lint` · `typecheck` · `build` · **1275 tests** · **`db:verify` 385 ✓, 0 ✗, exit 0**.
+
+---
+
+#### Corte 2 — La barra: tres medidas, no una
+
+**Ejecuta §C.** *"La aclaración sola no alcanza: un porcentaje grande junto a una barra suele adquirir
+significado evaluativo aunque el texto inferior lo niegue."*
+
+Y encontró algo que el equipo había justificado como virtud: *"«1 de 9 temas» y «26% de las horas»
+usan **denominadores diferentes** y pueden parecer dos medidas contradictorias."*
+
+Se separa en `actividad registrada` / `tiempo con evidencia` / `entregas que requieren revisión`, el
+rótulo deja de ser *progreso*, y **una entrega insuficiente pasa a ser intento y no criterio
+alcanzado** — tres estados visuales, no dos.
+
+#### Corte 3 — El multiplicador: comparabilidad y transparencia
+
+**Ejecuta §B.** El piso y el techo se mantienen. Lo que falta: exigir **3 días distintos** y el mismo
+tipo de actividad (§B3), la señal de **revisión de calibración** ante `≥2` en 3 de 5 (§B2), y que el
+estudiante **pueda ver qué actividades produjeron el ajuste, corregir un tiempo y desactivarlo** (§B4).
+
+⚠️ *"Psicopedagogía no debe ser el primer destino automático de un error de tiempo."* La señal va
+primero al owner académico de la estimación.
+
+#### Corte 4 — El `1,5` baja al último escalón
+
+**Ejecuta §D.** *"No encontré respaldo para afirmar que sea una constante psicopedagógica universal."*
+Pasa a ser el último de cuatro fuentes, y siempre se guarda cuál se usó.
+
+#### Fuera del MVP — §E, el método
+
+Los datos actuales *"permiten descripción, no determinar el método eficaz"*. Faltan ocho, empezando
+por **qué estrategia se usó** y el **desempeño diferido a 24–72 h**. No es una postergación por costo.
+
+---
+
 ## Fase B7 — Privacidad, consentimiento y golden dataset
 
 **Estado:** 🔒 [ADR-006](decisions.md#adr-006). **BLOQUEO ABSOLUTO para datos reales.**

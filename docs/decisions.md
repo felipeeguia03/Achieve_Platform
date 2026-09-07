@@ -121,6 +121,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-072](#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | ✅ `ACCEPTED` *(7 sep 2026 · cobertura ≠ readiness)* | — |
 | [ADR-073](#adr-073) | La disponibilidad se declara, y el reparto entre materias es una proyección | ✅ `ACCEPTED` *(7 sep 2026 · **no bloquea el alta**)* | — |
 | [ADR-074](#adr-074) | El Personal Engine calibra **el trabajo**, no la vida del estudiante | ✅ `ACCEPTED` *(7 sep 2026 · el multiplicador nunca baja de `1.0`)* | — |
+| [ADR-075](#adr-075) | Las respuestas de la psicopedagoga sobre tiempo y carga | ✅ `ACCEPTED` *(7 sep 2026 · **la pantalla del déficit no estaba aprobada**)* | `B6.17` |
 
 ---
 
@@ -5810,3 +5811,181 @@ una cuarta sería saltear ese circuito.
 - **Si el multiplicador debe ser por materia.** Hoy es del estudiante. Que a alguien le cueste
   Análisis y no Historia es probable, pero partirlo por materia multiplica la muestra necesaria por
   el número de materias, y hoy no hay ni la primera.
+
+
+---
+
+<a id="adr-075"></a>
+
+## ADR-075 — Las respuestas de la psicopedagoga sobre tiempo y carga
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **respondido por la psicopedagoga** —
+[fuente literal](respuesta-psicopedagoga-tiempo-y-carga-source.md), que **manda sobre esta paráfrasis**.
+**Responde:** [`agenda-psicopedagoga-tiempo-y-carga.md`](agenda-psicopedagoga-tiempo-y-carga.md).
+**Relacionado:** [ADR-036](#adr-036), [ADR-055](#adr-055), [ADR-058](#adr-058), [ADR-070](#adr-070),
+[ADR-072](#adr-072), [ADR-073](#adr-073), [ADR-074](#adr-074).
+
+### Lo primero que dijo
+
+> *"La pantalla, tal como está escrita, **no debería aprobarse todavía**."*
+
+El motivo: mostraba *"5 h por semana · 52,5 h es lo que piden tus materias"* **sin decir que la segunda
+cifra también era semanal**. Su lectura fue que podía estar comparando una tasa semanal con un total
+acumulado.
+
+⚠️ **La aritmética ya estaba sobre el mismo horizonte.** `demandaSemanal()` divide los minutos
+pendientes por las semanas que quedan, así que las dos cifras eran tasas semanales.
+
+**Y eso no salva la pantalla: la confirma.** Si la persona que tiene autoridad profesional sobre el
+mensaje leyó una comparación inválida, un estudiante también. **El defecto no era del cálculo, era del
+copy**, y una cifra sin su unidad al lado de otra que sí la tiene es exactamente el tipo de dato que
+*"puede ser verdadero y aun así engañoso"*.
+
+### El criterio general que fija, y aplica a todo lo demás
+
+> *"La información puede mostrarse, pero debe cumplir cuatro condiciones: ser **comparable**, estar
+> **contextualizada**, permitir una **acción concreta** y referirse al **proceso o a la tarea**, no a una
+> característica de la persona."*
+
+Y una advertencia sobre todos los números que siguen:
+
+> *"Son **umbrales operativos provisionales para el MVP**, no puntos de corte clínicos ni constantes
+> respaldadas universalmente por la psicopedagogía."*
+
+Se rotulan igual que los seis valores de [ADR-036](#adr-036), y se versionan.
+
+---
+
+### A · El déficit
+
+| | Decisión |
+|---|---|
+| **A1** | Se muestra la brecha, **nunca como un dato suelto** y sólo con las dos cifras sobre el mismo período. Prohibido *"no vas a llegar"*, *"deberías poder"* y *"estás atrasado"* |
+| **A2** | Copy nuevo. **«Las materias no piden»** — esa personificación suena a exigencia. Se dice *"trabajo pendiente estimado"* |
+| **A3** | Tres tramos por `requerido / disponible`: `≤1` entra · `1–2` las dos cifras en primer plano · `>2` **el mensaje cualitativo primero y el número como detalle secundario** |
+| **A4** | Tres acciones, y las tres conservan la agencia: *Revisar mis horas* · *Elegir qué priorizar* · *Pedir ayuda* |
+
+⚠️ **La excepción que hay que respetar:** *"Si falta fecha de evaluación, disponibilidad o alcance
+evaluado, **no mostrar una comparación cerrada**. Mostrar «faltan datos para estimar» y pedir el dato
+ausente."*
+
+⚠️ **Y lo que no se ofrece nunca**, textual: *"«sumá X horas», «dejá esta materia» ni una agenda
+intensiva que ignore sueño, trabajo, traslados, cuidados u otras obligaciones."*
+
+> **El horizonte que se eligió, y en qué difiere de su ejemplo.** Ella escribió el mensaje sobre el
+> horizonte *"hasta el parcial del 15 de septiembre"*, y admitió las dos opciones: *"Si el cálculo se
+> refiere a una semana, ambas cifras deben decir «esta semana»."*
+>
+> **Se eligió la semanal**, porque con varias materias y varias fechas **no existe un único «hasta la
+> evaluación»**: cada una tiene la suya, y sumar sobre horizontes distintos reintroduce el defecto que
+> este ADR corrige. Queda anotado para confirmarle.
+
+---
+
+### B · El multiplicador personal
+
+| | Decisión |
+|---|---|
+| **B1** | El piso `1,0` **se mantiene**. *"Completar antes una actividad no demuestra por sí solo que todas las futuras requerirán menos tiempo."* Y agrega qué sí se puede decir: *"Completaste esta actividad dentro del tiempo estimado"* |
+| **B2** | El techo `2,0` se mantiene, y **superarlo produce una señal de «revisión de calibración», no una etiqueta de riesgo personal** |
+| **B3** | Cinco observaciones habilitan **calibración provisional**; con menos de diez **no se describe como patrón estable**. Y exige comparabilidad: al menos **3 días distintos** y el mismo tipo general de actividad |
+| **B4** | **Sí se le informa la calibración**, con lenguaje sobre registros. Y **tiene que poder ver qué actividades la produjeron, corregir un tiempo y desactivar el ajuste** |
+
+⚠️ **La regla de B2 es más estricta que un umbral simple.** No alcanza con superar `2,0` una vez:
+*"`≥2` en **3 de las últimas 5 actividades comparables y válidas**, realizadas en al menos dos días"*, y
+antes de alertar hay que *"verificar rango estimado, pausas/interrupciones y estado de finalización"*.
+
+⚠️ **Y la frase que define a quién convoca esa señal:**
+
+> *"**Psicopedagogía no debe ser el primer destino automático de un error de tiempo.**"*
+
+Primero el owner académico de la estimación —puede estar mal el contenido, no la persona—, después un
+referente humano, y evaluación psicopedagógica **sólo si convergen otras señales**.
+
+⚠️ **Prohibido:** *"sos más lento"*, *"te cuesta el doble"*, *"tu ritmo es bajo"* y equivalentes.
+
+---
+
+### C · La barra — **la aclaración no alcanza**
+
+> *"Un porcentaje grande junto a una barra suele adquirir significado evaluativo aunque el texto
+> inferior lo niegue."*
+
+Y encontró algo que el equipo había justificado como una virtud: *"«1 de 9 temas» y «26% de las horas»
+usan **denominadores diferentes** y pueden parecer dos medidas contradictorias."*
+
+**Se separan en tres medidas, y el rótulo cambia.** No se llama *progreso*, ni `dominio`, `nivel`,
+`rendimiento` o `avance de aprendizaje`: se llama **`actividad registrada`**. Sin colores de
+calificación.
+
+⚠️ **Y C2 corrige la pregunta, no sólo la contesta:** *"La pregunta actual fuerza una elección falsa
+porque **mezcla dos constructos**: actividad y calidad del resultado."*
+
+Una entrega insuficiente cuenta como **trabajo intentado**, y **no** como contenido cubierto. Tres
+estados, no dos: `sin evidencia` · `evidencia enviada / requiere revisión` · `criterio alcanzado`.
+
+> **La condición de revisión que hay que leer entera:** *"Si la interpreta como nota, probabilidad de
+> aprobación o porcentaje aprendido, la solución **no es agregar más letra pequeña**: hay que cambiar la
+> representación."*
+
+---
+
+### D · El `1,5` es un fallback, no una constante
+
+> *"No encontré respaldo para afirmar que 1,5 horas de estudio autónomo por cada hora de clase sea una
+> constante psicopedagógica universal."*
+
+Y trajo la normativa: la [Resolución 2598/2023](https://www.argentina.gob.ar/normativa/nacional/resoluci%C3%B3n-2598-2023-393382/actualizacion)
+define el Crédito de Referencia del Estudiante en 25–30 horas por crédito, **y no prescribe una relación
+fija de 1,5 a 1**.
+
+**El `1,5` pasa a ser el último de cuatro escalones**, no el primero:
+
+```
+carga institucional o de cátedra  →  estimación por actividad concreta
+   →  mediana histórica de actividades comparables  →  fallback 1,5
+```
+
+⚠️ **Y siempre se guarda la fuente y la versión de la estimación** — que es lo que
+[ADR-068](#adr-068) ya hace con `declared_total_source`.
+
+---
+
+### E · El método: **no se puede afirmar todavía**
+
+> *"No permiten concluir qué método de estudio funciona mejor, porque hoy no se registra de manera
+> estructurada **qué estrategia se usó**, no hay comparación entre estrategias y el resultado inmediato
+> no demuestra retención o transferencia."*
+
+Confirma que el salto que el equipo no dio era el correcto, y aporta el fundamento: asignar un *"estilo
+de aprendizaje"* y adaptar la enseñanza a esa etiqueta **no tiene base de evidencia**
+([Pashler et al., 2008](https://journals.sagepub.com/doi/abs/10.1111/j.1539-6053.2009.01038.x)).
+
+**Lista ocho datos que faltan** —estrategia usada, tipo y objetivo de la tarea, criterio explícito de
+resultado, **desempeño diferido a 24–72 h**, interrupciones, tipo y cantidad de ayuda, confianza antes y
+después, comparaciones repetidas— y una regla de cinco puntos para el Personal Engine, cuyo núcleo es:
+
+> *"Presentar cada personalización temprana como un **experimento**"*, y *"no decir «este es tu método»
+> ni inferir causalidad"*.
+
+**Queda fuera del MVP.** No es una postergación por costo: es que los datos para sostenerlo no existen.
+
+---
+
+### Las siete condiciones antes de cualquier estudiante real
+
+Se adoptan como **gate**, junto al de [ADR-006](#adr-006):
+
+1. Prueba de comprensión del mensaje de déficit y de la barra.
+2. Prueba emocional breve y **no clínica**.
+3. Verificación de que **todas** las comparaciones usan el mismo período.
+4. Trazabilidad y corrección de los tiempos que alimentan el multiplicador.
+5. Diferenciación visual inequívoca entre actividad realizada y criterio alcanzado.
+6. Registro de fuente y versión de toda estimación.
+7. Circuito humano definido como **apoyo académico**, sin convertir automáticamente una anomalía de
+   datos en sospecha diagnóstica.
+
+Y su propio límite, que se transcribe porque acota el alcance de todo lo anterior:
+
+> *"Esta respuesta orienta decisiones de producto. **No constituye una evaluación de estudiantes ni
+> habilita inferencias diagnósticas individuales.**"*

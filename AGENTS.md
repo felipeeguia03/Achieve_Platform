@@ -247,7 +247,8 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/demo-mvp.md`](docs/demo-mvp.md) | Cómo levantar el mundo sintético y recorrer el alta, incluido el dock de **modo prueba** | Antes de correr la demo a mano |
 | [`docs/gantt-de-preparacion.md`](docs/gantt-de-preparacion.md) | 🆕 El Gantt de preparación: qué del modelo académico ya existe, qué falta (**el tiempo**), y los cinco ADR que siguen abiertos | Antes de tocar temas, clases, duración o la superficie del Gantt |
 | [`docs/inventario-corpus.md`](docs/inventario-corpus.md) | 🆕 Los 113 PDF medidos: 36 materias, **13 degradadas**, y por qué la mitad del corpus no se atribuye sola | Antes de escribir cualquier importador de libros de temas |
-| [`docs/agenda-psicopedagoga-tiempo-y-carga.md`](docs/agenda-psicopedagoga-tiempo-y-carga.md) | 🆕 **Pendiente de respuesta.** Lo que el sistema le dice al estudiante sobre su propio tiempo: el déficit, el multiplicador personal y la barra | Antes de tocar el copy del déficit o los umbrales del multiplicador |
+| [`docs/agenda-psicopedagoga-tiempo-y-carga.md`](docs/agenda-psicopedagoga-tiempo-y-carga.md) | ✅ **Respondida el 7 sep.** Las preguntas sobre el déficit, el multiplicador y la barra | Junto con la fuente de abajo |
+| [`docs/respuesta-psicopedagoga-tiempo-y-carga-source.md`](docs/respuesta-psicopedagoga-tiempo-y-carga-source.md) | 🆕 **Fuente literal.** Manda sobre [ADR-075](docs/decisions.md#adr-075) y sobre cualquier paráfrasis | Antes de tocar el copy del déficit, la barra o los umbrales del multiplicador |
 | [`docs/guion-focus-group.md`](docs/guion-focus-group.md) | El recorrido de sesión y el test de 10 segundos por pantalla | Antes de correr un focus group |
 
 ### Documentos de referencia — **no se editan**

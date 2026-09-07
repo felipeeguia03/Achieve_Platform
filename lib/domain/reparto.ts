@@ -48,6 +48,12 @@ export interface Reparto {
    * que se leería como «justo alcanza».
    */
   huecoSemanal: number | null;
+  /**
+   * Lo que el conjunto demanda **por semana**. Es la cifra que se compara con
+   * `minutosPorSemana`, y está en la misma unidad a propósito
+   * ([ADR-075](../../docs/decisions.md#adr-075)).
+   */
+  demandaSemanalTotal: number | null;
   materias: Array<{
     cursadaId: string;
     nombre: string;
@@ -121,6 +127,7 @@ export function repartir(
     minutosPorSemana,
     minutosRequeridos,
     huecoSemanal,
+    demandaSemanalTotal: estimables.length === 0 ? null : totalDemanda,
     regla: REGLA_DE_REPARTO,
     materias: demandas.map(({ m, d }) => ({
       cursadaId: m.cursadaId,
@@ -153,4 +160,66 @@ export function repartir(
  */
 export function faltaTiempo(r: Reparto): boolean | null {
   return r.huecoSemanal === null ? null : r.huecoSemanal > 0;
+}
+
+// ── Los tramos del déficit · ADR-075 §A3 ─────────────────────────────────────
+//
+// La psicopedagoga, textual: *"No existe un punto de corte psicopedagógico
+// universal. Para el MVP propongo esta regla provisional."*
+//
+// ⚠️ **`2` es un umbral operativo provisional, no un corte clínico.** Ella lo
+// dijo con esas palabras: *"es una decisión prudencial de producto que deberá
+// validarse"*. Se versiona con la regla y se revisa después del piloto.
+
+export const UMBRAL_DE_BRECHA_CRITICA = 2;
+
+/** A partir de acá, una brecha crítica pide conversación con una persona. */
+export const DIAS_PARA_REVISION_HUMANA = 7;
+
+export type TramoDeBrecha =
+  /** `≤1`. Entra. **Sin prometer resultados.** */
+  | "ENTRA"
+  /** `1–2`. Las dos cifras en primer plano, y se ofrece reorganizar. */
+  | "AJUSTABLE"
+  /**
+   * `>2`, o sin horas declaradas habiendo trabajo pendiente. El número pasa a
+   * **detalle secundario** y el mensaje cualitativo va primero: más allá de ese
+   * punto *"el dato bruto pierde capacidad de orientar por sí solo"*.
+   */
+  | "CRITICA"
+  /**
+   * ⚠️ **Falta un dato, y entonces NO se muestra una comparación cerrada.**
+   * Textual: *"Mostrar «faltan datos para estimar» y pedir el dato ausente."*
+   */
+  | "SIN_DATOS";
+
+export function tramoDeBrecha(r: Reparto): TramoDeBrecha {
+  const requerido = totalDemandado(r);
+
+  // Sin disponibilidad declarada o sin nada estimable, no hay comparación que
+  // hacer — y una comparación a medias es peor que ninguna.
+  if (requerido === null) return "SIN_DATOS";
+  if (r.minutosPorSemana === null) return "SIN_DATOS";
+
+  // «available = 0 con trabajo pendiente» es crítica por regla explícita: la
+  // división no está definida y el caso sí.
+  if (r.minutosPorSemana === 0) return requerido > 0 ? "CRITICA" : "ENTRA";
+
+  const razon = requerido / r.minutosPorSemana;
+  if (razon <= 1) return "ENTRA";
+  return razon <= UMBRAL_DE_BRECHA_CRITICA ? "AJUSTABLE" : "CRITICA";
+}
+
+/**
+ * Lo que el conjunto de materias demanda **por semana**. `null` ⇒ nada
+ * estimable.
+ *
+ * ⚠️ **Es una tasa semanal, igual que `minutosPorSemana`**, y por eso se pueden
+ * comparar. Que las dos cifras estén sobre el mismo horizonte es la corrección
+ * central de [ADR-075](../../docs/decisions.md#adr-075): el cálculo ya lo
+ * estaba, **la pantalla no lo decía**, y una cifra sin su unidad al lado de otra
+ * que sí la tiene se lee como un total acumulado.
+ */
+export function totalDemandado(r: Reparto): number | null {
+  return r.demandaSemanalTotal;
 }

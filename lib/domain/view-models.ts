@@ -226,6 +226,25 @@ export interface RepartoProjection {
   requerido: string | null;
   /** `true` = falta tiempo. `null` = no se puede saber. **No es un veredicto.** */
   falta: boolean | null;
+  /**
+   * En qué tramo cae la brecha — [ADR-075](../../docs/decisions.md#adr-075) §A3.
+   * Decide **la jerarquía**: en `CRITICA` el mensaje va primero y el número
+   * pasa a detalle secundario, porque más allá de `2×` *"el dato bruto pierde
+   * capacidad de orientar por sí solo"*.
+   */
+  tramo: "ENTRA" | "AJUSTABLE" | "CRITICA" | "SIN_DATOS";
+  /** El título del tramo, ya resuelto. Siempre presente. */
+  titulo: string;
+  /** Las dos cifras con su período **en las dos**. `null` en `SIN_DATOS`. */
+  cifras: string | null;
+  /** *"Es una estimación para organizarte; no predice tu resultado."* */
+  aclaracion: string;
+  /**
+   * ⚠️ **Nunca vacío salvo en `ENTRA`.** §A1: *"al menos una acción bajo control
+   * del estudiante"*. Un déficit sin salida *"puede sentirse como un veredicto
+   * y favorecer evitación"*.
+   */
+  acciones: readonly string[];
   materias: ReadonlyArray<{
     cursadaId: string;
     nombre: string;

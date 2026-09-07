@@ -150,15 +150,36 @@ export const copy = {
    * a materias se conserva: es una alternativa, no la forma de hacer aparecer
    * la acción.
    */
+  // ── El reparto y el déficit · ADR-075 §A ───────────────────────────────────
+  //
+  // ⚠️ **Todo este bloque lo revisó la psicopedagoga y lo reescribió.** La
+  // versión anterior decía «52,5 h es lo que piden tus materias»; ella lo
+  // objetó por dos motivos: la segunda cifra **no decía sobre qué período**, y
+  // «las materias no piden» —esa personificación suena a exigencia—.
+  //
+  // Prohibidas, textual: «no vas a llegar», «deberías poder», «estás atrasado»,
+  // y como respuesta automática «sumá X horas» o «dejá esta materia».
   "HOY.REPARTO": "Tus horas esta semana",
-  "HOY.REPARTO.POR_SEMANA": "por semana",
-  "HOY.REPARTO.REQUERIDO": "es lo que piden tus materias",
-  "HOY.REPARTO.SIN_DISPONIBILIDAD":
-    "Todavía no sabemos cuánto tiempo tenés por semana, así que no podemos repartirlo.",
-  "HOY.REPARTO.SIN_ESTIMACION":
-    "por semana. Todavía no podemos estimar cuánto piden tus materias.",
-  // ⚠️ Ninguno de estos dice «no llegás» ni «apurate». Son hechos: dos cifras y
-  // el motivo por el que alguna falta.
+
+  // Las dos cifras **con su período en las dos**. Es la corrección central.
+  "HOY.REPARTO.CIFRAS": "Esta semana declaraste {disponible} disponibles. El trabajo pendiente estimado es de {requerido}.",
+  "HOY.REPARTO.ESTIMACION": "Es una estimación para organizarte; no predice tu resultado.",
+
+  // `≤1` — entra, **sin prometer resultados**.
+  "HOY.REPARTO.ENTRA": "Tu plan entra en el tiempo que declaraste.",
+  // `1–2` — las dos cifras en primer plano y se ofrece reorganizar.
+  "HOY.REPARTO.AJUSTABLE": "Tu plan pide más tiempo del que declaraste.",
+  // `>2` — el mensaje cualitativo **primero**, el número como detalle secundario.
+  "HOY.REPARTO.CRITICA": "Tu plan no entra completo en el tiempo disponible.",
+  // Falta un dato: no se muestra una comparación cerrada.
+  "HOY.REPARTO.SIN_DATOS": "Faltan datos para estimar tus horas.",
+
+  // Las tres acciones de §A4. Las tres conservan la agencia del estudiante: el
+  // sistema no elige por él, y no ofrece «dejá esta materia».
+  "HOY.REPARTO.ACCION.PRIORIZAR": "Elegir qué priorizar",
+  "HOY.REPARTO.ACCION.HORAS": "Revisar mis horas",
+  "HOY.REPARTO.ACCION.AYUDA": "Pedir ayuda",
+
   "HOY.REPARTO.MOTIVO.SIN_ESTIMACION": "sin estimar",
   "HOY.REPARTO.MOTIVO.SIN_DISPONIBILIDAD": "sin repartir",
   "HOY.REPARTO.MOTIVO.SIN_FECHA": "sin fecha",

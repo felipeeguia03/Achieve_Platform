@@ -9,8 +9,10 @@ import {
   demandaSemanal,
   faltaTiempo,
   repartir,
+  tramoDeBrecha,
   type MateriaEnElReparto,
 } from "@/lib/domain/reparto";
+import { t } from "@/lib/content/es-AR";
 import type { RepartoProjection } from "@/lib/domain/view-models";
 
 /**
@@ -126,17 +128,41 @@ export function proyectarReparto(i: InsumosDeReparto): RepartoProjection | null 
   const demandas = materias.map(demandaSemanal).filter((d): d is number => d !== null);
   const totalSemanal = demandas.length === 0 ? null : demandas.reduce((a, b) => a + b, 0);
 
+  const tramo = tramoDeBrecha(r);
+  const disponible = r.minutosPorSemana === null ? null : enHoras(r.minutosPorSemana);
+  const requerido = totalSemanal === null ? null : enHoras(totalSemanal);
+
   return {
-    // ⚠️ Las dos cifras, y ninguna conclusión. El componente las muestra; no las
-    // compara para escribir un veredicto.
-    disponible: r.minutosPorSemana === null ? null : enHoras(r.minutosPorSemana),
+    tramo,
+    titulo: t(`HOY.REPARTO.${tramo}`),
+    // ⚠️ **Las dos cifras llevan su período, y es la corrección de ADR-075.**
+    // El cálculo ya estaba sobre el mismo horizonte —las dos son tasas
+    // semanales—; la pantalla no lo decía, y una cifra sin unidad al lado de
+    // otra que sí la tiene se lee como un total acumulado.
+    cifras:
+      tramo === "SIN_DATOS" || disponible === null || requerido === null
+        ? null
+        : t("HOY.REPARTO.CIFRAS").replace("{disponible}", disponible).replace("{requerido}", requerido),
+    aclaracion: t("HOY.REPARTO.ESTIMACION"),
+    // §A4. En `ENTRA` no hay nada que reorganizar, así que no se ofrece por
+    // ofrecer; en todo lo demás **siempre hay al menos una salida**.
+    acciones:
+      tramo === "ENTRA"
+        ? []
+        : tramo === "SIN_DATOS"
+          ? [t("HOY.REPARTO.ACCION.HORAS")]
+          : [
+              t("HOY.REPARTO.ACCION.PRIORIZAR"),
+              t("HOY.REPARTO.ACCION.HORAS"),
+              t("HOY.REPARTO.ACCION.AYUDA"),
+            ],
+    disponible,
     // ⚠️ **Lo requerido es la demanda SEMANAL, no el pendiente total.** Comparar
     // «6 h por semana» contra «48 h que faltan en total» sería comparar dos
     // cosas distintas y exagerar el hueco. `demandaSemanal` vive en el dominio y
     // se importa: reimplementarla acá duplicaría el horizonte de las materias
     // sin fecha en dos lugares.
-    requerido:
-      totalSemanal === null ? null : enHoras(totalSemanal),
+    requerido,
     falta: faltaTiempo(r),
     materias: r.materias.map((m) => ({
       cursadaId: m.cursadaId,

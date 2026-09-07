@@ -71,9 +71,21 @@ describe("Las dos cifras, y ninguna conclusión", () => {
     expect(r.disponible).toBe("1 h");
     expect(r.requerido).toBe("20 h");
     expect(r.falta).toBe(true);
-    // El objeto no trae ninguna clave que afirme algo sobre el resultado.
+    // El objeto no trae ninguna clave que afirme algo sobre el resultado del
+    // examen. `tramo` decide jerarquía visual, no predice nada.
     expect(Object.keys(r).sort()).toEqual(
-      ["disponible", "falta", "materias", "regla", "requerido"].sort(),
+      [
+        "aclaracion",
+        "acciones",
+        "cifras",
+        "disponible",
+        "falta",
+        "materias",
+        "regla",
+        "requerido",
+        "titulo",
+        "tramo",
+      ].sort(),
     );
   });
 
@@ -186,5 +198,116 @@ describe("El multiplicador personal entra al reparto (ADR-074)", () => {
     })!;
     expect(r.materias[0].motivo).toBe("SIN_ESTIMACION");
     expect(r.requerido).toBeNull();
+  });
+});
+
+describe("Los tres tramos del déficit (ADR-075 §A3)", () => {
+  /**
+   * Los umbrales son de la psicopedagoga, y ella misma los rotuló: *"umbrales
+   * operativos provisionales para el MVP, no puntos de corte clínicos"*.
+   */
+  const conDemanda = (minutosPorSemana: number) =>
+    proyectarReparto({
+      minutosPorSemana,
+      observaciones: [],
+      // 1200 min pendientes en una semana ⇒ demanda 1200/semana.
+      materias: [materia()],
+    })!;
+
+  it("`≤1` entra, y no promete resultados", () => {
+    const r = conDemanda(1200);
+    expect(r.tramo).toBe("ENTRA");
+    expect(r.titulo).toBe("Tu plan entra en el tiempo que declaraste.");
+    // Nada que reorganizar: no se ofrecen acciones por ofrecer.
+    expect(r.acciones).toEqual([]);
+    // Y ninguna promesa sobre el examen.
+    expect(r.titulo).not.toMatch(/vas a|aprob|listo/i);
+  });
+
+  it("`1–2` muestra las dos cifras en primer plano y ofrece reorganizar", () => {
+    const r = conDemanda(800); // 1200/800 = 1,5
+    expect(r.tramo).toBe("AJUSTABLE");
+    expect(r.acciones).toHaveLength(3);
+  });
+
+  it("`>2` pone el mensaje primero y el número como detalle", () => {
+    const r = conDemanda(300); // 1200/300 = 4
+    expect(r.tramo).toBe("CRITICA");
+    expect(r.titulo).toBe("Tu plan no entra completo en el tiempo disponible.");
+    // El número sigue estando —no se oculta—, pero baja de jerarquía en la
+    // pantalla. Acá lo que se fija es que la cifra exista igual.
+    expect(r.cifras).toContain("Esta semana");
+  });
+
+  it("cero horas declaradas con trabajo pendiente es crítica", () => {
+    // La división no está definida y el caso sí: es regla explícita de §A3.
+    const r = conDemanda(0);
+    expect(r.tramo).toBe("CRITICA");
+  });
+
+  it("sin disponibilidad NO se muestra una comparación cerrada", () => {
+    // ⚠️ Textual: *"Mostrar «faltan datos para estimar» y pedir el dato
+    // ausente"*. Media comparación es peor que ninguna.
+    const r = proyectarReparto({
+      minutosPorSemana: null,
+      observaciones: [],
+      materias: [materia()],
+    })!;
+    expect(r.tramo).toBe("SIN_DATOS");
+    expect(r.cifras).toBeNull();
+    // Pero sí una salida: pedirle el dato que falta.
+    expect(r.acciones).toEqual(["Revisar mis horas"]);
+  });
+
+  it("sin nada estimable, tampoco", () => {
+    const r = proyectarReparto({
+      minutosPorSemana: 600,
+      observaciones: [],
+      materias: [materia({ clases: [] })],
+    })!;
+    expect(r.tramo).toBe("SIN_DATOS");
+    expect(r.cifras).toBeNull();
+  });
+});
+
+describe("Lo que el copy tiene prohibido decir (ADR-075 §A1–A2)", () => {
+  const todos = [1200, 800, 300, 0].map((d) =>
+    proyectarReparto({ minutosPorSemana: d, observaciones: [], materias: [materia()] })!,
+  );
+
+  it("ninguna frase dice «no vas a llegar», «deberías poder» ni «estás atrasado»", () => {
+    for (const r of todos) {
+      const texto = `${r.titulo} ${r.cifras ?? ""} ${r.aclaracion} ${r.acciones.join(" ")}`;
+      expect(texto).not.toMatch(/no vas a llegar|deberías poder|estás atrasado/i);
+    }
+  });
+
+  it("las materias no «piden»: esa personificación se sacó", () => {
+    // Textual: *"las materias no «piden» y esa personificación puede sonar a
+    // exigencia"*. Se dice «trabajo pendiente estimado».
+    for (const r of todos) {
+      expect(r.cifras ?? "").not.toMatch(/piden tus materias/i);
+    }
+    expect(todos[2].cifras).toContain("trabajo pendiente estimado");
+  });
+
+  it("ninguna acción propone abandonar una materia", () => {
+    for (const r of todos) {
+      for (const a of r.acciones) expect(a).not.toMatch(/dej(á|a)|abandon|sum(á|a) \d/i);
+    }
+  });
+
+  it("siempre que falta tiempo hay al menos una salida", () => {
+    // Un déficit sin acción *"puede sentirse como un veredicto y favorecer
+    // evitación"*.
+    for (const r of todos) {
+      if (r.tramo !== "ENTRA") expect(r.acciones.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("la aclaración no predictiva está siempre", () => {
+    for (const r of todos) {
+      expect(r.aclaracion).toBe("Es una estimación para organizarte; no predice tu resultado.");
+    }
   });
 });

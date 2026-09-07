@@ -72,7 +72,16 @@ describe("Lo que el reparto tiene prohibido decir", () => {
     // trae ninguna clave que afirme algo sobre el resultado del examen.
     expect(faltaTiempo(r)).toBe(true);
     expect(Object.keys(r).sort()).toEqual(
-      ["huecoSemanal", "materias", "minutosPorSemana", "minutosRequeridos", "regla"].sort(),
+      // `demandaSemanalTotal` entró por ADR-075: es la cifra que se compara con
+      // `minutosPorSemana`, y está en **la misma unidad a propósito**.
+      [
+        "demandaSemanalTotal",
+        "huecoSemanal",
+        "materias",
+        "minutosPorSemana",
+        "minutosRequeridos",
+        "regla",
+      ].sort(),
     );
   });
 

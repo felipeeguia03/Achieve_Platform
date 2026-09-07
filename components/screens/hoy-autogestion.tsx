@@ -243,24 +243,64 @@ function Recuperacion({ r }: { r: RecuperacionProjection | null }) {
  * materias con horas al lado se lee como un plan si nadie aclara que no lo es.
  */
 function Reparto({ r }: { r: RepartoProjection }) {
+  // ⚠️ En `CRITICA` el mensaje va primero y **el número pasa a detalle
+  // secundario**: más allá de `2×`, según la psicopedagoga, *"el dato bruto
+  // pierde capacidad de orientar por sí solo"*.
+  const numeroEnSegundoPlano = r.tramo === "CRITICA";
+
   return (
     <div data-reparto>
       <Eyebrow>{t("HOY.REPARTO")}</Eyebrow>
 
-      {/*
-        Las dos cifras, juntas y sin veredicto. Cuando falta alguna, la línea
-        entera cambia por el motivo: media frase con un número solo se completa
-        sola en la cabeza de quien la lee, y se completa mal.
-      */}
-      <p style={{ fontSize: "var(--text-body)" }}>
-        {r.disponible === null
-          ? t("HOY.REPARTO.SIN_DISPONIBILIDAD")
-          : r.requerido === null
-            ? `${r.disponible} ${t("HOY.REPARTO.SIN_ESTIMACION")}`
-            : `${r.disponible} ${t("HOY.REPARTO.POR_SEMANA")} · ${r.requerido} ${t("HOY.REPARTO.REQUERIDO")}`}
+      <p style={{ fontSize: "var(--text-body)", fontWeight: numeroEnSegundoPlano ? 600 : 400 }}>
+        {r.titulo}
       </p>
 
-      <div style={{ marginTop: 8 }}>
+      {/*
+        Las dos cifras **con su período en las dos**. En `CRITICA` bajan a
+        tamaño de detalle; en el resto son la línea principal.
+      */}
+      {r.cifras && (
+        <p
+          style={{
+            fontSize: numeroEnSegundoPlano ? "var(--text-meta)" : "var(--text-body)",
+            color: numeroEnSegundoPlano ? "var(--muted-foreground)" : undefined,
+          }}
+        >
+          {r.cifras}
+        </p>
+      )}
+
+      <ReglaDeNegocio>{r.aclaracion}</ReglaDeNegocio>
+
+      {/*
+        ⚠️ **Siempre al menos una salida cuando falta tiempo.** Un déficit sin
+        acción *"puede sentirse como un veredicto y favorecer evitación"*. Las
+        tres conservan la agencia: ninguna dice «dejá esta materia».
+
+        Van sin `onClick` hasta que cada destino exista: una CTA que no lleva a
+        ningún lado sería peor que la ausencia, y el registro canónico decide a
+        dónde va cada una.
+      */}
+      {r.acciones.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+          {r.acciones.map((a) => (
+            <span
+              key={a}
+              style={{
+                fontSize: "var(--text-meta)",
+                padding: "3px 8px",
+                border: "1px solid var(--border)",
+                borderRadius: 6,
+              }}
+            >
+              {a}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style={{ marginTop: 10 }}>
         {r.materias.map((m) => (
           <div
             key={m.cursadaId}
