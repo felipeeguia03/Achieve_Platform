@@ -146,3 +146,23 @@ export function porcentajeDeHoras(c: Cobertura): number | null {
   if (p < 100 && p > 99) return 99;
   return Math.round(p);
 }
+
+/**
+ * Los minutos que **faltan** en una materia: los de los temas sin trabajar.
+ *
+ * Es lo que consume el reparto entre materias
+ * ([ADR-073](../../docs/decisions.md#adr-073)).
+ *
+ * ⚠️ **`null` cuando no se puede estimar, y eso no es cero.** Una materia sin
+ * libro de temas no *"no necesita tiempo"*: no sabemos cuánto necesita, y el
+ * reparto tiene que poder decir esa diferencia.
+ *
+ * ⚠️ **Un tema sin minutos conocidos no suma**, esté trabajado o no. Es el mismo
+ * corte que el denominador de la cobertura: contarlo con un valor inventado
+ * haría que cargar el libro de temas cambiara el pendiente sin que pasara nada.
+ */
+export function minutosPendientes(temas: readonly TemaConCobertura[]): number | null {
+  const conMinutos = temas.filter((t) => t.minutos !== null && t.minutos > 0);
+  if (conMinutos.length === 0) return null;
+  return conMinutos.filter((t) => !t.trabajado).reduce((a, t) => a + t.minutos!, 0);
+}

@@ -150,6 +150,21 @@ export const copy = {
    * a materias se conserva: es una alternativa, no la forma de hacer aparecer
    * la acción.
    */
+  "HOY.REPARTO": "Tus horas esta semana",
+  "HOY.REPARTO.POR_SEMANA": "por semana",
+  "HOY.REPARTO.REQUERIDO": "es lo que piden tus materias",
+  "HOY.REPARTO.SIN_DISPONIBILIDAD":
+    "Todavía no sabemos cuánto tiempo tenés por semana, así que no podemos repartirlo.",
+  "HOY.REPARTO.SIN_ESTIMACION":
+    "por semana. Todavía no podemos estimar cuánto piden tus materias.",
+  // ⚠️ Ninguno de estos dice «no llegás» ni «apurate». Son hechos: dos cifras y
+  // el motivo por el que alguna falta.
+  "HOY.REPARTO.MOTIVO.SIN_ESTIMACION": "sin estimar",
+  "HOY.REPARTO.MOTIVO.SIN_DISPONIBILIDAD": "sin repartir",
+  "HOY.REPARTO.MOTIVO.SIN_FECHA": "sin fecha",
+  "HOY.REPARTO.MOTIVO.POR_URGENCIA": "—",
+  "HOY.REPARTO.REGLA":
+    "Es una estimación, no una agenda. Nada se agenda desde acá.",
   "HOY.VACIO":
     "Hoy no hay una acción recomendada. Acá aparece la que conviene hacer ahora: es lo que te evita tener que decidir por dónde empezar. Mientras tanto, podés revisar tus materias.",
 

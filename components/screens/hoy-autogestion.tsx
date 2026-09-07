@@ -31,6 +31,7 @@ import type {
   HoyProps,
   MateriaResumen,
   RecuperacionProjection,
+  RepartoProjection,
 } from "@/lib/domain/view-models";
 
 /**
@@ -223,11 +224,72 @@ function Recuperacion({ r }: { r: RecuperacionProjection | null }) {
   );
 }
 
+/**
+ * **El reparto de horas entre materias** — [ADR-073](../../docs/decisions.md#adr-073).
+ *
+ * ## Las dos cosas que este bloque tiene prohibido hacer
+ *
+ * 1. **Sacar una conclusión.** Cuando falta tiempo se muestran **las dos cifras
+ *    y nada más**: ni *"no llegás"* ni *"apurate"*. Las dos son predicciones y
+ *    [ADR-058](../../docs/decisions.md#adr-058) las cerró. `falta` es un
+ *    booleano sobre dos números, y acá sólo elige la preposición.
+ * 2. **Sugerir qué recortar.** Todas las materias se listan y ninguna se marca
+ *    como sacrificable. Cuando el presupuesto no alcanza, el dominio las achica
+ *    a todas en la misma proporción.
+ *
+ * ⚠️ **Y no es una agenda.** Declarar cuántas horas tenés no agenda nada:
+ * [ADR-064](../../docs/decisions.md#adr-064) deja el *cuándo* en el
+ * `Commitment`. La regla de negocio lo dice en pantalla, porque una lista de
+ * materias con horas al lado se lee como un plan si nadie aclara que no lo es.
+ */
+function Reparto({ r }: { r: RepartoProjection }) {
+  return (
+    <div data-reparto>
+      <Eyebrow>{t("HOY.REPARTO")}</Eyebrow>
+
+      {/*
+        Las dos cifras, juntas y sin veredicto. Cuando falta alguna, la línea
+        entera cambia por el motivo: media frase con un número solo se completa
+        sola en la cabeza de quien la lee, y se completa mal.
+      */}
+      <p style={{ fontSize: "var(--text-body)" }}>
+        {r.disponible === null
+          ? t("HOY.REPARTO.SIN_DISPONIBILIDAD")
+          : r.requerido === null
+            ? `${r.disponible} ${t("HOY.REPARTO.SIN_ESTIMACION")}`
+            : `${r.disponible} ${t("HOY.REPARTO.POR_SEMANA")} · ${r.requerido} ${t("HOY.REPARTO.REQUERIDO")}`}
+      </p>
+
+      <div style={{ marginTop: 8 }}>
+        {r.materias.map((m) => (
+          <div
+            key={m.cursadaId}
+            style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0" }}
+          >
+            <span style={{ fontSize: "var(--text-body)", flex: 1 }}>{m.nombre}</span>
+            <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+              {/*
+                Sin asignación **no se escribe un cero**: cero diría que esta
+                materia no necesita tiempo esta semana, y lo que pasa es que no
+                sabemos cuánto.
+              */}
+              {m.asignado ?? t(`HOY.REPARTO.MOTIVO.${m.motivo}`)}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <ReglaDeNegocio>{t("HOY.REPARTO.REGLA")}</ReglaDeNegocio>
+    </div>
+  );
+}
+
 export function HoyAutogestion({
   fecha,
   estadoGeneral,
   hero,
   materias,
+  reparto,
   recuperacion,
   verProgreso,
   onAvanzar,
@@ -263,6 +325,8 @@ export function HoyAutogestion({
       <HeroContent hero={hero} onAvanzar={onAvanzar} />
 
       <MateriasQueue materias={materias} onVerMateria={onVerMateria} />
+
+      {reparto && <Reparto r={reparto} />}
 
       {/*
         `CTA-009` ya vive arriba a la derecha, como acción del objeto (§11.9.3).

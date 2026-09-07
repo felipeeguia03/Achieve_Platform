@@ -220,7 +220,9 @@ describe("B2.5 · la forma es la que la pantalla espera", () => {
    */
   it("devuelve exactamente las claves de `HoyProps`", () => {
     expect(Object.keys(proyectarDia(conAccion)).sort()).toEqual(
-      ["estadoGeneral", "fecha", "hero", "materias", "recuperacion", "verProgreso"].sort(),
+      // `reparto` entró por ADR-073. Llega por separado y por defecto es `null`:
+      // pesa más que el resto de `HOY` junto, así que quien lo quiere lo pide.
+      ["estadoGeneral", "fecha", "hero", "materias", "recuperacion", "reparto", "verProgreso"].sort(),
     );
   });
 

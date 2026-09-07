@@ -3856,7 +3856,7 @@ es decisión del owner.
 
 <a id="fase-b616--el-reparto-de-horas-entre-materias"></a>
 
-## Fase B6.16 — El reparto de horas entre materias · 🟡 EN CURSO
+## Fase B6.16 — El reparto de horas entre materias · ✅ COMPLETA
 
 **Qué es.** Que el estudiante empiece de cero y **cada materia que carga reorganice las horas de las
 demás**, a partir de cuánto requiere cada una. Pedido literal del owner el 7 de septiembre.
@@ -3924,17 +3924,48 @@ de un alta ajena.
 
 ---
 
-#### Corte 2 — El reparto, visible en `UX01`
-
-⚠️ **`lib/domain/reparto.ts` ya existe y está probado, y todavía no lo consume nadie.** Se dice acá
-en vez de dejarlo pasar: es exactamente la situación que [ADR-067](decisions.md#adr-067) documentó
-sobre `assessment` y `ingerirMateria`.
+#### ✅ Corte 2 — El reparto, visible en `UX01` · COMPLETO · 7 de septiembre de 2026
 
 | | |
 |---|---|
-| **Contrato** | `estado_del_dia()` tiene que devolver, por materia, los insumos de duración y los días hasta la evaluación — lo mismo que `estado_de_materia()` ya devuelve para una |
-| **Pantalla** | `UX01`, junto a las tarjetas de materia que ya están |
-| **Copy** | ⚠️ **El del déficit tiene que pasar por la psicopedagoga antes del piloto.** Mostrar un hueco puede aplastar aunque sea cierto, y la regla de la casa es *"reconocer patrones, no etiquetar personas"*. El hecho está decidido; **cómo se dice, no** |
+| **Migración** | `20260923000000_insumos_de_reparto.sql`. `insumos_de_reparto()` entrega **hechos** por materia: días hasta la evaluación, alcance declarado, carga horaria, unidades y clases crudas |
+| **Dominio** | `minutosPendientes()` en `cobertura.ts`, y `proyeccion-reparto.ts` encadena las tres derivaciones |
+| **Pantalla** | El bloque de reparto en `hoy-autogestion.tsx`, debajo de la cola de materias |
+| **Pruebas** | 6 comprobaciones nuevas contra Postgres y 11 de proyección |
+
+**Dos decisiones de implementación, y la segunda fue un defecto propio:**
+
+1. **Es una consulta aparte de `estado_del_dia()`, y `proyectarDia()` la recibe como argumento
+   opcional.** Repartir necesita, de cada materia, lo mismo que `estado_de_materia()` devuelve de una
+   sola; con dieciséis materias eso pesa más que el resto de `HOY` junto, y `estado_del_dia()` es el
+   camino caliente. Quien lo quiere lo pide; quien no, no lo paga.
+
+2. ⚠️ **El reparto exigía la materia entera para un parcial que cubre dos unidades.** Apareció
+   mirando la demo: decía **41 h por semana** donde correspondían 35. La causa era usar todos los
+   temas pendientes en vez de los del **alcance declarado**. Corregido con la misma salida que
+   `contexto_del_ade()`: si `assessment_topic` está declarado se usa; si está vacío se cuenta todo,
+   y **nunca se infiere del texto de `scope`**.
+
+Lo que se ve hoy con `npm run db:demo`, en `/hoy`:
+
+```
+TUS HORAS ESTA SEMANA
+5 h por semana · 35 h es lo que piden tus materias
+
+Cálculo Avanzado                                      5 h
+
+Es una estimación, no una agenda. Nada se agenda desde acá.
+```
+
+⚠️ **Ninguna de las dos cifras concluye nada.** El déficit está a la vista y no hay un *"no llegás"*
+en ninguna parte: `falta` es un booleano sobre dos números y la pantalla sólo lo usa para elegir qué
+línea escribir.
+
+⚠️ **El copy del déficit sigue sin validar.** Mostrar un hueco puede aplastar aunque sea cierto, y la
+regla de la casa es *"reconocer patrones, no etiquetar personas"*. El hecho está decidido; **cómo se
+dice, no** — eso es de la psicopedagoga, antes del piloto.
+
+`lint` · `typecheck` · `build` · **1245 tests** · **`db:verify` 380 ✓, 0 ✗, exit 0**.
 
 **Lo que el dominio ya fija, y los tests lo protegen:**
 

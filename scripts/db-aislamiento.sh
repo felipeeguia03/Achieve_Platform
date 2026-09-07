@@ -1173,6 +1173,53 @@ corre "select declarar_disponibilidad('$A','$EST1','[]'::jsonb);"
 corre "delete from availability where student_id='$EST1';"
 corre "update student set availability_declared_at=null where id='$EST1';"
 
+echo "→ ADR-073 corte 2 · insumos_de_reparto() entrega hechos, no reparte"
+
+EST2=a5000000-0000-0000-0000-000000000001
+corre "insert into topic (id,offering_id,name,sequence) values
+  ('c5000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','R1',1),
+  ('c5000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001','R2',2);"
+corre "insert into class_session (id,offering_id,session_date,source_type,duration_min) values
+  ('c6000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001',current_date - 7,'institution',600);"
+corre "insert into class_session_topic (class_session_id,topic_id) values
+  ('c6000000-0000-0000-0000-000000000001','c5000000-0000-0000-0000-000000000001');"
+corre "insert into assessment (id,offering_id,assessment_type,title,assessment_date,source_type) values
+  ('c7000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','parcial','P reparto',current_date + 14,'institution');"
+corre "insert into assessment_topic (assessment_id,topic_id) values
+  ('c7000000-0000-0000-0000-000000000001','c5000000-0000-0000-0000-000000000001');"
+
+# Sin contestar la pregunta, `minutosPorSemana` viaja NULL — no cero.
+[ -z "$(q "select insumos_de_reparto('$A','$EST2')->>'minutosPorSemana';" | tr -d '[:space:]')" ] \
+  && ok "sin contestar, los minutos por semana viajan NULL y no cero" || mal "salió un cero donde no había respuesta"
+
+corre "select declarar_disponibilidad('$A','$EST2','[{\"dia\":1,\"minutos\":300}]'::jsonb);"
+[ "$(q "select insumos_de_reparto('$A','$EST2')->>'minutosPorSemana';" | tr -d '[:space:]')" = "300" ] \
+  && ok "declarados, suma 300 minutos por semana" || mal "la suma de disponibilidad salió mal"
+
+# ⚠️ Sólo lo declarado: `observed` es del Personal Engine y no entra al total.
+corre "insert into availability (student_id,day_of_week,capacity_min,source) values ('$EST2',5,999,'observed');"
+[ "$(q "select insumos_de_reparto('$A','$EST2')->>'minutosPorSemana';" | tr -d '[:space:]')" = "300" ] \
+  && ok "lo observado no infla el total declarado: son dos orígenes" || mal "se mezcló lo observado con lo declarado"
+corre "delete from availability where student_id='$EST2' and source='observed';"
+
+M=$(q "select jsonb_array_length(insumos_de_reparto('$A','$EST2')->'materias')::text;" | tr -d '[:space:]')
+[ "$M" = "1" ] && ok "entrega una materia con sus insumos" || mal "materias devueltas: $M"
+
+X=$(q "select x->>'diasHastaEvaluacion' || '|' || jsonb_array_length(x->'alcance')::text || '|' || jsonb_array_length(x->'clases')::text
+  from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')
+[ "$X" = "14|1|1" ] \
+  && ok "viajan los días, el alcance declarado y las clases crudas" || mal "los insumos salieron mal: $X"
+
+# ⚠️ La comprobación que sostiene ADR-068: la función NO reparte.
+[ -z "$(q "select jsonb_path_query_first(insumos_de_reparto('$A','$EST2'), '\$.**.minutosPendientes')::text;" | tr -d '[:space:]')" ] \
+  && ok "no devuelve minutos pendientes: el cálculo vive en lib/domain" || mal "la función repartió, y no debe"
+
+corre "delete from assessment_topic where assessment_id='c7000000-0000-0000-0000-000000000001';"
+corre "delete from assessment where id='c7000000-0000-0000-0000-000000000001';"
+corre "delete from class_session where offering_id='a4000000-0000-0000-0000-000000000001';"
+corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
+corre "delete from availability where student_id='$EST2'; update student set availability_declared_at=null where id='$EST2';"
+
 limpiar_mundo
 ok "limpiado"
 

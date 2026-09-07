@@ -51,6 +51,8 @@ const BASE: HoyProps = {
   },
   materias: NUEVE,
   recuperacion: null,
+  // Fixture anterior a ADR-073: declara un mundo sin reparto.
+  reparto: null,
   verProgreso: null,
 };
 

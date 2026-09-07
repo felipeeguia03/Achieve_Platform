@@ -1,6 +1,11 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
 import { t } from "@/lib/content/es-AR";
-import type { HoyProps, MateriaResumen, RecuperacionProjection } from "@/lib/domain/view-models";
+import type {
+  HoyProps,
+  MateriaResumen,
+  RecuperacionProjection,
+  RepartoProjection,
+} from "@/lib/domain/view-models";
 import { fechaCorta } from "./tiempo";
 
 /**
@@ -192,7 +197,18 @@ function proyectarRecuperacion(e: EstadoDelDia): RecuperacionProjection | null {
   };
 }
 
-export function proyectarDia(e: EstadoDelDia): HoyProps {
+export function proyectarDia(
+  e: EstadoDelDia,
+  /**
+   * El reparto entre materias — [ADR-073](../../../docs/decisions.md#adr-073).
+   *
+   * ⚠️ **Llega calculado desde afuera y por separado, y es opcional.** Necesita
+   * de cada materia las sesiones y la carga declarada: con dieciséis materias
+   * eso es más payload que el resto de `HOY` junto, y esta proyección es el
+   * camino caliente. Quien lo quiera lo pide; quien no, no lo paga.
+   */
+  reparto: RepartoProjection | null = null,
+): HoyProps {
   const { nivel, variante } = selectHeroLevel(aEntradaDeHero(e));
 
   /**
@@ -277,5 +293,10 @@ export function proyectarDia(e: EstadoDelDia): HoyProps {
     })),
     // `null` ⇒ la CTA **no se renderiza**, en vez de renderizarse deshabilitada.
     verProgreso: e.bitacoraDisponible ? t("CTA.VER_AVANCE") : null,
+    // ⚠️ **Llega calculado desde afuera y por separado** (ADR-073). El reparto
+    // necesita, de cada materia, las sesiones y la carga declarada: con dieciséis
+    // materias eso es más payload que el resto de `HOY` junto, y esta proyección
+    // es el camino caliente. Quien lo quiera lo pide; quien no, no lo paga.
+    reparto,
   };
 }

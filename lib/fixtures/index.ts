@@ -90,6 +90,8 @@ export function proyectarHoy(escenario: Escenario): HoyProps | null {
     materias: hoy.materias,
     // La CTA de lectura aparece sólo si el contexto declara la Bitácora
     // disponible: es la condición de aparición de CTA-009.
+    // Fixture anterior a ADR-073: declara un mundo sin reparto.
+    reparto: null,
     verProgreso: escenario.contextos.UX01?.progresoDisponible === true ? "Ver progreso" : null,
   };
 }

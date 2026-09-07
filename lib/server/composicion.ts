@@ -80,6 +80,8 @@ import {
 } from "./servicios/ingesta";
 import { recomendarPara as recomendarPuro, type ResultadoDelMotor } from "./servicios/motor";
 import { proyectarDia } from "./servicios/proyeccion-hoy";
+import { proyectarReparto } from "./servicios/proyeccion-reparto";
+import { repartoReal } from "./repositorios/reparto";
 import { proyectarMateria } from "./servicios/proyeccion-materia";
 import { proyectarAccion } from "./servicios/proyeccion-accion";
 import { proyectarCompromiso } from "./servicios/proyeccion-compromiso";
@@ -1024,7 +1026,15 @@ export async function diaDe(
   ahora: string = new Date().toISOString(),
 ): Promise<HoyProps | null> {
   const estado = await hoyReal.estadoDelDia(institutionId, studentId, ahora);
-  return estado ? proyectarDia(estado) : null;
+  if (!estado) return null;
+
+  // ⚠️ **Dos lecturas, y a propósito** ([ADR-073](../../docs/decisions.md#adr-073)).
+  // El reparto necesita de cada materia las sesiones y la carga declarada; con
+  // dieciséis materias eso pesa más que el resto de `HOY` junto. Va en su propia
+  // consulta para que la forma del payload de `HOY` no cambie, y para que el
+  // día que haya que cachearlo se pueda cachear solo.
+  const insumos = await repartoReal.insumos(institutionId, studentId, ahora);
+  return proyectarDia(estado, proyectarReparto(insumos));
 }
 
 /**

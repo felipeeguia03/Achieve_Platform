@@ -212,6 +212,30 @@ export interface RecuperacionProjection {
   queSigue: string | null;
 }
 
+/**
+ * El reparto de horas entre materias — [ADR-073](../../docs/decisions.md#adr-073).
+ *
+ * ⚠️ **Todo viaja ya formateado y `falta` es un booleano sobre dos números, no
+ * un juicio.** El componente tiene prohibido convertirlo en «no vas a llegar»:
+ * lo que se muestra son las dos cifras.
+ */
+export interface RepartoProjection {
+  /** Lo declarado, en horas. `null` ⇒ no contestó la pregunta. */
+  disponible: string | null;
+  /** Lo que el conjunto pide por semana. `null` ⇒ nada estimable. */
+  requerido: string | null;
+  /** `true` = falta tiempo. `null` = no se puede saber. **No es un veredicto.** */
+  falta: boolean | null;
+  materias: ReadonlyArray<{
+    cursadaId: string;
+    nombre: string;
+    /** `null` ⇒ no se reparte. **No es cero**: cero diría que no necesita tiempo. */
+    asignado: string | null;
+    motivo: "POR_URGENCIA" | "SIN_FECHA" | "SIN_ESTIMACION" | "SIN_DISPONIBILIDAD";
+  }>;
+  regla: string;
+}
+
 export interface HoyProps {
   fecha: string;
   estadoGeneral: string;
@@ -222,6 +246,8 @@ export interface HoyProps {
    */
   recuperacion: RecuperacionProjection | null;
   materias: MateriaResumen[];
+  /** `null` ⇒ no hay materias y la sección **no se dibuja vacía**. */
+  reparto: RepartoProjection | null;
   /**
    * `CTA-009` — *ver progreso*. `null` ⇒ la Bitácora no está disponible y la
    * CTA **no se renderiza**, en vez de renderizarse deshabilitada.
