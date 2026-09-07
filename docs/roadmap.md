@@ -3648,7 +3648,7 @@ que es `C01-052` y espera un documento oficial.
 
 <a id="fase-b615--el-gantt-de-preparacion"></a>
 
-## Fase B6.15 — El Gantt de preparación · 🟡 EN CURSO
+## Fase B6.15 — El Gantt de preparación · ✅ COMPLETA
 
 **Qué es.** Que `UX02 · Materia / Cursado` conteste su propia pregunta canónica
 —*"¿Cómo vengo en esta materia y qué hago?"*— con una línea de tiempo en vez de una lista: qué temas
@@ -3680,10 +3680,13 @@ unidades por `sequence`, y `contextoIncompleto` como hecho de la base.
 | [ADR-068](decisions.md#adr-068) | La duración entra al modelo · los minutos por tema **no se persisten** | Equipo |
 | [ADR-069](decisions.md#adr-069) | `session_kind` se propone, no se importa | Equipo |
 
-**Tres siguen abiertos y son del owner:** el factor de estudio `1.5` como configuración versionada,
-los prerequisitos desde el orden dictado, y **qué número muestra la barra** —el que roza
-[ADR-058](decisions.md#adr-058), que cerró la readiness *sin porcentaje y sin predicción de
-aprobación*—.
+| [ADR-070](decisions.md#adr-070) | El factor de estudio es un **piso** versionado, no un valor | Owner |
+| [ADR-071](decisions.md#adr-071) | Los prerequisitos los aprueba el estudiante sobre su cursada | Owner |
+| [ADR-072](decisions.md#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | Owner |
+
+**Los siete están cerrados.** El que más costó fue [ADR-072](decisions.md#adr-072), porque roza
+[ADR-058](decisions.md#adr-058) —que cerró la readiness *sin porcentaje y sin predicción de
+aprobación*— y la salida fue distinguir dos objetos que se parecen: **cobertura no es readiness**.
 
 ---
 
@@ -3784,16 +3787,47 @@ aparte para que se pueda saber cuál de los dos números cambió.
 
 `lint` · `typecheck` · `build` · **1195 tests** · **`db:verify` 359 ✓, 0 ✗, exit 0**.
 
-#### Corte 3 — El Gantt en `UX02`
+#### ✅ Corte 3 — El Gantt en `UX02` · COMPLETO · 7 de septiembre de 2026
 
-**Bloqueado por los tres ADR de producto.** El componente se puede empezar; **la barra no se puede
-terminar** hasta que esté decidido qué número muestra.
+**Ejecuta [ADR-070](decisions.md#adr-070), [ADR-071](decisions.md#adr-071) y
+[ADR-072](decisions.md#adr-072)**, los tres cerrados el mismo día.
 
 | | |
 |---|---|
-| **Contrato** | Tres campos nuevos en `estado_de_materia()`: `minutosBase` por unidad, `cobertura` ponderada, y los días —derivables en el cliente desde `fechaEn` e `instante`, que ya viajan— |
-| **Pantalla** | `components/screens/materia-cursado.tsx`. Sin ruta nueva y sin `UX10` |
-| **Degradación** | ⚠️ **13 de 36 materias del corpus (36%) entran degradadas.** No es la vista principal, pero tampoco un caso borde: se diseña en serio |
+| **Migración** | `20260921000000_insumos_del_gantt.sql`. `estado_de_materia()` devuelve `clases[]`, `cargaDeclarada`, y por unidad su `id`, `peso` y `trabajado` |
+| **Dominio** | `lib/domain/cobertura.ts` — la cobertura ponderada por horas, versionada |
+| **Proyección** | `ganttDeMateria()` junta `duracion.ts` con `cobertura.ts`; `proyectarMateria()` lo entrega como `MateriaProps.gantt` |
+| **Pantalla** | El bloque `<Gantt>` en `materia-cursado.tsx`. **Sin ruta nueva, sin `UX10`, sin CTA nueva** |
+| **Pruebas** | 5 comprobaciones nuevas contra Postgres y 24 de dominio y proyección |
+
+**Las tres decisiones que se materializaron:**
+
+1. **La barra muestra cobertura, y la cobertura no es readiness.** El pie lleva los dos números
+   —*"1 de 2 temas · 86% de las horas"*— porque no coinciden a propósito: la ponderación por horas es
+   el motivo de que existan los dos. Y la nota al pie del owner va **textual**, porque es lo único que
+   separa un porcentaje de una nota.
+2. **`INSUFFICIENT` cuenta como trabajado.** Es contraintuitivo y es correcto: la barra mide *que
+   trabajaste*, no que lo hayas hecho bien. Descontarla sería usarla como nota, que es justo lo que la
+   aclaración niega.
+3. **El orden es el dictado, con el declarado de respaldo.** `SISTEMAS DE INFORMACIÓN` 2024 dio la
+   unidad 1 en la clase 13, a propósito; ordenar por `sequence` le mostraría al estudiante una
+   historia que no pasó. Y **un parcial no adelanta el tema que evaluó**: no dictó nada.
+
+⚠️ **Un tema sin minutos conocidos no entra al denominador.** Si entrara con un valor inventado,
+cargar el libro de temas **bajaría** la cobertura sin que el estudiante hiciera nada mal. Queda afuera
+y el conteo lo sigue incluyendo.
+
+⚠️ **`SIN_DATOS` no se degrada a cero, y hay tests que lo fijan.** Es la regresión más probable de
+todo el Gantt: alguien va a querer que la función devuelva siempre un número para que la barra no se
+rompa, y ahí una materia sin libro de temas se muestra igual que una en la que el estudiante no hizo
+nada.
+
+⚠️ **El Gantt todavía no se ve en el catálogo de escenarios.** Los fixtures del focus group declaran
+un mundo anterior a esta fase y entran con `gantt: null`; cambiarlos altera lo que ve el focus group y
+es decisión del owner. Para verlo hace falta `npm run db:demo` con datos sintéticos, o un fixture
+nuevo.
+
+`lint` · `typecheck` · `build` · **1219 tests** · **`db:verify` 364 ✓, 0 ✗, exit 0**.
 
 ---
 

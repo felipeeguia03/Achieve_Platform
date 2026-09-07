@@ -116,6 +116,9 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-067](#adr-067) | El estudiante da de alta su propia evaluación | ✅ `ACCEPTED` *(7 sep 2026 · reabre la Etapa 0.4 · **`CTA-020`: el registro pasa a 20**)* | — |
 | [ADR-068](#adr-068) | La duración entra al modelo académico | ✅ `ACCEPTED` *(7 sep 2026 · cinco columnas · **los minutos por tema no se persisten**)* | — |
 | [ADR-069](#adr-069) | `session_kind` se propone, no se importa | ✅ `ACCEPTED` *(7 sep 2026 · 25% de falsos positivos medidos)* | — |
+| [ADR-070](#adr-070) | El factor de estudio es un **piso** versionado, no un valor | ✅ `ACCEPTED` *(7 sep 2026 · `1.5`, constante y no tabla)* | — |
+| [ADR-071](#adr-071) | Los prerequisitos los aprueba el estudiante sobre su cursada | ✅ `ACCEPTED` *(7 sep 2026)* | — |
+| [ADR-072](#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | ✅ `ACCEPTED` *(7 sep 2026 · cobertura ≠ readiness)* | — |
 
 ---
 
@@ -5449,3 +5452,172 @@ vacío.
   *"\* = CLASE NO DICTADA"*. Es otro parser y entra después.
 - **Quién confirma la clasificación** sigue diferido por [ADR-057](#adr-057). Mientras tanto la
   confirma el estudiante sobre su propia cursada, como en [ADR-067](#adr-067).
+
+
+---
+
+<a id="adr-070"></a>
+
+## ADR-070 — El factor de estudio es un **piso** versionado, no un valor
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decidido por el Product Owner**
+**Relacionado:** [ADR-068](#adr-068), [ADR-072](#adr-072).
+**Toca:** `lib/domain/`.
+
+### La decisión, textual del owner
+
+> *"Para mí lo mejor es que el sistema proponga **1,5 hs por cada hora de clase mínimo**, luego
+> podemos pensar en algo que vaya calibrando a partir de la capacidad del alumnado en general, el
+> Personal Engine pida más horas para un tema, o los datos indiquen que hace falta más tiempo."*
+
+**La palabra que decide el diseño es «mínimo».** No es una estimación central de la que se puede
+desviar en las dos direcciones: es un **piso**.
+
+```
+minutos_de_estudio(tema) = minutos_de_clase(tema) × 1.5 × multiplicador(estudiante)
+                                                          └── ≥ 1.0, nunca menos
+```
+
+⚠️ **El Personal Engine puede pedir más tiempo; no puede prometer que vas a necesitar menos.** Un
+multiplicador por debajo de `1.0` convertiría el motor en algo que le dice al estudiante que estudie
+menos de lo que la cátedra supone — y eso no es una calibración, es una promesa que el sistema no
+puede sostener.
+
+### Constante versionada, no tabla
+
+El repositorio tiene un patrón claro para configuración versionada —`risk_rule`, `exam_protocol`,
+`error_type`—, y **este factor no entra ahí**. Esas tablas existen porque conviven varias versiones a
+la vez y porque alguien fuera del equipo técnico las edita. El `1.5` no cumple ninguna de las dos:
+hoy es un número, igual para todos.
+
+Va como constante en `lib/domain/`, con su `rule_version` viajando en el resultado —igual que
+`REGLA_DE_DURACION` de [ADR-068](#adr-068)—, para que **cambiar el factor no reescriba las
+estimaciones viejas**. Cuando haga falta que varíe por institución o por materia, se muda a una tabla
+y este ADR se supersede.
+
+### Lo que esto no decide
+
+**Cómo se calibra.** *"Algo que vaya calibrando a partir de la capacidad del alumnado en general"* es
+Personal Engine y necesita datos que todavía no existen. Hoy el multiplicador arranca en `1.0` y se
+queda ahí: **sin historia no se penaliza ni se premia a nadie.**
+
+---
+
+<a id="adr-071"></a>
+
+## ADR-071 — Los prerequisitos los aprueba el estudiante sobre su cursada
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decidido por el Product Owner**
+**Relacionado:** [ADR-029](#adr-029), [ADR-057](#adr-057), [ADR-067](#adr-067), [ADR-069](#adr-069).
+**Toca:** `topic_prerequisite`, `lib/domain/`, `UX02`.
+
+### El problema, y el dato que lo cambió
+
+El owner propuso *"cada unidad necesita la siguiente"*, y ofreció el mecanismo: *"ofrece el engine al
+administrador relaciones y él las aprueba"*.
+
+**El corpus desmiente la primera mitad.** `SISTEMAS DE INFORMACIÓN` 2024 dictó U2, U3, U4, U7, U8,
+U9… **y U1 al final, en la clase 13**. `ORG. Y ADM. DE EMPRESAS` 2025 dictó U1, U2, U4, parcial de
+«U 1,2,4», y recién después U3.
+
+Esos profesores reordenaron **a propósito**. Un prerequisito derivado de la numeración del programa
+habría bloqueado al estudiante en un tema que la cátedra decidió dejar para el cierre.
+
+`topic_prerequisite` ya existe justamente para no cometer ese error:
+
+> *"Prerequisitos explícitos. Derivarlos de `topic.sequence` sería inventar una regla académica."*
+
+### La decisión
+
+**El motor propone desde el orden dictado** —`class_session.session_date`, nunca `topic.sequence`— y
+**el estudiante aprueba sobre su propia cursada**.
+
+⚠️ **La segunda mitad de la propuesta del owner no era construible como estaba escrita.** No existe
+ninguna superficie de administrador: los nueve nodos del registro son del estudiante, y ADR-003
+—convergencia del Operador con el CRM— y [ADR-057](#adr-057) —quién valida y corrobora— siguen
+abiertos. Cablearlo a un administrador sería cablearlo a nadie.
+
+Es el mismo principio que ya rige para las cátedras y para las evaluaciones
+([ADR-067](#adr-067)): *"en un principio el alumno se autoagenda"*. Entra `unverified` y **no se
+auto-eleva** ([ADR-029](#adr-029)).
+
+### El costo, dicho
+
+**No hay efecto red.** Cada estudiante aprueba los suyos, y la aprobación de uno no le sirve a otro de
+la misma comisión — exactamente como las evaluaciones de [ADR-067](#adr-067), y por el mismo motivo:
+fusionar dos declaraciones `unverified` es corroborar, y quién corrobora sigue diferido.
+
+⚠️ **Y hoy nada consume prerequisitos.** El Gantt los muestra; no bloquea con ellos. Bloquear un tema
+porque otro no está «hecho» sería una afirmación de readiness, y eso lo cierra
+[ADR-058](#adr-058).
+
+---
+
+<a id="adr-072"></a>
+
+## ADR-072 — Qué muestra la barra, y qué tiene prohibido mostrar
+
+**Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decidido por el Product Owner**
+**Relacionado:** [ADR-058](#adr-058), [ADR-066](#adr-066), [ADR-068](#adr-068).
+**Toca:** `estado_de_materia()`, `lib/domain/`, `UX02`.
+
+### La tensión
+
+[ADR-058](#adr-058) cerró la readiness como regla determinista **sin porcentaje y sin predicción de
+aprobación**. Una barra con un número al lado es exactamente la forma que tiene un producto de violar
+eso sin darse cuenta.
+
+### La decisión
+
+**La barra muestra cobertura, y la cobertura no es readiness.** Son dos objetos distintos:
+
+| | Qué afirma | Quién lo produce |
+|---|---|---|
+| **Cobertura** | Cuántas de tus unidades tienen evidencia enviada | Hechos del estudiante |
+| **Readiness** | Si estás en condiciones de rendir | `preparation_readiness`, con su regla y su explicación |
+
+El texto es el que escribió el owner en su mockup, y se adopta literal:
+
+> **1 de 9 temas · 26% de las horas**
+>
+> ***\* temas marcados por vos sobre el total cargado. No es una nota ni una predicción.***
+
+### Por qué van los dos números, y no uno
+
+```
+cobertura = Σ minutos_base(temas con evidencia enviada) / Σ minutos_base(temas declarados)
+```
+
+**Ponderada por horas**: un tema de seis horas no vale lo mismo que uno de una. Pero entonces
+`1 de 9` (11%) y `26% de las horas` **no coinciden a propósito**, y la barra se dibuja con el 26%.
+
+⚠️ **Mostrar sólo el conteo dejaría la ponderación invisible**: la barra al 26% junto a un texto que
+dice «1 de 9» se lee como un defecto. **Mostrar sólo la barra sería peor**: una barra sin cifra es el
+*score de máquina* que el producto se prohíbe, porque nadie puede auditar de dónde sale.
+
+### Las cuatro cosas que la barra tiene prohibido hacer
+
+1. **No leer `topic_progress.domain_value`.** El dominio requiere evaluación; la cobertura sólo
+   requiere que el estudiante haya producido algo. Mezclarlos convierte la barra en una nota.
+2. **No ordenar materias por cobertura.** Ordenar por cobertura es un ranking de qué tan mal vas. El
+   orden es por próxima evaluación, con las sin fecha al fondo.
+3. **No completarse sola.** Un tema sin evidencia no aporta, y **un tema sin minutos conocidos no
+   entra al denominador** — si entrara, cargar el libro de temas *bajaría* la cobertura sin que el
+   estudiante hiciera nada mal.
+4. **No existir cuando no hay datos.** Sin minutos no hay barra: hay
+   *"sin clases cargadas — no puedo estimar"*. Una barra vacía por falta de datos y una por falta de
+   trabajo **no se dibujan igual** ([ADR-068](#adr-068), y el `SIN_DATOS` de `duracion.ts`).
+
+### Qué cuenta como cubierto
+
+**Evidencia enviada**, que es la decisión del owner: *"todo es evidencia enviada"*. Concretamente,
+una `Evidence` en cualquier estado desde `SUBMITTED` en adelante —`UNDER_REVIEW`, `SUFFICIENT`,
+`VALIDATED`— sobre una `Action` anclada a ese tema.
+
+⚠️ **`EXPECTED` no cuenta**: es una evidencia que se espera, no una que llegó.
+
+⚠️ **E `INSUFFICIENT` sí cuenta.** Es contraintuitivo y es correcto: la barra mide **que trabajaste**,
+no que lo hayas hecho bien. Que la evidencia no alcance es una afirmación de suficiencia, y
+suficiencia no es cobertura — el mismo corte que separa `preparar ≠ enviar ≠ suficiencia ≠
+validación ≠ dominio`. Bajarle la barra a alguien porque su entrega no alcanzó sería usarla como
+nota, que es justo lo que la nota al pie niega.

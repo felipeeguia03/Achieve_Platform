@@ -66,6 +66,30 @@ export type TipoDeAusencia = "SIN_ASIGNAR" | "CERO_REAL";
  * Se llama `FilaDato` y no `Fila` para no colisionar con el componente `Fila`
  * de `components/screens/design-system.tsx`, que es quien la dibuja.
  */
+/**
+ * La proyección del Gantt para la pantalla.
+ *
+ * ⚠️ **`barra` es `null` cuando no hay estimación, y eso NO es `0`.** Una barra
+ * vacía por falta de datos y una por falta de trabajo no se dibujan igual: la
+ * primera no existe, la segunda está en cero. El componente no puede colapsar
+ * los dos casos porque el tipo no se lo permite.
+ */
+export interface GanttProjection {
+  /** `0..100`, ya redondeado por el dominio. `null` ⇒ sin barra. */
+  barra: number | null;
+  /** Siempre presente, incluso sin barra: dice algo verdadero igual. */
+  pie: string;
+  /** La nota al pie. `null` cuando no hay número que aclarar. */
+  aclaracion: string | null;
+  /** Las unidades **en el orden dictado**. La pantalla no las reordena. */
+  unidades: ReadonlyArray<{
+    nombre: string;
+    /** `null` ⇒ no se sabe cuánto lleva. La fila se dibuja sin barra propia. */
+    minutos: number | null;
+    trabajado: boolean;
+  }>;
+}
+
 export interface FilaDato {
   label: string;
   valor: string;
@@ -246,6 +270,14 @@ export interface MateriaProps {
   hero: HeroProjection;
   catedraYVos: { catedra: ColumnaFuente; vos: ColumnaFuente } | null;
   unidades: FilaDato[];
+  /**
+   * **El Gantt de preparación** — [ADR-072](../../docs/decisions.md#adr-072).
+   *
+   * `null` ⇒ no se dibuja. Es el caso de los fixtures del focus group, que
+   * declaran un mundo anterior a esta etapa, y el de cualquier materia sin
+   * unidades cargadas.
+   */
+  gantt: GanttProjection | null;
   /**
    * Las cinco dimensiones, **separadas**. Confianza no es dominio: una
    * confianza alta con dominio no evaluado se muestra como dos hechos

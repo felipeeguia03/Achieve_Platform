@@ -1078,6 +1078,55 @@ corre "delete from class_session where offering_id='$CURS'; delete from assessme
 corre "delete from course_enrollment where id='a6000000-0000-0000-0000-000000000003'; delete from student where id='a5000000-0000-0000-0000-000000000003';"
 corre "delete from topic where offering_id='$CURS'; delete from course_offering where id='$CURS';"
 
+echo "→ ADR-071/072 · estado_de_materia() devuelve los insumos del Gantt"
+
+# El caso real del corpus: SISTEMAS DE INFORMACIÓN 2024 dictó U2 primero y U1
+# **al final**. Ordenar por `sequence` le mostraría al estudiante una historia
+# que no pasó.
+corre "insert into topic (id,offering_id,name,sequence) values
+  ('c3000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','U1',1),
+  ('c3000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001','U2',2);"
+corre "insert into class_session (id,offering_id,session_date,source_type,duration_min) values
+  ('c4000000-0000-0000-0000-000000000001','a4000000-0000-0000-0000-000000000001','2026-03-10','institution',120),
+  ('c4000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001','2026-06-10','institution',120);"
+# U2 el 10 de marzo, U1 el 10 de junio: al revés del `sequence`.
+corre "insert into class_session_topic (class_session_id,topic_id) values
+  ('c4000000-0000-0000-0000-000000000001','c3000000-0000-0000-0000-000000000002'),
+  ('c4000000-0000-0000-0000-000000000002','c3000000-0000-0000-0000-000000000001');"
+
+ORDEN=$(q "select string_agg(x->>'nombre', ',') from jsonb_array_elements(
+  estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x;" | tr -d '[:space:]')
+[ "$ORDEN" = "U2,U1" ] \
+  && ok "el orden es el DICTADO, no el declarado: U2 antes que U1" || mal "salió en orden de sequence: $ORDEN"
+
+# Y el respaldo: un tema que todavía no se dictó cae al final, por `sequence`.
+corre "insert into topic (id,offering_id,name,sequence) values ('c3000000-0000-0000-0000-000000000003','a4000000-0000-0000-0000-000000000001','U0',0);"
+ORDEN2=$(q "select string_agg(x->>'nombre', ',') from jsonb_array_elements(
+  estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x;" | tr -d '[:space:]')
+[ "$ORDEN2" = "U2,U1,U0" ] \
+  && ok "un tema no dictado va al final aunque su sequence sea la primera" || mal "el no dictado no quedó al final: $ORDEN2"
+
+# ⚠️ El parcial no cuenta para el orden: no dictó tema.
+corre "insert into class_session (id,offering_id,session_date,source_type,session_kind) values
+  ('c4000000-0000-0000-0000-000000000003','a4000000-0000-0000-0000-000000000001','2026-01-05','institution','parcial');"
+corre "insert into class_session_topic (class_session_id,topic_id) values ('c4000000-0000-0000-0000-000000000003','c3000000-0000-0000-0000-000000000003');"
+ORDEN3=$(q "select string_agg(x->>'nombre', ',') from jsonb_array_elements(
+  estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x;" | tr -d '[:space:]')
+[ "$ORDEN3" = "U2,U1,U0" ] \
+  && ok "un parcial de enero no adelanta el tema que evaluó: no dictó nada" || mal "el parcial movió el orden: $ORDEN3"
+
+# Los insumos crudos, que es lo que ADR-068 exige que la función entregue.
+[ "$(q "select jsonb_array_length(estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'clases')::text;" | tr -d '[:space:]')" = "3" ] \
+  && ok "las clases viajan crudas: la función NO reparte los minutos" || mal "no viajaron las clases"
+
+# `trabajado` es un hecho: hay evidencia posterior al envío anclada al tema.
+[ "$(q "select bool_or((x->>'trabajado')::boolean)::text from jsonb_array_elements(
+  estado_de_materia('$A','a5000000-0000-0000-0000-000000000001',now(),'a6000000-0000-0000-0000-000000000001')->'unidades') x;" | tr -d '[:space:]')" = "false" ] \
+  && ok "sin evidencia, ningún tema figura como trabajado" || mal "un tema sin evidencia salió trabajado"
+
+corre "delete from class_session where offering_id='a4000000-0000-0000-0000-000000000001';"
+corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
+
 limpiar_mundo
 ok "limpiado"
 

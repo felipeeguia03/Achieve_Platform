@@ -49,6 +49,8 @@ const materiaBase: MateriaProps = {
   // La base no declara actividad: los escenarios que la necesitan la agregan.
   actividadReciente: null,
   aviso: null,
+  // Fixture anterior a la Fase B6.15: declara un mundo sin Gantt.
+  gantt: null,
   capturaDeClase: "Pasó algo en clase",
 };
 
@@ -131,6 +133,8 @@ export const FX_LOCAL_MAT_CONTEXTO_INCOMPLETO = esc(
       { titulo: "Empezaste", detalle: "19:41", provenance: "Reportado por vos · sin verificar" },
       { titulo: "Te comprometiste", detalle: "17:37", provenance: "Reportado por vos · sin verificar" },
     ],
+    // Fixture anterior a la Fase B6.15: declara un mundo sin Gantt.
+    gantt: null,
     capturaDeClase: null,
     },
   },

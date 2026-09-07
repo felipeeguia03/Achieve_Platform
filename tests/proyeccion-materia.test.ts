@@ -25,6 +25,8 @@ const base: EstadoDeMateria = {
   contextoIncompleto: false,
   ultimoAvanceEn: null,
   unidades: [],
+  clases: [],
+  cargaDeclarada: null,
   dimensiones: null,
   actividadReciente: [],
 };
@@ -48,8 +50,8 @@ const conProgreso: EstadoDeMateria = {
   ...conAccion,
   ultimoAvanceEn: "2026-08-29T12:00:00.000Z",
   unidades: [
-    { codigo: "U1", nombre: "Integrales", ultimoAvanceEn: "2026-08-29T12:00:00.000Z", dominio: "not_evaluated", practica: "value", recorrido: "value" },
-    { codigo: "U2", nombre: "Series", ultimoAvanceEn: null, dominio: "not_evaluated", practica: "no_information", recorrido: "no_information" },
+    { id: "u1", codigo: "U1", nombre: "Integrales", ultimoAvanceEn: "2026-08-29T12:00:00.000Z", dominio: "not_evaluated", practica: "value", recorrido: "value", peso: null, trabajado: true },
+    { id: "u2", codigo: "U2", nombre: "Series", ultimoAvanceEn: null, dominio: "not_evaluated", practica: "no_information", recorrido: "no_information", peso: null, trabajado: false },
   ],
   dimensiones: {
     unidades: 2,
@@ -171,6 +173,9 @@ describe("B2.6 · la forma es la que la pantalla espera", () => {
         "dimensiones",
         "estado",
         "examen",
+        // El Gantt entró en la Fase B6.15 (ADR-072). `null` cuando la materia
+        // no tiene unidades cargadas: no se dibuja uno vacío.
+        "gantt",
         "hero",
         "materia",
         "ultimoAvance",

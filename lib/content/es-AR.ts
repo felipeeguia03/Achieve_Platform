@@ -255,6 +255,7 @@ export const copy = {
   "MATERIA.TITULO": "Cursado",
   "MATERIA.AHORA": "Ahora",
   "MATERIA.CATEDRA_Y_VOS": "Cátedra y vos",
+  "MATERIA.GANTT": "Preparación",
   "MATERIA.UNIDADES": "Unidades",
   "MATERIA.DIMENSIONES": "Cómo venís",
   /** `VI.2` §8.7. Preview de la Bitácora, no un historial aparte. */

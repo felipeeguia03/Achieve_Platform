@@ -107,6 +107,8 @@ describe("B3.3 · la preview es una preview", () => {
     contextoIncompleto: false,
     ultimoAvanceEn: null,
     unidades: [],
+    clases: [],
+    cargaDeclarada: null,
     dimensiones: null,
     actividadReciente: [
       { evento: "EvidenceSubmitted", en: "2026-09-01T19:00:00.000Z", porElEstudiante: true },

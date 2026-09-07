@@ -115,6 +115,8 @@ export const FX_DAY_BASE: Escenario = {
       { titulo: "Empezaste", detalle: "19:41", provenance: "Reportado por vos · sin verificar" },
       { titulo: "Te comprometiste", detalle: "17:37", provenance: "Reportado por vos · sin verificar" },
     ],
+    // Fixture anterior a la Fase B6.15: declara un mundo sin Gantt.
+    gantt: null,
     capturaDeClase: "Pasó algo en clase",
   },
 

@@ -1,8 +1,10 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
+import { minutosPorTema, type SesionDeClase, type TipoDeClase } from "@/lib/domain/duracion";
+import { coberturaDeMateria, porcentajeDeHoras, type Cobertura } from "@/lib/domain/cobertura";
 import { t } from "@/lib/content/es-AR";
 import { aEntradaVisible, type HechoPersistido } from "./hechos";
 import { fechaDeCalendario, haceCuanto } from "./tiempo";
-import type { FilaDato, MateriaProps } from "@/lib/domain/view-models";
+import type { FilaDato, GanttProjection, MateriaProps } from "@/lib/domain/view-models";
 
 /**
  * `UX02` proyectada desde datos persistidos — Etapa B2.6.
@@ -35,12 +37,27 @@ import type { FilaDato, MateriaProps } from "@/lib/domain/view-models";
 type EstadoDimension = "value" | "not_evaluated" | "no_information" | null;
 
 export interface UnidadPersistida {
+  id: string;
   codigo: string | null;
   nombre: string;
   ultimoAvanceEn: string | null;
   dominio: EstadoDimension;
   practica: EstadoDimension;
   recorrido: EstadoDimension;
+  /** El peso declarado. `null` = no declarado, **no `1.0`**. */
+  peso: number | null;
+  /**
+   * Hay al menos una `Evidence` posterior al envío anclada a este tema.
+   * **Es un hecho, no una estimación** ([ADR-072](../../../docs/decisions.md#adr-072)).
+   */
+  trabajado: boolean;
+}
+
+/** Una sesión del libro de temas, cruda. El reparto lo hace `lib/domain/duracion.ts`. */
+export interface ClasePersistida {
+  minutos: number | null;
+  tipo: TipoDeClase | null;
+  temas: string[];
 }
 
 /** Conteos por dimensión. **Conteo de un hecho, nunca un promedio.** */
@@ -77,6 +94,9 @@ export interface EstadoDeMateria {
   contextoIncompleto: boolean;
   ultimoAvanceEn: string | null;
   unidades: UnidadPersistida[];
+  /** Los insumos de la duración. La función de base **no** reparte (ADR-068). */
+  clases: ClasePersistida[];
+  cargaDeclarada: { minutos: number; texto: string } | null;
   dimensiones: DimensionesPersistidas | null;
   /** Los últimos hechos de la cursada. Los arma `hechos_de_cursada()`. */
   actividadReciente: HechoPersistido[];
@@ -237,6 +257,11 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     // lleven. Se omite entera antes que mostrarla sin fuente.
     catedraYVos: null,
     unidades: unidadesDe(e),
+    // ⚠️ **Sin unidades no hay Gantt, y no se dibuja uno vacío.** El mensaje de
+    // esa ausencia ya lo da el hero con `CONTEXTO_INCOMPLETO`; repetirlo abajo
+    // con una barra en blanco diría dos veces lo mismo y una de las dos parecería
+    // un error de carga.
+    gantt: e.unidades.length > 0 ? aGantt(e) : null,
     dimensiones,
     // La misma traducción que la Bitácora, y por eso la misma función: si cada
     // superficie tradujera por su cuenta, la preview y el historial dirían cosas
@@ -251,5 +276,114 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     // La captura de clase escribe en `class_event_record`: misma razón que
     // `catedraYVos`. No se ofrece una acción cuyo contrato no está cerrado.
     capturaDeClase: null,
+  };
+}
+
+/**
+ * **El Gantt de la materia** — [ADR-072](../../../docs/decisions.md#adr-072).
+ *
+ * Junta las dos derivaciones: `duracion.ts` dice cuánto lleva cada tema, y
+ * `cobertura.ts` dice cuánto de eso tiene evidencia enviada.
+ *
+ * ## Por qué esto vive acá y no en SQL
+ *
+ * [ADR-068](../../../docs/decisions.md#adr-068): el reparto de minutos y la
+ * reconciliación son reglas de producto que van a cambiar, y viajan con la
+ * versión que las produjo. La función de base entrega **hechos** —cuánto duró
+ * cada sesión, qué temas cubrió, si hay evidencia— y nada más.
+ *
+ * ## Lo que devuelve cuando no puede
+ *
+ * `barra: null` y `pie` con el motivo. **No devuelve cero**: una barra vacía por
+ * falta de datos y una por falta de trabajo no se dibujan igual.
+ */
+export interface GanttDeMateria {
+  /** Las unidades **en el orden dictado**, con sus minutos si se conocen. */
+  unidades: Array<{
+    id: string;
+    nombre: string;
+    minutos: number | null;
+    trabajado: boolean;
+  }>;
+  /** `0..100`, ya redondeado. `null` ⇒ no se dibuja barra. */
+  barra: number | null;
+  /** El texto de abajo de la barra. Siempre hay uno. */
+  pie: string;
+  /** La nota al pie del owner, literal. `null` cuando no hay barra que aclarar. */
+  aclaracion: string | null;
+  cobertura: Cobertura;
+}
+
+/** La nota al pie, textual del Product Owner. No se reescribe. */
+export const ACLARACION_DE_COBERTURA =
+  "temas marcados por vos sobre el total cargado. No es una nota ni una predicción.";
+
+export function ganttDeMateria(e: EstadoDeMateria): GanttDeMateria {
+  const sesiones: SesionDeClase[] = e.clases.map((c) => ({
+    tipo: c.tipo,
+    minutos: c.minutos,
+    temas: c.temas,
+  }));
+
+  const reparto = minutosPorTema(
+    e.unidades.map((u) => ({ id: u.id, peso: u.peso })),
+    sesiones,
+    e.cargaDeclarada?.minutos ?? null,
+  );
+
+  const minutosDe = (id: string): number | null =>
+    reparto.estado === "OK" ? (reparto.minutos[id] ?? null) : null;
+
+  const unidades = e.unidades.map((u) => ({
+    id: u.id,
+    nombre: u.nombre,
+    minutos: minutosDe(u.id),
+    trabajado: u.trabajado,
+  }));
+
+  const cobertura = coberturaDeMateria(
+    unidades.map((u) => ({ id: u.id, minutos: u.minutos, trabajado: u.trabajado })),
+  );
+
+  const barra = porcentajeDeHoras(cobertura);
+  const trabajados = cobertura.temasTrabajados;
+  const total = e.unidades.length;
+
+  // El pie siempre dice algo verdadero. Cuando hay barra, los dos números —y no
+  // coinciden a propósito: la ponderación por horas es el motivo de que existan
+  // los dos. Cuando no la hay, el conteo solo, que sigue siendo un hecho.
+  const pie =
+    barra !== null
+      ? `${trabajados} de ${total} temas · ${barra}% de las horas`
+      : cobertura.estado === "SIN_DATOS" && cobertura.motivo === "sin_temas_declarados"
+        ? "sin temas cargados — no puedo estimar"
+        : `${trabajados} de ${total} temas · sin clases cargadas, no puedo estimar las horas`;
+
+  return {
+    unidades,
+    barra,
+    pie,
+    // La aclaración acompaña al número. Sin número no hay nada que aclarar, y
+    // ponerla igual sería explicar una barra que no está.
+    aclaracion: barra !== null ? ACLARACION_DE_COBERTURA : null,
+    cobertura,
+  };
+}
+
+/** El Gantt, tal como lo consume la pantalla. */
+function aGantt(e: EstadoDeMateria): GanttProjection {
+  const g = ganttDeMateria(e);
+  return {
+    barra: g.barra,
+    pie: g.pie,
+    aclaracion: g.aclaracion,
+    // El orden llega dado por `estado_de_materia()` —el dictado, con el
+    // declarado de respaldo— y la proyección **no lo toca**: reordenar acá
+    // duplicaría la decisión en dos lugares.
+    unidades: g.unidades.map((u) => ({
+      nombre: u.nombre,
+      minutos: u.minutos,
+      trabajado: u.trabajado,
+    })),
   };
 }

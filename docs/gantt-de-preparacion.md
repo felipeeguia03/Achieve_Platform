@@ -458,61 +458,45 @@ legajo, domicilio y teléfono.
 
 ---
 
-## 11. Los ADR que hay que abrir
+## 11. Los siete ADR — todos cerrados el 7 de septiembre
 
-La numeración es tentativa —el último aceptado es [ADR-066](decisions.md#adr-066)— y el orden es el
-de dependencia. **Los cuatro primeros ya están cerrados**; los tres que quedan son del owner.
+| # | Qué cerró | Quién |
+|---|---|---|
+| [ADR-066](decisions.md#adr-066) | El Gantt es `UX02`, no una superficie nueva | Owner |
+| [ADR-067](decisions.md#adr-067) | El estudiante da de alta su evaluación · `CTA-020` | Owner |
+| [ADR-068](decisions.md#adr-068) | La duración entra al modelo · los minutos por tema **no se persisten** | Equipo |
+| [ADR-069](decisions.md#adr-069) | `session_kind` se propone, no se importa · 25% de falsos positivos | Equipo |
+| [ADR-070](decisions.md#adr-070) | El factor de estudio es un **piso** versionado | Owner |
+| [ADR-071](decisions.md#adr-071) | Los prerequisitos los aprueba el estudiante sobre su cursada | Owner |
+| [ADR-072](decisions.md#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | Owner |
 
-| # | Título propuesto | Qué desbloquea | Quién decide |
-|---|---|---|---|
-| ADR-066 | ✅ **El Gantt es `UX02`, no una superficie nueva** | La pantalla, sin tocar el registro | **Owner — decidido 7 sep** |
-| ADR-067 | ✅ **El estudiante da de alta su evaluación** — reabre la Etapa 0.4, `CTA-020` | La fecha, y con ella todo lo demás (§7) | **Owner — decidido 7 sep** |
-| ADR-068 | ✅ **La duración entra al modelo** — cinco columnas; los minutos por tema **no se persisten** | Todo lo cuantitativo | Equipo — decidido 7 sep |
-| ADR-069 | ✅ **`session_kind` se propone, no se importa** — 25% de falsos positivos | Que el importador no borre un tema inventando un examen | Equipo — decidido 7 sep |
-| ADR-070 | El factor de estudio (`1.5`) es configuración versionada con `rule_version` | Que cambiar el factor no reescriba el pasado | Owner |
-| ADR-071 | Los prerequisitos se proponen desde el orden dictado y **los aprueba una persona** | La relación entre temas | Owner |
-| ADR-072 | Cobertura ponderada por horas: qué muestra la barra y qué tiene prohibido mostrar | La barra, sin violar ADR-058 | Owner |
-| ADR-073 | Separar *"Necesita tu atención"* de *"Riesgo"* (§8.2) | Que el circuito de riesgo no se infle | Owner + psicopedagoga |
-
-⚠️ **Ya no hay un ADR de navegación en esta lista.** ADR-066 lo volvió innecesario para el Gantt.
+⚠️ **Nunca hizo falta un ADR de navegación.** [ADR-066](decisions.md#adr-066) lo volvió innecesario.
 
 ---
 
-## 12. Lo que recomiendo hacer primero
+## 12. Estado
 
-Cuatro de los siete ADR están cerrados. Lo que queda:
+Los tres cortes de la [Fase B6.15](roadmap.md#fase-b615--el-gantt-de-preparacion) están completos.
 
-| | Qué | Estado |
-|---|---|---|
-| ~~1~~ | ~~El estudiante da de alta su evaluación~~ | ✅ [ADR-067](decisions.md#adr-067) |
-| ~~2~~ | ~~Inventario del corpus~~ | ✅ [`inventario-corpus.md`](inventario-corpus.md) |
-| ~~3~~ | ~~Duración y `session_kind`~~ | ✅ [ADR-068](decisions.md#adr-068) · [ADR-069](decisions.md#adr-069) |
-| 4 | **ADR-070, 071 y 072** — el factor `1.5`, los prerequisitos, la barra | **Owner** |
-| 5 | **Corte 1**: `CTA-020` y `POST /api/evaluacion` | Ejecuta ADR-067. **No depende de 4** |
-| 6 | **Corte 2**: las cinco columnas de ADR-068 y el importador | Ejecuta ADR-068 y 069 |
-| 7 | **Corte 3**: los tres campos nuevos de `estado_de_materia()` y el componente | Depende de 4 |
+| Corte | Qué |
+|---|---|
+| 1 | `CTA-020` y `POST /api/evaluacion` — el escritor que faltaba |
+| 2 | Las cinco columnas de duración, `lib/domain/duracion.ts`, y la ingesta de sesiones |
+| 3 | `lib/domain/cobertura.ts`, los insumos en `estado_de_materia()` y el bloque en la pantalla |
 
-⚠️ **Los cortes 1 y 2 no esperan a nada.** ADR-067, 068 y 069 están cerrados y ninguno de los tres
-depende de las decisiones de producto que faltan. **La barra sí espera**: qué número muestra es
-ADR-072, y sin eso el corte 3 no se puede terminar.
+### Lo que queda abierto
 
-### Lo que el inventario contestó
+⚠️ **El Gantt no se ve en el catálogo de escenarios.** Los fixtures del focus group entran con
+`gantt: null` porque declaran un mundo anterior a esta fase, y cambiarlos altera lo que ve el focus
+group — decisión del owner. Hoy se ve con `npm run db:demo`.
 
-**El estado degradado alcanza a 13 de 36 materias — 36%.** No es la vista principal, pero tampoco un
-caso borde: el Gantt es viable para dos de cada tres materias y hay que diseñar bien el otro tercio.
+⚠️ **El factor `1.5` está decidido y todavía no aplicado.** `duracion.ts` devuelve **minutos de
+clase**; convertirlos a minutos de estudio es el paso siguiente, y va versionado aparte para que se
+pueda saber cuál de los dos números cambió.
 
-Y trajo tres correcciones al modelo:
+⚠️ **Los prerequisitos se decidieron y no se construyeron.** [ADR-071](decisions.md#adr-071) dice
+quién los aprueba; falta la propuesta desde el orden dictado y la pantalla donde se aprueban. **Hoy
+nada los consume**: el Gantt los mostraría, no bloquea con ellos.
 
-1. **`stream` lleva tres valores, no dos** — el corpus usa `TEORICO-PRACTICO`.
-2. **La mitad del corpus no se puede atribuir sola.** 46 de los 80 libros —prácticamente todos los
-   teóricos— no dicen de qué materia son. La ingesta de teóricos es asistida, no automática.
-3. **Encontrar el parcial es el problema.** La columna de tipo dice `NORMAL` en 988 de ~1016 filas, y
-   el texto libre tiene 25% de falsos positivos. De ahí [ADR-069](decisions.md#adr-069).
-
-### Lo que [ADR-066](decisions.md#adr-066) abarató
-
-Sin superficie nueva no hay `UX10`, no hay wireframe `WF-S12`, no hay ruta nueva, y los guards de
-navegación sólo se tocan por la **única** CTA que el Gantt necesita: `CTA-020`
-([ADR-067](decisions.md#adr-067)).
-
-**El Gantt pasó de ser una pantalla a ser cinco columnas, tres campos, un componente y un escritor.**
+⚠️ **El Personal Engine no existe todavía.** El multiplicador arranca en `1.0` y se queda ahí: sin
+historia no se penaliza ni se premia a nadie.

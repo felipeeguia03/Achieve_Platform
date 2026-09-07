@@ -18,7 +18,87 @@ import {
 } from "./design-system";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
-import type { ColumnaFuente, MateriaProps } from "@/lib/domain/view-models";
+import type { ColumnaFuente, GanttProjection, MateriaProps } from "@/lib/domain/view-models";
+
+/**
+ * **El Gantt de preparación** — [ADR-072](../../docs/decisions.md#adr-072).
+ *
+ * Una barra por materia y una fila por unidad, **en el orden dictado** — el que
+ * llega en las props, que la pantalla no reordena.
+ *
+ * ## Las tres cosas que este componente tiene prohibido hacer
+ *
+ * 1. **Tratar `barra: null` como `0`.** Sin estimación no hay barra: hay el
+ *    texto del pie, que dice por qué. Una barra vacía por falta de datos y una
+ *    por falta de trabajo no se ven igual.
+ * 2. **Mostrar el número sin la aclaración.** Van juntos o no va ninguno: el
+ *    porcentaje solo se lee como una nota, y la nota al pie es lo único que lo
+ *    impide.
+ * 3. **Decidir nada.** El porcentaje, el orden y el texto llegan calculados. La
+ *    pantalla proyecta.
+ */
+function Gantt({ gantt }: { gantt: GanttProjection }) {
+  return (
+    <div data-gantt>
+      <Eyebrow>{t("MATERIA.GANTT")}</Eyebrow>
+
+      {gantt.barra !== null && (
+        <div
+          role="img"
+          aria-label={gantt.pie}
+          style={{
+            height: 8,
+            borderRadius: 4,
+            background: "var(--muted)",
+            overflow: "hidden",
+            margin: "6px 0",
+          }}
+        >
+          <div
+            style={{
+              width: `${gantt.barra}%`,
+              height: "100%",
+              background: "var(--foreground)",
+            }}
+          />
+        </div>
+      )}
+
+      <p style={{ fontSize: "var(--text-body)" }}>{gantt.pie}</p>
+
+      {/*
+        ⚠️ La nota al pie es del Product Owner y va **textual**. Es lo único que
+        separa «26% de las horas» de una nota, y sin ella el número viola
+        ADR-058, que cerró la readiness sin porcentaje y sin predicción.
+      */}
+      {gantt.aclaracion && <ReglaDeNegocio>* {gantt.aclaracion}</ReglaDeNegocio>}
+
+      <div style={{ marginTop: 10 }}>
+        {gantt.unidades.map((u) => (
+          <div
+            key={u.nombre}
+            style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0" }}
+          >
+            <span aria-hidden style={{ fontSize: "var(--text-meta)" }}>
+              {u.trabajado ? "●" : "○"}
+            </span>
+            <span style={{ fontSize: "var(--text-body)", flex: 1 }}>{u.nombre}</span>
+            {/*
+              Sin minutos conocidos **no se escribe un cero ni un guion mudo**:
+              se omite la cifra. El pie ya dice cuántos temas quedaron sin
+              estimar, y repetirlo por fila sería ruido.
+            */}
+            {u.minutos !== null && (
+              <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+                {Math.round(u.minutos / 60)} h
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * `P-08`: la cátedra y el estudiante son dos fuentes en **columnas separadas**.
@@ -61,6 +141,7 @@ export function MateriaCursado({
   hero,
   catedraYVos,
   unidades,
+  gantt,
   actividadReciente,
   dimensiones,
   aviso,
@@ -160,6 +241,8 @@ export function MateriaCursado({
           ))}
         </div>
       )}
+
+      {gantt && <Gantt gantt={gantt} />}
 
       {unidades.length > 0 && (
         <div>
