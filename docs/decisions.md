@@ -5684,6 +5684,12 @@ afirmación que el producto se prohíbe.
 aplastar aunque sea cierto, y la regla de la casa es *"el sistema debe reconocer patrones, no
 etiquetar personas"*. El hecho es correcto; **cómo se dice, no está validado**.
 
+> 📋 **Planteado el 7 de septiembre** en
+> [`agenda-psicopedagoga-tiempo-y-carga.md`](agenda-psicopedagoga-tiempo-y-carga.md) §A, con la
+> pantalla textual y las tres preguntas que importan: si el número ayuda o aplasta, con qué palabras,
+> y **a partir de qué distancia deja de ser accionable** — porque cinco horas contra siete es una
+> brecha que alguien cierra, y cinco contra cincuenta y dos no.
+
 **3 · El reparto es una proyección. No crea nada.**
 
 No genera `Commitment`, no agenda y no reemplaza al ADE, que sigue proponiendo **una acción por vez**.
@@ -5780,6 +5786,11 @@ pasando —el material no alcanza, la estimación está mal, hay una dificultad 
 tiene que ver una persona, no un coeficiente que sigue creciendo.
 
 ### Lo que este ADR prohíbe
+
+> 📋 **Las cuatro reglas están planteadas a la psicopedagoga**, con el costo de cambiar cada una, en
+> [`agenda-psicopedagoga-tiempo-y-carga.md`](agenda-psicopedagoga-tiempo-y-carga.md) §B. Hasta que
+> conteste son **defaults provisionales del equipo**, igual que los seis valores de
+> [ADR-036](#adr-036), y no tocan a ninguna persona real: [ADR-006](#adr-006) sigue cerrado.
 
 ⚠️ **El multiplicador no se le muestra al estudiante como un número sobre él.** *"Tardás 1,8× lo
 normal"* es exactamente lo que la regla de la casa prohíbe: *"el sistema debe reconocer patrones, **no
