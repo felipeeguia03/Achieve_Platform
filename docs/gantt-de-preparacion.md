@@ -488,7 +488,8 @@ Los tres cortes de la [Fase B6.15](roadmap.md#fase-b615--el-gantt-de-preparacion
 
 ⚠️ **El Gantt no se ve en el catálogo de escenarios.** Los fixtures del focus group entran con
 `gantt: null` porque declaran un mundo anterior a esta fase, y cambiarlos altera lo que ve el focus
-group — decisión del owner. Hoy se ve con `npm run db:demo`.
+group — decisión del owner. **Sí se ve con `npm run db:demo`**, que desde el 7 de septiembre siembra
+diez sesiones y una carga horaria declarada.
 
 ⚠️ **El factor `1.5` está decidido y todavía no aplicado.** `duracion.ts` devuelve **minutos de
 clase**; convertirlos a minutos de estudio es el paso siguiente, y va versionado aparte para que se

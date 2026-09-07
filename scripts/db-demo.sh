@@ -76,9 +76,33 @@ P='[{"unidad":"Derivadas","requiere":"Límites y continuidad"},
     {"unidad":"Integrales","requiere":"Derivadas"}]'
 E='[{"tipo":"parcial","titulo":"Parcial 1","fecha":"2026-09-15","modalidad":"practico","alcance":"U1 a U2"},
     {"tipo":"final","titulo":"Final","modalidad":"oral"}]'
+# ── El libro de temas · Fase B6.15 ───────────────────────────────────────────
+#
+# Sin esto el Gantt de `UX02` no tiene de dónde sacar minutos y la materia
+# entra degradada: *"sin clases cargadas, no puedo estimar las horas"*. Es un
+# estado legítimo —13 de 36 materias del corpus real están así— pero no es el
+# que conviene mostrar en la demo.
+#
+# ⚠️ **La fila del parcial no lleva temas y va con `tipo: parcial`.** Un examen
+# ocupa el aula y no dicta nada: si entrara como clase, el Gantt le atribuiría
+# sus 120 minutos a las unidades que evaluaba (ADR-069).
+#
+# ⚠️ **Ninguna otra fila lleva `tipo`.** El importador no clasifica, y la guía
+# sólo lo trae cuando una persona lo confirmó. Ausente queda `NULL`, que el
+# dominio cuenta como clase.
+CL='[{"fecha":"2026-08-04","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Límites y continuidad"]},
+     {"fecha":"2026-08-11","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Límites y continuidad"]},
+     {"fecha":"2026-08-18","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Derivadas"]},
+     {"fecha":"2026-08-25","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Derivadas"]},
+     {"fecha":"2026-09-01","hora":"14:00","minutos":120,"corrida":"practico","temas":["Derivadas"]},
+     {"fecha":"2026-09-08","hora":"14:00","minutos":120,"corrida":"practico","temas":["Límites y continuidad","Derivadas"]},
+     {"fecha":"2026-09-15","hora":"14:00","minutos":120,"tipo":"parcial","temas":[]},
+     {"fecha":"2026-09-22","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Integrales"]},
+     {"fecha":"2026-09-29","hora":"14:00","minutos":120,"corrida":"practico","temas":["Integrales"]},
+     {"fecha":"2026-10-06","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Series"]}]'
 MATERIA=$(q "select code from curriculum_requirement
               where curriculum_plan_id='$PLAN' and label='Cálculo Avanzado';" | tr -d '[:space:]')
-OFF=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-calculo-avanzado.pdf',now(),0.7,'$MATERIA','Cálculo Avanzado','2026-2',NULL,'$U'::jsonb,'$P'::jsonb,'$E'::jsonb,'$PLAN');" | tr -d '[:space:]')
+OFF=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-calculo-avanzado.pdf',now(),0.7,'$MATERIA','Cálculo Avanzado','2026-2',NULL,'$U'::jsonb,'$P'::jsonb,'$E'::jsonb,'$PLAN','$CL'::jsonb,3600,'60 horas');" | tr -d '[:space:]')
 echo "   cursada: $OFF"
 
 q "insert into course_enrollment (id,institution_id,student_id,offering_id)
@@ -181,8 +205,12 @@ q "insert into learning_objective (id,institution_id,course_id,kind,label,source
 OBJ=af100000-0000-0000-0000-000000000001
 
 for n in 1 2; do
-  q "insert into action (id,institution_id,course_enrollment_id,exam_preparation_id,objective,verb,scope,status)
+  # ⚠️ **La Action se ancla al tema.** Sin `topic_id`, `estado_de_materia()`
+  # no puede decir que se trabajó sobre esa unidad y el Gantt muestra
+  # `0 de 4 temas` con dos entregas hechas — que es lo contrario de lo que pasó.
+  q "insert into action (id,institution_id,course_enrollment_id,exam_preparation_id,topic_id,objective,verb,scope,status)
      values ('ae00000$n-0000-0000-0000-000000000001','$INST','a6000000-0000-0000-0000-000000000001','$PREP',
+             (select id from topic where offering_id='$OFF' and name='Integrales'),
              'Resolver la guía de integrales por partes','resolver','tema','COMPLETED');
      insert into evidence (id,institution_id,action_id,lifecycle_state,submitted_at)
      values ('ad00000$n-0000-0000-0000-000000000001','$INST','ae00000$n-0000-0000-0000-000000000001','INSUFFICIENT',now());" >/dev/null
@@ -222,5 +250,6 @@ fi
 
 echo "✓ Mundo listo. Cursada: a6000000-0000-0000-0000-000000000001"
 q "select '   ' || (select count(*) from topic where offering_id='$OFF') || ' unidades · ' ||
+          (select count(*) from class_session where offering_id='$OFF') || ' clases · ' ||
           (select count(*) from assessment where offering_id='$OFF') || ' evaluaciones · ' ||
           (select count(*) from resource where offering_id='$OFF') || ' recursos';"

@@ -3824,8 +3824,31 @@ nada.
 
 ⚠️ **El Gantt todavía no se ve en el catálogo de escenarios.** Los fixtures del focus group declaran
 un mundo anterior a esta fase y entran con `gantt: null`; cambiarlos altera lo que ve el focus group y
-es decisión del owner. Para verlo hace falta `npm run db:demo` con datos sintéticos, o un fixture
-nuevo.
+es decisión del owner.
+
+> ✅ **Pero sí se ve en la demo.** `db-demo.sh` era de antes de este corte: sembraba unidades y
+> evaluaciones y **ninguna clase**, así que la materia entraba degradada. Ahora siembra **diez
+> sesiones y una carga horaria de 60 horas**, y las `Action` se anclan al tema — sin `topic_id`, el
+> Gantt mostraba `0 de 4 temas` con dos entregas hechas, que es lo contrario de lo que pasó.
+>
+> El resultado en `/materia`, con `npm run db:demo`:
+>
+> ```
+> 1 de 4 temas · 22% de las horas
+> * temas marcados por vos sobre el total cargado. No es una nota ni una predicción.
+>
+> ○ Límites y continuidad   17 h
+> ○ Derivadas               23 h
+> ● Integrales              13 h
+> ○ Series                   7 h
+> ```
+>
+> ⚠️ **Las dos entregas son `INSUFFICIENT` y aun así Integrales figura trabajada.** No es un defecto
+> de la demo: es [ADR-072](decisions.md#adr-072) funcionando. La barra mide que trabajaste, no que lo
+> hayas hecho bien.
+>
+> ⚠️ **Y el parcial del 15/09 no aporta sus 120 minutos a nadie.** Entra con `tipo: parcial` y sin
+> temas: ocupa el aula y no dicta nada ([ADR-069](decisions.md#adr-069)).
 
 `lint` · `typecheck` · `build` · **1219 tests** · **`db:verify` 364 ✓, 0 ✗, exit 0**.
 
