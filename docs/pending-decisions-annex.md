@@ -19,7 +19,7 @@ alcanzan fixtures y estados sintéticos. Sí bloquean los usos materiales indica
 **Gate material** (a partir de qué etapa deja de poder posponerse):
 `I` = antes de implementación productiva · `H` = antes de high-fidelity · `P` = antes de piloto institucional · `O` = fuera del MVP, no bloquea nada del corte actual.
 
-**37 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
+**32 de las 51 filas siguen `OPEN`.** Las ocho `HUMAN-P0` (`C01-031`…`C01-038`) pasaron a
 `ANSWERED — RESIDUO ABIERTO` el 31 de agosto de 2026, y `C01-051` el 1 de septiembre: su owner —una psicopedagoga real— respondió por
 escrito. Ver [ADR-025](decisions.md#adr-025) y la fuente literal en
 [`human-p0-source.md`](human-p0-source.md).
@@ -36,6 +36,14 @@ mismo día.
 ([ADR-047](decisions.md#adr-047), [ADR-048](decisions.md#adr-048)) y `C01-010` pasó a
 `ANSWERED — RESIDUO ABIERTO` ([ADR-046](decisions.md#adr-046)), con la regla adoptada para el MVP y a
 revisar antes del piloto.
+
+**Y el 5 de septiembre cerró cinco más**, también desde
+[`decisiones-abiertas.md`](decisiones-abiertas.md): `C01-029` quedó `CLOSED`
+([ADR-058](decisions.md#adr-058)); `C01-030` pasó a `DEFERRED` con motivo
+([ADR-057](decisions.md#adr-057)); y `C01-019`, `C01-021` y `C01-044` pasaron a
+`ANSWERED — RESIDUO ABIERTO` ([ADR-059](decisions.md#adr-059),
+[ADR-055](decisions.md#adr-055), [ADR-056](decisions.md#adr-056)). Fuente literal:
+[`respuesta-po-agenda-decisiones-source.md`](respuesta-po-agenda-decisiones-source.md).
 
 Eso es exactamente lo que este anexo pedía: **una respuesta real de su owner, documentada, no una
 inferencia.** Ninguna reclasificación ni uso en el low-fi cierra una fila; sólo su owner.
@@ -131,7 +139,7 @@ habrían quedado mal si se construía B5 antes de preguntar.
 ## Cómo usar esto en la práctica
 
 1. Ninguna de estas 51 filas te frena para seguir generando pantallas del low-fi con el spec consolidado — ya están resueltas ahí como fixture o estado neutral.
-2. Antes de mover cualquier pantalla a high-fidelity, revisá si toca una fila con gate `H` (hoy quedan **dos**: C01-008 y C01-019; `C01-051` fue respondida el 1 sep 2026 por [ADR-026](decisions.md#adr-026), con su residuo pedagógico declarado) y conseguí la respuesta real primero.
+2. Antes de mover cualquier pantalla a high-fidelity, revisá si toca una fila con gate `H` (hoy queda **una**: C01-008. `C01-051` fue respondida el 1 sep 2026 por [ADR-026](decisions.md#adr-026) y `C01-019` el 5 de septiembre por [ADR-059](decisions.md#adr-059), las dos con su residuo declarado) y conseguí la respuesta real primero.
 3. **Las 8 `HUMAN-P0` ya tienen la voz de la psicopedagoga real** (31 ago 2026). Podés construir contra el criterio confirmado `v1.0`, citándolo. **Lo que no podés** es cerrar sus residuos: ésos siguen necesitando a la misma persona, y aproximarlos es exactamente lo que este anexo existe para impedir.
 4. Todo lo demás (gate `I`) sí lo podés ir resolviendo con el equipo técnico a medida que avanzás.
 

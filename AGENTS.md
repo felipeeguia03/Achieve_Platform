@@ -235,11 +235,16 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/roadmap.md`](docs/roadmap.md) | Fases, etapas, bloqueos, estado | Antes de empezar cualquier trabajo |
 | [`docs/decisions.md`](docs/decisions.md) | ADRs numerados | **Siempre.** Para saber qué está bloqueado |
 | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) | Las respuestas `DD1`–`DD10` que el manual de diseño exige | Antes de aplicar un principio del manual |
-| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` — **42 abiertas**, 9 respondidas | Cuando dudes si algo está decidido |
+| [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) | Las 51 `C01` — **32 abiertas**, 19 resueltas (`CLOSED`, `ANSWERED — RESIDUO ABIERTO` o `DEFERRED`), más `C01-052` | Cuando dudes si algo está decidido |
 | [`docs/human-p0-source.md`](docs/human-p0-source.md) | **Fuente literal** de las 8 respuestas psicopedagógicas | Antes de escribir contenido del protocolo de examen |
 | [`docs/design-system-capturas.md`](docs/design-system-capturas.md) | Extracción visual anonimizada + §12, las decisiones de diseño abiertas | Antes de tocar layout, espaciado o la posición de una CTA |
 | **`docs/diseño/*.png`** | **Las 34 capturas: la fuente del lenguaje visual.** No versionadas ([ADR-006](docs/decisions.md#adr-006)) | **Siempre, antes de tocar UI.** Ver §1.5 |
 | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) | Contrato máquina-a-máquina vigente Plataforma ↔ CRM | Antes de tocar registro, elegibilidad o integración CRM |
+| [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) | **Qué falta decidir y quién lo decide** — veinte filas, **ocho abiertas**, ordenadas por lo que destraban | Antes de pedirle una decisión a una persona |
+| [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) | Lo que hace falta para **responderlas**: opciones, recomendación y dónde escribir la respuesta | Cuando haya que llevarle las abiertas al owner |
+| [`docs/plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) | Los **siete cortes** de ADR-060…ADR-065, y cuál está hecho | Antes de tocar período, comisión u horarios |
+| [`docs/informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) | El impacto de esas seis decisiones sobre el schema vigente | Junto con el plan de arriba |
+| [`docs/demo-mvp.md`](docs/demo-mvp.md) | Cómo levantar el mundo sintético y recorrer el alta, incluido el dock de **modo prueba** | Antes de correr la demo a mano |
 | [`docs/guion-focus-group.md`](docs/guion-focus-group.md) | El recorrido de sesión y el test de 10 segundos por pantalla | Antes de correr un focus group |
 
 ### Documentos de referencia — **no se editan**
@@ -281,9 +286,15 @@ Regla `C-01`; el anti-patrón `A-05` es exactamente una grieta de tono en la pan
 
 ## 5. Estado actual del proyecto
 
-**Fases B1–B6.7: ✅ completas en su alcance disponible.** No queda otra etapa desbloqueada: B7
-espera el dictamen legal de ADR-006 y B2b.2 espera un owner para corroboración. B6.7.4 dejó la
-replanificación versionada y la reentrada explicada antes de mover el recorrido.
+**Fases B1–B6.14: ✅ completas en su alcance disponible**, con **B2b en 2/3**. B7 espera el
+dictamen legal de ADR-006 y **B2b.3 espera `C01-042`**, que no lo cierra un agente.
+
+🆕 **Período, comisión y horarios de cursada** ([ADR-060](docs/decisions.md#adr-060) …
+[ADR-065](docs/decisions.md#adr-065), 5 de septiembre de 2026) van por **siete cortes verificables**
+—plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md)—. **El corte 1
+está hecho:** el período académico es vocabulario cerrado en dominio, base e importador, y el año
+lectivo y el semestre viven en columnas propias de `enrollment`. ⚠️ **Preguntar el período es el
+corte 2, y no está hecho:** `periodoDeCursado()` sigue infiriéndolo del mes.
 
 Track A y la Fase A2 están cerrados: las nueve superficies existen, todos los estados críticos son
 alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el owner.
@@ -315,10 +326,10 @@ En el Track B, hoy:
   resultado; no decide que hubo progreso:** `C01-018` sigue `OPEN`. Ninguna ruta de `Evidence`
   escribe progreso, con guard.
 - **El Product Event Model está declarado** en `lib/domain/product-events.ts`: 23 eventos P0 del
-  spec §16 más 18 extensiones que el backend emite y el P0 no lista. Antes de agregar un evento,
-  declaralo ahí.
-- **B2b va 1/3**, y el ADE v1, su materialización y el reloj del lifecycle se construyeron por
-  adelantado en B4.
+  spec §16 más **36 extensiones** que el backend emite o conserva como legacy. **De los 23 se
+  emiten 9.** Antes de agregar un evento, declaralo ahí.
+- **B2b va 2/3** —ingesta asistida y corroboración completas—, y el ADE v1, su materialización y
+  el reloj del lifecycle se construyeron por adelantado en B4.
 - **El alta existe** desde la Fase B6.14: `/login → /alta/whatsapp → /alta/carrera → /alta/materias
   → /hoy`. Las tres pantallas **no** entran al registro canónico —el precedente es `/login`— y el
   gate es un `409 ALTA_INCOMPLETA` **del backend**, no del navegador.

@@ -350,7 +350,7 @@ locales ya están implementados; el runtime operativo de producción sigue `DEFE
 
 ### 3.9 El código que hoy la implementa
 
-Actualizado el 2 de septiembre de 2026, con B1–B6.7 completas en su alcance disponible y B2b en
+Actualizado el 5 de septiembre de 2026, con B1–B6.14 completas en su alcance disponible y B2b en
 2/3. **§3.2 describe el diseño; esto dice dónde vive**, para no tener que deducirlo del `grep`.
 
 ```text
@@ -358,15 +358,44 @@ app/
 ├── (student)/            ← las nueve superficies. Piden a /api/* con Bearer y
 │                            dibujan `Ausencia` si la carga falla: nunca el fixture
 └── api/                  ← Controller. Valida sesión, llama a UN Service, traduce a HTTP
+    │
+    │  ── Con JWT del estudiante ──────────────────────────────────────────
     ├── hoy · materia · accion · compromiso · evidencia · progreso
+    ├── reflexion         ← POST. La Reflection existe y se escribe por acá.
+    │                        NO hay formulario: la superficie no está construida
+    ├── rescate           ← POST. La salida de un `MISSED`. Empieza OTRO objeto;
+    │                        el incumplido sigue `MISSED` para siempre
+    ├── renegociacion     ← POST. Las cinco condiciones de ADR-046
+    ├── reenvio           ← POST. Del estudiante. Distinto de `pedido-de-reenvio`:
+    │                        juzgar que algo no alcanza no obliga a pedir otra cosa
     ├── examen/           ← Modo Examen. Activación y paso; replanificación y
     │                        reentrada explicada en dos tiempos
-    ├── corroboracion     ← POST. Secreto de SERVICIO; eleva procedencia con auditoría
-    ├── observacion       ← POST. Secreto de SERVICIO: registrar un error es de
-    │                        quien evalúa la entrega, y ese rol no tiene superficie acá
-    ├── reloj             ← POST. Secreto de SERVICIO, no JWT: no lo dispara una persona.
-    │                        Además de los compromisos, expira las señales vencidas
-    └── sesion            ← alta de la sesión sintética, fuera de las nueve
+    ├── alta/             ← El tramo de alta (B6.14): whatsapp · carrera · materias.
+    │                        El gate es un `409 ALTA_INCOMPLETA` del BACKEND, y las
+    │                        nueve rutas lo devuelven. Un gate en el cliente no es un gate
+    ├── catalogo/plan     ← GET. El plan de estudios que el alta ofrece
+    ├── sesion            ← alta de la sesión sintética, fuera de las nueve
+    │
+    │  ── Con secreto de SERVICIO: no lo dispara una persona con superficie ──
+    ├── recomendacion     ← POST. El disparador del ADE. Lo que escriba pasa por
+    │                        el validador determinista ANTES de materializar
+    ├── validacion        ← POST. Registra la validación y el progreso.
+    │                        ⚠️ `VALIDATED` NO produce `ProgressUpdated`
+    ├── observacion/      ← POST + correccion/. Registrar un error es de quien
+    │                        evalúa la entrega, y ese rol no tiene superficie acá.
+    │                        La corrección es append-only
+    ├── pedido-de-reenvio ← POST. Del que evalúa. MOTIVO OBLIGATORIO.
+    │                        `actor_id` va `null`: es identidad externa sin FK
+    ├── corroboracion     ← POST. Eleva procedencia con auditoría
+    ├── apoyo · escalamiento · revision-temprana
+    │                     ← POST. El circuito de riesgo e intervención
+    ├── examen/reentrada/propuesta
+    │                     ← POST. Explicar primero; mover el paso sólo al aceptar
+    └── reloj             ← POST. No lo dispara una persona. Además de los
+                             compromisos, expira las señales vencidas
+
+    (y `prueba/alta` ← ANDAMIO, no producto. Sólo con `MODO_PRUEBA=1`;
+     sin la variable la ruta responde 404. Se borra cuando ADR-006 abra)
 
 lib/
 ├── client/               ← el cliente de /api/*: token, tipo suma de respuesta, hook
@@ -388,9 +417,9 @@ lib/
     │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar
     └── repositorios/     ← única capa que toca Postgres. No decide permisos ni transiciones
 
-supabase/migrations/      ← 46 migraciones. Una aplicada NO se edita: se reemplaza
+supabase/migrations/      ← 61 migraciones. Una aplicada NO se edita: se reemplaza
                              la función desde una nueva
-scripts/                  ← db:verify — 275 comprobaciones que npm test no puede hacer
+scripts/                  ← db:verify — 330 comprobaciones que npm test no puede hacer
 ```
 
 **Una lectura, una función de base.** Las nueve superficies tienen la suya —`estado_del_dia`,

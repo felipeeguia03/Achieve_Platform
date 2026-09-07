@@ -20,8 +20,9 @@ código sigue a la documentación. Si discrepan, **el código es el defectuoso**
 
 ## Las seis reglas
 
-1. **No inventes reglas de negocio.** Hay 40 decisiones abiertas; las 8 psicopedagógicas
-   ([ADR-025](docs/decisions.md#adr-025)) y la obligatoriedad de `Reflection`
+1. **No inventes reglas de negocio.** Siguen abiertas **32 de las 51 filas `C01`** (más
+   `C01-052`) y **8 de las 20** de [`decisiones-abiertas.md`](docs/decisiones-abiertas.md). Las 8
+   psicopedagógicas ([ADR-025](docs/decisions.md#adr-025)) y la obligatoriedad de `Reflection`
    ([ADR-026](docs/decisions.md#adr-026)) están respondidas, pero **con residuos**. Si falta una
    regla, registrala como ADR `PENDING` y **preguntá**.
 2. **No resuelvas una decisión `PENDING`.** La cierra una persona.
