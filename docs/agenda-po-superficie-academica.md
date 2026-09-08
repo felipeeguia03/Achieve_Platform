@@ -4,6 +4,8 @@
 **Para:** Product Owner
 **De:** equipo Plataforma
 **Fecha:** 8 de septiembre de 2026
+**Estado:** ✅ **Respondido** el 8 de septiembre de 2026 → [ADR-076](decisions.md#adr-076).
+⚠️ **Una afirmación de §7 estaba mal y el owner la rechazó** — ver la corrección ahí.
 **Qué es:** **un planteo, no un plan.** No propone construir una consola. Propone decidir **cuántas
 personas distintas** estamos llamando *"una persona"*, porque de eso depende cuánta superficie hace
 falta — y la respuesta puede ser bastante menos de la que parece.
@@ -165,8 +167,20 @@ separado — que es `corroborar_procedencia()`, la función que existe y nadie l
 | | |
 |---|---|
 | **Decidir los roles** | Una conversación. Nada de código |
-| **La superficie académica** | El backend ya existe: son las nueve rutas. Lo que falta es la pantalla y la autorización |
+| **La superficie académica** | ⚠️ **Esta fila estaba mal.** Ver el recuadro de abajo |
 | **No hacer nada** | Sigue funcionando. Cada estudiante reconstruye solo lo que la cátedra sabe una vez, y `corroborar_procedencia()` sigue sin llamador |
+
+> ⛔ **Corrección del 8 de septiembre de 2026, del Product Owner.** Este documento afirmaba que *"el
+> backend ya existe: son las nueve rutas. Lo que falta es la pantalla"*. **Es falso.**
+>
+> *"Las nueve rutas mencionadas no equivalen al backend de esa superficie. Para una cola académica
+> todavía pueden faltar consultas agrupadas por comisión, detección de duplicados, reglas de fusión,
+> permisos, auditoría y estados de procedencia."*
+>
+> El [informe](informe-superficie-academica.md) confirmó las seis faltas y encontró una séptima:
+> **de las nueve rutas, exactamente una opera sobre contenido.** Las otras ocho tienen como sujeto a
+> un estudiante y son el backend **de la superficie del coach** — la que ADR-006 bloquea. La frase
+> era exactamente al revés de la verdad.
 
 ⚠️ **Y una fecha que conviene mirar:** cuando ADR-006 se abra, van a hacer falta **las cinco**
 superficies a la vez, porque van a existir estudiantes reales. Decidir los roles ahora es lo que

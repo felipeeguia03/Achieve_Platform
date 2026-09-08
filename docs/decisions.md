@@ -122,6 +122,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-073](#adr-073) | La disponibilidad se declara, y el reparto entre materias es una proyección | ✅ `ACCEPTED` *(7 sep 2026 · **no bloquea el alta**)* | — |
 | [ADR-074](#adr-074) | El Personal Engine calibra **el trabajo**, no la vida del estudiante | ✅ `ACCEPTED` *(7 sep 2026 · el multiplicador nunca baja de `1.0`)* | — |
 | [ADR-075](#adr-075) | Las respuestas de la psicopedagoga sobre tiempo y carga | ✅ `ACCEPTED` *(7 sep 2026 · **la pantalla del déficit no estaba aprobada**)* | `B6.17` |
+| [ADR-076](#adr-076) | Tres perfiles operativos, y la superficie académica **no autorizada todavía** | ✅ `ACCEPTED` *(8 sep 2026 · sólo informe de solo lectura)* | **Toda construcción de la superficie** |
 
 ---
 
@@ -5999,3 +6000,130 @@ Y su propio límite, que se transcribe porque acota el alcance de todo lo anteri
 
 > *"Esta respuesta orienta decisiones de producto. **No constituye una evaluación de estudiantes ni
 > habilita inferencias diagnósticas individuales.**"*
+
+
+---
+
+<a id="adr-076"></a>
+
+## ADR-076 — Tres perfiles operativos, y la superficie académica **no autorizada todavía**
+
+**Estado:** ✅ `ACCEPTED` · 8 de septiembre de 2026 · **decidido por el Product Owner**
+**Responde:** [`agenda-po-superficie-academica.md`](agenda-po-superficie-academica.md).
+**Relacionado:** [ADR-003](#adr-003), [ADR-006](#adr-006), [ADR-039](#adr-039), [ADR-057](#adr-057),
+[ADR-067](#adr-067), [ADR-069](#adr-069), [ADR-071](#adr-071), [ADR-075](#adr-075).
+**Bloquea:** cualquier construcción de la superficie académica hasta nueva autorización.
+
+### La corrección al planteo, primero
+
+El documento del equipo afirmaba que *"el backend ya existe: son las nueve rutas. Lo que falta es la
+pantalla"*. **El owner lo rechazó, y tenía razón:**
+
+> *"No aceptaría la frase «el backend ya existe; falta la pantalla». Las nueve rutas mencionadas no
+> equivalen al backend de esa superficie. Para una cola académica todavía pueden faltar consultas
+> agrupadas por comisión, detección de duplicados, reglas de fusión, permisos, auditoría y estados de
+> procedencia."*
+
+El informe de §6 confirmó las seis faltas y encontró una séptima
+([`informe-superficie-academica.md`](informe-superficie-academica.md)):
+**de las nueve rutas humanas, exactamente una opera sobre contenido.** Las otras ocho son sobre un
+estudiante concreto y están bloqueadas por [ADR-006](#adr-006).
+
+### 1 · Roles y personas
+
+**Cinco responsabilidades del dominio, agrupadas en tres perfiles operativos.**
+
+| Perfil MVP | Responsabilidades |
+|---|---|
+| **Curador académico interno de Achieve** | Owner académico de la estimación **+** corroboración de procedencia |
+| **Coach/operador del CRM** | Operador **+** referente humano del caso |
+| **Psicopedagogía** | Intervención especializada, **siempre separada** |
+
+El flujo, textual:
+
+> *"1. Se revisa primero si el contenido, la estimación o la información académica están mal.
+> 2. Si el problema persiste, interviene el coach sobre el caso del estudiante.
+> 3. Psicopedagogía entra solamente cuando convergen las señales definidas."*
+
+⚠️ **Se modelan capacidades y permisos, no personas.**
+
+> *"Una misma persona podrá ocupar responsabilidades compatibles, pero toda acción deberá conservar
+> actor, rol y trazabilidad. Se mantiene la regla de que **nadie valida su propia evidencia o
+> propuesta**."*
+
+### 2 · El owner académico, durante el MVP, es interno
+
+**Una persona de Achieve responsable de la curación académica. No la cátedra ni la universidad.**
+
+El acceso institucional para docentes queda fuera de este corte y se resuelve dentro de
+[ADR-039](#adr-039) y del modelo comercial institucional.
+
+### 3 · Alcance de la futura superficie: **contenido, nunca casos**
+
+Cinco operaciones, y una frontera:
+
+1. Aprobar o descartar prerequisitos propuestos.
+2. Confirmar o descartar filas que parezcan evaluaciones.
+3. Detectar y resolver evaluaciones duplicadas de una misma comisión.
+4. Revisar cargas de estudio declaradas.
+5. Recibir señales de calibración **sólo cuando puedan presentarse sin identificar a un estudiante**.
+
+> ⚠️ *"Si una señal requiere mostrar el recorrido de una persona concreta, **no pertenece a esta
+> superficie** y queda bloqueada por ADR-006."*
+
+Eso resuelve el hueco que [ADR-075 §B2](#adr-075) dejó abierto: la señal de calibración entra **si y
+sólo si** se puede mostrar despersonalizada.
+
+### 4 · Procedencia: tres niveles, y `official` no se alcanza curando
+
+> *"La revisión interna de Achieve **no convierte automáticamente un dato en `official`**."*
+
+| Nivel | Quién lo produce |
+|---|---|
+| Declarado por estudiantes | El estudiante ([ADR-067](#adr-067), [ADR-071](#adr-071)) |
+| **Corroborado o curado por Achieve** | El curador académico interno |
+| Oficial | Una institución o cátedra autorizada |
+
+✅ **Esto ya está enforced en la base, y desde antes de la pregunta.**
+`corroborar_procedencia()` rechaza `official` con su motivo:
+
+```
+nadie puede declarar official: hace falta autenticar a la institución (C01-030, OPEN)
+```
+
+El vocabulario `unverified | corroborated | official | disputed` **ya expresa los tres niveles**. La
+decisión del owner no agrega una columna: **confirma la que hay y prohíbe el atajo.**
+
+### 5 · No entra al registro canónico
+
+> *"La superficie académica no forma parte del recorrido canónico del estudiante, de sus nueve
+> superficies ni de sus veinte CTAs. Será una herramienta interna separada y no estará alcanzada por
+> los guards de navegación del estudiante."*
+
+Mismo criterio que [ADR-052](#adr-052) aplicó al tramo de alta.
+
+### 6 · ⛔ La implementación **no está autorizada**
+
+> *"Estas decisiones quedan aprobadas como definición de producto y arquitectura. **No autorizo
+> todavía construir la superficie completa.**"*
+
+Primero, un **informe técnico de solo lectura** con seis preguntas, y una propuesta de **primer corte
+vertical pequeño, verificable y sin datos personales**.
+
+⚠️ **Y una prohibición explícita, que rige hasta nueva autorización:**
+
+> *"**No implementar, migrar, hacer push, merge ni deploy hasta nueva autorización.**"*
+
+El informe está en [`informe-superficie-academica.md`](informe-superficie-academica.md).
+
+### Por qué esta decisión es mejor que la que proponía el equipo
+
+El planteo pedía decidir **cinco roles** y sugería construir **una superficie**. La respuesta separa
+las dos cosas: **cinco responsabilidades siguen existiendo en el dominio** —no se pierden— pero se
+agrupan en **tres perfiles** para el MVP, y la construcción queda condicionada a un informe.
+
+⚠️ **Y evita un error que el equipo tenía a la vista y no vio:** agrupar en perfiles **no es lo mismo
+que fusionar responsabilidades**. Modelar capacidades en vez de personas es lo que permite que una
+sola persona haga dos cosas hoy **sin perder de quién fue cada acción** — y es lo que hace posible
+sostener *"nadie valida su propia evidencia o propuesta"* cuando el curador y el coach son la misma
+persona.
