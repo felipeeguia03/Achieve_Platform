@@ -5554,6 +5554,10 @@ fusionar dos declaraciones `unverified` es corroborar, y quién corrobora sigue 
 porque otro no está «hecho» sería una afirmación de readiness, y eso lo cierra
 [ADR-058](#adr-058).
 
+> 📋 **La superficie que este ADR no encontró es la misma que le falta a otros tres.** El planteo
+> —cuántos roles humanos son, y cuál se puede construir con ADR-006 todavía cerrado— está en
+> [`agenda-po-superficie-academica.md`](agenda-po-superficie-academica.md).
+
 ---
 
 <a id="adr-072"></a>
@@ -5903,6 +5907,12 @@ Primero el owner académico de la estimación —puede estar mal el contenido, n
 referente humano, y evaluación psicopedagógica **sólo si convergen otras señales**.
 
 ⚠️ **Prohibido:** *"sos más lento"*, *"te cuesta el doble"*, *"tu ritmo es bajo"* y equivalentes.
+
+> 📋 **La señal de §B2 se detecta y no tiene a dónde ir.** `risk_signal.student_id` es `NOT NULL` —el
+> sujeto de una señal de riesgo es siempre el estudiante— y ella pidió que el primer destino sea el
+> **owner académico de la estimación**. Ese rol **no tiene superficie**, y es el cuarto ADR que
+> tropieza con lo mismo. El planteo está en
+> [`agenda-po-superficie-academica.md`](agenda-po-superficie-academica.md).
 
 ---
 
