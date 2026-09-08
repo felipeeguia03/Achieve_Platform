@@ -17,7 +17,11 @@ export interface Miga {
 
 /** De quién cuelga cada superficie en el breadcrumb. `null` ⇒ es raíz. */
 const padre: Partial<Record<NodoId, NodoId>> = {
-  UX02: "UX01",
+  // ADR-077: el cursado cuelga del índice, no de `HOY`. Es el recorrido que
+  // pidió el owner —*"primero una pantalla con todas las materias y luego podés
+  // entrar a cada una"*— y la miga lo dice: `Hoy › Materias › Materia`.
+  UX02_INDICE: "UX01",
+  UX02: "UX02_INDICE",
   UX03: "UX01",
   UX04: "UX03",
   UX05: "UX04",
@@ -29,6 +33,7 @@ const padre: Partial<Record<NodoId, NodoId>> = {
 
 const ETIQUETAS: Partial<Record<NodoId, string>> = {
   UX01: "Hoy",
+  UX02_INDICE: "Materias",
   UX02: "Materia",
   UX03: "Próxima acción",
   UX04: "Compromiso",

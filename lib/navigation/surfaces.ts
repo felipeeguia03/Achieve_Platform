@@ -20,6 +20,8 @@
 export type NodoId =
   | "UX01"
   | "UX02"
+  /** El índice de materias. **No es una superficie**: ver `nodos.UX02_INDICE`. */
+  | "UX02_INDICE"
   | "UX03"
   | "UX04"
   | "UX04_RENEGOCIACION"
@@ -65,6 +67,28 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     nombre: "Materia / Cursado",
     pregunta: "¿Cómo vengo en esta materia y qué hago?",
     ruta: "/materia",
+    pendienteDeEtapa: null,
+  },
+  /**
+   * El área «Materias» — [ADR-077](../../docs/decisions.md#adr-077).
+   *
+   * ⚠️ **`wireframe: null` no es un olvido: es la decisión.** El spec es
+   * literal —*"No existe `UX10`"*— y `superficieIds` filtra por `wireframe`,
+   * así que este nodo **no cuenta como superficie** y esa afirmación sigue
+   * siendo cierta. Es el mismo patrón que `UX04_RENEGOCIACION` y
+   * `UX04_RESCATE`, con la diferencia de que éste sí tiene ruta.
+   *
+   * Y no es una invención: Parte II §10 nombra el área desde siempre
+   * —*"espacios persistentes de cursado y evaluaciones"*— y
+   * [ADR-054](../../docs/decisions.md#adr-054) lo dejó dicho: *"una superficie
+   * de lista no sería inventar una décima"*.
+   */
+  UX02_INDICE: {
+    id: "UX02_INDICE",
+    wireframe: null,
+    nombre: "Materias",
+    pregunta: "¿Cómo está distribuida mi carga?",
+    ruta: "/materias",
     pendienteDeEtapa: null,
   },
   UX03: {

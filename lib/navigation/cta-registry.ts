@@ -118,7 +118,10 @@ const siempre = () => true;
 export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
   "CTA-001": {
     id: "CTA-001",
-    origen: ["UX01"],
+    // ADR-077: el índice de materias emite la misma CTA que la cola de `HOY`, y
+    // ya transporta la cursada desde ADR-054 opción `B`. **El registro no
+    // crece**: es la misma navegación desde otro lugar.
+    origen: ["UX01", "UX02_INDICE"],
     condicion: "Course visible",
     accionSolicitada: "abrir materia",
     destino: "UX02",

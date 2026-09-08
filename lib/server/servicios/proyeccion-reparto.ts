@@ -70,6 +70,26 @@ export interface InsumosDeReparto {
     cargaDeclarada: { minutos: number; texto: string } | null;
     /** Trabajo autónomo declarado por la cátedra. Primer escalón del factor (§D). */
     cargaDeEstudio: { minutos: number; texto: string } | null;
+    /**
+     * La próxima evaluación **con fecha futura** — [ADR-077](../../../docs/decisions.md#adr-077).
+     *
+     * `null` ⇒ no hay ninguna, y el índice dice *"Sin evaluación cargada"*.
+     * **No se cae a la más reciente pasada**: una evaluación que ya ocurrió no
+     * es la próxima, y mostrarla como tal sería inventar una fecha.
+     *
+     * Es la **misma fila** que produjo `diasHastaEvaluacion`: si salieran de
+     * criterios distintos, *"Final 12 sep"* y *"15 d"* podrían hablar de
+     * evaluaciones diferentes sin que nada lo delate.
+     */
+    evaluacion: {
+      titulo: string | null;
+      tipo: string | null;
+      /** Cómo se rinde —`oral`, `practico`—. **No es `tipo`**, que dice qué instancia es. */
+      modalidad: string | null;
+      fecha: string;
+    } | null;
+    /** ISO o `null`. `null` ⇒ *"Sin avance registrado"*, que **no es** «hace 0 días» (`P-09`). */
+    ultimoAvanceEn: string | null;
     unidades: Array<{ id: string; peso: number | null; evidencia: EstadoDeUnidad }>;
     clases: Array<{ minutos: number | null; tipo: TipoDeClase | null; temas: string[] }>;
   }>;

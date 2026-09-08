@@ -21,6 +21,14 @@ const materia = (over: Partial<InsumosDeReparto["materias"][number]> = {}) => ({
   alcance: [] as string[],
   cargaDeclarada: null as { minutos: number; texto: string } | null,
   cargaDeEstudio: null as { minutos: number; texto: string } | null,
+  // ADR-077. El reparto no los mira; los lee el índice de materias.
+  evaluacion: null as {
+    titulo: string | null;
+    tipo: string | null;
+    modalidad: string | null;
+    fecha: string;
+  } | null,
+  ultimoAvanceEn: null as string | null,
   unidades: [
     { id: "u1", peso: null, evidencia: "sin_evidencia" as const },
     { id: "u2", peso: null, evidencia: "sin_evidencia" as const },

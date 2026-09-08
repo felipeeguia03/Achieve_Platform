@@ -134,6 +134,50 @@ q "insert into whatsapp_consent (institution_id,student_id,decision,policy_versi
      from curriculum_requirement cr
     where cr.curriculum_plan_id='$PLAN' and cr.label='Cálculo Avanzado';" >/dev/null
 
+# ── Dos materias más, para el índice · ADR-077 ───────────────────────────────
+#
+# ⚠️ **No son relleno: son los dos estados difíciles del índice.** Con una sola
+# materia el área no muestra nada de lo que decide —el orden por evaluación, y
+# los dos vacíos que ADR-072 §4 obliga a dibujar distinto—, y una pantalla que
+# sólo se puede mirar en su caso fácil no está probada.
+#
+#   · **Álgebra Sintética** tiene unidades y evaluación, y **ninguna clase**:
+#     entra sin barra, diciendo *"sin clases cargadas, no puedo estimar"*. Es el
+#     estado en el que entran **13 de las 36 materias del corpus real**.
+#   · **Física Sintética** tiene clases y unidades, y **ninguna evaluación**:
+#     entra sin fecha, al fondo del orden, ofreciendo cargarla.
+echo "→ Dos materias más para el índice (ADR-077): una sin clases, otra sin evaluación"
+
+U2='[{"codigo":"U1","nombre":"Grupos","orden":1},
+     {"codigo":"U2","nombre":"Anillos","orden":2},
+     {"codigo":"U3","nombre":"Cuerpos","orden":3}]'
+E2='[{"tipo":"final","titulo":"Final","fecha":"2026-09-24","modalidad":"oral"}]'
+MAT2=$(q "select code from curriculum_requirement where curriculum_plan_id='$PLAN' and label='Álgebra Sintética';" | tr -d '[:space:]')
+# Sin libro de temas: `[]`, y sin carga declarada. **La degradación es el punto.**
+OFF2=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-algebra.pdf',now(),0.7,'$MAT2','Álgebra Sintética','2026-2',NULL,'$U2'::jsonb,'[]'::jsonb,'$E2'::jsonb,'$PLAN','[]'::jsonb,NULL,NULL);" | tr -d '[:space:]')
+q "insert into course_enrollment (id,institution_id,student_id,offering_id)
+   values ('a6000000-0000-0000-0000-000000000002','$INST','$EST','$OFF2');
+   insert into requirement_declaration (institution_id,student_id,curriculum_requirement_id,course_enrollment_id)
+   select '$INST','$EST', cr.id, 'a6000000-0000-0000-0000-000000000002'
+     from curriculum_requirement cr
+    where cr.curriculum_plan_id='$PLAN' and cr.label='Álgebra Sintética';" >/dev/null
+
+U3='[{"codigo":"U1","nombre":"Cinemática","orden":1},
+     {"codigo":"U2","nombre":"Dinámica","orden":2}]'
+CL3='[{"fecha":"2026-08-06","hora":"18:00","minutos":180,"corrida":"teorico","temas":["Cinemática"]},
+      {"fecha":"2026-08-13","hora":"18:00","minutos":180,"corrida":"teorico","temas":["Cinemática"]},
+      {"fecha":"2026-08-20","hora":"18:00","minutos":180,"corrida":"practico","temas":["Dinámica"]}]'
+MAT3=$(q "select code from curriculum_requirement where curriculum_plan_id='$PLAN' and label='Física Sintética';" | tr -d '[:space:]')
+# Sin evaluaciones: `[]`. El índice **no le inventa una fecha** ni la ordena
+# como si tuviera: va al fondo y ofrece cargarla.
+OFF3=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-fisica.pdf',now(),0.7,'$MAT3','Física Sintética','2026-2',NULL,'$U3'::jsonb,'[]'::jsonb,'[]'::jsonb,'$PLAN','$CL3'::jsonb,1800,'30 horas');" | tr -d '[:space:]')
+q "insert into course_enrollment (id,institution_id,student_id,offering_id)
+   values ('a6000000-0000-0000-0000-000000000003','$INST','$EST','$OFF3');
+   insert into requirement_declaration (institution_id,student_id,curriculum_requirement_id,course_enrollment_id)
+   select '$INST','$EST', cr.id, 'a6000000-0000-0000-0000-000000000003'
+     from curriculum_requirement cr
+    where cr.curriculum_plan_id='$PLAN' and cr.label='Física Sintética';" >/dev/null
+
 echo "→ Material por unidad (sin recurso no hay acción ejecutable)"
 # ⚠️ **Se borra lo de esta cursada antes de insertar.** `ingerir_materia()` es
 # reemplazo por cursada para unidades y evaluaciones, pero los recursos los

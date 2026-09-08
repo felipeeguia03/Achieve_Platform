@@ -123,6 +123,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-074](#adr-074) | El Personal Engine calibra **el trabajo**, no la vida del estudiante | ✅ `ACCEPTED` *(7 sep 2026 · el multiplicador nunca baja de `1.0`)* | — |
 | [ADR-075](#adr-075) | Las respuestas de la psicopedagoga sobre tiempo y carga | ✅ `ACCEPTED` *(7 sep 2026 · **la pantalla del déficit no estaba aprobada**)* | `B6.17` |
 | [ADR-076](#adr-076) | Tres perfiles operativos, y la superficie académica **no autorizada todavía** | ✅ `ACCEPTED` *(8 sep 2026 · sólo informe de solo lectura)* | **Toda construcción de la superficie** |
+| [ADR-077](#adr-077) | El área «Materias» se construye: lista primero, materia después | ✅ `ACCEPTED` *(8 sep 2026 · cierra `A` y `C` de ADR-054 · **sin Gantt del período**)* | El Gantt cruzado |
 
 ---
 
@@ -6127,3 +6128,160 @@ que fusionar responsabilidades**. Modelar capacidades en vez de personas es lo q
 sola persona haga dos cosas hoy **sin perder de quién fue cada acción** — y es lo que hace posible
 sostener *"nadie valida su propia evidencia o propuesta"* cuando el curador y el coach son la misma
 persona.
+
+
+---
+
+<a id="adr-077"></a>
+
+## ADR-077 — El área «Materias» se construye: lista primero, materia después
+
+**Estado:** ✅ `ACCEPTED` · 8 de septiembre de 2026 · **decidido por el Product Owner**
+**Fecha de apertura:** 5 de septiembre de 2026 · **la dejó abierta [ADR-054](#adr-054), a propósito**
+**Relacionado:** [ADR-054](#adr-054), [ADR-058](#adr-058), [ADR-066](#adr-066), [ADR-072](#adr-072),
+[ADR-073](#adr-073).
+**Toca:** `lib/navigation/surfaces.ts`, `lib/navigation/menu.ts`, `lib/navigation/cta-registry.ts`,
+`lib/server/servicios/proyeccion-materias.ts`, `app/(student)/materias/`, `app/api/materias/`,
+`insumos_de_reparto()`.
+
+### Esta decisión no es nueva: estaba reservada
+
+[ADR-054](#adr-054) cerró **sólo la opción `B`** —`CTA-001` transporta la cursada— y delimitó el
+resto con firmeza:
+
+> *"Esto no autoriza construir todavía una nueva superficie de listado «Materias» ni cambiar el
+> nombre del ítem del menú. Las opciones `A` y `C` quedan como una decisión de diseño separada."*
+
+Y dijo **cómo** se tomaría:
+
+> *"…son una decisión de diseño propia, que se toma **con las capturas delante**."*
+
+El 8 de septiembre el owner puso las capturas delante y eligió:
+
+> *"esta pantalla de materias no me gusta, prefiero más el estilo de la segunda, la de color, primero
+> una pantalla con todas las materias y luego podés entrar a cada una"*
+
+**Eso cierra `A` y `C` juntas**, y en el orden correcto: el ítem del menú deja de llamarse plural
+sobre una superficie de una sola porque **ahora hay una de todas**, no porque se lo haya renombrado.
+
+### Por qué esto no inventa una décima superficie
+
+Lo dejó dicho el propio [ADR-054](#adr-054), leyendo el spec:
+
+> ⚠️ *"Eso mueve la opción `C`: una superficie de lista **no sería inventar una décima**, sería
+> construir un área que la arquitectura de información ya nombra."*
+
+Parte II §10 declara dos áreas distintas y el producto las había colapsado en una:
+
+| Área | Responsabilidad, textual | Estado |
+|---|---|---|
+| **Materias** | *"Espacios persistentes de cursado y evaluaciones."* | **Nunca se construyó** |
+| **Materia > Cursado** | *"Ritmo, unidades, progreso, recursos, acciones y Bitácora."* | `UX02` |
+
+**`UX02` no cambia de identidad.** Sigue siendo el cursado de **una** materia, y el Gantt que le puso
+[ADR-066](#adr-066) sigue viviendo ahí. Lo que se agrega es la puerta.
+
+⚠️ **Y se agrega como nodo sin wireframe, no como superficie.** `surfaces.ts` ya tiene el patrón:
+`UX04_RENEGOCIACION` y `UX04_RESCATE` son nodos con nombre y sin `wireframe`, y `superficieIds` los
+filtra. El índice entra igual —`wireframe: null`, `ruta: "/materias"`— así que **la afirmación *"no
+existe `UX10`"* del spec sigue siendo literalmente cierta** y los tests que la guardan siguen pasando
+sin tocarse.
+
+### El alcance: la lista, y sólo la lista
+
+El mockup trae dos vistas con un selector —**Lista** y **Gantt del período**—. Se aprueba **una**:
+
+| Vista | Decisión |
+|---|---|
+| **Lista** | ✅ Se construye ahora |
+| **Gantt del período** | ⏸️ **Diferido**, con decisión propia |
+
+**Por qué el Gantt cruzado no entra en este corte, y no es por tamaño.** Dibujar varias materias
+sobre un eje común es *decir cómo se reparte el período entre ellas* — que es exactamente lo que
+[ADR-073](#adr-073) ya proyecta en `UX01` con el reparto. **Dos superficies afirmando el reparto con
+reglas distintas es una contradicción esperando el momento**, y cuál manda es una decisión que nadie
+tomó todavía. El Gantt del período se decide cuando esa pregunta tenga respuesta.
+
+ℹ️ **El Gantt por materia no está afectado.** Es otro objeto: [ADR-066](#adr-066), dentro de `UX02`,
+sobre las unidades de una cursada. Ése ya existe y se queda donde está.
+
+### La cola de materias de `HOY` se queda
+
+[ADR-054](#adr-054) había señalado que la lista completa vivía *"sólo en `HOY`, debajo del fold y de a
+una"*. Con el índice construido, la tentación es sacarla. **No se saca:**
+
+| Superficie | La pregunta que contesta |
+|---|---|
+| `UX01` · la cola | ¿Qué necesito hacer **ahora**? |
+| El índice | ¿Cómo está **repartida** mi carga? |
+
+Son preguntas distintas y el paginado *«1 de 9»* es lo que `DD7` arbitró en `design-system.md` §1.4.
+Tocarlo sería reabrir `DD7` de refilón, sin decirlo.
+
+### Qué muestra cada fila
+
+| Elemento | Fuente | Ausencia |
+|---|---|---|
+| Nombre | `course_enrollment` | — |
+| Próxima evaluación · tipo · fecha | `assessment` con fecha futura, la más cercana | *"Sin evaluación cargada"* |
+| Días que faltan | `diasHastaEvaluacion` | `—` |
+| Barra de cobertura | `coberturaDeMateria()` | **No se dibuja** ([ADR-072](#adr-072) §4) |
+| Última actividad | `topic_progress` | *"Sin avance registrado"*, **nunca cero** |
+
+**El orden es por próxima evaluación, con las sin fecha al fondo.** Es lo que hace el mockup y es lo
+que [ADR-072](#adr-072) exige: *"ordenar por cobertura es un ranking de qué tan mal vas"*.
+
+### ⚠️ Una palabra del mockup que NO se adopta
+
+Las capturas rotulan la barra así:
+
+> ~~`26% · 1/9 dominados`~~
+
+**`dominados` es la primera prohibición de [ADR-072](#adr-072)**: *"no leer
+`topic_progress.domain_value`. El dominio requiere evaluación; la cobertura sólo requiere que el
+estudiante haya producido algo. Mezclarlos convierte la barra en una nota."* Es también el corte que
+sostiene toda la cadena `preparar ≠ enviar ≠ suficiencia ≠ validación ≠ dominio`.
+
+**Y el copy que se adopta tampoco es el de [ADR-072](#adr-072).** Ése fue revisado por la
+psicopedagoga en [ADR-075](#adr-075) §C1 —*"un porcentaje grande junto a una barra suele adquirir
+significado evaluativo aunque el texto inferior lo niegue"*, y *"«1 de 9 temas» y «26% de las horas»
+usan denominadores diferentes y pueden parecer dos medidas contradictorias"*—. El vigente es el que
+`UX02` ya dibuja, y el índice **no escribe uno propio: importa el mismo**:
+
+> **1 de 9 temas tiene alguna evidencia · 26% del tiempo estimado tiene evidencia asociada**
+>
+> *Esto muestra trabajo registrado. No mide comprensión, no es una nota y no predice el resultado.*
+
+⚠️ **Se comparte la función, no el texto.** `textoDeCobertura()` se extrae de
+`proyeccion-materia.ts` y la usan las dos superficies. Copiar el string habría dejado dos copias de
+un copy que ya cambió una vez por revisión clínica, y que va a cambiar otra vez.
+
+ℹ️ **Es un cambio de una palabra respecto del mockup, no de diseño.** El resto del mockup —los colores por materia, el
+orden, la barra, el estado *"sin temas cargados"* sin barra— cumple [ADR-072](#adr-072) tal como está
+dibujado, incluido el caso difícil: una materia sin datos **no se dibuja igual** que una sin trabajo.
+
+### El registro canónico de CTAs no cambia de tamaño
+
+**Sigue en veinte.** Lo único que cambia es de dónde puede salir `CTA-001`:
+
+```diff
+- origen: ["UX01"]
++ origen: ["UX01", "UX02_INDICE"]
+```
+
+Es lo que ya hace la cola de `HOY`, desde otro lugar. Y `CTA-001` ya transporta la cursada desde
+[ADR-054](#adr-054) opción `B`, así que **abrir la quinta fila abre la quinta materia** sin trabajo
+adicional: el defecto que ese ADR corrigió no se reintroduce.
+
+**La etiqueta del botón varía con el estado de la fila** —*Abrir*, *Completar*, *Agregar examen*— y
+eso es **copy, no contrato**: las tres hacen lo mismo, navegar a esa materia, y ninguna promete algo
+que el click no cumpla. Declarar tres CTAs para una navegación sería inflar el registro.
+
+### ⛔ Lo que queda afuera de este corte, y por qué
+
+**El botón `+ Agregar materia o evaluación` del pie no se construye.** Es el único elemento del
+mockup **sin destino definido**: son dos flujos distintos —dar de alta una materia es el alta
+([ADR-052](#adr-052), que es de una sola vez y no tiene reingreso especificado), y dar de alta una
+evaluación es `CTA-020`, que vive **dentro** de una cursada—. Ponerlo sin resolver eso sería un botón
+que no sabe adónde va.
+

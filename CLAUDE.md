@@ -102,13 +102,27 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 [ADR-054](docs/decisions.md#adr-054), **opción `B`** — `CTA-001` transporta el `CourseEnrollment`
 seleccionado y la pantalla abre exactamente ése. El incumplimiento de `VI.2` §5.2 está cerrado.
 
-⚠️ **Y lo que quedó afuera es deliberado, no un olvido:** el ítem del menú **sigue diciendo
-«Materias» en plural sobre una superficie de una sola**, y el área que la Parte II §10 del spec
-nombra sigue sin construirse. Son las opciones `A` y `C`, **decisión de diseño separada**, y el owner
-fue explícito: *"esto no autoriza construir todavía una nueva superficie de listado «Materias» ni
-cambiar el nombre del ítem del menú"*. **No las adelantes.**
+✅ **Y las opciones `A` y `C` se cerraron el 8 de septiembre de 2026** —
+[ADR-077](docs/decisions.md#adr-077), decididas por el owner con las capturas delante, que es como
+[ADR-054](docs/decisions.md#adr-054) pidió que se tomaran. **El área «Materias» existe**: `/materias`
+lista todas las cursadas ordenadas por próxima evaluación, y el ítem del menú por fin apunta ahí.
 
-✅ **`npm run db:verify` volvió a correr entero: 330 comprobaciones, cero fallos.** Estaba roto desde
+⚠️ **`/materias` NO es `UX10`, y el modo de lograrlo importa.** Es un nodo con `wireframe: null` en
+`surfaces.ts` —el mismo patrón que `UX04_RENEGOCIACION`—, así que `superficieIds` sigue devolviendo
+**nueve** y la afirmación del spec sigue siendo cierta. **Hay diez rutas bajo `app/(student)` y nueve
+superficies**, y los dos números se verifican por separado en `tests/shell.test.tsx`.
+
+⚠️ **El registro canónico sigue en 20 CTAs.** Entrar a una materia desde el índice es `CTA-001`, que
+ganó un origen. Las tres etiquetas del botón —*Abrir*, *Completar*, *Agregar examen*— son **copy**:
+las tres navegan a la misma materia.
+
+⚠️ **Lo que quedó afuera y sigue afuera:** el **«Gantt del período»** —la vista cruzada de varias
+materias sobre un eje común— **no se construyó**. Se pisa con el reparto de
+[ADR-073](docs/decisions.md#adr-073), que ya vive en `UX01`, y cuál manda no lo decidió nadie. Y el
+botón `+ Agregar materia o evaluación` del mockup tampoco: es el único elemento **sin destino
+definido**. **No los adelantes.**
+
+✅ **`npm run db:verify` corre entero: 396 comprobaciones, cero fallos.** Estaba roto desde
 la B6.14 —a `limpiar_mundo` le faltaban cinco tablas y, como las 40 sentencias van en **una sola
 transacción**, una FK abortaba todo y no se borraba nada—. Arreglarlo destapó un segundo defecto que
 el primero tapaba: `db-aislamiento.sh` **vacía el catálogo que `db-catalogo.sh` necesita después**,
@@ -483,7 +497,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **330 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **396 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
 de negocio a propósito:** después hay que volver a sembrar con `npm run db:demo`.
 

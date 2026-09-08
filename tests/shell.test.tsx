@@ -6,14 +6,31 @@ import { Item, NavegacionLateral } from "@/components/shell/navegacion-lateral";
 import { BarraSuperior } from "@/components/shell/barra-superior";
 import { menu, rutaDelItem } from "@/lib/navigation/menu";
 import { migasDe, padreDeMiga } from "@/lib/navigation/migas";
-import { nodos, superficieIds, type NodoId } from "@/lib/navigation/surfaces";
+import { nodoIds, nodos, superficieIds, type NodoId } from "@/lib/navigation/surfaces";
 import { ctaIds, ctaRegistry } from "@/lib/navigation/cta-registry";
 
 describe("El menú deriva del grafo", () => {
   it("todo ítem apunta a un nodo que existe y tiene ruta", () => {
+    // ⚠️ **Se verifica el nodo y su ruta, no que sea superficie.** Antes se
+    // pedía `superficieIds`, que era un proxy: alcanzaba mientras el menú sólo
+    // llevara a las nueve. El índice de materias
+    // ([ADR-077](../docs/decisions.md#adr-077)) es un nodo **con ruta y sin
+    // wireframe** —no es una décima superficie— y el proxy lo rechazaba por la
+    // razón equivocada. Esto es lo que el nombre del test siempre dijo.
     for (const item of menu) {
-      expect(superficieIds, item.nodo).toContain(item.nodo);
+      expect(nodoIds, item.nodo).toContain(item.nodo);
+      expect(nodos[item.nodo].ruta, item.nodo).not.toBeNull();
       expect(rutaDelItem(item)).toBe(nodos[item.nodo].ruta);
+    }
+  });
+
+  it("el menú no ofrece ninguna de las nueve salvo las que son destino propio", () => {
+    // El corte que el proxy anterior daba gratis, ahora explícito: si un ítem
+    // apunta a una superficie, tiene que ser una superficie de verdad.
+    for (const item of menu) {
+      const esSuperficie = superficieIds.includes(item.nodo);
+      const esArea = nodos[item.nodo].wireframe === null;
+      expect(esSuperficie || esArea, item.nodo).toBe(true);
     }
   });
 
@@ -33,8 +50,17 @@ describe("El menú deriva del grafo", () => {
     // `UX07` era la excepción —ninguna CTA llegaba (ADR-016)— y el menú tapaba
     // el hueco. Desde el 1 de septiembre de 2026 lo alcanza `CTA-019`, así que
     // ya no queda ninguno.
+    //
+    // ⚠️ **La regla se acota a las superficies, y no es un ablande.** Lo que
+    // hacía falso a `UX07` era ser una superficie con acciones de dominio
+    // alcanzable sólo por orientación. Un **área** de la arquitectura de
+    // información —`wireframe: null`, [ADR-077](../docs/decisions.md#adr-077)—
+    // no tiene acción propia: es orientación, y el menú es su entrada legítima.
+    // Cualquier nodo con wireframe sigue exigiendo su CTA.
     const destinosDeCta = new Set(ctaIds.map((id) => ctaRegistry[id].destino));
-    const soloPorMenu = menu.filter((m) => !destinosDeCta.has(m.nodo));
+    const soloPorMenu = menu
+      .filter((m) => nodos[m.nodo].wireframe !== null)
+      .filter((m) => !destinosDeCta.has(m.nodo));
     expect(soloPorMenu.map((m) => m.nodo)).toEqual([]);
   });
 
@@ -213,15 +239,32 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
    * no se rompe: se ve *casi* igual y pierde la navegación, que es la clase de
    * regresión que nadie nota hasta que un estudiante se queda sin salida.
    */
-  it("toda ruta del estudiante envuelve su superficie en `Shell`, con su nodo", () => {
+  it("toda ruta del estudiante envuelve su superficie en `Shell`, con un nodo real", () => {
     const rutas = paginas("app/(student)");
-    expect(rutas.length).toBe(9);
+
+    // ⚠️ **Diez rutas, nueve superficies.** El índice de materias
+    // ([ADR-077](../docs/decisions.md#adr-077)) es un nodo sin wireframe: tiene
+    // ruta y no es una décima. Las dos cifras se verifican por separado, abajo,
+    // justamente para que una no tape a la otra.
+    expect(rutas.length).toBe(10);
 
     const sinShell = rutas.filter((f) => {
       const src = readFileSync(resolve(RAIZ, f), "utf8");
-      return !/<Shell\s+nodo="UX0[1-9]"/.test(src);
+      const nodo = src.match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1];
+      // Más estricto que antes: el nodo declarado tiene que **existir en el
+      // grafo**. La regex anterior aceptaba cualquier `UX0n`, existiera o no.
+      return nodo === undefined || !(nodoIds as string[]).includes(nodo);
     });
     expect(sinShell).toEqual([]);
+  });
+
+  it("exactamente nueve rutas declaran una de las nueve superficies", () => {
+    // La afirmación del spec —*"No existe `UX10`"*— hecha verificable sobre las
+    // rutas, y no sobre el conteo total de páginas.
+    const superficies = paginas("app/(student)")
+      .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1])
+      .filter((n): n is string => n !== undefined && (superficieIds as string[]).includes(n));
+    expect(new Set(superficies).size).toBe(9);
   });
 
   /**
@@ -229,9 +272,11 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
    * breadcrumb que miente y un ítem activo en el lugar equivocado.
    */
   it("cada ruta declara un nodo propio, sin repetirse", () => {
-    const nodos = paginas("app/(student)")
-      .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="(UX0[1-9])"/)?.[1])
+    const declarados = paginas("app/(student)")
+      .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1])
       .filter(Boolean);
-    expect(new Set(nodos).size).toBe(9);
+    // Diez rutas, diez nodos distintos: nueve superficies más el índice.
+    expect(new Set(declarados).size).toBe(10);
+    expect(declarados.length).toBe(10);
   });
 });

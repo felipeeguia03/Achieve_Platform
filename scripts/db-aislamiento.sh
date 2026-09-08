@@ -1215,6 +1215,47 @@ X=$(q "select x->>'diasHastaEvaluacion' || '|' || jsonb_array_length(x->'alcance
 [ -z "$(q "select jsonb_path_query_first(insumos_de_reparto('$A','$EST2'), '\$.**.minutosPendientes')::text;" | tr -d '[:space:]')" ] \
   && ok "no devuelve minutos pendientes: el cálculo vive en lib/domain" || mal "la función repartió, y no debe"
 
+# ── ADR-077 · los insumos del índice de materias ─────────────────────────────
+
+echo "→ ADR-077 · la próxima evaluación y el último avance, por materia"
+
+X=$(q "select (x->'evaluacion'->>'titulo') || '|' || (x->'evaluacion'->>'tipo') || '|' || (x->'evaluacion'->>'fecha')
+  from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')
+[ "$X" = "Preparto|parcial|$(q "select (current_date + 14)::text;" | tr -d '[:space:]')" ] \
+  && ok "viaja la evaluación con su título, su tipo y su fecha" || mal "la evaluación salió mal: $X"
+
+# ⚠️ **La MISMA fila que produjo los días.** Si las dos subconsultas eligieran
+# distinto, el índice diría «Final 12 sep» al lado de «15 d» hablando de dos
+# evaluaciones diferentes, y nada lo delataría en pantalla.
+corre "insert into assessment (id,offering_id,assessment_type,title,assessment_date,source_type) values
+  ('c7000000-0000-0000-0000-000000000002','a4000000-0000-0000-0000-000000000001','final','P lejano',current_date + 40,'institution');"
+X=$(q "select (x->>'diasHastaEvaluacion') || '|' || (x->'evaluacion'->>'titulo')
+  from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')
+[ "$X" = "14|Preparto" ] \
+  && ok "con dos evaluaciones futuras, los días y el título salen de la misma" || mal "los días y la evaluación discreparon: $X"
+corre "delete from assessment where id='c7000000-0000-0000-0000-000000000002';"
+
+# ⚠️ **No se cae a una evaluación pasada.** Una que ya ocurrió no es la próxima,
+# y mostrarla como tal sería inventarle una fecha al estudiante.
+corre "update assessment set assessment_date = current_date - 3 where id='c7000000-0000-0000-0000-000000000001';"
+X=$(q "select coalesce((x->>'evaluacion'),'NULO') || '|' || coalesce((x->>'diasHastaEvaluacion'),'NULO')
+  from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')
+[ "$X" = "NULO|NULO" ] \
+  && ok "con la evaluación ya pasada, no se ofrece una próxima que no existe" || mal "se ofreció una evaluación pasada como próxima: $X"
+corre "update assessment set assessment_date = current_date + 14 where id='c7000000-0000-0000-0000-000000000001';"
+
+# ⚠️ **Sin avance registrado viaja NULL, no un instante.** «Sin avance» y «hace
+# 0 días» son dos afirmaciones distintas (`P-09`).
+[ "$(q "select coalesce((x->>'ultimoAvanceEn'),'NULO') from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')" = "NULO" ] \
+  && ok "sin topic_progress, el último avance viaja NULL y no una fecha" || mal "se inventó un último avance"
+
+# ⚠️ **Y la evaluación declarada por OTRO estudiante no se ve** — ADR-067. El
+# índice hereda la misma regla de visibilidad que el resto de las lecturas.
+corre "update assessment set declared_by='a5000000-0000-0000-0000-000000000002' where id='c7000000-0000-0000-0000-000000000001';"
+[ "$(q "select coalesce((x->>'evaluacion'),'NULO') from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')" = "NULO" ] \
+  && ok "la evaluación que declaró otro estudiante NO aparece en este índice" || mal "se filtró la evaluación de otro estudiante"
+corre "update assessment set declared_by=null where id='c7000000-0000-0000-0000-000000000001';"
+
 corre "delete from assessment_topic where assessment_id='c7000000-0000-0000-0000-000000000001';"
 corre "delete from assessment where id='c7000000-0000-0000-0000-000000000001';"
 corre "delete from class_session where offering_id='a4000000-0000-0000-0000-000000000001';"

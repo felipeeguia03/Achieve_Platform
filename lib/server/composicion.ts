@@ -81,6 +81,7 @@ import {
 import { recomendarPara as recomendarPuro, type ResultadoDelMotor } from "./servicios/motor";
 import { proyectarDia } from "./servicios/proyeccion-hoy";
 import { proyectarReparto } from "./servicios/proyeccion-reparto";
+import { proyectarMaterias } from "./servicios/proyeccion-materias";
 import { repartoReal } from "./repositorios/reparto";
 import { proyectarMateria } from "./servicios/proyeccion-materia";
 import { proyectarAccion } from "./servicios/proyeccion-accion";
@@ -154,6 +155,7 @@ import type {
   EvidenciaProps,
   HoyProps,
   MateriaProps,
+  MateriasProps,
   ProgresoProps,
   ProximaAccionProps,
 } from "@/lib/domain/view-models";
@@ -1035,6 +1037,24 @@ export async function diaDe(
   // día que haya que cachearlo se pueda cachear solo.
   const insumos = await repartoReal.insumos(institutionId, studentId, ahora);
   return proyectarDia(estado, proyectarReparto(insumos));
+}
+
+/**
+ * El índice de materias — [ADR-077](../../docs/decisions.md#adr-077).
+ *
+ * ⚠️ **Reusa `insumos_de_reparto()`, y es a propósito.** Necesita exactamente
+ * los mismos hechos que el reparto de `UX01`; una consulta propia podría
+ * divergir y entonces la barra del índice contradiría al reparto sobre la misma
+ * materia.
+ */
+export async function materiasDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  ahora: string = new Date().toISOString(),
+): Promise<MateriasProps> {
+  const insumos = await repartoReal.insumos(institutionId, studentId, ahora);
+  return proyectarMaterias(insumos, ahora, zona);
 }
 
 /**

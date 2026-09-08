@@ -35,7 +35,9 @@ export interface ItemDeMenu {
  */
 export const menu: readonly ItemDeMenu[] = [
   { nodo: "UX01", etiqueta: "Hoy", contador: null },
-  { nodo: "UX02", etiqueta: "Materias", contador: null },
+  // ADR-077. El plural deja de ser una promesa incumplida: apunta al índice,
+  // no al cursado de una sola materia. Cierra la opción `A` de ADR-054.
+  { nodo: "UX02_INDICE", etiqueta: "Materias", contador: null },
   { nodo: "UX06", etiqueta: "Progreso", contador: null },
   { nodo: "UX07", etiqueta: "Modo Examen", contador: null },
 ] as const;

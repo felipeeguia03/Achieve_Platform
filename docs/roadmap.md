@@ -54,7 +54,7 @@ Cada etapa, sin excepción:
 **nueve superficies** del estudiante leen de la base **y el camino principal escribe en ella**
 ([ADR-040](decisions.md#adr-040)), y desde la B6.14 **el estudiante declara él mismo qué cursa**.
 
-✅ **`npm run db:verify` volvió a correr entero** — **330 comprobaciones, cero fallos**. Estuvo roto
+✅ **`npm run db:verify` corre entero** — **396 comprobaciones, cero fallos**. Estuvo roto
 por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto de orden. Los dos, en
 [§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre).
 
@@ -4034,6 +4034,79 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 ---
 
 <a id="fase-b617--la-respuesta-de-la-psicopedagoga"></a>
+
+## Fase B6.18 — El área «Materias» · ✅ COMPLETA *(sin el Gantt del período)*
+
+**Decide:** [ADR-077](decisions.md#adr-077), sobre lo que
+[ADR-054](decisions.md#adr-054) dejó reservado el 5 de septiembre.
+
+> *"esta pantalla de materias no me gusta, prefiero más el estilo de la segunda, la de color, primero
+> una pantalla con todas las materias y luego podés entrar a cada una"*
+
+**No es una superficie nueva: es la que faltaba desde el principio.** Parte II §10 del spec nombra
+dos áreas —**Materias** (*"espacios persistentes de cursado y evaluaciones"*) y **Materia > Cursado**—
+y el producto las había colapsado en una: el ítem del menú decía el plural y llevaba a `UX02`, que es
+el cursado de **una**.
+
+### Qué se construyó
+
+| Pieza | Qué hace |
+|---|---|
+| `insumos_de_reparto()`, extendida | Suma la próxima evaluación **con fecha futura** y el último avance, por materia |
+| `proyeccion-materias.ts` | Ordena por evaluación y calcula cobertura reusando `duracion.ts` + `cobertura.ts` |
+| `/api/materias` · `/materias` | El controller y la pantalla |
+| `UX02_INDICE` en `surfaces.ts` | Nodo **sin wireframe**: ruta propia, y no es una décima superficie |
+
+⚠️ **Se extendió la función del reparto en vez de escribir una nueva.** El índice necesita
+exactamente los mismos hechos; una segunda consulta podría divergir, y entonces la barra del índice
+contradiría al reparto de `HOY` **sobre la misma materia**.
+
+⚠️ **`textoDeCobertura()` se extrajo a una sola función.** El pie de la barra ya cambió una vez por
+revisión clínica ([ADR-075](decisions.md#adr-075) §C1); dos copias significan que la próxima revisión
+arregla una pantalla y deja la otra afirmando lo que la psicopedagoga objetó.
+
+### Lo que el mockup pedía y no se hizo
+
+**`1/9 dominados`.** Es la primera prohibición de [ADR-072](decisions.md#adr-072) —no leer
+`domain_value`— y el corte que sostiene `preparar ≠ enviar ≠ suficiencia ≠ validación ≠ dominio`. Se
+usa el copy vigente, que es el de `UX02`.
+
+**El «Gantt del período».** Dibujar varias materias sobre un eje común es *decir cómo se reparte el
+período entre ellas*, que es lo que [ADR-073](decisions.md#adr-073) ya proyecta en `UX01`. **Dos
+superficies afirmando el reparto con reglas distintas es una contradicción esperando el momento**, y
+cuál manda no lo decidió nadie. Diferido con decisión propia.
+
+**El botón `+ Agregar materia o evaluación`.** El único elemento del mockup **sin destino definido**:
+son dos flujos —el alta ([ADR-052](decisions.md#adr-052), de una sola vez y sin reingreso
+especificado) y `CTA-020`, que vive dentro de una cursada—.
+
+### Tres guards que rompen de verdad
+
+Cada uno se verificó rompiendo la regla a propósito:
+
+- `✓ una cobertura alta NO adelanta a una materia con la evaluación más cerca` — ordenar por cobertura
+  invierte el orden y el test cae
+- `✓ declarar el alcance de un parcial no sube la barra` — recortar la cobertura al alcance la llevaría
+  del 50% al 100% sin que el estudiante hiciera nada
+- `✓ con la evaluación ya pasada, no se ofrece una próxima que no existe` — el fallback a la más
+  reciente le inventaría una fecha al estudiante
+
+### Y dos guards que rompieron, con razón
+
+`tests/shell.test.tsx` pedía que **todo ítem del menú fuera una superficie** y que hubiera **nueve
+rutas**. Las dos afirmaciones eran proxies que alcanzaban mientras el menú sólo llevara a las nueve.
+Ahora se verifica lo que su nombre siempre dijo —el nodo existe y tiene ruta— y **las dos cifras por
+separado**: diez rutas, nueve superficies. La regla *"ninguna superficie del menú depende sólo del
+menú"* se acotó a los nodos **con wireframe**, que es donde su motivo aplica.
+
+### El mundo demo creció, y no es relleno
+
+Tres materias en vez de una, elegidas por sus estados: **Cálculo** completa, **Álgebra** con unidades
+y sin clases —sin barra, el estado en el que entran **13 de las 36 materias del corpus real**— y
+**Física** con clases y sin evaluación. Con una sola materia el índice no muestra nada de lo que
+decide.
+
+---
 
 ## Fase B6.17 — La respuesta de la psicopedagoga · ✅ COMPLETA *(salvo §E, fuera del MVP)*
 

@@ -286,6 +286,86 @@ export interface HoyProps {
   verProgreso: string | null;
 }
 
+// ── El índice de materias ────────────────────────────────────────────────────
+
+/**
+ * Una fila del área «Materias» — [ADR-077](../../docs/decisions.md#adr-077).
+ *
+ * El área que la Parte II §10 del spec nombra desde siempre —*"espacios
+ * persistentes de cursado y evaluaciones"*— y que nunca se había construido.
+ * **No es una décima superficie**: `UX02` sigue siendo el cursado de una
+ * materia, y esto es la puerta.
+ */
+export interface MateriaEnIndice {
+  cursadaId: string;
+  nombre: string;
+  /**
+   * *"Parcial 1 · escrito · mar 15 sept"*. `null` ⇒ **no hay evaluación con
+   * fecha futura**, y la fila lo dice.
+   *
+   * ⚠️ No se cae a la última pasada: una evaluación que ya ocurrió no es la
+   * próxima.
+   */
+  evaluacion: string | null;
+  /** *"15 d"*. `null` ⇒ sin fecha, y la columna queda vacía en vez de en cero. */
+  faltan: string | null;
+  /**
+   * La barra de [ADR-072](../../docs/decisions.md#adr-072). **Cobertura, no
+   * readiness**: cuántas de tus unidades tienen evidencia enviada.
+   *
+   * `null` ⇒ **no se dibuja barra**. Es la cuarta prohibición del ADR: *"una
+   * barra vacía por falta de datos y una por falta de trabajo no se dibujan
+   * igual"*.
+   */
+  cobertura: CoberturaEnIndice | null;
+  /**
+   * Por qué no hay barra. `null` ⇒ hay barra. Se muestra **en su lugar**, nunca
+   * además.
+   */
+  sinCobertura: string | null;
+  /** *"última actividad hace 7 días"*. `null` ⇒ *"Sin avance registrado"*, **no** cero. */
+  ultimoAvance: string | null;
+  /**
+   * La etiqueta del botón — *Abrir*, *Completar*, *Agregar examen*.
+   *
+   * ⚠️ **Es copy, no contrato.** Las tres son `CTA-001` y las tres hacen lo
+   * mismo: navegar a esa materia. Declarar tres CTAs para una navegación
+   * inflaría el registro canónico sin agregar una sola condición nueva.
+   */
+  etiqueta: string;
+  tono: "neutral" | "urgencia";
+}
+
+export interface CoberturaEnIndice {
+  /** `0`–`1`. Es lo que se dibuja: **ponderado por horas**, no por conteo. */
+  fraccion: number;
+  /**
+   * *"1 de 9 temas · 26% de las horas"* — el copy literal que aprobó el owner
+   * en [ADR-072](../../docs/decisions.md#adr-072).
+   *
+   * ⚠️ Los dos números **no coinciden a propósito**: un tema de seis horas no
+   * vale lo mismo que uno de una. Mostrar sólo el conteo dejaría la ponderación
+   * invisible; mostrar sólo la barra sería el *score de máquina* que el
+   * producto se prohíbe.
+   */
+  texto: string;
+}
+
+export interface MateriasProps {
+  fecha: string;
+  /** *"15 días para el próximo final"*. `null` ⇒ ninguna materia tiene fecha. */
+  proximaEvaluacion: string | null;
+  /**
+   * Ordenadas por **próxima evaluación**, con las sin fecha al fondo.
+   *
+   * ⚠️ **Nunca por cobertura.** [ADR-072](../../docs/decisions.md#adr-072):
+   * *"ordenar por cobertura es un ranking de qué tan mal vas"*.
+   */
+  materias: MateriaEnIndice[];
+  /** La nota al pie de [ADR-072](../../docs/decisions.md#adr-072), obligatoria si hay alguna barra. */
+  aclaracion: string | null;
+}
+
 // ── UX02 · Materia / Cursado ─────────────────────────────────────────────────
 
 /**

@@ -335,6 +335,35 @@ export interface GanttDeMateria {
 export const ACLARACION_DE_COBERTURA =
   "Esto muestra trabajo registrado. No mide comprensión, no es una nota y no predice el resultado.";
 
+/**
+ * El pie de la barra, **uno solo para las dos superficies** —`UX02` y el índice
+ * de materias ([ADR-077](../../../docs/decisions.md#adr-077))—.
+ *
+ * ⚠️ **Vive acá y se importa, en vez de copiarse.** Este texto ya cambió una vez
+ * por revisión clínica ([ADR-075](../../../docs/decisions.md#adr-075) §C1: *"un
+ * porcentaje grande junto a una barra suele adquirir significado evaluativo
+ * aunque el texto inferior lo niegue"*) y va a volver a cambiar. Dos copias
+ * significan que la próxima revisión arregla una pantalla y deja la otra
+ * afirmando lo que la psicopedagoga objetó.
+ *
+ * **El pie siempre dice algo verdadero.** Con barra, los dos números —y no
+ * coinciden a propósito: la ponderación por horas es el motivo de que existan
+ * los dos—. Sin barra, el conteo solo, que sigue siendo un hecho.
+ */
+export function textoDeCobertura(cobertura: Cobertura, totalDeTemas: number): string {
+  const barra = porcentajeDeHoras(cobertura);
+  const trabajados = cobertura.temasTrabajados;
+  if (barra !== null) {
+    return `${trabajados} de ${totalDeTemas} temas tiene alguna evidencia · ${barra}% del tiempo estimado tiene evidencia asociada`;
+  }
+  // ⚠️ **Los dos vacíos NO se dicen igual** ([ADR-072](../../../docs/decisions.md#adr-072) §4).
+  // Sin temas no hay nada que contar; sin minutos hay temas y falta el tiempo.
+  if (cobertura.estado === "SIN_DATOS" && cobertura.motivo === "sin_temas_declarados") {
+    return "sin temas cargados — no puedo estimar";
+  }
+  return `${trabajados} de ${totalDeTemas} temas tiene alguna evidencia · sin clases cargadas, no puedo estimar el tiempo`;
+}
+
 export function ganttDeMateria(e: EstadoDeMateria): GanttDeMateria {
   const sesiones: SesionDeClase[] = e.clases.map((c) => ({
     tipo: c.tipo,
@@ -361,24 +390,13 @@ export function ganttDeMateria(e: EstadoDeMateria): GanttDeMateria {
   const cobertura = coberturaDeMateria(unidades);
 
   const barra = porcentajeDeHoras(cobertura);
-  const trabajados = cobertura.temasTrabajados;
   const total = e.unidades.length;
   const enRevision = cobertura.entregasQueRequierenRevision;
 
-  // El pie siempre dice algo verdadero. Cuando hay barra, los dos números —y no
-  // coinciden a propósito: la ponderación por horas es el motivo de que existan
-  // los dos. Cuando no la hay, el conteo solo, que sigue siendo un hecho.
-  // ⚠️ **Tres medidas, no una barra ambigua** — ADR-075 §C1. Textual: *"un
-  // porcentaje grande junto a una barra suele adquirir significado evaluativo
-  // aunque el texto inferior lo niegue"*, y *"«1 de 9 temas» y «26% de las
-  // horas» usan denominadores diferentes y pueden parecer dos medidas
-  // contradictorias"*.
-  const pie =
-    barra !== null
-      ? `${trabajados} de ${total} temas tiene alguna evidencia · ${barra}% del tiempo estimado tiene evidencia asociada`
-      : cobertura.estado === "SIN_DATOS" && cobertura.motivo === "sin_temas_declarados"
-        ? "sin temas cargados — no puedo estimar"
-        : `${trabajados} de ${total} temas tiene alguna evidencia · sin clases cargadas, no puedo estimar el tiempo`;
+  // El texto lo arma `textoDeCobertura`, **compartido con el índice de materias**
+  // (ADR-077). Vive en un solo lugar porque ya cambió una vez por revisión
+  // clínica y dos copias significan que la próxima arregla una sola pantalla.
+  const pie = textoDeCobertura(cobertura, total);
 
   return {
     unidades,
