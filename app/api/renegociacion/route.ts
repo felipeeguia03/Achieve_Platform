@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { t, textoDeClase } from "@/lib/content/es-AR";
 import { tokenDelHeader } from "@/lib/server/http";
 import { renegociarCompromiso, resolverSesion } from "@/lib/server/composicion";
 import { MINUTOS_DE_ANTICIPACION, motivoDelEstado } from "@/lib/domain/renegociacion";
@@ -95,6 +96,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ese compromiso cambió de estado" }, { status: 409 });
     case "CONFLICTO_DE_CLAVE":
       return NextResponse.json({ error: "La clave ya se usó para otro pedido" }, { status: 409 });
+    // ADR-064: mover el horario está sujeto a la misma regla que ponerlo, y se
+    // explica con las mismas palabras. La frase la arma `textoDeClase` para que
+    // las dos rutas no expliquen distinto el mismo hecho.
+    case "CONFLICTO_DE_HORARIO": {
+      const cuando = textoDeClase(resultado.bloque);
+      return NextResponse.json(
+        {
+          error: cuando ? `${t("COMPROMISO.CONFLICTO_HORARIO")} ${cuando}` : t("COMPROMISO.CONFLICTO_HORARIO"),
+          motivo: "CONFLICTO_DE_HORARIO",
+        },
+        { status: 409 },
+      );
+    }
     // La institución no tiene zona horaria. **No se sustituye por otra**: sin
     // ella la condición 5 no se puede evaluar, y evaluarla con la zona
     // equivocada sería aplicar otra regla. Es un defecto de datos, no del

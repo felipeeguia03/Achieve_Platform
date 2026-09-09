@@ -1,5 +1,9 @@
 import type { CommitmentState } from "./types";
 import { canTransition, commitmentTransitions } from "./state-machines";
+// El offset real de la zona, compartido con `superposicion.ts`: dos copias de
+// aritmética de husos divergen en el primer horario de verano.
+import { desplazamiento } from "./zona";
+import { bloqueQueSeSuperpone, type BloqueSemanal } from "./superposicion";
 
 /**
  * Cuándo una renegociación es elegible — [ADR-046](../../docs/decisions.md#adr-046).
@@ -152,18 +156,6 @@ function finDelDia(instanteDelAcuerdo: string, zona: string): number {
   return siguiente - desplazamiento(siguiente, zona);
 }
 
-/** Cuánto adelanta la zona respecto de UTC en ese instante, en milisegundos. */
-function desplazamiento(instante: number, zona: string): number {
-  const p = new Intl.DateTimeFormat("en-US", {
-    timeZone: zona, hour12: false,
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  }).formatToParts(new Date(instante));
-  const v = (tipo: string) => Number(p.find((x) => x.type === tipo)?.value);
-  const hora = v("hour") === 24 ? 0 : v("hour");
-  return Date.UTC(v("year"), v("month") - 1, v("day"), hora, v("minute"), v("second")) - instante;
-}
-
 /**
  * Por qué un estado no admite mover el horario.
  *
@@ -189,6 +181,16 @@ export function cambioDeHorarioPosible(entrada: {
   inicioOriginal: string | null;
   ahora: string;
   zonaInstitucional: string;
+  /**
+   * Los bloques de clase conocidos y cuánto dura el compromiso —
+   * [ADR-064](../../docs/decisions.md#adr-064).
+   *
+   * **No cambian la elegibilidad, filtran la oferta.** Con la lista vacía —el
+   * caso de casi todo el mundo hoy— se ofrecen exactamente las mismas franjas
+   * que antes de que esta regla existiera.
+   */
+  bloques?: readonly BloqueSemanal[];
+  minutos?: number;
 }): CambioDeHorario {
   if (!canTransition(commitmentTransitions, entrada.estado, "RENEGOTIATED")) {
     // El motivo se distingue porque la salida del estudiante es distinta en
@@ -210,12 +212,25 @@ export function cambioDeHorarioPosible(entrada: {
   // ofrecer un horario que nadie eligió, y ofrecer uno ya pasado sería ofrecer
   // algo que el servidor rechaza.
   const paso = PASO_EN_MINUTOS * 60_000;
+  const bloques = entrada.bloques ?? [];
+  const minutos = entrada.minutos ?? 0;
   const horarios: string[] = [];
   for (let t = Math.ceil(primero / paso) * paso; t < limite; t += paso) {
-    horarios.push(new Date(t).toISOString());
+    const inicio = new Date(t).toISOString();
+    // ADR-064: **no se ofrece una franja que el servidor va a rechazar.** Es el
+    // mismo criterio con el que arriba no se ofrece un horario ya pasado.
+    if (
+      minutos > 0 &&
+      bloqueQueSeSuperpone({ inicio, minutos, zonaInstitucional: entrada.zonaInstitucional }, bloques)
+    ) {
+      continue;
+    }
+    horarios.push(inicio);
   }
 
-  // Puede quedar vacío si el redondeo se pasó del límite: entonces tampoco hay.
+  // Puede quedar vacío si el redondeo se pasó del límite, **o si todas las
+  // franjas del día tienen clase encima**: en los dos casos no hay horario
+  // posible, y se dice con el mismo motivo.
   return horarios.length > 0
     ? { sePuede: true, horarios }
     : { sePuede: false, motivo: "SIN_HORARIO_POSIBLE" };

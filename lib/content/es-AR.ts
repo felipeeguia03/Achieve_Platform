@@ -347,6 +347,24 @@ export const copy = {
   "COMPROMISO.MOTIVO_YA_EMPEZO": "Este compromiso ya empezó.",
   "COMPROMISO.MOTIVO_INCUMPLIDO": "Este compromiso se incumplió; ahora corresponde rescatarlo.",
   "COMPROMISO.MOTIVO_SIN_HORARIO": "Ya no queda un horario válido dentro del día acordado.",
+  /**
+   * `CONFLICTO_DE_HORARIO` — [ADR-064](../../docs/decisions.md#adr-064).
+   *
+   * **Es el hecho y nada más.** El ADR pide dos salidas —elegir otro horario o
+   * corregir el bloque de clase— y la copy no las enuncia: donde la primera
+   * existe, el selector de horarios está a la vista; la segunda **todavía no
+   * tiene dónde hacerse**, y describir una puerta que no existe es peor que no
+   * mencionarla.
+   */
+  "COMPROMISO.CONFLICTO_HORARIO": "Tenés clase",
+  /**
+   * Cuando la propuesta se corrió para no caer encima de una clase — ADR-064.
+   *
+   * **Se dice.** Un horario que aparece corrido sin explicación se lee como un
+   * error de la pantalla, y el estudiante no tiene cómo saber que el sistema le
+   * esquivó la cursada.
+   */
+  "COMPROMISO.HORARIO_CORRIDO": "Movimos la propuesta para que no te caiga encima de una clase.",
 
   // ── UX05 · Evidencia ──────────────────────────────────────────────────────
   "EVIDENCIA.ESPERADA": "Evidencia esperada",
@@ -675,9 +693,39 @@ export function t(id: CopyId): string {
  */
 export const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
 
+/**
+ * Los mismos siete, enteros. **No es una segunda lista**: es el mismo dato en
+ * otro registro, y por eso viven pegados y con el mismo orden.
+ *
+ * La forma corta rotula una tabla —donde el ancho manda—; la larga entra en una
+ * oración, y *"tenés clase el Mar de 14:00 a 16:00"* no es una oración.
+ */
+export const DIAS_LARGOS = [
+  "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado",
+] as const;
+
 /** `null` ⇒ el número no nombra ningún día, y **no se muestra un día cualquiera**. */
 export function nombreDeDia(dia: number): string | null {
   return DIAS[dia] ?? null;
+}
+
+/**
+ * *"el martes de 14:00 a 16:00"* — un bloque de clase dentro de una oración.
+ *
+ * Vive acá porque **traducir un bloque a una frase es contenido**, y porque la
+ * usan dos rutas: `POST /api/compromiso` y `POST /api/renegociacion` explican
+ * el mismo conflicto ([ADR-064](../../docs/decisions.md#adr-064)) y tienen que
+ * explicarlo igual.
+ *
+ * `null` ⇒ el día no nombra ningún día. **No se arma la frase a medias**: sin
+ * poder decir cuándo, el mensaje no agrega nada a *"no se puede"*.
+ */
+export function textoDeClase(bloque: { dia: number; desde: string; hasta: string }): string | null {
+  const dia = DIAS_LARGOS[bloque.dia];
+  if (!dia) return null;
+  // Postgres entrega `TIME` con segundos y nadie los lee.
+  const hhmm = (h: string) => h.slice(0, 5);
+  return `el ${dia} de ${hhmm(bloque.desde)} a ${hhmm(bloque.hasta)}`;
 }
 
 /**

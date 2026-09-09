@@ -141,7 +141,7 @@ semanas`: un examen fuera de cuadro es peor que un eje largo.
   ([ADR-078](docs/decisions.md#adr-078)).
 - **`+ Agregar materia o evaluación`** — el único elemento **sin destino definido**.
 
-✅ **`npm run db:verify` corre entero: 429 comprobaciones, cero fallos.** Estaba roto desde
+✅ **`npm run db:verify` corre entero: 434 comprobaciones, cero fallos.** Estaba roto desde
 la B6.14 —a `limpiar_mundo` le faltaban cinco tablas y, como las 40 sentencias van en **una sola
 transacción**, una FK abortaba todo y no se borraba nada—. Arreglarlo destapó un segundo defecto que
 el primero tapaba: `db-aislamiento.sh` **vacía el catálogo que `db-catalogo.sh` necesita después**,
@@ -150,6 +150,33 @@ así que `db:verify` ahora lo reimporta entre los dos.
 ⚠️ **Regla que salió de ahí:** toda tabla nueva que referencie a las del mundo académico **se agrega
 a `limpiar_mundo` en el mismo commit**. Si no, el verificador deja de correr y el error no nombra la
 causa.
+
+✅ **Un compromiso ya no se confirma encima de una clase** —
+[ADR-084](docs/decisions.md#adr-084), 9 de septiembre, que construye
+[ADR-064](docs/decisions.md#adr-064). Las **dos mitades**: `confirmarCompromiso` y `renegociar`
+rechazan con `CONFLICTO_DE_HORARIO` **antes de escribir**, y la propuesta corre el horario hasta el
+primer hueco **y lo dice**.
+
+⚠️ **Antes de tocar la regla, tres cosas que no son obvias.** Los intervalos son **semiabiertos**:
+terminar justo cuando empieza la clase **no es conflicto**. Se comparan **instantes absolutos**, no
+minutos de pared — un `-03:00` a mano se rompe en el primer horario de verano, y en silencio. Y se
+valida contra **todas** las cursadas: estudiar Cálculo el martes a las 18:30 choca con la clase de
+Física igual que con la de Cálculo.
+
+⚠️ **La idempotencia va ANTES que la regla, a propósito.** Un reintento del mismo pedido devuelve la
+fila que ya existe aunque el horario ahora choque: si el horario se cargó en el medio, la respuesta a
+*"¿lo creaste?"* sigue siendo sí.
+
+⚠️ **Sin horarios cargados no pasa nada, y ésa es la mitigación.** Una lista vacía de bloques **nunca
+da conflicto**, así que el camino que ya funcionaba se comporta igual que antes. Hay test en las tres
+capas: si lo tocás, no lo aflojes.
+
+⛔ **Falta la segunda salida de ADR-064.** *"Elegir otro horario **o corregir el bloque de clase**"*:
+la primera existe, la segunda **no tiene dónde hacerse** hasta el cuarto paso del alta. La copy
+enuncia el hecho y ninguna salida, a propósito.
+
+⚠️ **La aritmética de husos vive en `lib/domain/zona.ts`, y hay una sola.** `renegociacion.ts` tenía
+su copia privada. **No la vuelvas a duplicar.**
 
 ✅ **El bloque horario existe** — [ADR-083](docs/decisions.md#adr-083), 9 de septiembre. Era **la
 única entidad genuinamente nueva** de ADR-060…065, decidida el 5 de septiembre y sin construir.
@@ -587,7 +614,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **429 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **434 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
 de negocio a propósito:** después hay que volver a sembrar con `npm run db:demo`.
 

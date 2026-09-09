@@ -4033,6 +4033,65 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+## Fase B6.22 — El compromiso no cae encima de una clase · ✅ COMPLETA
+
+**Decide:** [ADR-084](decisions.md#adr-084), que **construye**
+[ADR-064](decisions.md#adr-064) — decidido el 5 de septiembre. Es el Corte 5 del
+[plan](plan-periodo-comision-horarios.md), y sólo se pudo hacer ahora: hasta la B6.21 **no había
+contra qué comparar**.
+
+### Las dos mitades, porque el ADR pide las dos
+
+| | |
+|---|---|
+| **Validación** | `confirmarCompromiso` y `renegociar` rechazan con `CONFLICTO_DE_HORARIO` **antes de escribir**, y el `409` lleva el hecho: *"Tenés clase el miércoles de 14:00 a 16:00"* |
+| **Propuesta** | El horario propuesto se corre hasta el primer hueco **y se dice**; el selector de [ADR-050](decisions.md#adr-050) deja de ofrecer franjas con clase encima |
+
+Ofrecer un horario que el servidor va a rechazar es el defecto que ADR-050 corrigió una vez —*"la
+pantalla ofrecía algo que el backend no podía hacer"*—, y media fase existe para no repetirlo.
+
+### Los tres detalles que no eran obvios
+
+**Los bordes.** Terminar justo cuando empieza la clase **no es conflicto**. Tratarlo como conflicto
+haría imposible lo más razonable que alguien puede hacer: estudiar pegado a la cursada.
+
+**Instantes absolutos, no minutos de pared.** Cada bloque se materializa en su día concreto
+preguntándole el offset a la zona. Un `-03:00` a mano se rompe en la primera institución con horario
+de verano, y se rompe **en silencio**.
+
+**Todas las cursadas.** Estudiar Cálculo el martes a las 18:30 choca con la clase de **Física** igual
+que con la de Cálculo.
+
+### El riesgo, acotado a una sola propiedad
+
+Era **el más alto del plan**: una regla nueva sobre el camino que ya funciona. Se acota con esto:
+**una lista vacía de bloques nunca da conflicto**. Sin horarios cargados el comportamiento es
+idéntico al de antes, y hay test en las tres capas.
+
+### ⛔ Falta la segunda salida, y no es un olvido
+
+ADR-064 pide dos: *"elegir otro horario **o corregir el bloque de clase**"*. La primera existe. La
+segunda **no tiene dónde hacerse**: el único escritor de horarios es la ingesta, y el que declara el
+estudiante necesita el cuarto paso del alta ([ADR-062](decisions.md#adr-062)). Por eso la copy
+enuncia el hecho y ninguna salida: describir una puerta que no está es peor que no mencionarla.
+
+### Dos correcciones que salieron del camino
+
+**`renegociarCompromiso` habría convertido el conflicto en una mentira.** Su `switch` termina en
+`default: { estado: "CONFLICTO" }` —*"ese compromiso cambió de estado"*—, y **el `default` hace que
+el compilador no lo señale**. Ahora tiene su caso explícito, con guard de que esté antes del
+catch-all.
+
+**Y había una copia privada de aritmética de husos** en `renegociacion.ts`. Se extrajo a
+`lib/domain/zona.ts`: dos verdades sobre horarios de verano divergen en el primero.
+
+**Verificación:** 27 comprobaciones nuevas en `npm test` y 5 en `npm run db:verify`. ⚠️ Una quinta
+rotura **no falló**, y se deja anotado: sacar el atajo `if (bloques.length === 0)` no cambia nada
+porque el bucle sobre una lista vacía tampoco encuentra nada. **La garantía es estructural**, no el
+atajo.
+
+---
+
 ## Fase B6.21 — El horario de cursado · ✅ COMPLETA *(entidad, ingesta y pantalla)*
 
 **Decide:** [ADR-083](decisions.md#adr-083), que **construye** [ADR-063](decisions.md#adr-063) —

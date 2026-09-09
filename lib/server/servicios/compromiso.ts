@@ -4,6 +4,10 @@ import {
   type MotivoDeInelegibilidad,
 } from "@/lib/domain/renegociacion";
 import type { CommitmentState } from "@/lib/domain/types";
+import {
+  bloqueQueSeSuperpone,
+  type BloqueSemanal,
+} from "@/lib/domain/superposicion";
 import type { PublicadorDeEventos } from "./eventos";
 import {
   transicionarEntidad,
@@ -156,10 +160,21 @@ export async function transicionar(
 export interface ContextoDeRenegociacion {
   ahora: string;
   zonaInstitucional: string;
+  /**
+   * Los bloques de clase conocidos — [ADR-064](../../../docs/decisions.md#adr-064).
+   *
+   * **Mover el horario está sujeto a la misma regla que ponerlo.** Dejar la
+   * comprobación sólo en el primer compromiso sería dejar abierta la puerta
+   * grande: renegociar es exactamente la operación con la que alguien elige un
+   * horario nuevo.
+   */
+  bloques: readonly BloqueSemanal[];
 }
 
 export type ResultadoDeAcuerdo =
   | { estado: "OK"; compromiso: Compromiso }
+  /** El horario nuevo se pisa con una clase. Ver `ResultadoDeConfirmacion`. */
+  | { estado: "CONFLICTO_DE_HORARIO"; bloque: BloqueSemanal }
   | { estado: "NO_ENCONTRADO" }
   | { estado: "NO_RENEGOCIABLE"; desde: CommitmentState }
   | { estado: "NO_ELEGIBLE"; motivo: MotivoDeInelegibilidad }
@@ -201,8 +216,32 @@ export interface HuellaDeCompromiso {
   plannedMinutes: number;
 }
 
+/**
+ * Lo que hace falta para evaluar la restricción horaria —
+ * [ADR-064](../../../docs/decisions.md#adr-064).
+ *
+ * Viaja como contexto y no lo lee el Service, por la misma razón que
+ * `ContextoDeRenegociacion`: **la regla es del dominio y la consulta no**.
+ *
+ * ⚠️ **`bloques` vacío no es un caso degradado.** Es el estado normal de casi
+ * todo el mundo hoy, y significa que el comportamiento es **idéntico al de
+ * antes de esta regla**. Es la mitigación de riesgo del corte, y tiene test.
+ */
+export interface ContextoDeHorario {
+  zonaInstitucional: string;
+  bloques: readonly BloqueSemanal[];
+}
+
 export type ResultadoDeConfirmacion =
   | { estado: "OK"; compromiso: Compromiso; duplicado: boolean }
+  /**
+   * El horario acordado se pisa con una clase.
+   *
+   * **No es un error técnico**: es un estado de producto con su bloque, y `UX04`
+   * lo resuelve con las dos salidas que el ADR nombra. Viaja el bloque —no un
+   * texto— porque quién lo explica es la capa de contenido.
+   */
+  | { estado: "CONFLICTO_DE_HORARIO"; bloque: BloqueSemanal }
   /** La `Action` no existe, no es de este estudiante, o no admite comprometerse. */
   | { estado: "ACCION_NO_COMPROMETIBLE"; motivo: string }
   /** Ya hay un compromiso vivo sobre esta Action. No se apilan dos. */
@@ -213,7 +252,18 @@ export type ResultadoDeConfirmacion =
    * No se devuelve la fila: sería contar que existe, y de quién. Un `409` seco
    * es lo único que el que reintenta necesita saber.
    */
-  | { estado: "CONFLICTO_DE_CLAVE" };
+  | { estado: "CONFLICTO_DE_CLAVE" }
+  /**
+   * La institución no tiene zona horaria — [ADR-049](../../../docs/decisions.md#adr-049).
+   *
+   * **No hay fallback, y no es rigidez**: una clase de 18 a 20 evaluada en otro
+   * huso es una clase a otra hora. Sin la zona, la regla de ADR-064 no se puede
+   * aplicar, y aplicarla mal es peor que no confirmar.
+   *
+   * Lo produce la composición, no el Service puro: es una lectura que falta, no
+   * una regla que falla.
+   */
+  | { estado: "SIN_ZONA_INSTITUCIONAL" };
 
 export interface RepositorioDeConfirmacion {
   /** La huella de la fila que ya usó esa clave, para poder compararla. */
@@ -246,6 +296,7 @@ export async function confirmarCompromiso(
   deps: { repo: RepositorioDeConfirmacion; eventos: PublicadorDeEventos },
   institutionId: string,
   datos: ConfirmacionDeCompromiso,
+  horario: ContextoDeHorario,
 ): Promise<ResultadoDeConfirmacion> {
   const huella = await deps.repo.huellaDeClave(institutionId, datos.claveDeIdempotencia);
   if (huella) {
@@ -260,6 +311,17 @@ export async function confirmarCompromiso(
       ? { estado: "OK", compromiso: huella.compromiso, duplicado: true }
       : { estado: "CONFLICTO_DE_CLAVE" };
   }
+
+  // ADR-064: **no confirmar silenciosamente** un compromiso encima de una clase.
+  //
+  // Va antes de escribir y después de la idempotencia, y ese orden importa: un
+  // reintento del mismo pedido tiene que devolver la misma fila, no volver a
+  // evaluar una regla contra un horario que puede haber cambiado en el medio.
+  const pisa = bloqueQueSeSuperpone(
+    { inicio: datos.startAt, minutos: datos.plannedMinutes, zonaInstitucional: horario.zonaInstitucional },
+    horario.bloques,
+  );
+  if (pisa) return { estado: "CONFLICTO_DE_HORARIO", bloque: pisa };
 
   const creado = await deps.repo.crearConfirmado(institutionId, datos);
   if (!creado.comprometible) {
@@ -311,6 +373,15 @@ export async function renegociar(
       ? { estado: "NO_RENEGOCIABLE", desde: original.state }
       : { estado: "NO_ELEGIBLE", motivo: elegibilidad.motivo };
   }
+
+  // La misma regla que al confirmar: el horario nuevo tampoco puede caer encima
+  // de una clase. Va después de la elegibilidad porque un compromiso que no se
+  // puede mover no necesita que además le expliquen contra qué choca.
+  const pisa = bloqueQueSeSuperpone(
+    { inicio: acuerdo.startAt, minutos: acuerdo.plannedMinutes, zonaInstitucional: contexto.zonaInstitucional },
+    contexto.bloques,
+  );
+  if (pisa) return { estado: "CONFLICTO_DE_HORARIO", bloque: pisa };
 
   const nuevo = await deps.repo.renegociarAtomico(
     institutionId,

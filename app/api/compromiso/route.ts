@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { t, textoDeClase } from "@/lib/content/es-AR";
 import { altaPendiente, tokenDelHeader } from "@/lib/server/http";
 import {
   compromisoDe,
@@ -150,5 +151,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Esa acción ya tiene un compromiso vivo" }, { status: 409 });
     case "ACCION_NO_COMPROMETIBLE":
       return NextResponse.json({ error: resultado.motivo }, { status: 409 });
+    /*
+      **El conflicto con una clase** — ADR-064. No es un error técnico: es el
+      producto diciendo que a esa hora está cursando. Va con su motivo canónico
+      y con el hecho —cuándo es la clase—, porque *"no confirmar silenciosamente"*
+      significa poder explicar contra qué choca.
+    */
+    case "CONFLICTO_DE_HORARIO": {
+      const cuando = textoDeClase(resultado.bloque);
+      return NextResponse.json(
+        {
+          error: cuando ? `${t("COMPROMISO.CONFLICTO_HORARIO")} ${cuando}` : t("COMPROMISO.CONFLICTO_HORARIO"),
+          motivo: "CONFLICTO_DE_HORARIO",
+        },
+        { status: 409 },
+      );
+    }
+    /*
+      Sin zona institucional la regla no se puede evaluar, y evaluarla con otra
+      sería aplicar otra regla: una clase de 18 a 20 en otro huso es una clase a
+      otra hora. Es un defecto de datos, no del pedido — por eso `5xx`, igual
+      que en la renegociación (ADR-049).
+    */
+    case "SIN_ZONA_INSTITUCIONAL":
+      return NextResponse.json(
+        { error: "La institución no tiene zona horaria configurada" },
+        { status: 503 },
+      );
   }
 }

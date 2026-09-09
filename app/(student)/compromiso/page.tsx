@@ -189,9 +189,18 @@ function Pantalla({
       setCambioRechazado({
         sePuede: false,
         motivo:
-          MOTIVO_DE_CAMBIO[codigo as keyof typeof MOTIVO_DE_CAMBIO] ??
-          EQUIVALENCIA[codigo] ??
-          t("COMPROMISO.NO_SE_PUEDE_CAMBIAR"),
+          /*
+            **El conflicto con una clase es el único motivo que no sale de la
+            tabla** — ADR-064. Los demás son frases fijas; éste nombra un hecho
+            —*"tenés clase el martes de 14:00 a 16:00"*— y una tabla estática no
+            puede saber cuál. Lo arma `textoDeClase` en el servidor, para que
+            las dos rutas que explican este conflicto lo expliquen igual.
+          */
+          codigo === "CONFLICTO_DE_HORARIO"
+            ? r.motivo
+            : MOTIVO_DE_CAMBIO[codigo as keyof typeof MOTIVO_DE_CAMBIO] ??
+              EQUIVALENCIA[codigo] ??
+              t("COMPROMISO.NO_SE_PUEDE_CAMBIAR"),
       });
       return;
     }

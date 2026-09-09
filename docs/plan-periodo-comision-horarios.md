@@ -106,9 +106,20 @@ Tres hallazgos del informe, y el más importante apareció después:
 
 ---
 
-## Corte 5 · El conflicto de horario al comprometerse
+## Corte 5 · El conflicto de horario al comprometerse — ✅ HECHO
 
-**Ejecuta:** [ADR-064](decisions.md#adr-064).
+**Ejecuta:** [ADR-064](decisions.md#adr-064). **Completado el 9 de septiembre de 2026** —
+[ADR-084](decisions.md#adr-084), Fase B6.22.
+
+> ✅ **Cómo cerró.** Las dos mitades: la validación en el Service —`confirmarCompromiso` y
+> `renegociar`, antes de escribir— y la propuesta, que corre el horario hasta el primer hueco y lo
+> dice. El riesgo se acotó a una propiedad: **una lista vacía de bloques nunca da conflicto**.
+>
+> ⛔ **Falta la segunda salida**: *"corregir el bloque de clase"* no tiene dónde hacerse hasta el
+> cuarto paso del alta. La copy enuncia el hecho y ninguna salida, a propósito.
+>
+> ⚠️ Y destapó un defecto propio: el `switch` de `renegociarCompromiso` habría mandado el conflicto
+> al `default` —«ese compromiso cambió de estado»—, **sin que el compilador lo señalara**.
 
 | | |
 |---|---|

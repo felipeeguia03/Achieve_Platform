@@ -120,6 +120,8 @@ const compromiso: EstadoDeCompromiso = {
   esRenegociacion: false,
   esRescate: false,
   original: null,
+  // Sin horarios de cursado: se ofrecen las mismas franjas que antes de ADR-064.
+  horario: [],
   yaEmpezo: false,
 };
 

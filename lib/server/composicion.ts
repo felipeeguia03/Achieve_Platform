@@ -57,6 +57,8 @@ import { progresoLecturaReal } from "./repositorios/progreso-lectura";
 import { progresoEscrituraReal } from "./repositorios/progreso";
 import { institucionesReal } from "./repositorios/instituciones";
 import { institucionReal } from "./repositorios/institucion";
+import { horariosReal } from "./repositorios/horarios";
+import { primerInicioSinClase, type BloqueSemanal } from "@/lib/domain/superposicion";
 import { motorReal } from "./repositorios/motor";
 import { relojReal } from "./repositorios/reloj";
 import { senalesReal } from "./repositorios/riesgo";
@@ -356,10 +358,22 @@ export async function confirmarCompromiso(
   institutionId: string,
   datos: ConfirmacionDeCompromiso,
 ): Promise<ResultadoDeConfirmacion> {
+  // ADR-064: el *cuándo* se valida acá, no en el ADE. Las dos lecturas que la
+  // regla necesita —la zona de la institución y los bloques conocidos— salen de
+  // la base, porque la regla es del dominio y la consulta no.
+  //
+  // ⚠️ **Sin zona institucional la operación NO se hace.** Es el mismo criterio
+  // que ADR-049 fijó para la renegociación: evaluar la condición con otra zona
+  // sería aplicar otra regla. Y acá pesa más, porque una clase de 18 a 20 en
+  // otro huso es una clase a otra hora.
+  const zonaInstitucional = await institucionReal.zonaHoraria(institutionId);
+  if (!zonaInstitucional) return { estado: "SIN_ZONA_INSTITUCIONAL" };
+
   const resultado = await confirmarCompromisoPuro(
     { repo: compromisosReal, eventos: eventosReal },
     institutionId,
     datos,
+    { zonaInstitucional, bloques: await horariosReal.delEstudiante(institutionId, datos.estudianteId) },
   );
 
   if (resultado.estado !== "OK" || resultado.duplicado) return resultado;
@@ -582,6 +596,13 @@ export type ResultadoDeRenegociacion =
   | { estado: "CONFLICTO" }
   /** La clave existe con otro dueño, otro original u otro contenido. */
   | { estado: "CONFLICTO_DE_CLAVE" }
+  /**
+   * El horario nuevo cae encima de una clase — [ADR-064](../../docs/decisions.md#adr-064).
+   *
+   * Viaja el bloque y no un texto: **la frase la arma la capa de contenido**,
+   * para que las dos rutas que explican este conflicto lo expliquen igual.
+   */
+  | { estado: "CONFLICTO_DE_HORARIO"; bloque: BloqueSemanal }
   /** La institución no existe: sin su zona, la condición 5 no se puede evaluar. */
   | { estado: "SIN_ZONA_INSTITUCIONAL" };
 
@@ -644,7 +665,11 @@ export async function renegociarCompromiso(
       plannedMinutes: datos.plannedMinutes,
       claveDeIdempotencia: datos.claveDeIdempotencia,
     },
-    { ahora, zonaInstitucional },
+    {
+      ahora,
+      zonaInstitucional,
+      bloques: await horariosReal.delEstudiante(institutionId, datos.estudianteId),
+    },
     datos.estudianteId,
   );
 
@@ -661,6 +686,15 @@ export async function renegociarCompromiso(
       return resultado.motivo === "ESTADO_NO_RENEGOCIABLE"
         ? { estado: "CONFLICTO" }
         : { estado: "NO_ELEGIBLE", motivo: resultado.motivo };
+    /*
+      ADR-064. **Tiene que estar antes del `default`**, y eso no es una
+      formalidad: sin este caso, un conflicto de horario salía por el catch-all
+      como «ese compromiso cambió de estado» — que no cambió, y el estudiante
+      habría recargado la pantalla para encontrarla igual. El `default` hace que
+      el compilador no lo señale, así que lo señala el guard.
+    */
+    case "CONFLICTO_DE_HORARIO":
+      return { estado: "CONFLICTO_DE_HORARIO", bloque: resultado.bloque };
     default:
       return { estado: "CONFLICTO" };
   }
@@ -1292,9 +1326,34 @@ export async function propuestaDeCompromiso(
   if (incumplido) return null;
 
   const zona = estado.zona;
-  const inicio = proximaMediaHora(ahora);
-  const startAt = inicio.toISOString();
   const minutos = estado.minutosMax ?? estado.minutosMin ?? 45;
+
+  /*
+    ── El horario propuesto esquiva las clases · ADR-064 ───────────────────────
+
+    *"La restricción horaria pertenece a **la propuesta** y validación del
+    `Commitment`"*. Proponer un horario que `POST /api/compromiso` va a rechazar
+    es el defecto que ADR-050 ya corrigió una vez —la pantalla ofreciendo algo
+    que el backend no puede hacer— y no se repite acá.
+
+    ⚠️ **Sin zona institucional se propone igual, sin comprobar.** Es una
+    lectura, no un acuerdo: negarle la pantalla a alguien porque falta un dato de
+    la institución sería peor, y el `503` al confirmar dice qué pasa. Escribir es
+    lo que no se hace a ciegas.
+  */
+  const zonaInstitucional = await institucionReal.zonaHoraria(institutionId);
+  const bloques = zonaInstitucional
+    ? await horariosReal.delEstudiante(institutionId, studentId)
+    : [];
+
+  const propuesto = proximaMediaHora(ahora).toISOString();
+  const startAt = zonaInstitucional
+    ? primerInicioSinClase({ inicio: propuesto, minutos, zonaInstitucional }, bloques)
+    : propuesto;
+  const inicio = new Date(startAt);
+  // Si se movió, **se dice**. Un horario que aparece corrido sin explicación se
+  // lee como un error de la pantalla.
+  const seMovio = startAt !== propuesto;
 
   const fmt = (o: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat("es-AR", { ...o, timeZone: zona }).format(inicio).replace(/[.,]/g, "");
@@ -1318,7 +1377,7 @@ export async function propuestaDeCompromiso(
       evidenciaEsperada: estado.evidenciaEsperada,
       criterioCierre: estado.criterioCierre,
       estadoResultante: { tono: "exito", texto: "Confirmado" },
-      aviso: null,
+      aviso: seMovio ? t("COMPROMISO.HORARIO_CORRIDO") : null,
       original: null,
       ctaPrimaria: { texto: "Me comprometo", habilitada: true },
     },

@@ -1,5 +1,6 @@
 import { MOTIVO_DE_CAMBIO, t } from "@/lib/content/es-AR";
 import { cambioDeHorarioPosible } from "@/lib/domain/renegociacion";
+import type { BloqueSemanal } from "@/lib/domain/superposicion";
 import type { CompromisoProps, EstadoCompromiso, FilaDato } from "@/lib/domain/view-models";
 
 /**
@@ -46,6 +47,13 @@ export interface EstadoDeCompromiso {
     minutosPlanificados: number;
   } | null;
   yaEmpezo: boolean;
+  /**
+   * Los bloques de clase conocidos — [ADR-064](../../../docs/decisions.md#adr-064).
+   *
+   * Sólo se usan para **no ofrecer** una franja con clase encima. `[]` ⇒ no se
+   * sabe, y se ofrece lo mismo que antes de que la regla existiera.
+   */
+  horario: readonly BloqueSemanal[];
 }
 
 export interface RepositorioDeCompromiso {
@@ -160,6 +168,9 @@ function cambioDeHorarioDe(e: EstadoDeCompromiso): CompromisoProps["cambioDeHora
     inicioOriginal: e.inicioEn,
     ahora: e.instante,
     zonaInstitucional: e.zonaInstitucional,
+    // No cambian la elegibilidad: filtran la oferta. Ver ADR-064.
+    bloques: e.horario,
+    minutos: e.minutosPlanificados,
   });
 
   if (r.sePuede) {

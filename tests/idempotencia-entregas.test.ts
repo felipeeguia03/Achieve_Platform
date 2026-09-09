@@ -79,12 +79,20 @@ function repoDeConfirmacion(huella: HuellaDeCompromiso | null) {
   return { repo, creados: () => creados };
 }
 
+/**
+ * Un mundo **sin horarios de cursado**, que es el de casi todo el mundo hoy.
+ * Con la lista vacía la regla de [ADR-064](../docs/decisions.md#adr-064) no
+ * bloquea nada, y estas comprobaciones siguen midiendo lo que vinieron a medir:
+ * la idempotencia, no la superposición.
+ */
+const SIN_HORARIOS = { zonaInstitucional: "America/Argentina/Cordoba", bloques: [] };
+
 describe("confirmar un compromiso, dos veces", () => {
   it("sin clave previa lo crea y publica el hecho", async () => {
     const { repo, creados } = repoDeConfirmacion(null);
     const ev = eventos();
 
-    const r = await confirmarCompromiso({ repo, eventos: ev }, INST, PEDIDO);
+    const r = await confirmarCompromiso({ repo, eventos: ev }, INST, PEDIDO, SIN_HORARIOS);
 
     expect(r).toMatchObject({ estado: "OK", duplicado: false });
     expect(creados()).toBe(1);
@@ -95,7 +103,7 @@ describe("confirmar un compromiso, dos veces", () => {
     const { repo, creados } = repoDeConfirmacion(HUELLA);
     const ev = eventos();
 
-    const r = await confirmarCompromiso({ repo, eventos: ev }, INST, PEDIDO);
+    const r = await confirmarCompromiso({ repo, eventos: ev }, INST, PEDIDO, SIN_HORARIOS);
 
     expect(r).toEqual({ estado: "OK", compromiso: HUELLA.compromiso, duplicado: true });
     expect(creados()).toBe(0);
@@ -113,7 +121,7 @@ describe("confirmar un compromiso, dos veces", () => {
   ])("la misma clave con %s es conflicto, y no filtra la fila", async (_caso, cambio) => {
     const { repo, creados } = repoDeConfirmacion(HUELLA);
 
-    const r = await confirmarCompromiso({ repo, eventos: eventos() }, INST, { ...PEDIDO, ...cambio });
+    const r = await confirmarCompromiso({ repo, eventos: eventos() }, INST, { ...PEDIDO, ...cambio }, SIN_HORARIOS);
 
     expect(r).toEqual({ estado: "CONFLICTO_DE_CLAVE" });
     expect(creados()).toBe(0);

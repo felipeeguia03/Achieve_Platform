@@ -130,6 +130,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-081](#adr-081) | Una reingesta **borra el progreso del estudiante**: `topic` gana clave natural y deja de borrarse | ✅ `ACCEPTED` *(8 sep 2026 · **defecto medido**, no hipótesis)* | — |
 | [ADR-082](#adr-082) | La Bitácora **es de una materia**: `CTA-009` transporta la cursada | ✅ `ACCEPTED` *(9 sep 2026 · corte 1 de `cursado-de-materia.md` · **segunda aplicación de ADR-054**)* | — |
 | [ADR-083](#adr-083) | El bloque horario existe, entra por la ingesta y **no toca el reparto** | ✅ `ACCEPTED` *(9 sep 2026 · construye ADR-063 · **sin `kind` ni `schedule_status`**)* | El cuarto paso del alta (ADR-062), el conflicto de ADR-064 |
+| [ADR-084](#adr-084) | El compromiso **no se confirma encima de una clase** | ✅ `ACCEPTED` *(9 sep 2026 · construye ADR-064 · **falta la segunda salida**)* | «Corregir el bloque» necesita el cuarto paso del alta |
 
 ---
 
@@ -6968,3 +6969,106 @@ sección de base ingería contra la oferta compartida con `p_unidades: []`, y de
 [ADR-081](#adr-081) eso **retira todas las unidades de la oferta** — nueve comprobaciones aguas abajo
 se caían sin que hubiera un solo invariante roto. La sección tiene ahora su propio mundo. **Un
 verificador no puede romper lo que las otras comprobaciones necesitan.**
+
+---
+
+<a id="adr-084"></a>
+
+## ADR-084 — El compromiso no se confirma encima de una clase
+
+**Estado:** ✅ `ACCEPTED` · 9 de septiembre de 2026 · **construye
+[ADR-064](#adr-064)**, decidido el 5 de septiembre y sin implementar
+**Relacionado:** [ADR-046](#adr-046), [ADR-049](#adr-049), [ADR-050](#adr-050),
+[ADR-063](#adr-063), [ADR-083](#adr-083) · [plan](plan-periodo-comision-horarios.md) Corte 5
+**Toca:** `lib/domain/superposicion.ts`, `lib/domain/zona.ts`, el Service de `Commitment`,
+`POST /api/compromiso`, `POST /api/renegociacion`, `estado_de_compromiso`, `UX04`.
+
+### Qué se construyó
+
+La decisión de [ADR-064](#adr-064), textual:
+
+> *"La restricción horaria pertenece a la propuesta y validación del `Commitment`, no al ADE."*
+> *"No confirmar silenciosamente el compromiso. **Mostrar el conflicto.**"*
+
+**Las dos mitades**, porque el ADR pide las dos:
+
+| | |
+|---|---|
+| **Validación** | `confirmarCompromiso` y `renegociar` rechazan con `CONFLICTO_DE_HORARIO` **antes de escribir**. El `409` lleva el hecho: *"Tenés clase el miércoles de 14:00 a 16:00"* |
+| **Propuesta** | `propuestaDeCompromiso` corre el horario hasta el primer hueco libre **y lo dice**; el selector de [ADR-050](#adr-050) deja de listar franjas con clase encima |
+
+Proponer un horario que el servidor va a rechazar es exactamente el defecto que
+[ADR-050](#adr-050) corrigió una vez —*"la pantalla ofrecía algo que el backend no podía hacer"*— y
+la mitad de este ADR existe para no repetirlo.
+
+### La regla, y sus bordes
+
+**Los dos intervalos son semiabiertos.** Terminar **justo** cuando empieza la clase **no es
+conflicto**, y empezar justo cuando termina, tampoco. Tratarlos como conflicto haría imposible lo más
+razonable que alguien puede hacer —estudiar pegado a la clase— y nadie entendería por qué.
+
+**Se comparan instantes absolutos, no minutos de pared.** Cada bloque se materializa en el día
+concreto —y en sus dos vecinos, porque una franja puede cruzar la medianoche— preguntándole el offset
+a la zona para ese día. Un `-03:00` escrito a mano se rompe en la primera institución con horario de
+verano, **y se rompe en silencio**: da un resultado plausible una hora corrido.
+
+**Contra todas sus cursadas, no contra la materia de la Action.** Comprometerse a estudiar Cálculo el
+martes a las 18:30 choca con la clase de **Física** de 18 a 20 igual que con la de Cálculo. Filtrar
+por materia dejaría pasar justo el caso que el estudiante no ve venir.
+
+**La zona es la de la institución** ([ADR-049](#adr-049)), no la del estudiante: el horario de clase
+es un hecho de la cátedra, y dos estudiantes de la misma comisión en husos distintos cursan a la
+misma hora. **Sin zona institucional el compromiso no se confirma** (`503`), igual que la
+renegociación: evaluar la regla con otra zona sería aplicar otra regla.
+
+### El riesgo, y cómo se acotó
+
+Es **una regla nueva sobre el camino que ya funciona** —el plan lo marcaba como el riesgo más alto
+del bloque—. Se acota con una sola propiedad: **una lista vacía de bloques nunca da conflicto**. Sin
+horarios cargados —el caso de casi todo el mundo hoy— el comportamiento es **idéntico** al de antes,
+y hay test de eso en las tres capas.
+
+⚠️ **La idempotencia va antes que la regla, y el orden es deliberado.** Un reintento del mismo pedido
+devuelve la fila que ya existe **aunque el horario ahora choque**: si el horario de clase se cargó en
+el medio, la respuesta a *"¿lo creaste?"* sigue siendo sí. Reevaluar acá convertiría un reintento en
+el rechazo de algo que ya pasó. Hay guard.
+
+### ⛔ Lo que NO se construyó, y hay que decirlo
+
+**El ADR pide dos salidas y sólo una existe.** *"Pedir que elija otro horario **o que corrija el
+bloque de clase** si ya no corresponde."*
+
+- **Elegir otro horario** ✅ existe donde hay selector —la renegociación de [ADR-050](#adr-050)— y en
+  la propuesta se resuelve solo, corriendo el horario.
+- **Corregir el bloque de clase** ⛔ **no tiene dónde hacerse.** El único escritor de horarios es la
+  ingesta ([ADR-083](#adr-083)); el que declara el estudiante necesita el cuarto paso del alta, que
+  arrastra [ADR-062](#adr-062) entero.
+
+Por eso la copy **enuncia el hecho y ninguna de las dos salidas**: donde la primera existe, el
+selector está a la vista; describir la segunda sería señalar una puerta que no está.
+
+### Una corrección que salió del camino
+
+**`renegociarCompromiso` habría convertido el conflicto en una mentira.** Su `switch` termina en
+`default: return { estado: "CONFLICTO" }` —*"ese compromiso cambió de estado"*—, y el conflicto de
+horario salía por ahí: el estudiante habría recargado la pantalla para encontrarla igual. **Y como
+hay `default`, el compilador no lo señala.** Ahora tiene su caso explícito, y un guard verifica que
+esté **antes** del catch-all.
+
+**Y había una copia privada de aritmética de husos.** `renegociacion.ts` traía su `desplazamiento()`;
+esta regla necesitaba lo mismo. Se extrajo a `lib/domain/zona.ts` en vez de duplicarla — dos verdades
+sobre husos horarios divergen en el primer horario de verano.
+
+### Cómo se verifica
+
+**27 comprobaciones nuevas en `npm test`** (`tests/superposicion-de-horario.test.ts`) y **5 en
+`npm run db:verify`**. Cuatro reglas se verificaron **rompiéndolas a propósito** y las cuatro hacen
+fallar su guard.
+
+⚠️ **Una quinta rotura NO falló, y conviene saber por qué:** sacar el atajo
+`if (bloques.length === 0) return null` no cambia nada, porque el bucle sobre una lista vacía tampoco
+encuentra nada. **La garantía es estructural, no el atajo**, y el test fija el comportamiento.
+
+Y el recorrido real, contra la app corriendo: con una clase de 14 a 16 cargada, la propuesta llega a
+las **16:00** con su aviso; confirmar a las 14:30 devuelve `409 · "Tenés clase el miércoles de 14:00
+a 16:00"` y **no crea ninguna fila**; confirmar a las 16:00 devuelve `201`.

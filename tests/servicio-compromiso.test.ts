@@ -222,7 +222,7 @@ const ACUERDO = { startAt: "2026-09-02T19:00:00.000Z", timezone: "America/Argent
  * para las 11:00 de Córdoba del 2 de septiembre y la propuesta son las 16:00
  * del mismo día: mismo día calendario y siete horas de anticipación.
  */
-const CONTEXTO = { ahora: "2026-09-02T12:00:00.000Z", zonaInstitucional: "America/Argentina/Cordoba" };
+const CONTEXTO = { ahora: "2026-09-02T12:00:00.000Z", zonaInstitucional: "America/Argentina/Cordoba", bloques: [] };
 
 describe("B2.2 · I2 · renegociar crea una fila nueva", () => {
   it("el original queda RENEGOTIATED y devuelve el sucesor", async () => {

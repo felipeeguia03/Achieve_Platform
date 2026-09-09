@@ -371,6 +371,30 @@ igual "una ingesta con horarios reemplaza el publicado" \
 igual "y NO toca el que declaró el estudiante" \
   "$(q "select count(*) from class_schedule_block where course_enrollment_id='$CE_HOR';")" "1"
 
+echo "→ B6.22 · contra qué se valida el horario de un compromiso (ADR-064)"
+# Sigue con el mundo de horarios de arriba: la oferta tiene un bloque publicado
+# —el lunes de 09 a 11, que dejó la última ingesta— y la cursada uno declarado.
+igual "los dos dueños viajan juntos para validar" \
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "2"
+# ⚠️ **Todas las cursadas, no la de una materia.** Comprometerse a estudiar
+# Cálculo el martes a las 18:30 choca con la clase de Física igual que con la de
+# Cálculo: nadie puede estudiar mientras cursa otra cosa.
+q "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+     values ('$INS','b7000000-0000-0000-0000-000000000001',6,'08:00','10:00','institution');" >/dev/null 2>&1
+igual "y también los de otra materia del estudiante" \
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "3"
+# El aislamiento alcanza también a esta lectura (I11).
+igual "no cruza institución" \
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$OTRA','$EST'));")" "0"
+igual "ni devuelve los de otro estudiante" \
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','b2222222-0000-0000-0000-0000000000ff'));")" "0"
+# Una cursada terminada **ya no ocupa el martes**.
+q "update course_enrollment set status='completed' where id='$CE_HOR';" >/dev/null 2>&1
+igual "una cursada dada de baja deja de ocupar la semana" \
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "1"
+q "update course_enrollment set status='active' where id='$CE_HOR';
+   delete from class_schedule_block where institution_id='$INS';" >/dev/null 2>&1
+
 echo "→ B6.20 · la Bitácora es de una materia, y de la que se pidió"
 # **Sin una segunda materia el defecto es invisible**: con una sola cursada, «la
 # primera activa» y «la que pediste» son la misma, y la CTE elegía bien por
