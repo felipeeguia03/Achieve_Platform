@@ -439,6 +439,21 @@ export type EstadoMateria =
 export interface MateriaProps {
   estado: EstadoMateria;
   materia: string;
+  /**
+   * De qué cursada habla la pantalla — [ADR-054](../../docs/decisions.md#adr-054),
+   * opción `B`.
+   *
+   * No es contenido: `UX02` no muestra ids. Es lo que `CTA-009` necesita para
+   * abrir **la Bitácora de esta materia** y no la de otra. Sin él, el enlace
+   * viajaba pelado y la lectura elegía la primera cursada activa: con tres
+   * materias en curso, mirar el registro de Álgebra abría el de Cálculo.
+   *
+   * `null` ⇒ **no hay una cursada persistida detrás**, que es el Track A: un
+   * escenario declara un mundo y no tiene `course_enrollment`. Ahí la CTA
+   * navega sin parámetro, igual que `MateriaResumen.cursadaId`. **No se
+   * inventa un id para completar el tipo.**
+   */
+  cursadaId: string | null;
   /** `null` ⇒ no hay examen registrado; se omite la línea. */
   examen: string | null;
   /**
@@ -480,7 +495,40 @@ export interface MateriaProps {
    * `null` ⇒ todavía no pasó nada en esta materia, y la sección **no se
    * renderiza vacía**.
    */
+  /**
+   * `CLASES DE LA SEMANA` — el horario semanal de cursado
+   * ([ADR-063](../../docs/decisions.md#adr-063)).
+   *
+   * **Solo muestra.** Es la decisión del owner, textual —*«solo mostrar, no
+   * agendar»*—, y coincide con lo que ya estaba decidido: el *cuándo* de una
+   * tarea vive en el `Commitment` ([ADR-064](../../docs/decisions.md#adr-064)),
+   * no en esta pantalla.
+   *
+   * ⚠️ **No es `class_session`.** Aquéllas son las clases **dictadas**, con su
+   * fecha; esto es la **regla semanal**. Y **no es `availability`**: una dice
+   * cuándo cursa, la otra cuándo puede estudiar, y ADR-063 prohíbe mezclarlas.
+   *
+   * `null` ⇒ **no se sabe el horario**, y la sección no se dibuja vacía. No
+   * saberlo **no significa tener la semana libre**.
+   */
+  clasesDeLaSemana: readonly { cuando: string; procedencia: string }[] | null;
   actividadReciente: readonly EntradaDeBitacora[] | null;
+  /**
+   * `CTA-009` — *ver progreso*, con la materia puesta. `null` ⇒ **no se
+   * renderiza**, en vez de renderizarse deshabilitada.
+   *
+   * Es `null` exactamente cuando `actividadReciente` lo es, y no por
+   * comodidad: la preview y la Bitácora salen de `hechos_de_cursada()` y
+   * comparten la traducción (`aEntradaVisible`), así que **una preview vacía
+   * es una Bitácora vacía**. Ofrecer la puerta ahí sería prometer un historial
+   * que no existe.
+   *
+   * ⚠️ Con una salvedad dicha: la preview mira **los últimos tres hechos**, no
+   * todos. Si esos tres no tienen copy aprobada y hay otros más viejos que sí,
+   * la puerta queda escondida. Es el error conservador —omitir de más— y no el
+   * de prometer de más.
+   */
+  verRegistro: string | null;
   /** Aviso de estado vacío, incompleto o de error. `null` ⇒ se omite. */
   aviso: string | null;
   /**

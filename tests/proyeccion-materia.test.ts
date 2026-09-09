@@ -28,6 +28,7 @@ const base: EstadoDeMateria = {
   clases: [],
   cargaDeclarada: null,
   dimensiones: null,
+  horario: [],
   actividadReciente: [],
 };
 
@@ -170,6 +171,8 @@ describe("B2.6 · la forma es la que la pantalla espera", () => {
         "capturaDeClase",
         "catedraYVos",
         "chip",
+        "clasesDeLaSemana",
+        "cursadaId",
         "dimensiones",
         "estado",
         "examen",
@@ -180,6 +183,7 @@ describe("B2.6 · la forma es la que la pantalla espera", () => {
         "materia",
         "ultimoAvance",
         "unidades",
+        "verRegistro",
       ].sort(),
     );
   });

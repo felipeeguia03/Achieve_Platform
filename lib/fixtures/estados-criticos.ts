@@ -28,6 +28,11 @@ function esc(id: string, proposito: string, vista: Partial<Escenario>, cubre: re
 
 const materiaBase: MateriaProps = {
   estado: "NORMAL",
+  // Track A: el escenario declara un mundo y **no hay `course_enrollment` que
+  // nombrar**. `CTA-009` navega sin parámetro y el backend elige. Inventar un
+  // id para completar el tipo sería exactamente lo que *omitir, no inventar*
+  // prohíbe.
+  cursadaId: null,
   materia: "Análisis Matemático II",
   examen: "Parcial 1",
   chip: { tono: "urgencia", texto: "Necesita atención" },
@@ -46,8 +51,14 @@ const materiaBase: MateriaProps = {
   catedraYVos: null,
   unidades: [],
   dimensiones: [],
+  // Fixture anterior a la Fase B6.21: declara un mundo sin horario de cursado.
+  // **`null` no es «no cursa»**: es que nadie lo cargó (ADR-063).
+  clasesDeLaSemana: null,
   // La base no declara actividad: los escenarios que la necesitan la agregan.
   actividadReciente: null,
+  // Y sin actividad **no hay puerta al historial**: `CTA-009` no se renderiza.
+  // Los dos campos se mueven juntos, y hay guard.
+  verRegistro: null,
   aviso: null,
   // Fixture anterior a la Fase B6.15: declara un mundo sin Gantt.
   gantt: null,
@@ -133,6 +144,7 @@ export const FX_LOCAL_MAT_CONTEXTO_INCOMPLETO = esc(
       { titulo: "Empezaste", detalle: "19:41", provenance: "Reportado por vos · sin verificar" },
       { titulo: "Te comprometiste", detalle: "17:37", provenance: "Reportado por vos · sin verificar" },
     ],
+    verRegistro: "Ver avance",
     // Fixture anterior a la Fase B6.15: declara un mundo sin Gantt.
     gantt: null,
     capturaDeClase: null,

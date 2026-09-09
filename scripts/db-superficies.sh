@@ -31,6 +31,17 @@ OTRA=b1111111-0000-0000-0000-000000000002
 EST=b2222222-0000-0000-0000-000000000001
 CE=b3333333-0000-0000-0000-000000000001
 OPERADOR=b9999999-0000-0000-0000-000000000001
+# La segunda materia de la B6.20. Vive acá y no en la siembra inicial: se crea
+# donde se usa, para que su presencia no cambie en silencio ningún check previo.
+C_ALG=b6000000-0000-0000-0000-000000000009
+O_ALG=b7000000-0000-0000-0000-000000000009
+CE_ALG=b3333333-0000-0000-0000-000000000009
+A_ALG=ba000000-0000-0000-0000-000000000009
+# El mundo propio de la B6.21. Vive aparte porque su sección **ingiere**, y una
+# ingesta con `p_unidades: []` retira las unidades de la oferta que toque.
+C_HOR=b6000000-0000-0000-0000-00000000000a
+O_HOR=b7000000-0000-0000-0000-00000000000a
+CE_HOR=b3333333-0000-0000-0000-00000000000a
 
 limpiar() {
   q "delete from progress_entry where institution_id in ('$INS','$OTRA');
@@ -291,6 +302,121 @@ igual "y como mucho tres entradas" \
 igual "el hecho más reciente es el mismo en las dos superficies" \
   "$(q "select (public.estado_de_materia('$INS','$EST',now())->'actividadReciente'->0->>'evento') =
           (select h.event_name from public.hechos_de_cursada('$INS','$CE',1) h);")" "t"
+
+echo "→ B6.21 · el horario de cursado llega a UX02 con su procedencia (ADR-063)"
+# **Un mundo propio, y no es prolijidad.** La primera versión de esta sección
+# ingería contra la oferta compartida con `p_unidades: []`, y desde ADR-081 eso
+# **retira todas las unidades de la oferta**: nueve comprobaciones aguas abajo
+# se caían sin que hubiera un solo invariante roto. Un verificador no puede
+# romper el mundo que las otras comprobaciones necesitan.
+q "insert into course (id,curriculum_plan_id,code,name)
+     values ('$C_HOR','b5000000-0000-0000-0000-000000000001','HOR','Horarios SYN');
+   insert into course_offering (id,course_id,term) values ('$O_HOR','$C_HOR','2026-2');
+   insert into course_enrollment (id,institution_id,student_id,offering_id)
+     values ('$CE_HOR','$INS','$EST','$O_HOR');" >/dev/null 2>&1
+
+# Dos dueños, dos filas, una sola cursada: el horario publicado de la comisión y
+# el que declaró el estudiante. Que lleguen juntas es lo que hace visible que
+# **no se fusionan** (`P-08`).
+q "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+     values ('$INS','$O_HOR',2,'14:00','16:00','institution');
+   insert into class_schedule_block (institution_id,course_enrollment_id,day_of_week,start_time,end_time,source_type)
+     values ('$INS','$CE_HOR',4,'18:00','21:00','student');" >/dev/null 2>&1
+
+igual "los dos bloques llegan a la materia" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "2"
+# **En orden de día y hora, decidido por la base.** La pantalla no reordena.
+igual "y en el orden que la base dicta" \
+  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'dia';")" "2"
+igual "el publicado viaja como de la cátedra" \
+  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'origen';")" "catedra"
+igual "y el declarado viaja como tuyo, sin convertirse en voz de la cátedra" \
+  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->1->>'origen';")" "vos"
+# `I9`: usar un dato sin corroborar **no lo eleva**. Ninguna de las dos sale
+# verificada, y la de la institución tampoco — que la fuente tenga autoridad no
+# es lo mismo que que alguien haya verificado el dato.
+igual "ninguno se eleva por llegar a la pantalla" \
+  "$(q "select bool_and(b->>'verificacion' = 'unverified')
+          from jsonb_array_elements(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario') b;")" "t"
+
+# ⚠️ **La regla semanal no se deriva de las clases dictadas.** Se cargan tres
+# sesiones un lunes y el horario **sigue teniendo dos bloques**, ninguno lunes:
+# si alguien derivara la regla de sus instancias, este número cambiaría.
+q "insert into class_session (offering_id,session_date,session_time,duration_min,source_type)
+     values ('$O_HOR','2026-08-03','09:00',120,'institution'),
+            ('$O_HOR','2026-08-10','09:00',120,'institution'),
+            ('$O_HOR','2026-08-17','09:00',120,'institution');" >/dev/null 2>&1
+igual "y no se deriva de las clases dictadas" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "2"
+igual "ni aparece el lunes de las sesiones" \
+  "$(q "select bool_and((b->>'dia')::int <> 1)
+          from jsonb_array_elements(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario') b;")" "t"
+
+# ── La ingesta, y lo que NO pisa ─────────────────────────────────────────────
+#
+# `p_horarios` vacío no borra nada: el que no manda el dato **no está afirmando
+# que no existe**. Es la misma regla que `p_clases`.
+q "select public.ingerir_materia('$INS','institution','ref',now(),0.9,'HOR','Horarios SYN','2026-2',NULL,
+     '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'b5000000-0000-0000-0000-000000000001');" >/dev/null 2>&1
+igual "una ingesta sin horarios no borra los que había" \
+  "$(q "select count(*) from class_schedule_block where institution_id='$INS';")" "2"
+
+# Con horarios, **reemplaza los de la oferta** y deja intacto el del estudiante:
+# el bloque que declaró él no es de la cátedra, y una ingesta no lo pisa.
+q "select public.ingerir_materia('$INS','institution','ref',now(),0.9,'HOR','Horarios SYN','2026-2',NULL,
+     '[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'b5000000-0000-0000-0000-000000000001',
+     p_horarios => '[{\"dia\":1,\"desde\":\"09:00\",\"hasta\":\"11:00\"}]'::jsonb);" >/dev/null 2>&1
+igual "una ingesta con horarios reemplaza el publicado" \
+  "$(q "select count(*) from class_schedule_block where offering_id='$O_HOR';")" "1"
+igual "y NO toca el que declaró el estudiante" \
+  "$(q "select count(*) from class_schedule_block where course_enrollment_id='$CE_HOR';")" "1"
+
+echo "→ B6.20 · la Bitácora es de una materia, y de la que se pidió"
+# **Sin una segunda materia el defecto es invisible**: con una sola cursada, «la
+# primera activa» y «la que pediste» son la misma, y la CTE elegía bien por
+# casualidad. Álgebra existe acá para que dejen de coincidir.
+q "insert into course (id,curriculum_plan_id,code,name)
+     values ('$C_ALG','b5000000-0000-0000-0000-000000000001','ALG','Álgebra');
+   insert into course_offering (id,course_id,term) values ('$O_ALG','$C_ALG','2026-2');
+   insert into course_enrollment (id,institution_id,student_id,offering_id)
+     values ('$CE_ALG','$INS','$EST','$O_ALG');
+   insert into action (id,institution_id,course_enrollment_id,objective,verb,scope,status)
+     values ('$A_ALG','$INS','$CE_ALG','Leer el apunte','leer','unidad 1','RECOMMENDED');
+   insert into product_event (event_name,institution_id,actor_id,subject_type,subject_id,cause_ref,occurred_at)
+     values ('ActionAccepted','$INS','$EST','action','$A_ALG','RECOMMENDED->ACCEPTED',now() - interval '30 minutes');" >/dev/null 2>&1
+
+# 1 · Sin decir cuál, nada cambia. El parámetro es opcional y su ausencia
+#     conserva el comportamiento de siempre: `UX01` y `UX05` siguen llamando así.
+igual "sin cursada, sigue abriendo la de siempre" \
+  "$(q "select public.estado_de_progreso('$INS','$EST',now())->>'materia';")" "AnálisisII"
+
+# 2 · Con la cursada puesta, la pantalla habla de esa materia. **Éste es el
+#     check que fallaba antes de la B6.20**: devolvía «Análisis II».
+igual "pedida Álgebra, la Bitácora es de Álgebra" \
+  "$(q "select public.estado_de_progreso('$INS','$EST',now(),null,'$CE_ALG')->>'materia';")" "Álgebra"
+
+# 3 · Y trae sus hechos, no los de la otra. Que el encabezado diga bien y el
+#     historial venga de otra materia sería el mismo error una capa más abajo.
+igual "y trae un solo ciclo: el suyo" \
+  "$(q "select jsonb_array_length(public.estado_de_progreso('$INS','$EST',now(),null,'$CE_ALG')->'bitacora');")" "1"
+igual "con su único hecho, y no los tres de Análisis II" \
+  "$(q "select jsonb_array_length(public.estado_de_progreso('$INS','$EST',now(),null,'$CE_ALG')->'bitacora'->0->'entradas');")" "1"
+igual "y es el hecho de Álgebra" \
+  "$(q "select public.estado_de_progreso('$INS','$EST',now(),null,'$CE_ALG')->'bitacora'->0->'entradas'->0->>'evento';")" "ActionAccepted"
+
+# 4 · La otra punta: `estado_de_progreso` deriva la cursada de la última
+#     evidencia del estudiante, que es de Análisis II. Si sólo se filtrara la
+#     CTE `cursada` y no la evidencia, Álgebra mostraría la evidencia ajena.
+igual "y no se cuela la evidencia de la otra materia" \
+  "$(q "select coalesce(public.estado_de_progreso('$INS','$EST',now(),null,'$CE_ALG')->>'evidencia','NULO');")" "NULO"
+
+# 5 · El scoping no se negocia. La cursada llega del request; el estudiante y la
+#     institución salen de la sesión. Pedir una cursada que no es suya **no
+#     devuelve la propia como consuelo**: no devuelve nada.
+igual "una cursada que no existe no cae en la primera activa" \
+  "$(q "select coalesce(public.estado_de_progreso('$INS','$EST',now(),null,'b3333333-0000-0000-0000-0000000000ff')::text,'NULO');")" "NULO"
+igual "y con el parámetro puesto tampoco cruza institución (I11)" \
+  "$(q "select coalesce(public.estado_de_progreso('$OTRA','$EST',now(),null,'$CE_ALG')::text,'NULO');")" "NULO"
 
 echo "→ B5 · estado_de_activacion · consume una señal emitida, no calcula la ventana"
 igual "sin preparación, la evaluación no trae señal" \

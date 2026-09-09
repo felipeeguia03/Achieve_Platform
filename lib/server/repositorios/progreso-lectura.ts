@@ -11,12 +11,13 @@ import { clienteDeServicio } from "../supabase";
  * varias lecturas dan una foto inconsistente entre sí.
  */
 export const progresoLecturaReal: RepositorioDeProgreso = {
-  async estadoDeProgreso(institutionId, studentId, ahora, evidenceId = null) {
+  async estadoDeProgreso(institutionId, studentId, ahora, evidenceId = null, courseEnrollmentId = null) {
     const { data, error } = await clienteDeServicio().rpc("estado_de_progreso", {
       p_institution_id: institutionId,
       p_student_id: studentId,
       p_ahora: ahora,
       p_evidence_id: evidenceId,
+      p_course_enrollment_id: courseEnrollmentId,
     });
     if (error) throw new Error(`No se pudo leer el progreso: ${error.message}`);
     return (data as EstadoDeProgreso | null) ?? null;

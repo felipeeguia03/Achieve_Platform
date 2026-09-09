@@ -22,13 +22,10 @@
 
 import { useState } from "react";
 
-import { t } from "@/lib/content/es-AR";
+import { DIAS, t } from "@/lib/content/es-AR";
 import { Button } from "@/components/ui/button";
 import { CTAPrincipal, ReglaDeNegocio } from "@/components/screens/design-system";
 import { ErrorDelAlta, MarcoDelAlta } from "./marco";
-
-/** Domingo a sábado, como `availability.day_of_week`. */
-const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
 
 export interface Bloque {
   dia: number;

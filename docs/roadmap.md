@@ -4033,6 +4033,110 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+## Fase B6.21 — El horario de cursado · ✅ COMPLETA *(entidad, ingesta y pantalla)*
+
+**Decide:** [ADR-083](decisions.md#adr-083), que **construye** [ADR-063](decisions.md#adr-063) —
+decidido el 5 de septiembre y sin tocar desde entonces. Es el corte 3 de
+[`cursado-de-materia.md`](cursado-de-materia.md) §8, con el alcance que eligió el owner.
+
+**La única entidad genuinamente nueva del bloque ADR-060…065 existe.**
+`class_schedule_block`, con **exactamente un dueño**: la oferta —el horario publicado de la
+comisión— o la cursada —el que declara el estudiante que no sabe cuál es la suya—. Dos FK reales,
+`CHECK` de exclusividad, **sin `owner_type` y sin JSON**, que son las dos prohibiciones de forma que
+el ADR escribió textualmente.
+
+### Las tres cosas que no es, y cada una tiene guard
+
+| No es | Por qué se confunde | Qué lo impide |
+|---|---|---|
+| `class_session` | Las dos hablan de clases | La sesión es **una clase dictada**, con fecha; el bloque es **la regla semanal**. Guard: se cargan tres sesiones de un lunes y el horario sigue sin ningún lunes |
+| `availability` | Las dos tienen día y hora | *"Uno expresa cuándo está cursando y el otro cuándo puede estudiar"*. Guard: `insumos_de_reparto` no menciona la tabla |
+| Una agenda | Un panel con días se lee como una | *«Solo mostrar, no agendar»*, del owner. Guard: el panel no contiene ni un `button`, ni un `a`, ni un `input` |
+
+### ⛔ Lo que se decidió NO hacer, y el argumento
+
+**El descuento del reparto no se construyó.** El corte lo proponía; contradice tres cosas ya
+decididas, y el detalle está en [ADR-083](decisions.md#adr-083). En una línea: **`availability` ya
+es el tiempo que queda**, así que restarle las clases las descuenta dos veces, y donde sí hay
+superposición [ADR-064](decisions.md#adr-064) manda mostrarla porque *"la pantalla no puede asumir
+que el equivocado es él"*.
+
+**Dos columnas quedaron fuera.** `kind` —ningún ADR declara su vocabulario— y
+`course_enrollment.schedule_status`, que **el ADR sí pide**: se escribió, se probó y se sacó porque
+la cursada se crea **después** de la ingesta, así que el `UPDATE` no tocaba nada y las tres materias
+del demo quedaban `UNKNOWN` con sus bloques cargados. **Llega con su escritor**, que es el cuarto
+paso del alta.
+
+### Una corrección que salió del camino
+
+**Había dos listas de nombres de día**, y este corte iba a agregar una tercera. Se unificaron en
+`lib/content/es-AR.ts` —traducir un `SMALLINT` a una palabra visible es contenido— con guard de que
+no reaparezca una copia en ningún componente. Las dos tablas comparten la escala `0`–`6`, que es lo
+que va a permitir compararlas el día que se construya [ADR-064](decisions.md#adr-064).
+
+**Verificación:** 19 comprobaciones nuevas en `npm test` y 18 en `npm run db:verify`. ⚠️ Y un defecto
+propio que encontraron los guards: la sección de base ingería contra la oferta compartida con
+`p_unidades: []`, y desde [ADR-081](decisions.md#adr-081) eso **retira las unidades de la oferta** —
+nueve comprobaciones aguas abajo se caían sin que hubiera un invariante roto. Ahora tiene su propio
+mundo.
+
+---
+
+## Fase B6.20 — La Bitácora es de una materia · ✅ COMPLETA
+
+**Decide:** [ADR-082](decisions.md#adr-082). **Es el corte 1** de los cuatro que propuso
+[`cursado-de-materia.md`](cursado-de-materia.md) §8, y **el único autorizado**: el owner dijo
+*"empezá por el 1"* el 9 de septiembre de 2026.
+
+### El defecto, en una línea
+
+**Con tres materias en curso, mirar el registro de Álgebra abría el de Cálculo.**
+
+`hechos_de_cursada()` siempre fue por cursada —eso lo cerró la B3.3—, pero `estado_de_progreso` no
+tenía cómo recibir cuál: su CTE `cursada` tomaba **la primera activa** por `created_at`. Con una
+materia, «la primera activa» y «la que pediste» son la misma y el defecto no se ve. El alta deja
+tres.
+
+Es el mismo error que [ADR-054](decisions.md#adr-054) cerró en `CTA-001`, una superficie más allá:
+**no una ausencia —de esas el repo tiene muchas y son honestas— sino una respuesta equivocada**.
+
+### Qué se construyó
+
+| Pieza | Cambio |
+|---|---|
+| `estado_de_progreso` | Quinto parámetro `p_course_enrollment_id`, **opcional**. `NULL` conserva entero el comportamiento anterior |
+| `GET /api/progreso` | Acepta `?cursada=<uuid>`. La identidad **sigue saliendo de la sesión**: pedir la cursada de otro devuelve `404`, no su Bitácora |
+| `CTA-009` | Transporta `cursada`, con el nombre declarado en el registro canónico. Es el **segundo** parámetro del registro, y el guard de ADR-054 pasó a ser una lista cerrada de dos |
+| `MateriaProps` | `cursadaId` —para que la CTA sepa a dónde ir— y `verRegistro` —la copy, o `null`— |
+| `UX02` | La CTA arriba a la derecha, en píldora, **una sola vez** |
+
+### Las dos decisiones que no eran obvias
+
+**Se filtran las dos puntas.** `estado_de_progreso` deriva la cursada de la última evidencia del
+estudiante. Acotar sólo la CTE `cursada` dejaba la URL diciendo «Álgebra» y la evidencia siendo de
+Cálculo; acotar sólo la evidencia devolvía `NULL`. **Hay un check de base por cada punta**, y los dos
+se verificaron rompiendo la regla a propósito.
+
+**La puerta aparece si hay algo detrás.** `verRegistro` es `null` exactamente cuando
+`actividadReciente` lo es: las dos salen de la misma función y de la misma traducción, así que una
+preview vacía **es** una Bitácora vacía. ⚠️ La preview mira los últimos **tres** hechos, no todos: si
+esos tres no tienen copy aprobada y hay otros viejos que sí, la puerta queda escondida. Se eligió el
+error conservador y **está escrito en el tipo**, no tapado.
+
+### Lo que NO se hizo, y no por falta de tiempo
+
+⛔ **La Bitácora no se mudó adentro de `UX02`.** El spec reparte —2–3 entradas acá, el historial
+allá— y copiarlo sería la segunda fuente histórica que `VI.6` §8.3 prohíbe: la regla que esta fase
+viene a cumplir.
+
+⛔ **El checklist de Confianza es el corte 2 y sigue bloqueado** por la revisión de vocabulario de la
+psicopedagoga. `Dominado` viola [ADR-072](decisions.md#adr-072) y `nivel` viola
+[ADR-075](decisions.md#adr-075) §C1.
+
+**Verificación:** 20 comprobaciones nuevas en `npm test` y 8 en `npm run db:verify`.
+
+---
+
 <a id="fase-b617--la-respuesta-de-la-psicopedagoga"></a>
 
 ## Fase B6.19 — El andamio para probar el MVP · ✅ COMPLETA

@@ -110,7 +110,8 @@ describe("B3.3 · la preview es una preview", () => {
     clases: [],
     cargaDeclarada: null,
     dimensiones: null,
-    actividadReciente: [
+    horario: [],
+      actividadReciente: [
       { evento: "EvidenceSubmitted", en: "2026-09-01T19:00:00.000Z", porElEstudiante: true },
       { evento: "CommitmentStarted", en: "2026-09-01T18:00:00.000Z", porElEstudiante: true },
       { evento: "CommitmentConfirmed", en: "2026-09-01T17:00:00.000Z", porElEstudiante: true },

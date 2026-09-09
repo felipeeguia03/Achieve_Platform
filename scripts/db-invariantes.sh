@@ -50,6 +50,7 @@ limpiar_fixtures() {
   q "delete from progress_entry where course_enrollment_id='88888888-8888-8888-8888-888888888888'; \
      delete from product_event where institution_id='11111111-1111-1111-1111-111111111111'; \
      delete from topic_progress where course_enrollment_id='88888888-8888-8888-8888-888888888888'; \
+     delete from class_schedule_block where institution_id='11111111-1111-1111-1111-111111111111'; \
      delete from course_enrollment where id='88888888-8888-8888-8888-888888888888'; \
      delete from student where id='77777777-7777-7777-7777-777777777777'; \
      delete from course_offering where id='55555555-5555-5555-5555-555555555555'; \
@@ -91,6 +92,44 @@ rechaza "topic sin offering ni course" \
 echo "→ Un tema no es prerequisito de sí mismo (no_self_prerequisite)"
 rechaza "prerequisito reflexivo" \
   "insert into topic_prerequisite (topic_id,prerequisite_id) values ('66666666-6666-6666-6666-666666666666','66666666-6666-6666-6666-666666666666');"
+
+echo "→ B6.21 · el bloque horario tiene exactamente un dueño (ADR-063)"
+# *"No crear una comisión ficticia ni utilizar la offering con `commission IS
+# NULL` para guardar el horario personal."* El `CHECK` es lo que hace que esa
+# frase sea una garantía y no una convención.
+rechaza "un bloque con los dos dueños" \
+  "insert into class_schedule_block (institution_id,offering_id,course_enrollment_id,day_of_week,start_time,end_time,source_type)
+   values ('11111111-1111-1111-1111-111111111111','55555555-5555-5555-5555-555555555555','88888888-8888-8888-8888-888888888888',2,'14:00','16:00','institution');"
+rechaza "un bloque sin ningún dueño" \
+  "insert into class_schedule_block (institution_id,day_of_week,start_time,end_time,source_type)
+   values ('11111111-1111-1111-1111-111111111111',2,'14:00','16:00','institution');"
+rechaza "un bloque que termina antes de empezar" \
+  "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+   values ('11111111-1111-1111-1111-111111111111','55555555-5555-5555-5555-555555555555',2,'16:00','14:00','institution');"
+# La misma escala que `availability`: `0`-`6`. Un `7` no es «domingo otra vez».
+rechaza "un día fuera de la escala 0-6" \
+  "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+   values ('11111111-1111-1111-1111-111111111111','55555555-5555-5555-5555-555555555555',7,'14:00','16:00','institution');"
+rechaza "una procedencia inventada" \
+  "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+   values ('11111111-1111-1111-1111-111111111111','55555555-5555-5555-5555-555555555555',2,'14:00','16:00','telepatia');"
+acepta "el horario publicado de la comisión" \
+  "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+   values ('11111111-1111-1111-1111-111111111111','55555555-5555-5555-5555-555555555555',2,'14:00','16:00','institution');"
+# ADR-063: *"un horario declarado por el estudiante puede usarse inmediatamente
+# como una restricción personal, con `source_type = student` y
+# `verification_status = unverified`"*. Y **no se eleva** por usarse.
+acepta "el que declara el estudiante, sobre su cursada" \
+  "insert into class_schedule_block (institution_id,course_enrollment_id,day_of_week,start_time,end_time,source_type)
+   values ('11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888888',4,'18:00','21:00','student');"
+# Este script sólo sabe aceptar y rechazar, así que la comprobación se escribe
+# como lo que es: **existe la fila y NO está verificada**. Si alguien la elevara,
+# el `select` no devolvería nada y el `acepta` fallaría.
+acepta "y entra sin verificar, como el ADR pide" \
+  "select 1/count(*) from class_schedule_block
+    where course_enrollment_id='88888888-8888-8888-8888-888888888888'
+      and source_type='student' and verification_status='unverified';"
+q "delete from class_schedule_block where institution_id='11111111-1111-1111-1111-111111111111';" >/dev/null 2>&1
 
 echo "→ Provenance: los enums son cerrados"
 rechaza "source_type inventado" \

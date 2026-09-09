@@ -26,7 +26,11 @@ function Vista() {
   const params = useSearchParams();
 
   const escenario = params.get("escenario");
-  const { respuesta, reintentar } = useSuperficie<ProgresoProps>("/api/progreso", { omitir: !!escenario });
+  // `?cursada=` sólo viaja si está: sin él el backend elige, como siempre. Es
+  // el mismo contrato que `/materia` — ADR-054, opción `B`.
+  const cursada = params.get("cursada");
+  const ruta = cursada ? `/api/progreso?cursada=${encodeURIComponent(cursada)}` : "/api/progreso";
+  const { respuesta, reintentar } = useSuperficie<ProgresoProps>(ruta, { omitir: !!escenario });
 
   if (escenario) {
     const id = escenarioDesde(escenario, "progreso") ?? "FX-LOCAL-PROG-VALIDATED";

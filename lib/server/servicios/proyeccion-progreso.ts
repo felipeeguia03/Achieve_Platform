@@ -117,6 +117,15 @@ export interface RepositorioDeProgreso {
     studentId: string,
     ahora: string,
     evidenceId?: string | null,
+    /**
+     * De qué materia es la Bitácora — [ADR-054](../../../docs/decisions.md#adr-054),
+     * opción `B`: el objeto viaja en la URL.
+     *
+     * `null` ⇒ la lectura elige, como siempre: la cursada de la evidencia, y
+     * sin evidencia la primera activa. **Con tres materias en curso eso no es
+     * una elección neutra**, y por eso `UX02` ahora manda el id.
+     */
+    courseEnrollmentId?: string | null,
   ): Promise<EstadoDeProgreso | null>;
 }
 

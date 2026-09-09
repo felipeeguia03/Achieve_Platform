@@ -222,6 +222,20 @@ const { data: resultado, error: fallo } = await admin.rpc("ingerir_materia", {
   p_clases: clases,
   p_carga_min: 3600,
   p_carga_texto: "60 horas",
+  // El horario semanal publicado de la comisión · ADR-063.
+  //
+  // ⚠️ **No se deriva de las clases dictadas de arriba**, aunque coincidan:
+  // derivar la regla semanal desde sus instancias es inferir, y quedaría
+  // presentado como horario de la institución. Acá se declara.
+  //
+  // `0`–`6`, domingo a sábado, la misma escala que `availability`.
+  p_horarios: [
+    {
+      dia: new Date(`${dia(-7)}T00:00:00Z`).getUTCDay(),
+      desde: `${String(14 + (s % 5)).padStart(2, "0")}:00`,
+      hasta: `${String(16 + (s % 5)).padStart(2, "0")}:00`,
+    },
+  ],
 });
 
 if (fallo) {

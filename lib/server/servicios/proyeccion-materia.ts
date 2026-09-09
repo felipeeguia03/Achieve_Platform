@@ -6,7 +6,12 @@ import {
   type Cobertura,
   type EstadoDeUnidad,
 } from "@/lib/domain/cobertura";
-import { t } from "@/lib/content/es-AR";
+import { nombreDeDia, t } from "@/lib/content/es-AR";
+import {
+  provenanceVisible,
+  type SourceType,
+  type VerificationStatus,
+} from "@/lib/content/provenance";
 import { aEntradaVisible, type HechoPersistido } from "./hechos";
 import { fechaDeCalendario, haceCuanto } from "./tiempo";
 import type { FilaDato, GanttProjection, MateriaProps } from "@/lib/domain/view-models";
@@ -77,10 +82,36 @@ export interface DimensionesPersistidas {
   confianzaEn: string | null;
 }
 
+/**
+ * Un bloque del horario de cursado, tal como lo devuelve `estado_de_materia`.
+ *
+ * `origen` viaja **rotulado y sin fusionarse** (`P-08`): lo que publica la
+ * cátedra y lo que declaró el estudiante son dos fuentes, y una no se convierte
+ * en la otra (AGENTS.md §2.6).
+ */
+export interface BloqueDeCursado {
+  /** `0`–`6`, domingo a sábado. La misma escala que `availability`. */
+  dia: number;
+  /** `HH:MM:SS`, como lo entrega Postgres. La proyección lo recorta. */
+  desde: string;
+  hasta: string;
+  origen: "catedra" | "vos";
+  fuente: SourceType | null;
+  verificacion: VerificationStatus | null;
+}
+
 export interface EstadoDeMateria {
   instante: string;
   zona: string;
   cursadaId: string;
+  /**
+   * El horario semanal de cursado — [ADR-063](../../../docs/decisions.md#adr-063).
+   *
+   * **No es `clases`.** `clases` son las **dictadas**, con su fecha, y alimentan
+   * la duración por tema; esto es **la regla semanal**. Derivar la segunda desde
+   * las primeras sería inferencia presentada como horario de la institución.
+   */
+  horario: readonly BloqueDeCursado[];
   materia: string;
   examen: { titulo: string; fechaEn: string | null } | null;
   accion: {
@@ -200,6 +231,42 @@ function unidadesDe(e: EstadoDeMateria): FilaDato[] {
 }
 
 /**
+ * `CLASES DE LA SEMANA` — [ADR-063](../../../docs/decisions.md#adr-063), con la
+ * decisión del owner encima: **«solo mostrar, no agendar»**.
+ *
+ * Por eso proyecta **el hecho y su procedencia**, y nada más: ni una acción, ni
+ * un hueco reservado, ni una resta al presupuesto de estudio. Un bloque de clase
+ * dice cuándo está cursando; `availability` dice cuándo puede estudiar, y ADR-063
+ * es explícito en que **no se mezclan**.
+ *
+ * `null` ⇒ **no se sabe el horario**, y la sección no se dibuja vacía. Que no se
+ * sepa no es que tenga la semana libre: es que nadie lo cargó.
+ */
+function clasesDeLaSemanaDe(e: EstadoDeMateria): MateriaProps["clasesDeLaSemana"] {
+  const bloques = e.horario
+    .map((b) => {
+      const dia = nombreDeDia(b.dia);
+      // Un día que no nombra ningún día no se muestra como uno cualquiera.
+      if (dia === null) return null;
+      return {
+        cuando: `${dia} ${hhmm(b.desde)}–${hhmm(b.hasta)}`,
+        // La procedencia **no se eleva**: que la fuente sea la institución no
+        // vuelve el dato verificado. Sin los dos campos, la frase de «no
+        // disponible» — que es lo que `provenanceVisible` ya decide (`I9`).
+        procedencia: provenanceVisible(b.fuente, b.verificacion),
+      };
+    })
+    .filter((x) => x !== null);
+
+  return bloques.length > 0 ? bloques : null;
+}
+
+/** `18:00:00` → `18:00`. Postgres entrega `TIME` con segundos; nadie los lee. */
+function hhmm(hora: string): string {
+  return hora.slice(0, 5);
+}
+
+/**
  * Las últimas entradas, ya traducidas. `null` ⇒ **no pasó nada todavía**, y la
  * sección no se dibuja vacía: un encabezado sobre una lista sin filas es peor
  * que no tener la sección.
@@ -214,6 +281,7 @@ function actividadDe(e: EstadoDeMateria): MateriaProps["actividadReciente"] {
 export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
   const { nivel, variante } = selectHeroLevel(aEntradaDeHero(e));
   const dimensiones = dimensionesDe(e);
+  const actividad = actividadDe(e);
 
   const tiempoOEstado =
     e.accion?.status === "IN_PROGRESS"
@@ -230,6 +298,9 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
       : e.accion
         ? "NORMAL"
         : "SIN_RECOMENDACION",
+    // Qué cursada es. No se muestra: lo lleva `CTA-009` para abrir la Bitácora
+    // de **esta** materia. Ver `MateriaProps.cursadaId`.
+    cursadaId: e.cursadaId,
     materia: e.materia,
     // Una evaluación sin fecha conserva su título: la fecha desconocida no se
     // estima, y el título sigue siendo un hecho.
@@ -272,7 +343,13 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     // La misma traducción que la Bitácora, y por eso la misma función: si cada
     // superficie tradujera por su cuenta, la preview y el historial dirían cosas
     // distintas del mismo hecho.
-    actividadReciente: actividadDe(e),
+    // El horario de cursado. **Solo mostrar** — ver `clasesDeLaSemanaDe`.
+    clasesDeLaSemana: clasesDeLaSemanaDe(e),
+    actividadReciente: actividad,
+    // `CTA-009` aparece **si hay historial que abrir**. La preview y la Bitácora
+    // salen del mismo `hechos_de_cursada()` y de la misma traducción: sin
+    // entradas visibles acá, `UX06` tampoco tiene ninguna. Ver `verRegistro`.
+    verRegistro: actividad ? t("CTA.VER_AVANCE") : null,
     // El aviso explica una ausencia; no la disfraza.
     aviso: e.contextoIncompleto
       ? null // el hero ya lo dice: no se repite el mismo hecho dos veces

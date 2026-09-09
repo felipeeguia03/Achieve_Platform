@@ -113,9 +113,18 @@ CL='[{"fecha":"2026-08-04","hora":"14:00","minutos":120,"corrida":"teorico","tem
      {"fecha":"2026-09-22","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Integrales"]},
      {"fecha":"2026-09-29","hora":"14:00","minutos":120,"corrida":"practico","temas":["Integrales"]},
      {"fecha":"2026-10-06","hora":"14:00","minutos":120,"corrida":"teorico","temas":["Series"]}]'
+# El horario semanal PUBLICADO de la comisión · ADR-063.
+#
+# ⚠️ **No sale de las clases dictadas de arriba, aunque coincida.** Las diez
+# sesiones caen todas un martes a las 14, y derivar «cursa los martes» de eso
+# sería inferir la regla desde sus instancias — inferencia presentada como
+# horario de la institución. Acá se declara, que es otra cosa.
+#
+# `0`–`6`, domingo a sábado: la escala de `availability`.
+HOR='[{"dia":2,"desde":"14:00","hasta":"16:00"}]'
 MATERIA=$(q "select code from curriculum_requirement
               where curriculum_plan_id='$PLAN' and label='Cálculo Avanzado';" | tr -d '[:space:]')
-OFF=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-calculo-avanzado.pdf',now(),0.7,'$MATERIA','Cálculo Avanzado','2026-2',NULL,'$U'::jsonb,'$P'::jsonb,'$E'::jsonb,'$PLAN','$CL'::jsonb,3600,'60 horas');" | tr -d '[:space:]')
+OFF=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-calculo-avanzado.pdf',now(),0.7,'$MATERIA','Cálculo Avanzado','2026-2',NULL,'$U'::jsonb,'$P'::jsonb,'$E'::jsonb,'$PLAN','$CL'::jsonb,3600,'60 horas',p_horarios => '$HOR'::jsonb);" | tr -d '[:space:]')
 echo "   cursada: $OFF"
 
 q "insert into course_enrollment (id,institution_id,student_id,offering_id)
@@ -170,7 +179,11 @@ CL3='[{"fecha":"2026-08-06","hora":"18:00","minutos":180,"corrida":"teorico","te
 MAT3=$(q "select code from curriculum_requirement where curriculum_plan_id='$PLAN' and label='Física Sintética';" | tr -d '[:space:]')
 # Sin evaluaciones: `[]`. El índice **no le inventa una fecha** ni la ordena
 # como si tuviera: va al fondo y ofrece cargarla.
-OFF3=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-fisica.pdf',now(),0.7,'$MAT3','Física Sintética','2026-2',NULL,'$U3'::jsonb,'[]'::jsonb,'[]'::jsonb,'$PLAN','$CL3'::jsonb,1800,'30 horas');" | tr -d '[:space:]')
+# Jueves de 18 a 21. **Álgebra no lleva horario a propósito**: es la tercera
+# combinación de ADR-063 —comisión conocida, horario desconocido— y sirve para
+# ver que la pantalla dice «no se sabe» en vez de dibujar una semana vacía.
+HOR3='[{"dia":4,"desde":"18:00","hasta":"21:00"}]'
+OFF3=$(q "select cursada_id from public.ingerir_materia('$INST','public_web','https://syn.example/programa-fisica.pdf',now(),0.7,'$MAT3','Física Sintética','2026-2',NULL,'$U3'::jsonb,'[]'::jsonb,'[]'::jsonb,'$PLAN','$CL3'::jsonb,1800,'30 horas',p_horarios => '$HOR3'::jsonb);" | tr -d '[:space:]')
 q "insert into course_enrollment (id,institution_id,student_id,offering_id)
    values ('a6000000-0000-0000-0000-000000000003','$INST','$EST','$OFF3');
    insert into requirement_declaration (institution_id,student_id,curriculum_requirement_id,course_enrollment_id)

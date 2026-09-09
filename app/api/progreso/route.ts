@@ -6,6 +6,13 @@ import { progresoDe, resolverSesion } from "@/lib/server/composicion";
 /**
  * `GET /api/progreso` — Controller de `UX06`. `?evidencia=<uuid>` opcional.
  *
+ * Y `?cursada=<uuid>`, también opcional: **de qué materia es la Bitácora**. Sin
+ * él la lectura elige —la cursada de la evidencia, y sin evidencia la primera
+ * activa—, que era correcto con una materia y es una respuesta equivocada con
+ * tres. El `institutionId` y el `studentId` **nunca** vienen del request: salen
+ * de la sesión, y el scoping por estudiante los usa a los dos, así que pedir la
+ * cursada de otro no devuelve su Bitácora: devuelve `404`.
+ *
  * Sin cursada activa devuelve `404`, no una pantalla vacía: no hay progreso de
  * una materia que el estudiante no está cursando, y dibujar el esqueleto sin
  * datos sería el mismo fallback silencioso que la `B2.6` vino a sacar.
@@ -25,8 +32,13 @@ export async function GET(request: Request) {
   const pendiente = altaPendiente(sesion.alta);
   if (pendiente) return NextResponse.json(pendiente, { status: 409 });
 
-  const id = new URL(request.url).searchParams.get("evidencia");
-  const props = await progresoDe(sesion.estudiante.institutionId, sesion.estudiante.id, id);
+  const parametros = new URL(request.url).searchParams;
+  const props = await progresoDe(
+    sesion.estudiante.institutionId,
+    sesion.estudiante.id,
+    parametros.get("evidencia"),
+    parametros.get("cursada"),
+  );
   if (!props) return NextResponse.json({ error: "Sin cursada activa" }, { status: 404 });
 
   return NextResponse.json(props);

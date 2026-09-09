@@ -132,16 +132,16 @@ semanas`: un examen fuera de cuadro es peor que un eje largo.
 
 ⚠️ **Tres cosas del mockup que NO se construyeron, y no las adelantes:**
 
-- **`Cursás Lun 14:00-16:00`** — necesita el bloque horario de
-  [ADR-062](docs/decisions.md#adr-062), que está **decidido y no existe en el schema**.
-  `class_session.session_time` es la hora de **una clase dictada**, no un horario semanal: derivarlo
-  sería inferir la regla desde sus instancias.
+- ~~**`Cursás Lun 14:00-16:00`**~~ ✅ **construido el 9 de septiembre** —
+  [ADR-083](docs/decisions.md#adr-083). `class_schedule_block` existe y `UX02` lo muestra como
+  *«Clases de la semana»*. Lo que sigue valiendo es el porqué: `class_session.session_time` es la
+  hora de **una clase dictada**, no un horario semanal, y **derivarlo sigue prohibido** — hay guard.
 - **`frenada hace 7 días`** — se muestra el hecho, *"última actividad hace 7 días"*. Siete días sin
   actividad en una materia que se cursa una vez por semana **es lo normal**
   ([ADR-078](docs/decisions.md#adr-078)).
 - **`+ Agregar materia o evaluación`** — el único elemento **sin destino definido**.
 
-✅ **`npm run db:verify` corre entero: 398 comprobaciones, cero fallos.** Estaba roto desde
+✅ **`npm run db:verify` corre entero: 429 comprobaciones, cero fallos.** Estaba roto desde
 la B6.14 —a `limpiar_mundo` le faltaban cinco tablas y, como las 40 sentencias van en **una sola
 transacción**, una FK abortaba todo y no se borraba nada—. Arreglarlo destapó un segundo defecto que
 el primero tapaba: `db-aislamiento.sh` **vacía el catálogo que `db-catalogo.sh` necesita después**,
@@ -150,6 +150,54 @@ así que `db:verify` ahora lo reimporta entre los dos.
 ⚠️ **Regla que salió de ahí:** toda tabla nueva que referencie a las del mundo académico **se agrega
 a `limpiar_mundo` en el mismo commit**. Si no, el verificador deja de correr y el error no nombra la
 causa.
+
+✅ **El bloque horario existe** — [ADR-083](docs/decisions.md#adr-083), 9 de septiembre. Era **la
+única entidad genuinamente nueva** de ADR-060…065, decidida el 5 de septiembre y sin construir.
+`class_schedule_block` con **exactamente un dueño** —la oferta o la cursada—, cargada por
+`ingerir_materia` con `p_horarios`, y visible en `UX02`.
+
+⚠️ **Tres cosas que el bloque horario NO es, y las tres tienen guard.** No es `class_session` —una
+clase **dictada**, con fecha— y **derivar la regla semanal de sus instancias sigue prohibido**. No es
+`availability`: *"uno expresa cuándo está cursando y el otro cuándo puede estudiar"*. Y **no es una
+agenda**: *«solo mostrar, no agendar»*, y el panel no contiene ni un `button`.
+
+⛔ **El reparto NO descuenta las horas de cursada, y es una decisión.** `availability` **ya es** el
+tiempo que queda, así que restarle las clases las descontaría dos veces; y donde sí hay
+superposición, [ADR-064](docs/decisions.md#adr-064) manda mostrarla porque *"la pantalla no puede
+asumir que el equivocado es él"*. Hay guard: `insumos_de_reparto` no menciona la tabla.
+
+⚠️ **Falta el segundo escritor de [ADR-063](docs/decisions.md#adr-063).** El horario que **declara el
+estudiante** existe en el schema —el `CHECK` lo admite y los guards lo ejercitan— y **ninguna ruta lo
+escribe**: es el cuarto paso del alta, que pregunta comisión y horario juntos y arrastra
+[ADR-062](docs/decisions.md#adr-062) entero.
+
+⚠️ **Y `course_enrollment.schedule_status` NO existe, aunque ADR-063 lo pida.** Se escribió, se probó
+y se sacó: la cursada se crea **después** de la ingesta, así que el `UPDATE` no tocaba ninguna fila y
+las tres materias del demo quedaban `UNKNOWN` con sus bloques cargados. **Llega con su escritor.**
+Mientras tanto «no se sabe» es la ausencia de bloques — que sigue **sin leerse como disponibilidad**.
+
+✅ **La Bitácora dejó de ser la de otra materia** — [ADR-082](docs/decisions.md#adr-082), 9 de
+septiembre, **corte 1** de [`cursado-de-materia.md`](docs/cursado-de-materia.md) §8 y el único
+autorizado. `estado_de_progreso` tomaba **la primera cursada activa** porque nadie podía decirle
+cuál: con tres materias en curso, mirar el registro de Álgebra abría el de Cálculo. `CTA-009` ahora
+transporta la cursada, igual que `CTA-001` desde [ADR-054](docs/decisions.md#adr-054).
+
+⚠️ **El registro canónico tiene ahora dos CTAs con parámetro, y sigue siendo una lista cerrada.**
+`CTA-001` y `CTA-009`, las dos con `cursada` porque es el mismo objeto. El guard de ADR-054 se hizo
+**más estricto**, no más laxo: enumera las dos y exige el nombre.
+
+⚠️ **Antes de tocar `estado_de_progreso`:** filtra **dos** puntas, no una. La cursada sale de la
+última evidencia del estudiante, así que acotar sólo la CTE `cursada` deja la URL diciendo una
+materia y la evidencia siendo de otra. Hay un check de base por cada punta.
+
+⚠️ **La Bitácora NO se mudó adentro de `UX02`, y no se muda.** `VI.2` §8.7 da 2–3 entradas y `VI.6`
+§8.3 el historial completo, sobre la misma fuente: *"no existe una segunda fuente histórica"*.
+
+⚠️ **El checklist de la captura del owner es la quinta dimensión, no una escala nueva.**
+`confidence_value`, `confidence_state` y `confidence_declared_at` existen desde la B1 y **el único
+escritor es `registrar_progreso`**: por eso `UX02` muestra cuatro dimensiones y no cinco. Es el
+**corte 2**, y está **bloqueado** hasta que la psicopedagoga revise el vocabulario — `Dominado` viola
+[ADR-072](docs/decisions.md#adr-072) y `nivel` viola [ADR-075](docs/decisions.md#adr-075) §C1.
 
 🛠️ **El andamio para probar el MVP creció** — [ADR-079](docs/decisions.md#adr-079), 8 de septiembre.
 **El golden path se recorre entero desde una cuenta nueva, por navegador.** Dos piezas nuevas:
@@ -539,7 +587,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **398 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **429 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
 de negocio a propósito:** después hay que volver a sembrar con `npm run db:demo`.
 

@@ -296,6 +296,7 @@ export const copy = {
   // `nivel`, `rendimiento` ni `avance de aprendizaje`"*. Decía «Preparación».
   "MATERIA.GANTT": "Actividad registrada",
   "MATERIA.GANTT.REVISION": "Entregas que requieren revisión:",
+  "MATERIA.CLASES": "Clases de la semana",
   "MATERIA.UNIDADES": "Unidades",
   "MATERIA.DIMENSIONES": "Cómo venís",
   /** `VI.2` §8.7. Preview de la Bitácora, no un historial aparte. */
@@ -658,6 +659,25 @@ export type CopyId = keyof typeof copy;
 /** Devuelve el copy de un ID. El ID es tipado: un ID inexistente no compila. */
 export function t(id: CopyId): string {
   return copy[id];
+}
+
+/**
+ * Domingo a sábado, en el orden y la escala de `availability.day_of_week` y de
+ * `class_schedule_block.day_of_week` — **`0`–`6`, y son la misma escala a
+ * propósito** ([ADR-063](../../docs/decisions.md#adr-063)).
+ *
+ * Vive acá y no en un componente porque **la usan dos**: el paso de
+ * disponibilidad del alta y el horario de cursado de `UX02`. Dos listas serían
+ * dos verdades, y el día que alguien corrija «Mié» en una, la otra queda mal.
+ *
+ * Y porque traducir un `SMALLINT` a una palabra visible **es contenido**:
+ * `AGENTS.md` §2.6, los enums nunca son copy.
+ */
+export const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
+
+/** `null` ⇒ el número no nombra ningún día, y **no se muestra un día cualquiera**. */
+export function nombreDeDia(dia: number): string | null {
+  return DIAS[dia] ?? null;
 }
 
 /**

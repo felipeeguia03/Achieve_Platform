@@ -6,6 +6,7 @@
  */
 
 import {
+  AccionDeObjeto,
   CTAPrincipal,
   CTASecundaria,
   EstadoChip,
@@ -174,13 +175,20 @@ export function MateriaCursado({
   catedraYVos,
   unidades,
   gantt,
+  clasesDeLaSemana,
   actividadReciente,
+  verRegistro,
   dimensiones,
   aviso,
   capturaDeClase,
   onAvanzar,
   onCapturar,
-}: MateriaProps & { onAvanzar?: () => void; onCapturar?: () => void }) {
+  onVerRegistro,
+}: MateriaProps & {
+  onAvanzar?: () => void;
+  onCapturar?: () => void;
+  onVerRegistro?: () => void;
+}) {
   return (
     <div
       className="space-y-4"
@@ -192,6 +200,16 @@ export function MateriaCursado({
         titulo={t("MATERIA.TITULO")}
         meta={examen ? `Examen · ${examen}` : undefined}
         subcopy={SUBCOPY.UX02}
+        acciones={
+          // `CTA-009` — el historial completo de **esta** materia. Va arriba a
+          // la derecha, como acción del objeto (§11.9.3) y como en `UX01`: es
+          // navegación de lectura y no compite con la CTA primaria del Hero.
+          //
+          // No se pone también al pie de «Actividad reciente». La misma acción
+          // dos veces en una pantalla es `C-02` roto —un concepto, un lugar—, y
+          // es el defecto que ya se corrigió una vez en `UX01`.
+          verRegistro ? <AccionDeObjeto onClick={onVerRegistro}>{verRegistro}</AccionDeObjeto> : undefined
+        }
       />
 
       <EstadoGeneral>
@@ -270,6 +288,36 @@ export function MateriaCursado({
           <Eyebrow>{t("MATERIA.DIMENSIONES")}</Eyebrow>
           {dimensiones.map((d) => (
             <Fila key={d.label} label={d.label} value={d.valor} ausencia={d.ausencia} tono={d.tono} />
+          ))}
+        </div>
+      )}
+
+      {/*
+        `CLASES DE LA SEMANA` — el horario de cursado (ADR-063).
+
+        ⚠️ **Solo muestra.** Es la decisión del owner, textual: *"solo mostrar,
+        no agendar"*. Este bloque no ofrece una acción, no reserva un hueco y no
+        le descuenta nada al presupuesto de estudio: `availability` dice cuándo
+        puede estudiar y esto dice cuándo está cursando, y ADR-063 prohíbe
+        mezclarlos.
+
+        Cada bloque lleva **su procedencia**, como todo lo que esta pantalla
+        afirma sobre la cátedra: que la fuente sea la institución no lo vuelve
+        verificado, y decirlo sería elevar la verificación desde la UI (`I9`).
+
+        `null` ⇒ no se sabe el horario, y **no se dibuja la sección vacía**. No
+        saberlo no es tener la semana libre.
+      */}
+      {clasesDeLaSemana && (
+        <div data-horario>
+          <Eyebrow>{t("MATERIA.CLASES")}</Eyebrow>
+          {clasesDeLaSemana.map((b) => (
+            <div key={b.cuando} style={{ padding: "4px 0" }}>
+              <span style={{ fontSize: "var(--text-body)" }}>{b.cuando}</span>
+              <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+                {b.procedencia}
+              </p>
+            </div>
           ))}
         </div>
       )}

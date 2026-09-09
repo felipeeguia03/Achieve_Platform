@@ -72,6 +72,8 @@ export const FX_DAY_BASE: Escenario = {
 
   materia: {
     materia: "Análisis Matemático II",
+    // Track A: no hay cursada persistida detrás. Ver `MateriaProps.cursadaId`.
+    cursadaId: null,
     examen: "Parcial 1",
     estado: "NORMAL",
     chip: { tono: "urgencia", texto: "Necesita atención" },
@@ -115,6 +117,15 @@ export const FX_DAY_BASE: Escenario = {
       { titulo: "Empezaste", detalle: "19:41", provenance: "Reportado por vos · sin verificar" },
       { titulo: "Te comprometiste", detalle: "17:37", provenance: "Reportado por vos · sin verificar" },
     ],
+    // El horario de cursado — ADR-063. **Solo muestra**: el escenario declara
+    // que la cátedra publicó estos dos bloques, y la pantalla los proyecta sin
+    // agendar nada ni descontarle nada al presupuesto de estudio.
+    clasesDeLaSemana: [
+      { cuando: "Mar 18:00–20:00", procedencia: "Institución · sin verificar" },
+      { cuando: "Jue 18:00–20:00", procedencia: "Institución · sin verificar" },
+    ],
+    // Hay historial: `CTA-009` se ofrece. Ver `MateriaProps.verRegistro`.
+    verRegistro: "Ver avance",
     // Fixture anterior a la Fase B6.15: declara un mundo sin Gantt.
     gantt: null,
     capturaDeClase: "Pasó algo en clase",

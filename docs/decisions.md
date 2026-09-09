@@ -128,6 +128,8 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-079](#adr-079) | El andamio para probar el MVP: por dónde entra el contenido y quién dispara el loop | ✅ `ACCEPTED` *(8 sep 2026 · **se borra con ADR-006**)* | `C01-030`, el scheduler, la ingesta del estudiante |
 | [ADR-080](#adr-080) | Enriquecimiento académico con IA — **candidato, no decidido** | 🟡 `PROVISIONAL — CANDIDATO` *(8 sep 2026 · **faltan rúbrica, revisión clínica y muestra**)* | **Todo uso productivo** |
 | [ADR-081](#adr-081) | Una reingesta **borra el progreso del estudiante**: `topic` gana clave natural y deja de borrarse | ✅ `ACCEPTED` *(8 sep 2026 · **defecto medido**, no hipótesis)* | — |
+| [ADR-082](#adr-082) | La Bitácora **es de una materia**: `CTA-009` transporta la cursada | ✅ `ACCEPTED` *(9 sep 2026 · corte 1 de `cursado-de-materia.md` · **segunda aplicación de ADR-054**)* | — |
+| [ADR-083](#adr-083) | El bloque horario existe, entra por la ingesta y **no toca el reparto** | ✅ `ACCEPTED` *(9 sep 2026 · construye ADR-063 · **sin `kind` ni `schedule_status`**)* | El cuarto paso del alta (ADR-062), el conflicto de ADR-064 |
 
 ---
 
@@ -6763,3 +6765,206 @@ sin `code`, cero duplicados** en las dos pertenencias.
 **después de verificar**, y si un catálogo futuro trae códigos repetidos la migración **debe fallar
 ruidosamente** en vez de deduplicar por su cuenta: elegir cuál de dos unidades homónimas sobrevive
 es una decisión de contenido, no de schema.
+
+---
+
+<a id="adr-082"></a>
+
+## ADR-082 — La Bitácora es de una materia: `CTA-009` transporta la cursada
+
+**Estado:** ✅ `ACCEPTED` · 9 de septiembre de 2026 · **autorizado por el owner** (*"empezá por el
+1"*, sobre los cuatro cortes de [`cursado-de-materia.md`](cursado-de-materia.md) §8)
+**Fecha de apertura:** 9 de septiembre de 2026 · lo abrió el mockup del cursado de materia
+**Relacionado:** [ADR-054](#adr-054) *(de la que es la segunda aplicación)*, [ADR-077](#adr-077) ·
+[`cursado-de-materia.md`](cursado-de-materia.md) §6 fila **B**
+**Toca:** `estado_de_progreso`, `GET /api/progreso`, `CTA-009`, `MateriaProps`.
+
+### El defecto
+
+Dos frases del spec dicen lo mismo, y sólo una se cumplía:
+
+> `VI.2` §8.7 — *"una preview cronológica de eventos relevantes **de esta materia**"*
+> `VI.6` §8.3 — *"Bitácora es el historial completo de la misma verdad derivada. **No existe una
+> segunda fuente histórica**"*
+
+`hechos_de_cursada()` **siempre fue por cursada**. El que elegía mal era `estado_de_progreso`: su
+CTE `cursada` tomaba **la primera activa** por `created_at`, sin que nadie pudiera decirle cuál.
+
+**Con una materia eso era invisible. Con tres —que es lo que deja el alta— mirar el registro de
+Álgebra abría el de Cálculo.** Es exactamente el defecto que [ADR-054](#adr-054) cerró en `CTA-001`,
+en la superficie de al lado y por el mismo motivo: **no es una ausencia, es una respuesta
+equivocada**, y es la clase de error que *"la UI proyecta, nunca decide"* existe para impedir.
+
+### La decisión
+
+**`estado_de_progreso` gana un quinto parámetro opcional, `p_course_enrollment_id`, y `CTA-009` lo
+transporta.** Es el contrato de [ADR-054](#adr-054) opción `B` —el objeto viaja en la URL— aplicado
+por segunda vez, con el mismo nombre de parámetro porque es el mismo objeto.
+
+`NULL` conserva entero el comportamiento anterior: es lo que `UX01`, `UX05`, `UX08` y `UX09` siguen
+pidiendo, y lo que el Track A necesita cuando **no hay `course_enrollment` que nombrar**.
+
+### Las tres cosas que se decidieron en el camino
+
+**1 · Se filtran las dos puntas, no una.** `estado_de_progreso` deriva la cursada de la última
+evidencia del estudiante. Acotar sólo la CTE `cursada` dejaba la pantalla diciendo «Álgebra» en la
+URL y mostrando la evidencia de Cálculo; acotar sólo la evidencia devolvía `NULL`. Hay check de base
+para cada una.
+
+**2 · La puerta aparece si hay algo detrás.** `verRegistro` es `null` exactamente cuando
+`actividadReciente` lo es. La preview y la Bitácora salen de la misma función y de la misma
+traducción (`aEntradaVisible`), así que **una preview vacía es una Bitácora vacía**, y ofrecer el
+enlace ahí sería prometer un historial que no existe.
+
+⚠️ **Con una salvedad dicha, no tapada:** la preview mira **los últimos tres hechos**, no todos. Si
+esos tres no tienen copy aprobada y hay otros más viejos que sí, la puerta queda escondida. Es el
+error conservador —omitir de más— y se prefirió al de prometer de más.
+
+**3 · La CTA va arriba a la derecha, y una sola vez.** Como acción del objeto (§11.9.3) y como ya
+está en `UX01`. **No se repite al pie de «Actividad reciente»**: la misma acción dos veces en una
+pantalla es `C-02` roto —un concepto, un lugar—, y es el defecto que ya se corrigió una vez en
+`UX01`.
+
+### Lo que este ADR NO hace
+
+⛔ **No mueve la Bitácora adentro de `UX02`.** El spec reparte: `UX02` muestra 2–3 entradas y `UX06`
+el historial completo. Copiar el historial a la materia sería la segunda fuente que `VI.6` §8.3
+prohíbe — la regla que este ADR viene a **cumplir**, no a erosionar.
+
+⛔ **No toca la dimensión Confianza.** El checklist de la captura del owner es el corte 2, y
+[`cursado-de-materia.md`](cursado-de-materia.md) §8 lo deja bloqueado hasta que la psicopedagoga lea
+el vocabulario. Este ADR no adelanta ni una palabra de eso.
+
+⛔ **No agrega una superficie ni una CTA.** El registro canónico sigue en **20**. `CTA-009` ya
+existía y ya tenía origen en `UX02`: lo único que cambia es que ahora **dice de qué materia**.
+
+⛔ **No cambia el breadcrumb.** `UX06` sigue colgando de `UX01`: `CTA-009` tiene cinco orígenes, y
+`migas.ts` declara un árbol, no el camino por el que se llegó. Inventar jerarquía según el
+referrer sería otra cosa.
+
+### Cómo se verifica
+
+**20 comprobaciones nuevas en `npm test`** (`tests/bitacora-por-materia.test.tsx`) y **8 en
+`npm run db:verify`** (`scripts/db-superficies.sh`, sección `B6.20`). Las de base se verificaron
+**rompiendo la regla a propósito**: sin el filtro de la CTE `cursada`, pedir Álgebra devuelve
+«Análisis II» con los tres hechos de Análisis II, y el guard lo dice con esas palabras.
+
+---
+
+<a id="adr-083"></a>
+
+## ADR-083 — El bloque horario existe, entra por la ingesta y **no toca el reparto**
+
+**Estado:** ✅ `ACCEPTED` · 9 de septiembre de 2026 · **autorizado por el owner** (alcance elegido:
+*entidad + ingesta + pantalla*, sobre el corte 3 de [`cursado-de-materia.md`](cursado-de-materia.md) §8)
+**Fecha de apertura:** 5 de septiembre de 2026 — [ADR-063](#adr-063) lo decidió y **nadie lo
+construyó en cuatro días**
+**Relacionado:** [ADR-062](#adr-062), [ADR-063](#adr-063), [ADR-064](#adr-064),
+[ADR-081](#adr-081) · [plan](plan-periodo-comision-horarios.md) Corte 4
+**Toca:** una tabla nueva, `ingerir_materia`, `estado_de_materia`, `UX02`, `lib/content/es-AR.ts`.
+
+### Qué se construyó
+
+**`class_schedule_block`**, con **exactamente un dueño** y `CHECK` de exclusividad — el mismo patrón
+que `topic_belongs_somewhere` y `una_sola_forma`. Dos FK reales, sin `owner_type` y sin JSON, que son
+las dos prohibiciones de forma que [ADR-063](#adr-063) escribió textualmente.
+
+| | |
+|---|---|
+| `offering_id` | El horario **publicado** de la comisión |
+| `course_enrollment_id` | El que **declara el estudiante** que todavía no sabe su comisión |
+
+Lo carga `ingerir_materia` con `p_horarios`, llega a `UX02` como **`CLASES DE LA SEMANA`**, y cada
+bloque viaja con su procedencia.
+
+### Las tres cosas que el bloque horario no es
+
+**No es `class_session`.** Aquélla es **una clase dictada**, con su fecha. Ésta es **la regla
+semanal**. Derivar la segunda desde las primeras —«se dictó tres martes seguidos, entonces cursa los
+martes»— es inferencia, y quedaría presentada como horario de la institución. Hay guard: se cargan
+tres sesiones de un lunes y el horario **sigue sin tener ningún lunes**.
+
+**No es `availability`.** *"Uno expresa cuándo está cursando y el otro cuándo puede estudiar"*
+([ADR-063](#adr-063)).
+
+**No es una agenda.** Decisión del owner, textual: **«solo mostrar, no agendar»**. El panel no ofrece
+ninguna acción, y hay guard de que no contiene ni un `button`, ni un `a`, ni un `input`.
+
+### ⛔ Por qué NO descuenta las horas del reparto
+
+El corte 3 de [`cursado-de-materia.md`](cursado-de-materia.md) proponía que `insumos_de_reparto()`
+restara las horas de cursada. **Se dejó sin hacer, y no por falta de tiempo:** contradice tres cosas
+ya decididas.
+
+1. **[ADR-063](#adr-063) separa las dos magnitudes.** `availability` es *"cuándo puede estudiar"* —
+   **ya excluye la clase por construcción**, porque eso es lo que la pregunta significa. Restarle las
+   horas de cursada las descontaría **dos veces**.
+2. **[ADR-064](#adr-064) ya decidió dónde se resuelve una superposición**: en el `Commitment`, *"no
+   confirmar silenciosamente… mostrar el conflicto"*, con dos salidas —elegir otro horario **o
+   corregir el bloque de clase**— porque *"la pantalla no puede asumir que el equivocado es él"*.
+   Restar en silencio del presupuesto asume exactamente eso.
+3. **El owner dijo «solo mostrar».** Consumir presupuesto es hacer algo más que mostrar.
+
+Hay guard estático: `insumos_de_reparto` **no menciona** `class_schedule_block`, y romperlo hace
+fallar el test.
+
+⚠️ **Esto deja abierta una pregunta legítima, y es del owner:** un estudiante puede declarar
+disponibilidad **encima** de su horario de clase. Hoy eso no se detecta en el reparto y aparece
+recién al comprometerse, por ADR-064. Si hay que decir algo antes, es una decisión de producto — no
+una resta silenciosa.
+
+### Las dos columnas que se decidieron NO agregar
+
+**⛔ `kind`.** El plan la listaba como opcional y **ningún ADR declara su vocabulario**: «teórico»,
+«práctico», «laboratorio» serían tres palabras inventadas acá. Una columna que nada restringe y nada
+lee es el defecto de `reflection.difficulty` —dos escritores, cero lectores— repetido a sabiendas.
+
+**⛔ `course_enrollment.schedule_status`.** Ésta **sí la pide [ADR-063](#adr-063)**, y se escribió,
+se probó y se sacó. El motivo está medido: el estado se pondría en `KNOWN` al ingerir el horario,
+pero **`course_enrollment` se crea después de la ingesta** —lo hace `db-demo.sh` y lo hace el alta—,
+así que el `UPDATE` no tocaba ninguna fila y las tres materias del mundo demo quedaban `UNKNOWN`
+**con sus bloques cargados**. Una columna que miente en el caso normal es peor que no tenerla.
+
+Y el arreglo no es un trigger: **el estado que el ADR describe es una declaración del estudiante**
+—*"todavía no sé mis horarios"*— y la pantalla que la recoge es el cuarto paso del alta, que pregunta
+comisión y horario juntos y arrastra [ADR-062](#adr-062) entero. **La columna llega con su
+escritor.** Mientras tanto, «no se sabe» se contesta con la ausencia de bloques, que es un hecho y no
+puede desincronizarse.
+
+⚠️ **Y esa ausencia sigue sin leerse como disponibilidad**: la pantalla **omite** la sección, no
+dibuja una semana libre.
+
+### Lo que este ADR NO habilita
+
+⛔ **No construye el cuarto paso del alta**, así que el segundo escritor de [ADR-063](#adr-063) —el
+horario que declara el estudiante— **existe en el schema y no tiene pantalla**. El `CHECK` lo admite
+y los guards de base lo ejercitan; ninguna ruta lo escribe todavía.
+
+⛔ **No abre [ADR-062](#adr-062).** `commission_status`, `NOT_LISTED` y la acción global *«no sé mis
+comisiones»* siguen sin construir.
+
+⛔ **No implementa [ADR-064](#adr-064).** El conflicto al comprometerse sigue sin validarse; ahora
+existe contra qué validarlo.
+
+⛔ **No agrega aula.** [ADR-062](#adr-062) modeló el bloque sin aula y la captura del owner pedía
+«Aula 305». No hay dónde ponerlo **a propósito**.
+
+### Una corrección que salió del camino
+
+**Había dos listas de nombres de día.** El paso de disponibilidad del alta tenía la suya, y este
+corte necesitaba otra para `UX02`. Se unificó en `lib/content/es-AR.ts` —traducir un `SMALLINT` a una
+palabra visible **es contenido**— con guard de que no aparezca una segunda copia en ningún
+componente. Y las dos tablas usan **la misma escala `0`–`6`**, que es lo que va a permitir compararlas
+el día que [ADR-064](#adr-064) se construya.
+
+### Cómo se verifica
+
+**19 comprobaciones nuevas en `npm test`** (`tests/horario-de-cursado.test.tsx`) y **18 en
+`npm run db:verify`** —8 de constraints en `db-invariantes.sh` y 10 de lectura e ingesta en
+`db-superficies.sh`—. Las cuatro reglas centrales se verificaron **rompiéndolas a propósito**.
+
+⚠️ **Y un defecto propio, encontrado por los guards y no por una lectura:** la primera versión de la
+sección de base ingería contra la oferta compartida con `p_unidades: []`, y desde
+[ADR-081](#adr-081) eso **retira todas las unidades de la oferta** — nueve comprobaciones aguas abajo
+se caían sin que hubiera un solo invariante roto. La sección tiene ahora su propio mundo. **Un
+verificador no puede romper lo que las otras comprobaciones necesitan.**

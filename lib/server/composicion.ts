@@ -1375,9 +1375,18 @@ export async function progresoDe(
   institutionId: string,
   studentId: string,
   evidenceId: string | null = null,
+  // El orden es el de `materiaDe`: el objeto que la pantalla mira y después el
+  // reloj. `ahora` último en las siete lecturas.
+  courseEnrollmentId: string | null = null,
   ahora: string = new Date().toISOString(),
 ): Promise<ProgresoProps | null> {
-  const estado = await progresoLecturaReal.estadoDeProgreso(institutionId, studentId, ahora, evidenceId);
+  const estado = await progresoLecturaReal.estadoDeProgreso(
+    institutionId,
+    studentId,
+    ahora,
+    evidenceId,
+    courseEnrollmentId,
+  );
   return estado ? proyectarProgreso(estado) : null;
 }
 

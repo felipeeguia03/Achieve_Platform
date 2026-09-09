@@ -7,10 +7,12 @@ import { MateriaCursado } from "@/components/screens/materia-cursado";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
-import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
+import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
 import type { MateriaProps } from "@/lib/domain/view-models";
 
 const DESTINO = rutaDeCta("CTA-002");
+/** `CTA-009` — la Bitácora. Existe la ruta aunque no haya cursada que nombrar. */
+const A_REGISTRO = rutaDeCta("CTA-009");
 
 /**
  * Etapa B2.6 — `UX02` desde la base.
@@ -65,7 +67,19 @@ function Pantalla({
   const destino = siguienteUrl("/materia", params.get("escenario")) ?? DESTINO;
 
   return (
-    <MateriaCursado {...props} onAvanzar={destino ? () => router.push(destino) : undefined} />
+    <MateriaCursado
+      {...props}
+      onAvanzar={destino ? () => router.push(destino) : undefined}
+      // `CTA-009` con la cursada puesta. Con `cursadaId` en `null` —el Track A—
+      // `rutaDeCtaCon` devuelve la ruta pelada y el backend elige, que es
+      // exactamente lo que ADR-054 previó: no se inventa un id para completar
+      // la URL.
+      onVerRegistro={
+        A_REGISTRO
+          ? () => router.push(rutaDeCtaCon("CTA-009", props.cursadaId) ?? A_REGISTRO)
+          : undefined
+      }
+    />
   );
 }
 

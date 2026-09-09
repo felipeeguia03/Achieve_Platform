@@ -61,6 +61,7 @@ limpiar_mundo() {
    delete from commitment; \
    delete from action; \
    delete from topic_progress; \
+   delete from class_schedule_block; \
    delete from course_enrollment; \
    delete from availability; \
    delete from enrollment; \

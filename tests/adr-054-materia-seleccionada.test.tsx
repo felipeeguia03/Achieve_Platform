@@ -78,11 +78,22 @@ describe("§1 · El registro canónico declara qué transporta CTA-001", () => {
     });
   });
 
-  it("es la única que transporta algo: las otras dieciocho no", () => {
+  it("sólo dos transportan algo, y las dos transportan la misma cursada", () => {
+    // El guard **no se afloja**: sigue siendo una lista cerrada, y quien agregue
+    // un parámetro tiene que decir acá por qué.
+    //
+    // `CTA-009` entró en la Fase B6.20, por el mismo motivo que `CTA-001`: `VI.6`
+    // §8.3 y `VI.2` §8.7 dicen las dos *«de esta materia»*, y sin transportar
+    // cuál, `estado_de_progreso` elegía la primera cursada activa. Con una
+    // materia era invisible; con tres, mirar el registro de Álgebra abría el de
+    // Cálculo. **No era una ausencia: era una respuesta equivocada.**
     const conParametro = Object.values(ctaRegistry)
       .filter((c) => c.parametro !== undefined)
       .map((c) => c.id);
-    expect(conParametro).toEqual(["CTA-001"]);
+    expect(conParametro).toEqual(["CTA-001", "CTA-009"]);
+
+    // Y el nombre del parámetro es el mismo en las dos: es el mismo objeto.
+    expect(ctaRegistry["CTA-009"].parametro?.nombre).toBe("cursada");
   });
 
   it("`rutaDeCtaCon` arma el destino con el nombre declarado", () => {

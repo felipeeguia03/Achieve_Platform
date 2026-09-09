@@ -479,6 +479,46 @@ CREATE TABLE class_session (
   uploaded_by         UUID
 );
 
+-- ── El horario semanal de cursado · ADR-063, construido en la B6.21 ──────────
+--
+-- **No es `class_session`.** Aquélla es una clase DICTADA, con su fecha; ésta es
+-- la REGLA semanal. Derivar la segunda desde las primeras —«se dictó tres martes
+-- seguidos, entonces cursa los martes»— es inferencia presentada como horario de
+-- la institución.
+--
+-- **Y no es `availability`**: una dice cuándo está cursando, la otra cuándo puede
+-- estudiar. Comparten la escala de día `0`-`6` **a propósito**, para poder
+-- compararse el día que se construya ADR-064.
+--
+-- Exactamente un dueño: la oferta (horario publicado de la comisión) o la
+-- cursada (el que declara un estudiante que no sabe cuál es la suya). Dos FK
+-- reales, sin `owner_type` y sin JSON: las dos prohibiciones literales del ADR.
+CREATE TABLE class_schedule_block (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  offering_id          UUID REFERENCES course_offering(id)   ON DELETE CASCADE,
+  course_enrollment_id UUID REFERENCES course_enrollment(id) ON DELETE CASCADE,
+  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  start_time  TIME NOT NULL,
+  end_time    TIME NOT NULL,
+  -- provenance obligatoria: un horario declarado por el estudiante se usa sin
+  -- corroborar y NADIE lo eleva (I9).
+  source_type TEXT NOT NULL CHECK (source_type IN
+                ('institution','instructor','student','community','public_web','inference')),
+  source_ref  TEXT,
+  observed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  confidence  NUMERIC(3,2) CHECK (confidence BETWEEN 0 AND 1),
+  verification_status TEXT NOT NULL DEFAULT 'unverified'
+                        CHECK (verification_status IN
+                          ('unverified','corroborated','official','disputed')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT bloque_tiene_un_solo_dueno
+    CHECK (num_nonnulls(offering_id, course_enrollment_id) = 1),
+  CONSTRAINT bloque_termina_despues_de_empezar CHECK (end_time > start_time)
+);
+-- ⛔ SIN `kind` y SIN `course_enrollment.schedule_status`: las dos se decidieron
+-- NO agregar, con su motivo, en ADR-083.
+
 CREATE TABLE class_session_topic (
   class_session_id UUID NOT NULL REFERENCES class_session(id) ON DELETE CASCADE,
   topic_id         UUID NOT NULL REFERENCES topic(id) ON DELETE CASCADE,

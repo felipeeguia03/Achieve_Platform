@@ -30,6 +30,7 @@ const BASE: EstadoDeMateria = {
   clases: [],
   cargaDeclarada: null,
   dimensiones: null,
+  horario: [],
   actividadReciente: [],
 };
 

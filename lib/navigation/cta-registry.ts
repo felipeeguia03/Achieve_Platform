@@ -249,6 +249,11 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     condicion: "Progress/Bitácora disponible",
     accionSolicitada: "ver progreso",
     destino: "UX06",
+    // ADR-054, opción `B`, otra vez: **de qué materia es la Bitácora**. `VI.2`
+    // §8.7 y `VI.6` §8.3 dicen las dos *«de esta materia»*, y sin el id la
+    // lectura elegía la primera cursada activa. Con `null` —el Track A, donde
+    // no hay `course_enrollment` que nombrar— la ruta viaja pelada.
+    parametro: { nombre: "cursada", que: "el CourseEnrollment cuya Bitácora se abre" },
     resultadoAutoritativo: "ninguno; lectura",
     fallback: { nodo: null, descripcion: "volver al origen" },
     estadoError: "mostrar estado no disponible",
