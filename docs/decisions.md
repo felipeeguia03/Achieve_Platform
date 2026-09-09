@@ -124,6 +124,10 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-075](#adr-075) | Las respuestas de la psicopedagoga sobre tiempo y carga | ✅ `ACCEPTED` *(7 sep 2026 · **la pantalla del déficit no estaba aprobada**)* | `B6.17` |
 | [ADR-076](#adr-076) | Tres perfiles operativos, y la superficie académica **no autorizada todavía** | ✅ `ACCEPTED` *(8 sep 2026 · sólo informe de solo lectura)* | **Toda construcción de la superficie** |
 | [ADR-077](#adr-077) | El área «Materias» se construye: lista primero, materia después | ✅ `ACCEPTED` *(8 sep 2026 · cierra `A` y `C` de ADR-054 · **sin Gantt del período**)* | El Gantt cruzado |
+| [ADR-078](#adr-078) | El Gantt del período es una ventana, no un presupuesto | ✅ `ACCEPTED` *(8 sep 2026 · **corrige a ADR-077**: no se pisa con el reparto)* | Horarios de cursada (ADR-062) |
+| [ADR-079](#adr-079) | El andamio para probar el MVP: por dónde entra el contenido y quién dispara el loop | ✅ `ACCEPTED` *(8 sep 2026 · **se borra con ADR-006**)* | `C01-030`, el scheduler, la ingesta del estudiante |
+| [ADR-080](#adr-080) | Enriquecimiento académico con IA — **candidato, no decidido** | 🟡 `PROVISIONAL — CANDIDATO` *(8 sep 2026 · **faltan rúbrica, revisión clínica y muestra**)* | **Todo uso productivo** |
+| [ADR-081](#adr-081) | Una reingesta **borra el progreso del estudiante**: `topic` gana clave natural y deja de borrarse | ✅ `ACCEPTED` *(8 sep 2026 · **defecto medido**, no hipótesis)* | — |
 
 ---
 
@@ -6194,9 +6198,14 @@ El mockup trae dos vistas con un selector —**Lista** y **Gantt del período**�
 | Vista | Decisión |
 |---|---|
 | **Lista** | ✅ Se construye ahora |
-| **Gantt del período** | ⏸️ **Diferido**, con decisión propia |
+| **Gantt del período** | ⏸️ Diferido acá · ✅ **construido el mismo día por [ADR-078](#adr-078)** |
 
-**Por qué el Gantt cruzado no entra en este corte, y no es por tamaño.** Dibujar varias materias
+> ⚠️ **El argumento que sigue resultó ser falso, y [ADR-078](#adr-078) lo corrige.** Se conserva
+> tachado en vez de borrado: la pregunta era correcta —*¿qué manda si dos superficies dicen cosas
+> distintas?*— y lo que estaba mal era el supuesto. **El relleno del Gantt es cobertura, no
+> asignación de horas**, y lo decía la leyenda del propio mockup que el equipo tenía delante.
+
+~~**Por qué el Gantt cruzado no entra en este corte, y no es por tamaño.**~~ Dibujar varias materias
 sobre un eje común es *decir cómo se reparte el período entre ellas* — que es exactamente lo que
 [ADR-073](#adr-073) ya proyecta en `UX01` con el reparto. **Dos superficies afirmando el reparto con
 reglas distintas es una contradicción esperando el momento**, y cuál manda es una decisión que nadie
@@ -6285,3 +6294,472 @@ mockup **sin destino definido**: son dos flujos distintos —dar de alta una mat
 evaluación es `CTA-020`, que vive **dentro** de una cursada—. Ponerlo sin resolver eso sería un botón
 que no sabe adónde va.
 
+
+
+---
+
+<a id="adr-078"></a>
+
+## ADR-078 — El Gantt del período es una ventana, no un presupuesto
+
+**Estado:** ✅ `ACCEPTED` · 8 de septiembre de 2026 · **decidido por el Product Owner**
+**Fecha de apertura:** 8 de septiembre de 2026 · **la abrió [ADR-077](#adr-077), el mismo día**
+**Relacionado:** [ADR-072](#adr-072), [ADR-073](#adr-073), [ADR-075](#adr-075), [ADR-077](#adr-077).
+**Toca:** `lib/domain/ventana.ts`, `insumos_de_reparto()`, `proyeccion-materias.ts`,
+`components/screens/indice-de-materias.tsx`.
+
+### ⚠️ Corrige a ADR-077, y la corrección es el motivo de este ADR
+
+[ADR-077](#adr-077) difirió el «Gantt del período» con este argumento:
+
+> ~~*"Dibujar varias materias sobre un eje común es decir cómo se reparte el período entre ellas —
+> que es exactamente lo que [ADR-073](#adr-073) ya proyecta en `UX01` con el reparto. Dos superficies
+> afirmando el reparto con reglas distintas es una contradicción esperando el momento."*~~
+
+**Era falso, y lo desmiente la propia leyenda del mockup**, que el equipo tenía delante y no leyó:
+
+> *ventana de preparación · ◆ fecha de examen · línea negra = hoy · **relleno = cobertura de temas***
+
+**El relleno es cobertura, no asignación.** Son dos objetos que no se tocan:
+
+| | Qué afirma | Unidad | Quién lo produce |
+|---|---|---|---|
+| **Reparto** (`UX01`) | *"Esta semana te tocan 4,5 h de Cálculo"* | horas por semana | `reparto.ts`, sobre la disponibilidad declarada |
+| **Ventana** (el Gantt) | *"Tenés desde el 4 de agosto hasta el 15 de septiembre, y cubriste el 22%"* | días de calendario | `ventana.ts` + `cobertura.ts` |
+
+El primero reparte un presupuesto que puede no alcanzar; el segundo describe **cuánto tiempo hay y
+cuánto está cubierto**. Ninguno de los dos puede contradecir al otro porque **no afirman la misma
+magnitud**. El Gantt no lee la disponibilidad, no lee el multiplicador personal y no asigna horas.
+
+⚠️ **Que la objeción fuera falsa no la vuelve inútil.** Era la pregunta correcta —*¿qué manda si dos
+superficies dicen cosas distintas?*— hecha sobre un supuesto equivocado. La respuesta —*no dicen
+cosas distintas*— es lo que este ADR deja registrado, para que nadie la vuelva a hacer.
+
+### La decisión
+
+**Se construye la vista «Gantt del período» como segunda vista del índice**, con un selector
+`Lista` / `Gantt del período`. Misma superficie —`UX02_INDICE`, sin wireframe, sin CTA nueva—, mismos
+datos, otra forma de mirarlos.
+
+### La ventana: dos hechos, y nada entre medio
+
+```
+ventana = [ primera clase dictada , fecha de la evaluación ]
+```
+
+**Las dos puntas son hechos persistidos**, y ninguna se infiere:
+
+| Falta | Qué pasa | Por qué |
+|---|---|---|
+| **La fecha de evaluación** | ⛔ **No hay ventana.** Barra punteada: *"sin ventana de preparación"* | Sin fin no hay plazo. Dibujar hasta el borde del eje inventaría una fecha |
+| **La primera clase** | La barra empieza en el borde del eje, **y se dice** | Hay plazo pero no se sabe desde cuándo se viene preparando |
+| **Las dos** | ⛔ No hay ventana | — |
+
+⚠️ **Se descartó empezar todas las barras en el borde izquierdo del eje**, que es como se ven en el
+mockup. Es cómodo de dibujar y **no afirma nada**: una materia que empezó en marzo y una que empezó
+la semana pasada tendrían la misma ventana. La primera clase es un hecho y distingue.
+
+**El eje se adapta a los datos.** Va de `hoy − 2 semanas` a `max(última evaluación, hoy + 3 semanas)`.
+El mínimo conserva la forma del mockup; el máximo existe para que **una evaluación nunca quede fuera
+de cuadro** — un examen que no se ve es peor que un eje largo.
+
+### El relleno es la misma cobertura, y sale de la misma función
+
+**No se recalcula.** `coberturaDeMateria()` y `textoDeCobertura()` son las que ya usan `UX02` y la
+Lista ([ADR-077](#adr-077)). Rigen las cuatro prohibiciones de [ADR-072](#adr-072) sin excepción, y
+la cuarta se ve especialmente acá: **una materia sin minutos conocidos no dibuja relleno**, dice
+*"sin temas cargados"* dentro de su barra. Una barra vacía por falta de datos y una por falta de
+trabajo **no se ven igual**, y en un Gantt esa confusión es más fácil de cometer que en una lista.
+
+### ⛔ Dos cosas del mockup que NO se construyen
+
+**1 · `Cursás Lun 14:00-16:00 · Jue 20:00-22:00`.** El bloque horario de cursada está **decidido y no
+implementado**: [ADR-062](#adr-062) lo definió con dos dueños posibles y excluyentes, y **la entidad
+no existe todavía en el schema**. `class_session.session_time` guarda la hora de **una clase
+dictada**, que es otra cosa: un hecho puntual, no un horario semanal. Derivar el horario de las horas
+observadas sería inferir la regla desde sus instancias — *omitir, no inventar*.
+
+**2 · `frenada hace 7 días`.** Se muestra el hecho —*"última actividad hace 7 días"*— y no el
+juicio. **«Frenada» es una etiqueta**, y la regla de [ADR-075](#adr-075) es literal: *"el sistema
+debe reconocer patrones, no etiquetar personas"*. Que la etiqueta caiga sobre la materia y no sobre
+el estudiante no cambia quién la lee: la lee él, sobre su propia materia.
+
+⚠️ **Y no es sólo tono: es que el hecho no la sostiene.** Siete días sin actividad registrada en una
+materia que se cursa una vez por semana **es lo normal**. Llamarla «frenada» convierte una cadencia
+en un problema.
+
+
+
+---
+
+<a id="adr-079"></a>
+
+## ADR-079 — El andamio para probar el MVP: por dónde entra el contenido y quién dispara el loop
+
+**Estado:** ✅ `ACCEPTED` · 8 de septiembre de 2026 · **decidido por el Product Owner**
+**Fecha de apertura:** 8 de septiembre de 2026 · **la abrió el recorrido del golden path a mano**
+**Relacionado:** [ADR-006](#adr-006), [ADR-039](#adr-039), [ADR-052](#adr-052), [ADR-076](#adr-076).
+**Toca:** `scripts/sembrar-materia.mjs`, `app/api/prueba/loop/`, `components/prueba/panel.tsx`.
+
+### El hallazgo: el loop funciona, y no se puede empezar
+
+**El golden path se recorrió entero contra Postgres** el 8 de septiembre: ADE → `Commitment` →
+`Evidence` (firma, subida, registro) → validación → progreso → siguiente acción. Cerró y volvió a
+abrir, y todo lo derivado se movió con él:
+
+| | antes | después |
+|---|---|---|
+| Cobertura de la materia | 22% | **61%** |
+| Reparto | 95,5 h | **43 h** |
+| `HOY` | *Derivadas* | *Límites y continuidad* |
+
+⚠️ **Pero un estudiante que completa el alta desde cero no puede empezarlo.** Verificado
+recorriendo los cuatro pasos del alta con el estudiante nuevo:
+
+```
+alta/materias  → {"cursadas":1, "declaraciones":1, "recomendadas":0}
+HOY            → FALTA CONTEXTO DE CURSADO
+reparto        → SIN_DATOS
+la materia     → sin temas cargados — no puedo estimar · SIN VENTANA
+```
+
+**El producto está diciendo la verdad.** Lo que falta es por dónde entra el contenido: el único
+escritor académico es `ingerir_materia`, y **ninguna ruta lo alcanza** — el mundo demo funciona
+porque `db-demo.sh` llama al RPC desde bash.
+
+⚠️ **Y hay una segunda mitad, peor.** Aunque el contenido se cargara después, **nada vuelve a
+disparar el ADE**: se dispara en el alta (una vez, `alta.ts`) y desde `scripts/validar.mjs`. La ruta
+de validación no lo re-dispara. Un estudiante cuyo ADE no encontró nada en el alta **se queda sin
+acción para siempre**.
+
+### La decisión: dos andamios declarados, y ninguna superficie
+
+| Hueco | Qué se construye | Qué NO se construye |
+|---|---|---|
+| El contenido de una materia | `npm run db:materia` | Ninguna pantalla |
+| ADE · validación · reloj | Tres botones en el dock de `MODO_PRUEBA` | Ningún scheduler, ningún rol |
+
+**Por qué el contenido es un script y no una pantalla.** [ADR-076](#adr-076) **no autoriza construir
+la superficie académica**, y el informe encontró algo peor que la falta de pantalla: **no hay
+identidad de actor**, sólo un secreto compartido. Un script no necesita saber quién aprieta el botón
+**porque no hay botón**.
+
+### ⚠️ El cerrojo que el dock abre, dicho de frente
+
+**El paso `validar` deja al estudiante validando su propia evidencia**, que es la regla que el
+producto más protege. **No es un descuido: es la consecuencia de que `C01-030` —*quién valida*— siga
+`OPEN`.** Hasta que se cierre no hay a quién darle ese botón.
+
+Por eso vive detrás de tres cerrojos, los mismos que `/api/prueba/alta`:
+
+1. **`404` sin `MODO_PRUEBA=1`**, no `403`: un `403` confirmaría que la ruta existe.
+2. **JWT del estudiante, y sólo sobre sí mismo.** **Sin secreto de servicio a propósito**: un secreto
+   podría correr el loop de cualquiera, y este paso escribe progreso.
+3. **No reimplementa nada.** Llama a `recomendarPara`, `validarEvidencia` y `correrReloj`, los
+   mismos que las rutas reales — un atajo que salteara el servicio probaría el atajo.
+
+### Lo que el andamio encontró, y no se sabía
+
+**`ingerir_materia` sin `p_curriculum_plan_id` crea una cursada nueva.** Resuelve el `course` dentro
+del contenedor *«Sin programa declarado»* —otra fila con el mismo código— y la del estudiante **queda
+vacía mientras el script dice «listo»**. Lo encontró un chequeo que el script hace después de
+ingerir, no una lectura del SQL, y ese chequeo queda.
+
+**`ingerir_materia` no crea recursos, y sin recursos el ADE no recomienda.** Lo dice él mismo:
+`CONTEXTO_INCOMPLETO — «Fundamentos» no tiene material configurado`. Es correcto —una acción sin nada
+que abrir no es ejecutable— y era la pieza que faltaba para que una materia recién cargada sirviera
+de algo.
+
+### ⛔ Lo que sigue sin resolverse, y no lo resuelve este ADR
+
+| Qué | Quién lo cierra |
+|---|---|
+| **No se puede crear una cuenta.** `/login` no ofrece registro ([ADR-039](#adr-039): el padrón lo decide el CRM) | El contrato con el CRM |
+| **Quién valida** | `C01-030`, `OPEN` |
+| **El reloj no corre solo.** Sin scheduler, los compromisos nunca vencen y el rescate no se alcanza | Decisión de infraestructura |
+| **El ADE no se re-dispara** desde la ruta de validación | Trabajo pendiente, no decisión |
+| **El estudiante no puede cargar su programa.** Sería la `B2b.3` | Decisión de producto |
+
+### Cuando ADR-006 abra, esto se borra
+
+**Los dos andamios, enteros.** No son un paso hacia una consola de operación: con personas reales,
+cargar el programa de una materia y validar la evidencia de alguien son operaciones con **actor,
+procedencia y trazabilidad** — no comandos ni botones.
+
+
+
+---
+
+<a id="adr-080"></a>
+
+## ADR-080 — Enriquecimiento académico con IA: **candidato, no decidido**
+
+**Estado:** 🟡 `PROVISIONAL — CANDIDATO` · 8 de septiembre de 2026 · **autorizado a registrarse como
+propuesta por el Product Owner**
+**Relacionado:** [ADR-006](#adr-006), [ADR-023](#adr-023), [ADR-037](#adr-037),
+[ADR-058](#adr-058), [ADR-074](#adr-074), [ADR-075](#adr-075) ·
+[matriz de fuentes y autoridad](matriz-de-fuentes-y-autoridad.md).
+**Toca:** nada. **No hay implementación asociada.**
+
+> ⛔ **Esto NO es una decisión cerrada, y el estado lo dice.** Faltan tres cosas antes de que pueda
+> serlo: **la rúbrica**, **la revisión de la psicopedagoga** y **la prueba sobre una muestra**.
+> Ninguna de las tres existe.
+>
+> ⛔ **No autoriza ejecutar llamadas a OpenAI, procesar el CSV, escribir scripts, backend,
+> migraciones ni cambios del ADE.** [ADR-076](#adr-076) §6 sigue vigente.
+
+### El problema que intenta resolver
+
+El catálogo trae **temas y sus relaciones** y no trae **ninguna noción de cuánto cuesta cada uno**.
+Hoy el ADE estima con un bloque por defecto de 30–45 minutos, igual para todo, y el reparto usa un
+factor de estudio constante ([ADR-070](#adr-070)) cuando la cátedra no declaró horas.
+
+⚠️ **Y la única señal de dificultad que el producto captura no la lee nadie.**
+`reflection.difficulty` —`mas_facil | esperado | mas_dificil`— tiene dos escritores y **cero
+lectores** (§4.15 de la matriz). O se usa o se deja de pedir.
+
+### La propuesta, punto por punto
+
+**1 · La IA no se consulta durante el uso normal del estudiante.** Ni una llamada en el camino
+caliente. Los temas y sus relaciones **cambian poco**, así que la inferencia se hace una vez.
+
+⚠️ **El motivo de fondo no es el costo: es la reproducibilidad.** Una inferencia que cambia entre dos
+lecturas de la misma pantalla no se puede auditar, y es exactamente el problema que la matriz señala
+en las derivaciones no persistidas.
+
+**2 · No se construye un backend de IA separado para el MVP.** Un proceso offline alcanza.
+
+**3 · El enriquecimiento es un proceso offline sobre una versión identificada del CSV.** La entrada
+tiene que ser **inmutable e identificable**: sin eso, la salida no se puede atribuir a nada.
+
+**4 · La salida siempre lleva `source_type = 'inference'`.** Ya está en el vocabulario de
+Provenance, y ADR-023 lo previó.
+
+**5 · La inferencia nunca se eleva sola a `corroborated` ni a `official`.** Es `I9`, sin excepción:
+*ninguna capa eleva su propio `verification_status`*. Y `official` sigue siendo **inalcanzable por
+diseño** hasta que exista autenticación institucional.
+
+**6 · Se registra la trazabilidad completa de cada inferencia:**
+
+| Campo | Por qué |
+|---|---|
+| Modelo exacto | Dos versiones del mismo modelo no son el mismo clasificador |
+| Versión del prompt | Es la regla, y las reglas se versionan (`REGLA_DE_*`) |
+| Esquema de salida | Sin él, «lo que devolvió» no es comparable entre corridas |
+| Fecha de generación | — |
+| **Versión o hash del CSV de entrada** | Es la única forma de saber **sobre qué** se infirió |
+| Justificación | Una clasificación sin razón no se puede revisar ni disputar |
+
+**7 · La IA estima propiedades del CONTENIDO, nunca de una persona.** El corte es el de
+[ADR-037](#adr-037), y no es negociable:
+
+| Puede estimarlo | No debe afirmarlo |
+|---|---|
+| Complejidad conceptual del tema | *"A esta persona le va a resultar difícil"* |
+| Demanda cognitiva inicial | Dificultad personal del estudiante |
+| Esfuerzo inicial para un estudiante promedio | Minutos que **esa** persona necesita |
+
+> **Puede decir:** *"este tema presupone recursividad y razonamiento abstracto"*.
+> **No puede decir:** *"a Felipe este tema le va a costar"*.
+
+⚠️ **Lo segundo sale de la evidencia de la persona** —sus entregas, repeticiones, minutos reales y
+reflexiones—, que es el Personal Engine. **El sistema reconoce patrones, no etiqueta personas**
+([ADR-075](#adr-075)).
+
+**8 · No se incorpora a `costoDeNoActuar` ni modifica la prioridad del ADE.** Hoy esa función tiene
+tres términos —entra en la evaluación, nunca practicada, días sin tocar— y un desempate por orden.
+Meter una inferencia ahí **cambiaría qué manda a estudiar el sistema**, y eso necesita validación
+clínica antes que código.
+
+**9 · Su primer uso candidato es dimensionar, no priorizar.** Estimar minutos iniciales, evitar
+juntar varios temas complejos en una misma acción, partir una unidad grande. **Decidir cuánto dura
+una acción no es decidir cuál conviene hacer.**
+
+**10 · La experiencia real tiene precedencia sobre la inferencia inicial.**
+
+```
+estimación inicial del catálogo  (inferencia)
+        ↓
+observaciones reales del estudiante  (reflection)
+        ↓
+estimación personalizada  (Personal Engine)
+```
+
+> **Cuando exista evidencia personal suficiente, la calibración del Personal Engine tiene
+> precedencia sobre la inferencia inicial. Queda abierto si la estimación del catálogo continúa como
+> base ajustada o si se descarta completamente.**
+
+⚠️ **La formulación anterior decía que la experiencia «reemplaza» la estimación, y era prematura.**
+Con el diseño actual el multiplicador de [ADR-074](#adr-074) —5 observaciones en ≥3 días distintos—
+**calibra una estimación base que sigue existiendo**: es un factor, no un sustituto. Cuál de las dos
+formas corresponde **no fue diseñado ni validado**, y cerrarlo acá fijaría una fórmula que nadie
+escribió.
+
+**11 · Antes de cualquier incorporación se prueba una muestra de 20–30 temas**, y **la psicopedagoga
+evalúa la consistencia**. Si la clasificación no le parece consistente, **no se corre sobre el
+catálogo completo**.
+
+**12 · La API key vive en un proceso seguro y nunca en el frontend.** Es la misma regla que ya rige
+para `SUPABASE_SERVICE_ROLE_KEY` y `RELOJ_SHARED_SECRET`.
+
+### ⚠️ La dependencia de `topic`, y por qué parte esto en dos
+
+**La anotación colgaría de un `topic_id`, y `topic` no conserva ni origen ni versión ni historia.**
+Es la conclusión principal de la [matriz](matriz-de-fuentes-y-autoridad.md) §0: una nueva ingesta
+borra las unidades con `DELETE`, y la anotación quedaría apuntando a un id que ya no existe — o
+peor, a uno **recreado con otro contenido**.
+
+Eso separa dos cosas que conviene no confundir:
+
+| | Qué se puede hacer | Estado |
+|---|---|---|
+| **Experimentación** | Sobre un **CSV inmutable**, con una **clave estable por fila** y un **hash del contenido**. **Sin tocar producción**, sin persistir contra `topic_id` | 🟡 **Posible en principio** — sigue necesitando autorización propia |
+| **Uso productivo** | Persistir la inferencia y que algún engine la consuma | ⛔ **Bloqueado** hasta resolver la **identidad estable del `topic`** |
+
+⚠️ **No se puede persistir una anotación contra un `topic_id` descartable.** El campo
+`catalog_version` que el planteo propone es el reconocimiento implícito del problema, y **hoy no hay
+contra qué versionarlo**.
+
+⚠️ **«Identidad estable del `topic`» NO es la identidad de actores de `C01-030`.** Son dos problemas
+distintos y no se destraban juntos:
+
+| | Qué pregunta | Estado |
+|---|---|---|
+| **Identidad estable del `topic`** | ¿Este id sigue nombrando la misma unidad después de una reingesta? | Brecha **1** de la matriz · **C2**. ⚠️ **Nadie externo la bloquea** |
+| **Identidad de actor** (`C01-030`) | ¿Quién afirmó esto, y con qué capacidad? | Brecha **2** de la matriz. ⏸️ **`DEFERRED`** hasta [ADR-006](#adr-006) por [ADR-057](#adr-057) |
+
+**Lo que bloquea el uso productivo de este ADR es la primera**, que es del carril A de la matriz y no
+depende de ningún dictamen externo.
+
+### ⬜ Lo que queda explícitamente abierto
+
+**Ninguna de estas nueve está decidida por este ADR.** Registrarlas es el punto del documento.
+
+| # | Pregunta abierta | Quién la contesta |
+|---|---|---|
+| 1 | **Qué rúbrica se utiliza** | Psicopedagoga |
+| 2 | **Qué dimensiones se clasifican** — complejidad, demanda, esfuerzo, carga de prerequisitos, o un subconjunto | Psicopedagoga + Product Owner |
+| 3 | **Quién revisa la muestra** | Product Owner |
+| 4 | **Qué nivel de acuerdo se considera aceptable** — y contra qué se mide | Psicopedagoga |
+| 5 | **Cómo se identifican establemente los temas** | Product Owner + CTO. ⚠️ **Depende de la brecha 1 de la matriz — la trazabilidad de `topic`**, no de `C01-030` |
+| 6 | **Cómo se versionan y reemplazan las inferencias** — y si la anterior se conserva | Product Owner + CTO |
+| 7 | **Cuándo puede el ADE consumirlas** | Product Owner. Ver §11 de la matriz |
+| 8 | **Cómo se le muestra al estudiante que es una estimación** | Psicopedagoga. ⚠️ [ADR-058](#adr-058) prohíbe presentarlo como predicción |
+| 9 | **Dónde vive el enriquecimiento aprobado** — otro CSV, entidad separada, o dentro del futuro modelo versionado de `topic` | Product Owner + CTO |
+
+⚠️ **La 5 y la 9 son la misma pregunta vista de dos lados**, y las dos dependen de cómo se resuelva
+la trazabilidad de `topic` (C2 de la matriz). **No conviene decidirlas antes que esa.**
+
+### Por qué este ADR existe aunque no decida nada
+
+Para que la idea quede **registrada con sus límites puestos** en vez de volver más adelante sin
+ellos. Las tres restricciones que importa no perder son:
+
+1. **La IA es `inference`, y no se eleva sola.**
+2. **Estima el contenido, nunca a la persona.**
+3. **Dimensiona la acción, no elige la prioridad.**
+
+Si alguna de las tres se afloja en una conversación futura, este ADR es el lugar donde consta que se
+habían puesto.
+
+
+---
+
+<a id="adr-081"></a>
+
+## ADR-081 — Una reingesta borra el progreso del estudiante: `topic` gana clave natural y deja de borrarse
+
+**Estado:** ✅ `ACCEPTED` · 8 de septiembre de 2026 · **decidido por el Product Owner**
+**Fecha de apertura:** 8 de septiembre de 2026 · **lo abrió medir C2 antes de empezarlo**
+**Relacionado:** [ADR-060](#adr-060), [ADR-067](#adr-067), [ADR-080](#adr-080) ·
+[matriz de fuentes y autoridad](matriz-de-fuentes-y-autoridad.md) §4.9 y §0.
+**Toca:** `topic`, `ingerir_materia`, `scripts/db-aislamiento.sh`.
+
+### El hallazgo, y no es una hipótesis
+
+**Cargar dos veces la misma materia destruye el trabajo del estudiante.** Medido el 8 de septiembre
+sobre el mundo demo, contando antes y después de una segunda ingesta de la misma cursada:
+
+| | antes | después |
+|---|---:|---:|
+| `topic_progress` de esa cursada | 1 | **0** |
+| `action` ancladas a un tema | 2 | **0** |
+| `action` con `topic_id NULL` | — | **7** |
+
+**El progreso se borró y las acciones perdieron a qué unidad pertenecían.** En silencio: sin
+`audit_log`, sin evento, sin nada que lo delate.
+
+### Por qué pasa
+
+`ingerir_materia` hace `DELETE FROM topic WHERE offering_id = …` y vuelve a insertar. **Doce tablas
+apuntan a `topic`**, y sus reglas de borrado hacen el resto:
+
+| Regla | Tablas | Efecto |
+|---|---|---|
+| ⚠️ `CASCADE` | `topic_progress`, `assessment_topic`, `topic_prerequisite`, `class_session_topic` | **La fila se borra** |
+| `SET NULL` | `action`, `progress_entry`, `error_observation`, `resource`, `learning_objective`, `protocol_step_completion`, `support_need_observation` | La fila sobrevive **y pierde el tema** |
+
+⚠️ **Y `topic` no tiene clave natural**: no hay `UNIQUE (offering_id, code)`. Un tema recargado es
+una fila nueva con otro `id`, así que **nada podía reconectarse aunque quisiera**.
+
+### La consecuencia que más importa
+
+**El ADE vuelve a ver todo como `no_information`.** Lee `topic_progress` para saber qué se practicó
+y cuándo; después de una reingesta no queda nada, y **recomienda como si el estudiante nunca hubiera
+hecho nada**.
+
+⚠️ **Esto es distinto de lo que la matriz había registrado.** Ahí decía *"el `DELETE` no deja
+rastro"* —un problema de auditoría—. Es más grave: **destruye datos de primera parte del
+estudiante**, que es lo único que el modelo trata como incuestionable en todas las otras familias.
+
+### Los tres problemas, que estaban apilados
+
+Se separan porque tienen urgencias distintas:
+
+| # | Problema | Naturaleza |
+|---|---|---|
+| **1** | **Pérdida de datos.** Una reingesta borra progreso y desancla acciones | **Defecto vivo.** Golpea a una persona el día que alguien recargue un programa |
+| **2** | **Identidad inestable.** El mismo tema recargado es otra fila | Modelo |
+| **3** | **Procedencia e historia.** Quién afirmó la unidad y qué decía la versión anterior | Modelo |
+
+### La decisión: clave natural, y la ingesta deja de borrar
+
+**Se eligió la forma que cierra los tres de una** —de las cuatro que la
+[matriz](matriz-de-fuentes-y-autoridad.md) §5.3 dejó abiertas—:
+
+**1 · `topic` gana clave natural.** `UNIQUE (offering_id, code)` y `UNIQUE (course_id, code)`, como
+índices parciales, porque `topic_belongs_somewhere` admite las dos pertenencias
+([ADR-060](#adr-060): *el temario es de la materia*).
+
+**2 · `ingerir_materia` pasa de `DELETE` + `INSERT` a upsert.** El tema que vuelve con el mismo
+código **es el mismo tema**: conserva su `id`, y con él todo lo que le cuelga.
+
+**3 · Lo que ya no viene se marca retirado, no se borra.** Una unidad que desaparece del programa
+**deja de estar vigente**; sus filas dependientes sobreviven.
+
+⚠️ **Retirar no es borrar, y la diferencia es el punto del ADR.** El progreso sobre una unidad que la
+cátedra sacó del programa **sigue siendo cierto**: el estudiante lo hizo. Borrarlo sería afirmar que
+no ocurrió.
+
+### Qué NO decide este ADR
+
+⛔ **No agrega procedencia a `topic`.** `source_type` y `verification_status` siguen sin existir ahí.
+Esto hace que la identidad sea estable —precondición para poder atribuir algo a una unidad— pero
+**no atribuye nada todavía**. Es el problema 3, y sigue abierto.
+
+⛔ **No es la identidad de actor de `C01-030`.** Son dos cosas distintas y se cruzan sólo en el
+nombre: acá se trata de que un `id` siga nombrando la misma unidad, no de quién está autorizado a
+afirmar algo. `C01-030` sigue `DEFERRED` por [ADR-057](#adr-057).
+
+⛔ **No habilita [ADR-080](#adr-080).** El enriquecimiento con IA sigue siendo candidato, y su
+bloqueo por *identidad estable del `topic`* se levanta sólo en la parte que este ADR resuelve.
+
+### El riesgo, y por qué se aceptó
+
+**Un `UNIQUE` sobre datos existentes puede no entrar.** Se midió antes de decidir: **9 temas, cero
+sin `code`, cero duplicados** en las dos pertenencias.
+
+⚠️ **Es una muestra chica**, y el corpus real tiene 36 materias identificables. El índice se agrega
+**después de verificar**, y si un catálogo futuro trae códigos repetidos la migración **debe fallar
+ruidosamente** en vez de deduplicar por su cuenta: elegir cuál de dos unidades homónimas sobrevive
+es una decisión de contenido, no de schema.

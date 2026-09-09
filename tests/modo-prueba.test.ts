@@ -304,3 +304,83 @@ describe("El modo prueba no se puede montar sin darse cuenta", () => {
     expect(LEER(".env.local.example")).toContain("MODO_PRUEBA");
   });
 });
+
+describe("Los tres pasos del loop viven detrás del mismo cerrojo", () => {
+  const RUTA = LEER("app/api/prueba/loop/route.ts");
+
+  it("responde 404 y no 403, igual que el reinicio del alta", () => {
+    expect(RUTA).toContain('process.env.MODO_PRUEBA !== "1"');
+    expect(RUTA).toMatch(/if \(apagada\(\)\) return NextResponse\.json\(\{ error: "No encontrado" \}, \{ status: 404 \}\)/);
+  });
+
+  it("el cerrojo va antes que el token", () => {
+    const gate = RUTA.indexOf("apagada()", RUTA.indexOf("export async function POST"));
+    const token = RUTA.indexOf("tokenDelHeader", RUTA.indexOf("export async function POST"));
+    expect(gate).toBeGreaterThan(-1);
+    expect(gate).toBeLessThan(token);
+  });
+
+  /**
+   * ⚠️ **El guard que más importa de este archivo.**
+   *
+   * Un secreto de servicio acá podría correr el loop de **cualquier**
+   * estudiante, y el paso `validar` escribe progreso. El `studentId` sale de la
+   * sesión y de ningún otro lado.
+   */
+  it("NO acepta secreto de servicio, y el estudiante sale de la sesión", () => {
+    const codigo = sinComentarios(RUTA);
+    expect(codigo).not.toMatch(/esSecretoDeServicio|SHARED_SECRET/);
+    expect(codigo).toMatch(/sesion\.estudiante\.id/);
+    // Y el cuerpo sólo puede traer el paso: nada de ids ajenos.
+    expect(codigo).toMatch(/\{ paso\?: string \}/);
+  });
+
+  it("el paso llega de una lista cerrada, no del cuerpo tal cual", () => {
+    expect(RUTA).toMatch(/const PASOS = \["ade", "validar", "reloj"\] as const/);
+    expect(RUTA).toMatch(/PASOS\.find\(\(p\) => p === cuerpo\?\.paso\)/);
+  });
+
+  /**
+   * ⚠️ **La ruta no reimplementa el loop.** Llama a los mismos servicios que las
+   * rutas reales: un atajo que salteara el servicio probaría el atajo.
+   */
+  it("delega en composicion, sin lógica propia de dominio", () => {
+    const codigo = sinComentarios(RUTA);
+    expect(codigo).toContain("avanzarLoopDePrueba");
+    expect(codigo).not.toMatch(/from "@\/lib\/server\/repositorios/);
+    expect(codigo).not.toMatch(/topic_progress|INSERT|update\(/);
+  });
+
+  it("y el andamio sigue sin agregar superficies ni CTAs", () => {
+    expect(superficieIds).toHaveLength(9);
+    expect(Object.keys(ctaRegistry)).toHaveLength(20);
+  });
+});
+
+describe("El sembrador de materias es andamio, y lo dice", () => {
+  const SCRIPT = LEER("scripts/sembrar-materia.mjs");
+
+  it("se anuncia como sintético en pantalla, no sólo en un comentario", () => {
+    expect(SCRIPT).toMatch(/console\.log\([^)]*SINTÉTICOS/);
+  });
+
+  /**
+   * ⚠️ **Falla de verdad.** Sin el plan, `ingerir_materia` resuelve el `course`
+   * dentro del contenedor «Sin programa declarado» y crea una **segunda**
+   * cursada: el script diría «listo» y la del estudiante seguiría vacía. Pasó,
+   * y lo encontró el chequeo de abajo.
+   */
+  it("pasa el plan del curso a la ingesta", () => {
+    expect(SCRIPT).toMatch(/p_curriculum_plan_id: elegida\.course_offering\.course\.curriculum_plan_id/);
+  });
+
+  it("verifica que la ingesta haya caído en la cursada del estudiante", () => {
+    expect(SCRIPT).toMatch(/offering !== elegida\.offering_id/);
+    expect(SCRIPT).toMatch(/No se tocó la suya/);
+  });
+
+  it("carga material por unidad: sin recursos el ADE no recomienda", () => {
+    expect(SCRIPT).toContain('from("resource")');
+    expect(SCRIPT).toMatch(/CONTEXTO_INCOMPLETO/);
+  });
+});

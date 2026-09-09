@@ -16,6 +16,7 @@ const materia = (over: Partial<Materia> = {}): Materia => ({
   cargaDeEstudio: null,
   evaluacion: { titulo: "Final", tipo: "final", modalidad: "escrito", fecha: "2026-09-23" },
   ultimoAvanceEn: null,
+  primeraClase: null as string | null,
   unidades: [
     { id: "u1", peso: null, evidencia: "enviada" },
     { id: "u2", peso: null, evidencia: "sin_evidencia" },
@@ -189,5 +190,69 @@ describe("El rótulo de la evaluación no repite lo que ya dijo", () => {
       materia({ evaluacion: { titulo: "Final", tipo: "final", modalidad: null, fecha: "2026-09-15" } }),
     ]).materias;
     expect(m.evaluacion).toBe("Final · mar 15 sept");
+  });
+});
+
+describe("ADR-078 · el Gantt del período", () => {
+  it("la ventana llega resuelta a fracciones: la pantalla no hace aritmética", () => {
+    const [m] = proyectar([
+      materia({ primeraClase: "2026-09-01", evaluacion: { titulo: "P", tipo: "parcial", modalidad: null, fecha: "2026-09-15" } }),
+    ]).materias;
+    expect(m.ventana).not.toBeNull();
+    // Eje de 35 días desde el 25 de agosto: el 1 de septiembre es el día 7.
+    expect(m.ventana!.desde).toBeCloseTo(7 / 35, 5);
+    expect(m.ventana!.hasta).toBeCloseTo(21 / 35, 5);
+    expect(m.ventana!.inicioDesconocido).toBe(false);
+  });
+
+  it("sin fecha de evaluación no hay ventana, y la fila igual existe", () => {
+    const [m] = proyectar([
+      materia({ evaluacion: null, diasHastaEvaluacion: null, primeraClase: "2026-09-01" }),
+    ]).materias;
+    expect(m.ventana).toBeNull();
+    expect(m.nombre).toBe("Cálculo");
+  });
+
+  it("sin clases cargadas hay ventana, marcada como de inicio desconocido", () => {
+    const [m] = proyectar([materia({ primeraClase: null })]).materias;
+    expect(m.ventana!.inicioDesconocido).toBe(true);
+    expect(m.ventana!.desde).toBe(0);
+  });
+
+  /**
+   * ⚠️ **Falla de verdad.** Un eje por fila haría que dos barras de la misma
+   * longitud representaran plazos distintos — que es exactamente lo que un Gantt
+   * existe para impedir.
+   */
+  it("todas las materias comparten un eje: la misma fecha cae en el mismo lugar", () => {
+    const r = proyectar([
+      materia({ cursadaId: "a", nombre: "A", primeraClase: "2026-09-01", diasHastaEvaluacion: 7,
+        evaluacion: { titulo: "P", tipo: "parcial", modalidad: null, fecha: "2026-09-15" } }),
+      materia({ cursadaId: "b", nombre: "B", primeraClase: "2026-09-01", diasHastaEvaluacion: 60,
+        evaluacion: { titulo: "F", tipo: "final", modalidad: null, fecha: "2026-11-07" } }),
+    ]);
+    const [a, b] = r.materias;
+    expect(a.ventana!.desde).toBe(b.ventana!.desde);
+    // Y el eje se estiró hasta el final lejano en vez de dejarlo fuera de cuadro.
+    expect(b.ventana!.hasta).toBe(1);
+    expect(a.ventana!.hasta).toBeLessThan(1);
+  });
+
+  it("el eje trae la marca de hoy entre las de semana", () => {
+    const { eje } = proyectar([materia()]);
+    const hoy = eje.marcas.find((m) => m.esHoy);
+    expect(hoy?.etiqueta).toBe("hoy");
+    expect(hoy?.posicion).toBeCloseTo(eje.hoy, 5);
+    expect(eje.marcas.map((m) => m.etiqueta)).toEqual([
+      "−2 sem", "−1 sem", "hoy", "+1 sem", "+2 sem", "+3 sem",
+    ]);
+  });
+
+  it("un eje estirado gana marcas: las mismas cinco mentirían sobre la escala", () => {
+    const { eje } = proyectar([
+      materia({ evaluacion: { titulo: "F", tipo: "final", modalidad: null, fecha: "2026-11-07" } }),
+    ]);
+    expect(eje.marcas.length).toBeGreaterThan(6);
+    expect(eje.marcas[eje.marcas.length - 1].etiqueta).toBe("+8 sem");
   });
 });

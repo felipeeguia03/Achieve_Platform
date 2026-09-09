@@ -1,9 +1,16 @@
 import { minutosPorTema, type SesionDeClase } from "@/lib/domain/duracion";
 import { coberturaDeMateria, porcentajeDeHoras } from "@/lib/domain/cobertura";
+import {
+  ejeDelPeriodo,
+  posicionEnEje,
+  SEMANAS_HACIA_ATRAS,
+  ventanaDe,
+  type Eje,
+} from "@/lib/domain/ventana";
 import type { InsumosDeReparto } from "./proyeccion-reparto";
 import { ACLARACION_DE_COBERTURA, textoDeCobertura } from "./proyeccion-materia";
 import { fechaDeCalendario, haceCuanto } from "./tiempo";
-import type { MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
+import type { EjeDelPeriodo, MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
 
 /**
  * El área «Materias» — [ADR-077](../../../docs/decisions.md#adr-077).
@@ -31,7 +38,16 @@ export function proyectarMaterias(
   ahora: string,
   zona: string,
 ): MateriasProps {
-  const materias = i.materias.map((m) => aFila(m, ahora, zona));
+  // ⚠️ **El eje se calcula una vez, sobre TODAS las materias.** Un eje por fila
+  // haría que dos barras de la misma longitud representaran plazos distintos,
+  // que es exactamente lo que un Gantt existe para impedir.
+  const hoy = ahora.slice(0, 10);
+  const eje = ejeDelPeriodo(
+    hoy,
+    i.materias.map((m) => m.evaluacion?.fecha).filter((f): f is string => f !== undefined),
+  );
+
+  const materias = i.materias.map((m) => aFila(m, ahora, zona, eje));
 
   // ⚠️ **El orden se decide acá, no en SQL.** `insumos_de_reparto()` ordena por
   // nombre porque la cola de `HOY` indexa por posición; cambiarlo allá
@@ -55,7 +71,8 @@ export function proyectarMaterias(
     .filter((d): d is number => d !== null);
 
   return {
-    fecha: fechaDeCalendario(ahora.slice(0, 10)),
+    fecha: fechaDeCalendario(hoy),
+    eje: marcasDelEje(hoy, eje),
     // `null` ⇒ ninguna materia tiene evaluación con fecha. **No dice «0 días»**:
     // no saber cuándo y que sea hoy son cosas distintas.
     proximaEvaluacion:
@@ -67,10 +84,39 @@ export function proyectarMaterias(
   };
 }
 
+/**
+ * Las marcas del eje, ya rotuladas y posicionadas.
+ *
+ * ⚠️ **`hoy` es una marca más.** Tratarla como un caso especial de la pantalla
+ * pondría su posición en dos lugares —la línea vertical y el rótulo— con dos
+ * cálculos que pueden separarse.
+ */
+function marcasDelEje(hoy: string, eje: Eje): EjeDelPeriodo {
+  const DIA = 86_400_000;
+  const fechaDeSemana = (n: number) =>
+    new Date(Date.parse(`${hoy}T00:00:00Z`) + n * 7 * DIA).toISOString().slice(0, 10);
+
+  // Desde `−2 sem` hasta la última semana que entra en el eje. Cuando una
+  // evaluación lejana lo estira, **aparecen más marcas**: un eje más largo con
+  // las mismas cinco marcas mentiría sobre la escala.
+  const ultima = Math.floor(eje.dias / 7) - SEMANAS_HACIA_ATRAS;
+  const marcas = [];
+  for (let n = -SEMANAS_HACIA_ATRAS; n <= ultima; n++) {
+    marcas.push({
+      etiqueta: n === 0 ? "hoy" : n < 0 ? `−${-n} sem` : `+${n} sem`,
+      posicion: posicionEnEje(fechaDeSemana(n), eje),
+      esHoy: n === 0,
+    });
+  }
+
+  return { hoy: posicionEnEje(hoy, eje), marcas };
+}
+
 function aFila(
   m: InsumosDeReparto["materias"][number],
   ahora: string,
   zona: string,
+  eje: Eje,
 ): MateriaEnIndice {
   const sesiones: SesionDeClase[] = m.clases.map((c) => ({
     tipo: c.tipo,
@@ -113,6 +159,10 @@ function aFila(
     // `null` ⇒ *"Sin avance registrado"* lo pone la pantalla. Acá no se
     // convierte en «hace 0 días» (`P-09`).
     ultimoAvance: m.ultimoAvanceEn === null ? null : haceCuanto(m.ultimoAvanceEn, ahora, zona),
+    // ⚠️ **La ventana se resuelve acá, no en la pantalla.** El componente recibe
+    // dos fracciones y dibuja; poner el recorte en el JSX dejaría la regla en un
+    // lugar sin versión, al lado de otro que sí la tiene.
+    ventana: aVentana(m, eje),
     // ⚠️ **Copy, no contrato.** Las tres etiquetas son `CTA-001` y las tres
     // navegan a la misma materia. Lo que cambia es qué le falta a esa fila.
     etiqueta:
@@ -148,4 +198,21 @@ function rotuloDeEvaluacion(
   return [e.titulo ?? e.tipo, e.modalidad, fechaDeCalendario(e.fecha)]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** La barra del Gantt, ya en fracciones del eje. `null` ⇒ no hay ventana. */
+function aVentana(
+  m: InsumosDeReparto["materias"][number],
+  eje: Eje,
+): MateriaEnIndice["ventana"] {
+  const v = ventanaDe(
+    { primeraClase: m.primeraClase, fechaDeEvaluacion: m.evaluacion?.fecha ?? null },
+    eje.desde,
+  );
+  if (v.estado !== "OK") return null;
+  return {
+    desde: posicionEnEje(v.inicio, eje),
+    hasta: posicionEnEje(v.fin, eje),
+    inicioDesconocido: v.inicioDesconocido,
+  };
 }

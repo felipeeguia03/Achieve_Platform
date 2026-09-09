@@ -90,6 +90,14 @@ export interface InsumosDeReparto {
     } | null;
     /** ISO o `null`. `null` ⇒ *"Sin avance registrado"*, que **no es** «hace 0 días» (`P-09`). */
     ultimoAvanceEn: string | null;
+    /**
+     * `YYYY-MM-DD` de la primera clase dictada — la punta izquierda de la
+     * ventana ([ADR-078](../../../docs/decisions.md#adr-078)).
+     *
+     * `null` ⇒ **no hay clases cargadas**, que no es «empezó hoy»: la barra
+     * arranca en el borde del eje **diciéndolo**.
+     */
+    primeraClase: string | null;
     unidades: Array<{ id: string; peso: number | null; evidencia: EstadoDeUnidad }>;
     clases: Array<{ minutos: number | null; tipo: TipoDeClase | null; temas: string[] }>;
   }>;

@@ -23,6 +23,7 @@
     "db:demo": "./scripts/db-demo.sh",
     "db:catalogo": "node ./scripts/importar-catalogo.mjs",
     "db:sesion": "node ./scripts/sesion-demo.mjs",
+    "db:materia": "node ./scripts/sembrar-materia.mjs",
     "reloj": "node ./scripts/reloj.mjs",
     "recomendar": "node ./scripts/recomendar.mjs",
     "validar": "node ./scripts/validar.mjs",

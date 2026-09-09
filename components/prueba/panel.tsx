@@ -55,12 +55,22 @@ interface Reinicio {
   siguiente: string;
 }
 
+type Paso = "ade" | "validar" | "reloj";
+
+const ETIQUETAS: Record<Paso, string> = {
+  ade: "correr el ADE",
+  validar: "validar la entrega",
+  reloj: "correr el reloj",
+};
+
 export function PanelDePrueba() {
   const [abierto, setAbierto] = useState(false);
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null);
   const [destino, setDestino] = useState("");
   const [enCurso, setEnCurso] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pasoEnCurso, setPasoEnCurso] = useState<Paso | null>(null);
+  const [ultimo, setUltimo] = useState<string | null>(null);
 
   // Se piden al abrir, no al montar: el panel está en las nueve superficies y en
   // el alta, y una request en cada carga de página es ruido en todas ellas.
@@ -76,6 +86,36 @@ export function PanelDePrueba() {
       vivo = false;
     };
   }, [abierto, catalogos]);
+
+  /**
+   * Los tres pasos del loop que hoy sólo existen en la terminal.
+   *
+   * ⚠️ **Nada se recarga solo.** Se muestra qué pasó y el estudiante refresca si
+   * quiere: un `window.location.assign` acá haría perder de vista el resultado,
+   * que es justamente lo que se está mirando.
+   */
+  async function avanzar(paso: Paso) {
+    if (pasoEnCurso) return;
+    setPasoEnCurso(paso);
+    setError(null);
+
+    const r = await enviar<{ paso: string; detalle: string }>("/api/prueba/loop", { paso });
+
+    if (r.estado !== "OK") {
+      setError(
+        r.estado === "NO_ENCONTRADO"
+          ? "El modo prueba está apagado: falta MODO_PRUEBA=1"
+          : r.estado === "RECHAZADO"
+            ? r.motivo
+            : `No se pudo correr «${ETIQUETAS[paso]}» (${r.estado})`,
+      );
+      setPasoEnCurso(null);
+      return;
+    }
+
+    setUltimo(`${ETIQUETAS[paso]}: ${r.datos.detalle}`);
+    setPasoEnCurso(null);
+  }
 
   async function reiniciar() {
     if (enCurso) return;
@@ -183,6 +223,57 @@ export function PanelDePrueba() {
               </option>
             ))}
           </select>
+
+          {/*
+            ── Los tres pasos del loop ──────────────────────────────────────
+            ⚠️ **«validar» deja al estudiante validando su propia evidencia**,
+            que es lo que el producto prohíbe. Está acá porque `C01-030` —quién
+            valida— sigue `OPEN` y no hay a quién darle el botón, y es la razón
+            por la que esto no puede sobrevivir a `MODO_PRUEBA`. El aviso está
+            escrito en pantalla, no sólo en el código.
+          */}
+          <hr style={{ border: 0, borderTop: "1px dashed var(--border)", margin: "2px 0" }} />
+
+          <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)", margin: 0 }}>
+            Los tres pasos que en producción dispara un proceso o una persona.
+            Validar rompe «nadie valida su propia evidencia»: existe sólo acá.
+          </p>
+
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["ade", "validar", "reloj"] as const).map((paso) => (
+              <button
+                key={paso}
+                onClick={() => avanzar(paso)}
+                disabled={pasoEnCurso !== null}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--text-meta)",
+                  padding: "6px 10px",
+                  borderRadius: "var(--radius-pildora)",
+                  border: "1px dashed var(--muted-foreground)",
+                  color: "var(--foreground)",
+                  opacity: pasoEnCurso !== null ? 0.5 : 1,
+                }}
+              >
+                {pasoEnCurso === paso ? "…" : ETIQUETAS[paso]}
+              </button>
+            ))}
+          </div>
+
+          {ultimo && (
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "var(--text-meta)",
+                color: "var(--muted-foreground)",
+                margin: 0,
+              }}
+            >
+              {ultimo}
+            </p>
+          )}
+
+          <hr style={{ border: 0, borderTop: "1px dashed var(--border)", margin: "2px 0" }} />
 
           {error && (
             <p style={{ fontSize: "var(--text-meta)", color: "var(--destructive)", margin: 0 }}>

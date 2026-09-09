@@ -1040,6 +1040,87 @@ export async function diaDe(
 }
 
 /**
+ * ⚠️⚠️ **ANDAMIO. Los tres pasos del loop que hoy sólo existen en la terminal.**
+ *
+ * `npm run recomendar`, `npm run validar` y `npm run reloj` son procesos: en
+ * producción los dispara un scheduler o una persona con un rol que **todavía no
+ * existe**. Para ajustar el MVP hacen falta con un click, y bajar a la consola
+ * en cada vuelta del loop hace que probar cueste más que arreglar.
+ *
+ * ## ⚠️ El cerrojo que esto abre, dicho de frente
+ *
+ * **`validar` rompe la regla más importante del producto**: *nadie valida su
+ * propia evidencia*. Acá el estudiante valida la suya, y **esa es exactamente la
+ * razón por la que esto nunca puede ser una capacidad del producto**. Quién
+ * valida es `C01-030`, `OPEN`; hasta que se cierre, no hay a quién darle el
+ * botón. Por eso vive detrás de `MODO_PRUEBA=1` y se borra con él.
+ *
+ * ## Lo que NO hace
+ *
+ * **No reimplementa nada.** Llama a los mismos servicios que las rutas reales
+ * —`recomendarPara`, `validarEvidencia`, `correrReloj`—, así que lo que se
+ * ejercita es el camino de producción. Un atajo que salteara el servicio
+ * probaría el atajo.
+ */
+export async function avanzarLoopDePrueba(
+  institutionId: string,
+  studentId: string,
+  paso: "ade" | "validar" | "reloj",
+  ahora: string = new Date().toISOString(),
+): Promise<{ paso: string; detalle: string }> {
+  if (paso === "reloj") {
+    const r = await correrReloj(institutionId, ahora);
+    return {
+      paso,
+      detalle: `vencidos ${r.vencidos ?? 0} · incumplidos ${r.incumplidos ?? 0}`,
+    };
+  }
+
+  if (paso === "ade") {
+    // Las cursadas salen de `insumos_de_reparto()`, que **ya está scopeada al
+    // estudiante**. Leerlas de otra forma abriría un segundo camino a la misma
+    // lista, y uno de los dos podría olvidarse del scoping.
+    const insumos = await repartoReal.insumos(institutionId, studentId, ahora);
+    const resultados = await Promise.all(
+      insumos.materias.map((m) => recomendarPara(institutionId, m.cursadaId, ahora)),
+    );
+    const conAccion = resultados.filter((r) => r.estado === "RECOMENDADA").length;
+    // ⚠️ **Cero no es un error.** Una materia sin material configurado no le da
+    // al ADE sobre qué decidir, y decirlo es más útil que un «listo» vacío.
+    const motivos = resultados
+      .filter((r) => r.estado !== "RECOMENDADA")
+      .map((r) => r.estado)
+      .join(", ");
+    return {
+      paso,
+      detalle:
+        conAccion > 0
+          ? `${conAccion} de ${resultados.length} cursadas con acción`
+          : `sin recomendación en ninguna de las ${resultados.length}${motivos ? ` (${motivos})` : ""}`,
+    };
+  }
+
+  const vivo = await compromisoVigenteDe(institutionId, studentId, ahora);
+  if (!vivo) return { paso, detalle: "no hay compromiso vivo" };
+  const evidencia = await evidenciaDeCompromiso(institutionId, vivo.compromisoId);
+  if (!evidencia) return { paso, detalle: "el compromiso todavía no tiene entrega" };
+
+  const r = await validarEvidencia({
+    institutionId,
+    evidenciaId: evidencia.id,
+    // El mismo rótulo que usa `POST /api/validacion` sin `validadaPor`: no se
+    // inventa una identidad, se declara que no hay una.
+    validadaPor: "validador-sintetico",
+    cambios: [{ dimension: "practice", valor: 19 }],
+  });
+  if (r.estado !== "OK") return { paso, detalle: `no se pudo validar (${r.estado})` };
+  return {
+    paso,
+    detalle: r.accionCompletada ? "validada · acción completada" : "validada",
+  };
+}
+
+/**
  * El índice de materias — [ADR-077](../../docs/decisions.md#adr-077).
  *
  * ⚠️ **Reusa `insumos_de_reparto()`, y es a propósito.** Necesita exactamente

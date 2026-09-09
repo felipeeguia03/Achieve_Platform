@@ -1244,6 +1244,23 @@ X=$(q "select coalesce((x->>'evaluacion'),'NULO') || '|' || coalesce((x->>'diasH
   && ok "con la evaluación ya pasada, no se ofrece una próxima que no existe" || mal "se ofreció una evaluación pasada como próxima: $X"
 corre "update assessment set assessment_date = current_date + 14 where id='c7000000-0000-0000-0000-000000000001';"
 
+# ── ADR-078 · la punta izquierda de la ventana ───────────────────────────────
+
+# La primera clase dictada, que es un hecho. Hay una sola clase cargada, hace 7
+# días.
+[ "$(q "select (x->>'primeraClase') from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')" \
+  = "$(q "select (current_date - 7)::text;" | tr -d '[:space:]')" ] \
+  && ok "viaja la fecha de la primera clase dictada" || mal "la primera clase salió mal"
+
+# ⚠️ **Es un MIN, no la última ni la primera insertada.** Se carga una clase
+# ANTERIOR y la punta tiene que moverse hacia atrás.
+corre "insert into class_session (id,offering_id,session_date,source_type,duration_min) values
+  ('c6000000-0000-0000-0000-000000000009','a4000000-0000-0000-0000-000000000001',current_date - 40,'institution',600);"
+[ "$(q "select (x->>'primeraClase') from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')" \
+  = "$(q "select (current_date - 40)::text;" | tr -d '[:space:]')" ] \
+  && ok "una clase más vieja corre la punta hacia atrás: es un MIN" || mal "no tomó la clase más vieja"
+corre "delete from class_session where id='c6000000-0000-0000-0000-000000000009';"
+
 # ⚠️ **Sin avance registrado viaja NULL, no un instante.** «Sin avance» y «hace
 # 0 días» son dos afirmaciones distintas (`P-09`).
 [ "$(q "select coalesce((x->>'ultimoAvanceEn'),'NULO') from jsonb_array_elements(insumos_de_reparto('$A','$EST2')->'materias') x;" | tr -d '[:space:]')" = "NULO" ] \
@@ -1261,6 +1278,54 @@ corre "delete from assessment where id='c7000000-0000-0000-0000-000000000001';"
 corre "delete from class_session where offering_id='a4000000-0000-0000-0000-000000000001';"
 corre "delete from topic where offering_id='a4000000-0000-0000-0000-000000000001';"
 corre "delete from availability where student_id='$EST2'; update student set availability_declared_at=null where id='$EST2';"
+
+# ── ADR-081 · una reingesta NO borra el trabajo del estudiante ───────────────
+
+echo "→ ADR-081 · reingerir la misma materia conserva el progreso"
+
+# El mundo de este bloque: la offering `a4000000-…-01` con dos unidades y una
+# clase, creado más arriba. Se le cuelga progreso y una acción, que es
+# exactamente lo que el DELETE destruía.
+OFA=a4000000-0000-0000-0000-000000000001
+CODA=$(q "select c.code from course_offering o join course c on c.id=o.course_id where o.id='$OFA';" | tr -d '[:space:]')
+PLANA=$(q "select c.curriculum_plan_id from course_offering o join course c on c.id=o.course_id where o.id='$OFA';" | tr -d '[:space:]')
+UNI='[{"codigo":"R1","nombre":"R1","orden":1},{"codigo":"R2","nombre":"R2","orden":2}]'
+# El programa después de perder R2. **Va en variable**: escapar comillas dobles
+# dentro de `corre "…"` las hace desaparecer y el JSON llega inválido.
+UNI_SIN_R2='[{"codigo":"R1","nombre":"R1","orden":1}]'
+
+corre "select public.ingerir_materia('$A','public_web','https://syn/x.pdf',now(),0.7,'$CODA','X','2026',NULL,'$UNI'::jsonb,'[]'::jsonb,'[]'::jsonb,'$PLANA','[]'::jsonb,NULL,NULL);"
+T1=$(q "select id from topic where offering_id='$OFA' and code='R1';" | tr -d '[:space:]')
+corre "insert into topic_progress (institution_id,course_enrollment_id,topic_id,
+         exposure_state,practice_state,domain_state,confidence_state,practice_value,recency_at)
+       values ('$A','a6000000-0000-0000-0000-000000000001','$T1',
+         'no_information','value','not_evaluated','no_information',7, now());"
+
+# ⚠️ **El guard que sostiene el ADR.** Antes de ADR-081 esto pasaba de 1 a 0.
+corre "select public.ingerir_materia('$A','public_web','https://syn/x.pdf',now(),0.7,'$CODA','X','2026',NULL,'$UNI'::jsonb,'[]'::jsonb,'[]'::jsonb,'$PLANA','[]'::jsonb,NULL,NULL);"
+[ "$(q "select count(*) from topic_progress tp join topic t on t.id=tp.topic_id where t.offering_id='$OFA';" | tr -d '[:space:]')" = "1" ] \
+  && ok "reingerir la misma materia CONSERVA el progreso del estudiante" || mal "la reingesta borró topic_progress"
+
+# Y el id es el mismo: sin eso, nada podría reconectarse aunque quisiera.
+[ "$(q "select id from topic where offering_id='$OFA' and code='R1';" | tr -d '[:space:]')" = "$T1" ] \
+  && ok "la unidad conserva su id: la clave natural la reconoce" || mal "la unidad cambió de id"
+
+# ⚠️ **Retirar NO es borrar.** El programa pierde R2 y su fila sobrevive.
+corre "select public.ingerir_materia('$A','public_web','https://syn/x.pdf',now(),0.7,'$CODA','X','2026',NULL,'$UNI_SIN_R2'::jsonb,'[]'::jsonb,'[]'::jsonb,'$PLANA','[]'::jsonb,NULL,NULL);"
+X=$(q "select (select count(*) from topic where offering_id='$OFA' and retired_at is null)||'|'||(select count(*) from topic where offering_id='$OFA' and retired_at is not null);" | tr -d '[:space:]')
+[ "$X" = "1|1" ] && ok "la unidad que salió del programa se RETIRA, no se borra" || mal "el retiro salió mal: $X"
+
+# Y lo retirado deja de ofrecerse: el ADE no recomienda una unidad que ya no está.
+[ "$(q "select jsonb_array_length(public.contexto_del_ade('$A','a6000000-0000-0000-0000-000000000001')->'unidades');" | tr -d '[:space:]')" = "1" ] \
+  && ok "el ADE deja de ver la unidad retirada" || mal "el ADE sigue viendo lo retirado"
+
+# ⚠️ **Pero el progreso sobre lo retirado SIGUE existiendo.** Es el punto del ADR:
+# el estudiante lo hizo, y borrarlo afirmaría que no ocurrió.
+[ "$(q "select count(*) from topic_progress tp join topic t on t.id=tp.topic_id where t.offering_id='$OFA';" | tr -d '[:space:]')" = "1" ] \
+  && ok "y el progreso sobre lo retirado sobrevive: pasó, y sigue siendo cierto" || mal "se perdió el progreso al retirar"
+
+corre "delete from topic_progress where course_enrollment_id='a6000000-0000-0000-0000-000000000001';"
+corre "update topic set retired_at=null where offering_id='$OFA';"
 
 echo "→ ADR-074 · el Personal Engine observa el trabajo, no la vida"
 

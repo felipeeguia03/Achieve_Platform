@@ -54,7 +54,7 @@ Cada etapa, sin excepción:
 **nueve superficies** del estudiante leen de la base **y el camino principal escribe en ella**
 ([ADR-040](decisions.md#adr-040)), y desde la B6.14 **el estudiante declara él mismo qué cursa**.
 
-✅ **`npm run db:verify` corre entero** — **396 comprobaciones, cero fallos**. Estuvo roto
+✅ **`npm run db:verify` corre entero** — **398 comprobaciones, cero fallos**. Estuvo roto
 por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto de orden. Los dos, en
 [§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre).
 
@@ -4035,7 +4035,56 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 <a id="fase-b617--la-respuesta-de-la-psicopedagoga"></a>
 
-## Fase B6.18 — El área «Materias» · ✅ COMPLETA *(sin el Gantt del período)*
+## Fase B6.19 — El andamio para probar el MVP · ✅ COMPLETA
+
+**Decide:** [ADR-079](decisions.md#adr-079).
+
+**El golden path se recorrió entero contra Postgres, y funciona.** ADE → `Commitment` → `Evidence`
+→ validación → progreso → siguiente acción, con todo lo derivado moviéndose detrás: cobertura
+22% → 61%, reparto 95,5 h → 43 h, `HOY` de *Derivadas* a *Límites y continuidad*.
+
+⚠️ **Y un estudiante que se da de alta desde cero no podía empezarlo.** El alta deja
+`course_enrollment` y **nada adentro**, así que `HOY` decía `FALTA CONTEXTO DE CURSADO`, el reparto
+`SIN_DATOS` y el ADE no tenía sobre qué decidir. El producto decía la verdad; faltaba por dónde entra
+el contenido.
+
+### Los dos andamios
+
+| Comando / control | Qué cierra |
+|---|---|
+| `npm run db:materia -- <email> "<materia>"` | Carga unidades, clases, evaluación, alcance y **material por unidad** en la cursada que el alta ya creó |
+| Dock de `MODO_PRUEBA`: `correr el ADE` · `validar la entrega` · `correr el reloj` | Los tres pasos que hoy sólo existen en la terminal |
+
+**Con eso, el recorrido completo desde una cuenta nueva es por navegador**, verificado de punta a
+punta: alta → seed → ADE → compromiso → entrega → validación → `BAJO CONTROL` con la unidad
+siguiente y la cobertura al 25%.
+
+### ⚠️ El cerrojo que el dock abre a propósito
+
+**`validar` deja al estudiante validando su propia evidencia**, que es la regla que el producto más
+protege. Es la consecuencia de que `C01-030` siga `OPEN`: hasta que se cierre **no hay a quién darle
+ese botón**. Vive detrás de `404` sin `MODO_PRUEBA=1`, sin secreto de servicio, y **se borra con
+[ADR-006](decisions.md#adr-006)**.
+
+### Dos defectos que el andamio destapó
+
+**`ingerir_materia` sin `p_curriculum_plan_id` crea una cursada nueva** y deja la del estudiante
+vacía mientras el script dice «listo». Lo encontró un chequeo posterior a la ingesta, no una lectura
+del SQL — y ese chequeo queda como guard.
+
+**`ingerir_materia` no crea recursos, y sin recursos el ADE no recomienda**:
+`CONTEXTO_INCOMPLETO — «Fundamentos» no tiene material configurado`.
+
+### Lo que sigue sin resolverse
+
+No se puede **crear una cuenta** ([ADR-039](decisions.md#adr-039): el padrón lo decide el CRM).
+**Quién valida** es `C01-030`, `OPEN`. **El reloj no corre solo** —sin scheduler los compromisos
+nunca vencen y el camino del rescate no se alcanza—. Y **la ruta de validación no re-dispara el
+ADE**: sólo lo hace `scripts/validar.mjs`.
+
+---
+
+## Fase B6.18 — El área «Materias» · ✅ COMPLETA *(las dos vistas)*
 
 **Decide:** [ADR-077](decisions.md#adr-077), sobre lo que
 [ADR-054](decisions.md#adr-054) dejó reservado el 5 de septiembre.
@@ -4071,10 +4120,10 @@ arregla una pantalla y deja la otra afirmando lo que la psicopedagoga objetó.
 `domain_value`— y el corte que sostiene `preparar ≠ enviar ≠ suficiencia ≠ validación ≠ dominio`. Se
 usa el copy vigente, que es el de `UX02`.
 
-**El «Gantt del período».** Dibujar varias materias sobre un eje común es *decir cómo se reparte el
-período entre ellas*, que es lo que [ADR-073](decisions.md#adr-073) ya proyecta en `UX01`. **Dos
-superficies afirmando el reparto con reglas distintas es una contradicción esperando el momento**, y
-cuál manda no lo decidió nadie. Diferido con decisión propia.
+~~**El «Gantt del período».**~~ ⚠️ **Se difirió con un argumento falso, y se construyó el mismo día**
+— [ADR-078](decisions.md#adr-078). La leyenda del propio mockup lo desmentía: *"relleno = cobertura
+de temas"*. El relleno **no es asignación de horas**, así que el Gantt y el reparto no afirman la
+misma magnitud y no pueden contradecirse. La pregunta era correcta; el supuesto, no.
 
 **El botón `+ Agregar materia o evaluación`.** El único elemento del mockup **sin destino definido**:
 son dos flujos —el alta ([ADR-052](decisions.md#adr-052), de una sola vez y sin reingreso
@@ -4098,6 +4147,27 @@ rutas**. Las dos afirmaciones eran proxies que alcanzaban mientras el menú sól
 Ahora se verifica lo que su nombre siempre dijo —el nodo existe y tiene ruta— y **las dos cifras por
 separado**: diez rutas, nueve superficies. La regla *"ninguna superficie del menú depende sólo del
 menú"* se acotó a los nodos **con wireframe**, que es donde su motivo aplica.
+
+### La segunda vista · ADR-078
+
+Un selector `Gantt del período` / `Lista` sobre **los mismos datos**: mismo orden, misma cobertura,
+misma fila. Lo que cambia es la forma, nunca lo que se afirma.
+
+| Pieza | Qué hace |
+|---|---|
+| `lib/domain/ventana.ts` | `[primera clase , evaluación]`, versionada por `REGLA_DE_VENTANA` |
+| `insumos_de_reparto()`, otra vez | Suma `primeraClase`: un `MIN`, la punta izquierda |
+| `ejeDelPeriodo()` | `−2` a `+3` semanas, **y se estira** si una evaluación cae más lejos |
+
+⚠️ **Las dos puntas son hechos, y ninguna se completa.** Sin fecha de evaluación **no hay ventana**:
+barra punteada, *"sin ventana de preparación"*. Sin primera clase hay ventana desde el borde **con la
+marca puesta** — es distinto de haber empezado ahí.
+
+⚠️ **Y dos cosas del mockup no se construyeron.** `Cursás Lun 14:00-16:00` necesita el bloque horario
+de [ADR-062](decisions.md#adr-062), que está **decidido y no existe en el schema**; derivarlo de las
+horas de las clases dictadas sería inferir la regla desde sus instancias. Y `frenada hace 7 días` se
+muestra como el hecho —*"última actividad hace 7 días"*—: siete días sin actividad en una materia que
+se cursa una vez por semana **es lo normal**, y la etiqueta convierte una cadencia en un problema.
 
 ### El mundo demo creció, y no es relleno
 

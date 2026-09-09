@@ -116,13 +116,32 @@ superficies**, y los dos números se verifican por separado en `tests/shell.test
 ganó un origen. Las tres etiquetas del botón —*Abrir*, *Completar*, *Agregar examen*— son **copy**:
 las tres navegan a la misma materia.
 
-⚠️ **Lo que quedó afuera y sigue afuera:** el **«Gantt del período»** —la vista cruzada de varias
-materias sobre un eje común— **no se construyó**. Se pisa con el reparto de
-[ADR-073](docs/decisions.md#adr-073), que ya vive en `UX01`, y cuál manda no lo decidió nadie. Y el
-botón `+ Agregar materia o evaluación` del mockup tampoco: es el único elemento **sin destino
-definido**. **No los adelantes.**
+✅ **Y el «Gantt del período» se construyó el mismo día** — [ADR-078](docs/decisions.md#adr-078).
+`/materias` tiene **dos vistas** sobre los mismos datos, con un selector.
 
-✅ **`npm run db:verify` corre entero: 396 comprobaciones, cero fallos.** Estaba roto desde
+⚠️ **ADR-078 corrige a ADR-077, y la corrección importa.** El Gantt se había diferido diciendo que
+*"se pisa con el reparto de `UX01`"*. **Era falso**, y lo desmentía la leyenda del propio mockup:
+*"relleno = cobertura de temas"*. El reparto afirma **horas por semana** sobre un presupuesto; la
+ventana afirma **días de calendario**. No son la misma magnitud y no pueden contradecirse — por eso
+`lib/domain/ventana.ts` **no importa `reparto.ts` ni conoce la disponibilidad**.
+
+⚠️ **Las dos puntas de la ventana son hechos.** Sin fecha de evaluación **no hay ventana**: barra
+punteada. Sin primera clase hay ventana desde el borde del eje **con la marca puesta**, que es
+distinto de haber empezado ahí. Y el eje **se estira** si una evaluación cae más lejos que `+3
+semanas`: un examen fuera de cuadro es peor que un eje largo.
+
+⚠️ **Tres cosas del mockup que NO se construyeron, y no las adelantes:**
+
+- **`Cursás Lun 14:00-16:00`** — necesita el bloque horario de
+  [ADR-062](docs/decisions.md#adr-062), que está **decidido y no existe en el schema**.
+  `class_session.session_time` es la hora de **una clase dictada**, no un horario semanal: derivarlo
+  sería inferir la regla desde sus instancias.
+- **`frenada hace 7 días`** — se muestra el hecho, *"última actividad hace 7 días"*. Siete días sin
+  actividad en una materia que se cursa una vez por semana **es lo normal**
+  ([ADR-078](docs/decisions.md#adr-078)).
+- **`+ Agregar materia o evaluación`** — el único elemento **sin destino definido**.
+
+✅ **`npm run db:verify` corre entero: 398 comprobaciones, cero fallos.** Estaba roto desde
 la B6.14 —a `limpiar_mundo` le faltaban cinco tablas y, como las 40 sentencias van en **una sola
 transacción**, una FK abortaba todo y no se borraba nada—. Arreglarlo destapó un segundo defecto que
 el primero tapaba: `db-aislamiento.sh` **vacía el catálogo que `db-catalogo.sh` necesita después**,
@@ -132,8 +151,31 @@ así que `db:verify` ahora lo reimporta entre los dos.
 a `limpiar_mundo` en el mismo commit**. Si no, el verificador deja de correr y el error no nombra la
 causa.
 
-🛠️ **Y hay andamio nuevo: el dock de «modo prueba»** (`MODO_PRUEBA=1`), que reinicia el alta del
-estudiante sintético sin volver a sembrar el mundo. **No es producto.** Apagado por defecto —sin la
+🛠️ **El andamio para probar el MVP creció** — [ADR-079](docs/decisions.md#adr-079), 8 de septiembre.
+**El golden path se recorre entero desde una cuenta nueva, por navegador.** Dos piezas nuevas:
+
+- **`npm run db:materia -- <email> "<materia>"`** — carga contenido sintético en la cursada que el
+  alta ya creó. Sin esto, un estudiante recién dado de alta queda con `FALTA CONTEXTO DE CURSADO`,
+  reparto `SIN_DATOS` y el ADE sin nada que decidir: el alta crea `course_enrollment` **y nada
+  adentro**, y `ingerir_materia` **no lo alcanza ninguna ruta**.
+- **Tres botones en el dock**: `correr el ADE`, `validar la entrega`, `correr el reloj`.
+
+⚠️ **`validar` deja al estudiante validando su propia evidencia**, que es la regla que el producto
+más protege. Es la consecuencia de que `C01-030` siga `OPEN`: **no hay a quién darle ese botón**.
+`404` sin `MODO_PRUEBA=1`, **sin secreto de servicio**, y se borra con ADR-006.
+
+⚠️ **Dos defectos que el andamio destapó, y conviene saberlos antes de tocar la ingesta:**
+`ingerir_materia` **sin `p_curriculum_plan_id` crea una cursada nueva** —resuelve el `course` en el
+contenedor «Sin programa declarado»— y deja la del estudiante vacía; y **no crea recursos**, sin los
+cuales el ADE contesta `CONTEXTO_INCOMPLETO`.
+
+⚠️ **Lo que sigue sin resolverse:** no se puede **crear una cuenta**
+([ADR-039](docs/decisions.md#adr-039)); **quién valida** es `C01-030`, `OPEN`; **el reloj no corre
+solo**, así que los compromisos nunca vencen y el rescate no se alcanza sin apretar el botón; y **la
+ruta de validación no re-dispara el ADE** — sólo lo hace `scripts/validar.mjs`.
+
+🛠️ **Y el control original del dock sigue igual**: reinicia el alta del estudiante sintético sin
+volver a sembrar el mundo. **No es producto.** Apagado por defecto —sin la
 variable la ruta responde `404` y el componente no llega al HTML—, no agrega superficies ni CTAs, no
 emite eventos y no toca `product_event`, `audit_log` ni el catálogo. **Su selector de institución
 simula el padrón; no reabre [ADR-052](docs/decisions.md#adr-052).** Se borra cuando ADR-006 abra.
@@ -497,7 +539,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **396 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **398 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
 de negocio a propósito:** después hay que volver a sembrar con `npm run db:demo`.
 

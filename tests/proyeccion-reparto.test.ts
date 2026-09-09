@@ -29,6 +29,7 @@ const materia = (over: Partial<InsumosDeReparto["materias"][number]> = {}) => ({
     fecha: string;
   } | null,
   ultimoAvanceEn: null as string | null,
+  primeraClase: null as string | null,
   unidades: [
     { id: "u1", peso: null, evidencia: "sin_evidencia" as const },
     { id: "u2", peso: null, evidencia: "sin_evidencia" as const },

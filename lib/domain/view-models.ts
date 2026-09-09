@@ -323,8 +323,22 @@ export interface MateriaEnIndice {
    * además.
    */
   sinCobertura: string | null;
-  /** *"última actividad hace 7 días"*. `null` ⇒ *"Sin avance registrado"*, **no** cero. */
+  /**
+   * *"última actividad hace 7 días"*. `null` ⇒ *"Sin avance registrado"*, **no** cero.
+   *
+   * ⚠️ **El hecho, nunca el juicio.** El mockup decía *«frenada hace 7 días»* y
+   * eso **no se adoptó** ([ADR-078](../../docs/decisions.md#adr-078)): siete
+   * días sin actividad en una materia que se cursa una vez por semana **es lo
+   * normal**, y llamarla «frenada» convierte una cadencia en un problema.
+   */
   ultimoAvance: string | null;
+  /**
+   * La barra del Gantt del período — [ADR-078](../../docs/decisions.md#adr-078).
+   *
+   * `null` ⇒ **no hay ventana** y la fila se dibuja punteada. La vista Lista lo
+   * ignora: es la misma fila, mirada de otra forma.
+   */
+  ventana: VentanaEnIndice | null;
   /**
    * La etiqueta del botón — *Abrir*, *Completar*, *Agregar examen*.
    *
@@ -351,8 +365,34 @@ export interface CoberturaEnIndice {
   texto: string;
 }
 
+/**
+ * Una ventana ya resuelta a fracciones del eje, `0`–`1`.
+ *
+ * ⚠️ **La pantalla no hace aritmética de fechas.** Recibe posiciones y dibuja:
+ * calcular el recorte en el componente pondría la regla en dos lugares, y uno de
+ * ellos sin versión.
+ */
+export interface VentanaEnIndice {
+  /** Dónde empieza la barra dentro del eje. */
+  desde: number;
+  /** Dónde termina. La evaluación cae acá, y ahí va el rombo. */
+  hasta: number;
+  /**
+   * `true` ⇒ el arranque **no es un hecho**: no hay clases cargadas y se tomó el
+   * borde. La barra lo dice; no lo disimula.
+   */
+  inicioDesconocido: boolean;
+}
+
 export interface MateriasProps {
   fecha: string;
+  /**
+   * El eje del Gantt: sus marcas, ya rotuladas y posicionadas.
+   *
+   * ⚠️ **Incluye `hoy`**, que es una marca más y no un caso especial de la
+   * pantalla.
+   */
+  eje: EjeDelPeriodo;
   /** *"15 días para el próximo final"*. `null` ⇒ ninguna materia tiene fecha. */
   proximaEvaluacion: string | null;
   /**
@@ -364,6 +404,13 @@ export interface MateriasProps {
   materias: MateriaEnIndice[];
   /** La nota al pie de [ADR-072](../../docs/decisions.md#adr-072), obligatoria si hay alguna barra. */
   aclaracion: string | null;
+}
+
+export interface EjeDelPeriodo {
+  /** *"−2 sem"*, *"hoy"*, *"+1 sem"*… con su posición `0`–`1` en el eje. */
+  marcas: ReadonlyArray<{ etiqueta: string; posicion: number; esHoy: boolean }>;
+  /** Dónde cae hoy. La línea vertical se dibuja acá. */
+  hoy: number;
 }
 
 // ── UX02 · Materia / Cursado ─────────────────────────────────────────────────
