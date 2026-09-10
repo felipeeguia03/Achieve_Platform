@@ -56,6 +56,14 @@ describe("Registro canónico de CTAs", () => {
     // estudiante. Es la segunda entrada que **no transcribe el spec**, y por el
     // mismo motivo que la primera — el spec asumía que las evaluaciones venían
     // de la institución, y ADR-006 cerró esa vía.
+    //
+    // ⚠️ **Sigue en 20, y `CTA-021` es la razón por la que importa.** ADR-087
+    // Enmienda 1 la autorizó, y la Enmienda 2 la dejó **fuera del registro**
+    // hasta que exista su escritura: la biblioteca de Formación entró como V1
+    // de solo lectura. Una CTA registrada cuyo `resultadoAutoritativo` promete
+    // una `Action` que nadie crea es un contrato incumplido.
+    //
+    // ⚠️ **El número sube sólo con un ADR que la nombre Y con su escritura.**
     expect(ctaIds).toHaveLength(20);
     for (let n = 1; n <= 20; n++) {
       expect(ctaIds).toContain(`CTA-${String(n).padStart(3, "0")}` as CtaId);

@@ -297,6 +297,28 @@ export const copy = {
   "MATERIA.GANTT": "Actividad registrada",
   "MATERIA.GANTT.REVISION": "Entregas que requieren revisión:",
   "MATERIA.CLASES": "Clases de la semana",
+  "MATERIA.TEMAS": "Temas del programa",
+  "MATERIA.EJE_TEMA": "Tema",
+  "MATERIA.EJE_ESTADO": "Estado",
+  "MATERIA.EVALUACION": "Evaluación",
+  /** `CTA-019` — la entrada manual a Modo Examen desde la materia (ADR-016). */
+  "MATERIA.MODO_EXAMEN": "Activar Modo Examen",
+  "MATERIA.REGISTRO": "Registro",
+  "MATERIA.CURSAS": "Cursás",
+  "MATERIA.PROXIMO_PASO": "Próximo paso sugerido",
+  /*
+    El estado de cada tema — [ADR-085](../../docs/decisions.md#adr-085).
+
+    ⚠️ **Describen actividad, no conocimiento.** El mockup rotulaba esta columna
+    `Sin empezar · Leído · Practicado · Dominado`: `Dominado` es la primera
+    prohibición de ADR-072 —el dominio requiere evaluación— y `nivel`, la
+    leyenda que las acompañaba, la de ADR-075 §C1.
+  */
+  "UNIDAD.SIN_REGISTRO": "Sin registro",
+  "UNIDAD.SIN_DICTAR": "Todavía no se dictó",
+  "UNIDAD.ENVIADA": "Entregado",
+  "UNIDAD.REVISION": "Requiere revisión",
+  "UNIDAD.CRITERIO": "Criterio alcanzado",
   "MATERIA.UNIDADES": "Unidades",
   "MATERIA.DIMENSIONES": "Cómo venís",
   /** `VI.2` §8.7. Preview de la Bitácora, no un historial aparte. */
@@ -666,10 +688,119 @@ export const copy = {
    */
   "MATERIA.SIN_SEMANTICA": "Todavía no podemos resumir esta dimensión.",
 
+  /*
+   * ADR-086 · de dónde salió lo que se está mirando.
+   *
+   * Las dos frases dicen **quién puso el dato**, que es lo único que la pantalla
+   * sabe. No dicen que esté bien ni que esté mal: `verification_status` sigue en
+   * `unverified` para todo esto, y afirmarlo desde acá sería elevarlo por la UI.
+   *
+   * ⚠️ Y **no desactivan nada**. El estudiante puede planificar sobre esto
+   * igual: el owner pidió que sirvan como válidos, y sirven — lo que no se hace
+   * es callar de dónde vienen.
+   */
+  "ALTA.CARRERA.UCC_SISTEMAS": "UCC Sistemas",
+
+  /*
+   * ── Formación · ADR-087 ──────────────────────────────────────────────────
+   *
+   * ⚠️ **Ninguna de estas frases promete aprendizaje.** Formación es método:
+   * enseña a estudiar, no certifica que se sepa. `ADR-072` y `ADR-075` §C1
+   * valen igual acá — nada de «dominado», «nivel» ni porcentajes de avance.
+   */
+  "FORMACION.TITULO": "Formación",
+  "FORMACION.EYEBROW": "CÓMO ESTUDIAR MEJOR",
+  "FORMACION.SUBCOPY":
+    "Contenido breve sobre cómo estudiar, para aplicar a las materias que estés cursando.",
+  "FORMACION.PROBLEMA": "Cuándo sirve",
+  "FORMACION.OBJETIVO": "Para qué",
+  "FORMACION.EXPLICACION": "Por qué",
+  "FORMACION.ACCION": "Qué hacés después",
+  "FORMACION.EVIDENCIA": "Qué entregás",
+  "FORMACION.MATERIAL": "Material",
+  /*
+   * El vacío de la biblioteca, y **argumenta en vez de acusar**.
+   *
+   * ⚠️ No lleva imperativo, y es la regla `C-04`: sólo se ofrece una palanca
+   * cuando el estudiante la tiene. **No puede publicar contenido** desde acá,
+   * así que decirle que haga algo sería ofrecerle una salida que no existe.
+   */
+  "FORMACION.VACIO":
+    "Todavía no hay contenido publicado. Lo estamos preparando con la psicopedagoga del equipo y va a aparecer acá cuando esté listo.",
+
+  "MATERIA.CONTENIDO_ESTIMADO":
+    "Estos temas los estimó Achieve porque la cátedra todavía no publicó su programa. " +
+    "Sirven para organizarte, y conviene contrastarlos con el programa de la materia.",
+  "MATERIA.CALENDARIO_ESTIMADO":
+    "Los temas salen del programa oficial de la cátedra. Las fechas de clase y el tiempo " +
+    "estimado de cada unidad los puso Achieve.",
+
   // ── Provenance (`product.md` §7) ──────────────────────────────────────────
   /** Falta la fuente o falta el estado de verificación: no se afirma ninguno. */
   "PROVENANCE.NO_DISPONIBLE": "Fuente o estado de verificación no disponible",
   "PROVENANCE.DISPUTADO": "Dato en revisión · hay versiones distintas",
+
+  // ── `UX01` · la capa «anticipar» ([ADR-089](../../docs/decisions.md#adr-089)) ──
+  "HOY.PROXIMA_EVALUACION": "Próxima evaluación",
+  /**
+   * ⚠️ **Dice qué falta, nunca si alcanza.** Una ventana corta no significa *"no
+   * llegás"*: [ADR-058](../../docs/decisions.md#adr-058) cerró las predicciones,
+   * y [ADR-078](../../docs/decisions.md#adr-078) dejó la ventana en días de
+   * calendario. Acá se cuentan días, y punto.
+   */
+  "HOY.SIN_EVALUACIONES": "Ninguna de tus materias tiene fecha de evaluación cargada.",
+  "HOY.SIN_EVALUACIONES.AYUDA":
+    "Cargá la fecha en la materia y Achieve puede ubicarla en el mapa.",
+  "HOY.PANORAMA": "Los próximos 14 días",
+  /**
+   * La nota que hace legible el mapa. **Sin esto las formas no dicen nada**, y
+   * una barra sin significado se lee como un pronóstico.
+   */
+  "HOY.PANORAMA.AYUDA":
+    "Cada barra es la ventana de preparación hasta la evaluación. El relleno es lo que ya cubriste.",
+  "HOY.PANORAMA.SIN_VENTANA": "sin ventana de preparación",
+  "HOY.PANORAMA.VACIO": "Todavía no hay materias con fechas para ubicar en el mapa.",
+
+  // ── El espacio de trabajo ([ADR-088](../../docs/decisions.md#adr-088)) ────
+  /**
+   * ⚠️ **Ninguna de estas frases afirma nada del dominio.** El espacio de
+   * trabajo no crea entidades, no evalúa y no promete: son etiquetas de
+   * control. Viven acá por `C-07` y por el tono — voseo, sin excepciones.
+   */
+  "ESPACIO.TITULO": "Lo que tenés abierto",
+  "ESPACIO.ABRIR_OTRO": "Abrir otro",
+  "ESPACIO.VACIO": "Todavía no abriste nada.",
+  "ESPACIO.VACIO_AYUDA": "Lo que abras desde una materia, el mapa o el buscador te queda acá para volver.",
+  "ESPACIO.CERRAR": "Cerrar",
+  "ESPACIO.CERRAR_OTROS": "Cerrar los otros",
+  "ESPACIO.CERRAR_TODOS": "Cerrar todos",
+  "ESPACIO.MOVER_IZQUIERDA": "Mover a la izquierda",
+  "ESPACIO.MOVER_DERECHA": "Mover a la derecha",
+  "ESPACIO.MAS": "Ver los demás",
+  "ESPACIO.OPCIONES": "Opciones de este objeto",
+  /** El límite duro actuando. **Se dice**: nada se cierra en silencio (ADR-088 §2). */
+  "ESPACIO.DESALOJADO": "Cerramos lo que hacía más que no mirabas para hacer lugar:",
+
+  // ── La ventana interna (ADR-088, Enmienda 1) ─────────────────────────────
+  "PANEL.MINIMIZAR": "Minimizar",
+  "PANEL.CERRAR": "Cerrar",
+  "PANEL.VER_COMO_PAGINA": "Ver como página",
+  /**
+   * ⚠️ **La frase que separa consultar de trabajar.** El panel no ofrece
+   * comprometerse, empezar ni entregar: eso pasa en la superficie, con su
+   * precedencia y su CTA única (`I-06`). Sin decirlo, un panel que muestra una
+   * materia parece un lugar donde se puede operar.
+   */
+  "PANEL.SOLO_CONSULTA":
+    "Esto es para consultar. Comprometerte, empezar y entregar se hacen en la materia.",
+  /** El objeto existe en la barra y su superficie todavía no se puede desplegar. */
+  "PANEL.SIN_VISTA": "Todavía no se puede ver este objeto acá.",
+  "PANEL.SIN_VISTA_AYUDA": "Abrilo como página para verlo completo.",
+  // Enmienda 2 — el manejo de ventana.
+  "PANEL.EXPANDIR": "Expandir",
+  "PANEL.RESTAURAR": "Restaurar el tamaño",
+  "PANEL.MOVER": "Mover la ventana",
+  "PANEL.REDIMENSIONAR": "Cambiar el tamaño",
 } as const;
 
 export type CopyId = keyof typeof copy;
@@ -705,6 +836,31 @@ export const DIAS_LARGOS = [
 ] as const;
 
 /** `null` ⇒ el número no nombra ningún día, y **no se muestra un día cualquiera**. */
+/**
+ * Cómo se llama una carrera **en pantalla** · ADR-086.
+ *
+ * El owner decidió el 9 de septiembre de 2026 que la carrera se muestre como
+ * «UCC Sistemas», y decidió también que **el cambio sea sólo de presentación**:
+ * `academic_program.name` sigue diciendo `INGENIERIA DE SISTEMAS`, que es como
+ * la nombra el CSV administrativo de la facultad.
+ *
+ * ⚠️ **Es una traducción, no un renombre.** Si mañana hay que cruzar los datos
+ * con la institución, el nombre que ella usa sigue estando en la base. Por eso
+ * vive acá y no en una migración.
+ *
+ * ⚠️ **Lo que no está en la tabla se devuelve tal cual.** Ninguna otra carrera
+ * se toca, y no hay heurística que "mejore" nombres: eso terminaría inventando
+ * denominaciones institucionales.
+ */
+const NOMBRE_VISIBLE_DE_CARRERA: Record<string, CopyId> = {
+  "INGENIERIA DE SISTEMAS": "ALTA.CARRERA.UCC_SISTEMAS",
+};
+
+export function nombreVisibleDeCarrera(nombre: string): string {
+  const id = NOMBRE_VISIBLE_DE_CARRERA[nombre];
+  return id ? t(id) : nombre;
+}
+
 export function nombreDeDia(dia: number): string | null {
   return DIAS[dia] ?? null;
 }

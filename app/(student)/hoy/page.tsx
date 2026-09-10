@@ -8,7 +8,8 @@ import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
-import type { HoyProps } from "@/lib/domain/view-models";
+import { useEspacioDeTrabajo } from "@/components/shell/espacio-de-trabajo";
+import type { HoyProps, MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
 
 // Los tres destinos salen del registro canónico, no de un recorrido escrito a
 // mano: CTA-002 a la próxima acción, CTA-001 a la materia, CTA-009 al progreso.
@@ -39,6 +40,19 @@ function Hoy() {
   const escenario = params.get("escenario");
   const { respuesta, reintentar } = useSuperficie<HoyProps>("/api/hoy", { omitir: !!escenario });
 
+  /**
+   * La capa «anticipar» — [ADR-089](../../../docs/decisions.md#adr-089) §2.
+   *
+   * ⚠️ **Es la lectura que ya existía**, la misma que alimenta el Gantt del
+   * período de `UX02_INDICE`. No hay contrato nuevo, no se tocó
+   * `estado_del_dia()` y no hubo migración.
+   *
+   * ⚠️ **Y se pide aparte, como `reparto`.** Si falla o todavía no llegó, `UX01`
+   * se dibuja **sin panorama** en vez de no dibujarse: la capa que conduce no
+   * depende de la que acompaña.
+   */
+  const panorama = useSuperficie<MateriasProps>("/api/materias", { omitir: !!escenario });
+
   if (escenario) {
     const id = escenarioDesde(escenario, "hoy") ?? "FX-DAY-BASE";
     const props = proyectarHoy(getEscenario(id));
@@ -61,7 +75,18 @@ function Hoy() {
     );
   }
 
-  return <Pantalla props={respuesta.datos} router={router} params={params} />;
+  return (
+    <Pantalla
+      props={{
+        ...respuesta.datos,
+        // `OK` o nada. Un estado de carga o un error **no se dibujan como un
+        // panorama vacío**: eso afirmaría que no hay evaluaciones.
+        panorama: panorama.respuesta.estado === "OK" ? panorama.respuesta.datos : null,
+      }}
+      router={router}
+      params={params}
+    />
+  );
 }
 
 function Pantalla({
@@ -74,10 +99,44 @@ function Pantalla({
   params: ReturnType<typeof useSearchParams>;
 }) {
   const destino = siguienteUrl("/hoy", params.get("escenario")) ?? A_ACCION;
+  const { abrir } = useEspacioDeTrabajo();
+
+  /**
+   * Abrir una materia **como objeto del espacio de trabajo** —
+   * [ADR-088](../../../docs/decisions.md#adr-088) §10.6.
+   *
+   * ⚠️ **No duplica la navegación.** La ruta sale del registro canónico
+   * (`rutaDeCtaCon` la lee de `CTA-001`), igual que `onVerMateria`: lo único que
+   * agrega es que el objeto quede abierto para volver. Dos formas de abrir la
+   * misma materia sería exactamente lo que §10.6 pide evitar.
+   */
+  function abrirMateria(m: MateriaEnIndice) {
+    const ruta = rutaDeCtaCon("CTA-001", m.cursadaId) ?? A_MATERIA;
+    if (!ruta) return;
+    abrir({
+      tipo: "materia",
+      entidadId: m.cursadaId,
+      etiqueta: m.nombre,
+      /*
+        ⚠️ **La evaluación NO va acá, y se probó mirándolo.** *"Parcial 1 ·
+        practico · sáb 26 sept"* como contexto empujaba el nombre de la materia a
+        `ANALISI…`, que es exactamente el anti-patrón `A-07` que
+        [ADR-088](../../../docs/decisions.md#adr-088) §3 se comprometió a no
+        reproducir.
+
+        El contexto de un objeto es **la materia a la que pertenece** —
+        *"Unidad 2 · Economía"*—. Una materia **es** el objeto, así que no tiene
+        contexto: va sola, entera y legible.
+      */
+      etiquetaSecundaria: null,
+      ruta,
+    });
+  }
 
   return (
     <HoyAutogestion
       {...props}
+      onAbrirMateria={abrirMateria}
       onAvanzar={destino ? () => router.push(destino) : undefined}
       /*
         ADR-054, opción `B`: se abre **la cursada de la fila que se tocó**, no la

@@ -12,6 +12,8 @@
  * envuelve.
  */
 
+import { usaPesos } from "./duracion";
+
 /** Las cuatro ramas que el spec congela. No hay una quinta. */
 export type RamaDelAde = "NEW" | "NONE" | "ERROR" | "PENDING";
 
@@ -37,6 +39,14 @@ export interface UnidadCandidata {
   dominioEstado: "value" | "not_evaluated" | "no_information";
   /** Cuándo se tocó por última vez. `null` = nunca. */
   recenciaEn: string | null;
+  /**
+   * Peso relativo declarado de la unidad — cuánto de la materia ocupa, y de ahí
+   * cuántos minutos pide. `null` = **no declarado, y no es `1`**.
+   *
+   * ⚠️ **No es dificultad.** Que una unidad sea larga y que sea difícil son dos
+   * afirmaciones distintas, y la segunda no la declaró nadie.
+   */
+  peso: number | null;
   /** Recursos disponibles para esta unidad. Sin recurso no hay acción ejecutable. */
   recursos: readonly { id: string; titulo: string }[];
 }
@@ -93,12 +103,43 @@ function habilitada(u: UnidadCandidata, trabajadas: ReadonlySet<string>): boolea
 }
 
 /**
+ * Cuánto puede sumar el peso al costo · ADR-086.
+ *
+ * Deliberadamente **por debajo de la señal de práctica (`300`) y muy por debajo
+ * de la de evaluación (`1000`)**: que una unidad sea larga inclina el orden
+ * entre unidades parecidas, pero **no le gana a que otra entre en el parcial**.
+ * Está a la altura de la recencia (`0..60`) porque son la misma clase de señal:
+ * ajustan, no deciden.
+ */
+const PESO_MAXIMO_EN_EL_COSTO = 120;
+
+/**
+ * El peso de cada unidad, normalizado a `0..1` contra el más pesado de la
+ * materia. Vacío si la materia no usa pesos.
+ *
+ * ⚠️ **Todo o nada, y la regla no se reimplementa acá:** la decide `usaPesos()`,
+ * la misma que reparte los minutos en `duracion.ts`. Si el ADE y el reparto
+ * discreparan sobre qué materia tiene pesos, el estudiante vería un orden
+ * justificado por una duración que la otra pantalla no muestra.
+ */
+function pesosRelativos(unidades: readonly UnidadCandidata[]): Map<string, number> {
+  if (!usaPesos(unidades.map((u) => ({ id: u.topicId, peso: u.peso })))) return new Map();
+  const mayor = Math.max(...unidades.map((u) => u.peso!));
+  if (!(mayor > 0)) return new Map();
+  return new Map(unidades.map((u) => [u.topicId, u.peso! / mayor]));
+}
+
+/**
  * Costo de no actuar. **Más alto = más urgente.**
  *
- * Las tres señales son las que el spec ya distingue, y ninguna se fusiona con
+ * Las cuatro señales son las que el spec ya distingue, y ninguna se fusiona con
  * otra en un score visible: esto ordena y muere acá adentro.
  */
-function costoDeNoActuar(u: UnidadCandidata, ctx: ContextoDelAde): number {
+function costoDeNoActuar(
+  u: UnidadCandidata,
+  ctx: ContextoDelAde,
+  pesoRelativo: ReadonlyMap<string, number>,
+): number {
   let costo = 0;
 
   // 1. Entra en la próxima evaluación. Es lo que más cuesta no hacer.
@@ -115,6 +156,15 @@ function costoDeNoActuar(u: UnidadCandidata, ctx: ContextoDelAde): number {
     ? Math.floor((Date.parse(ctx.ahora) - Date.parse(u.recenciaEn)) / 86_400_000)
     : 999;
   costo += Math.min(dias, 60);
+
+  // 4. Pide más tiempo · ADR-086. **Más peso, antes se arranca**: la unidad
+  //    larga es la que no llega si se deja para el final, y el estudiante no
+  //    puede comprimirla después. La dirección es una decisión del owner
+  //    (9 sep 2026) y hay test que falla si se invierte.
+  //
+  //    ⚠️ Sin pesos declarados el término es **cero para todas**, no `1` para
+  //    todas: una materia sin pesos se ordena exactamente como antes.
+  costo += (pesoRelativo.get(u.topicId) ?? 0) * PESO_MAXIMO_EN_EL_COSTO;
 
   // Desempate estable por orden del programa: sin esto, dos unidades empatadas
   // cambian de recomendación entre corridas y el estudiante ve otra cosa cada
@@ -155,8 +205,13 @@ export function recomendar(ctx: ContextoDelAde): SalidaDelAde {
     };
   }
 
+  // Se calcula una vez sobre **todas** las unidades, no sobre las elegibles: el
+  // peso relativo es una propiedad de la materia, y que un prerequisito bloquee
+  // a la más pesada no cambia cuánto pesa el resto.
+  const pesoRelativo = pesosRelativos(ctx.unidades);
+
   const conCosto = elegibles
-    .map((u) => ({ u, costo: costoDeNoActuar(u, ctx) }))
+    .map((u) => ({ u, costo: costoDeNoActuar(u, ctx, pesoRelativo) }))
     .sort((a, b) => b.costo - a.costo);
 
   const elegida = conCosto[0].u;

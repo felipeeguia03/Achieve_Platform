@@ -108,6 +108,10 @@ export const aristasDeRetornoTransversales: readonly Arista[] = [
   { clase: "retornoSeguro", desde: "UX04_RENEGOCIACION", hasta: "UX04", cta: null, causa: "renegociación no elegible o incierta: mantener el Commitment original sin cambios" },
   { clase: "retornoSeguro", desde: "UX04_RESCATE", hasta: "UX01", cta: null, causa: "el rescate no altera el original: se conserva visible y se vuelve a Hoy" },
   { clase: "retornoSeguro", desde: "UX07", hasta: "UX02", cta: null, causa: "Assessment no registrada o no elegible: retorno seguro" },
+  // ADR-087. Sin contenido publicado (`D5`) la biblioteca se muestra igual, dice
+  // por qué está vacía y ofrece volver. **V1 no tiene CTA**: la arista es de
+  // retorno, no de avance.
+  { clase: "retornoSeguro", desde: "FORMACION", hasta: "UX01", cta: null, causa: "sin contenido publicado: empty honesto y retorno seguro" },
 ] as const;
 
 export const aristas: readonly Arista[] = [

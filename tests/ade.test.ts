@@ -21,6 +21,9 @@ function unidad(p: Partial<UnidadCandidata> & { topicId: string }): UnidadCandid
     dominioValor: null,
     dominioEstado: "not_evaluated",
     recenciaEn: null,
+    // Por defecto **sin peso declarado**, que es el estado de casi todas las
+    // materias: así los casos viejos siguen midiendo lo que medían.
+    peso: null,
     recursos: [{ id: `res-${p.topicId}`, titulo: "Apunte" }],
     ...p,
   };
@@ -197,5 +200,94 @@ describe("ADE v1 · respeta la disponibilidad declarada", () => {
     const r = recomendar(ctx({ minutosDisponibles: 20 }));
     if (r.rama !== "NEW") throw new Error("esperaba NEW");
     expect(r.recomendacion.minutosMax).toBeLessThanOrEqual(20);
+  });
+});
+
+describe("ADR-086 · el peso entra al ranking, y en una dirección", () => {
+  /**
+   * La dirección la decidió el owner el 9 de septiembre de 2026: **más peso,
+   * más prioridad**. La unidad larga es la que no llega si se deja para el
+   * final, porque el estudiante no puede comprimirla después.
+   *
+   * ⚠️ Este test **falla si alguien invierte el signo**, que es exactamente lo
+   * que tiene que pasar: la alternativa —arrancar por las cortas para acumular
+   * cierres— es un criterio psicopedagógico defendible, pero es de la
+   * psicopedagoga y hoy no está respondido. No se cambia sin su decisión.
+   */
+  it("entre dos unidades iguales, gana la más pesada", () => {
+    const r = recomendar(
+      ctx({
+        unidades: [
+          unidad({ topicId: "liviana", orden: 1, peso: 1 }),
+          unidad({ topicId: "pesada", orden: 2, peso: 3 }),
+        ],
+      }),
+    );
+    if (r.rama !== "NEW") throw new Error("esperaba NEW");
+    expect(r.recomendacion.topicId).toBe("pesada");
+  });
+
+  /**
+   * ⚠️ **El peso ajusta, no decide.** Si le ganara a la evaluación, el ADE
+   * mandaría a estudiar algo que no entra en el parcial del martes porque es
+   * más largo. `1000` contra `120` es la distancia que lo impide.
+   */
+  it("pero no le gana a estar en la próxima evaluación", () => {
+    const r = recomendar(
+      ctx({
+        unidades: [
+          unidad({ topicId: "en-el-parcial", orden: 1, peso: 1 }),
+          unidad({ topicId: "pesada-y-fuera", orden: 2, peso: 3 }),
+        ],
+        proximaEvaluacion: { titulo: "Parcial 1", fecha: "2026-09-15", temas: ["en-el-parcial"] },
+      }),
+    );
+    if (r.rama !== "NEW") throw new Error("esperaba NEW");
+    expect(r.recomendacion.topicId).toBe("en-el-parcial");
+  });
+
+  /**
+   * ⚠️ **Todo o nada**, la misma regla que reparte los minutos (`usaPesos()`).
+   * Un peso faltante no es `1`: mezclar declarados con defaults produciría un
+   * orden que **parece medido y no lo es**.
+   */
+  it("si una unidad no tiene peso, la materia se ordena como si ninguna lo tuviera", () => {
+    const conMezcla = recomendar(
+      ctx({
+        unidades: [
+          unidad({ topicId: "primera", orden: 1, peso: null }),
+          unidad({ topicId: "segunda", orden: 2, peso: 3 }),
+        ],
+      }),
+    );
+    const sinNinguno = recomendar(
+      ctx({
+        unidades: [
+          unidad({ topicId: "primera", orden: 1, peso: null }),
+          unidad({ topicId: "segunda", orden: 2, peso: null }),
+        ],
+      }),
+    );
+    if (conMezcla.rama !== "NEW" || sinNinguno.rama !== "NEW") throw new Error("esperaba NEW");
+    expect(conMezcla.recomendacion.topicId).toBe(sinNinguno.recomendacion.topicId);
+  });
+
+  /**
+   * Un peso de `0` o negativo no existe —la base lo rechaza con
+   * `CHECK (weight IS NULL OR weight > 0)`—, pero el dominio no puede confiar
+   * en eso: `usaPesos()` ya lo trata como no declarado y acá se fija.
+   */
+  it("un peso no positivo cuenta como no declarado, no como el más liviano", () => {
+    const r = recomendar(
+      ctx({
+        unidades: [
+          unidad({ topicId: "cero", orden: 1, peso: 0 }),
+          unidad({ topicId: "tres", orden: 2, peso: 3 }),
+        ],
+      }),
+    );
+    if (r.rama !== "NEW") throw new Error("esperaba NEW");
+    // Sin pesos utilizables gana el desempate por orden: la primera.
+    expect(r.recomendacion.topicId).toBe("cero");
   });
 });

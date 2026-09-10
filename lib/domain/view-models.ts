@@ -89,8 +89,17 @@ export interface GanttProjection {
   enRevision: number;
   /** Temas que alcanzaron el criterio. Es la tercera medida, y **no** la barra. */
   criterioAlcanzado: number;
+  /**
+   * El eje temporal del panel — [ADR-085](../../docs/decisions.md#adr-085).
+   *
+   * **El mismo que el índice de materias**, con las mismas marcas y la misma
+   * escala: `marcasDelEje` vive en `lib/domain/ventana.ts` y la usan las dos.
+   */
+  eje: EjeDelPeriodo;
   /** Las unidades **en el orden dictado**. La pantalla no las reordena. */
   unidades: ReadonlyArray<{
+    /** `T1`, `U3`… `null` ⇒ la unidad no declara código y se muestra sin él. */
+    codigo: string | null;
     nombre: string;
     /** `null` ⇒ no se sabe cuánto lleva. La fila se dibuja sin barra propia. */
     minutos: number | null;
@@ -99,6 +108,24 @@ export interface GanttProjection {
      * registrada** y **no** criterio alcanzado (§C2).
      */
     estado: "sin_evidencia" | "enviada" | "requiere_revision" | "criterio_alcanzado";
+    /**
+     * El estado en copy. **Describe actividad, no conocimiento**: `dominado` y
+     * `nivel` están prohibidos por [ADR-072](../../docs/decisions.md#adr-072) y
+     * [ADR-075](../../docs/decisions.md#adr-075) §C1.
+     */
+    etiqueta: string;
+    /**
+     * Dónde empieza y termina la barra en el eje, `0`–`1`.
+     *
+     * ⚠️ **`null` ⇒ el tema NO se ubica**, y la fila lo dice. Las dos puntas son
+     * hechos —la primera clase que lo dictó y la evaluación que lo evalúa— y
+     * ninguna se estima: poner un tema en «+7 días» porque es el séptimo de la
+     * lista sería **inventar un plan de estudio que nadie hizo**.
+     */
+    desde: number | null;
+    hasta: number | null;
+    /** Por qué no se ubica. `null` cuando sí se ubica. */
+    nota: string | null;
   }>;
 }
 
@@ -284,6 +311,20 @@ export interface HoyProps {
    * CTA **no se renderiza**, en vez de renderizarse deshabilitada.
    */
   verProgreso: string | null;
+  /**
+   * La capa «anticipar» — [ADR-089](../../docs/decisions.md#adr-089).
+   *
+   * ⚠️ **Es el mismo `MateriasProps` que alimenta el Gantt del período de
+   * [ADR-078](../../docs/decisions.md#adr-078)**, no un contrato nuevo: sale de
+   * `GET /api/materias`, que ya existía. `estado_del_dia()` no se tocó y no hubo
+   * migración.
+   *
+   * ⚠️ **Llega por separado y es opcional**, igual que `reparto` — *"quien lo
+   * quiera lo pide; quien no, no lo paga"*. `null` ⇒ **la capa no se dibuja**:
+   * no es un panorama vacío diciendo *"no tenés nada"*, es la ausencia de una
+   * lectura que puede estar cargando, haber fallado o no corresponder.
+   */
+  panorama: MateriasProps | null;
 }
 
 // ── El índice de materias ────────────────────────────────────────────────────
@@ -384,6 +425,43 @@ export interface VentanaEnIndice {
   inicioDesconocido: boolean;
 }
 
+/**
+ * Una pieza de Formación, ya proyectada · ADR-087.
+ *
+ * ⚠️ **No hay `video`.** La autora declara que faltan los guiones, y `D4`
+ * decidió omitirlos en vez de simularlos: *sin guion no hay video, y la línea
+ * desaparece*. Cuando exista, llega con su columna.
+ */
+export interface PiezaDeFormacion {
+  id: string;
+  codigo: string;
+  /** La frase del estudiante: *"No sé por dónde empezar a estudiar"*. */
+  titulo: string;
+  problema: string;
+  objetivo: string;
+  explicacion: string;
+  accionPosterior: string;
+  evidenciaEsperada: string;
+  /** `null` ⇒ la pieza no declara material. La línea se omite. */
+  material: string | null;
+  /** *"Cátedra · sin verificar"*, ya traducida por `provenanceVisible()`. */
+  procedencia: string;
+}
+
+/**
+ * La biblioteca de Formación, **V1 de solo lectura** — ADR-087 Enmienda 2.
+ *
+ * ⚠️ **No hay `cursadas` ni `empezar`, y las dos ausencias son la decisión.**
+ * V1 no ofrece aplicar: sin `CTA-021`, sin selector de materia y sin botón que
+ * prometa una escritura que todavía no existe. La biblioteca **se lee aunque el
+ * estudiante no tenga ninguna cursada**.
+ */
+export interface FormacionProps {
+  piezas: readonly PiezaDeFormacion[];
+  /** Aviso de estado vacío. `null` ⇒ se omite. */
+  aviso: string | null;
+}
+
 export interface MateriasProps {
   fecha: string;
   /**
@@ -454,8 +532,25 @@ export interface MateriaProps {
    * inventa un id para completar el tipo.**
    */
   cursadaId: string | null;
-  /** `null` ⇒ no hay examen registrado; se omite la línea. */
-  examen: string | null;
+  /**
+   * La tarjeta de evaluación — [ADR-085](../../docs/decisions.md#adr-085).
+   *
+   * `null` ⇒ **no hay evaluación registrada** y la tarjeta no se dibuja. Una
+   * evaluación sin fecha conserva su título: la fecha desconocida no se estima.
+   */
+  evaluacion: {
+    titulo: string;
+    /** *"6 días · práctico · 2 evidencias enviadas"*. `null` ⇒ se omite. */
+    detalle: string | null;
+  } | null;
+  /**
+   * `CTA-019` — *activar Modo Examen* desde la materia
+   * ([ADR-016](../../docs/decisions.md#adr-016)).
+   *
+   * `null` ⇒ **no se renderiza**, en vez de renderizarse deshabilitada. Es el
+   * caso de una materia sin evaluación registrada: no hay qué activar.
+   */
+  modoExamen: string | null;
   /**
    * El chip de estado general de la materia. **`null` ⇒ no se renderiza**, en
    * vez de renderizarse con una afirmación sin fuente (Etapa B2.6).
@@ -468,7 +563,6 @@ export interface MateriaProps {
   ultimoAvance: string | null;
   hero: HeroProjection;
   catedraYVos: { catedra: ColumnaFuente; vos: ColumnaFuente } | null;
-  unidades: FilaDato[];
   /**
    * **El Gantt de preparación** — [ADR-072](../../docs/decisions.md#adr-072).
    *

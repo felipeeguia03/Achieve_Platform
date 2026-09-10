@@ -22,6 +22,8 @@ export type NodoId =
   | "UX02"
   /** El índice de materias. **No es una superficie**: ver `nodos.UX02_INDICE`. */
   | "UX02_INDICE"
+  /** La biblioteca de Formación. **No es una superficie**: ver `nodos.FORMACION`. */
+  | "FORMACION"
   | "UX03"
   | "UX04"
   | "UX04_RENEGOCIACION"
@@ -83,6 +85,26 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
    * [ADR-054](../../docs/decisions.md#adr-054) lo dejó dicho: *"una superficie
    * de lista no sería inventar una décima"*.
    */
+  /**
+   * La biblioteca de Formación — [ADR-087](../../docs/decisions.md#adr-087).
+   *
+   * ⚠️ **`wireframe: null`: NO es una décima superficie.** Mismo patrón que
+   * `UX02_INDICE` y `UX04_RENEGOCIACION`, y por el mismo motivo: el spec dice
+   * que las superficies son nueve, y `superficieIds` tiene que seguir
+   * devolviendo nueve. Hay guard.
+   *
+   * ⚠️ **Y no es una materia.** El contenido de Formación es de método, no de
+   * cátedra: no cuelga de ninguna cursada, no tiene temas y no entra al Gantt.
+   */
+  FORMACION: {
+    id: "FORMACION",
+    wireframe: null,
+    nombre: "Formación",
+    pregunta: "¿Cómo estudio mejor?",
+    ruta: "/formacion",
+    pendienteDeEtapa: null,
+  },
+
   UX02_INDICE: {
     id: "UX02_INDICE",
     wireframe: null,

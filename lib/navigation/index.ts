@@ -30,6 +30,9 @@ export {
   type Estacion,
 } from "./focus-group";
 
+// `export { } from` re-exporta, pero **no trae los nombres al scope**: sin
+// este import, `rutaConocida` no compila.
+import { nodos, nodoIds } from "./surfaces";
 import { ctaRegistry, type CtaId } from "./cta-registry";
 import { rutaDe } from "./golden-path";
 
@@ -70,4 +73,21 @@ export function rutaDeCtaCon(id: CtaId, valor: string | null): string | null {
   const parametro = ctaRegistry[id].parametro;
   if (ruta === null || valor === null || parametro === undefined) return ruta;
   return `${ruta}?${parametro.nombre}=${encodeURIComponent(valor)}`;
+}
+
+/**
+ * ¿Es una ruta que la aplicación reconoce? — [ADR-088](../../docs/decisions.md#adr-088) §4.
+ *
+ * El espacio de trabajo restaura rutas desde el navegador, y **una ruta
+ * restaurada no se confía**: `localStorage` se edita a mano. Esto la valida
+ * contra el grafo antes de que llegue a un `router.push`.
+ *
+ * ⚠️ **Compara sólo el camino.** Los parámetros son del objeto —qué cursada,
+ * qué tema— y no se enumeran acá: el grafo describe destinos, no instancias.
+ */
+export function rutaConocida(ruta: string): boolean {
+  if (!ruta.startsWith("/")) return false;
+  const camino = ruta.split("?")[0];
+  if (camino === undefined) return false;
+  return nodoIds.some((id) => nodos[id].ruta === camino);
 }

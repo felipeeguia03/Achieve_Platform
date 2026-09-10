@@ -2,15 +2,15 @@ import { minutosPorTema, type SesionDeClase } from "@/lib/domain/duracion";
 import { coberturaDeMateria, porcentajeDeHoras } from "@/lib/domain/cobertura";
 import {
   ejeDelPeriodo,
+  marcasDelEje,
   posicionEnEje,
-  SEMANAS_HACIA_ATRAS,
   ventanaDe,
   type Eje,
 } from "@/lib/domain/ventana";
 import type { InsumosDeReparto } from "./proyeccion-reparto";
 import { ACLARACION_DE_COBERTURA, textoDeCobertura } from "./proyeccion-materia";
 import { fechaDeCalendario, haceCuanto } from "./tiempo";
-import type { EjeDelPeriodo, MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
+import type { MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
 
 /**
  * El área «Materias» — [ADR-077](../../../docs/decisions.md#adr-077).
@@ -82,34 +82,6 @@ export function proyectarMaterias(
     // aclarar, y ponerla igual sería explicar algo que no está en pantalla.
     aclaracion: orden.some((m) => m.cobertura !== null) ? ACLARACION_DE_COBERTURA : null,
   };
-}
-
-/**
- * Las marcas del eje, ya rotuladas y posicionadas.
- *
- * ⚠️ **`hoy` es una marca más.** Tratarla como un caso especial de la pantalla
- * pondría su posición en dos lugares —la línea vertical y el rótulo— con dos
- * cálculos que pueden separarse.
- */
-function marcasDelEje(hoy: string, eje: Eje): EjeDelPeriodo {
-  const DIA = 86_400_000;
-  const fechaDeSemana = (n: number) =>
-    new Date(Date.parse(`${hoy}T00:00:00Z`) + n * 7 * DIA).toISOString().slice(0, 10);
-
-  // Desde `−2 sem` hasta la última semana que entra en el eje. Cuando una
-  // evaluación lejana lo estira, **aparecen más marcas**: un eje más largo con
-  // las mismas cinco marcas mentiría sobre la escala.
-  const ultima = Math.floor(eje.dias / 7) - SEMANAS_HACIA_ATRAS;
-  const marcas = [];
-  for (let n = -SEMANAS_HACIA_ATRAS; n <= ultima; n++) {
-    marcas.push({
-      etiqueta: n === 0 ? "hoy" : n < 0 ? `−${-n} sem` : `+${n} sem`,
-      posicion: posicionEnEje(fechaDeSemana(n), eje),
-      esHoy: n === 0,
-    });
-  }
-
-  return { hoy: posicionEnEje(hoy, eje), marcas };
 }
 
 function aFila(

@@ -222,7 +222,20 @@ describe("B2.5 · la forma es la que la pantalla espera", () => {
     expect(Object.keys(proyectarDia(conAccion)).sort()).toEqual(
       // `reparto` entró por ADR-073. Llega por separado y por defecto es `null`:
       // pesa más que el resto de `HOY` junto, así que quien lo quiere lo pide.
-      ["estadoGeneral", "fecha", "hero", "materias", "recuperacion", "reparto", "verProgreso"].sort(),
+      //
+      // `panorama` entró por ADR-089 **y por el mismo camino**: sale de
+      // `GET /api/materias`, no de `estado_del_dia()`, así que esta proyección
+      // lo deja en `null` y lo compone la página.
+      [
+        "estadoGeneral",
+        "fecha",
+        "hero",
+        "materias",
+        "panorama",
+        "recuperacion",
+        "reparto",
+        "verProgreso",
+      ].sort(),
     );
   });
 

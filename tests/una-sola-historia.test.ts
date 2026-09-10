@@ -98,6 +98,7 @@ describe("B3.3 · la preview es una preview", () => {
     instante: "2026-09-01T20:00:00.000Z",
     zona: "America/Argentina/Cordoba",
     cursadaId: "ce-1",
+    evidenciasEnviadas: 0,
     materia: "Análisis Matemático II",
     examen: null,
     accion: null,
@@ -105,6 +106,8 @@ describe("B3.3 · la preview es una preview", () => {
     rescatePendiente: false,
     evidencia: "NONE" as const,
     contextoIncompleto: false,
+    // Por defecto **nada estimado**: los casos viejos miden lo que medían.
+    contenido: null,
     ultimoAvanceEn: null,
     unidades: [],
     clases: [],

@@ -36,6 +36,9 @@ export const FX_DAY_BASE: Escenario = {
       progresoDisponible: true,
     }),
     UX02: contexto({ courseVisible: true, recomendacionPrimariaVigente: true, progresoDisponible: true }),
+    // ADR-087. La biblioteca de Formación. **V1 es de solo lectura**: no hay
+    // CTA que pueda aparecer o no, así que el contexto no la condiciona.
+    FORMACION: contexto({ courseVisible: true }),
     // La Action está recomendada y todavía no aceptada: se puede aceptar.
     UX03: contexto({ recomendacionPrimariaVigente: true, actionStatus: "RECOMMENDED" }),
     // Aceptada, con el draft del Commitment abierto. Aceptar NO creó el
@@ -74,7 +77,9 @@ export const FX_DAY_BASE: Escenario = {
     materia: "Análisis Matemático II",
     // Track A: no hay cursada persistida detrás. Ver `MateriaProps.cursadaId`.
     cursadaId: null,
-    examen: "Parcial 1",
+    evaluacion: { titulo: "Parcial 1", detalle: "6 días · práctico · 2 evidencias enviadas" },
+  // `CTA-019` — hay evaluación registrada, así que hay qué activar (ADR-016).
+  modoExamen: "Activar Modo Examen",
     estado: "NORMAL",
     chip: { tono: "urgencia", texto: "Necesita atención" },
     ultimoAvance: "avance hace 2 días",
@@ -103,12 +108,6 @@ export const FX_DAY_BASE: Escenario = {
         tono: "urgencia",
       },
     },
-    unidades: [
-      { label: "U1", valor: "práctica registrada" },
-      { label: "U2", valor: "en construcción" },
-      { label: "U3", valor: "necesita atención", tono: "urgencia" },
-      { label: "U4", valor: "recorrido inicial" },
-    ],
     dimensiones: [],
     aviso: null,
     // `VI.2` §8.7: preview de 2–3 entradas, la misma verdad que la Bitácora.

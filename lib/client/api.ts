@@ -1,4 +1,5 @@
 import { clienteDeNavegador } from "./supabase-navegador";
+import { olvidarTodo } from "./espacio-de-trabajo/persistencia";
 
 /**
  * El cliente de `/api/*` del navegador. Etapa B2.6.
@@ -63,8 +64,38 @@ export async function tokenDeSesion(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
-/** Cierra la sesión. La pantalla que llame decide a dónde ir después. */
+/**
+ * Quién es el estudiante de esta sesión, para **aislar su espacio de trabajo**
+ * — [ADR-088](../../docs/decisions.md#adr-088) §4.
+ *
+ * Sale de Auth y de ningún otro lado. `null` ⇒ no hay sesión, y entonces el
+ * espacio de trabajo **no persiste nada**: el Track A corre con `?escenario=` y
+ * sin backend, y darle memoria a una demo sería guardar el recorrido de un
+ * focus group en la máquina de quien lo corrió.
+ *
+ * Envuelto en `try` porque sin las variables de entorno de Supabase el cliente
+ * lanza al construirse, y eso es exactamente el caso del Track A.
+ */
+export async function identidadDeSesion(): Promise<string | null> {
+  try {
+    const { data } = await clienteDeNavegador().auth.getSession();
+    return data.session?.user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cierra la sesión. La pantalla que llame decide a dónde ir después.
+ *
+ * ⚠️ **Y borra el espacio de trabajo de este navegador.** Es el único lugar
+ * donde se cierra sesión, así que es el único donde hace falta: dejar los
+ * objetos de una identidad esperando a que entre otra es lo que ADR-088 §4
+ * prohíbe. Se borra **todo** el namespace y no sólo el del estudiante actual,
+ * porque acá ya no se sabe con certeza cuál era.
+ */
 export async function cerrarSesion(): Promise<void> {
+  olvidarTodo();
   await clienteDeNavegador().auth.signOut();
 }
 

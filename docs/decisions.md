@@ -65,7 +65,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-016](#adr-016) | Ninguna CTA del registro lleva a `UX07` | ✅ `ACCEPTED` *(Opción A: se agrega `CTA-019`)* | — |
 | [ADR-017](#adr-017) | Las dos CTAs ambiguas de `product.md` §10.2 | `ACCEPTED` | — |
 | [ADR-018](#adr-018) | El lenguaje visual sale de las capturas, y hay que mirarlas | `ACCEPTED` | — |
-| [ADR-019](#adr-019) | El dock inferior no se construye; `Ausencia` ocupa su etapa | `ACCEPTED` | [ADR-018](#adr-018) |
+| [ADR-019](#adr-019) | El dock inferior no se construye; `Ausencia` ocupa su etapa | ⚠️ `SUPERSEDED` por [ADR-088](#adr-088) *(10 sep 2026 · **sólo su punto 1**)* | [ADR-018](#adr-018) |
 | [ADR-020](#adr-020) | Cuántas clases de ausencia distingue Achieve, y con qué palabras | ✅ `ACCEPTED` *(un no-cambio declarado es un dato)* | — |
 | [ADR-021](#adr-021) | Qué es, en Achieve, el «trabajo pendiente que caduca» | `ACCEPTED` | — |
 | [ADR-022](#adr-022) | `C-04` elevado: el vacío argumenta, con tercera cláusula condicional | `ACCEPTED` | — |
@@ -131,6 +131,12 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-082](#adr-082) | La Bitácora **es de una materia**: `CTA-009` transporta la cursada | ✅ `ACCEPTED` *(9 sep 2026 · corte 1 de `cursado-de-materia.md` · **segunda aplicación de ADR-054**)* | — |
 | [ADR-083](#adr-083) | El bloque horario existe, entra por la ingesta y **no toca el reparto** | ✅ `ACCEPTED` *(9 sep 2026 · construye ADR-063 · **sin `kind` ni `schedule_status`**)* | El cuarto paso del alta (ADR-062), el conflicto de ADR-064 |
 | [ADR-084](#adr-084) | El compromiso **no se confirma encima de una clase** | ✅ `ACCEPTED` *(9 sep 2026 · construye ADR-064 · **falta la segunda salida**)* | «Corregir el bloque» necesita el cuarto paso del alta |
+| [ADR-085](#adr-085) | `UX02` se rearma alrededor del **Gantt por tema** | ✅ `ACCEPTED` *(9 sep 2026 · layout del owner · **sin `dominado`, `nivel` ni `3/3`**)* | El checklist de Confianza (corte 2) |
+| [ADR-088](#adr-088) | **El espacio de trabajo**: los objetos abiertos, y ADR-019 queda `SUPERSEDED` | ✅ `ACCEPTED` *(10 sep 2026 · decidido por el owner · **los seis requisitos del multiventana, cumplidos**)* | — |
+| [ADR-088 · Enm. 1](#adr-088-enmienda-1) | **La ventana interna**: la ficha despliega, minimiza y cierra | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **el panel consulta, la superficie trabaja**)* | — |
+| [ADR-088 · Enm. 2](#adr-088-enmienda-2) | **El marco**: se arrastra, se estira, se expande y recuerda dónde quedó | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **«marco», no «ventana»: `A-04`**)* | — |
+| [ADR-089](#adr-089) | `UX01` gana la capa **«anticipar»**: próxima evaluación y mapa de 14 días | ✅ `ACCEPTED` *(10 sep 2026 · **sin contrato nuevo**: reusa `GET /api/materias`)* | — |
+| [ADR-090](#adr-090) | El **radar académico** de `UX01` | 🟡 `PROPOSED` — **no se construye** | `C01-021`, `C01-036`, `C01-044` |
 
 ---
 
@@ -1534,7 +1540,12 @@ Cuando los dos hablen del mismo píxel, sigue mandando la spec, **y se registra 
 <a id="adr-019"></a>
 ## ADR-019 — El dock inferior no se construye, y la primitiva `Ausencia` ocupa su etapa
 
-**Estado:** `ACCEPTED` · 30 ago 2026
+**Estado:** ⚠️ `SUPERSEDED` por [ADR-088](#adr-088) · 10 sep 2026 — **en su punto 1 solamente.**
+El punto 2 (*el breadcrumb no se reemplaza*) y el punto 4 (*la primitiva `Ausencia`*) **siguen vigentes**.
+Se conserva entero, con su fecha: **no se equivocaba cuando se escribió**, y caducó una premisa suya
+—*«Achieve no tiene dos objetos abiertos a la vez»*— que ADR-077, ADR-082, ADR-085 y ADR-086 volvieron falsa.
+
+**Estado original:** `ACCEPTED` · 30 ago 2026
 **Toca:** `roadmap.md` (Fase A2), `design-system-capturas.md` §12.8, `design-system.md` §3.2.
 **Corrige:** [ADR-018](#adr-018), que enumeró el dock entre los patrones a tomar sin advertir que
 `design-system-capturas.md` §7.4 ya lo había descartado.
@@ -7072,3 +7083,910 @@ encuentra nada. **La garantía es estructural, no el atajo**, y el test fija el 
 Y el recorrido real, contra la app corriendo: con una clase de 14 a 16 cargada, la propuesta llega a
 las **16:00** con su aviso; confirmar a las 14:30 devuelve `409 · "Tenés clase el miércoles de 14:00
 a 16:00"` y **no crea ninguna fila**; confirmar a las 16:00 devuelve `201`.
+
+---
+
+<a id="adr-085"></a>
+
+## ADR-085 — `UX02` se rearma alrededor del Gantt por tema
+
+**Estado:** ✅ `ACCEPTED` · 9 de septiembre de 2026 · **decidido por el owner con las capturas
+delante** (*"copiá el diseño tal cual, manteniendo la paleta"*)
+**Relacionado:** [ADR-016](#adr-016), [ADR-054](#adr-054), [ADR-072](#adr-072), [ADR-075](#adr-075),
+[ADR-078](#adr-078), [ADR-083](#adr-083) · [`cursado-de-materia.md`](cursado-de-materia.md)
+**Toca:** `estado_de_materia`, `GanttProjection`, `MateriaProps`, `UX02`, `CTA-019`,
+`lib/domain/ventana.ts`.
+
+### Qué se construyó
+
+El layout de la captura, con la paleta actual: **el Gantt por tema con eje de fechas** ocupando el
+panel principal, la **tarjeta de evaluación** con la entrada a Modo Examen, el **registro**, las
+**clases de la semana**, el **próximo paso** y la **actividad reciente**.
+
+`CTA-019` —declarada desde [ADR-016](#adr-016) y **nunca renderizada**— por fin es alcanzable por
+clic, y transporta la cursada como `CTA-001` y `CTA-009`: `UX07` elige entre los `Assessment` **de
+esta cursada**.
+
+### Las dos puntas de cada barra son hechos
+
+**Cuándo se dictó** sale de `class_session_topic` y **para cuándo se evalúa** de `assessment_topic`.
+Ninguna se estima.
+
+⚠️ **Un tema sin esas fechas NO se ubica**, y la fila lo dice: *«todavía no se dictó»*. Colocarlo en
+«+7 días» porque es el séptimo de la lista sería **inventar un plan de estudio que nadie hizo** y
+presentarlo como si la cátedra lo hubiera dictado. Es la misma regla que impide que el ADE agende.
+
+⚠️ **Y sin `assessment_topic` no hay alcance.** No se supone que la evaluación de la materia cubre
+todos sus temas: eso lo declara la cátedra o no está. Sin evaluación, la barra termina en la última
+clase que dictó el tema.
+
+El eje es **el mismo que el índice de materias**: `marcasDelEje` se movió a `lib/domain/ventana.ts` y
+la usan las dos. Dos copias serían dos escalas para el mismo eje.
+
+### ⛔ Las tres cosas de la captura que no se copiaron, y por qué
+
+**`Dominado`.** Primera prohibición de [ADR-072](#adr-072) —*el dominio requiere evaluación*—, el
+corte que sostiene `preparar ≠ enviar ≠ suficiencia ≠ validación ≠ dominio`. Un estudiante
+marcándose «dominado» **no evalúa nada: declara**.
+
+**`nivel`.** [ADR-075](#adr-075) §C1, la psicopedagoga, textual: *"su rótulo visible debe ser
+`actividad registrada`, no `dominio`, `nivel`, `rendimiento` ni `avance de aprendizaje`"*.
+
+**`3/3`.** Un puntaje, sobre una dimensión que `C01-019` dejó sin unidad en la que expresarse.
+
+En su lugar, la columna dice **el estado de la evidencia**, que sí es un hecho: `Sin registro ·
+Entregado · Requiere revisión · Criterio alcanzado`. Los cuatro describen **actividad, no
+conocimiento**, que es exactamente lo que §C1 pide.
+
+⚠️ **Y hay una razón más honda que el vocabulario: la escala de la captura es la dimensión
+Confianza**, que el estudiante autodeclara y que **todavía no tiene escritor**. Construirla es el
+corte 2 de [`cursado-de-materia.md`](cursado-de-materia.md), **bloqueado** hasta que la psicopedagoga
+revise las palabras.
+
+**Un cuarto detalle, del mismo tipo:** la captura pintaba cada estado de un color —verde
+«dominado», ámbar «leído»—, que es **la escala de calificación que §C1 descarta**. Las barras usan un
+solo color, y el estado se lee en palabras.
+
+### Tres decisiones de layout que el mockup forzó
+
+**El orden va contra el spec, y es del owner.** `VI.2` §1 pide *"la acción ocupa el primer
+viewport… no obligan al alumno a analizar un tablero para descubrir qué hacer"*. La captura invierte
+eso. Se construyó como la captura porque el owner la eligió con las dos delante, y queda dicho en el
+componente para que no se lea como un descuido.
+
+**El `CURSÁS · Lun 14:00–16:00` de la tarjeta NO se copió.** Repetía el panel «Clases de la semana»,
+que además lleva la procedencia de cada bloque. La misma cosa en dos lugares es `C-02` roto, y es el
+defecto que ya se corrigió una vez en `UX01` con `CTA-009`.
+
+**Modo Examen es CTA secundaria, no primaria.** En la captura es el botón dominante; `I-06` admite
+**una sola CTA primaria por pantalla**, y la que esta pantalla propone sigue siendo la próxima
+acción. Hay guard, y falla si se invierte.
+
+### Lo que se perdió, y hay que decirlo
+
+**La lista «Unidades» con su recencia por tema desapareció.** El Gantt la reemplaza y muestra el
+estado de evidencia, **no** el *«hace 2 días»* de cada unidad. Se sacó la prop en vez de dejarla sin
+renderizar —una prop que nada dibuja es la misma deuda que una columna que nadie escribe— y **la
+regla que protegía sobrevive**: su test se reescribió contra la forma nueva.
+
+### Lo que este ADR NO hace
+
+⛔ **No construye el checklist de Confianza.** Es el corte 2, y sigue bloqueado.
+
+⛔ **No agrega `Aula 305` ni «Seguir en etapa 3».** No hay campo de aula ([ADR-062](#adr-062) modeló
+el bloque sin aula) y las «etapas» siguen sin definirse.
+
+⛔ **No nombra a ninguna persona.** *«Analía interviene en paralelo»* es dato personal y quién
+interviene es `C01-030`, `DEFERRED`.
+
+⛔ **No toca la navegación.** «Calendario», «Formación» y «Mi seguimiento» quedaron afuera por
+decisión del owner, y el registro canónico sigue en **20 CTAs**.
+
+### Cómo se verifica
+
+**19 comprobaciones nuevas en `npm test`** (`tests/gantt-por-tema.test.tsx`). Cuatro reglas se
+verificaron **rompiéndolas a propósito** —la etiqueta prohibida, ubicar un tema sin clase, invertir
+la jerarquía de CTAs y ofrecer Modo Examen sin evaluación— y las cuatro hacen fallar su guard.
+
+Y el recorrido real: el panel llega con su eje de seis marcas, las unidades dictadas con su barra
+entre dos fechas, la que no se dictó **sin barra y con su motivo**, y la tarjeta diciendo
+*«Parcial 1 · mar 15 sept · 6 días · practico · 2 evidencias enviadas»*.
+
+---
+
+## ADR-086 — Contenido estimado, el peso como tiempo, y el Plan 2016 publicado
+
+**Estado:** ✅ `ACCEPTED` · 9 de septiembre de 2026 · **decidido por el owner**, cuatro respuestas
+explícitas más una quinta sobre el plan en borrador
+**Relacionado:** [ADR-006](#adr-006), [ADR-053](#adr-053), [ADR-068](#adr-068),
+[ADR-081](#adr-081), [ADR-085](#adr-085)
+**Toca:** `ingerir_materia`, `contexto_del_ade`, `estado_de_materia`, `lib/domain/ade.ts`,
+`MateriaProps.aviso`, `scripts/importar-temarios.mjs`, `scripts/simular-temarios.mjs`,
+`scripts/importar-catalogo.mjs`, `scripts/db-catalogo.sh`.
+
+### El problema
+
+El Plan 2016 tiene **51 materias**. Veinticinco tenían temario real —los programas oficiales de la
+UCC, cargados por `importar-temarios.mjs`— y veintiséis no tenían nada. Y **ninguna tenía
+calendario**: un programa de asignatura no trae fechas, así que el Gantt quedaba vacío y no existía
+la cuenta *"cuánto te falta estudiar antes del examen"*. Además el plan estaba `DRAFT`, así que
+nadie podía inscribirse solo.
+
+### Lo que se decidió
+
+**1 · El contenido que falta se genera, y se dice que se generó.** No hay columna nueva: se usa
+`source_type = 'inference'`, que ya existe en el vocabulario y que `provenance.ts` ya traduce a
+*«Estimado por Achieve»*. `estado_de_materia` devuelve una clave `contenido` con tres valores
+—`estimado`, `calendario_estimado`, `NULL`— derivada de mirar `source_type` en `resource` y
+`class_session`.
+
+⚠️ **`NULL` no significa «verificado»**, significa que ninguna fila dice `inference`.
+`verification_status` sigue en `unverified` para todo esto, y su única escritura sigue siendo
+`corroborar_procedencia()` (`I9`, intacto).
+
+**2 · «Tomado como válido» y «estimado» conviven.** El dominio trata el contenido generado igual
+que al real —el ADE recomienda sobre él, el Gantt lo ubica, el progreso cuenta— y la procedencia
+dice la verdad. **Funcionalmente válido, procedencialmente estimado.** El aviso va en `UX02`, en el
+slot `aviso` que ya existía, arriba del Gantt.
+
+**3 · La «dificultad» es `topic.weight`, y ya existía.** Es *cuánto de la materia ocupa esa
+unidad*, y de ahí salen los minutos por tema que `duracion.ts` ya calculaba. Lo que faltaba era el
+dato: `ingerir_materia` no lo escribía. Ahora `p_unidades` acepta `peso`.
+
+⚠️ **No es dificultad, y no se renombra a eso.** Que una unidad sea larga y que sea difícil son dos
+afirmaciones, y la segunda no la declaró nadie.
+
+⚠️ **Es todo o nada por materia** (`usaPesos()`, ADR-068). Un peso faltante no es `1.0`.
+
+**4 · El peso entra al ranking del ADE: más peso, más prioridad.** La unidad larga es la que no
+llega si se deja para el final. Aporta hasta `120`, **por debajo** de la señal de práctica (`300`) y
+muy por debajo de la de evaluación (`1000`): ajusta el orden entre unidades parecidas y **no le gana
+a que otra entre en el parcial**.
+
+⚠️ La dirección contraria —arrancar por las cortas para acumular cierres— es defendible y **es de la
+psicopedagoga**. Hoy no está respondida. Hay test que falla si alguien invierte el signo.
+
+**5 · El Plan 2016 se publica.** Sin eso el alta no ofrece la carrera y nadie puede inscribirse
+solo. `publicar_plan_de_estudios()` exige que no queden `needs_review`, así que **el owner los da
+por revisados**, con su motivo escrito en `importar-catalogo.mjs` y en el `audit_log`.
+
+⚠️ **Dar por revisado no es auditar.** El owner los levantó para habilitar el MVP, no porque haya
+contrastado el plan con la resolución de la facultad. Y **los diez nombres cortados siguen
+cortados**: `label_truncated` no se toca, porque levantar la marca no arregla el dato.
+
+⚠️ **Tres guards se mudaron de plan, no se aflojaron.** «Un borrador no se ofrece», «`requisitos_del_plan`
+devuelve `NULL`» y «publicar con `needs_review` se rechaza» ahora corren contra
+`INFORMATICA/web-2026`, que sigue `DRAFT` con sus 74 sin revisar.
+
+**6 · «UCC Sistemas» es sólo lo que ve el estudiante.** `academic_program.name` conserva
+`INGENIERIA DE SISTEMAS`, que es como la nombra el CSV de la facultad. La traducción vive en
+`lib/content/es-AR.ts` y se aplica al salir. **Es una traducción, no un renombre.**
+
+**7 · Los dos códigos duplicados los resuelve el plan.** `ORGANIZACIÓN Y ADMINISTRACIÓN DE EMPRESAS`
+es `22136` y `REDES TELEINFORMÁTICAS II` es `10212`; los que traen los programas (`20136`, `10210`)
+se mapean al entrar. `curriculum_requirement` es la fuente administrativa.
+
+### Lo que se aprendió construyéndolo
+
+⚠️ **La cursada vive en el período del alta, no en el año lectivo del programa.**
+`confirmar_mapa_academico()` crea la cursada con `(course, term, NULL)` usando el período que el
+estudiante eligió. Ingerir bajo `2024 / cátedra A` dejaba **dos ofertas** de la misma materia: la
+del contenido y la del estudiante, vacía. Medido: seis materias inscriptas, cero temas, ADE sin nada
+que decidir. El año lectivo y la cátedra viajan en `source_ref`.
+
+⚠️ **Una unidad pesada tiene que ocupar más clases.** `minutosPorTema()` reparte los minutos
+**observados** entre los temas que cada sesión cubrió: con una clase por unidad, todas salían con
+los mismos 120 minutos y el peso no cambiaba nada. El generador le da `peso` clases a cada unidad.
+
+⚠️ **El ADE chequea el material DESPUÉS de rankear y sólo sobre el ganador.** Cambiar el ranking
+cambia quién gana, así que una unidad sin `resource` puede ahora devolver `CONTEXTO_INCOMPLETO` donde
+antes no lo hacía. Todo tema generado lleva su material, y hay test.
+
+### Lo que NO se hizo
+
+- **No se cargaron los 80 libros de temas.** Traen nombre y legajo del docente en cada fila.
+- **No se completaron los 3 temarios reales que el parser no lee** —Sistemas de Representación e
+  Ingeniería de Software II— porque no numeran sus unidades. Conviene parsearlos, no simularlos.
+- **No se tocó [ADR-006](#adr-006)**, que sigue `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`.
+  Publicar un plan es `publication_status`; el dictamen legal es otra cosa y sigue faltando.
+
+---
+
+<a id="adr-087"></a>
+
+## ADR-087 — Formación: la biblioteca del alumno autónomo
+
+**Estado:** ✅ `ACCEPTED` · 10 de septiembre de 2026 · **decidido por el owner**, cinco decisiones
+más cuatro condiciones de alcance — ver §*Decisiones del owner*
+⚠️ **La construcción NO está autorizada todavía:** el owner pidió revisar este documento y el plan
+antes de que se escriba código.
+**Relacionado:** [ADR-006](#adr-006), [ADR-021](#adr-021), [ADR-058](#adr-058),
+[ADR-072](#adr-072), [ADR-075](#adr-075), [ADR-077](#adr-077) ·
+[`gantt-de-preparacion.md`](gantt-de-preparacion.md) §7 · [`cursado-de-materia.md`](cursado-de-materia.md) §5
+**Toca:** una entidad nueva, `lib/navigation/surfaces.ts`, `lib/navigation/menu.ts`, el registro de
+CTAs, y una superficie nueva.
+
+### El problema
+
+`Formación` aparece como ítem de menú en el mockup del owner, junto a `Calendario` y
+`Mi seguimiento`, y **se difirió tres veces**: en `gantt-de-preparacion.md` §7 (*"son dos productos
+separados que aparecieron en el mismo mockup"*), en `cursado-de-materia.md` §5 (*"afuera por
+ahora"*) y en [ADR-085](#adr-085) (*"quedaron afuera por decisión del owner"*).
+
+Pero **el concepto sí está decidido** desde el spec original. Lo que faltaba era la superficie.
+
+### Lo que el spec ya decide, y este ADR no reabre
+
+De `product-spec-source.md` §13 · *Formación*, los dos `DECIDIDO`:
+
+> Formación es aplicada y adaptativa; **no una videoteca pasiva**.
+> **Autónomo: biblioteca + recomendaciones contextuales.**
+
+> Para primer año, lo obligatorio debe tender a ser **microintervención contextual y aplicada, no
+> curso lineal** previo a usar el producto. *La obligatoriedad existe donde reduce un error
+> probable, no como requisito burocrático de onboarding.*
+
+Y §3.9 la define en una línea: **contenido → aplicación real → evidencia → feedback.**
+Concuerdan `D5` y `D23`, las dos `DECIDIDO`. **WF-S11** la engancha como `APOYO` de un paso del
+protocolo: *"PDF breve · links de Formación"*.
+
+⚠️ **Un ítem de menú es un destino que se navega, y el spec prohíbe la videoteca pasiva.** La única
+frase que lo habilita es *"Autónomo: biblioteca"*. **Por eso el alcance de este ADR es exactamente
+ésa y ninguna otra.**
+
+### Lo que este ADR decide
+
+**1 · Se construye la biblioteca, y sólo la biblioteca.** La microintervención contextual de primer
+año **no entra**: es la mitad que el spec marca como *"no curso lineal"*, define obligatoriedad
+sobre personas y **es terreno de la psicopedagoga**. Queda como residuo nombrado.
+
+**2 · Entidad nueva, no se cuelga de `resource`.** `resource` está atada a `offering_id` y
+`topic_id`: es material **de una cátedra sobre un tema**. El contenido de método —cómo usar una
+guía, cómo preparar un oral— **no pertenece a ninguna materia**, y forzarlo ahí obligaría a
+inventarle una cursada dueña.
+
+**3 · Nodo sin wireframe, como `/materias`.** El patrón de [ADR-077](#adr-077): entra en
+`surfaces.ts` con `wireframe: null`, así **`superficieIds` sigue devolviendo nueve** y la afirmación
+del spec —*no existe `UX10`*— sigue siendo cierta. Hay guard.
+
+**4 · El contenido entra con procedencia y sin verificar.** `source_type` + `verification_status`
+en su default `unverified`, como todo lo demás. **`I9` intacto:** nada eleva su propia verificación.
+
+### La cuarta decisión — **resuelta**, ver §*Decisiones del owner*
+
+⚠️ **No existe el Student Model, así que no se puede mostrar la biblioteca «sólo al autónomo».**
+
+El §13 condiciona la biblioteca a que el alumno **sea** autónomo, y §539 dice que eso lo determina
+el Student Model: *"primer año, recursantes o estudiantes en riesgo pueden recibir mayor estructura;
+alumnos autónomos, menor intervención"*.
+
+**`student` tiene ocho columnas y ninguna dice cuánto andamiaje necesita esta persona.** No hay
+tabla de Student Model, ni nivel de scaffolding, ni nada que lo calcule.
+
+Sin eso, mostrar el ítem de menú a todos **le da una videoteca navegable a un ingresante** — que es
+literalmente lo que `D23` descarta. Las tres salidas:
+
+| | qué implica |
+|---|---|
+| **A · A todos** | Lo más simple y lo que más se aleja del spec. Un ingresante ve la biblioteca completa el primer día |
+| **B · Detrás de un hecho observable** | Sin Student Model, el proxy tendría que ser algo que ya existe —¿evidencia validada?, ¿compromisos cumplidos?—. **Elegir el proxy es inventar la regla**, y es de la psicopedagoga |
+| **C · La biblioteca existe, la entrada es contextual** | Sin ítem de menú: se llega desde un paso del protocolo (WF-S11) o desde un bloqueo. Respeta el §13 entero y **no construye la pantalla que pediste** |
+
+**No la resuelvo yo.** Es una regla de negocio sobre a quién se le ofrece qué, y la regla 2 dice que
+la cierra una persona.
+
+### Lo que este ADR NO hace
+
+- **No predice, no puntúa y no dice «dominado».** [ADR-072](#adr-072) y
+  [ADR-075](#adr-075) §C1 valen igual acá: nada de `nivel`, `rendimiento` ni porcentajes de avance.
+- **No es la ingesta.** No extrae unidades ni toca `topic`.
+- **No define quién escribe el contenido.** Con [ADR-006](#adr-006) en `PROVISIONAL`, el catálogo
+  arranca **sintético**, igual que todo lo demás.
+- **No construye `Calendario` ni `Mi seguimiento`.** Siguen diferidos.
+
+### Actualización · 10 de septiembre de 2026 — llegó el contenido
+
+El owner trajo **los cinco contenidos de prioridad máxima** de la psicopedagoga, transcriptos en
+[`formacion-prioridad-maxima-source.md`](formacion-prioridad-maxima-source.md). Con eso, tres de las
+incógnitas de este ADR dejan de serlo.
+
+**1 · El catálogo ya no arranca sintético.** Hay cinco piezas reales, elegidas por frecuencia de
+consultorio, y un índice temático de **diecisiete áreas y cinco ejes** que ya estaba en el repo
+desde el 1 de septiembre ([`indice-psicopedagogico-source.md`](indice-psicopedagogico-source.md)).
+El índice **clasifica**; los cinco **son contenido**.
+
+**2 · La forma de la entidad la dicta el contenido, no yo.** Cada pieza trae exactamente seis
+partes, y son las mismas seis en las cinco:
+
+| parte | ejemplo (pieza 1) |
+|---|---|
+| **título** | *"No sé por dónde empezar a estudiar"* |
+| **problema que resuelve** | la tarea se ve demasiado grande y no logra arrancar |
+| **objetivo** | transformar *"tengo que estudiar"* en una primera acción concreta |
+| **explicación psicopedagógica** | el texto de la autora |
+| **acción concreta posterior** | definir una microacción y comenzarla |
+| **evidencia** | foto del primer paso |
+| **material descargable** | plantilla *"De obligación a acción"* |
+
+⚠️ **Eso es literalmente `§3.9`**: *contenido → aplicación real → evidencia → feedback*. La entidad
+no puede ser «título + video»: sin la acción posterior y la evidencia, Formación **vuelve a ser la
+videoteca pasiva** que el `§13` prohíbe.
+
+**3 · Los videos no existen.** La autora lo dice: *"son 5, faltan los guiones"*. Se construye todo
+lo que rodea al video, y el video **se omite en vez de fingirse**.
+
+### La quinta incógnita — **resuelta**, ver §*Decisiones del owner*
+
+⚠️ **`action.course_enrollment_id` es `NOT NULL`, y `evidence.action_id` también.** Un contenido de
+Formación **no puede producir una acción ni una evidencia** sin colgar de una cursada. Y Formación no
+es de ninguna materia. Tres salidas:
+
+| | qué implica |
+|---|---|
+| **A · Hacer la columna nullable** | Toca la tabla más central del dominio. Todas las lecturas asumen que una `Action` tiene cursada |
+| **B · La pieza se aplica a una materia que el estudiante elige** | **Es lo que el contenido ya pide**: la pieza 2 dice *"simplificar el programa"* —¿de qué materia?—, y la 1, *"definir una microacción"*. La maquinaria de `Action`/`Evidence` sirve **sin tocar nada**, y la *aplicación real* del `§3.9` se vuelve literal |
+| **C · v1 sin evidencia** | La pieza enuncia qué evidencia correspondería y no la recoge. Más rápido, y deja el `§3.9` a medias |
+
+**Recomendación: `B`.** No agrega esquema, no debilita un `NOT NULL` y es la lectura más fiel del
+contenido — que está escrito para aplicarse a una materia concreta.
+
+⚠️ **Y la vigencia sigue sin confirmar.** Igual que el índice y que el protocolo: *recibido no es
+aprobado*. Los tipeos del original se conservan y **no se corrigen** (precedente de ADR-031).
+
+### Decisiones del owner · 10 de septiembre de 2026
+
+Tomadas por el owner con las dos opciones y sus costos delante
+([`agenda-formacion.md`](agenda-formacion.md)), y transcriptas acá **sin interpretarlas**.
+
+#### D1 · A quién se le muestra — **opción `A`**
+
+> Formación será una **biblioteca opcional visible para todos los estudiantes desde el menú**. El
+> acceso **no implica obligatoriedad** ni convierte Formación en un curso lineal. Mientras no exista
+> el Student Model, **no se utilizarán proxies, puntajes ni umbrales** para clasificar estudiantes
+> como autónomos. En el futuro, el Student Model podrá personalizar recomendaciones, orden y
+> acompañamiento, sin que esta decisión defina todavía restricciones de acceso.
+
+⚠️ **La prohibición de proxies es la parte operativa, y es un guard.** La opción `B` de la agenda
+—inventar un sustituto del Student Model— **queda cerrada**: nada en el código puede clasificar a un
+estudiante como autónomo a partir de evidencias validadas, compromisos cumplidos ni tiempo de uso.
+Clasificar personas con un umbral improvisado es exactamente lo que `D23` y la psicopedagoga
+protegen.
+
+⚠️ **«Opcional» y «no obligatoria» tienen consecuencias visibles:** sin badge en el menú, sin
+contador, sin nada que caduque. [ADR-021](#adr-021) ya fijó que el único badge posible es el del
+trabajo que vence, y **en Formación no vence nada**.
+
+#### D2 · La evidencia — **opción `B`**
+
+> Las piezas de Formación producen aplicación y evidencia **vinculándose a un `CourseEnrollment`
+> elegido por el estudiante**. **Leer una pieza no exige seleccionar una materia**; la selección se
+> solicita **al comenzar la acción**. `action.course_enrollment_id` conserva su `NOT NULL` y no se
+> debilita el esquema central. **Si no existen cursadas activas, se permite leer la pieza, pero no
+> iniciar su aplicación.**
+
+⚠️ **Leer y aplicar se separan, y el orden importa.** Pedir la materia para leer convertiría la
+biblioteca en un embudo; pedirla al aplicar es el momento en que la pregunta significa algo. El
+estado *"sin cursadas activas"* **no oculta la pieza**: la deja leerse y dice por qué no se puede
+empezar todavía.
+
+#### D3 · Primer año — **fuera de alcance**
+
+> La microintervención contextual u obligatoria para primer año queda **fuera de alcance y pendiente
+> de definición psicopedagógica**.
+
+#### D4 · Los videos — **se omiten, no se simulan**
+
+> Se autoriza construir la estructura alrededor de las cinco piezas **sin videos**, pero **no
+> inventar videos ni simular que existen**.
+
+⚠️ Es *"omitir, no inventar"* aplicado a la letra: sin guion no hay video, y **la línea desaparece**
+en vez de mostrar un reproductor vacío o un *"próximamente"*.
+
+#### D5 · Fuera de producción hasta que ella autorice
+
+> El contenido debe mantenerse **fuera de producción** hasta que la psicopedagoga **confirme su
+> vigencia y autorice su publicación**. Debe conservarse **literalmente** la fuente recibida,
+> incluidos sus tipeos, conforme al precedente [ADR-031](#adr-031).
+
+**Esto no necesita un mecanismo nuevo: es `publication_status`.** La columna que
+[ADR-051](#adr-051) definió para el catálogo responde exactamente esta pregunta —*"¿esto se le puede
+mostrar a un estudiante?"*— con `DRAFT` por defecto. Las cinco piezas entran `DRAFT`, y **sólo lo
+`PUBLISHED` se proyecta**.
+
+⚠️ **`publication_status` NO es `verification_status`, y no se colapsan.** La segunda sigue teniendo
+una sola escritura en todo el repositorio (`corroborar_procedencia()`, `I9`). Que la autora autorice
+publicar **no corrobora** su contenido, y viceversa.
+
+⚠️ **Consecuencia que hay que mirar de frente: con `D1` la biblioteca se le muestra a todos, y con
+`D5` no hay nada publicado.** Hasta que ella autorice, la pantalla existe y **está vacía**. Eso es
+correcto y es lo que el owner decidió, pero el vacío tiene que **decir por qué** —`C-04`, estado
+vacío elevado— y no parecer un error ni una pantalla rota.
+
+### Lo que queda abierto después de estas decisiones
+
+- **La confirmación de vigencia de la psicopedagoga.** Bloquea la publicación, no la construcción.
+- **Los guiones de los cinco videos.** Los declara faltantes la propia autora.
+- **El resto del índice** — diecisiete áreas, y sólo cinco piezas escritas.
+- **El Student Model.** Cuando exista, `D1` dice que podrá personalizar *recomendaciones, orden y
+  acompañamiento*; **restricciones de acceso no**, y reabrirlas sería otra decisión.
+
+### Enmienda 1 · `CTA-021` · autorizada el 10 de septiembre de 2026
+
+El registro canónico está **cerrado en 20 CTAs** y hay test que exige que toda CTA fuera de
+`product-spec-source.md` Parte III §5 tenga un ADR `ACCEPTED` que la nombre. `D2` necesita una: el
+momento en que el estudiante **empieza a aplicar** una pieza y se le pide la cursada.
+
+**`CTA-021` · Empezar** — el owner la autoriza como parte de este ADR.
+
+| campo | valor |
+|---|---|
+| **Origen** | la superficie de Formación |
+| **Condición de aparición** | pieza abierta **y** al menos una cursada activa |
+| **Acción solicitada** | empezar a aplicar la pieza a una materia |
+| **Resultado autoritativo** | `Action` creada sobre el `CourseEnrollment` elegido, con la pieza registrada en `formative_content_id` |
+| **Fallback** | permanecer en la pieza sin crear nada |
+| **Estado de error** | sin cursadas activas: **la pieza se sigue leyendo** y se dice por qué no se puede empezar |
+
+⚠️ **Aparición y habilitación son dos cosas distintas, y acá se separan a propósito.** Sin cursadas
+activas la CTA **no aparece** —no hay a qué aplicarla— pero la pieza **se lee igual**, que es
+literalmente lo que `D2` decidió: *"se permite leer la pieza, pero no iniciar su aplicación"*.
+
+⚠️ **Es la tercera CTA fuera del spec**, junto a [ADR-016](#adr-016) (`CTA-019`) y
+[ADR-067](#adr-067) (`CTA-020`). `product-spec-source.md` **no se edita**: la corrección vive acá.
+
+⚠️ **`escenarios` queda vacío**, igual que `CTA-020`. El spec no tiene un `SC-` para esto porque no
+preveía la superficie; **inventar uno sería fabricar trazabilidad** hacia un documento que no lo dice.
+
+### Enmienda 2 · Las decisiones del owner, y las dos verticales · 10 de septiembre de 2026
+
+**Estado:** `ACCEPTED` · decidida por el owner, por escrito.
+
+#### E2.1 · Las diez reglas de la aplicación
+
+| # | regla |
+|---|---|
+| 1 | El CTA de la pieza se rotula **«Aplicarlo»**. |
+| 2 | **Leer una pieza no requiere seleccionar una materia.** Ratifica `D2`. |
+| 3 | Al presionar «Aplicarlo», el estudiante **elige una cursada vigente**. |
+| 4 | **«Vigente» = `course_enrollment.status = 'active'` + período académico actual canónico del estudiante + coincidencia de estudiante e institución.** Los tres datos ya existen: **no se crea estado, puntaje ni inferencia nueva.** |
+| 5 | La aplicación **crea una `Action`** vinculada al `CourseEnrollment` elegido, y sigue por el flujo normal de `Evidence`. |
+| 6 | **`action.course_enrollment_id` permanece `NOT NULL`.** |
+| 7 | **Sin cursadas vigentes, la pieza se lee pero no se aplica.** |
+| 8 | **No se muestran videos falsos** ni controles que aparenten reproducir contenido inexistente. Ratifica `D4`. |
+| 9 | **El contenido permanece fuera de producción** hasta que la psicopedagoga confirme vigencia y autorice publicación. Ratifica `D5`. |
+| 10 | **La fuente se conserva literalmente.** Una versión corregida sólo la reemplaza si **proviene de la autora** y está **expresamente aprobada**, **preservando procedencia e historial**. Extiende `D5` y el precedente [ADR-031](#adr-031). |
+
+#### E2.2 · La aplicación convive con el ADE — no compite
+
+- Es **secundaria**: no reemplaza, cancela, reordena ni bloquea la acción principal del motor.
+- **No crea `action_recommendation`**, no usa `is_primary`, y **nunca se registra como recomendación del motor**.
+- **`UX01` sigue mostrando como acción principal la que determina el ADE.**
+- Se muestra dentro de Formación y en lugares secundarios compatibles; **no compite por la posición principal de `HOY`**.
+- **La separación se resuelve en dominio y backend.** El frontend no decide prioridad.
+- **Máximo una aplicación viva por estudiante**, además de la del ADE; si ya existe, el sistema **lleva a continuarla**.
+- **`CTA-021` es idempotente**: los reintentos nunca duplican.
+
+⚠️ **Consecuencia obligatoria sobre el motor, para cuando V2 se construya.**
+`materializar_recomendacion()` se niega hoy a crear si existe *cualquier* acción viva para la
+cursada. Sin acotar ese guard, aplicar una pieza **impediría al ADE emitir la acción del día** de esa
+materia. Corregirlo, y filtrar la lectura de `HOY`, **forma parte de esta decisión**.
+
+#### E2.3 · La elegibilidad es de la aplicación, nunca de la lectura
+
+⚠️ **La biblioteca no se oculta ni se condiciona por las cursadas.** `D2` es literal, y un estudiante
+sin ninguna cursada vigente **ve la biblioteca completa**. La regla de vigencia describe **qué
+cursadas se ofrecen al aplicar**, y se evalúa **al aplicar**.
+
+En consecuencia `biblioteca_de_formacion()` **no devuelve cursadas**. Lo que había —una lista sin
+filtro alguno, pese a que su comentario declaraba *«cursadas activas»*— **no se corrigió: se retiró**.
+Como la migración era **inédita**, se editó en su archivo: **no se apila una migración correctiva
+sobre una migración que nunca se aplicó.**
+
+#### E2.4 · Las dos verticales
+
+**V1 · Biblioteca de solo lectura — es lo que está construido.** No modifica `action`, **no agrega
+`action.formative_content_id` ni `origin`**, **no registra `CTA-021`**, no muestra botón ni selector,
+y **no exige cursadas para leer**. El registro canónico sigue en **20 CTAs**; las rutas son **once** y
+las superficies **nueve**.
+
+**V2 · Aplicación — diferida.** Incorpora `origin`, el vínculo con la pieza, la selección de cursada,
+la creación de `Action`, la API, `CTA-021`, `Evidence` y sus invariantes.
+
+⛔ **`CTA-021` no entra al registro hasta que exista su escritura.** Un `resultadoAutoritativo` que
+promete *«Action creada sobre el CourseEnrollment elegido»* sobre un camino inexistente es un
+contrato incumplido, y **documentar el incumplimiento no lo repara**. Hay guard.
+
+#### E2.5 · Qué impide publicar contenido no aprobado
+
+Cuatro mecanismos independientes, y **ninguno depende de que alguien se acuerde**:
+
+1. **`publication_status NOT NULL DEFAULT 'DRAFT'`** con `CHECK`: toda pieza nace `DRAFT`.
+2. **`CONSTRAINT formacion_publicada_con_fecha`**: no se publica sin dejar fecha.
+3. **RLS activo y sin ninguna política**: `formative_content` es inalcanzable por PostgREST para
+   `anon` y `authenticated` — **nadie llega a la tabla**, ni siquiera a las `DRAFT`.
+4. **`biblioteca_de_formacion()` filtra `PUBLISHED` en la base**, con `REVOKE ALL FROM PUBLIC, anon`.
+   El filtro **no vive en la proyección**, donde un `if` podría perderse.
+
+Y **el cargador no puede publicar**: no escribe `publication_status` ni en un `set` ni en la lista de
+columnas del `insert`, con guard que lo verifica. **Publicar es un acto de la autora.**
+
+#### E2.6 · Clasificación
+
+La implementación existente es **incompleta, no no-autorizada**: se escribió con autorización del
+owner, después de que el ADR incorporara D1–D5. **Será funcional cuando `CTA-021` realice la
+escritura y tenga pruebas.**
+
+---
+
+<a id="adr-088"></a>
+
+## ADR-088 — El espacio de trabajo: los objetos abiertos, y ADR-019 queda `SUPERSEDED`
+
+**Estado:** `ACCEPTED` · 10 sep 2026 · **decidido por el owner, por escrito, con ADR-019 delante**
+**Toca:** `design-system-capturas.md` §7.4 · §10.1 · §11.3 · §12.8, `roadmap.md`, `tests/ausencia.test.tsx`, `tests/track-a-rules.test.ts`
+**Reemplaza:** [ADR-019](#adr-019), que descartó el dock inferior **y no se equivocaba cuando lo escribió**.
+
+### Contexto
+
+[ADR-019](#adr-019) descartó el dock el 30 de agosto de 2026 con un argumento que **no era estético
+sino estructural**, y que conviene citar entero antes de tocarlo:
+
+> **Dónde no:** productos de tarea única, **flujos lineales**, o cualquier cosa que se use
+> mayoritariamente en móvil. Ahí el dock es puro costo.
+
+Y la premisa con la que se aplicó:
+
+> **Achieve es exactamente el caso que el manual excluye:** un flujo lineal (`UX01`→`UX09`) de una
+> decisión por pantalla (`DD9`). **No tiene dos objetos abiertos a la vez porque su unidad de trabajo
+> es una `Action`.**
+
+**Esa premisa dejó de ser cierta, y se puede fechar.** Entre el 8 y el 9 de septiembre de 2026 el
+producto dejó de ser nueve pantallas encadenadas:
+
+| Qué cambió | Dónde |
+|---|---|
+| El área «Materias» existe: **51 cursadas** listadas a la vez | [ADR-077](#adr-077) |
+| Las 51 materias del Plan 2016 **tienen contenido**: unidades, calendario, evaluación y material | [ADR-086](#adr-086) |
+| `UX02` se rearmó alrededor del **Gantt por tema**: la unidad es un objeto navegable | [ADR-085](#adr-085) |
+| La Bitácora **es de una materia**, no del estudiante | [ADR-082](#adr-082) |
+| `CTA-001` y `CTA-009` **transportan la cursada**: dos CTAs con parámetro | [ADR-054](#adr-054), [ADR-082](#adr-082) |
+
+La unidad de trabajo **ya no es una `Action`**. Un estudiante con cinco materias en curso tiene
+abiertos, a la vez, una unidad de Análisis, el TP2 de Computación Gráfica y la evaluación de Historia
+Económica. ADR-019 acertó al decir que *un producto sin dos objetos abiertos no necesita dock*; lo
+que cambió es que **ahora los tiene**.
+
+⚠️ **Lo que ADR-019 dijo y sigue valiendo, y no se toca:** el breadcrumb no se reemplaza. Las dos
+preguntas son distintas y por eso conviven — *"¿dónde estoy?"* la contesta la miga, *"¿qué tengo
+abierto y quiero retomar?"* la contesta el espacio de trabajo. Un espacio que además dijera dónde
+estás sería la segunda lista de destinos que ADR-019 temía, con razón.
+
+### Decisión
+
+**1. Se construye el espacio de trabajo.** No es un dock y no se llama dock: es **el espacio de
+trabajo**, y lo que contiene son **objetos abiertos**. Un concepto, una palabra (`AGENTS.md` §4).
+`ficha`, `pestaña`, `tab` y `dock` **no entran al vocabulario**.
+
+**2. Los seis requisitos innegociables del multiventana se cumplen los seis.** El manual cierra la
+sección con *"si no podés cumplirlo, **no lo hagas**"*, así que la lista no es una guía: es la
+condición de la decisión.
+
+| # | Requisito del manual | Cómo se cumple |
+|---|---|---|
+| 1 | **URL por ficha** | Cada objeto abierto lleva su `ruta`, que es la misma del registro de CTAs. Activar un objeto **navega**; no hay estado que viva sólo en el espacio |
+| 2 | **Botón Atrás definido** | La navegación es `router.push`: atrás y adelante del navegador recorren el historial real. El espacio **no intercepta** la history API |
+| 3 | **Trampa de foco y orden de tabulación** | `role="tablist"` con navegación por flechas, `Home`/`End`, y `Delete` para cerrar. El foco nunca queda huérfano al cerrar |
+| 4 | **Jerarquía de `Escape` con dos capas** | `Escape` cierra primero el menú de desbordamiento o la hoja móvil; con nada abierto **no hace nada**. Nunca cierra un objeto: cerrar es destructivo y no se hace con una tecla de escape |
+| 5 | **Comportamiento del dock a escala** | Se muestran hasta **5**; el resto va a un menú de desbordamiento con su contador. **Nunca se comprimen las etiquetas hasta ser ilegibles** — que es el anti-patrón `A-07`, y es el motivo de este renglón |
+| 6 | **Límite duro de objetos abiertos** | **12.** Al abrir el decimotercero se cierra **el menos visitado**, y la pantalla lo dice |
+
+⚠️ **El requisito 6 se cumple aunque el pedido decía «no hay un límite rígido».** El manual lo llama
+innegociable y ADR-019 lo citó como parte de la razón para descartar el dock: construirlo salteándose
+justo el renglón que lo hacía caro sería quedarse con el costo y tirar la mitigación. **El límite se
+elige alto —12— para que nadie lo toque en un día normal**, y cuando actúa **se dice**: un objeto que
+desaparece en silencio es peor que no tenerlo.
+
+**3. `A-07` no se reproduce, y por eso el límite visible es 5.** El anti-patrón catalogado no es *"el
+dock existe"*: es *"el dock ya trunca títulos con dos elementos abiertos"*. Cinco objetos a ancho
+legible con desbordamiento explícito es la corrección del defecto, no su copia.
+
+**4. La persistencia local se autoriza, y sólo para esto.** El guard de *cero persistencia*
+(`tests/track-a-rules.test.ts`) **se relaja del mismo modo en que se relajó el de red en la B1.6**:
+nombrando el único módulo que puede usarla, y dejando prohibido todo el resto.
+
+| | |
+|---|---|
+| **Único módulo autorizado** | `lib/client/espacio-de-trabajo/persistencia.ts` |
+| **Clave** | `achieve.espacio-de-trabajo.v1.<studentId>` — versionada y **aislada por estudiante** |
+| **Qué se guarda** | `kind`, `entityId`, `label`, `secondaryLabel`, `ruta`, y dos instantes |
+| **Qué NO se guarda** | Evidencia, reflexiones, mensajes humanos, nombres de personas, **nada de otro estudiante** |
+| **Cambio de identidad** | Otro `studentId` es **otro namespace**. Cerrar sesión **borra** |
+| **Dato corrupto** | Se descarta entero y se arranca vacío. **Nunca rompe la aplicación** |
+
+⚠️ **Una etiqueta guardada no es una autorización.** El backend sigue decidiendo el acceso a cada
+entidad: si el objeto ya no existe o el estudiante lo perdió, la ruta contesta lo que contestaba y el
+objeto se puede cerrar. **El espacio no es una caché de dominio.**
+
+**5. Los guards no se borran: se reescriben contra esta decisión.** ADR-019 §3 dijo *"una regla sin
+test se pierde en dos meses"*, y eso vale igual para la regla nueva. El `describe` de
+`tests/ausencia.test.tsx` que prohibía el dock pasa a verificar **los seis requisitos**.
+
+### Consecuencias
+
+- [ADR-019](#adr-019) queda `SUPERSEDED`. **Su punto 2 sobrevive entero:** el breadcrumb no se
+  reemplaza, y el espacio de trabajo **no es navegación**.
+- `design-system-capturas.md` §7.4, §10.1, §11.3 y §12.8 se actualizan: el descarte se conserva
+  **con su fecha y su razón**, y se anota qué premisa caducó. **No se borra el registro** — un
+  documento que borra por qué dijo que no se equivoca dos veces.
+- El anti-patrón `A-07` **sigue en la lista de §11.2**. No se sacó: se dice cómo se evita.
+- **Ninguna superficie nueva y ninguna CTA nueva.** El espacio de trabajo no entra a `surfaces.ts` ni
+  a `cta-registry.ts`: no solicita una acción de dominio, no muta nada y no crea entidades. Es
+  orientación, como la navegación lateral — el mismo motivo por el que el menú tampoco está en el
+  registro.
+- **La regla de una sola CTA primaria por pantalla (`I-06`) no se toca.** El espacio no tiene CTA.
+
+---
+
+<a id="adr-088-enmienda-1"></a>
+
+### ADR-088 · Enmienda 1 — la ventana interna
+
+**Estado:** `ACCEPTED` · 10 sep 2026 · **pedida por el owner con las capturas delante**
+
+#### Contexto
+
+La primera versión hacía que tocar una ficha **navegara**. Consultar en qué anda
+Álgebra costaba perder la pantalla en la que estabas y volver — que es la mitad del trabajo que un
+espacio de trabajo existe para ahorrar.
+
+El software de `docs/diseño/` lo resuelve con una **ventana interna**: la ficha del pie despliega el
+objeto encima de la pantalla actual, con barra de título, minimizar y cerrar. El owner pidió
+exactamente eso: *"minimizar o abrir totalmente cuando tocás abajo en la barra de pestañas"*.
+
+⚠️ **Esto es «multiventana», la palabra que [ADR-019](#adr-019) usó para descartarlo.** No se entra
+por la puerta de atrás: se cumplen los seis requisitos, y **tres de ellos recién ahora se ejercitan
+de verdad**.
+
+#### Decisión
+
+**1. Tocar una ficha despliega el panel; volver a tocarla lo minimiza.** El gesto es uno solo.
+
+**2. El panel vive en la URL** — `?abierto=<clave>` sobre la ruta actual. Es el requisito 1
+(*URL por ficha*) y no es ceremonia: hace que el panel se pueda compartir, que **el botón atrás lo
+cierre** y que recargar lo reponga. Una clave que no corresponde a un objeto abierto **se ignora**:
+no existe la ventana huérfana.
+
+**3. Trampa de foco y `Escape` con dos capas** — requisitos 3 y 4. `Tab` circula adentro; al cerrarse
+el foco vuelve a donde estaba. `Escape` cierra primero un menú abierto y sólo después minimiza:
+**nunca cierra el objeto**, porque cerrar es destructivo y no se hace con una tecla de escape.
+
+**4. Minimizar y cerrar son dos cosas, y por eso son dos botones.** Minimizar guarda el panel y
+**deja el objeto en la barra**; cerrar saca el objeto. Tocar afuera minimiza. Dos controles que
+hicieran lo mismo serían ruido.
+
+**5. ⚠️ El panel consulta; la superficie trabaja.** Adentro **no hay CTA de dominio**:
+comprometerse, empezar y entregar tienen su precedencia y su CTA única en `UX02`–`UX05` (`I-06`), y
+duplicarlas acá serían dos lugares donde se decide lo mismo. *«Ver como página»* es el camino a la
+superficie.
+
+Es la misma distinción que la fuente hace en su propia ficha —*"se listan para consultarlas:
+renovar, triagear y editar el legajo se hacen en la cartera, que sigue siendo la única superficie de
+trabajo"*—. Se toma **el mecanismo**, nunca su dominio: ni sus marcas, ni sus expedientes, ni sus
+clientes (`AGENTS.md` §1.5).
+
+**6. Un tipo sin vista propia lo dice.** Hoy sólo `materia` se despliega. El resto muestra que
+todavía no se puede ver ahí y ofrece abrirlo como página: *omitir, no inventar* (§2.7), nunca caer a
+una pantalla parecida.
+
+#### Consecuencias
+
+- El objeto activo pasa a ser **el del panel** cuando hay panel. Es lo que el estudiante está
+  mirando; si mandara la ruta, la barra marcaría como activo algo que quedó atrás de la ventana.
+- Cerrar el objeto del panel **se lleva el panel** y pasa al vecino, sin sacar al estudiante de la
+  pantalla en la que estaba.
+- **Ninguna superficie nueva, ninguna CTA nueva, ningún contrato de backend nuevo.** El panel relee
+  `GET /api/materia`, la misma lectura de `UX02`.
+
+---
+
+<a id="adr-088-enmienda-2"></a>
+
+### ADR-088 · Enmienda 2 — el panel se maneja como una ventana
+
+**Estado:** `ACCEPTED` · 10 sep 2026 · **pedida por el owner**
+
+#### Contexto
+
+La Enmienda 1 dejó el panel centrado y de tamaño fijo. El owner pidió que se comporte como una
+ventana de escritorio: *"que podés mover dentro del desktop a donde quieras, pero si lo minimizás,
+queda donde estaba antes, y podés expandirlo o minimizarlo, y podés hacer que ocupe parte de la
+pantalla"*.
+
+#### Decisión
+
+**1. Cada objeto recuerda su marco.** Se arrastra de la barra de título, se redimensiona de sus ocho
+bordes y se expande. Minimizar y volver a abrir lo devuelve **al mismo lugar y al mismo tamaño**.
+
+**2. ⚠️ Se llama «marco», no «ventana».** `Ventana` ya está tomada **dos veces** en este dominio: la
+ventana de preparación de [ADR-078](#adr-078) —días de calendario hasta la evaluación— y
+`VentanaDeExamen`. Reusar la palabra haría que *"la ventana de Álgebra es corta"* tuviera dos
+significados incompatibles: es el anti-patrón `A-04`, deriva de vocabulario (`AGENTS.md` §4).
+
+**3. La aritmética es dominio puro**, en `lib/domain/marco-de-panel.ts`. Topar contra los bordes,
+respetar el mínimo, mover el origen al tirar del borde izquierdo y restaurar al tamaño previo son
+**reglas**; probarlas con un mouse de mentira sería probar el doble. El componente sólo traduce
+eventos de puntero a deltas.
+
+**4. El marco se guarda al soltar, no en cada `pointermove`.** Escribir en el estado compartido
+sesenta veces por segundo volvería a renderizar la barra y el contenido de `UX02` en cada píxel del
+arrastre.
+
+**5. ⚠️ Se reencuadra contra la pantalla de ahora, siempre.** Un marco guardado en un monitor grande
+y restaurado en una laptop nacería **medio fuera de la pantalla, con su barra de título
+inalcanzable**, y no habría forma de recuperarlo: no se puede arrastrar lo que no se puede agarrar.
+Es el caso que rompe un manejo de ventanas casero, y tiene test.
+
+**6. A menos de 768 px no hay ventana que manejar.** El panel ocupa la pantalla. Arrastrar y estirar
+un rectángulo en un teléfono no es una función: es una forma de perderlo detrás del borde.
+
+**7. La geometría entra a la memoria local, y no obliga a versionar la clave.** Es un campo nuevo y
+opcional: lo guardado antes de esta enmienda se sigue leyendo, y un marco corrupto **pierde la
+posición, no el atajo**. Sigue sin guardarse nada que no sea geometría — sólo números y un booleano,
+y hay test que lo comprueba campo por campo.
+
+#### Consecuencias
+
+- `ObjetoAbierto` gana `marco`. `null` ⇒ **nunca se abrió**, y nace en cascada: una ventana nueva en
+  el origen encima de otra es indistinguible de una que el estudiante puso ahí.
+- **Mover una ventana no cuenta como visitarla.** Si contara, arrastrar la de Álgebra la salvaría del
+  desalojo por encima de una que el estudiante realmente estuvo mirando.
+- Los ocho agarres son `aria-hidden`: redimensionar con el teclado **no es una función que exista
+  acá**, y anunciar ocho controles inutilizables sin mouse es peor que no anunciarlos. Expandir,
+  minimizar, cerrar y `Escape` **sí** funcionan sin mouse.
+
+---
+
+<a id="adr-089"></a>
+
+## ADR-089 — `UX01` gana la capa «anticipar», y de dónde salen sus datos
+
+**Estado:** `ACCEPTED` · 10 sep 2026
+**Toca:** `components/screens/hoy-autogestion.tsx`, `lib/domain/view-models.ts`, `app/(student)/hoy/page.tsx`
+**Autoriza:** la excepción de la regla 6 de [`CLAUDE.md`](../CLAUDE.md) para `hoy-autogestion.tsx`.
+
+### Contexto
+
+`UX01` contesta *"¿qué necesito hacer ahora?"* y lo hace bien: `selectHeroLevel` resuelve nueve
+niveles y la pantalla proyecta el que le toca. Lo que **no** contesta es *"¿qué se me viene?"* — y el
+estudiante que abre Hoy no puede ver que tiene un final en doce días sin entrar a otra pantalla.
+
+Las dos preguntas son distintas y **no compiten**: la primera es conducta, la segunda es contexto.
+
+### Decisión
+
+**1. `UX01` gana dos módulos, y ninguno es una CTA primaria.** *Próxima evaluación* con su cuenta
+regresiva, y el **mapa de catorce días** por materia. La Próxima Acción **sigue siendo la única
+conducta primaria**: `I-06` no se toca y el Hero no se mueve de arriba.
+
+**2. Los datos salen de una lectura que ya existe, y se piden aparte.** El mapa se arma con
+`GET /api/materias` —el mismo `MateriasProps` que alimenta el Gantt del período de
+[ADR-078](#adr-078)—, **no con un contrato nuevo**.
+
+⚠️ **Es el precedente de `reparto`, literal:** *"llega calculado desde afuera y por separado, y es
+opcional… quien lo quiera lo pide; quien no, no lo paga"*. `estado_del_dia()` **no se toca**, no hay
+migración y no hay contrato de backend nuevo.
+
+**3. Las reglas del Gantt son las de ADR-078 y ADR-085, sin excepción.** Sin fecha de evaluación **no
+hay ventana** y la fila se dibuja punteada; sin primera clase el inicio **se marca como no sabido**;
+un tema sin sus dos puntas **no se ubica**. El mapa de `UX01` es **la misma ventana, más chica** — no
+una segunda aritmética. Por eso reusa `lib/domain/ventana.ts` y no calcula fechas en el componente.
+
+**4. La composición se adapta al nivel del Hero, y a nada más.** Cuando `selectHeroLevel` devuelve un
+nivel de rescate o incumplimiento, los módulos de contexto **se repliegan**: el estudiante atrasado
+ve menos, no más.
+
+⚠️ **Eso NO es la UI decidiendo.** El nivel llega resuelto por el dominio; la pantalla **lo proyecta
+en el eje de la densidad** en vez de sólo en el del texto. No hay un segundo ranking, no se reordena
+por criterio propio y no se recorta una acción. Si esto alguna vez necesita una regla que el nivel no
+alcance a expresar, **es un ADR nuevo, no un `if` más**.
+
+### Lo que NO entra, y por qué
+
+| Pedido | Por qué no |
+|---|---|
+| **Radar académico** con señales y CTA por señal | `VI.1` §3.3 autoriza al riesgo a *cambiar el estado general* y nada más. Qué severidad se muestra es **`C01-021`, `OPEN`**. Ver [ADR-090](#adr-090) |
+| **Videos / «Para avanzar mejor»** | Es Formación: [ADR-087](#adr-087) está `PROPOSED` con dos decisiones abiertas del owner |
+| **Seguimiento humano** como módulo propio | La `Intervention` existe y **ningún motor la dispara** (`C01-036`, `C01-044`). Hoy `recuperacion` ya dice lo único que se puede sostener |
+| **Cobertura como «preparación»** | [ADR-072](#adr-072): cobertura es actividad, no dominio ni pronóstico |
+
+---
+
+<a id="adr-090"></a>
+
+## ADR-090 — El radar académico de `UX01`
+
+**Estado:** `PROPOSED` — **no se construye**
+**Bloqueado por:** `C01-021` (`OPEN`) · `C01-036` (`OPEN`) · `C01-044` (`OPEN`)
+
+### El problema
+
+Un panel que liste señales de riesgo en `UX01` necesita contestar **qué severidad merece aparecer**,
+y eso es exactamente `C01-021`. Elegir un umbral acá sería *"inventar el umbral por el que a un
+estudiante se le dice que está en problemas"* — la frase está en
+[`proyeccion-hoy.ts`](../lib/server/servicios/proyeccion-hoy.ts), y sigue siendo cierta.
+
+Hay un segundo bloqueo, independiente: cada señal tendría que ofrecer una salida, y las salidas son
+los playbooks, que `C01-044` dejó **sin valores** (*"no se inventan valores"*).
+
+### Lo que hace falta para cerrarlo
+
+1. **`C01-021`** — a partir de qué severidad una señal se le muestra al estudiante en `UX01`.
+2. **`C01-036`** — qué motor produce la señal, y con qué causa.
+3. **`C01-044`** — qué playbook ofrece cada causa.
+
+Las tres las cierra una persona. Mientras tanto, `UX01` sigue mostrando lo único sostenible: el
+estado general cambia a *necesita recuperación* **cuando la señal misma pide una persona**, que no es
+un umbral local.
+
+
+---
+
+<a id="adr-091"></a>
+
+## ADR-091 — La fila del índice es un solo destino, y la miga nombra el objeto
+
+**Estado:** `ACCEPTED` · 10 sep 2026 · pedido del owner el 9 de septiembre, con la pantalla delante.
+
+### El problema
+
+1. **Sólo el botón abría la materia.** La fila se lee entera como accionable y clickearla no hacía
+   nada (`P-05`: el área activa coincide con el área que parece activa).
+2. **El breadcrumb decía «Materia».** La cadena sale del grafo, y el grafo conoce **nodos, no
+   instancias**: `UX02` es «Materia» para las 51.
+
+### La decisión
+
+**1 · La fila entera abre la materia.** El `<li>` recibe el manejador de clic; el botón interior
+conserva el suyo y detiene la propagación para no navegar dos veces. **El botón no desaparece**: es
+el objetivo accesible, el que anuncia la acción y el que alcanza el teclado (`P-07`).
+
+⚠️ **Una sola CTA con tres etiquetas.** *Abrir*, *Completar* y *Agregar examen* son las tres
+`CTA-001` y las tres navegan a esta materia. El registro **no se toca**.
+
+⛔ **Deuda registrada, y es de accesibilidad.** Lo correcto es que la fila sea **un solo destino de
+navegación con `href` real** —el texto de acción adentro del enlace, sin controles anidados—, para
+que el clic del medio, «abrir en pestaña nueva» y el foco funcionen sin escribir nada para ello. Hoy
+el `onClick` del contenedor **le da al mouse una capacidad que el teclado no tiene**: quien navega
+con teclado llega al botón y no a la fila. Es una mejora, no una regresión —el camino accesible
+existe—, y queda en la deuda posterior al MVP.
+
+**2 · `migasDe()` acepta con qué nombrar la última miga.**
+
+```ts
+migasDe(nodo: NodoId, etiquetaFinal?: string | null): Miga[]
+```
+
+- ⚠️ **Sólo reemplaza la última.** Las anteriores son nodos del grafo; cambiarlas rompería el camino
+  de vuelta.
+- ⚠️ **Vacío o ausente no borra**, deja la etiqueta del nodo. Una miga sin texto sería un hueco donde
+  el usuario pierde dónde está mientras carga.
+
+**3 · El nombre viaja por contexto.** `ProveedorDeMigaDelObjeto` + `useMigaDelObjeto`. El Shell no
+puede leerlo solo: el nombre llega en la respuesta de la API, que se pide **adentro** del árbol que
+el Shell envuelve. ⚠️ **Sin proveedor montado el hook es inerte**, no explota: `/login` y el alta no
+montan el Shell.
+
+### Lo que este ADR NO hace
+
+- **No agrega superficies ni nodos.** Nueve superficies, once rutas.
+- **No agrega CTAs.** El registro sigue en 20.
+- **No toca el grafo, el árbol de padres ni las rutas.**
+- **No reemplaza el breadcrumb.** [ADR-019](#adr-019) §2 sigue vigente.
+- **No toca autenticación.** El arreglo del login viaja aparte, con su propia prueba.
+
+### Cómo se verifica
+
+`tests/indice-clickeable.test.tsx` — la fila abre desde cualquier parte y el botón sigue anunciando
+la acción; sin manejador la fila no promete nada; la última miga dice la materia; las anteriores
+conservan su enlace; en blanco vuelve a la etiqueta del nodo; las superficies que no abren un objeto
+no se tocan.

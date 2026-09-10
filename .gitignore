@@ -28,3 +28,10 @@ next-env.d.ts
 .DS_Store
 npm-debug.log*
 .gstack/
+
+# Configuración de sesión de Claude Code. **No es producto**: los permisos que
+# habilita valen para la máquina de quien los aprobó, no para el repositorio.
+# ⚠️ Angosto a propósito: si mañana el proyecto quiere versionar skills, comandos
+# o agentes compartidos bajo `.claude/`, pueden entrar sin tocar esto.
+.claude/settings.json
+.claude/settings.local.json

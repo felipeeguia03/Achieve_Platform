@@ -39,6 +39,15 @@ export const menu: readonly ItemDeMenu[] = [
   // no al cursado de una sola materia. Cierra la opción `A` de ADR-054.
   { nodo: "UX02_INDICE", etiqueta: "Materias", contador: null },
   { nodo: "UX06", etiqueta: "Progreso", contador: null },
+  // ADR-087 `D1`. Va **después** del cursado y antes de Modo Examen: es apoyo
+  // de método, no el trabajo del día.
+  //
+  // ⚠️ **`contador: null`, y no es que falte el dato.** `D1` la declaró
+  // *opcional y no obligatoria*, y ADR-021 fijó que el único badge posible es
+  // el del trabajo que **caduca**. En Formación no vence nada: un número acá
+  // sería una urgencia inventada sobre algo que el estudiante puede no abrir
+  // nunca sin consecuencia.
+  { nodo: "FORMACION", etiqueta: "Formación", contador: null },
   { nodo: "UX07", etiqueta: "Modo Examen", contador: null },
 ] as const;
 

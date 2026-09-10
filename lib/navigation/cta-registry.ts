@@ -435,6 +435,10 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     fallback: { nodo: "UX02", descripcion: "permanecer en la materia" },
     estadoError: "mostrar Modo Examen no disponible; no presumir preparación",
     escenarios: ["SC-EX-01"],
+    // ADR-054, opción `B`, por tercera vez: `UX07` elige entre los `Assessment`
+    // **de esta cursada**, así que necesita saber cuál. Es el mismo objeto y el
+    // mismo nombre que en `CTA-001` y `CTA-009`.
+    parametro: { nombre: "cursada", que: "el CourseEnrollment cuyos exámenes se ofrecen" },
     aparece: (c) => c.assessmentElegible,
     habilitada: () => true,
   },
@@ -484,6 +488,18 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     aparece: (c) => c.courseVisible,
     habilitada: siempre,
   },
+
+  /*
+    ⚠️ **`CTA-021` NO está acá, y es una decisión** — ADR-087 Enmienda 2.
+
+    La biblioteca de Formación entró como **V1 de solo lectura**: no crea
+    `Action`, no pide cursada y no muestra botón. Registrar la CTA ahora
+    declararía un `resultadoAutoritativo` —*"Action creada sobre el
+    CourseEnrollment elegido"*— que **ningún camino del código cumple**, y un
+    contrato incumplido no se repara documentando que no se cumple.
+
+    Vuelve con la vertical de aplicación (V2), **junto con su escritura**.
+  */
 } as const;
 
 export const ctaIds = Object.keys(ctaRegistry) as CtaId[];

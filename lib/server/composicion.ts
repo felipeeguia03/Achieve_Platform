@@ -84,6 +84,8 @@ import { recomendarPara as recomendarPuro, type ResultadoDelMotor } from "./serv
 import { proyectarDia } from "./servicios/proyeccion-hoy";
 import { proyectarReparto } from "./servicios/proyeccion-reparto";
 import { proyectarMaterias } from "./servicios/proyeccion-materias";
+import { proyectarFormacion } from "./servicios/proyeccion-formacion";
+import { formacionReal } from "./repositorios/formacion";
 import { repartoReal } from "./repositorios/reparto";
 import { proyectarMateria } from "./servicios/proyeccion-materia";
 import { proyectarAccion } from "./servicios/proyeccion-accion";
@@ -157,6 +159,7 @@ import type {
   EvidenciaProps,
   HoyProps,
   MateriaProps,
+  FormacionProps,
   MateriasProps,
   ProgresoProps,
   ProximaAccionProps,
@@ -1162,6 +1165,20 @@ export async function avanzarLoopDePrueba(
  * divergir y entonces la barra del índice contradiría al reparto sobre la misma
  * materia.
  */
+/**
+ * La biblioteca de Formación — [ADR-087](../../docs/decisions.md#adr-087).
+ *
+ * ⚠️ **No recibe `ahora` ni zona horaria, y no es un olvido.** Nada de acá
+ * caduca: `D1` la declaró opcional y no obligatoria, y ADR-021 dejó el badge
+ * sólo para lo que vence. Una pieza de método no tiene fecha.
+ */
+export async function formacionDe(
+  institutionId: string,
+  studentId: string,
+): Promise<FormacionProps> {
+  return proyectarFormacion(await formacionReal.biblioteca(institutionId, studentId));
+}
+
 export async function materiasDe(
   institutionId: string,
   studentId: string,

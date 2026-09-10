@@ -163,8 +163,16 @@ export function IndiceDeMaterias({
 function Fila({ m, onAbrir }: { m: MateriaEnIndice; onAbrir?: (id: string) => void }) {
   const color = colorDeMateria(m.cursadaId);
 
+  // La fila entera abre la materia · pedido del owner, 9 sep 2026.
+  //
+  // ⚠️ **El botón de la derecha NO se saca, y el `li` NO es un `button`.** Un
+  // `button` dentro de otro es HTML inválido, y mover el control al `li` dejaría
+  // la fila sin nada enfocable: quien navega con teclado perdería el acceso. El
+  // `li` agrega el clic de mouse **encima** del control, que sigue siendo el
+  // camino visible (`P-07`).
   return (
     <li
+      onClick={onAbrir ? () => onAbrir(m.cursadaId) : undefined}
       style={{
         display: "flex",
         alignItems: "center",
@@ -174,6 +182,7 @@ function Fila({ m, onAbrir }: { m: MateriaEnIndice; onAbrir?: (id: string) => vo
         border: "1px solid var(--border)",
         borderLeft: `4px solid ${color}`,
         background: "var(--card)",
+        cursor: onAbrir ? "pointer" : "default",
       }}
     >
       <div style={{ flex: "1 1 240px", minWidth: 0 }}>
@@ -265,7 +274,16 @@ function Fila({ m, onAbrir }: { m: MateriaEnIndice; onAbrir?: (id: string) => vo
       */}
       <button
         type="button"
-        onClick={onAbrir ? () => onAbrir(m.cursadaId) : undefined}
+        // `stopPropagation` porque el `li` ya abre: sin esto el clic sobre el
+        // botón navegaría dos veces.
+        onClick={
+          onAbrir
+            ? (e) => {
+                e.stopPropagation();
+                onAbrir(m.cursadaId);
+              }
+            : undefined
+        }
         style={{
           flex: "0 0 auto",
           padding: "8px 16px",
@@ -316,14 +334,23 @@ function FilaDelGantt({
   const color = colorDeMateria(m.cursadaId);
   const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
 
+  // La fila entera abre la materia · pedido del owner, 9 sep 2026.
+  //
+  // ⚠️ **El botón de la derecha NO se saca, y el `li` NO es un `button`.** Un
+  // `button` dentro de otro es HTML inválido, y mover el control al `li` dejaría
+  // la fila sin nada enfocable: quien navega con teclado perdería el acceso. El
+  // `li` agrega el clic de mouse **encima** del control, que sigue siendo el
+  // camino visible (`P-07`).
   return (
     <li
+      onClick={onAbrir ? () => onAbrir(m.cursadaId) : undefined}
       style={{
         display: "flex",
         alignItems: "center",
         gap: 20,
         padding: "16px 4px",
         borderBottom: "1px solid var(--border)",
+        cursor: onAbrir ? "pointer" : "default",
       }}
     >
       <div style={{ flex: "0 0 250px", minWidth: 0 }}>
@@ -474,7 +501,16 @@ function FilaDelGantt({
 
       <button
         type="button"
-        onClick={onAbrir ? () => onAbrir(m.cursadaId) : undefined}
+        // `stopPropagation` porque el `li` ya abre: sin esto el clic sobre el
+        // botón navegaría dos veces.
+        onClick={
+          onAbrir
+            ? (e) => {
+                e.stopPropagation();
+                onAbrir(m.cursadaId);
+              }
+            : undefined
+        }
         style={{
           flex: "0 0 auto",
           padding: "8px 16px",

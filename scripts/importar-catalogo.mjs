@@ -40,6 +40,34 @@ const SE_PUBLICAN = {
   "SYN-U/SYN-ING-A/SYN-2016": "dataset sintético de autoría propia; no representa a ninguna institución real",
   "SYN-U/SYN-ING-B/SYN-2021": "dataset sintético de autoría propia; carrera sucesora, no se mezcla con SYN-2016",
   "SYN-I2/SYN2-ING/SYN2-2020": "dataset sintético de autoría propia; segunda institución para verificar aislamiento",
+  "UCC/08/2016":
+    "decisión del owner del 9 de septiembre de 2026 (ADR-086) para que el estudiante " +
+    "pueda inscribirse solo en el MVP; el plan sigue sin dictamen legal de ADR-006",
+};
+
+/**
+ * Los planes cuyos requisitos el owner dio por revisados · ADR-086.
+ *
+ * ⚠️ **Esto levanta `needs_review`, y `needs_review` significa algo.** Los 57
+ * requisitos del Plan 2016 entraron marcados porque el CSV administrativo trae
+ * diez nombres cortados y un `SEMINARIO` que ni siquiera se sabe si es materia o
+ * cupo. `publicar_plan_de_estudios()` los rechaza a propósito
+ * ([ADR-053](../docs/decisions.md#adr-053)), con la regla *"puesta donde no se
+ * pueda saltear"*.
+ *
+ * **No se saltea: se declara quién revisó y con qué alcance.** El owner decidió
+ * habilitarlo para poder probar el MVP, y eso **no es lo mismo** que haber
+ * auditado el plan contra la resolución de la facultad. La diferencia queda
+ * escrita acá y en el motivo de publicación, que va al `audit_log`.
+ *
+ * ⚠️ **Los nombres cortados siguen cortados.** `label_truncated` no se toca:
+ * levantar la marca de revisión no arregla el dato, y fingir que sí sería peor
+ * que la marca.
+ */
+const REVISADOS_POR_EL_OWNER = {
+  "UCC/08/2016":
+    "el owner los da por revisados para habilitar el alta del MVP; no es una " +
+    "auditoría del plan contra la resolución de la facultad",
 };
 
 const COLUMNAS = [
@@ -244,6 +272,21 @@ for (const archivo of archivos) {
     const [{ plan_id: planId, requisitos: n, materias: m, opciones: o }] = data;
     planesTotales++;
     requisitosTotales += n;
+
+    // La revisión va **antes** de publicar y sólo para los planes que la
+    // declaran: `publicar_plan_de_estudios()` cuenta los `needs_review` y
+    // rechaza si queda alguno.
+    const revision = REVISADOS_POR_EL_OWNER[clave];
+    if (revision) {
+      const { error: falloRevision } = await admin
+        .from("curriculum_requirement")
+        .update({ needs_review: false })
+        .eq("curriculum_plan_id", planId);
+      if (falloRevision) {
+        console.error(`✗ ${clave}: no se pudo registrar la revisión — ${falloRevision.message}`);
+        process.exit(1);
+      }
+    }
 
     const motivo = SE_PUBLICAN[clave];
     let estado = "DRAFT";

@@ -21,6 +21,7 @@ const padre: Partial<Record<NodoId, NodoId>> = {
   // pidió el owner —*"primero una pantalla con todas las materias y luego podés
   // entrar a cada una"*— y la miga lo dice: `Hoy › Materias › Materia`.
   UX02_INDICE: "UX01",
+  FORMACION: "UX01",
   UX02: "UX02_INDICE",
   UX03: "UX01",
   UX04: "UX03",
@@ -34,6 +35,7 @@ const padre: Partial<Record<NodoId, NodoId>> = {
 const ETIQUETAS: Partial<Record<NodoId, string>> = {
   UX01: "Hoy",
   UX02_INDICE: "Materias",
+  FORMACION: "Formación",
   UX02: "Materia",
   UX03: "Próxima acción",
   UX04: "Compromiso",
@@ -44,7 +46,20 @@ const ETIQUETAS: Partial<Record<NodoId, string>> = {
   UX09: "Paso",
 };
 
-export function migasDe(nodo: NodoId): Miga[] {
+/**
+ * @param etiquetaFinal Con qué nombrar la **última** miga. Sirve para que una
+ *   superficie que abre *un* objeto lo diga: `Hoy › Materias › Emprendedorismo`
+ *   en vez de `… › Materia`.
+ *
+ *   ⚠️ **Sólo reemplaza la última.** Las anteriores son nodos del grafo y su
+ *   etiqueta es del nodo, no de lo que uno esté mirando: cambiarlas rompería el
+ *   camino de vuelta.
+ *
+ *   ⚠️ **Vacío o ausente no borra la etiqueta**, la deja como estaba. Una miga
+ *   sin texto no sería una miga: sería un hueco donde el usuario perdería dónde
+ *   está mientras la pantalla carga.
+ */
+export function migasDe(nodo: NodoId, etiquetaFinal?: string | null): Miga[] {
   const cadena: NodoId[] = [];
   let actual: NodoId | undefined = nodo;
   // Se sube por la cadena de padres. El `while` termina porque `padre` es un
@@ -53,10 +68,14 @@ export function migasDe(nodo: NodoId): Miga[] {
     cadena.unshift(actual);
     actual = padre[actual];
   }
-  return cadena.map((id, i) => ({
-    etiqueta: ETIQUETAS[id] ?? id,
-    href: i === cadena.length - 1 ? null : nodos[id].ruta,
-  }));
+  const propio = (etiquetaFinal ?? "").trim();
+  return cadena.map((id, i) => {
+    const ultima = i === cadena.length - 1;
+    return {
+      etiqueta: ultima && propio ? propio : (ETIQUETAS[id] ?? id),
+      href: ultima ? null : nodos[id].ruta,
+    };
+  });
 }
 
 export { padre as padreDeMiga };

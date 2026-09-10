@@ -191,6 +191,111 @@ q "insert into course_enrollment (id,institution_id,student_id,offering_id)
      from curriculum_requirement cr
     where cr.curriculum_plan_id='$PLAN' and cr.label='Física Sintética';" >/dev/null
 
+# ── Tres materias más, con temario completo · ADR-085 ────────────────────────
+#
+# **El MVP no se prueba con una materia.** El índice, el reparto y el Gantt por
+# tema deciden cosas que con una sola cursada no se ven: el orden por evaluación
+# más próxima, el reparto de un presupuesto entre varias, y un eje con temas de
+# distintas materias cayendo en semanas distintas.
+#
+# ⚠️ **Los temarios son SINTÉTICOS y están inventados acá.** No salen de ningún
+# programa real: `docs/temas/` son 113 documentos institucionales reales —uno de
+# ellos un analítico con nombre, DNI y domicilio— y ADR-006 sigue en
+# `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`, que es bloqueo absoluto **sin
+# excepciones ni «una prueba chica»**.
+#
+# ⚠️ **Álgebra y Física NO se tocan.** Sus vacíos son deliberados —una sin
+# clases, otra sin evaluación— y son los dos estados difíciles del índice.
+echo "→ Tres materias más, con temario completo (para probar el MVP en serio)"
+
+# Una materia entera, de punta a punta: ingesta, cursada, declaración y material.
+# Existe como función porque tres copias del mismo bloque divergen en el primer
+# arreglo, y ya pasó con los recursos.
+materia_completa() {
+  local id="$1" etiqueta="$2" unidades="$3" clases="$4" evals="$5" horario="$6" carga="$7"
+  local code off
+  code=$(q "select code from curriculum_requirement
+             where curriculum_plan_id='$PLAN' and label='$etiqueta';" | tr -d '[:space:]')
+  if [ -z "$code" ]; then echo "   ✗ '$etiqueta' no está en el plan"; return 1; fi
+
+  off=$(q "select cursada_id from public.ingerir_materia('$INST','public_web',
+             'https://syn.example/programa-sintetico.pdf',now(),0.7,'$code','$etiqueta','2026-2',NULL,
+             '$unidades'::jsonb,'[]'::jsonb,'$evals'::jsonb,'$PLAN','$clases'::jsonb,$carga,'carga declarada',
+             p_horarios => '$horario'::jsonb);" | tr -d '[:space:]')
+
+  # ⚠️ **La primera versión de esta función mentía.** `q` manda los errores a
+  # `/dev/null`, así que una ingesta rechazada devolvía el texto del error y el
+  # `echo ✓` se imprimía igual: dos materias quedaron sin crear y el script dijo
+  # que estaban. Ahora se comprueba que volvió un uuid.
+  if ! printf '%s' "$off" | grep -Eq '^[0-9a-f-]{36}$'; then
+    echo "   ✗ '$etiqueta' — la ingesta no devolvió una cursada: $off"; return 1
+  fi
+
+  q "insert into course_enrollment (id,institution_id,student_id,offering_id)
+       values ('$id','$INST','$EST','$off');
+     insert into requirement_declaration (institution_id,student_id,curriculum_requirement_id,course_enrollment_id)
+     select '$INST','$EST', cr.id, '$id' from curriculum_requirement cr
+      where cr.curriculum_plan_id='$PLAN' and cr.label='$etiqueta';" >/dev/null
+
+  # ⚠️ **Sin recurso el ADE contesta `CONTEXTO_INCOMPLETO`** y la materia no se
+  # puede recorrer. Lo destapó el andamio de ADR-079: `ingerir_materia` no crea
+  # material, y nadie lo notaba porque sólo Cálculo lo tenía.
+  q "delete from resource where offering_id='$off';
+     insert into resource (offering_id,topic_id,resource_type,title,source_type,rights_status)
+     select '$off', t.id, 'apunte', 'Guía de ' || t.name, 'instructor', 'unknown'
+       from topic t where t.offering_id='$off';" >/dev/null
+
+  # El alcance de la evaluación se **declara**: no se infiere que cubre todo.
+  q "insert into assessment_topic (assessment_id, topic_id)
+     select a.id, t.id from assessment a, topic t
+      where a.offering_id='$off' and t.offering_id='$off'
+        and t.sequence <= 3
+     on conflict do nothing;" >/dev/null
+
+  echo "   ✓ $etiqueta"
+}
+
+# Bases de Datos — evaluación a +10 días, cursa martes y viernes.
+U4='[{"codigo":"T1","nombre":"Modelo relacional","orden":1},
+     {"codigo":"T2","nombre":"Álgebra relacional","orden":2},
+     {"codigo":"T3","nombre":"SQL y consultas","orden":3},
+     {"codigo":"T4","nombre":"Normalización","orden":4},
+     {"codigo":"T5","nombre":"Índices y planes","orden":5},
+     {"codigo":"T6","nombre":"Transacciones","orden":6}]'
+CL4='[{"fecha":"2026-08-11","hora":"08:00","minutos":120,"corrida":"teorico","temas":["Modelo relacional"]},
+      {"fecha":"2026-08-18","hora":"08:00","minutos":120,"corrida":"teorico","temas":["Álgebra relacional"]},
+      {"fecha":"2026-08-25","hora":"08:00","minutos":120,"corrida":"practico","temas":["SQL y consultas"]},
+      {"fecha":"2026-09-01","hora":"08:00","minutos":120,"corrida":"practico","temas":["SQL y consultas","Normalización"]},
+      {"fecha":"2026-09-08","hora":"08:00","minutos":120,"corrida":"teorico","temas":["Índices y planes"]}]'
+E4='[{"tipo":"parcial","titulo":"Parcial 2","fecha":"2026-09-19","modalidad":"teorico_escrito"}]'
+H4='[{"dia":2,"desde":"08:00","hasta":"10:00"},{"dia":5,"desde":"08:00","hasta":"10:00"}]'
+materia_completa 'a6000000-0000-0000-0000-000000000004' 'Bases de Datos' "$U4" "$CL4" "$E4" "$H4" 4200
+
+# Inteligencia Artificial — la evaluación más lejana: **estira el eje**.
+U5='[{"codigo":"T1","nombre":"Regresión lineal","orden":1},
+     {"codigo":"T2","nombre":"Clasificación","orden":2},
+     {"codigo":"T3","nombre":"Validación cruzada","orden":3},
+     {"codigo":"T4","nombre":"Árboles y ensambles","orden":4},
+     {"codigo":"T5","nombre":"Redes neuronales","orden":5}]'
+CL5='[{"fecha":"2026-08-27","hora":"16:00","minutos":180,"corrida":"teorico","temas":["Regresión lineal"]},
+      {"fecha":"2026-09-03","hora":"16:00","minutos":180,"corrida":"teorico","temas":["Clasificación"]}]'
+E5='[{"tipo":"final","titulo":"Final","fecha":"2026-10-14","modalidad":"oral"}]'
+H5='[{"dia":4,"desde":"16:00","hasta":"19:00"}]'
+materia_completa 'a6000000-0000-0000-0000-000000000005' 'Inteligencia Artificial' "$U5" "$CL5" "$E5" "$H5" 3600
+
+# Arquitectura de Software — la evaluación **más próxima**: encabeza el índice.
+U6='[{"codigo":"T1","nombre":"Estilos arquitectónicos","orden":1},
+     {"codigo":"T2","nombre":"Atributos de calidad","orden":2},
+     {"codigo":"T3","nombre":"Patrones de integración","orden":3},
+     {"codigo":"T4","nombre":"Documentación de vistas","orden":4}]'
+CL6='[{"fecha":"2026-08-12","hora":"20:00","minutos":120,"corrida":"teorico","temas":["Estilos arquitectónicos"]},
+      {"fecha":"2026-08-19","hora":"20:00","minutos":120,"corrida":"teorico","temas":["Atributos de calidad"]},
+      {"fecha":"2026-08-26","hora":"20:00","minutos":120,"corrida":"practico","temas":["Patrones de integración"]},
+      {"fecha":"2026-09-02","hora":"20:00","minutos":120,"corrida":"practico","temas":["Documentación de vistas"]}]'
+E6='[{"tipo":"parcial","titulo":"Parcial 1","fecha":"2026-09-11","modalidad":"teorico_escrito"}]'
+H6='[{"dia":3,"desde":"20:00","hasta":"22:00"}]'
+materia_completa 'a6000000-0000-0000-0000-000000000006' 'Arquitectura de Software' "$U6" "$CL6" "$E6" "$H6" 2400
+
 echo "→ Material por unidad (sin recurso no hay acción ejecutable)"
 # ⚠️ **Se borra lo de esta cursada antes de insertar.** `ingerir_materia()` es
 # reemplazo por cursada para unidades y evaluaciones, pero los recursos los

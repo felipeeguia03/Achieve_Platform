@@ -1,5 +1,6 @@
 import { selectHeroLevel, type HeroInput } from "@/lib/domain/precedence";
 import { minutosPorTema, type SesionDeClase, type TipoDeClase } from "@/lib/domain/duracion";
+import { ejeDelPeriodo, marcasDelEje, posicionEnEje } from "@/lib/domain/ventana";
 import {
   coberturaDeMateria,
   porcentajeDeHoras,
@@ -51,6 +52,16 @@ export interface UnidadPersistida {
   codigo: string | null;
   nombre: string;
   ultimoAvanceEn: string | null;
+  /**
+   * Las dos puntas que ubican al tema en el calendario —
+   * [ADR-085](../../../docs/decisions.md#adr-085). **Son hechos**: la primera
+   * clase que lo dictó (`class_session_topic`) y la evaluación que declara
+   * cubrirlo (`assessment_topic`). `null` ⇒ el dato no existe, y el tema **no
+   * se ubica en el eje**.
+   */
+  primeraClaseEn: string | null;
+  ultimaClaseEn: string | null;
+  evaluaEn: string | null;
   dominio: EstadoDimension;
   practica: EstadoDimension;
   recorrido: EstadoDimension;
@@ -104,6 +115,8 @@ export interface EstadoDeMateria {
   instante: string;
   zona: string;
   cursadaId: string;
+  /** Cuántas entregas lleva la cursada. **Un conteo de hechos**, no una medida. */
+  evidenciasEnviadas: number;
   /**
    * El horario semanal de cursado — [ADR-063](../../../docs/decisions.md#adr-063).
    *
@@ -113,7 +126,14 @@ export interface EstadoDeMateria {
    */
   horario: readonly BloqueDeCursado[];
   materia: string;
-  examen: { titulo: string; fechaEn: string | null } | null;
+  examen: {
+    titulo: string;
+    fechaEn: string | null;
+    /** Como los declaró la fuente. `null` **no se completa**: una evaluación
+     * sin modalidad declarada no es «escrita por defecto». */
+    tipo: string | null;
+    modalidad: string | null;
+  } | null;
   accion: {
     status: string;
     objetivo: string;
@@ -129,6 +149,18 @@ export interface EstadoDeMateria {
   rescatePendiente: boolean;
   evidencia: "NONE" | "ENVIADA" | "VALIDADA";
   contextoIncompleto: boolean;
+  /**
+   * Qué parte del contenido la declaró la cátedra · ADR-086.
+   *
+   * `"estimado"` — lo generó Achieve entero, unidades incluidas.
+   * `"calendario_estimado"` — las unidades salieron del programa oficial; las
+   * fechas y los pesos los puso Achieve.
+   * `null` — no hay nada que advertir.
+   *
+   * ⚠️ **`null` no significa «verificado»**, significa que ninguna fila dice
+   * `inference`. La verificación es otra pregunta y otra columna.
+   */
+  contenido: "estimado" | "calendario_estimado" | null;
   ultimoAvanceEn: string | null;
   unidades: UnidadPersistida[];
   /** Los insumos de la duración. La función de base **no** reparte (ADR-068). */
@@ -214,21 +246,6 @@ function dimensionesDe(e: EstadoDeMateria): FilaDato[] {
   return filas;
 }
 
-/**
- * Las unidades declaradas. **El orden es el declarado, no uno inferido**: que la
- * Unidad 2 vaya después de la 1 no dice que la necesite (misma regla que la
- * ingesta del ADL).
- */
-function unidadesDe(e: EstadoDeMateria): FilaDato[] {
-  return e.unidades.map((u) => {
-    const label = u.codigo ?? u.nombre;
-    if (u.ultimoAvanceEn) {
-      return { label, valor: haceCuanto(u.ultimoAvanceEn, e.instante, e.zona) };
-    }
-    // Sin registro no es "cero actividad": es que nadie anotó nada.
-    return { label, valor: t("COMUN.SIN_AVANCE"), ausencia: "SIN_ASIGNAR" as const };
-  });
-}
 
 /**
  * `CLASES DE LA SEMANA` — [ADR-063](../../../docs/decisions.md#adr-063), con la
@@ -304,14 +321,26 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     materia: e.materia,
     // Una evaluación sin fecha conserva su título: la fecha desconocida no se
     // estima, y el título sigue siendo un hecho.
-    examen: e.examen
-      ? e.examen.fechaEn
-        // `assessment_date` es un `DATE`, no un instante: se formatea sin zona.
-        // Con `fechaCorta` mostraba el día anterior en cualquier zona al oeste
-        // de UTC — un Parcial del 15 aparecía como del 14.
-        ? `${e.examen.titulo} · ${fechaDeCalendario(e.examen.fechaEn)}`
-        : e.examen.titulo
+    //
+    // `assessment_date` es un `DATE`, no un instante: se formatea sin zona. Con
+    // `fechaCorta` mostraba el día anterior en cualquier zona al oeste de UTC —
+    // un Parcial del 15 aparecía como del 14.
+    evaluacion: e.examen
+      ? {
+          titulo: e.examen.fechaEn
+            ? `${e.examen.titulo} · ${fechaDeCalendario(e.examen.fechaEn)}`
+            : e.examen.titulo,
+          detalle: detalleDeEvaluacion(e),
+        }
       : null,
+    /*
+      `CTA-019` — la entrada manual a Modo Examen desde la materia (ADR-016).
+
+      Aparece **sólo si hay una evaluación registrada**: sin `Assessment` no hay
+      qué activar, y ofrecerlo llevaría a una pantalla que dice que no hay nada.
+      Es la condición de aparición del registro canónico, no una invención.
+    */
+    modoExamen: e.examen ? t("MATERIA.MODO_EXAMEN") : null,
     // Sin Risk Engine no hay estado de materia. Ver `MateriaProps.chip`.
     chip: null,
     ultimoAvance: e.ultimoAvanceEn
@@ -333,7 +362,6 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     // columnas no se pueden rotular con su provenance, y `P-08` exige que la
     // lleven. Se omite entera antes que mostrarla sin fuente.
     catedraYVos: null,
-    unidades: unidadesDe(e),
     // ⚠️ **Sin unidades no hay Gantt, y no se dibuja uno vacío.** El mensaje de
     // esa ausencia ya lo da el hero con `CONTEXTO_INCOMPLETO`; repetirlo abajo
     // con una barra en blanco diría dos veces lo mismo y una de las dos parecería
@@ -351,11 +379,21 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     // entradas visibles acá, `UX06` tampoco tiene ninguna. Ver `verRegistro`.
     verRegistro: actividad ? t("CTA.VER_AVANCE") : null,
     // El aviso explica una ausencia; no la disfraza.
+    //
+    // ⚠️ **La procedencia del contenido va primero** · ADR-086. Un temario que
+    // inventó el sistema, mostrado sin decirlo, es `A-01` —*dato roto
+    // presentado como transparencia*—: el estudiante planifica su cursada sobre
+    // unidades que su cátedra nunca publicó. Es peor que cualquiera de las
+    // ausencias de abajo, así que gana el lugar.
     aviso: e.contextoIncompleto
       ? null // el hero ya lo dice: no se repite el mismo hecho dos veces
-      : dimensiones.length > 0 && dimensiones.every((f) => f.ausencia)
-        ? t("MATERIA.SIN_SEMANTICA")
-        : null,
+      : e.contenido === "estimado"
+        ? t("MATERIA.CONTENIDO_ESTIMADO")
+        : e.contenido === "calendario_estimado"
+          ? t("MATERIA.CALENDARIO_ESTIMADO")
+          : dimensiones.length > 0 && dimensiones.every((f) => f.ausencia)
+            ? t("MATERIA.SIN_SEMANTICA")
+            : null,
     // La captura de clase escribe en `class_event_record`: misma razón que
     // `catedraYVos`. No se ofrece una acción cuyo contrato no está cerrado.
     capturaDeClase: null,
@@ -491,9 +529,53 @@ export function ganttDeMateria(e: EstadoDeMateria): GanttDeMateria {
   };
 }
 
+/**
+ * El estado de una unidad, en copy — [ADR-085](../../../docs/decisions.md#adr-085).
+ *
+ * ⚠️ **Describe actividad, no conocimiento.** El mockup del owner rotulaba esta
+ * columna `Sin empezar · Leído · Practicado · Dominado`, con la leyenda *"el
+ * relleno de cada barra es **el nivel** del tema"*. Dos de esas palabras están
+ * prohibidas:
+ *
+ *   - **`Dominado`** es la primera prohibición de
+ *     [ADR-072](../../../docs/decisions.md#adr-072) —*el dominio requiere
+ *     evaluación*—, el corte que sostiene toda la cadena
+ *     `preparar ≠ enviar ≠ suficiencia ≠ validación ≠ dominio`;
+ *   - **`nivel`** lo prohíbe [ADR-075](../../../docs/decisions.md#adr-075) §C1,
+ *     textual: *"su rótulo visible debe ser `actividad registrada`, no
+ *     `dominio`, `nivel`, `rendimiento` ni `avance de aprendizaje`"*.
+ *
+ * Y hay una razón más honda: **la escala del mockup es la dimensión Confianza**,
+ * que el estudiante autodeclara y que **todavía no tiene escritor**. Lo que sí
+ * es un hecho es el estado de la evidencia, y es lo que se muestra.
+ */
+const ETIQUETA_DE_UNIDAD: Record<GanttProjection["unidades"][number]["estado"], string> = {
+  sin_evidencia: "UNIDAD.SIN_REGISTRO",
+  enviada: "UNIDAD.ENVIADA",
+  requiere_revision: "UNIDAD.REVISION",
+  criterio_alcanzado: "UNIDAD.CRITERIO",
+};
+
 /** El Gantt, tal como lo consume la pantalla. */
 function aGantt(e: EstadoDeMateria): GanttProjection {
   const g = ganttDeMateria(e);
+
+  const hoy = fechaDeHoy(e.instante, e.zona);
+  /*
+    El eje se arma con **las evaluaciones que los temas declaran**, no con la
+    de la materia: es lo que decide hasta dónde se estira. Una evaluación fuera
+    de cuadro es peor que un eje largo (ADR-078).
+  */
+  const eje = ejeDelPeriodo(
+    hoy,
+    // Se filtra por verdad, no por `!== null`: una clave ausente llega como
+    // `undefined` y `Date.parse(undefined)` no falla — devuelve `NaN`, y el eje
+    // se arma alrededor de una fecha inválida sin que nadie se entere.
+    e.unidades.map((u) => u.evaluaEn).filter((f): f is string => Boolean(f)),
+  );
+
+  const porId = new Map(e.unidades.map((u) => [u.id, u]));
+
   return {
     barra: g.barra,
     pie: g.pie,
@@ -503,10 +585,76 @@ function aGantt(e: EstadoDeMateria): GanttProjection {
     // duplicaría la decisión en dos lugares.
     enRevision: g.enRevision,
     criterioAlcanzado: g.criterioAlcanzado,
-    unidades: g.unidades.map((u) => ({
-      nombre: u.nombre,
-      minutos: u.minutos,
-      estado: u.estado,
-    })),
+    eje: marcasDelEje(hoy, eje),
+    unidades: g.unidades.map((u) => {
+      const p = porId.get(u.id);
+      /*
+        ── Dónde va la barra · ADR-085 ─────────────────────────────────────────
+
+        **Las dos puntas son hechos y ninguna se estima.** Empieza cuando el
+        tema se dictó por primera vez; termina en la evaluación que declara
+        cubrirlo, o en la última clase que lo dictó si no hay evaluación.
+
+        ⚠️ **Sin primera clase no hay barra.** Un tema que todavía no se dictó no
+        se ubica: colocarlo en «+7 días» porque es el séptimo de la lista sería
+        inventar un plan de estudio que nadie hizo y presentarlo como si la
+        cátedra lo hubiera dictado.
+      */
+      const inicio = p?.primeraClaseEn ?? null;
+      const fin = p?.evaluaEn ?? p?.ultimaClaseEn ?? null;
+
+      return {
+        codigo: p?.codigo ?? null,
+        nombre: u.nombre,
+        minutos: u.minutos,
+        estado: u.estado,
+        etiqueta: t(ETIQUETA_DE_UNIDAD[u.estado] as Parameters<typeof t>[0]),
+        desde: inicio ? posicionEnEje(inicio, eje) : null,
+        hasta: inicio ? posicionEnEje(fin ?? inicio, eje) : null,
+        nota: inicio ? null : t("UNIDAD.SIN_DICTAR"),
+      };
+    }),
   };
+}
+
+/**
+ * *"6 días · práctico · 2 evidencias enviadas"* — la segunda línea de la
+ * tarjeta de evaluación.
+ *
+ * **Cada parte se omite si su dato falta**, y nada se completa: una evaluación
+ * sin modalidad declarada no es «escrita por defecto», y sin fecha no se cuentan
+ * días contra una fecha que no existe. `null` ⇒ no hay ninguna parte que decir.
+ */
+function detalleDeEvaluacion(e: EstadoDeMateria): string | null {
+  const partes: string[] = [];
+
+  if (e.examen?.fechaEn) {
+    const dias = diasHasta(e.examen.fechaEn, e.instante, e.zona);
+    // Una evaluación pasada no dice «−3 días»: no se muestra la cuenta.
+    if (dias >= 0) partes.push(dias === 1 ? "1 día" : `${dias} días`);
+  }
+  // El enum crudo nunca es copy visible (AGENTS.md §2.6), pero éstos son
+  // palabras del oficio que la cátedra declaró —`practico`, `escrito`— y viajan
+  // como las declaró. Traducirlas sería reescribir lo que dijo la fuente.
+  if (e.examen?.modalidad) partes.push(e.examen.modalidad);
+  if (e.evidenciasEnviadas > 0) {
+    partes.push(
+      e.evidenciasEnviadas === 1 ? "1 evidencia enviada" : `${e.evidenciasEnviadas} evidencias enviadas`,
+    );
+  }
+
+  return partes.length > 0 ? partes.join(" · ") : null;
+}
+
+/** Días entre hoy —el del estudiante— y una fecha de calendario. */
+function diasHasta(fecha: string, instante: string, zona: string): number {
+  const hoy = fechaDeHoy(instante, zona);
+  return Math.round((Date.parse(`${fecha}T00:00:00Z`) - Date.parse(`${hoy}T00:00:00Z`)) / 86_400_000);
+}
+
+/** El día calendario del estudiante. La misma cuenta que hace el índice. */
+function fechaDeHoy(instante: string, zona: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric", month: "2-digit", day: "2-digit", timeZone: zona,
+  }).format(new Date(instante));
 }

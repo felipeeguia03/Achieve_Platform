@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { tokenDelHeader } from "@/lib/server/http";
 import { catalogoOfrecible, resolverSesion } from "@/lib/server/composicion";
+import { nombreVisibleDeCarrera } from "@/lib/content/es-AR";
 
 /**
  * `GET /api/alta` — dónde está el estudiante en el alta, y qué puede elegir.
@@ -39,5 +40,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No encontramos tu institución" }, { status: 404 });
   }
 
-  return NextResponse.json({ alta: sesion.alta, institucion });
+  // El nombre de carrera se traduce **al salir**, no en la base · ADR-086.
+  // `academic_program.name` conserva el que usa la facultad; el estudiante ve el
+  // que el owner aprobó. Ver `nombreVisibleDeCarrera`.
+  return NextResponse.json({
+    alta: sesion.alta,
+    institucion: {
+      ...institucion,
+      carreras: institucion.carreras.map((c) => ({ ...c, nombre: nombreVisibleDeCarrera(c.nombre) })),
+    },
+  });
 }

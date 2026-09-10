@@ -13,7 +13,6 @@ import {
   EstadoGeneral,
   Eyebrow,
   Fila,
-  HeroCard,
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
@@ -38,10 +37,25 @@ import type { ColumnaFuente, GanttProjection, MateriaProps } from "@/lib/domain/
  * 3. **Decidir nada.** El porcentaje, el orden y el texto llegan calculados. La
  *    pantalla proyecta.
  */
+const meta = { fontSize: "var(--text-meta)", color: "var(--muted-foreground)" } as const;
+const celdaDeTema = { width: 230, flexShrink: 0 } as const;
+const celdaDeEstado = { width: 130, flexShrink: 0 } as const;
+const tarjeta = {
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
+  background: "var(--card)",
+  padding: 16,
+} as const;
+
 function Gantt({ gantt }: { gantt: GanttProjection }) {
   return (
-    <div data-gantt>
-      <Eyebrow>{t("MATERIA.GANTT")}</Eyebrow>
+    <div data-gantt style={tarjeta}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+        <Eyebrow>{t("MATERIA.TEMAS")}</Eyebrow>
+        <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+          {gantt.pie}
+        </span>
+      </div>
 
       {/*
         ⚠️ **Sin colores de calificación.** Textual de la psicopedagoga: *"evitar
@@ -56,88 +70,139 @@ function Gantt({ gantt }: { gantt: GanttProjection }) {
           role="img"
           aria-label={gantt.pie}
           style={{
-            height: 8,
-            borderRadius: 4,
+            height: 6,
+            borderRadius: 3,
             background: "var(--muted)",
             overflow: "hidden",
-            margin: "6px 0",
+            margin: "10px 0 4px",
           }}
         >
-          <div
-            style={{
-              width: `${gantt.barra}%`,
-              height: "100%",
-              background: "var(--foreground)",
-            }}
-          />
+          <div style={{ width: `${gantt.barra}%`, height: "100%", background: "var(--foreground)" }} />
         </div>
       )}
 
-      <p style={{ fontSize: "var(--text-body)" }}>{gantt.pie}</p>
+      {/* El eje del período — el mismo que el índice de materias (ADR-078). */}
+      <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0 4px" }}>
+        <span style={{ ...celdaDeTema, ...meta }}>{t("MATERIA.EJE_TEMA")}</span>
+        <div style={{ position: "relative", flex: 1, height: 14 }}>
+          {gantt.eje.marcas.map((m) => (
+            <span
+              key={m.etiqueta}
+              style={{
+                ...meta,
+                position: "absolute",
+                left: `${m.posicion * 100}%`,
+                transform: "translateX(-50%)",
+                whiteSpace: "nowrap",
+                fontWeight: m.esHoy ? 600 : 400,
+              }}
+            >
+              {m.etiqueta}
+            </span>
+          ))}
+        </div>
+        <span style={{ ...celdaDeEstado, ...meta, textAlign: "right" }}>
+          {t("MATERIA.EJE_ESTADO")}
+        </span>
+      </div>
 
-      {/*
-        ⚠️ La nota al pie es del Product Owner y va **textual**. Es lo único que
-        separa «26% de las horas» de una nota, y sin ella el número viola
-        ADR-058, que cerró la readiness sin porcentaje y sin predicción.
-      */}
+      {gantt.unidades.map((u, i) => (
+        <FilaDeTema key={`${i}-${u.nombre}`} u={u} hoy={gantt.eje.hoy} />
+      ))}
+
       {/*
         §C1: *"Entregas que requieren revisión: X, cuando corresponda"*. En cero
-        **no se dibuja**: una línea que dice «0 pendientes» inventa una
-        tranquilidad que nadie afirmó.
+        la línea **no se dibuja**.
       */}
       {gantt.enRevision > 0 && (
-        <p style={{ fontSize: "var(--text-body)" }}>
+        <ReglaDeNegocio>
           {t("MATERIA.GANTT.REVISION")} {gantt.enRevision}
-        </p>
+        </ReglaDeNegocio>
       )}
 
+      {/*
+        El número y su aclaración van juntos o no va ninguno: el porcentaje solo
+        se lee como una nota, y esta línea es lo único que lo impide.
+      */}
       {gantt.aclaracion && <ReglaDeNegocio>{gantt.aclaracion}</ReglaDeNegocio>}
-
-      <div style={{ marginTop: 10 }}>
-        {gantt.unidades.map((u) => (
-          <div
-            key={u.nombre}
-            style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "3px 0" }}
-          >
-            {/*
-              Cuatro estados, no dos. Una entrega insuficiente es **actividad
-              registrada** y **no** criterio alcanzado: mostrarlas iguales
-              *"puede producir una falsa sensación de preparación"*, y no
-              mostrar la insuficiente *"invisibiliza el esfuerzo y castiga dos
-              veces"* (ADR-075 §C2).
-            */}
-            <span aria-hidden style={{ fontSize: "var(--text-meta)" }}>
-              {u.estado === "criterio_alcanzado"
-                ? "●"
-                : u.estado === "requiere_revision"
-                  ? "◑"
-                  : u.estado === "enviada"
-                    ? "◔"
-                    : "○"}
-            </span>
-            <span style={{ fontSize: "var(--text-body)", flex: 1 }}>{u.nombre}</span>
-            {/*
-              Sin minutos conocidos **no se escribe un cero ni un guion mudo**:
-              se omite la cifra. El pie ya dice cuántos temas quedaron sin
-              estimar, y repetirlo por fila sería ruido.
-            */}
-            {u.minutos !== null && (
-              <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
-                {Math.round(u.minutos / 60)} h
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
 
 /**
- * `P-08`: la cátedra y el estudiante son dos fuentes en **columnas separadas**.
- * Nunca se fusionan, y ninguna capa eleva la verificación de la otra
- * (AGENTS.md §2.6).
+ * Una fila del Gantt por tema — [ADR-085](../../docs/decisions.md#adr-085).
+ *
+ * ⚠️ **La barra no se dibuja si el tema no se puede ubicar**, y en su lugar va
+ * el motivo. Las dos puntas son hechos —la primera clase que lo dictó y la
+ * evaluación que declara cubrirlo— y ninguna se estima: poner un tema en «+7
+ * días» porque es el séptimo de la lista sería inventar un plan de estudio.
  */
+function FilaDeTema({
+  u,
+  hoy,
+}: {
+  u: GanttProjection["unidades"][number];
+  hoy: number;
+}) {
+  const ubicado = u.desde !== null && u.hasta !== null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        padding: "8px 0",
+        borderTop: "1px solid var(--border)",
+      }}
+    >
+      <span style={celdaDeTema}>
+        {u.codigo && <span style={{ ...meta, marginRight: 6 }}>{u.codigo}</span>}
+        <span style={{ fontSize: "var(--text-body)" }}>{u.nombre}</span>
+      </span>
+
+      <div style={{ position: "relative", flex: 1, height: 18 }}>
+        {/* La línea de hoy. Es una marca del eje, no una decoración. */}
+        <div
+          style={{
+            position: "absolute",
+            left: `${hoy * 100}%`,
+            top: 0,
+            bottom: 0,
+            width: 1,
+            background: "var(--border)",
+          }}
+        />
+        {ubicado && (
+          <div
+            style={{
+              position: "absolute",
+              left: `${u.desde! * 100}%`,
+              // Un tema dictado y evaluado el mismo día es un punto, no nada:
+              // el mínimo lo hace visible sin mover ninguna de las dos puntas.
+              width: `max(10px, ${(u.hasta! - u.desde!) * 100}%)`,
+              top: 4,
+              height: 10,
+              borderRadius: 5,
+              /*
+                ⚠️ **Un solo color, y no significa nada.** El mockup pintaba cada
+                estado de un color —verde «dominado», ámbar «leído»— y eso es
+                exactamente la escala de calificación que ADR-075 §C1 descarta.
+                El estado se lee en su columna, con palabras.
+              */
+              background: "var(--foreground)",
+              opacity: u.estado === "sin_evidencia" ? 0.18 : 0.75,
+            }}
+          />
+        )}
+      </div>
+
+      <span style={{ ...celdaDeEstado, textAlign: "right" }}>
+        <span style={{ ...meta, color: "var(--muted-foreground)" }}>{u.nota ?? u.etiqueta}</span>
+      </span>
+    </div>
+  );
+}
+
 function Columna({ fuente }: { fuente: ColumnaFuente }) {
   return (
     <div className="flex-1">
@@ -166,14 +231,34 @@ function Columna({ fuente }: { fuente: ColumnaFuente }) {
   );
 }
 
+/**
+ * `UX02` — el cursado de una materia, con el layout que pidió el owner
+ * ([ADR-085](../../docs/decisions.md#adr-085)).
+ *
+ * ## El orden es una decisión del owner, tomada contra el spec
+ *
+ * `VI.2` §1 pide *"la acción ocupa el primer viewport… no obligan al alumno a
+ * analizar un tablero para descubrir qué hacer"*. **La captura invierte eso**:
+ * el Gantt arriba y el próximo paso al pie. Se construyó así porque el owner lo
+ * eligió con las dos opciones delante, que es como ADR-054 pidió que se tomaran
+ * las decisiones de esta pantalla. Queda dicho para que no se lea como un
+ * descuido.
+ *
+ * ## Lo único del mockup que NO se copió
+ *
+ * El `CURSÁS · Lun 14:00–16:00` de la tarjeta de evaluación **repetía** el panel
+ * «Clases de la semana», que además lleva la procedencia de cada bloque. La
+ * misma cosa en dos lugares es `C-02` roto, y es el defecto que ya se corrigió
+ * una vez en `UX01` con `CTA-009`.
+ */
 export function MateriaCursado({
   materia,
-  examen,
+  evaluacion,
+  modoExamen,
   chip,
   ultimoAvance,
   hero,
   catedraYVos,
-  unidades,
   gantt,
   clasesDeLaSemana,
   actividadReciente,
@@ -184,30 +269,23 @@ export function MateriaCursado({
   onAvanzar,
   onCapturar,
   onVerRegistro,
+  onModoExamen,
 }: MateriaProps & {
   onAvanzar?: () => void;
   onCapturar?: () => void;
   onVerRegistro?: () => void;
+  onModoExamen?: () => void;
 }) {
   return (
-    <div
-      className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
-    >
-      {/* Sin Assessment registrado la línea de examen desaparece; no se inventa. */}
+    <div style={{ background: "var(--background)", padding: 16, borderRadius: "var(--radius)" }}>
       <TituloDePanel
         eyebrow={materia}
         titulo={t("MATERIA.TITULO")}
-        meta={examen ? `Examen · ${examen}` : undefined}
         subcopy={SUBCOPY.UX02}
         acciones={
           // `CTA-009` — el historial completo de **esta** materia. Va arriba a
           // la derecha, como acción del objeto (§11.9.3) y como en `UX01`: es
-          // navegación de lectura y no compite con la CTA primaria del Hero.
-          //
-          // No se pone también al pie de «Actividad reciente». La misma acción
-          // dos veces en una pantalla es `C-02` roto —un concepto, un lugar—, y
-          // es el defecto que ya se corrigió una vez en `UX01`.
+          // navegación de lectura y no compite con la CTA primaria.
           verRegistro ? <AccionDeObjeto onClick={onVerRegistro}>{verRegistro}</AccionDeObjeto> : undefined
         }
       />
@@ -229,134 +307,200 @@ export function MateriaCursado({
         </ReglaDeNegocio>
       )}
 
-      <HeroCard>
-        {hero.contexto && (
-          <Eyebrow>
-            {t("MATERIA.AHORA")} · {hero.contexto}
-          </Eyebrow>
-        )}
-        <p style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, color: "var(--foreground)" }}>
-          {hero.titulo}
-        </p>
-        {hero.razon && (
-          <ReglaDeNegocio>
-            {t("COMUN.PORQUE")} {hero.razon}
-          </ReglaDeNegocio>
-        )}
-        {(hero.tiempoOEstado || hero.evidenciaEsperada) && (
-          <ReglaDeNegocio>
-            {[
-              hero.tiempoOEstado,
-              hero.evidenciaEsperada
-                ? `${t("MATERIA.ENTREGA")} ${hero.evidenciaEsperada}`
-                : null,
-            ]
-              .filter((p): p is string => p !== null)
-              .join(" · ")}
-          </ReglaDeNegocio>
-        )}
-        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
-      </HeroCard>
-
       {/*
-        Captura de "pasó algo en clase". Es un reporte del alumno: registrarlo
-        durante una clase NO lo convierte en voz de la cátedra, y ninguna capa
-        eleva su verificación (AGENTS.md §2.6).
+        Dos columnas, como la captura. **360 px es el piso móvil** (ADR-014): por
+        debajo del ancho de la grilla las dos columnas se apilan solas, porque
+        `minmax` no fuerza el lateral a caber donde no entra.
       */}
-      {capturaDeClase && <CTASecundaria onClick={onCapturar}>{capturaDeClase}</CTASecundaria>}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 16,
+          alignItems: "start",
+          marginTop: 12,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, gridColumn: "span 2", minWidth: 0 }}>
+          {/*
+            ⚠️ **Sin unidades no hay Gantt, y no se dibuja uno vacío.** El mensaje
+            de esa ausencia ya lo da el hero con `CONTEXTO_INCOMPLETO`; repetirlo
+            con una tabla en blanco diría dos veces lo mismo.
+          */}
+          {gantt && <Gantt gantt={gantt} />}
 
-      {catedraYVos && (
-        <div>
-          <Eyebrow>{t("MATERIA.CATEDRA_Y_VOS")}</Eyebrow>
+          {/*
+            `CLASES DE LA SEMANA` — el horario de cursado (ADR-063).
+
+            ⚠️ **Solo muestra.** Decisión del owner, textual: *"solo mostrar, no
+            agendar"*. No ofrece acción, no reserva un hueco y no le descuenta
+            nada al presupuesto de estudio.
+
+            `null` ⇒ no se sabe el horario. No saberlo no es tener la semana libre.
+          */}
+          {clasesDeLaSemana && (
+            <div data-horario style={tarjeta}>
+              <Eyebrow>{t("MATERIA.CLASES")}</Eyebrow>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                {clasesDeLaSemana.map((b) => (
+                  <span
+                    key={b.cuando}
+                    style={{
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-pildora)",
+                      padding: "5px 12px",
+                      fontSize: "var(--text-label)",
+                    }}
+                    title={b.procedencia}
+                  >
+                    {b.cuando}
+                    <span style={{ ...meta, marginLeft: 8 }}>{b.procedencia}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div
-            className="flex gap-3 rounded-[var(--radius-control)] border p-3"
-            style={{ borderColor: "var(--border)", background: "var(--card)" }}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 16,
+            }}
           >
-            <Columna fuente={catedraYVos.catedra} />
-            <Columna fuente={catedraYVos.vos} />
+            {/*
+              `PRÓXIMO PASO SUGERIDO`. La CTA vive **acá adentro**: el owner
+              eligió este orden, y una tarjeta que propone algo sin manera de
+              aceptarlo sería una descripción, no una propuesta.
+            */}
+            <div style={tarjeta}>
+              <Eyebrow>{t("MATERIA.PROXIMO_PASO")}</Eyebrow>
+              {hero.contexto && <ReglaDeNegocio>{hero.contexto}</ReglaDeNegocio>}
+              <p style={{ fontSize: "var(--text-body)", fontWeight: 600, margin: "6px 0" }}>
+                {hero.titulo}
+              </p>
+              {hero.razon && (
+                <ReglaDeNegocio>
+                  {t("COMUN.PORQUE")} {hero.razon}
+                </ReglaDeNegocio>
+              )}
+              {(hero.tiempoOEstado || hero.evidenciaEsperada) && (
+                <ReglaDeNegocio>
+                  {[
+                    hero.tiempoOEstado,
+                    hero.evidenciaEsperada ? `${t("MATERIA.ENTREGA")} ${hero.evidenciaEsperada}` : null,
+                  ]
+                    .filter((p): p is string => p !== null)
+                    .join(" · ")}
+                </ReglaDeNegocio>
+              )}
+              <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
+            </div>
+
+            <div style={tarjeta}>
+              {/*
+                El mockup la titulaba «ÚLTIMA ACTIVIDAD». Se usa el nombre del
+                spec —`VI.2` §8.7, *"Actividad reciente"*— porque es **el mismo
+                concepto**, y dos palabras para una cosa es `C-02` roto. Hay
+                guard de vocabulario y lo caza.
+              */}
+              <Eyebrow>{t("MATERIA.ACTIVIDAD")}</Eyebrow>
+              {/*
+                `null` ⇒ **no hay actividad registrada**, y se dice. «Hace 0
+                días» sería inventar una que no ocurrió.
+              */}
+              <p style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: "6px 0" }}>
+                {ultimoAvance ?? t("COMUN.SIN_AVANCE")}
+              </p>
+              {actividadReciente?.[0] && (
+                <ReglaDeNegocio>{actividadReciente[0].titulo}</ReglaDeNegocio>
+              )}
+            </div>
           </div>
+
+          {/*
+            Captura de "pasó algo en clase". Es un reporte del alumno:
+            registrarlo durante una clase NO lo convierte en voz de la cátedra, y
+            ninguna capa eleva su verificación (AGENTS.md §2.6).
+          */}
+          {capturaDeClase && <CTASecundaria onClick={onCapturar}>{capturaDeClase}</CTASecundaria>}
         </div>
-      )}
 
-      {/*
-        Las cinco dimensiones, separadas. Confianza no es dominio: una confianza
-        alta con dominio no evaluado son dos hechos distintos, y la vista no
-        genera una Action a partir de la brecha.
-      */}
-      {dimensiones.length > 0 && (
-        <div>
-          <Eyebrow>{t("MATERIA.DIMENSIONES")}</Eyebrow>
-          {dimensiones.map((d) => (
-            <Fila key={d.label} label={d.label} value={d.valor} ausencia={d.ausencia} tono={d.tono} />
-          ))}
-        </div>
-      )}
-
-      {/*
-        `CLASES DE LA SEMANA` — el horario de cursado (ADR-063).
-
-        ⚠️ **Solo muestra.** Es la decisión del owner, textual: *"solo mostrar,
-        no agendar"*. Este bloque no ofrece una acción, no reserva un hueco y no
-        le descuenta nada al presupuesto de estudio: `availability` dice cuándo
-        puede estudiar y esto dice cuándo está cursando, y ADR-063 prohíbe
-        mezclarlos.
-
-        Cada bloque lleva **su procedencia**, como todo lo que esta pantalla
-        afirma sobre la cátedra: que la fuente sea la institución no lo vuelve
-        verificado, y decirlo sería elevar la verificación desde la UI (`I9`).
-
-        `null` ⇒ no se sabe el horario, y **no se dibuja la sección vacía**. No
-        saberlo no es tener la semana libre.
-      */}
-      {clasesDeLaSemana && (
-        <div data-horario>
-          <Eyebrow>{t("MATERIA.CLASES")}</Eyebrow>
-          {clasesDeLaSemana.map((b) => (
-            <div key={b.cuando} style={{ padding: "4px 0" }}>
-              <span style={{ fontSize: "var(--text-body)" }}>{b.cuando}</span>
-              <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
-                {b.procedencia}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          {/*
+            La tarjeta de evaluación. `null` ⇒ **no hay evaluación registrada** y
+            no se dibuja: no se inventa una fecha ni se ofrece activar un Modo
+            Examen sobre nada.
+          */}
+          {evaluacion && (
+            <div data-evaluacion style={tarjeta}>
+              <Eyebrow>{t("MATERIA.EVALUACION")}</Eyebrow>
+              <p style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: "6px 0" }}>
+                {evaluacion.titulo}
               </p>
+              {evaluacion.detalle && <ReglaDeNegocio>{evaluacion.detalle}</ReglaDeNegocio>}
+              {/*
+                `CTA-019` — la entrada manual a Modo Examen desde la materia
+                (ADR-016). **No hay readiness**: activar no afirma que esté
+                listo, y no se muestra ningún score (ADR-011, `C01-029`).
+              */}
+              {modoExamen && (
+                <CTASecundaria onClick={onModoExamen}>{modoExamen}</CTASecundaria>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {gantt && <Gantt gantt={gantt} />}
+          {/*
+            `REGISTRO` — la preview de la Bitácora (`VI.2` §8.7).
 
-      {unidades.length > 0 && (
-        <div>
-          <Eyebrow>{t("MATERIA.UNIDADES")}</Eyebrow>
-          {unidades.map((u) => (
-            <Fila key={u.label} label={u.label} value={u.valor} ausencia={u.ausencia} tono={u.tono} />
-          ))}
-        </div>
-      )}
-
-      {/*
-        Actividad reciente (`VI.2` §8.7) — Etapa B3.3.
-
-        **La misma forma que la Bitácora de `UX06`, y a propósito.** `VI.6` §8.3
-        dice que es "una preview de la misma verdad derivada" y que no existe una
-        segunda fuente histórica: si se viera distinta, parecería otra cosa. Lo
-        único que cambia es cuántas entradas entran — el corte lo hace la base.
-
-        `null` ⇒ no pasó nada todavía y la sección **no se dibuja vacía**.
-      */}
-      {actividadReciente && (
-        <div data-actividad>
-          <Eyebrow>{t("MATERIA.ACTIVIDAD")}</Eyebrow>
-          {actividadReciente.map((e, i) => (
-            <div key={`${i}-${e.titulo}`} style={{ padding: "4px 0" }}>
-              <span style={{ fontSize: "var(--text-body)" }}>{e.titulo}</span>
-              <ReglaDeNegocio>{e.detalle}</ReglaDeNegocio>
-              <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
-                {e.provenance ?? t("PROVENANCE.NO_DISPONIBLE")}
-              </p>
+            **La misma verdad que `UX06`, y a propósito.** `VI.6` §8.3: *"no
+            existe una segunda fuente histórica"*. Lo único que cambia es cuántas
+            entradas entran, y el corte lo hace la base.
+          */}
+          {actividadReciente && (
+            <div data-actividad style={tarjeta}>
+              <Eyebrow>{t("MATERIA.REGISTRO")}</Eyebrow>
+              {actividadReciente.map((e, i) => (
+                <div
+                  key={`${i}-${e.titulo}`}
+                  style={{ padding: "8px 0", borderTop: i === 0 ? undefined : "1px solid var(--border)" }}
+                >
+                  <span style={{ ...meta, marginRight: 8 }}>{e.detalle}</span>
+                  <span style={{ fontSize: "var(--text-body)" }}>{e.titulo}</span>
+                  <p style={meta}>{e.provenance ?? t("PROVENANCE.NO_DISPONIBLE")}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/*
+            Las dimensiones, separadas. Confianza no es dominio: una confianza
+            alta con dominio no evaluado son dos hechos distintos, y la vista
+            **no genera una Action** a partir de la brecha.
+          */}
+          {dimensiones.length > 0 && (
+            <div style={tarjeta}>
+              <Eyebrow>{t("MATERIA.DIMENSIONES")}</Eyebrow>
+              {dimensiones.map((d) => (
+                <Fila key={d.label} label={d.label} value={d.valor} ausencia={d.ausencia} tono={d.tono} />
+              ))}
+            </div>
+          )}
+
+          {/*
+            `P-08`: cátedra y estudiante en columnas separadas, nunca fusionadas.
+          */}
+          {catedraYVos && (
+            <div style={tarjeta}>
+              <Eyebrow>{t("MATERIA.CATEDRA_Y_VOS")}</Eyebrow>
+              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                <Columna fuente={catedraYVos.catedra} />
+                <Columna fuente={catedraYVos.vos} />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

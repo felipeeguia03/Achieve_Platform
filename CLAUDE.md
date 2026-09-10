@@ -109,8 +109,9 @@ lista todas las cursadas ordenadas por próxima evaluación, y el ítem del men�
 
 ⚠️ **`/materias` NO es `UX10`, y el modo de lograrlo importa.** Es un nodo con `wireframe: null` en
 `surfaces.ts` —el mismo patrón que `UX04_RENEGOCIACION`—, así que `superficieIds` sigue devolviendo
-**nueve** y la afirmación del spec sigue siendo cierta. **Hay diez rutas bajo `app/(student)` y nueve
-superficies**, y los dos números se verifican por separado en `tests/shell.test.tsx`.
+**nueve** y la afirmación del spec sigue siendo cierta. **Hay once rutas bajo `app/(student)` y nueve
+superficies** —`/materias` y `/formacion` son los dos nodos sin wireframe—, y los dos números se
+verifican por separado en `tests/shell.test.tsx`.
 
 ⚠️ **El registro canónico sigue en 20 CTAs.** Entrar a una materia desde el índice es `CTA-001`, que
 ganó un origen. Las tres etiquetas del botón —*Abrir*, *Completar*, *Agregar examen*— son **copy**:
@@ -150,6 +151,93 @@ así que `db:verify` ahora lo reimporta entre los dos.
 ⚠️ **Regla que salió de ahí:** toda tabla nueva que referencie a las del mundo académico **se agrega
 a `limpiar_mundo` en el mismo commit**. Si no, el verificador deja de correr y el error no nombra la
 causa.
+
+🟡 **La biblioteca de Formación existe, y está vacía a propósito** —
+[ADR-087](docs/decisions.md#adr-087), 10 de septiembre. Cinco piezas de la psicopedagoga cargadas en
+`DRAFT`: el contenido **no se publica hasta que ella confirme vigencia** (`D5`).
+
+⚠️ **`D1` prohíbe clasificar al estudiante.** No existe el Student Model, y hasta que exista **no se
+usan proxies, puntajes ni umbrales** para decidir quién es autónomo: la biblioteca es la misma para
+todos. Hay guard sobre el SQL de lectura y sobre la proyección.
+
+⚠️ **Leer y aplicar se separan** (`D2`). Sin cursadas activas la pieza **se lee igual**; lo que se
+apaga es `CTA-021`. La materia se pide **al empezar**, no al abrir.
+
+⚠️ **`formative_content` NO lleva `institution_id`, `eje`, `area` ni `video`.** No es de ninguna
+institución; el eje y el área no los declara el documento de las cinco piezas; y sin guion no hay
+video. Las cuatro ausencias son decisiones, no olvidos.
+
+⚠️ **Formación entró como V1 de solo lectura** — ADR-087 Enmienda 2. **No toca `action`**, no agrega
+`origin` ni `formative_content_id`, no pide cursada, no muestra botón y **`CTA-021` NO está en el
+registro canónico**: una CTA que promete crear una `Action` que nadie crea es un contrato
+incumplido. La vertical de aplicación es **V2**, y la CTA vuelve **con** su escritura.
+
+⚠️ **El registro sigue en 20 CTAs.** Y **once rutas, nueve superficies**: `FORMACION` es un nodo con
+`wireframe: null`, como `/materias`.
+
+⚠️ **La biblioteca se lee aunque el estudiante no tenga ninguna cursada.** La elegibilidad de
+cursadas es de la aplicación, nunca de la lectura (`E2.3`).
+
+✅ **Las 51 materias del Plan 2016 tienen contenido** — [ADR-086](docs/decisions.md#adr-086), 9 de
+septiembre. 25 con temario real de los programas oficiales de la UCC y 26 generadas; **todas** con
+unidades, pesos, calendario, evaluación y material. El ADE corre sobre ellas.
+
+⚠️ **Lo que generó el sistema se marca con `source_type = 'inference'`, no con una columna nueva.**
+`estado_de_materia` devuelve `contenido` —`estimado` · `calendario_estimado` · `NULL`— y `UX02` lo
+avisa arriba del Gantt. **`NULL` no significa «verificado»**: significa que ninguna fila dice
+`inference`. `verification_status` sigue `unverified` y su única escritura sigue siendo
+`corroborar_procedencia()`.
+
+⚠️ **«Tomado como válido» y «estimado» conviven a propósito.** El dominio trata lo generado igual
+que lo real; la procedencia dice la verdad.
+
+⚠️ **`topic.weight` NO es dificultad, y es todo o nada por materia.** Es cuánto de la materia ocupa
+la unidad, y de ahí salen sus minutos. Si una unidad lo tiene y otra no, la materia entera vuelve a
+repartirse pareja (`usaPesos()`, ADR-068). **Un peso faltante no es `1.0`.**
+
+⚠️ **El peso entra al ranking del ADE: más peso, más prioridad.** Aporta hasta `120`, contra `300`
+de práctica y `1000` de evaluación — ajusta, no decide. **La dirección contraria es de la
+psicopedagoga y no está respondida**; hay test que falla si se invierte el signo.
+
+⚠️ **La cursada vive en el período del alta, no en el año lectivo del programa.**
+`confirmar_mapa_academico()` la crea con `(course, term, NULL)`. Ingerir bajo `2024/cátedra A`
+dejaba **dos ofertas** de la misma materia: la del contenido y la del estudiante, vacía.
+
+⚠️ **Una unidad pesada tiene que ocupar más clases.** `minutosPorTema()` reparte los minutos
+**observados**: con una clase por unidad todas salen iguales y el peso no cambia nada.
+
+✅ **El Plan 2016 está `PUBLISHED`** — sin eso el alta no ofrece la carrera y nadie se inscribe solo.
+⚠️ **Los 57 `needs_review` los levantó el owner para habilitar el MVP: eso no es una auditoría del
+plan**, y los diez nombres cortados **siguen cortados**. Tres guards del borrador se mudaron a
+`INFORMATICA/web-2026`, que sigue `DRAFT`.
+
+⚠️ **«UCC Sistemas» es sólo lo que ve el estudiante.** `academic_program.name` conserva
+`INGENIERIA DE SISTEMAS`. Es una traducción en `lib/content/es-AR.ts`, no un renombre.
+
+⛔ **ADR-006 sigue `PROVISIONAL`.** Publicar un plan es `publication_status`; el dictamen legal es
+otra cosa y sigue faltando.
+
+✅ **`UX02` se rearmó alrededor del Gantt por tema** — [ADR-085](docs/decisions.md#adr-085), 9 de
+septiembre, con las capturas del owner delante. Panel de temas con eje de fechas, tarjeta de
+evaluación, registro, clases y próximo paso. **`CTA-019` por fin es alcanzable por clic**: estaba
+declarada desde ADR-016 y nunca se había renderizado.
+
+⚠️ **Las dos puntas de cada barra son hechos, y un tema sin ellas NO se ubica.** Ponerlo en «+7 días»
+porque es el séptimo de la lista sería inventar un plan de estudio que nadie hizo. Hay guard.
+
+⛔ **Tres palabras de la captura NO se copiaron, y no las repongas:** `Dominado`
+([ADR-072](docs/decisions.md#adr-072)), `nivel` ([ADR-075](docs/decisions.md#adr-075) §C1) y `3/3`.
+La columna dice el **estado de la evidencia** — actividad, no conocimiento. Tampoco hay color por
+estado: verde/ámbar por nivel **es la escala de calificación que §C1 descarta**.
+
+⚠️ **La escala de la captura es la dimensión Confianza**, que no tiene escritor. Es el corte 2 y
+sigue bloqueado hasta que la psicopedagoga revise el vocabulario.
+
+⚠️ **Modo Examen es CTA secundaria, no primaria** (`I-06`: una sola por pantalla), y el `CURSÁS` de
+la tarjeta **no se copió** porque repetía el panel de clases (`C-02`).
+
+⚠️ **`MateriaProps.unidades` ya no existe.** La reemplaza el Gantt por tema; se perdió el *«hace 2
+días»* por unidad, y está dicho en el ADR.
 
 ✅ **Un compromiso ya no se confirma encima de una clase** —
 [ADR-084](docs/decisions.md#adr-084), 9 de septiembre, que construye

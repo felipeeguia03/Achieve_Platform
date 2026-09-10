@@ -58,23 +58,52 @@ igual "TRABAJO FINAL es el capstone" \
   "$(q "select requirement_type from curriculum_requirement where curriculum_plan_id='$PLAN2016' and code='00301';")" "CAPSTONE"
 igual "SEMINARIO (54) quedó UNKNOWN: no se sabe si es asignatura o cupo" \
   "$(q "select requirement_type from curriculum_requirement where curriculum_plan_id='$PLAN2016' and code='20186';")" "UNKNOWN"
-igual "los 57 quedaron pendientes de revisión" \
-  "$(q "select count(*) from curriculum_requirement where curriculum_plan_id='$PLAN2016' and needs_review;")" "57"
+# ⚠️ **Los 57 entraron con `needs_review` y hoy están en cero.** No los revisó
+# una auditoría: los dio por revisados el owner el 9 de septiembre de 2026 para
+# habilitar el alta del MVP (ADR-086), y el motivo está escrito en
+# `scripts/importar-catalogo.mjs` y en el `audit_log` de la publicación.
+igual "la revisión del owner levantó la marca de los 57" \
+  "$(q "select count(*) from curriculum_requirement where curriculum_plan_id='$PLAN2016' and needs_review;")" "0"
+# ⚠️ **Y los nombres cortados siguen cortados.** Es el punto: dar por revisado un
+# plan no arregla su dato. Si esto pasara a `0` alguien "limpió" el síntoma.
 igual "diez nombres entran cortados, y se declara" \
   "$(q "select count(*) from curriculum_requirement where curriculum_plan_id='$PLAN2016' and label_truncated;")" "10"
 igual "ningún requisito de tipo cupo apunta a una materia" \
   "$(q "select count(*) from curriculum_requirement where requirement_type <> 'COURSE' and course_id is not null;")" "0"
 
 echo "→ B6.14 · un plan DRAFT no se le ofrece a nadie (ADR-051)"
-igual "el Plan 2016 sigue en borrador" \
-  "$(q "select publication_status from curriculum_plan where id='$PLAN2016';")" "DRAFT"
+#
+# ⚠️ **Estas tres afirmaciones se mudaron de plan, no se aflojaron.** Hasta
+# ADR-086 se verificaban contra el Plan 2016; ahora ese plan está publicado y la
+# regla se verifica contra `INFORMATICA/web-2026`, que sigue en borrador con sus
+# 74 requisitos sin revisar. **La regla es la misma y sigue teniendo test**: si
+# alguien publicara todos los planes, esto quedaría sin plan contra el cual
+# correr y hay que decirlo, no borrarlo.
+PLANWEB=$(q "select cp.id from curriculum_plan cp join academic_program ap on ap.id=cp.program_id
+              where ap.key='INFORMATICA' and cp.version='web-2026';" | tr -d '[:space:]')
+igual "queda un plan en borrador contra el cual verificar la regla" \
+  "$(q "select publication_status from curriculum_plan where id='$PLANWEB';")" "DRAFT"
 igual "requisitos_del_plan devuelve NULL para un borrador, no una lista vacía" \
-  "$(q "select public.requisitos_del_plan('$PLAN2016', gen_random_uuid()) is null;")" "t"
-igual "la UCC no aparece en el catálogo ofrecible" \
-  "$(q "select count(*) from institution i
-         where i.key='UCC' and public.catalogo_ofrecible(i.id)->'carreras' @> '[{\"tienePlan\": true}]';")" "0"
+  "$(q "select public.requisitos_del_plan('$PLANWEB', gen_random_uuid()) is null;")" "t"
 igual "publicar un plan con requisitos sin corroborar se rechaza" \
-  "$(q "select 1 from (select public.publicar_plan_de_estudios('$PLAN2016','probando')) t;" | grep -ci "no se publica")" "1"
+  "$(q "select 1 from (select public.publicar_plan_de_estudios('$PLANWEB','probando')) t;" | grep -ci "no se publica")" "1"
+
+echo "→ ADR-086 · el Plan 2016 se publicó, y por decisión del owner"
+# Lo que destraba: sin esto el alta no ofrece la carrera y **nadie puede
+# inscribirse solo**, que es el requisito del MVP.
+igual "el Plan 2016 está publicado" \
+  "$(q "select publication_status from curriculum_plan where id='$PLAN2016';")" "PUBLISHED"
+igual "la UCC ya aparece en el catálogo ofrecible" \
+  "$(q "select count(*) from institution i
+         where i.key='UCC' and public.catalogo_ofrecible(i.id)->'carreras' @> '[{\"tienePlan\": true}]';")" "1"
+# ⚠️ **Publicar NO es verificar.** `publication_status` responde "¿se le puede
+# mostrar a un estudiante?"; `verification_status` responde "¿alguien con
+# autoridad lo confirmó?", y sigue sin escritor fuera de `corroborar_procedencia`.
+igual "publicar no elevó ninguna procedencia" \
+  "$(q "select count(*) from class_session cs
+          join course_offering o on o.id=cs.offering_id
+          join course c on c.id=o.course_id
+         where c.curriculum_plan_id='$PLAN2016' and cs.verification_status<>'unverified';")" "0"
 
 echo "→ B6.14 · dos carreras sucesoras no se mezclan"
 igual "SYN-2016 y SYN-2021 son dos carreras distintas" \
@@ -159,8 +188,11 @@ igual "y el primero la tiene completa" \
   "$(q "select public.estado_del_alta('$INST','$EST')->>'materiasConfirmadas';")" "true"
 
 echo "→ B6.14 · lo que la base rechaza"
+# ⚠️ Contra `$PLANWEB` y ya no contra el Plan 2016: desde ADR-086 ése está
+# publicado, así que confirmar contra él **debe** funcionar y no probaría nada.
+# La regla —un borrador no se confirma— sigue verificada.
 rechaza "confirmar contra un plan en borrador" \
-  "select public.confirmar_mapa_academico('$INST','$EST','$PROG','$PLAN2016',1::smallint,'2026-2','[]'::jsonb);"
+  "select public.confirmar_mapa_academico('$INST','$EST','$PROG','$PLANWEB',1::smallint,'2026-2','[]'::jsonb);"
 rechaza "una opción electiva colgada de una materia concreta" \
   "insert into elective_option (curriculum_requirement_id, course_id, source_type, source_ref)
    select cr.id, cr.course_id, 'institution', 'x' from curriculum_requirement cr

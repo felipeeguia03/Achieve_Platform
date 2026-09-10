@@ -34,7 +34,9 @@ const materiaBase: MateriaProps = {
   // prohíbe.
   cursadaId: null,
   materia: "Análisis Matemático II",
-  examen: "Parcial 1",
+  evaluacion: { titulo: "Parcial 1", detalle: "6 días · práctico · 2 evidencias enviadas" },
+  // `CTA-019` — hay evaluación registrada, así que hay qué activar (ADR-016).
+  modoExamen: "Activar Modo Examen",
   chip: { tono: "urgencia", texto: "Necesita atención" },
   ultimoAvance: "avance hace 2 días",
   hero: {
@@ -49,7 +51,6 @@ const materiaBase: MateriaProps = {
     chip: null,
   },
   catedraYVos: null,
-  unidades: [],
   dimensiones: [],
   // Fixture anterior a la Fase B6.21: declara un mundo sin horario de cursado.
   // **`null` no es «no cursa»**: es que nadie lo cargó (ADR-063).
@@ -106,10 +107,6 @@ export const FX_LOCAL_MAT_PROVENANCE = esc(
           tono: "urgencia",
         },
       },
-      unidades: [
-        { label: "U1", valor: "práctica registrada" },
-        { label: "U3", valor: "necesita atención", tono: "urgencia" },
-      ],
     },
   },
   ["C01-002", "SC-GOV-01"],
@@ -123,7 +120,8 @@ export const FX_LOCAL_MAT_CONTEXTO_INCOMPLETO = esc(
     materia: {
       ...materiaBase,
       estado: "CONTEXTO_INCOMPLETO",
-      examen: null,
+      evaluacion: null,
+      modoExamen: null,
       chip: { tono: "urgencia", texto: "Falta contexto" },
       ultimoAvance: null,
       hero: {

@@ -60,7 +60,22 @@ function Formulario() {
         password,
       });
       if (fallo) {
-        setError(t("LOGIN.ERROR.CREDENCIALES"));
+        /*
+          ⚠️ **No todo fallo es una contraseña equivocada.**
+          `signInWithPassword` **no lanza** cuando no puede llegar al proveedor:
+          devuelve el error acá, igual que cuando las credenciales son
+          incorrectas. El `catch` de abajo no se ejecuta, así que mandar todo a
+          `CREDENCIALES` le afirmaba al estudiante algo falso sobre sus datos
+          —con el stack apagado, «revisá tu contraseña»— y lo dejaba buscando
+          un problema que no tenía.
+
+          Un fallo de red no trae `status` de HTTP, o trae `0`; el rechazo de
+          credenciales viene como `400`. Ante la duda **se dice que no se pudo
+          verificar**, que es lo único cierto en los dos casos.
+        */
+        const status = (fallo as { status?: number }).status;
+        const esDeRed = status === undefined || status === 0 || /Retryable/i.test(fallo.name ?? "");
+        setError(t(esDeRed ? "LOGIN.ERROR.RED" : "LOGIN.ERROR.CREDENCIALES"));
         setEnCurso(false);
         return;
       }

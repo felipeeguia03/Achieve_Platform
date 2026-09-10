@@ -22,6 +22,8 @@
  *    ([ADR-072](../../docs/decisions.md#adr-072)).
  */
 
+import type { EjeDelPeriodo } from "./view-models";
+
 /** La versión de la regla. Cambiarla **no** reescribe ventanas viejas. */
 export const REGLA_DE_VENTANA = "ventana-v1";
 
@@ -125,4 +127,35 @@ export function ejeDelPeriodo(hoy: string, evaluaciones: readonly string[]): Eje
 export function posicionEnEje(fecha: string, eje: Eje): number {
   const bruta = (dia(fecha) - dia(eje.desde)) / (eje.dias * DIA);
   return Math.min(1, Math.max(0, bruta));
+}
+
+/**
+ * Las marcas del eje, ya rotuladas y posicionadas.
+ *
+ * Vive en el dominio porque **la usan dos superficies**: el índice de materias
+ * (ADR-078) y el Gantt por tema de `UX02` (ADR-085). Dos copias serían dos
+ * escalas para el mismo eje, y la que se mira menos envejece primero.
+ *
+ * ⚠️ **`hoy` es una marca más.** Tratarla como un caso especial de la pantalla
+ * pondría su posición en dos lugares —la línea vertical y el rótulo— con dos
+ * cálculos que pueden separarse.
+ */
+export function marcasDelEje(hoy: string, eje: Eje): EjeDelPeriodo {
+  const fechaDeSemana = (n: number) =>
+    new Date(Date.parse(`${hoy}T00:00:00Z`) + n * 7 * DIA).toISOString().slice(0, 10);
+
+  // Desde `−2 sem` hasta la última semana que entra en el eje. Cuando una
+  // evaluación lejana lo estira, **aparecen más marcas**: un eje más largo con
+  // las mismas cinco marcas mentiría sobre la escala.
+  const ultima = Math.floor(eje.dias / 7) - SEMANAS_HACIA_ATRAS;
+  const marcas = [];
+  for (let n = -SEMANAS_HACIA_ATRAS; n <= ultima; n++) {
+    marcas.push({
+      etiqueta: n === 0 ? "hoy" : n < 0 ? `−${-n} sem` : `+${n} sem`,
+      posicion: posicionEnEje(fechaDeSemana(n), eje),
+      esHoy: n === 0,
+    });
+  }
+
+  return { hoy: posicionEnEje(hoy, eje), marcas };
 }

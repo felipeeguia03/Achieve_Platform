@@ -53,6 +53,7 @@ const BASE: HoyProps = {
   recuperacion: null,
   // Fixture anterior a ADR-073: declara un mundo sin reparto.
   reparto: null,
+  panorama: null,
   verProgreso: null,
 };
 
@@ -78,7 +79,7 @@ describe("§1 · El registro canónico declara qué transporta CTA-001", () => {
     });
   });
 
-  it("sólo dos transportan algo, y las dos transportan la misma cursada", () => {
+  it("sólo tres transportan algo, y las tres transportan la misma cursada", () => {
     // El guard **no se afloja**: sigue siendo una lista cerrada, y quien agregue
     // un parámetro tiene que decir acá por qué.
     //
@@ -90,10 +91,14 @@ describe("§1 · El registro canónico declara qué transporta CTA-001", () => {
     const conParametro = Object.values(ctaRegistry)
       .filter((c) => c.parametro !== undefined)
       .map((c) => c.id);
-    expect(conParametro).toEqual(["CTA-001", "CTA-009"]);
+    expect(conParametro).toEqual(["CTA-001", "CTA-009", "CTA-019"]);
 
-    // Y el nombre del parámetro es el mismo en las dos: es el mismo objeto.
-    expect(ctaRegistry["CTA-009"].parametro?.nombre).toBe("cursada");
+    // Y el nombre del parámetro es el mismo en las tres: es el mismo objeto.
+    // `CTA-019` entró en la B6.23: `UX07` elige entre los `Assessment` **de
+    // esta cursada**, así que también necesita saber cuál.
+    for (const id of ["CTA-009", "CTA-019"] as const) {
+      expect(ctaRegistry[id].parametro?.nombre).toBe("cursada");
+    }
   });
 
   it("`rutaDeCtaCon` arma el destino con el nombre declarado", () => {

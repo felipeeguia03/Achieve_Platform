@@ -435,7 +435,7 @@ categoría + fecha absoluta 11 px en ink-3.
 | Patrón | Por qué no |
 |---|---|
 | **Sidebar de 7 destinos** | Achieve no tiene 7 destinos paralelos. Tiene un Golden Path. Ver §10.1 |
-| **Dock inferior de fichas** | Requiere multiventana. El manual mismo lo desaconseja fuera de escritorio |
+| **Dock inferior de fichas** | Requiere multiventana. El manual mismo lo desaconseja fuera de escritorio. ⚠️ **Caducado el 10 sep 2026** por [ADR-088](decisions.md#adr-088): la premisa era *«Achieve no tiene dos objetos abiertos a la vez»*, y dejó de ser cierta. Ver §12.8 |
 | **Multiventana con barra de título** | Los 6 requisitos innegociables (URL por ficha, trampa de foco, jerarquía de `Escape`, límite duro…) son costo puro para 9 pantallas encadenadas |
 | **Selector de contexto de organización** | Un estudiante no cambia de organización |
 | **Panel de notificaciones** | **No hay superficie de notificaciones en `UX01`–`UX09`.** El spec Parte II §22.3 prohíbe agregar navegación para ideas sin función. Queda registrado como patrón disponible, no como pantalla |
@@ -604,7 +604,7 @@ reportes no vuelven.
 | Un registro por destino | **Una decisión por pantalla** (`DD9`) |
 | Cola `N de M` en pantalla de decisión | Cola paginable **solo en la lista de materias** de `UX01`, resuelto en `design-system.md` §1.4 |
 | Dos objetos comparados en espejo | **No aplica.** Achieve nunca compara dos objetos |
-| Dock + multiventana | **No aplica.** Ver §7.4 |
+| Dock + multiventana | **No aplica.** Ver §7.4. ⚠️ **Caducado** por [ADR-088](decisions.md#adr-088) — se construyó como **espacio de trabajo**, con los seis requisitos cumplidos |
 
 ### 10.2 Patrón → superficie
 
@@ -682,7 +682,7 @@ falta para reconocerlos:
 | `A-04` | El mismo flujo se nombra de cuatro maneras según dónde estés |
 | `A-05` | Todo el producto vosea **menos una etiqueta en la pantalla más importante** |
 | `A-06` | El objeto externo rotulado **«LA AMENAZA»** — el sistema enuncia la conclusión antes de que el usuario la saque, y esa palabra queda escrita si la pantalla se comparte |
-| `A-07` | El dock **ya trunca títulos con dos elementos abiertos** |
+| `A-07` | El dock **ya trunca títulos con dos elementos abiertos**. ⚠️ **Sigue en la lista**: [ADR-088](decisions.md#adr-088) no lo borra, lo evita — hasta 5 objetos a ancho legible, y el resto a desbordamiento explícito |
 | `A-08` | Deshabilitado sin tratamiento propio, indistinguible del secundario |
 | `A-09` | **`Secured by Clerk`** al pie del menú de cuenta: lenguaje visual ajeno en el único lugar donde el usuario administra su identidad |
 
@@ -690,7 +690,7 @@ falta para reconocerlos:
 
 | Elemento | Por qué no en Achieve |
 |---|---|
-| **Dock + multiventana** | Seis requisitos innegociables de costo alto, para un producto de 9 pantallas encadenadas |
+| **Dock + multiventana** | Seis requisitos innegociables de costo alto, para un producto de 9 pantallas encadenadas. ⚠️ **Caducado** por [ADR-088](decisions.md#adr-088): ya no son 9 pantallas encadenadas, y **los seis se cumplen** |
 | **Sidebar de 7 destinos** | Achieve no tiene 7 destinos. Imponerla obligaría a inventar navegación (spec Parte II §22.3) |
 | **Cuarto color semántico (ámbar)** | `DD6`: tres, con la cuarta ranura vacía a propósito |
 | **Umbral con score visible** | `DD5`: el spec prohíbe magnitudes de máquina visibles |
@@ -884,7 +884,7 @@ documento.
 
 ---
 
-### 12.8 El dock inferior — ✅ `RESUELTO` por [ADR-019](decisions.md#adr-019): no se construye
+### 12.8 El dock inferior — ⚠️ `REABIERTO Y RESUELTO DE NUEVO` por [ADR-088](decisions.md#adr-088)
 
 **Registrado el 30 de agosto de 2026.** No era una decisión abierta: era un **choque entre dos
 documentos del propio repositorio**, y §1.5 de [`AGENTS.md`](../AGENTS.md) exige que un choque así
@@ -913,9 +913,40 @@ no tenía**, sin cruzar cada patrón contra §7.4 y §11.3. Es el mismo mecanism
 la A2.1. La corrección quedó en `AGENTS.md` §1.5: **cruzar contra §7.4/§11.3 antes de anotar un
 patrón como brecha**, no sólo antes de implementarlo.
 
-**Hay un test que lo sostiene** (`tests/ausencia.test.tsx`): ningún archivo de `app/`,
-`components/` o `lib/` puede llamarse dock ni multiventana, y este documento tiene que seguir
+**Había un test que lo sostenía** (`tests/ausencia.test.tsx`): ningún archivo de `app/`,
+`components/` o `lib/` podía llamarse dock ni multiventana, y este documento tenía que seguir
 descartándolo en más de un lugar. Una regla que vive sólo en un markdown vuelve en dos meses.
+
+---
+
+#### Lo que pasó después — 10 de septiembre de 2026
+
+**El descarte de arriba se conserva entero, con su fecha y su razón.** No se borra: un documento que
+tacha por qué dijo que no se equivoca dos veces, y la segunda es peor.
+
+Lo que caducó es **una premisa, no el razonamiento**. ADR-019 aplicó bien la regla del manual
+—*"flujos lineales → el dock es puro costo"*— sobre un producto que entonces era, textualmente,
+*"un flujo lineal `UX01`→`UX09` que **no tiene dos objetos abiertos a la vez** porque su unidad de
+trabajo es una `Action`"*.
+
+Entre el 8 y el 9 de septiembre de 2026 eso dejó de ser verdad: [ADR-077](decisions.md#adr-077) abrió
+el área «Materias» con 51 cursadas, [ADR-086](decisions.md#adr-086) les puso contenido a las 51,
+[ADR-085](decisions.md#adr-085) rearmó `UX02` alrededor del Gantt por tema —la unidad pasó a ser un
+objeto navegable— y [ADR-082](decisions.md#adr-082) hizo que la Bitácora fuera **de una materia**.
+
+**[ADR-088](decisions.md#adr-088) lo construye, y con los seis requisitos innegociables cumplidos los
+seis** — incluido el límite duro, que es justamente el que ADR-019 citó para descartarlo.
+
+⚠️ **No se llama dock, y no por cosmética.** Es **el espacio de trabajo**, y lo que contiene son
+**objetos abiertos** (`AGENTS.md` §4: un concepto, una palabra).
+
+⚠️ **El punto 2 de ADR-019 sobrevive intacto:** el breadcrumb **no se reemplaza**. La miga contesta
+*"¿dónde estoy?"* y el espacio *"¿qué tengo abierto?"*. Un espacio que contestara las dos sería la
+segunda lista de destinos que ADR-019 temía — con razón, y la advertencia sigue en pie.
+
+**El test no se borró: se reescribió contra la decisión nueva.** `tests/ausencia.test.tsx` verifica
+ahora **los seis requisitos**, por el mismo motivo que daba ADR-019 §3: una regla sin test se pierde
+en dos meses.
 
 
 ## 13. Qué le agrega este documento a `design-system.md`

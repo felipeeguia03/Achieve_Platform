@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { Shell } from "@/components/shell/shell";
+import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MateriaCursado } from "@/components/screens/materia-cursado";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
@@ -13,6 +14,8 @@ import type { MateriaProps } from "@/lib/domain/view-models";
 const DESTINO = rutaDeCta("CTA-002");
 /** `CTA-009` — la Bitácora. Existe la ruta aunque no haya cursada que nombrar. */
 const A_REGISTRO = rutaDeCta("CTA-009");
+/** `CTA-019` — la entrada manual a Modo Examen desde la materia (ADR-016). */
+const A_MODO_EXAMEN = rutaDeCta("CTA-019");
 
 /**
  * Etapa B2.6 — `UX02` desde la base.
@@ -62,6 +65,10 @@ function Pantalla({
   router: ReturnType<typeof useRouter>;
   params: ReturnType<typeof useSearchParams>;
 }) {
+  // La última miga dice **qué materia**, no «Materia»: `Hoy › Materias ›
+  // Emprendedorismo`. Pedido del owner, 9 sep 2026.
+  useMigaDelObjeto(props.materia);
+
   // El recorrido de focus group manda sobre el destino genérico: en una
   // sesión, la CTA tiene que llevar a la estación siguiente.
   const destino = siguienteUrl("/materia", params.get("escenario")) ?? DESTINO;
@@ -77,6 +84,13 @@ function Pantalla({
       onVerRegistro={
         A_REGISTRO
           ? () => router.push(rutaDeCtaCon("CTA-009", props.cursadaId) ?? A_REGISTRO)
+          : undefined
+      }
+      // `CTA-019`. `UX07` elige entre los `Assessment` de la cursada, así que
+      // le llega la misma cursada que abrió esta pantalla.
+      onModoExamen={
+        A_MODO_EXAMEN
+          ? () => router.push(rutaDeCtaCon("CTA-019", props.cursadaId) ?? A_MODO_EXAMEN)
           : undefined
       }
     />

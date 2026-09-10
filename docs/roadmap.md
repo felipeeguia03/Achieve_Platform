@@ -62,6 +62,10 @@ por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto 
 
 | Frente | Estado |
 |---|---|
+| **La ventana del objeto** | 🆕 **10 de septiembre de 2026** — [Enmienda 1](decisions.md#adr-088-enmienda-1) y [Enmienda 2](decisions.md#adr-088-enmienda-2) de ADR-088. La ficha **despliega, minimiza y cierra**, y el panel se maneja como una ventana: se arrastra, se estira, se expande y **vuelve donde estaba**. ⚠️ **Se llama «marco», no «ventana»**: `Ventana` ya son dos cosas del dominio (ADR-078 y `VentanaDeExamen`), y reusarla sería `A-04`. ⚠️ **El panel consulta; la superficie trabaja** — adentro toda CTA navega |
+| **El espacio de trabajo · los objetos abiertos** | 🆕 **Construido el 10 de septiembre de 2026** — [ADR-088](decisions.md#adr-088), que deja [ADR-019](decisions.md#adr-019) `SUPERSEDED` **en su punto 1**. El estudiante retoma lo que tenía abierto sin volver al índice. ⚠️ **Los seis requisitos innegociables del multiventana se cumplen los seis**, incluido el límite duro (12) que ADR-019 citó para descartar el dock. **No es navegación**: no entra a `surfaces.ts` ni a `cta-registry.ts`, y **el breadcrumb no se reemplaza** |
+| **`UX01` · la capa «anticipar»** | 🆕 **Construida el 10 de septiembre de 2026** — [ADR-089](decisions.md#adr-089). *Próxima evaluación* con cuenta regresiva y **mapa de 14 días** por materia. ⚠️ **Sin contrato nuevo, sin migración y sin tocar `estado_del_dia()`**: sale de `GET /api/materias`, la misma lectura del Gantt del período, pedida aparte como `reparto` |
+| **El radar académico de `UX01`** | 🟡 [ADR-090](decisions.md#adr-090) `PROPOSED` — **no se construye**. Bloqueado por `C01-021` (qué severidad se muestra), `C01-036` (qué motor la produce) y `C01-044` (qué playbook ofrece). Hoy el riesgo **sólo cambia el estado general**, que es lo único que `VI.1` §3.3 autoriza |
 | **Fase B6.14 · el catálogo curricular y el tramo de alta** | ✅ **Completa, 6 / 6** — 5 de septiembre de 2026 ([ADR-051](decisions.md#adr-051), [ADR-052](decisions.md#adr-052), [ADR-053](decisions.md#adr-053)). Cierra el hueco que ADR-039 había dejado escrito: entre el `authorized: true` del CRM y la primera acción **ya hay pantallas**. ⚠️ **Y le movió el mundo debajo a una decisión de la B2.6**: ver [ADR-054](decisions.md#adr-054) |
 | **Período, comisión y horarios de cursada** | 🆕 **Decidido el 5 de septiembre de 2026, sin implementar** — [ADR-060](decisions.md#adr-060) … [ADR-065](decisions.md#adr-065). El temario pasa a ser **de la materia** (el progreso sobrevive a un cambio de comisión), la comisión gana **cuatro estados en la cursada**, el período se pregunta en `/alta/carrera` con vocabulario cerrado, y la superposición con clase se valida **en el `Commitment`, no en el ADE**. Plan por **siete cortes** en [`plan-periodo-comision-horarios.md`](plan-periodo-comision-horarios.md) |
 | **Corte 1 · el período deja de ser texto libre** | ✅ **Hecho** — 5 de septiembre de 2026. Vocabulario cerrado en dominio, base e importador; año lectivo y semestre en columnas propias de `enrollment`, derivados sin cambiar ningún contrato; y los CSV sintéticos con materias de los dos semestres y anuales, **en tres dialectos distintos** para que el normalizador se pruebe con datos y no en laboratorio. `db:verify` **330 ✓** |
@@ -4033,6 +4037,163 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+## Fase B6.26 — El rescate del árbol · ✅ COMPLETA
+
+**10 de septiembre de 2026** · [ADR-091](decisions.md#adr-091) y la Enmienda 2 de
+[ADR-087](decisions.md#adr-087).
+
+Seis ADR quedaron fuera del historial mientras dos sesiones escribían sobre el mismo árbol: 85
+archivos sin commitear y 21 ya en el índice. **El MVP está timeboxed**, así que el rescate entró en
+**un solo commit** en vez de doce, con respaldo recuperable tomado antes.
+
+⚠️ **Lo que se corrigió antes de commitear, y era lo único que bloqueaba:** `CTA-021` estaba en el
+registro canónico prometiendo *«Action creada sobre el CourseEnrollment elegido»* **sin que
+existiera esa escritura**. Formación entró como **V1 de solo lectura** y la CTA salió del registro.
+
+### Deuda posterior al MVP — registrada, no olvidada
+
+| # | deuda | de dónde sale |
+|---|---|---|
+| 1 | **V2 de Formación** — `origin`, `formative_content_id`, selección de cursada, creación de `Action`, `CTA-021` con su escritura, `Evidence` | ADR-087 Enmienda 2 `E2.4` |
+| 2 | **Ciclo de vida de la acción de Formación** y sus invariantes | Enmienda 2 `E2.2` |
+| 3 | **Concurrencia de la aplicación** — advisory lock o tabla-cerrojo. `action` no tiene `student_id`, así que *una viva por estudiante* **no es expresable como índice único** | Enmienda 2 `E2.2` |
+| 4 | ⛔ **Acotar `materializar_recomendacion()` por origen.** Sin esto, cuando V2 exista, aplicar una pieza **impediría al ADE emitir la acción del día** de esa cursada | Enmienda 2 `E2.2` |
+| 5 | **Sincronización entre pestañas del espacio de trabajo.** No hay listener de `storage`: dos pestañas del mismo estudiante se pisan y **la última escritura gana**. Se pierden atajos, no datos | ADR-088 |
+| 6 | **Cuatro mutadores del espacio leen `espacio` de la clausura** (`abrir`, `activar`, `verComoPagina`, `cerrar`) en vez de usar la forma funcional, como sí hacen los otros cinco | ADR-088 |
+| 7 | **Pruebas faltantes de ADR-088:** escritura de `localStorage` que falla, aislamiento A/B, aperturas concurrentes, sincronización entre pestañas | ADR-088 |
+| 8 | **Prueba faltante de ADR-089:** que el repliegue lo determina el nivel del dominio y no una condición local en `seRepliega` | ADR-089 |
+| 9 | **La fila del índice debería ser un enlace único con `href`**, sin `onClick` de contenedor ni controles anidados | [ADR-091](decisions.md#adr-091) |
+| 10 | **El radar académico** sigue `PROPOSED` y bloqueado por `C01-021`, `C01-036` y `C01-044` | [ADR-090](decisions.md#adr-090) |
+| 11 | **`db:verify` no se corrió en el rescate.** Es destructivo para la base local y necesita su propio respaldo y recuperación | decisión del owner |
+| 12 | **`scripts/db-demo.sh` sigue afirmando que ADR-006 es bloqueo absoluto.** Sólo se corrige citando la Enmienda a ADR-006, **que todavía no existe como decisión escrita** | ADR-006 |
+
+---
+
+## Fase B6.25 — La biblioteca de Formación · ✅ V1 DE SOLO LECTURA
+
+**10 de septiembre de 2026** · [ADR-087](decisions.md#adr-087) y su Enmienda 1.
+
+`Formación` era un ítem de menú de un mockup, diferido tres veces. El concepto **sí** estaba
+decidido en el spec original (§13, §3.9, `D5`, `D23`), y el 10 de septiembre llegó el contenido: los
+cinco temas más recurrentes del consultorio de la psicopedagoga.
+
+| | qué se hizo |
+|---|---|
+| **La entidad** | `formative_content`, con **las seis partes que dicta el contenido**: problema, objetivo, explicación, acción posterior, evidencia y material |
+| **El vínculo** | `action.formative_content_id`, **aditivo**: `course_enrollment_id` conserva su `NOT NULL` |
+| **La carga** | `scripts/cargar-formacion.mjs` parsea la **fuente literal**, no una copia |
+| **La lectura** | `biblioteca_de_formacion()`, que devuelve **sólo `PUBLISHED`** |
+| **La navegación** | nodo con `wireframe: null`, ítem **sin contador**, arista de retorno a `UX01` |
+| **La pantalla** | listado y pieza abierta con sus seis partes. **Sin CTA y sin selector** |
+
+⚠️ **La biblioteca está vacía, y es correcto.** `D5`: el contenido queda fuera de producción hasta
+que la psicopedagoga confirme vigencia. Las cinco piezas están cargadas en `DRAFT`.
+
+⚠️ **`D1` prohíbe clasificar al estudiante.** Sin Student Model, **nada** de proxies, puntajes ni
+umbrales: la biblioteca es la misma para todos. Hay guard sobre el SQL y sobre la proyección.
+
+⚠️ **Leer y aplicar se separan.** Sin cursadas la pieza **se lee igual** y lo que se apaga es
+`CTA-021`. Pedir la materia para leer convertiría la biblioteca en un embudo.
+
+⚠️ **No hay video, y no se anuncia uno.** La autora declara que faltan los guiones.
+
+⚠️ **Entró como V1 de solo lectura** (Enmienda 2). No toca `action`, no pide cursada y **`CTA-021` no
+está en el registro**: se lee aunque no haya ninguna cursada. La vertical de aplicación es **V2**, y
+la CTA vuelve con su escritura.
+
+---
+
+## Fase B6.24 — Las 51 materias tienen contenido, y el ADE lo usa · ✅ COMPLETA
+
+**9 de septiembre de 2026** · [ADR-086](decisions.md#adr-086).
+
+El Plan 2016 tiene 51 materias: **25 con temario real** de los programas oficiales de la UCC y
+**26 sin nada**. Ninguna tenía calendario —un programa no trae fechas— así que el Gantt estaba
+vacío y no existía la cuenta *"cuánto te falta estudiar"*.
+
+Ahora **las 51 tienen unidades, pesos, calendario, evaluación y material**, y lo que generó el
+sistema **lo dice en pantalla**.
+
+| | qué se hizo |
+|---|---|
+| **Marcar lo estimado** | `source_type = 'inference'`, sin columna nueva. `estado_de_materia` devuelve `contenido`: `estimado` · `calendario_estimado` · `NULL` |
+| **El peso** | `ingerir_materia` acepta `peso` por unidad; de ahí salen los minutos por tema que `duracion.ts` ya calculaba |
+| **El ADE** | el peso entra al ranking: más peso, más prioridad. Aporta hasta `120`, contra `300` de práctica y `1000` de evaluación |
+| **El plan** | `UCC/08/2016` pasa a `PUBLISHED`: sin eso el alta no ofrece la carrera y **nadie puede inscribirse solo** |
+| **El aviso** | en `UX02`, en el slot `aviso` que ya existía, arriba del Gantt |
+
+**Verificado de punta a punta:** cuenta nueva → alta → *UCC Sistemas* → seis materias de 3er año →
+`recomendadas: 6`, y el ADE eligió la unidad más pesada dentro del alcance del examen en las seis.
+
+⚠️ **La cursada vive en el período del alta.** `confirmar_mapa_academico()` la crea con
+`(course, term, NULL)`. Ingerir bajo el año lectivo del programa dejaba **dos ofertas**: la del
+contenido y la del estudiante, vacía.
+
+⚠️ **Una unidad pesada ocupa más clases.** `minutosPorTema()` reparte lo **observado**: con una
+clase por unidad, el peso no cambiaba nada.
+
+⚠️ **Dar por revisado no es auditar.** Los 57 `needs_review` los levantó el owner para habilitar el
+MVP. Los diez nombres cortados **siguen cortados**.
+
+⚠️ **Tres guards se mudaron a `INFORMATICA/web-2026`**, que sigue `DRAFT`. La regla del borrador
+sigue teniendo test.
+
+⛔ **Los 80 libros de temas siguen afuera** — nombre y legajo del docente en cada fila.
+
+---
+
+## Fase B6.23 — `UX02` se rearma alrededor del Gantt por tema · ✅ COMPLETA
+
+**Decide:** [ADR-085](decisions.md#adr-085), con las capturas del owner delante — que es como
+[ADR-054](decisions.md#adr-054) pidió que se tomaran las decisiones de esta pantalla.
+
+El layout de la captura con la paleta actual: **el Gantt por tema con eje de fechas** en el panel
+principal, la **tarjeta de evaluación** con la entrada a Modo Examen, el registro, las clases de la
+semana, el próximo paso y la actividad reciente.
+
+**`CTA-019` por fin es alcanzable por clic.** Estaba declarada desde
+[ADR-016](decisions.md#adr-016) —1 de septiembre— y **nunca se había renderizado**.
+
+### Las dos puntas de cada barra son hechos
+
+Cuándo se dictó (`class_session_topic`) y para cuándo se evalúa (`assessment_topic`). ⚠️ **Un tema
+sin esas fechas no se ubica**, y la fila lo dice: *«todavía no se dictó»*. Ponerlo en «+7 días»
+porque es el séptimo de la lista sería inventar un plan de estudio que nadie hizo.
+
+El eje es **el mismo que el índice de materias**: `marcasDelEje` se movió al dominio y la usan las
+dos.
+
+### ⛔ Tres palabras de la captura no se copiaron
+
+`Dominado` ([ADR-072](decisions.md#adr-072)), `nivel` ([ADR-075](decisions.md#adr-075) §C1) y `3/3`
+—un puntaje—. La columna dice el **estado de la evidencia**: `Sin registro · Entregado · Requiere
+revisión · Criterio alcanzado`, que describen **actividad, no conocimiento**.
+
+⚠️ **Y la razón de fondo:** la escala de la captura **es la dimensión Confianza**, que el estudiante
+autodeclara y que todavía no tiene escritor. Es el corte 2, bloqueado hasta la revisión de
+vocabulario.
+
+También quedó afuera el color por estado —verde «dominado», ámbar «leído»—: es la escala de
+calificación que §C1 descarta.
+
+### Tres decisiones que el mockup forzó
+
+**El orden va contra el spec y es del owner:** `VI.2` §1 pide la acción en el primer viewport y la
+captura la manda al pie. **El `CURSÁS` de la tarjeta no se copió**, porque repetía el panel de clases
+—`C-02`—. Y **Modo Examen es CTA secundaria**: `I-06` admite una sola primaria, y la que esta
+pantalla propone sigue siendo la próxima acción.
+
+### Lo que se perdió
+
+**La lista «Unidades» con su recencia por tema.** El Gantt la reemplaza y muestra estado de
+evidencia, no el *«hace 2 días»* de cada unidad. Se sacó la prop en vez de dejarla sin renderizar, y
+la regla que protegía se reescribió contra la forma nueva.
+
+**Verificación:** 19 comprobaciones nuevas en `npm test`. Cuatro reglas verificadas rompiéndolas a
+propósito.
+
+---
+
 ## Fase B6.22 — El compromiso no cae encima de una clase · ✅ COMPLETA
 
 **Decide:** [ADR-084](decisions.md#adr-084), que **construye**
@@ -4308,7 +4469,7 @@ Cada uno se verificó rompiendo la regla a propósito:
 `tests/shell.test.tsx` pedía que **todo ítem del menú fuera una superficie** y que hubiera **nueve
 rutas**. Las dos afirmaciones eran proxies que alcanzaban mientras el menú sólo llevara a las nueve.
 Ahora se verifica lo que su nombre siempre dijo —el nodo existe y tiene ruta— y **las dos cifras por
-separado**: diez rutas, nueve superficies. La regla *"ninguna superficie del menú depende sólo del
+separado**: once rutas, nueve superficies. La regla *"ninguna superficie del menú depende sólo del
 menú"* se acotó a los nodos **con wireframe**, que es donde su motivo aplica.
 
 ### La segunda vista · ADR-078

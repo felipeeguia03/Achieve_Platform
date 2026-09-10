@@ -27,12 +27,16 @@ import {
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara, ofreceCta } from "@/lib/content/hero";
 import type {
+  EjeDelPeriodo,
   HeroProjection,
   HoyProps,
+  MateriaEnIndice,
   MateriaResumen,
+  MateriasProps,
   RecuperacionProjection,
   RepartoProjection,
 } from "@/lib/domain/view-models";
+import type { HeroLevel } from "@/lib/domain/precedence";
 
 /**
  * Línea operativa: tiempo (o estado) · evidencia esperada.
@@ -324,6 +328,332 @@ function Reparto({ r }: { r: RepartoProjection }) {
   );
 }
 
+/**
+ * ¿La pantalla se repliega? — [ADR-089](../../docs/decisions.md#adr-089) §4.
+ *
+ * ⚠️ **Esto NO decide nada.** El nivel llega resuelto por `selectHeroLevel`
+ * (`lib/domain/precedence.ts`), con sus nueve niveles; acá sólo se proyecta ese
+ * mismo nivel **en el eje de la densidad** además de en el del texto.
+ *
+ * El criterio es el de la psicopedagoga y está en el ADR: **al que está atrasado
+ * se le muestra menos, no más**. Un panorama de catorce días encima de un
+ * compromiso incumplido es información que nadie va a leer y una razón más para
+ * cerrar la pantalla.
+ *
+ * Si alguna vez hace falta una regla que el nivel no alcance a expresar, **es un
+ * ADR nuevo y no un `if` más acá**.
+ */
+function seRepliega(nivel: HeroLevel): boolean {
+  return nivel === "RESCUE_REQUIRED" || nivel === "COMMITMENT_MISSED";
+}
+
+/**
+ * **Próxima evaluación** — la mitad derecha de la primera fila.
+ *
+ * Dice **cuánto falta**, y nada más. No dice si alcanza, no puntúa la
+ * preparación y no ofrece un pronóstico:
+ * [ADR-058](../../docs/decisions.md#adr-058) cerró las predicciones y
+ * [ADR-072](../../docs/decisions.md#adr-072) prohibió leer la cobertura como
+ * dominio.
+ *
+ * ⚠️ **No lleva CTA primaria.** `I-06`: una sola por pantalla, y es la del Hero.
+ * Abrir la materia es navegación de lectura, igual que `CTA-009` arriba.
+ */
+function ProximaEvaluacion({
+  panorama,
+  onAbrirMateria,
+}: {
+  panorama: MateriasProps;
+  onAbrirMateria?: (m: MateriaEnIndice) => void;
+}) {
+  // La primera con fecha. El orden ya viene por próxima evaluación desde la
+  // proyección (ADR-072), así que **acá no se rankea**: se toma la primera.
+  const proxima = panorama.materias.find((m) => m.evaluacion !== null && m.faltan !== null);
+
+  return (
+    <section
+      aria-label={t("HOY.PROXIMA_EVALUACION")}
+      style={{
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius)",
+        padding: "14px 16px",
+        background: "var(--card)",
+      }}
+    >
+      <Eyebrow>{t("HOY.PROXIMA_EVALUACION")}</Eyebrow>
+
+      {proxima ? (
+        <>
+          <p style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, color: "var(--foreground)" }}>
+            {proxima.faltan}
+          </p>
+          <p style={{ fontSize: "var(--text-body)", color: "var(--foreground)" }}>{proxima.nombre}</p>
+          <ReglaDeNegocio>{proxima.evaluacion}</ReglaDeNegocio>
+
+          {/*
+            La cobertura, **con su aclaración obligatoria** (ADR-072). Sin barra
+            se dice por qué: una barra vacía por falta de datos y una por falta
+            de trabajo **no se dibujan igual**.
+          */}
+          {proxima.cobertura ? (
+            <ReglaDeNegocio>{proxima.cobertura.texto}</ReglaDeNegocio>
+          ) : proxima.sinCobertura ? (
+            <ReglaDeNegocio>{proxima.sinCobertura}</ReglaDeNegocio>
+          ) : null}
+
+          {onAbrirMateria && (
+            <div style={{ marginTop: 10 }}>
+              <AccionDeObjeto onClick={() => onAbrirMateria(proxima)}>
+                {proxima.etiqueta}
+              </AccionDeObjeto>
+            </div>
+          )}
+        </>
+      ) : (
+        /*
+          ⚠️ **No es «no tenés exámenes»**: es que ninguna materia tiene la fecha
+          cargada. Afirmar lo primero sería tranquilizar sobre algo que nadie
+          verificó — *sin datos no es cero* (`AGENTS.md` §2.5).
+        */
+        <>
+          <p style={{ fontSize: "var(--text-body)", color: "var(--foreground)" }}>
+            {t("HOY.SIN_EVALUACIONES")}
+          </p>
+          <ReglaDeNegocio>{t("HOY.SIN_EVALUACIONES.AYUDA")}</ReglaDeNegocio>
+        </>
+      )}
+    </section>
+  );
+}
+
+/**
+ * **El mapa de catorce días** — [ADR-089](../../docs/decisions.md#adr-089) §3.
+ *
+ * Es **la misma ventana** del Gantt del período de
+ * [ADR-078](../../docs/decisions.md#adr-078), mirada más chica: las posiciones
+ * llegan resueltas a fracciones `0`–`1` desde la proyección, y **la pantalla no
+ * hace aritmética de fechas**. Calcular el recorte acá pondría la regla en dos
+ * lugares, y uno de ellos sin versión.
+ *
+ * ## Las tres cosas que NO hace
+ *
+ * 1. **No agenda.** No es un calendario editable y no crea `Commitment`: el
+ *    *cuándo* vive en `UX04` ([ADR-064](../../docs/decisions.md#adr-064)).
+ * 2. **No inventa una punta.** Sin fecha de evaluación **no hay ventana** y la
+ *    fila se dibuja punteada diciéndolo. Sin primera clase, el inicio se marca
+ *    como no sabido en vez de disimularse.
+ * 3. **No ordena por cobertura.** El orden es por próxima evaluación, y viene
+ *    dado: *"ordenar por cobertura es un ranking de qué tan mal vas"*.
+ */
+function MapaDeCatorceDias({
+  panorama,
+  onAbrirMateria,
+}: {
+  panorama: MateriasProps;
+  onAbrirMateria?: (m: MateriaEnIndice) => void;
+}) {
+  if (panorama.materias.length === 0) {
+    return (
+      <section aria-label={t("HOY.PANORAMA")}>
+        <Eyebrow>{t("HOY.PANORAMA")}</Eyebrow>
+        <ReglaDeNegocio>{t("HOY.PANORAMA.VACIO")}</ReglaDeNegocio>
+      </section>
+    );
+  }
+
+  return (
+    <section aria-label={t("HOY.PANORAMA")} data-mapa-catorce-dias>
+      <div className="flex items-baseline justify-between" style={{ gap: 12 }}>
+        <Eyebrow>{t("HOY.PANORAMA")}</Eyebrow>
+        {panorama.proximaEvaluacion && (
+          <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+            {panorama.proximaEvaluacion}
+          </span>
+        )}
+      </div>
+
+      {/*
+        A 360 px el eje se sale de cuadro si no puede desplazarse. El scroll vive
+        **adentro de este contenedor**: el `body` nunca hace scroll horizontal.
+      */}
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ minWidth: 460 }}>
+          <EjeDelMapa eje={panorama.eje} />
+          <ul>
+            {panorama.materias.map((m) => (
+              <FilaDelMapa key={m.cursadaId} m={m} eje={panorama.eje} onAbrir={onAbrirMateria} />
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <ReglaDeNegocio>{t("HOY.PANORAMA.AYUDA")}</ReglaDeNegocio>
+      {/* La nota al pie de ADR-072, obligatoria si hay alguna barra de cobertura. */}
+      {panorama.aclaracion && <ReglaDeNegocio>{panorama.aclaracion}</ReglaDeNegocio>}
+    </section>
+  );
+}
+
+const pct = (n: number) => `${(n * 100).toFixed(2)}%`;
+
+function EjeDelMapa({ eje }: { eje: EjeDelPeriodo }) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "relative",
+        height: 18,
+        marginLeft: 148,
+        fontSize: "var(--text-meta)",
+        color: "var(--muted-foreground)",
+      }}
+    >
+      {eje.marcas.map((marca) => (
+        <span
+          key={marca.etiqueta}
+          style={{
+            position: "absolute",
+            left: pct(marca.posicion),
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+            color: marca.esHoy ? "var(--foreground)" : undefined,
+            fontWeight: marca.esHoy ? 600 : 400,
+          }}
+        >
+          {marca.etiqueta}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function FilaDelMapa({
+  m,
+  eje,
+  onAbrir,
+}: {
+  m: MateriaEnIndice;
+  eje: EjeDelPeriodo;
+  onAbrir?: (m: MateriaEnIndice) => void;
+}) {
+  const urgencia = m.tono === "urgencia";
+
+  return (
+    <li className="flex items-center" style={{ gap: 8, padding: "3px 0" }}>
+      <button
+        onClick={() => onAbrir?.(m)}
+        title={m.nombre}
+        className="truncate text-left"
+        style={{
+          width: 140,
+          flexShrink: 0,
+          fontSize: "var(--text-label)",
+          color: "var(--foreground)",
+        }}
+      >
+        {m.nombre}
+      </button>
+
+      <div style={{ position: "relative", flex: 1, height: 26 }}>
+        {/* La línea de hoy, que es una marca del eje y no un caso especial. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: pct(eje.hoy),
+            top: 0,
+            bottom: 0,
+            width: 1,
+            background: "var(--foreground)",
+            opacity: 0.35,
+          }}
+        />
+
+        {m.ventana ? (
+          <div
+            style={{
+              position: "absolute",
+              left: pct(m.ventana.desde),
+              width: pct(Math.max(0, m.ventana.hasta - m.ventana.desde)),
+              top: 5,
+              height: 16,
+              borderRadius: 4,
+              overflow: "hidden",
+              background: "var(--muted)",
+              border: "1px solid var(--border)",
+              // ⚠️ Punteado a la izquierda ⇒ **no se sabe desde cuándo**. No es
+              // lo mismo que haber empezado ahí, y por eso se ve distinto.
+              borderLeftStyle: m.ventana.inicioDesconocido ? "dotted" : "solid",
+            }}
+          >
+            {/*
+              ⚠️ **El fondo es la ventana; el relleno, la cobertura.** Sin
+              cobertura no se dibuja relleno: una barra vacía por falta de datos
+              y una por falta de trabajo no se dibujan igual (ADR-072).
+            */}
+            {m.cobertura && (
+              <div
+                style={{
+                  width: pct(m.cobertura.fraccion),
+                  height: "100%",
+                  background: urgencia ? "var(--urgencia-fill)" : "var(--exito-fill)",
+                }}
+              />
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              position: "absolute",
+              inset: "5px 0 auto 0",
+              height: 16,
+              borderRadius: 4,
+              border: "1px dashed var(--border)",
+              display: "flex",
+              alignItems: "center",
+              paddingLeft: 8,
+              fontSize: "var(--text-meta)",
+              color: "var(--muted-foreground)",
+            }}
+          >
+            {t("HOY.PANORAMA.SIN_VENTANA")}
+          </div>
+        )}
+
+        {/* El rombo de la evaluación, sobre el fin de la ventana. */}
+        {m.ventana && (
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: pct(m.ventana.hasta),
+              top: 7,
+              transform: "translateX(-50%) rotate(45deg)",
+              width: 9,
+              height: 9,
+              background: urgencia ? "var(--urgencia-texto)" : "var(--foreground)",
+            }}
+          />
+        )}
+      </div>
+
+      <span
+        style={{
+          width: 46,
+          flexShrink: 0,
+          textAlign: "right",
+          fontFamily: "var(--font-mono)",
+          fontSize: "var(--text-meta)",
+          color: urgencia ? "var(--urgencia-texto)" : "var(--muted-foreground)",
+        }}
+      >
+        {/* Sin fecha la columna **queda vacía**, no en cero. */}
+        {m.faltan ?? ""}
+      </span>
+    </li>
+  );
+}
+
 export function HoyAutogestion({
   fecha,
   estadoGeneral,
@@ -332,14 +662,32 @@ export function HoyAutogestion({
   reparto,
   recuperacion,
   verProgreso,
+  panorama,
   onAvanzar,
   onVerMateria,
   onVerProgreso,
+  onAbrirMateria,
 }: HoyProps & {
   onAvanzar?: () => void;
   onVerMateria?: (cursadaId: string | null) => void;
   onVerProgreso?: () => void;
+  /**
+   * Abre una materia **como objeto del espacio de trabajo** —
+   * [ADR-088](../../docs/decisions.md#adr-088) §10.6.
+   *
+   * Es la misma navegación de `CTA-001`; lo que agrega es que el objeto quede
+   * abierto para volver. `undefined` ⇒ no hay espacio de trabajo montado
+   * (el Track A sin sesión) y **las filas siguen siendo navegación normal**.
+   */
+  onAbrirMateria?: (m: MateriaEnIndice) => void;
 }) {
+  /*
+    La composición adaptativa de [ADR-089](../../docs/decisions.md#adr-089) §4.
+
+    ⚠️ **El nivel llega decidido**; acá sólo se lo proyecta también en la
+    densidad. Ver `seRepliega`.
+  */
+  const replegado = seRepliega(hero.nivel);
   return (
     <div
       className="space-y-4"
@@ -362,9 +710,36 @@ export function HoyAutogestion({
 
       <Recuperacion r={recuperacion} />
 
-      <HeroContent hero={hero} onAvanzar={onAvanzar} />
+      {/*
+        **Primera fila: foco y evaluación.** El Hero manda y ocupa dos tercios;
+        la evaluación acompaña en el tercero. Por debajo de `lg` se apilan, y el
+        Hero queda primero — el contrato de orden semántico de
+        `design-system.md` §6.1 rige en todo ancho ([ADR-014](../../docs/decisions.md#adr-014)).
+
+        ⚠️ **Repleg­ada, la evaluación no se dibuja.** A alguien con un
+        compromiso incumplido no se le pone una cuenta regresiva al lado de la
+        salida.
+      */}
+      <div className={panorama && !replegado ? "grid gap-4 lg:grid-cols-3" : undefined}>
+        <div className={panorama && !replegado ? "lg:col-span-2" : undefined}>
+          <HeroContent hero={hero} onAvanzar={onAvanzar} />
+        </div>
+        {panorama && !replegado && (
+          <ProximaEvaluacion panorama={panorama} onAbrirMateria={onAbrirMateria} />
+        )}
+      </div>
 
       <MateriasQueue materias={materias} onVerMateria={onVerMateria} />
+
+      {/*
+        ⚠️ **El mapa va después del Hero y de las materias, nunca antes.** La
+        precedencia de `UX01` es conducta primero y contexto después
+        (`product.md` §10.2): un panorama arriba del Hero convierte la pantalla
+        que conduce en una que informa.
+      */}
+      {panorama && !replegado && (
+        <MapaDeCatorceDias panorama={panorama} onAbrirMateria={onAbrirMateria} />
+      )}
 
       {reparto && <Reparto r={reparto} />}
 

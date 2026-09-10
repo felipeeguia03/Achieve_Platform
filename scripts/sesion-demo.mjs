@@ -47,6 +47,17 @@ const IDENTIDADES = [
     password: "achieve-demo-alta",
     rotulo: "recién habilitado · recorre el alta",
   },
+  // El tercero **no lo siembra `db:demo`**: lo crea
+  // `scripts/importar-temarios.mjs --estudiante`, y vive en la UCC, no en
+  // `SYN-U`. Si no corriste el importador, este `student` no existe y la
+  // atadura se saltea sola.
+  {
+    id: "a5000000-0000-0000-0000-000000000003",
+    email: "estudiante.ucc@achieve.local",
+    password: "achieve-demo-ucc",
+    rotulo: "temarios reales de la UCC · 6 materias",
+    opcional: true,
+  },
 ];
 
 // `.env.local` a mano: este script corre fuera de Next, que es quien
@@ -110,6 +121,23 @@ async function conEspera(descripcion, intentar) {
 console.log("✓ Sesiones sintéticas listas\n");
 
 for (const identidad of IDENTIDADES) {
+  // ⚠️ Una identidad `opcional` cuyo `student` no está **se saltea entera**, y
+  // no se crea el usuario de auth. Sin esto quedaba una cuenta que entra a
+  // `/login`, pasa la contraseña y choca contra `403 SIN_PADRON`: el peor de
+  // los tres estados, porque parece un problema de permisos y es una fila que
+  // no existe. El `.update()` de abajo no lo detecta — cero filas no es error.
+  if (identidad.opcional) {
+    const { data: existe } = await admin
+      .from("student")
+      .select("id")
+      .eq("id", identidad.id)
+      .maybeSingle();
+    if (!existe) {
+      console.log(`   (se saltea ${identidad.email}: su student no está sembrado)\n`);
+      continue;
+    }
+  }
+
   const { data: creado, error } = await conEspera(identidad.email, () =>
     admin.auth.admin.createUser({
       email: identidad.email,

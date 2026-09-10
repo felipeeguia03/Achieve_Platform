@@ -16,6 +16,7 @@ const base: EstadoDeMateria = {
   instante: "2026-08-31T15:00:00.000Z",
   zona: "America/Argentina/Cordoba",
   cursadaId: "ce-syn-1",
+  evidenciasEnviadas: 0,
   materia: "Análisis Matemático II",
   examen: null,
   accion: null,
@@ -23,6 +24,8 @@ const base: EstadoDeMateria = {
   rescatePendiente: false,
   evidencia: "NONE",
   contextoIncompleto: false,
+  // Por defecto **nada estimado**: los casos viejos miden lo que medían.
+  contenido: null,
   ultimoAvanceEn: null,
   unidades: [],
   clases: [],
@@ -51,8 +54,8 @@ const conProgreso: EstadoDeMateria = {
   ...conAccion,
   ultimoAvanceEn: "2026-08-29T12:00:00.000Z",
   unidades: [
-    { id: "u1", codigo: "U1", nombre: "Integrales", ultimoAvanceEn: "2026-08-29T12:00:00.000Z", dominio: "not_evaluated", practica: "value", recorrido: "value", peso: null, evidencia: "enviada" as const },
-    { id: "u2", codigo: "U2", nombre: "Series", ultimoAvanceEn: null, dominio: "not_evaluated", practica: "no_information", recorrido: "no_information", peso: null, evidencia: "sin_evidencia" as const },
+    { id: "u1", codigo: "U1", nombre: "Integrales", ultimoAvanceEn: "2026-08-29T12:00:00.000Z", dominio: "not_evaluated", practica: "value", recorrido: "value", peso: null, primeraClaseEn: "2026-08-04", ultimaClaseEn: "2026-08-18", evaluaEn: "2026-09-10", evidencia: "enviada" as const },
+    { id: "u2", codigo: "U2", nombre: "Series", ultimoAvanceEn: null, dominio: "not_evaluated", practica: "no_information", recorrido: "no_information", peso: null, primeraClaseEn: null, ultimaClaseEn: null, evaluaEn: null, evidencia: "sin_evidencia" as const },
   ],
   dimensiones: {
     unidades: 2,
@@ -117,10 +120,31 @@ describe("B2.6 · las ausencias se distinguen entre sí", () => {
     expect(dims.every((d) => d.ausencia === "SIN_ASIGNAR")).toBe(true);
   });
 
-  it("una unidad sin registro no dice «hace 0 días»", () => {
-    const u = proyectarMateria(conProgreso).unidades;
-    expect(u[1].valor).toBe("Sin avance registrado");
-    expect(u[1].ausencia).toBe("SIN_ASIGNAR");
+  it("una unidad sin registro no dice «hace 0 días» ni se ubica en el eje", () => {
+    /*
+      La lista de unidades se fue con la B6.23 —la reemplaza el Gantt por tema—
+      pero **la regla que este test protege sobrevive entera**: una ausencia se
+      nombra, nunca se dibuja como cero.
+
+      La segunda unidad no se dictó ni tiene evidencia: no lleva barra, y lo
+      dice. Ubicarla en «+7 días» porque es la segunda de la lista sería
+      inventar un plan de estudio que nadie hizo.
+    */
+    const u = proyectarMateria(conProgreso).gantt!.unidades;
+    expect(u[1].desde).toBeNull();
+    expect(u[1].hasta).toBeNull();
+    expect(u[1].nota).toBe("Todavía no se dictó");
+    expect(u[1].etiqueta).toBe("Sin registro");
+  });
+
+  it("y la que sí se dictó lleva su barra, entre dos hechos", () => {
+    // Las dos puntas: la primera clase que la dictó y la evaluación que declara
+    // cubrirla. Ninguna se estima.
+    const u = proyectarMateria(conProgreso).gantt!.unidades;
+    expect(u[0].desde).not.toBeNull();
+    expect(u[0].hasta).not.toBeNull();
+    expect(u[0].desde!).toBeLessThanOrEqual(u[0].hasta!);
+    expect(u[0].nota).toBeNull();
   });
 
   it("sin unidades declaradas no se inventan dimensiones", () => {
@@ -130,16 +154,16 @@ describe("B2.6 · las ausencias se distinguen entre sí", () => {
 
 describe("B2.6 · lo que sí es un hecho", () => {
   it("la evaluación sin fecha conserva su título y no se le estima una", () => {
-    const p = proyectarMateria({ ...base, examen: { titulo: "Parcial 1", fechaEn: null } });
-    expect(p.examen).toBe("Parcial 1");
+    const p = proyectarMateria({ ...base, examen: { titulo: "Parcial 1", fechaEn: null, tipo: null, modalidad: null } });
+    expect(p.evaluacion?.titulo).toBe("Parcial 1");
   });
 
   it("la evaluación con fecha la muestra sin correrla un día", () => {
     // Este test decía sólo `/.*sep/` y por eso no vio el bug durante dos fases:
     // `assessment_date` es un `DATE` y se estaba formateando como instante en
     // la zona del estudiante, así que un examen del 10 salía como del 9.
-    const p = proyectarMateria({ ...base, examen: { titulo: "Parcial 1", fechaEn: "2026-09-10" } });
-    expect(p.examen).toBe("Parcial 1 · jue 10 sept");
+    const p = proyectarMateria({ ...base, examen: { titulo: "Parcial 1", fechaEn: "2026-09-10", tipo: null, modalidad: null } });
+    expect(p.evaluacion?.titulo).toBe("Parcial 1 · jue 10 sept");
   });
 
   it("sin contexto de cursado, el estado lo dice y el aviso no lo repite", () => {
@@ -175,14 +199,14 @@ describe("B2.6 · la forma es la que la pantalla espera", () => {
         "cursadaId",
         "dimensiones",
         "estado",
-        "examen",
+        "evaluacion",
         // El Gantt entró en la Fase B6.15 (ADR-072). `null` cuando la materia
         // no tiene unidades cargadas: no se dibuja uno vacío.
         "gantt",
         "hero",
         "materia",
+        "modoExamen",
         "ultimoAvance",
-        "unidades",
         "verRegistro",
       ].sort(),
     );

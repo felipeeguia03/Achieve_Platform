@@ -18,6 +18,7 @@ const BASE: EstadoDeMateria = {
   instante: "2026-09-07T12:00:00.000Z",
   zona: "America/Argentina/Cordoba",
   cursadaId: "ce-1",
+  evidenciasEnviadas: 0,
   materia: "Análisis Matemático II",
   examen: null,
   accion: null,
@@ -25,6 +26,8 @@ const BASE: EstadoDeMateria = {
   rescatePendiente: false,
   evidencia: "NONE",
   contextoIncompleto: false,
+  // Por defecto **nada estimado**: los casos viejos miden lo que medían.
+  contenido: null,
   ultimoAvanceEn: null,
   unidades: [],
   clases: [],
@@ -43,6 +46,10 @@ const u = (id: string, evidencia: "sin_evidencia" | "enviada" | "requiere_revisi
   practica: null,
   recorrido: null,
   peso: null,
+  // Sin dictar ni evaluar: el tema **no se ubica en el eje** (ADR-085).
+  primeraClaseEn: null,
+  ultimaClaseEn: null,
+  evaluaEn: null,
   evidencia,
 });
 

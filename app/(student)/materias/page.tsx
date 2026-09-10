@@ -8,6 +8,7 @@ import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { IndiceDeMaterias } from "@/components/screens/indice-de-materias";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCtaCon } from "@/lib/navigation";
+import { useEspacioDeTrabajo } from "@/components/shell/espacio-de-trabajo";
 import type { MateriasProps } from "@/lib/domain/view-models";
 
 /**
@@ -21,6 +22,7 @@ import type { MateriasProps } from "@/lib/domain/view-models";
  */
 function Vista() {
   const router = useRouter();
+  const { abrir } = useEspacioDeTrabajo();
   const { respuesta, reintentar } = useSuperficie<MateriasProps>("/api/materias");
 
   if (respuesta.estado === "CARGANDO") return null;
@@ -39,9 +41,32 @@ function Vista() {
       // `CTA-001` **con la cursada de la fila que se tocó**: es lo que ADR-054
       // opción `B` corrigió, y el índice lo hereda sin trabajo adicional. Abrir
       // la quinta fila abre la quinta materia.
+      /*
+        ⚠️ **La navegación es la misma que antes, y sigue saliendo del registro
+        canónico.** Lo que agrega [ADR-088](../../../docs/decisions.md#adr-088)
+        es que la materia quede **abierta como objeto**, para volver sin pasar
+        de nuevo por el índice.
+
+        Sin espacio de trabajo montado, `abrir` es inerte y `router.push` hace
+        exactamente lo que hacía: la pantalla no se entera.
+      */
       onAbrirMateria={(cursadaId) => {
         const destino = rutaDeCtaCon("CTA-001", cursadaId);
-        if (destino) router.push(destino);
+        if (!destino) return;
+        const materia = respuesta.datos.materias.find((m) => m.cursadaId === cursadaId);
+        if (materia) {
+          abrir({
+            tipo: "materia",
+            entidadId: materia.cursadaId,
+            etiqueta: materia.nombre,
+            // Ver el comentario de `/hoy`: una materia es el objeto, no tiene
+            // contexto, y meterle la evaluación reproduce `A-07`.
+            etiquetaSecundaria: null,
+            ruta: destino,
+          });
+          return;
+        }
+        router.push(destino);
       }}
     />
   );

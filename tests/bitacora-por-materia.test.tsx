@@ -51,6 +51,7 @@ const base: EstadoDeMateria = {
   instante: "2026-09-09T15:00:00.000Z",
   zona: "America/Argentina/Cordoba",
   cursadaId: "ce-algebra",
+  evidenciasEnviadas: 0,
   materia: "Álgebra",
   examen: null,
   accion: null,
@@ -58,6 +59,8 @@ const base: EstadoDeMateria = {
   rescatePendiente: false,
   evidencia: "NONE",
   contextoIncompleto: false,
+  // Por defecto **nada estimado**: los casos viejos miden lo que medían.
+  contenido: null,
   ultimoAvanceEn: null,
   unidades: [],
   clases: [],

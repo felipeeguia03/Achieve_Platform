@@ -134,8 +134,47 @@ describe("Track A — reglas verificables estáticamente", () => {
     expect(culpables).toEqual([]);
   });
 
+  /**
+   * **Relajado en ADR-088, y acotado a un solo archivo.**
+   *
+   * El espacio de trabajo tiene que sobrevivir a una recarga o no es memoria de
+   * trabajo: es una lista que se borra sola.
+   * [ADR-088](../docs/decisions.md#adr-088) §4 lo autoriza **nombrando el único
+   * módulo** que puede persistir, exactamente como la B1.6 hizo con la red en
+   * vez de aflojar el regex.
+   *
+   * Lo que sigue siendo delito es todo el resto: una pantalla que guarda estado
+   * en el navegador decide qué sobrevive a una sesión, y eso no es una decisión
+   * de presentación.
+   *
+   * ⚠️ **Si hace falta persistir otra cosa, la lista se amplía con su ADR**, no
+   * se ensancha el regex. La excepción es angosta a propósito.
+   */
+  const PERSISTENCIA_PERMITIDA = ["lib/client/espacio-de-trabajo/"];
+
   it("cero persistencia: sin localStorage, sessionStorage ni IndexedDB", () => {
-    expect(offenders(/\b(localStorage|sessionStorage|indexedDB|IDBDatabase)\b/)).toEqual([]);
+    const culpables = offenders(/\b(localStorage|sessionStorage|indexedDB|IDBDatabase)\b/)
+      .filter((f) => !PERSISTENCIA_PERMITIDA.some((capa) => f.startsWith(capa)))
+      // Los tests quedan afuera **por el mismo motivo que en el guard de red**:
+      // probar que la memoria se aísla por estudiante y que un JSON roto no
+      // rompe nada exige tocar el almacenamiento. Un test que no puede escribir
+      // en él no prueba la persistencia: prueba un doble.
+      .filter((f) => !f.startsWith("tests/"));
+    expect(culpables).toEqual([]);
+  });
+
+  it("la excepción de ADR-088 es un módulo, no una carpeta abierta", () => {
+    // Que la lista tenga exactamente un elemento es parte de la regla: dos
+    // significa que alguien amplió la excepción sin pasar por un ADR.
+    expect(PERSISTENCIA_PERMITIDA).toHaveLength(1);
+  });
+
+  it("el dominio del espacio de trabajo NO persiste: las reglas son puras", () => {
+    // La separación que hace testeable al módulo. Si el dominio tocara el
+    // navegador, probar el desalojo exigiría un `localStorage` de mentira.
+    const dominio = files.find(({ path }) => path === "lib/domain/espacio-de-trabajo.ts");
+    expect(dominio).toBeDefined();
+    expect(/\b(localStorage|sessionStorage|indexedDB)\b/.test(dominio?.code ?? "")).toBe(false);
   });
 
   /**

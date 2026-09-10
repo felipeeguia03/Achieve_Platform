@@ -87,6 +87,15 @@ export function proyectarHoy(escenario: Escenario): HoyProps | null {
     // sistema detectó algo — que es justo la diferencia entre declarar un
     // estado y haberlo evaluado.
     recuperacion: null,
+    /**
+     * **Siempre `null` en el Track A** — [ADR-089](../../docs/decisions.md#adr-089).
+     *
+     * El panorama sale de `GET /api/materias`, y un escenario no tiene backend.
+     * Dibujarlo desde el fixture obligaría a declarar una segunda vez las
+     * ventanas que `UX02_INDICE` ya proyecta, y **dos declaraciones del mismo
+     * eje son dos ejes**.
+     */
+    panorama: null,
     materias: hoy.materias,
     // La CTA de lectura aparece sólo si el contexto declara la Bitácora
     // disponible: es la condición de aparición de CTA-009.
