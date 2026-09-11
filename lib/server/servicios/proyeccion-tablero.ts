@@ -1,4 +1,6 @@
 import { copy, t, type CopyId } from "@/lib/content/es-AR";
+import { hayActividad } from "@/lib/domain/cobertura";
+import { cuadroDeHoy, type HorarioDeHoy } from "@/lib/domain/cuadro-de-hoy";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { fechaEnZona } from "@/lib/domain/zona";
 import {
@@ -6,9 +8,9 @@ import {
   type MateriaParaRiesgo,
   type Riesgo,
 } from "@/lib/domain/riesgos-de-planificacion";
-import { semanaDe, type ItemDeSemana } from "@/lib/domain/semana";
 import type {
-  ItemDeLaSemana,
+  CuadroDeHoy,
+  ItemDeHorario,
   RepartoProjection,
   RiesgoProyectado,
   TableroProps,
@@ -19,7 +21,8 @@ import { proyectarMaterias } from "./proyeccion-materias";
 import { fechaDeCalendario } from "./tiempo";
 
 /**
- * El tablero de `UX01` — [ADR-093](../../../docs/decisions.md#adr-093).
+ * El tablero de `UX01` — [ADR-093](../../../docs/decisions.md#adr-093), con el
+ * cuadro de hoy de [ADR-094](../../../docs/decisions.md#adr-094).
  *
  * ## Por qué lee los insumos del reparto
  *
@@ -31,26 +34,31 @@ import { fechaDeCalendario } from "./tiempo";
  *
  * ## Lo que se suma
  *
- * La semana necesita tres cosas que el reparto no trae: los bloques de clase,
- * los compromisos pendientes y las franjas declaradas. Llegan en
- * `InsumosDeSemana`, de su propio repositorio.
+ * El cuadro de hoy necesita lo que el reparto no trae: los bloques de clase con
+ * su aula, las clases dadas con sus temas, los compromisos pendientes y las
+ * franjas declaradas. Llegan en `InsumosDelDia`, de su propio repositorio.
  */
 
-export interface InsumosDeSemana {
-  clases: Array<{ cursadaId: string; dia: number; desde: string; hasta: string }>;
+export interface InsumosDelDia {
+  clases: Array<{ cursadaId: string; dia: number; desde: string; hasta: string; aula: string | null; estimada: boolean }>;
   /** Pendientes: `CONFIRMED`, `DUE` o `STARTED`. `titulo` es el objetivo de la `Action`. */
   compromisos: Array<{ cursadaId: string; inicio: string; minutos: number; titulo: string }>;
   /** Sólo la **declarada** ([ADR-074](../../../docs/decisions.md#adr-074)). */
   disponibilidad: Array<{ dia: number | null; desde: string | null; hasta: string | null; minutos: number | null }>;
+  /** Clases **dadas** —hasta hoy— con los temas que cubrieron. */
+  dictadas: Array<{ cursadaId: string; fecha: string; temas: string[] }>;
+  /** Código y secuencia de los temas de esas clases, para escribir `Un. N`. */
+  temas: Array<{ id: string; codigo: string | null; secuencia: number | null }>;
 }
 
 export interface RepositorioDeTablero {
-  insumosDeSemana(
+  insumosDelDia(
     institutionId: string,
     studentId: string,
     desde: string,
     hasta: string,
-  ): Promise<InsumosDeSemana>;
+    hoy: string,
+  ): Promise<InsumosDelDia>;
 }
 
 /**
@@ -63,6 +71,16 @@ export function modalidadVisible(m: string | null): string | null {
   if (!m) return null;
   const id = `EVALUACION.MODALIDAD.${m}`;
   return id in copy ? t(id as CopyId) : null;
+}
+
+/**
+ * El número de una unidad: el del código (`U5` → `5`) y, si no hay, su
+ * secuencia. `null` ⇒ **no se le inventa uno**, y el cuadro la omite.
+ */
+export function numeroDeUnidad(codigo: string | null, secuencia: number | null): number | null {
+  const enCodigo = codigo ? /\d+/.exec(codigo)?.[0] : undefined;
+  if (enCodigo !== undefined) return Number(enCodigo);
+  return secuencia;
 }
 
 /** Rellena `{clave}` en una plantilla de `es-AR.ts`. Una clave sin valor queda visible: se nota. */
@@ -154,46 +172,37 @@ function redactarRiesgo(r: Riesgo, reparto: RepartoProjection | null): RiesgoPro
   }
 }
 
-function redactarItem(i: ItemDeSemana): ItemDeLaSemana {
-  switch (i.tipo) {
+function redactarHorario(h: HorarioDeHoy): ItemDeHorario {
+  switch (h.tipo) {
     case "EVALUACION":
-      return {
-        tipo: i.tipo,
-        hora: null,
-        texto: i.rotulo ? `${i.rotulo} · ${i.nombre}` : i.nombre,
-        cursadaId: i.cursadaId,
-      };
+      return { tipo: h.tipo, hora: null, texto: h.rotulo ? `${h.rotulo} · ${h.nombre}` : h.nombre, cursadaId: h.cursadaId };
     case "COMPROMISO":
       return {
-        tipo: i.tipo,
-        hora: i.hora,
-        texto: llenar(t("HOY.SEMANA.COMPROMISO"), { titulo: i.titulo }),
-        cursadaId: i.cursadaId,
+        tipo: h.tipo,
+        hora: h.hora,
+        texto: llenar(t("HOY.CUADRO.COMPROMISO"), { titulo: h.titulo }),
+        cursadaId: h.cursadaId,
       };
-    case "CLASE":
+    case "DISPONIBLE": {
+      const desde = h.desde?.slice(0, 5) ?? null;
+      const hasta = h.hasta?.slice(0, 5) ?? null;
       return {
-        tipo: i.tipo,
-        hora: `${i.desde}–${i.hasta}`,
-        texto: llenar(t("HOY.SEMANA.CLASE"), { materia: i.nombre }),
-        cursadaId: i.cursadaId,
-      };
-    case "DISPONIBLE":
-      return {
-        tipo: i.tipo,
-        hora: i.desde ? (i.hasta ? `${i.desde}–${i.hasta}` : i.desde) : null,
+        tipo: h.tipo,
+        hora: desde ? (hasta ? `${desde}–${hasta}` : desde) : null,
         // Sin horario, la franja dice cuánto; con horario, el horario ya lo dice.
         texto:
-          i.desde === null && i.minutos !== null
-            ? llenar(t("HOY.SEMANA.DISPONIBLE.MINUTOS"), { horas: enHoras(i.minutos) })
-            : t("HOY.SEMANA.DISPONIBLE"),
+          desde === null && h.minutos !== null
+            ? llenar(t("HOY.CUADRO.DISPONIBLE.MINUTOS"), { horas: enHoras(h.minutos) })
+            : t("HOY.CUADRO.DISPONIBLE"),
         cursadaId: null,
       };
+    }
   }
 }
 
 export function proyectarTablero(
   i: InsumosDeReparto,
-  s: InsumosDeSemana,
+  s: InsumosDelDia,
   ahora: string,
   zona: string,
 ): TableroProps {
@@ -242,26 +251,6 @@ export function proyectarTablero(
     diasSinActividad: m.ultimoAvanceEn ? diasEntre(m.ultimoAvanceEn, ahora, zona) : null,
   }));
 
-  const hoy = fechaEnZona(Date.parse(ahora), zona);
-  const nombreDe = (id: string) => nombreDeObjeto(crudas.get(id)?.nombre ?? "");
-  const semana = semanaDe({
-    hoy,
-    zona,
-    evaluaciones: filas.flatMap(({ m }) =>
-      m.evaluacion
-        ? [{ cursadaId: m.cursadaId, nombre: nombreDeObjeto(m.nombre), fecha: m.evaluacion.fecha, rotulo: rotulo(m.evaluacion) }]
-        : [],
-    ),
-    // Un bloque de una cursada que el índice no conoce no se puede nombrar: se omite.
-    clases: s.clases.filter((c) => crudas.has(c.cursadaId)).map((c) => ({ ...c, nombre: nombreDe(c.cursadaId) })),
-    compromisos: s.compromisos.map((c) => ({
-      ...c,
-      nombre: nombreDe(c.cursadaId),
-      titulo: nombreDeObjeto(c.titulo),
-    })),
-    disponibilidad: s.disponibilidad,
-  });
-
   return {
     proximaEvaluacion: dias.length > 0 ? { dias: Math.min(...dias) } : null,
     tarjetas,
@@ -271,11 +260,73 @@ export function proyectarTablero(
     riesgos: riesgosDePlanificacion({ materias: entrada, tramoDelReparto: reparto?.tramo ?? null }).map(
       (r) => redactarRiesgo(r, reparto),
     ),
-    semana: semana.map((d) => ({
-      fecha: d.fecha,
-      etiqueta:
-        d.offset === 0 ? t("HOY.SEMANA.HOY") : d.offset === 1 ? t("HOY.SEMANA.MANANA") : fechaDeCalendario(d.fecha),
-      items: d.items.map(redactarItem),
+    hoy: proyectarCuadro(filas.map(({ m }) => m), s, ahora, zona),
+  };
+}
+
+/** El cuadro de hoy, redactado — ADR-094. `materias` llega en orden de próxima evaluación. */
+function proyectarCuadro(
+  materias: InsumosDeReparto["materias"],
+  s: InsumosDelDia,
+  ahora: string,
+  zona: string,
+): CuadroDeHoy {
+  const conocidas = new Set(materias.map((m) => m.cursadaId));
+  const numeros = new Map(s.temas.map((x) => [x.id, numeroDeUnidad(x.codigo, x.secuencia)]));
+
+  const c = cuadroDeHoy({
+    hoy: fechaEnZona(Date.parse(ahora), zona),
+    zona,
+    materias: materias.map((m) => ({
+      cursadaId: m.cursadaId,
+      nombre: nombreDeObjeto(m.nombre),
+      unidades: m.unidades.map((u) => ({
+        id: u.id,
+        numero: numeros.get(u.id) ?? null,
+        conEvidencia: hayActividad(u.evidencia),
+      })),
     })),
+    // Un bloque de una cursada que el índice no conoce no se puede nombrar: se omite.
+    clases: s.clases.filter((x) => conocidas.has(x.cursadaId)),
+    dictadas: s.dictadas,
+    evaluaciones: materias.flatMap((m) =>
+      m.evaluacion
+        ? [
+            {
+              cursadaId: m.cursadaId,
+              nombre: nombreDeObjeto(m.nombre),
+              fecha: m.evaluacion.fecha,
+              rotulo: m.evaluacion.titulo ?? m.evaluacion.tipo,
+            },
+          ]
+        : [],
+    ),
+    compromisos: s.compromisos.map((x) => ({ ...x, titulo: nombreDeObjeto(x.titulo) })),
+    disponibilidad: s.disponibilidad,
+  });
+
+  // ⚠️ **La nota de estimado es obligatoria** si alguna clase de hoy es
+  // simulada: sin ella, el aula se lee como dato de la facultad (ADR-094).
+  const notas = [
+    ...(c.clases.some((x) => x.estimada) ? [t("HOY.CUADRO.NOTA.ESTIMADO")] : []),
+    ...(c.clases.some((x) => x.unidad !== null) ? [t("HOY.CUADRO.NOTA.UNIDAD")] : []),
+    ...(c.avanzar.length > 0 ? [t("HOY.CUADRO.NOTA.AVANZAR")] : []),
+  ];
+
+  return {
+    clases: c.clases.map((x) => ({
+      cursadaId: x.cursadaId,
+      hora: `${x.desde}–${x.hasta}`,
+      materia: x.nombre,
+      detalle: [x.unidad !== null ? `Un. ${x.unidad}` : null, x.aula].filter(Boolean).join(" · ") || null,
+    })),
+    avanzar: c.avanzar.map((a) => ({
+      cursadaId: a.cursadaId,
+      materia: a.nombre,
+      unidades: `Un. ${a.unidades.join(" · ")}${a.resto > 0 ? ` +${a.resto}` : ""}`,
+    })),
+    vacioDeAvance: t(c.sinClasesDadas ? "HOY.CUADRO.AVANZAR.SIN_CLASES" : "HOY.CUADRO.AVANZAR.TODO"),
+    horarios: c.horarios.map(redactarHorario),
+    notas,
   };
 }

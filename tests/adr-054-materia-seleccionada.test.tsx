@@ -81,7 +81,7 @@ const TABLERO: TableroProps = {
   aclaracionDeCobertura: null,
   horizonteEnDias: 14,
   riesgos: [],
-  semana: [],
+  hoy: { clases: [], avanzar: [], vacioDeAvance: "", horarios: [], notas: [] },
 };
 
 /** Toca la tarjeta pedida y devuelve la cursada que se abrió. */

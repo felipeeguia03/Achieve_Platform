@@ -69,14 +69,16 @@ function tablero(over: Partial<TableroProps> = {}): TableroProps {
     aclaracionDeCobertura: NOTA,
     horizonteEnDias: 14,
     riesgos: [],
-    semana: [
-      {
-        fecha: "2026-09-10",
-        etiqueta: "hoy",
-        items: [{ tipo: "CLASE", hora: "08:00–10:00", texto: "Clase · Física I", cursadaId: "ce-2" }],
-      },
-      { fecha: "2026-09-11", etiqueta: "mañana", items: [] },
-    ],
+    hoy: {
+      clases: [{ cursadaId: "ce-2", hora: "08:00–10:00", materia: "Química", detalle: "Un. 5 · Aula 3.12" }],
+      avanzar: [{ cursadaId: "ce-1", materia: "Análisis Matemático II", unidades: "Un. 1 · 2 · 3 +2" }],
+      vacioDeAvance: "Lo dado en clase ya tiene evidencia.",
+      horarios: [{ tipo: "DISPONIBLE", hora: "18:00–20:00", texto: "Disponible para estudiar", cursadaId: null }],
+      notas: [
+        "Horarios y aulas estimados por Achieve, no publicados por la facultad.",
+        "Un.: la unidad de la última clase dada.",
+      ],
+    },
     ...over,
   };
 }
@@ -94,9 +96,9 @@ const opcion1 = () => screen.getByLabelText("Opción 1 · tarjetas");
 const opcion2 = () => screen.getByLabelText("Opción 2 · carril");
 
 describe("sin tablero, `UX01` sigue siendo la pantalla que conduce", () => {
-  it("no dibuja la semana, los riesgos ni las evaluaciones", () => {
+  it("no dibuja el cuadro de hoy, los riesgos ni las evaluaciones", () => {
     render(<HoyAutogestion {...BASE} />);
-    expect(screen.queryByLabelText("Próximos 7 días")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Tu día")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Riesgos detectados")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Próximas evaluaciones")).not.toBeInTheDocument();
   });
@@ -320,24 +322,45 @@ describe("riesgos detectados", () => {
   });
 });
 
-describe("próximos 7 días", () => {
-  it("lista cada día con su hora y lo que tiene", () => {
+describe("el cuadro de hoy — ADR-094", () => {
+  const cuadro = () => screen.getByLabelText("Tu día");
+  const bloque = (nombre: string) => cuadro().querySelector(`[data-bloque="${nombre}"]`) as HTMLElement;
+
+  it("las clases de hoy van con hora, materia, unidad y aula", () => {
     render(<HoyAutogestion {...BASE} tablero={tablero()} />);
-    const s = screen.getByLabelText("Próximos 7 días");
-    expect(s).toHaveTextContent("hoy");
-    expect(s).toHaveTextContent("08:00–10:00");
-    expect(s).toHaveTextContent("Clase · Física I");
+    // Dos renglones: hora y materia arriba, unidad y aula abajo — en una sola
+    // línea el aula se cortaba, y un dato ilegible es lo mismo que no tenerlo.
+    expect(bloque("clases")).toHaveTextContent("08:00–10:00");
+    expect(bloque("clases")).toHaveTextContent("Química");
+    expect(bloque("clases")).toHaveTextContent("Un. 5 · Aula 3.12");
   });
 
-  it("**no es una agenda**: no tiene un solo botón", () => {
+  it("dice qué significa «Un.» y que horarios y aulas son estimados", () => {
     render(<HoyAutogestion {...BASE} tablero={tablero()} />);
-    expect(screen.getByLabelText("Próximos 7 días").querySelectorAll("button")).toHaveLength(0);
+    expect(cuadro()).toHaveTextContent("Un.: la unidad de la última clase dada.");
+    expect(cuadro()).toHaveTextContent("estimados por Achieve, no publicados por la facultad");
   });
 
-  it("si no hay nada en ningún día, lo dice una vez", () => {
-    const semana = tablero().semana.map((d) => ({ ...d, items: [] }));
-    render(<HoyAutogestion {...BASE} tablero={tablero({ semana })} />);
-    expect(screen.getByLabelText("Próximos 7 días")).toHaveTextContent("Nada cargado para estos 7 días.");
+  it("podés avanzar: la materia y sus unidades; tocarla abre esa materia", () => {
+    const abrir = vi.fn();
+    render(<HoyAutogestion {...BASE} tablero={tablero()} onAbrirMateria={abrir} />);
+    expect(bloque("avanzar")).toHaveTextContent("Un. 1 · 2 · 3 +2");
+    fireEvent.click(within(bloque("avanzar")).getByRole("button", { name: "Análisis Matemático II" }));
+    expect(abrir.mock.calls[0]?.[0]).toMatchObject({ cursadaId: "ce-1" });
+  });
+
+  it("**no es una agenda**: clases y horarios no tienen un solo botón", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} onAbrirMateria={vi.fn()} />);
+    expect(bloque("clases").querySelectorAll("button")).toHaveLength(0);
+    expect(bloque("horarios").querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("cada bloque vacío dice lo suyo, y avanzar no confunde «sin clases dadas» con «todo hecho»", () => {
+    const hoy = { clases: [], avanzar: [], vacioDeAvance: "Todavía no hay clases dadas cargadas.", horarios: [], notas: [] };
+    render(<HoyAutogestion {...BASE} tablero={tablero({ hoy })} />);
+    expect(bloque("clases")).toHaveTextContent("Hoy no tenés clases cargadas.");
+    expect(bloque("avanzar")).toHaveTextContent("Todavía no hay clases dadas cargadas.");
+    expect(bloque("horarios")).toHaveTextContent("Sin compromisos ni franjas declaradas para hoy.");
   });
 });
 
@@ -347,7 +370,7 @@ describe("la composición adaptativa — ADR-089 §4, conservada por ADR-093", (
     ["incumplimiento", "COMMITMENT_MISSED"],
   ])("en %s la pantalla se repliega: menos información, no más", (_, nivel) => {
     render(<HoyAutogestion {...BASE} hero={{ ...HERO, nivel }} tablero={tablero({ riesgos: [riesgo()] })} />);
-    expect(screen.queryByLabelText("Próximos 7 días")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Tu día")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Riesgos detectados")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Próximas evaluaciones")).not.toBeInTheDocument();
     // El Hero **nunca** se repliega: es la única conducta primaria.

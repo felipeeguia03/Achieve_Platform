@@ -813,16 +813,28 @@ export const copy = {
   "HOY.RIESGOS.ENCIMADAS.DETALLE": "{materias}, sin un día libre entre medio.",
   "HOY.RIESGOS.ABRIR": "Abrir materia",
 
-  "HOY.SEMANA": "Próximos 7 días",
-  "HOY.SEMANA.HOY": "hoy",
-  "HOY.SEMANA.MANANA": "mañana",
-  "HOY.SEMANA.CLASE": "Clase · {materia}",
-  "HOY.SEMANA.COMPROMISO": "Compromiso · {titulo}",
-  "HOY.SEMANA.DISPONIBLE": "Disponible para estudiar",
-  "HOY.SEMANA.DISPONIBLE.MINUTOS": "Disponible para estudiar · {horas}",
-  "HOY.SEMANA.VACIO": "Nada cargado para estos 7 días.",
-  "HOY.SEMANA.AYUDA":
-    "Evaluaciones, compromisos y clases cargadas, y las franjas que declaraste para estudiar. No agenda nada.",
+  /**
+   * **El cuadro de hoy** — [ADR-094](../../docs/decisions.md#adr-094). Poca
+   * información a propósito: es un vistazo, y cada renglón dice una cosa.
+   */
+  "HOY.CUADRO": "Tu día",
+  "HOY.CUADRO.CLASES": "Clases",
+  "HOY.CUADRO.CLASES.VACIO": "Hoy no tenés clases cargadas.",
+  "HOY.CUADRO.AVANZAR": "Podés avanzar",
+  "HOY.CUADRO.AVANZAR.SIN_CLASES": "Todavía no hay clases dadas cargadas.",
+  // ⚠️ Sin la palabra «todo»: el guard `C-02` la lee como `to-do`, que es una de
+  // las derivas prohibidas de `Action` (`AGENTS.md` §4).
+  "HOY.CUADRO.AVANZAR.TODO": "Lo dado en clase ya tiene evidencia.",
+  "HOY.CUADRO.HORARIOS": "Horarios",
+  "HOY.CUADRO.HORARIOS.VACIO": "Sin compromisos ni franjas declaradas para hoy.",
+  "HOY.CUADRO.COMPROMISO": "Compromiso · {titulo}",
+  "HOY.CUADRO.DISPONIBLE": "Disponible para estudiar",
+  "HOY.CUADRO.DISPONIBLE.MINUTOS": "Disponible para estudiar · {horas}",
+  /** ⚠️ **Obligatoria si alguna clase de hoy es simulada.** Sin esto el aula se lee como dato de la facultad. */
+  "HOY.CUADRO.NOTA.ESTIMADO": "Horarios y aulas estimados por Achieve, no publicados por la facultad.",
+  /** ⚠️ `Un.` **no es la unidad de hoy**: no hay cronograma de clases futuras (ADR-094). */
+  "HOY.CUADRO.NOTA.UNIDAD": "Un.: la unidad de la última clase dada.",
+  "HOY.CUADRO.NOTA.AVANZAR": "Podés avanzar: unidades dadas en clase sin evidencia, por evaluación más cercana.",
 
   /**
    * La modalidad de una evaluación, para leer. ⚠️ **El enum nunca es copy**

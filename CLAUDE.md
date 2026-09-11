@@ -108,7 +108,16 @@ la carga (`lib/domain/riesgos-de-planificacion.ts`, `PLAN-v0.1`): no escriben, n
 abren intervenciones y **no cambian el estado general**. `C01-021` sigue abierto. Si tocás un umbral,
 **cambiá la versión**.
 
-⚠️ **Los próximos 7 días no son una agenda**: no proponen cuándo estudiar y no tienen botones.
+🆕 **Y el mismo día los 7 días pasaron a ser *Tu día*** — [ADR-094](docs/decisions.md#adr-094):
+clases de hoy con `Un.` y aula, *Podés avanzar* y horarios. **No es una agenda**: sin botones salvo
+abrir una materia.
+
+⚠️ **`Un.` es la unidad de la ÚLTIMA clase dada, no la de hoy.** No hay cronograma futuro, y
+simular clases futuras estiraba el Gantt de `UX02`. **No lo "arregles" inventando clases.**
+
+⚠️ **`class_schedule_block.room` existe y hereda la procedencia del bloque.** Hoy toda aula es
+simulada: `node scripts/simular-aulas.mjs --aplicar` sólo escribe sobre bloques `inference`, y hay
+que correrlo **después** de `simular-temarios --aplicar`, que regenera los bloques sin aula.
 
 ✅ **El apartado «Materias» quedó decidido** el 5 de septiembre de 2026:
 [ADR-054](docs/decisions.md#adr-054), **opción `B`** — `CTA-001` transporta el `CourseEnrollment`

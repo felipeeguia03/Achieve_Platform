@@ -8,7 +8,7 @@
  * rankea, no se prioriza y no se elige entre recomendaciones.
  *
  * Desde [ADR-093](../../docs/decisions.md#adr-093) es además un **tablero**:
- * los próximos 7 días al lado del Hero, los riesgos de planificación y las
+ * el cuadro de hoy al lado del Hero ([ADR-094](../../docs/decisions.md#adr-094)), los riesgos de planificación y las
  * evaluaciones en dos formas —las dos opciones que el owner pidió ver juntas
  * para elegir una—. Los riesgos y la semana **llegan redactados** en
  * `TableroProps`: esta pantalla no evalúa ninguna regla.
@@ -35,7 +35,7 @@ import { ctaPara, ofreceCta } from "@/lib/content/hero";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import type {
-  DiaDeLaSemana,
+  CuadroDeHoy,
   HeroProjection,
   HoyProps,
   RecuperacionProjection,
@@ -235,82 +235,128 @@ function Pildora({ fecha, proxima }: { fecha: string; proxima: TableroProps["pro
   );
 }
 
-// ── Próximos 7 días ───────────────────────────────────────────────────────────
+// ── Tu día ───────────────────────────────────────────────────────────────────
+
+function Subtitulo({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ ...MONO, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
+      {children}
+    </p>
+  );
+}
+
+function Vacio({ children }: { children: React.ReactNode }) {
+  return <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{children}</p>;
+}
 
 /**
- * La columna secundaria del Hero — [ADR-015](../../docs/decisions.md#adr-015)
- * le asigna *"continuidad"*, y esto es exactamente eso.
+ * **El cuadro de hoy** — [ADR-094](../../docs/decisions.md#adr-094), en la
+ * columna que [ADR-015](../../docs/decisions.md#adr-015) reserva para la
+ * *continuidad*. Tres bloques y poca información: las clases de hoy con su
+ * unidad y su aula, lo que podés avanzar, y los horarios.
  *
- * ⚠️ **No tiene un solo botón, y es a propósito.** No es una agenda: no propone
- * cuándo estudiar ni crea nada ([ADR-064](../../docs/decisions.md#adr-064)).
+ * ⚠️ **No es una agenda**: las clases y los horarios no tienen un solo botón. Lo
+ * único que se toca es el nombre de una materia en *Podés avanzar*, y abre esa
+ * materia (`CTA-001`) — navegación, no una acción nueva.
  */
-function Semana({ semana }: { semana: DiaDeLaSemana[] }) {
-  const vacia = semana.every((d) => d.items.length === 0);
+function CuadroHoy({ c, onAbrir }: { c: CuadroDeHoy; onAbrir?: AbrirMateria }) {
   return (
-    <section aria-label={t("HOY.SEMANA")} style={{ ...TARJETA, padding: "14px 16px" }}>
-      <Eyebrow>{t("HOY.SEMANA")}</Eyebrow>
-      {vacia ? (
-        <ReglaDeNegocio>{t("HOY.SEMANA.VACIO")}</ReglaDeNegocio>
-      ) : (
-        /*
-          Con clases todos los días la lista mide más que el Hero y lo deja
-          flotando en un hueco. Se acota **adentro**: el scroll es de la lista,
-          nunca de la página, y no se esconde ningún día.
-        */
-        <ul style={{ maxHeight: 360, overflowY: "auto" }}>
-          {semana.map((d, i) => (
-            <li
-              key={d.fecha}
+    <section aria-label={t("HOY.CUADRO")} className="space-y-3" style={{ ...TARJETA, padding: "14px 16px" }}>
+      <Eyebrow>{t("HOY.CUADRO")}</Eyebrow>
+
+      <div data-bloque="clases">
+        <Subtitulo>{t("HOY.CUADRO.CLASES")}</Subtitulo>
+        {c.clases.length === 0 ? (
+          <Vacio>{t("HOY.CUADRO.CLASES.VACIO")}</Vacio>
+        ) : (
+          /*
+            Dos renglones, y no uno: en una sola línea el aula se cortaba
+            —`Aula 3…`— y un dato que no se puede leer es lo mismo que no
+            tenerlo (`A-03`: el modo compacto reduce tamaño, nunca información).
+          */
+          c.clases.map((cl) => (
+            <div key={`${cl.cursadaId}-${cl.hora}`} style={{ marginBottom: 4 }}>
+              <p className="truncate" title={cl.materia} style={{ fontSize: "var(--text-label)", lineHeight: 1.5 }}>
+                <span style={{ ...MONO, color: "var(--muted-foreground)", marginRight: 6 }}>{cl.hora}</span>
+                <span style={{ color: "var(--foreground)" }}>{cl.materia}</span>
+              </p>
+              {cl.detalle && (
+                <p style={{ ...MONO, color: "var(--muted-foreground)", paddingLeft: 78, lineHeight: 1.4 }}>
+                  {cl.detalle}
+                </p>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div data-bloque="avanzar">
+        <Subtitulo>{t("HOY.CUADRO.AVANZAR")}</Subtitulo>
+        {c.avanzar.length === 0 ? (
+          <Vacio>{c.vacioDeAvance}</Vacio>
+        ) : (
+          c.avanzar.map((a) => (
+            <div
+              key={a.cursadaId}
+              className="flex items-baseline justify-between"
+              style={{ gap: 8, fontSize: "var(--text-label)", lineHeight: 1.6 }}
+            >
+              {onAbrir ? (
+                <button
+                  className="truncate text-left"
+                  onClick={() => onAbrir({ cursadaId: a.cursadaId, nombre: a.materia })}
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {a.materia}
+                </button>
+              ) : (
+                <span className="truncate" style={{ color: "var(--foreground)" }}>
+                  {a.materia}
+                </span>
+              )}
+              <span style={{ ...MONO, color: "var(--muted-foreground)", whiteSpace: "nowrap" }}>{a.unidades}</span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div data-bloque="horarios">
+        <Subtitulo>{t("HOY.CUADRO.HORARIOS")}</Subtitulo>
+        {c.horarios.length === 0 ? (
+          <Vacio>{t("HOY.CUADRO.HORARIOS.VACIO")}</Vacio>
+        ) : (
+          c.horarios.map((h, k) => (
+            <p
+              key={k}
+              data-tipo={h.tipo}
               style={{
-                display: "grid",
-                gridTemplateColumns: "76px 1fr",
-                gap: 8,
-                padding: "7px 0",
-                borderTop: i > 0 ? "1px solid var(--border)" : undefined,
+                fontSize: "var(--text-label)",
+                lineHeight: 1.6,
+                fontWeight: h.tipo === "EVALUACION" ? 600 : 400,
+                color: h.tipo === "DISPONIBLE" ? "var(--muted-foreground)" : "var(--foreground)",
               }}
             >
-              <span style={{ ...MONO, color: i === 0 ? "var(--foreground)" : "var(--muted-foreground)", paddingTop: 2 }}>
-                {d.etiqueta}
-              </span>
-              <div className="min-w-0">
-                {d.items.length === 0 ? (
-                  <span style={{ color: "var(--muted-foreground)" }} aria-label="Nada cargado">
-                    —
-                  </span>
-                ) : (
-                  d.items.map((it, k) => {
-                    const principal = it.tipo === "EVALUACION" || it.tipo === "COMPROMISO";
-                    return (
-                      <p
-                        key={k}
-                        data-tipo={it.tipo}
-                        // Clases y franjas son contexto: una línea cada una, el texto entero en el `title`.
-                        title={principal ? undefined : it.texto}
-                        className={principal ? undefined : "truncate"}
-                        style={{
-                          fontSize: principal ? "var(--text-body)" : "var(--text-label)",
-                          fontWeight: it.tipo === "EVALUACION" ? 600 : 400,
-                          color: principal ? "var(--foreground)" : "var(--muted-foreground)",
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {it.tipo === "EVALUACION" && (
-                          <span aria-hidden style={{ color: "var(--urgencia-texto)", marginRight: 6 }}>
-                            ◆
-                          </span>
-                        )}
-                        {it.hora && <span style={{ ...MONO, marginRight: 6 }}>{it.hora}</span>}
-                        {it.texto}
-                      </p>
-                    );
-                  })
-                )}
-              </div>
-            </li>
+              {h.tipo === "EVALUACION" && (
+                <span aria-hidden style={{ color: "var(--urgencia-texto)", marginRight: 6 }}>
+                  ◆
+                </span>
+              )}
+              {h.hora && <span style={{ ...MONO, color: "var(--muted-foreground)", marginRight: 6 }}>{h.hora}</span>}
+              {h.texto}
+            </p>
+          ))
+        )}
+      </div>
+
+      {c.notas.length > 0 && (
+        <div>
+          {c.notas.map((n) => (
+            <p key={n} style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+              {n}
+            </p>
           ))}
-        </ul>
+        </div>
       )}
-      <ReglaDeNegocio>{t("HOY.SEMANA.AYUDA")}</ReglaDeNegocio>
     </section>
   );
 }
@@ -801,8 +847,8 @@ export function HoyAutogestion({
       <Recuperacion r={recuperacion} />
 
       {/*
-        **Primera fila: la acción y la semana.** El Hero manda y ocupa dos
-        tercios; la semana acompaña en el tercero, que ADR-015 reserva para la
+        **Primera fila: la acción y el día.** El Hero manda y ocupa dos
+        tercios; el cuadro de hoy acompaña en el tercero, que ADR-015 reserva para la
         *continuidad*. Por debajo de `lg` se apilan y el Hero queda primero — el
         contrato de orden semántico de `design-system.md` §6.1 rige en todo ancho.
       */}
@@ -810,7 +856,7 @@ export function HoyAutogestion({
         <div className={conTablero ? "lg:col-span-2" : undefined}>
           <HeroContent hero={hero} onAvanzar={onAvanzar} />
         </div>
-        {conTablero && <Semana semana={tablero.semana} />}
+        {conTablero && <CuadroHoy c={tablero.hoy} onAbrir={abrir} />}
       </div>
 
       {/*

@@ -143,6 +143,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-091](#adr-091) | La fila del índice es un solo destino, y la miga nombra el objeto | ✅ `ACCEPTED` *(10 sep 2026 · pedido del owner)* | — |
 | [ADR-092](#adr-092) | **Dos materias del Plan 2016 se llamaban igual**: `ARQUITECTURA DE COMPUTADORAS I` y `II` | ✅ `ACCEPTED` *(11 sep 2026 · **con los programas oficiales delante**)* | [ADR-053](#adr-053), [ADR-086](#adr-086) |
 | [ADR-093](#adr-093) | **`UX01` es un tablero**: evaluaciones en dos opciones, riesgos de planificación `PLAN-v0.1` y los próximos 7 días | ✅ `ACCEPTED` *(11 sep 2026 · **decidido por el owner con la referencia delante**)* | [ADR-089](#adr-089), [ADR-090](#adr-090), [ADR-072](#adr-072), [ADR-073](#adr-073) |
+| [ADR-094](#adr-094) | **El cuadro de hoy**: clases con `Un.` y aula, *Podés avanzar* y horarios; el bloque horario gana el aula (simulada) | ✅ `ACCEPTED` *(11 sep 2026 · pedido del owner)* | [ADR-093](#adr-093), [ADR-062](#adr-062), [ADR-083](#adr-083) |
 
 ---
 
@@ -6965,7 +6966,7 @@ comisiones»* siguen sin construir.
 existe contra qué validarlo.
 
 ⛔ **No agrega aula.** [ADR-062](#adr-062) modeló el bloque sin aula y la captura del owner pedía
-«Aula 305». No hay dónde ponerlo **a propósito**.
+«Aula 305». No hay dónde ponerlo **a propósito**. ⚠️ **Cambió el 11 sep por [ADR-094](#adr-094)**: el owner pidió el aula; la columna existe y hoy sólo la llenan aulas simuladas sobre horarios simulados.
 
 ### Una corrección que salió del camino
 
@@ -8559,7 +8560,7 @@ intervenciones y **no cambia el estado general**. Mira el calendario y la carga,
 acción por riesgo es **abrir la materia** (`CTA-001`, navegación): una salida propia por riesgo sería
 el playbook que `C01-044` dejó sin valores.
 
-**5. Los próximos 7 días.** Evaluaciones (la próxima de cada materia), clases (`class_schedule_block`,
+**5. Los próximos 7 días** — ⚠️ **reemplazados el mismo día por el cuadro de hoy de [ADR-094](#adr-094)**. Evaluaciones (la próxima de cada materia), clases (`class_schedule_block`,
 la regla semanal), compromisos pendientes con su hora acordada y las franjas de disponibilidad
 **declaradas** —ADR-074: nunca derivadas de lo cumplido—. **No es una agenda**: no propone cuándo
 estudiar, no crea nada y no tiene botones ([ADR-064](#adr-064)). Clases y disponibilidad se listan
@@ -8623,3 +8624,78 @@ en la salida, la frase de la psicopedagoga en `PLAN_NO_ENTRA`. `tests/hoy-antici
 pantalla: lo retirado no se dibuja aunque llegue, las tres ausencias, las dos opciones, los riesgos,
 la semana sin botones y el repliegue. `tests/adr-054-materia-seleccionada.test.tsx` — la garantía de
 ADR-054 se mudó de la cola a la tarjeta.
+
+---
+
+<a id="adr-094"></a>
+
+## ADR-094 — El cuadro de hoy, y el bloque horario gana el aula
+
+**Estado:** ✅ `ACCEPTED` · 11 sep 2026 · **pedido del owner con el tablero delante**
+**Toca:** `lib/domain/cuadro-de-hoy.ts`, `lib/server/servicios/proyeccion-tablero.ts`, `lib/server/repositorios/tablero.ts`, `components/screens/hoy-autogestion.tsx`, `supabase/migrations/20261006000000_aula_del_bloque.sql`, `scripts/simular-aulas.mjs`
+**Enmienda:** [ADR-093](#adr-093) §5 (los próximos 7 días pasan a ser el día de hoy) y lo que [ADR-062](#adr-062) y [ADR-083](#adr-083) dejaron escrito del bloque: *"no lleva aula, a propósito"*.
+
+### Contexto
+
+Con el tablero de ADR-093 funcionando, el owner pidió, textual:
+
+> *"me encanta lo de próximos 7 días, pero prefiero que sea un cuadro de hoy: clases de hoy tal como
+> está, temas que podés avanzar, y horarios"*
+>
+> *"después agregale en qué aulas dan las clases, como no están, simulalas, también agregá las
+> unidades que dan, todo esto en la sección de hoy, pero poca info, como diciendo: Un. 5, nada más"*
+
+### Decisión
+
+**1. El cuadro *Tu día*** reemplaza a los próximos 7 días, en la misma columna (la de
+*continuidad*, [ADR-015](#adr-015)). Tres bloques, un renglón por cosa:
+
+| Bloque | Renglón | De dónde |
+|---|---|---|
+| **Clases** | `08:00–10:00 Fundamentos de programación · Un. 6 · Aula 3.12` | `class_schedule_block` + la última clase dada |
+| **Podés avanzar** | `Análisis matemático I   Un. 1 · 2 · 3 +5` | unidades dadas en clase **sin evidencia**; hasta 3 materias, en orden de próxima evaluación |
+| **Horarios** | evaluaciones, compromisos pendientes y franjas **declaradas** de hoy | `assessment`, `commitment`, `availability` |
+
+**2. ⚠️ `Un.` es la unidad de la ÚLTIMA clase dada, no la de hoy — y la pantalla lo dice.** No
+existe un cronograma de clases futuras: `class_session` son clases **dadas**, con minutos
+**observados** ([ADR-068](#adr-068)). Se evaluó simular las clases que vienen y se descartó:
+`estado_de_materia()` toma la última fecha de cada tema de **todas** sus clases, así que una clase
+futura simulada **estiraba las barras del Gantt de `UX02` y aparecía en su registro de clases** —
+y [ADR-085](#adr-085) exige que las dos puntas de cada barra sean hechos. Lo que sí es un hecho es
+**por dónde va la materia**; eso se muestra, con la nota *"Un.: la unidad de la última clase dada"*.
+
+**3. El aula existe: `class_schedule_block.room`, nullable.** ⚠️ **No tiene procedencia propia:
+hereda la del bloque.** El dato lo pone `scripts/simular-aulas.mjs --aplicar`, que **sólo escribe
+sobre bloques `inference`** —la regla vive en el `WHERE`— y no pisa un aula existente. Con la base de
+este día: **51 bloques simulados con aula, 6 `public_web` sin tocar**. Si alguna clase de hoy es
+simulada, el cuadro lleva la nota *"Horarios y aulas estimados por Achieve, no publicados por la
+facultad"* — obligatoria, porque sin ella el aula se lee como dato de la institución.
+
+**4. *Podés avanzar* no es una recomendación.** Es un filtro sobre hechos —dado en clase, sin
+evidencia— en el orden de próxima evaluación que [ADR-072](#adr-072) ya aceptó. La recomendación
+sigue siendo **una**, y es el Hero (`DD9`). Sin ninguna clase dada, el vacío dice *"Todavía no hay
+clases dadas cargadas"*, **no** *"todo hecho"*.
+
+**5. No es una agenda.** Clases y horarios no tienen botones. Lo único que se toca es el nombre de
+una materia en *Podés avanzar*, que la abre por `CTA-001` — navegación, no una acción nueva.
+
+### Costos
+
+- ⚠️ **Revierte una ausencia deliberada.** ADR-062 y ADR-083 dejaron el bloque sin aula *"a
+  propósito"*; lo cambia el owner, y el aula de hoy es **toda simulada**.
+- ⚠️ **`ingerir_materia()` no recibe aula.** Si se vuelve a correr `simular-temarios --aplicar`, los
+  bloques se regeneran sin aula: hay que correr `simular-aulas --aplicar` después.
+- ⚠️ **Con el calendario simulado, todas las materias ya dieron su última unidad** antes del 4 de
+  septiembre. `Un.` muestra la última del programa y *Podés avanzar* ofrece todo lo que no tiene
+  evidencia. Es cierto sobre el dato; es raro como producto.
+- ⛔ **`db:verify` no se corrió.** La migración se aplicó a la base local con `psql`, sin `db:reset`,
+  porque `db:verify` vacía la base de demo en uso. Queda pendiente.
+
+### Cómo se verifica
+
+`tests/cuadro-de-hoy.test.ts` — clases por día de semana y en orden; `Un.` de la última clase dada y
+nunca de una futura; *Podés avanzar* sólo con lo dado y sin evidencia, en el orden recibido, con
+tope y resto; el vacío sin clases dadas; compromisos en hora de pared. `tests/aula-del-bloque.test.ts`
+— la columna es nullable y sin procedencia paralela, el simulador sólo toca `inference` y no inserta
+ni borra, y la lectura marca como estimado todo bloque `inference`. `tests/proyeccion-tablero.test.ts`
+y `tests/hoy-anticipar.test.tsx` — el cuadro redactado, las notas y la pantalla.

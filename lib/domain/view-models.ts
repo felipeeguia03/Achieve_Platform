@@ -373,21 +373,44 @@ export interface RiesgoProyectado {
   cursadaId: string | null;
 }
 
-/** Un renglón de los próximos 7 días, ya redactado. */
-export interface ItemDeLaSemana {
-  tipo: "EVALUACION" | "COMPROMISO" | "CLASE" | "DISPONIBLE";
+/** Un renglón de *Horarios* del cuadro de hoy, ya redactado. */
+export interface ItemDeHorario {
+  tipo: "EVALUACION" | "COMPROMISO" | "DISPONIBLE";
   /** *"18:00"* o *"18:00–20:00"*. `null` ⇒ sin hora, y **no se inventa una**. */
   hora: string | null;
   texto: string;
   cursadaId: string | null;
 }
 
-export interface DiaDeLaSemana {
-  /** `YYYY-MM-DD`. */
-  fecha: string;
-  /** *"hoy"*, *"mañana"*, *"dom 13 sept"*. */
-  etiqueta: string;
-  items: ItemDeLaSemana[];
+/** Una clase de hoy — [ADR-094](../../docs/decisions.md#adr-094). */
+export interface ClaseDeHoy {
+  cursadaId: string;
+  /** *"08:00–10:00"*. */
+  hora: string;
+  materia: string;
+  /**
+   * *"Un. 6 · Aula 3.12"*. Cada parte se omite si falta; `null` ⇒ ninguna.
+   * ⚠️ `Un.` es la unidad de la **última clase dada**, no la de hoy.
+   */
+  detalle: string | null;
+}
+
+/** Una materia de *Podés avanzar*: unidades dadas en clase y todavía sin evidencia. */
+export interface AvanceDisponible {
+  cursadaId: string;
+  materia: string;
+  /** *"Un. 1 · 2 · 3 +5"*. */
+  unidades: string;
+}
+
+export interface CuadroDeHoy {
+  clases: ClaseDeHoy[];
+  avanzar: AvanceDisponible[];
+  /** Qué decir cuando `avanzar` está vacío. **No es lo mismo sin clases dadas que con todo hecho.** */
+  vacioDeAvance: string;
+  horarios: ItemDeHorario[];
+  /** Notas al pie: qué es simulado y qué significa `Un.`. Vacío ⇒ ninguna. */
+  notas: string[];
 }
 
 export interface TableroProps {
@@ -400,7 +423,8 @@ export interface TableroProps {
   /** El largo del carril de la *Opción 2*, en días. Múltiplo de 7, nunca menos de 14. */
   horizonteEnDias: number;
   riesgos: RiesgoProyectado[];
-  semana: DiaDeLaSemana[];
+  /** El cuadro de hoy — ADR-094, que reemplaza los próximos 7 días. */
+  hoy: CuadroDeHoy;
 }
 
 // ── El índice de materias ────────────────────────────────────────────────────

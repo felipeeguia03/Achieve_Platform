@@ -89,6 +89,7 @@ import { formacionReal } from "./repositorios/formacion";
 import { repartoReal } from "./repositorios/reparto";
 import { tableroReal } from "./repositorios/tablero";
 import { proyectarTablero } from "./servicios/proyeccion-tablero";
+import { fechaEnZona } from "@/lib/domain/zona";
 import type { TableroProps } from "@/lib/domain/view-models";
 import { proyectarMateria } from "./servicios/proyeccion-materia";
 import { proyectarAccion } from "./servicios/proyeccion-accion";
@@ -1193,7 +1194,8 @@ export async function materiasDe(
 }
 
 /**
- * El tablero de `UX01` — [ADR-093](../../docs/decisions.md#adr-093).
+ * El tablero de `UX01` — [ADR-093](../../docs/decisions.md#adr-093), con el cuadro
+ * de hoy de [ADR-094](../../docs/decisions.md#adr-094).
  *
  * Los insumos del reparto (los mismos que el índice, para que una tarjeta y una
  * fila no se contradigan) y los de la semana, en paralelo. La ventana de
@@ -1208,12 +1210,12 @@ export async function tableroDe(
 ): Promise<TableroProps> {
   const instante = Date.parse(ahora);
   const desde = new Date(instante - 86_400_000).toISOString();
-  const hasta = new Date(instante + 8 * 86_400_000).toISOString();
-  const [insumos, semana] = await Promise.all([
+  const hasta = new Date(instante + 2 * 86_400_000).toISOString();
+  const [insumos, dia] = await Promise.all([
     repartoReal.insumos(institutionId, studentId, ahora),
-    tableroReal.insumosDeSemana(institutionId, studentId, desde, hasta),
+    tableroReal.insumosDelDia(institutionId, studentId, desde, hasta, fechaEnZona(instante, zona)),
   ]);
-  return proyectarTablero(insumos, semana, ahora, zona);
+  return proyectarTablero(insumos, dia, ahora, zona);
 }
 
 /**
