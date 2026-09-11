@@ -73,7 +73,13 @@ Resolución adoptada:
 > más de una materia con algo pendiente el mismo día, esa lista deja de ser plana y se vuelve
 > paginable, con flechas y contador. **No se agrega pantalla ni CTA nuevo.**
 
-Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.
+~~Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.~~
+
+⚠️ **Retirado de Hoy el 11 de septiembre de 2026 por [ADR-093](decisions.md#adr-093)**, por pedido del
+owner: *"no hace falta la tabla de estados ni las materias"*. Una cola de a una no sirve para una vista
+rápida. Las materias se ven ahora como **tarjetas de evaluación**, todas a la vez; entrar a una sigue
+siendo `CTA-001` **con su cursada** ([ADR-054](decisions.md#adr-054)). La resolución de arriba —el Hero no
+cambia— sigue valiendo.
 
 ### 1.5 Deuda detectada por `DD6`
 

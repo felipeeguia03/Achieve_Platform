@@ -29,36 +29,25 @@
 import { useState } from "react";
 import { ReglaDeNegocio, TituloDePanel } from "./design-system";
 import type { EjeDelPeriodo, MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
+import { colorDeMateria } from "@/lib/domain/color-de-materia";
 
 export interface IndiceDeMateriasProps extends MateriasProps {
   /** `CTA-001`. Recibe la cursada de **la fila que se tocó** (ADR-054, opción `B`). */
   onAbrirMateria?: (cursadaId: string) => void;
 }
 
-/**
- * El color de una materia — **identidad, no medida**.
- *
- * ⚠️ **Por qué esto no viola [ADR-075](../../docs/decisions.md#adr-075) §C1.** La
- * psicopedagoga prohibió *"colores propios de calificación —rojo/verde— para el
- * porcentaje de actividad"*. Un color de calificación es el que **cambia con el
- * número**: verde si vas bien, rojo si vas mal. Éste sale del `cursadaId` y es
- * **constante**: la misma materia tiene el mismo color al 3% y al 100%, así que
- * no puede leerse como un juicio sobre la cifra.
- *
- * **Es lo que hace que la pantalla se vea como el mockup sin afirmar nada**: el
- * color distingue materias, que es para lo que el owner lo quería.
- *
- * ⚠️ **Queda para confirmar con la psicopedagoga.** Que un color sea constante
- * no garantiza que nadie lo lea como semáforo, y esa lectura es empírica: se
- * prueba con personas, no se decide acá.
- */
-const PALETA = ["#b04a2f", "#3d6b4a", "#b8862f", "#41508f", "#6b4a80", "#2f6b73"] as const;
+/*
+  ⚠️ **El color se mudó a `lib/domain/color-de-materia.ts`, y no se copió.**
 
-function colorDeMateria(cursadaId: string): string {
-  let n = 0;
-  for (const c of cursadaId) n = (n * 31 + c.charCodeAt(0)) >>> 0;
-  return PALETA[n % PALETA.length];
-}
+  El escritorio de ADR-088 lo necesita para que la ventana de una materia tenga
+  **el color que esa materia tiene en esta lista**. Dos copias de la función
+  serían dos paletas el día que alguien toque una: la lista y las ventanas
+  dirían colores distintos para la misma materia, y el color pasaría a mentir
+  sobre la identidad en vez de fijarla.
+
+  La razón por la que esto no viola ADR-075 §C1 —identidad, no medida— viaja con
+  la función, que es donde se va a leer.
+*/
 
 export function IndiceDeMaterias({
   fecha,

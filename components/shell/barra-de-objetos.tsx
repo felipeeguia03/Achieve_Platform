@@ -48,7 +48,10 @@ import {
   type TipoDeObjeto,
 } from "@/lib/domain/espacio-de-trabajo";
 import { t } from "@/lib/content/es-AR";
+import { colorDelObjeto } from "@/lib/domain/color-de-materia";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { useEspacioDeTrabajo } from "./espacio-de-trabajo";
+import { guardarEnLaFicha } from "./movimiento";
 
 /** Un ícono por tipo. **No hay emoji**: el set es el de la aplicación (Lucide). */
 const ICONOS: Record<TipoDeObjeto, typeof BookOpen> = {
@@ -79,7 +82,14 @@ const ANCHO_DE_OBJETO = 192;
 const ANCHO_DE_CONTROLES = 110;
 
 export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void }) {
-  const { espacio, listo, desalojado, alternarPanel, cerrar } = useEspacioDeTrabajo();
+  const { espacio, listo, desalojado, paneles, alternarPanel, cerrar } = useEspacioDeTrabajo();
+  /*
+    ⚠️ **Cuáles están desplegadas, y no sólo cuál está activa** — Enmienda 3.
+    Con varias ventanas abiertas, «activo» dice **una** cosa (la de adelante) y
+    hace falta otra: cuáles bajaste a la barra y cuáles siguen en pantalla. Sin
+    esa señal, tocar una ficha es una apuesta entre abrir y cerrar.
+  */
+  const desplegados = new Set(paneles.map((o) => o.clave));
   const [menu, setMenu] = useState<string | null>(null);
   const [desbordeAbierto, setDesbordeAbierto] = useState(false);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
@@ -189,6 +199,7 @@ export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void })
               key={objeto.clave}
               objeto={objeto}
               activo={espacio.activo === objeto.clave}
+              desplegado={desplegados.has(objeto.clave)}
               indice={i}
               total={visibles.length}
               menuAbierto={menu === objeto.clave}
@@ -196,7 +207,21 @@ export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void })
               onMenu={() => setMenu((m) => (m === objeto.clave ? null : objeto.clave))}
               onCerrarMenu={() => setMenu(null)}
               onArrastrar={setArrastrando}
-              onActivar={() => alternarPanel(objeto.clave)}
+              /*
+                ⚠️ **Tocar una ficha desplegada guarda su ventana primero.** El
+                gesto nace acá, pero el efecto es el mismo que el del semáforo de
+                la ventana: si la barra minimizara en seco, minimizar desde la
+                ficha se vería distinto de minimizar desde la ventana — y son
+                **el mismo gesto**.
+
+                Desplegar, en cambio, no espera nada: la animación de apertura la
+                corre la ventana al aparecer.
+              */
+              onActivar={() =>
+                desplegados.has(objeto.clave)
+                  ? guardarEnLaFicha(objeto.clave, () => alternarPanel(objeto.clave))
+                  : alternarPanel(objeto.clave)
+              }
               onCerrar={() => cerrar(objeto.clave)}
             />
           ))}
@@ -231,6 +256,7 @@ export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void })
 function Objeto({
   objeto,
   activo,
+  desplegado,
   indice,
   total,
   menuAbierto,
@@ -243,6 +269,8 @@ function Objeto({
 }: {
   objeto: ObjetoAbierto;
   activo: boolean;
+  /** `true` ⇒ su ventana está desplegada, y volver a tocarla la baja. */
+  desplegado: boolean;
   indice: number;
   total: number;
   menuAbierto: boolean;
@@ -259,9 +287,17 @@ function Objeto({
 
   // El nombre completo siempre disponible, aunque el ancho lo corte: es la
   // mitad accesible del truncado (§10.2).
+  const nombre = nombreDeObjeto(objeto.etiqueta);
   const completo = objeto.etiquetaSecundaria
-    ? `${objeto.etiqueta} · ${objeto.etiquetaSecundaria}`
-    : objeto.etiqueta;
+    ? `${nombre} · ${nombreDeObjeto(objeto.etiquetaSecundaria)}`
+    : nombre;
+  /*
+    ⚠️ **El mismo color que esta materia tiene en la lista** — Enmienda 5. Sale
+    de `colorDeMateria`, que es la función que usa el índice: es identidad, no
+    medida, y por eso la ficha de Álgebra es del color de Álgebra al 3% y al
+    100%.
+  */
+  const color = colorDelObjeto(objeto.tipo, objeto.entidadId);
 
   function alTeclear(e: React.KeyboardEvent) {
     const barra = boton.current?.closest('[role="tablist"]');
@@ -280,6 +316,16 @@ function Objeto({
   return (
     <span style={{ position: "relative", display: "inline-flex" }}>
       <span
+        /*
+          ⚠️ **La ficha se marca con su clave, y no es para estilarla.** La
+          ventana necesita **medir** de dónde sale al desplegarse (ADR-088,
+          Enmienda 4), y el único que sabe dónde quedó la ficha es el DOM: el
+          reparto entre visibles y desbordadas, el ancho de la columna y la barra
+          lateral colapsada la mueven. Un `data-` es cómo la ventana la encuentra
+          sin que la barra tenga que publicar coordenadas en el estado —que
+          serían coordenadas viejas apenas alguien colapse la barra lateral—.
+        */
+        data-objeto={objeto.clave}
         draggable
         onDragStart={() => {
           arrastrandoGlobal.actual = objeto.clave;
@@ -300,7 +346,13 @@ function Objeto({
         }}
         className="flex items-center"
         style={{
-          background: activo ? "var(--muted)" : "transparent",
+          background: activo || desplegado ? "var(--muted)" : "transparent",
+          /*
+            ⚠️ **El punto dice «tiene ventana abierta», y el fondo dice «es la
+            de adelante».** Son dos hechos distintos y hacía falta separarlos:
+            con tres desplegadas, un solo tratamiento para las dos cosas deja
+            sin decir cuál te va a contestar el `Escape`.
+          */
           borderRadius: "var(--radius-pildora)",
           opacity: arrastrando ? 0.5 : 1,
           // 120–200 ms, y sólo si el sistema no pidió lo contrario.
@@ -326,7 +378,23 @@ function Objeto({
             fontWeight: activo ? 600 : 400,
           }}
         >
-          <Icono size={15} aria-hidden style={{ flexShrink: 0, color: "var(--muted-foreground)" }} />
+          <span
+            aria-hidden
+            style={{
+              flexShrink: 0,
+              width: 5,
+              height: 5,
+              borderRadius: 999,
+              // Ocupa lugar siempre: apareciendo y desapareciendo correría la
+              // etiqueta de la ficha cada vez que se despliega una ventana.
+              background: desplegado ? "var(--foreground)" : "transparent",
+            }}
+          />
+          <Icono
+            size={15}
+            aria-hidden
+            style={{ flexShrink: 0, color: color ?? "var(--muted-foreground)" }}
+          />
           {/*
             ⚠️ **El orden de sacrificio importa, y es la mitad de `A-07`.**
             Cuando no entra todo, lo que se recorta es **el contexto**, no el
@@ -336,14 +404,14 @@ function Objeto({
             `flexShrink` 1 contra 6 es lo que fija ese orden.
           */}
           <span className="truncate" style={{ flexShrink: 1, minWidth: 0 }}>
-            {objeto.etiqueta}
+            {nombre}
           </span>
           {objeto.etiquetaSecundaria && (
             <span
               className="truncate"
               style={{ flexShrink: 6, minWidth: 0, color: "var(--muted-foreground)" }}
             >
-              {objeto.etiquetaSecundaria}
+              {nombreDeObjeto(objeto.etiquetaSecundaria)}
             </span>
           )}
         </button>
@@ -399,7 +467,8 @@ function Desbordamiento({
   onAlternar: () => void;
   onCerrar: () => void;
 }) {
-  const { alternarPanel, cerrar, espacio } = useEspacioDeTrabajo();
+  const { alternarPanel, cerrar, espacio, paneles } = useEspacioDeTrabajo();
+  const desplegados = new Set(paneles.map((o) => o.clave));
   return (
     <span style={{ position: "relative", display: "inline-flex" }}>
       <button
@@ -424,8 +493,11 @@ function Desbordamiento({
           onCerrar={onCerrar}
           opciones={objetos.map((o) => ({
             texto: o.etiquetaSecundaria ? `${o.etiqueta} · ${o.etiquetaSecundaria}` : o.etiqueta,
-            destacada: espacio.activo === o.clave,
-            alElegir: () => alternarPanel(o.clave),
+            destacada: espacio.activo === o.clave || desplegados.has(o.clave),
+            alElegir: () =>
+              desplegados.has(o.clave)
+                ? guardarEnLaFicha(o.clave, () => alternarPanel(o.clave))
+                : alternarPanel(o.clave),
             alCerrar: () => cerrar(o.clave),
           }))}
         />

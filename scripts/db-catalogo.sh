@@ -66,8 +66,36 @@ igual "la revisión del owner levantó la marca de los 57" \
   "$(q "select count(*) from curriculum_requirement where curriculum_plan_id='$PLAN2016' and needs_review;")" "0"
 # ⚠️ **Y los nombres cortados siguen cortados.** Es el punto: dar por revisado un
 # plan no arregla su dato. Si esto pasara a `0` alguien "limpió" el síntoma.
-igual "diez nombres entran cortados, y se declara" \
-  "$(q "select count(*) from curriculum_requirement where curriculum_plan_id='$PLAN2016' and label_truncated;")" "10"
+#
+# ⚠️ **Eran diez y son ocho desde el 11 de septiembre de 2026, y NO es que se
+# aflojó el guard.** Dos filas —`20162` y `10207`— compartían el nombre cortado
+# `ARQUITECTURA COMPUTADORAS` y eran **materias distintas**: un estudiante
+# inscripto en las dos veía dos fichas iguales. Se corrigieron **con fuente**,
+# no por intuición: los programas oficiales de la cátedra dicen
+# `(0820162) ARQUITECTURA DE COMPUTADORAS I` y
+# `(0810207) ARQUITECTURA DE COMPUTADORAS II` (ADR-092).
+#
+# Las otras ocho **siguen cortadas** porque nadie tiene su nombre completo. El
+# día que aparezca, este número baja con su ADR — nunca con un `UPDATE` suelto.
+igual "ocho nombres entran cortados, y se declara" \
+  "$(q "select count(*) from curriculum_requirement where curriculum_plan_id='$PLAN2016' and label_truncated;")" "8"
+# ⚠️ **Y las dos corregidas ya no se llaman igual.** Es la comprobación de que la
+# corrección entró: si alguien reimportara el CSV viejo, esto lo dice.
+igual "\`ARQUITECTURA DE COMPUTADORAS\` son dos materias con dos nombres" \
+  "$(q "select count(distinct label) from curriculum_requirement where curriculum_plan_id='$PLAN2016' and code in ('20162','10207');")" "2"
+#
+# ⚠️ **Quedan DOS parejas que sí comparten nombre, y el número las cuenta.**
+#
+# \`10182\`/\`20160\` son las dos \`LABORATORIO DE COMPUTACION (…\` y
+# \`10098\`/\`20071\` las dos \`SEMINARIO DE FORMACION HUMAN…\`: materias distintas
+# con el nombre cortado en el mismo punto, igual que estaban las de Arquitectura.
+# **No se corrigieron porque nadie tiene su nombre completo** — y completarlo por
+# intuición es inventar contenido de dominio, que es lo que el esquema prohíbe.
+#
+# Si esto baja a \`0\` sin un ADR que traiga la fuente, alguien las "limpió".
+# Si sube, apareció una pareja nueva y hay que mirarla.
+igual "dos parejas del plan todavía comparten nombre, y se declara" \
+  "$(q "select count(*) from (select label from curriculum_requirement where curriculum_plan_id='$PLAN2016' and requirement_type='COURSE' group by label having count(*) > 1) d;")" "2"
 igual "ningún requisito de tipo cupo apunta a una materia" \
   "$(q "select count(*) from curriculum_requirement where requirement_type <> 'COURSE' and course_id is not null;")" "0"
 

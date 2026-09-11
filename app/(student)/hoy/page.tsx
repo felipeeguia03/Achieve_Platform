@@ -9,7 +9,7 @@ import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
 import { useEspacioDeTrabajo } from "@/components/shell/espacio-de-trabajo";
-import type { HoyProps, MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
+import type { HoyProps, TableroProps } from "@/lib/domain/view-models";
 
 // Los tres destinos salen del registro canónico, no de un recorrido escrito a
 // mano: CTA-002 a la próxima acción, CTA-001 a la materia, CTA-009 al progreso.
@@ -41,17 +41,14 @@ function Hoy() {
   const { respuesta, reintentar } = useSuperficie<HoyProps>("/api/hoy", { omitir: !!escenario });
 
   /**
-   * La capa «anticipar» — [ADR-089](../../../docs/decisions.md#adr-089) §2.
+   * El tablero — [ADR-093](../../../docs/decisions.md#adr-093), que reemplaza la
+   * capa «anticipar» de ADR-089.
    *
-   * ⚠️ **Es la lectura que ya existía**, la misma que alimenta el Gantt del
-   * período de `UX02_INDICE`. No hay contrato nuevo, no se tocó
-   * `estado_del_dia()` y no hubo migración.
-   *
-   * ⚠️ **Y se pide aparte, como `reparto`.** Si falla o todavía no llegó, `UX01`
-   * se dibuja **sin panorama** en vez de no dibujarse: la capa que conduce no
-   * depende de la que acompaña.
+   * ⚠️ **Se pide aparte, como antes el panorama.** Si falla o todavía no llegó,
+   * `UX01` se dibuja **sin tablero** en vez de no dibujarse: la capa que conduce
+   * no depende de la que acompaña. `estado_del_dia()` no se tocó.
    */
-  const panorama = useSuperficie<MateriasProps>("/api/materias", { omitir: !!escenario });
+  const tablero = useSuperficie<TableroProps>("/api/tablero", { omitir: !!escenario });
 
   if (escenario) {
     const id = escenarioDesde(escenario, "hoy") ?? "FX-DAY-BASE";
@@ -80,8 +77,8 @@ function Hoy() {
       props={{
         ...respuesta.datos,
         // `OK` o nada. Un estado de carga o un error **no se dibujan como un
-        // panorama vacío**: eso afirmaría que no hay evaluaciones.
-        panorama: panorama.respuesta.estado === "OK" ? panorama.respuesta.datos : null,
+        // tablero vacío**: eso afirmaría que no hay evaluaciones ni riesgos.
+        tablero: tablero.respuesta.estado === "OK" ? tablero.respuesta.datos : null,
       }}
       router={router}
       params={params}
@@ -110,7 +107,7 @@ function Pantalla({
    * agrega es que el objeto quede abierto para volver. Dos formas de abrir la
    * misma materia sería exactamente lo que §10.6 pide evitar.
    */
-  function abrirMateria(m: MateriaEnIndice) {
+  function abrirMateria(m: { cursadaId: string; nombre: string }) {
     const ruta = rutaDeCtaCon("CTA-001", m.cursadaId) ?? A_MATERIA;
     if (!ruta) return;
     abrir({

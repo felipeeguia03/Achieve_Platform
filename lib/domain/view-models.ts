@@ -312,19 +312,95 @@ export interface HoyProps {
    */
   verProgreso: string | null;
   /**
-   * La capa «anticipar» — [ADR-089](../../docs/decisions.md#adr-089).
+   * El tablero — [ADR-093](../../docs/decisions.md#adr-093), que reemplaza la
+   * capa «anticipar» de [ADR-089](../../docs/decisions.md#adr-089).
    *
-   * ⚠️ **Es el mismo `MateriasProps` que alimenta el Gantt del período de
-   * [ADR-078](../../docs/decisions.md#adr-078)**, no un contrato nuevo: sale de
-   * `GET /api/materias`, que ya existía. `estado_del_dia()` no se tocó y no hubo
-   * migración.
-   *
-   * ⚠️ **Llega por separado y es opcional**, igual que `reparto` — *"quien lo
-   * quiera lo pide; quien no, no lo paga"*. `null` ⇒ **la capa no se dibuja**:
-   * no es un panorama vacío diciendo *"no tenés nada"*, es la ausencia de una
-   * lectura que puede estar cargando, haber fallado o no corresponder.
+   * ⚠️ **Llega por separado y es opcional**, igual que antes el panorama — *"quien
+   * lo quiera lo pide; quien no, no lo paga"*. Sale de `GET /api/tablero`;
+   * `estado_del_dia()` no se tocó. `null` ⇒ **la capa no se dibuja**: no es un
+   * tablero vacío diciendo *"no tenés nada"*, es la ausencia de una lectura que
+   * puede estar cargando, haber fallado o no corresponder.
    */
-  panorama: MateriasProps | null;
+  tablero: TableroProps | null;
+}
+
+// ── El tablero de `UX01` · ADR-093 ───────────────────────────────────────────
+
+/**
+ * Una tarjeta de evaluación — la *Opción 1* de ADR-093, y los datos de la *Opción 2*.
+ *
+ * Sale de los mismos insumos que el índice de materias: una tarjeta y una fila
+ * del índice **no pueden decir cosas distintas** sobre la misma materia.
+ */
+export interface TarjetaDeEvaluacion {
+  cursadaId: string;
+  /** Ya en presentación (`nombreDeObjeto`, ADR-088 Enmienda 5). */
+  nombre: string;
+  /**
+   * `null` ⇒ **no hay evaluación con fecha futura**, y la tarjeta lo dice.
+   * `modalidad` ya traducida: el enum nunca es copy (`AGENTS.md` §2.6).
+   */
+  evaluacion: { rotulo: string | null; fecha: string; modalidad: string | null } | null;
+  /** Días que faltan. `null` ⇒ sin fecha, **no** cero. */
+  dias: number | null;
+  /** *"4 d"*. `null` ⇒ la cifra no se dibuja. */
+  faltan: string | null;
+  /**
+   * Cobertura ponderada por horas ([ADR-072](../../docs/decisions.md#adr-072)).
+   * `null` ⇒ **no hay barra**, y `sinCobertura` dice por qué.
+   */
+  cobertura: { fraccion: number; porcentaje: number } | null;
+  sinCobertura: string | null;
+  /** *"hace 3 días"*. `null` ⇒ sin actividad registrada, que **no es** «hace 0 días». */
+  ultimoAvance: string | null;
+  tono: "neutral" | "urgencia";
+}
+
+/** Un riesgo de planificación ya redactado. Ver `lib/domain/riesgos-de-planificacion.ts`. */
+export interface RiesgoProyectado {
+  regla:
+    | "EVALUACION_SIN_TEMAS"
+    | "COBERTURA_BAJA_CERCA"
+    | "SIN_ACTIVIDAD_CERCA"
+    | "EVALUACIONES_ENCIMADAS"
+    | "PLAN_NO_ENTRA";
+  /** Quién aporta el hecho: el Academic Engine o el Personal Engine. */
+  motor: "ACADEMICO" | "PERSONAL";
+  titulo: string;
+  /** `null` ⇒ la línea se omite. */
+  detalle: string | null;
+  /** `null` ⇒ el riesgo no es de una materia y **no ofrece abrir ninguna**. */
+  cursadaId: string | null;
+}
+
+/** Un renglón de los próximos 7 días, ya redactado. */
+export interface ItemDeLaSemana {
+  tipo: "EVALUACION" | "COMPROMISO" | "CLASE" | "DISPONIBLE";
+  /** *"18:00"* o *"18:00–20:00"*. `null` ⇒ sin hora, y **no se inventa una**. */
+  hora: string | null;
+  texto: string;
+  cursadaId: string | null;
+}
+
+export interface DiaDeLaSemana {
+  /** `YYYY-MM-DD`. */
+  fecha: string;
+  /** *"hoy"*, *"mañana"*, *"dom 13 sept"*. */
+  etiqueta: string;
+  items: ItemDeLaSemana[];
+}
+
+export interface TableroProps {
+  /** La cifra de la píldora del encabezado. `null` ⇒ ninguna materia tiene fecha. */
+  proximaEvaluacion: { dias: number } | null;
+  /** Todas las materias, **por próxima evaluación** y las sin fecha al fondo (ADR-072). */
+  tarjetas: TarjetaDeEvaluacion[];
+  /** La nota al pie de ADR-072, obligatoria si hay alguna barra. */
+  aclaracionDeCobertura: string | null;
+  /** El largo del carril de la *Opción 2*, en días. Múltiplo de 7, nunca menos de 14. */
+  horizonteEnDias: number;
+  riesgos: RiesgoProyectado[];
+  semana: DiaDeLaSemana[];
 }
 
 // ── El índice de materias ────────────────────────────────────────────────────

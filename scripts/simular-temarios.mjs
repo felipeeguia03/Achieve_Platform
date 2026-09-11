@@ -44,6 +44,7 @@
  * Uso:
  *   node scripts/simular-temarios.mjs              # simulacro
  *   node scripts/simular-temarios.mjs --aplicar
+ *   node scripts/simular-temarios.mjs --padron     # sólo la fila de padrón de la UCC
  */
 import { spawnSync } from "node:child_process";
 
@@ -320,6 +321,41 @@ if (sinReceta.length > 0) {
   for (const s of sinReceta) console.log(`   · ${s}`);
 }
 
+// ── Una fila de padrón, y nada más · ADR-086 ─────────────────────────────────
+//
+// El estudiante **no se inscribe desde acá**: se da de alta por pantalla y elige
+// sus materias, que es lo que el owner pidió. Lo único que hace falta sembrar es
+// lo que en producción provee el CRM — que la persona **esté habilitada**.
+//
+// Sin esta fila, `/login` contesta `403 SIN_PADRON`: la identidad es válida y no
+// hay `student`. Con ella y sin nada más, el alta arranca en su primer paso.
+//
+// ⚠️ **No se le pone consentimiento, ni carrera, ni disponibilidad.** Ponérselos
+// saltearía justamente el recorrido que queremos probar.
+//
+// ⚠️ **Corre aunque no haya `--aplicar`, y ése fue un defecto real.** Vivía al
+// final del archivo, después del `process.exit(0)` del simulacro: `--padron`
+// solo **no llegaba a ejecutarse nunca** y no lo decía, así que habilitar la
+// cuenta obligaba a regenerar de paso el contenido de las 51 materias. Son dos
+// operaciones distintas —una siembra el padrón, la otra escribe contenido— y el
+// flag que sólo hace la primera tiene que poder hacer sólo la primera.
+function sembrarPadron() {
+  const ALUMNO = "a5000000-0000-0000-0000-000000000003";
+  const previo = unaFila(
+    sql(`select coalesce(auth_user_id::text, '') from student where id = ${lit(ALUMNO)};`),
+  );
+  sql(`insert into student (id, institution_id, timezone, auth_user_id)
+       values (${lit(ALUMNO)}, ${lit(INST)}, 'America/Argentina/Cordoba',
+               nullif(${lit(previo)}, '')::uuid)
+       on conflict (id) do update set institution_id = excluded.institution_id;`);
+  const hay = unaFila(sql(`select count(*) from student where id = ${lit(ALUMNO)};`));
+  console.log(hay === "1"
+    ? `\n→ Padrón: un estudiante habilitado en la UCC, con el alta por recorrer.\n`
+    : `\n   ✗ no se pudo sembrar el padrón: ${hay}\n`);
+}
+
+if (process.argv.includes("--padron")) sembrarPadron();
+
 if (!APLICAR) {
   console.log(`\n   Simulacro: nada se escribió. Agregá --aplicar.\n`);
   process.exit(0);
@@ -378,28 +414,3 @@ for (const m of plan) {
 
 console.log(`\n   ${ok} materias completadas, ${fallos} con error.\n`);
 
-// ── Una fila de padrón, y nada más · ADR-086 ─────────────────────────────────
-//
-// El estudiante **no se inscribe desde acá**: se da de alta por pantalla y elige
-// sus materias, que es lo que el owner pidió. Lo único que hace falta sembrar es
-// lo que en producción provee el CRM — que la persona **esté habilitada**.
-//
-// Sin esta fila, `/login` contesta `403 SIN_PADRON`: la identidad es válida y no
-// hay `student`. Con ella y sin nada más, el alta arranca en su primer paso.
-//
-// ⚠️ **No se le pone consentimiento, ni carrera, ni disponibilidad.** Ponérselos
-// saltearía justamente el recorrido que queremos probar.
-if (process.argv.includes("--padron")) {
-  const ALUMNO = "a5000000-0000-0000-0000-000000000003";
-  const previo = unaFila(
-    sql(`select coalesce(auth_user_id::text, '') from student where id = ${lit(ALUMNO)};`),
-  );
-  sql(`insert into student (id, institution_id, timezone, auth_user_id)
-       values (${lit(ALUMNO)}, ${lit(INST)}, 'America/Argentina/Cordoba',
-               nullif(${lit(previo)}, '')::uuid)
-       on conflict (id) do update set institution_id = excluded.institution_id;`);
-  const hay = unaFila(sql(`select count(*) from student where id = ${lit(ALUMNO)};`));
-  console.log(hay === "1"
-    ? `→ Padrón: un estudiante habilitado en la UCC, con el alta por recorrer.\n`
-    : `   ✗ no se pudo sembrar el padrón: ${hay}\n`);
-}

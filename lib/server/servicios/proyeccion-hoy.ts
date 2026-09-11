@@ -294,14 +294,14 @@ export function proyectarDia(
     // `null` ⇒ la CTA **no se renderiza**, en vez de renderizarse deshabilitada.
     verProgreso: e.bitacoraDisponible ? t("CTA.VER_AVANCE") : null,
     /**
-     * El panorama **no lo arma esta proyección** — [ADR-089](../../../docs/decisions.md#adr-089).
+     * El tablero **no lo arma esta proyección** — [ADR-093](../../../docs/decisions.md#adr-093).
      *
-     * Sale de `GET /api/materias`, que es otra lectura y otro camino. Traerlo
-     * acá obligaría a `estado_del_dia()` a devolver las ventanas de todas las
-     * cursadas, y esta proyección es el camino caliente: es el mismo motivo por
-     * el que `reparto` llega por separado.
+     * Sale de `GET /api/tablero`, que es otra lectura y otro camino. Traerlo
+     * acá obligaría a `estado_del_dia()` a devolver evaluaciones, horarios y
+     * compromisos de todas las cursadas, y esta proyección es el camino
+     * caliente: es el mismo motivo por el que `reparto` llega por separado.
      */
-    panorama: null,
+    tablero: null,
     // ⚠️ **Llega calculado desde afuera y por separado** (ADR-073). El reparto
     // necesita, de cada materia, las sesiones y la carga declarada: con dieciséis
     // materias eso es más payload que el resto de `HOY` junto, y esta proyección

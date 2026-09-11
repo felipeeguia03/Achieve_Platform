@@ -354,17 +354,49 @@ export function repartir(
 export const PARAM_PANEL = "abierto";
 
 /**
- * Qué objeto está desplegado en el panel, según la URL.
+ * El separador entre claves desplegadas.
  *
- * `null` ⇒ no hay panel. Una clave que **no corresponde a un objeto abierto** se
- * trata como ausencia: la URL se puede editar a mano, y un panel de algo que no
- * está en la barra sería una ventana huérfana.
+ * ⚠️ **La coma, y no un parámetro repetido.** `?abierto=a&abierto=b` obligaría a
+ * `URLSearchParams.getAll` acá y a `set` en cinco lugares distintos del
+ * proveedor, y el orden de los repetidos no está garantizado por nadie. Con una
+ * sola clave y una lista, **el orden es el dato** — y el orden es el
+ * apilamiento.
  */
-export function claveDelPanel(espacio: EspacioDeTrabajo, ruta: string): string | null {
+const SEPARADOR_DE_PANELES = ",";
+
+/**
+ * Qué objetos están desplegados, y **en qué orden se apilan** — Enmienda 3.
+ *
+ * El último de la lista es **el de adelante**. Es la misma convención que
+ * cualquier manejo de ventanas: lo que se toca sube al final.
+ *
+ * ⚠️ **Una clave que no corresponde a un objeto abierto se descarta**, sin
+ * descartar las otras. La URL se puede editar a mano, y un parámetro con una
+ * clave inventada entre dos válidas no es motivo para perder las dos válidas.
+ *
+ * ⚠️ **Y no hay repetidos.** `?abierto=a,a` es una ventana, no dos: la regla de
+ * identidad de ADR-088 §1 no admite dos objetos con la misma clave, y tampoco
+ * dos ventanas del mismo objeto.
+ */
+export function clavesDesplegadas(espacio: EspacioDeTrabajo, ruta: string): readonly string[] {
   const consulta = ruta.split("?")[1] ?? "";
-  const clave = new URLSearchParams(consulta).get(PARAM_PANEL);
-  if (clave === null) return null;
-  return espacio.objetos.some((o) => o.clave === clave) ? clave : null;
+  const crudo = new URLSearchParams(consulta).get(PARAM_PANEL);
+  if (crudo === null || crudo === "") return [];
+
+  const vistas = new Set<string>();
+  const claves: string[] = [];
+  for (const clave of crudo.split(SEPARADOR_DE_PANELES)) {
+    if (clave === "" || vistas.has(clave)) continue;
+    if (!espacio.objetos.some((o) => o.clave === clave)) continue;
+    vistas.add(clave);
+    claves.push(clave);
+  }
+  return claves;
+}
+
+/** La de adelante. `null` ⇒ no hay ninguna desplegada. */
+export function claveAlFrente(claves: readonly string[]): string | null {
+  return claves[claves.length - 1] ?? null;
 }
 
 /** El objeto de una clave, si está abierto. */
@@ -373,20 +405,57 @@ export function objetoDe(espacio: EspacioDeTrabajo, clave: string | null): Objet
   return espacio.objetos.find((o) => o.clave === clave) ?? null;
 }
 
+/** Los objetos de una lista de claves, **en el orden de la lista**. */
+export function objetosDe(
+  espacio: EspacioDeTrabajo,
+  claves: readonly string[],
+): readonly ObjetoAbierto[] {
+  return claves
+    .map((clave) => espacio.objetos.find((o) => o.clave === clave))
+    .filter((o): o is ObjetoAbierto => o !== undefined);
+}
+
 /**
- * La ruta actual **con el panel desplegado**, o sin él.
+ * La ruta actual con **estas** ventanas desplegadas, en este orden.
  *
  * Se construye acá y no en el componente para que la regla de qué parámetro se
- * usa viva en un solo lugar: dos lugares que arman la URL son dos lugares donde
- * se escribe mal el nombre del parámetro.
+ * usa —y con qué separador— viva en un solo lugar: dos lugares que arman la URL
+ * son dos lugares donde se escribe mal el nombre del parámetro.
  */
-export function rutaConPanel(ruta: string, clave: string | null): string {
+export function rutaConPaneles(ruta: string, claves: readonly string[]): string {
   const [camino = "", consulta = ""] = ruta.split("?");
   const params = new URLSearchParams(consulta);
-  if (clave === null) params.delete(PARAM_PANEL);
-  else params.set(PARAM_PANEL, clave);
+  if (claves.length === 0) params.delete(PARAM_PANEL);
+  else params.set(PARAM_PANEL, claves.join(SEPARADOR_DE_PANELES));
   const cola = params.toString();
   return cola ? `${camino}?${cola}` : camino;
+}
+
+/**
+ * Despliega una ventana, o **la trae al frente si ya estaba**.
+ *
+ * ⚠️ **No hay dos ventanas del mismo objeto**, así que desplegar algo que ya
+ * está desplegado no es abrir otra: es traerla adelante, que es lo que hace
+ * cualquier escritorio cuando tocás algo que ya está abierto.
+ */
+export function desplegar(claves: readonly string[], clave: string): readonly string[] {
+  return [...claves.filter((c) => c !== clave), clave];
+}
+
+/** Minimiza una ventana. **El objeto sigue abierto**: sale la ventana, no el objeto. */
+export function minimizarPanelDe(claves: readonly string[], clave: string): readonly string[] {
+  return claves.filter((c) => c !== clave);
+}
+
+/**
+ * El gesto de la ficha: desplegar si está minimizada, minimizar si está desplegada.
+ *
+ * ⚠️ **Estar desplegada pero atrás cuenta como desplegada, y se minimiza.** La
+ * alternativa —traerla al frente— dejaría la ficha sin forma de minimizar lo
+ * que ella misma abrió. Subir al frente es tocar la ventana; la ficha alterna.
+ */
+export function alternarDespliegue(claves: readonly string[], clave: string): readonly string[] {
+  return claves.includes(clave) ? minimizarPanelDe(claves, clave) : desplegar(claves, clave);
 }
 
 export function claveEnRuta(espacio: EspacioDeTrabajo, ruta: string): string | null {

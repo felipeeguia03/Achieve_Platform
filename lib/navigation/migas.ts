@@ -9,6 +9,7 @@
  */
 
 import { nodos, type NodoId } from "./surfaces";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 
 export interface Miga {
   etiqueta: string;
@@ -68,7 +69,16 @@ export function migasDe(nodo: NodoId, etiquetaFinal?: string | null): Miga[] {
     cadena.unshift(actual);
     actual = padre[actual];
   }
-  const propio = (etiquetaFinal ?? "").trim();
+  /*
+    ⚠️ **La última miga se escribe con mayúscula sólo en la primera letra.**
+
+    Los nombres del Plan 2016 llegan en mayúsculas de la fuente oficial, y
+    *Hoy › Materias › ARQUITECTURA COMPUTADORAS* desequilibra la línea entera: el
+    último tramo pesa más que los dos anteriores juntos, cuando es justamente el
+    que **no** lleva a ningún lado. Es presentación, no renombre — el dato de la
+    base no se toca (ver `nombreDeObjeto`).
+  */
+  const propio = nombreDeObjeto((etiquetaFinal ?? "").trim());
   return cadena.map((id, i) => {
     const ultima = i === cadena.length - 1;
     return {

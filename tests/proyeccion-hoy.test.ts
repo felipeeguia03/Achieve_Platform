@@ -223,17 +223,18 @@ describe("B2.5 · la forma es la que la pantalla espera", () => {
       // `reparto` entró por ADR-073. Llega por separado y por defecto es `null`:
       // pesa más que el resto de `HOY` junto, así que quien lo quiere lo pide.
       //
-      // `panorama` entró por ADR-089 **y por el mismo camino**: sale de
-      // `GET /api/materias`, no de `estado_del_dia()`, así que esta proyección
-      // lo deja en `null` y lo compone la página.
+      // `tablero` entró por ADR-093 **y por el mismo camino** que el panorama de
+      // ADR-089, al que reemplaza: sale de `GET /api/tablero`, no de
+      // `estado_del_dia()`, así que esta proyección lo deja en `null` y lo
+      // compone la página.
       [
         "estadoGeneral",
         "fecha",
         "hero",
         "materias",
-        "panorama",
         "recuperacion",
         "reparto",
+        "tablero",
         "verProgreso",
       ].sort(),
     );

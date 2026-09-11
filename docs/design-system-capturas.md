@@ -948,6 +948,37 @@ segunda lista de destinos que ADR-019 temía — con razón, y la advertencia si
 ahora **los seis requisitos**, por el mismo motivo que daba ADR-019 §3: una regla sin test se pierde
 en dos meses.
 
+⚠️ **Y el 10 de septiembre se volvió multiventana de verdad** —
+[Enmienda 3](decisions.md#adr-088-enmienda-3). Abrir una materia **va a su superficie completa**;
+desde ahí un semáforo arriba a la izquierda la minimiza a la barra, la reduce a ventana o la cierra.
+Las ventanas **conviven todas**, se apilan y se traen al frente tocándolas, y el escritorio entero
+vive en `?abierto=<a>,<b>` — el orden de la lista es el apilamiento.
+
+⚠️ **`A-07` sigue evitado, y aparece un riesgo nuevo que también se maneja.** Tres ventanas del mismo
+tamaño una encima de otra son *una sola ventana* para el que las mira: por eso el tamaño por defecto
+se achicó a `940 × 660` y la cascada a 32 px — medido en el navegador, con `1080 × 760` la segunda
+tapaba el 96 % de la primera.
+
+⚠️ **La trampa de foco de la Enmienda 1 se retiró**, con su razón escrita: era correcta para una
+ventana modal y, con varias no modales, encerraría al teclado en la última que se abrió.
+
+
+### 12.9 El tablero de Hoy contra la referencia del owner — ✅ `RESUELTO` por [ADR-093](decisions.md#adr-093)
+
+El 11 de septiembre el owner trajo una pantalla de referencia para `UX01` —no una de las 34 capturas—
+y pidió su **estilo comunicacional**. Se tomó: el propósito de la pantalla en mono al lado del título, la
+píldora con **un solo número**, tarjetas con color de identidad y días grandes, *riesgos detectados* con
+contador, *próximos 7 días* y la nota al pie que define la métrica.
+
+**Donde la referencia y la spec hablaban del mismo píxel, ganó la spec** (ADR-015), y queda anotado:
+
+| En la referencia | En Achieve | Qué manda |
+|---|---|---|
+| Tres CTAs apiladas a la derecha del Hero | Una, a ancho completo al final de la columna | `I-06`, §12.7 |
+| El Hero a todo el ancho | 2/3, con los 7 días en el tercio | ADR-015: la columna secundaria es *continuidad* |
+| *"hace 12 días"* en rojo | El hecho sin color | ADR-078 |
+| Tarjeta de la operadora con una cita | No existe | `product.md` §13, ADR-033 |
+| Títulos y cifras con serifa | La tipografía de `globals.css` | Regla 6 |
 
 ## 13. Qué le agrega este documento a `design-system.md`
 

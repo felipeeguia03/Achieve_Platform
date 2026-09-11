@@ -25,6 +25,7 @@ import { ProveedorDeMigaDelObjeto } from "./miga-del-objeto";
 import { ProveedorDeEspacioDeTrabajo } from "./espacio-de-trabajo";
 import { BarraDeObjetos } from "./barra-de-objetos";
 import { PanelDeObjeto } from "./panel-de-objeto";
+import { BarraDeSuperficie } from "./barra-de-superficie";
 import type { NodoId } from "@/lib/navigation/surfaces";
 
 export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactNode }) {
@@ -71,6 +72,13 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
             <BarraSuperior migas={migasDe(nodo, objeto)} onAbrirPaleta={() => setPaleta(true)} />
             <main className="min-w-0 flex-1" style={{ padding: "24px 24px 88px" }}>
               <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+                {/*
+                  El semáforo de **esta** pantalla, cuando la pantalla es la de
+                  un objeto abierto — ADR-088, Enmienda 3. Va acá y no adentro de
+                  la superficie: es cromo del marco, y `components/screens/*` no
+                  se toca (regla 6 de `CLAUDE.md`).
+                */}
+                <BarraDeSuperficie />
                 <ProveedorDeMigaDelObjeto value={setObjeto}>{children}</ProveedorDeMigaDelObjeto>
               </div>
             </main>
@@ -88,10 +96,10 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
           </div>
 
           {/*
-            La ventana interna va **fuera de la columna**, en `fixed`: cubre la
-            pantalla entera menos el pie, donde queda la barra a la vista. Que se
-            siga viendo la ficha de la que salió es lo que hace que se entienda
-            de dónde vino.
+            Las ventanas internas van **fuera de la columna**, en `fixed`: se
+            mueven por la pantalla entera menos el pie, donde queda la barra a la
+            vista. Que se siga viendo la ficha de la que salió cada una es lo que
+            hace que se entienda de dónde vinieron.
           */}
           <PanelDeObjeto />
 

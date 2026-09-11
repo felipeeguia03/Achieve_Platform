@@ -151,6 +151,8 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
   const proveedor = readFileSync(resolve(ROOT, "components/shell/espacio-de-trabajo.tsx"), "utf8");
   const barra = readFileSync(resolve(ROOT, "components/shell/barra-de-objetos.tsx"), "utf8");
   const panel = readFileSync(resolve(ROOT, "components/shell/panel-de-objeto.tsx"), "utf8");
+  const movimiento = readFileSync(resolve(ROOT, "components/shell/movimiento.ts"), "utf8");
+  const marco = readFileSync(resolve(ROOT, "lib/domain/marco-de-panel.ts"), "utf8");
 
   it("1 · URL por objeto: ningún objeto existe sin su ruta", () => {
     // El tipo la exige, y la persistencia rechaza lo que no empiece con `/`.
@@ -206,14 +208,23 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
     expect(panel).not.toMatch(/addEventListener\("keydown"[^)]*true\)/);
   });
 
-  it("la barra queda **por encima** del panel: se puede cambiar de objeto sin cerrarlo", () => {
+  it("la barra queda **por encima** de las ventanas: se puede cambiar de objeto sin cerrarlas", () => {
     // Medido en el navegador: con el fondo del panel encima, la barra se veía y
     // no se podía tocar. El orden importa y por eso se prueba.
     const zBarra = /zIndex: (\d+), padding: "0 16px", pointerEvents: "none"/.exec(barra);
-    const zPanel = /zIndex: (\d+),\n\s*background: "rgba\(0,0,0,0\.18\)"/.exec(panel);
+    const zPanel = /position: "fixed", inset: 0, zIndex: (\d+), pointerEvents: "none"/.exec(panel);
     expect(zBarra).not.toBeNull();
     expect(zPanel).not.toBeNull();
     expect(Number(zBarra?.[1])).toBeGreaterThan(Number(zPanel?.[1]));
+
+    /*
+      ⚠️ **Y el apilamiento de las ventanas es RELATIVO al contenedor** — la
+      Enmienda 3 lo vuelve una regla, no un detalle. Con `zIndex: 40 + i` la
+      undécima ventana pasaría a la barra y volvería el defecto que este test
+      vino a cerrar. El contenedor ya está en su capa; adentro se cuenta desde 1.
+    */
+    expect(panel).toMatch(/zIndex: apilado/);
+    expect(panel).not.toMatch(/zIndex: \d+ \+/);
   });
 
   /**
@@ -225,7 +236,6 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
    * probar con un mouse de mentira.
    */
   it("el marco se calcula en el dominio, y no reusa la palabra `ventana`", () => {
-    const marco = readFileSync(resolve(ROOT, "lib/domain/marco-de-panel.ts"), "utf8");
     expect(marco).toMatch(/export function (mover|redimensionar|alternarExpandido)/);
     // Puro: sin React y sin DOM.
     expect(marco).not.toMatch(/from "react"|document\.|window\./);
@@ -264,15 +274,35 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
     expect(panel).not.toMatch(/e\.target !== e\.currentTarget/);
   });
 
-  /** La ventana interna — ADR-088, Enmienda 1. */
-  it("la ventana interna vive en la URL, atrapa el foco y no ofrece CTA de dominio", () => {
-    // Requisito 1: el panel es un parámetro, no un estado en memoria.
+  /** Las ventanas internas — ADR-088, Enmiendas 1 y 3. */
+  it("las ventanas viven en la URL, devuelven el foco y no ofrecen CTA de dominio", () => {
+    // Requisito 1: el escritorio es un parámetro, no un estado en memoria.
     expect(dominio).toMatch(/export const PARAM_PANEL/);
+    expect(dominio).toMatch(/export function clavesDesplegadas/);
     expect(panel).toMatch(/role="dialog"/);
-    expect(panel).toMatch(/aria-modal="true"/);
-    // Requisito 3: trampa de foco y devolución del foco al cerrar.
-    expect(panel).toMatch(/"Tab"/);
+
+    /*
+      ⚠️ **Y NO son modales, que es lo que la Enmienda 3 corrigió.** Anunciar
+      `aria-modal` en algo que no lo es le dice al lector de pantalla que el
+      resto de la página no existe — cuando el resto de la página es lo que se
+      sigue usando: la barra, la pantalla de atrás y las otras dos ventanas.
+    */
+    expect(panel).not.toMatch(/aria-modal=/);
+
+    /*
+      ⚠️ **Y por lo mismo no hay trampa de foco.** Con una sola ventana modal
+      atrapar el `Tab` era correcto; con tres no modales dejaría al teclado
+      encerrado en la última que se abrió, sin forma de llegar a las otras.
+      Lo que **sí** se conserva es devolver el foco a donde estaba.
+    */
+    expect(panel).not.toMatch(/e\.key === "Tab"|e\.shiftKey/);
     expect(panel).toMatch(/anterior\?\.focus\?\.\(\)/);
+
+    /*
+      Requisito 4, capa 2: `Escape` minimiza **la ventana que tiene el foco**, no
+      el escritorio entero. Sin la clave, una tecla bajaría las tres.
+    */
+    expect(panel).toMatch(/minimizarPanel\(clave\)/);
     /*
       **Ninguna CTA muerta.** `MateriaCursado` dibuja sus CTAs por el dato, no
       por el manejador: sin cablearlas, *«Activar Modo Examen»* aparecía adentro
@@ -287,6 +317,142 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
     // Y los destinos salen del registro canónico, no escritos a mano.
     expect(panel).toMatch(/rutaDeCta\("CTA-002"\)/);
     expect(panel).not.toMatch(/router\.push\("\/(materia|examen|progreso)/);
+  });
+
+  /**
+   * ⚠️ **La Enmienda 3: todas las ventanas existen a la vez.**
+   *
+   * Es el pedido del owner —*"cuando abrís dos o tres de esos cuadros deberían
+   * existir todos, y poder acomodarlos"*— y las dos mitades tienen que estar:
+   * varias ventanas dibujadas, y **ningún fondo que las apague al tocar atrás**.
+   */
+  it("hay tantas ventanas como fichas desplegadas, y ninguna tapa la pantalla de atrás", () => {
+    // El dominio sabe manejar una lista, no una clave.
+    expect(dominio).toMatch(/export function desplegar/);
+    expect(dominio).toMatch(/export function alternarDespliegue/);
+    expect(dominio).toMatch(/export function rutaConPaneles/);
+
+    // Y el componente dibuja una por cada una.
+    expect(panel).toMatch(/visibles\.map/);
+
+    /*
+      ⚠️ **Sin fondo oscurecido, y sin «tocar afuera minimiza».** Los dos eran
+      correctos con una ventana modal y son un defecto con tres: el escritorio
+      se apagaría entero apenas tocás la pantalla de atrás, que es justamente lo
+      que tener tres ventanas viene a permitir.
+    */
+    expect(panel).not.toMatch(/rgba\(0,0,0,0\.18\)/);
+    expect(panel).not.toMatch(/minimizarPanel\(\)/);
+
+    /*
+      El apilamiento **no es un segundo límite duro**. Nunca puede haber más
+      ventanas que objetos abiertos, así que el techo de 12 ya está puesto y un
+      número nuevo sería una regla inventada (`CLAUDE.md`, regla 1).
+    */
+    expect(dominio).not.toMatch(/LIMITE_DE_VENTANAS|MAXIMO_DE_PANELES/);
+  });
+
+  /**
+   * ⚠️ **El movimiento del escritorio — Enmienda 4.**
+   *
+   * Tres cosas, y las tres se rompen callado: el movimiento que ignora a quien
+   * pidió menos movimiento, la aritmética que se escapa del dominio, y el orden
+   * entre animar y minimizar —que ya falló una vez y se midió en el navegador—.
+   */
+  it("la ventana sale de su ficha, y el efecto se apaga si el sistema lo pidió", () => {
+    // La aritmética es del dominio, como la del marco. Acá sólo se traduce.
+    expect(marco).toMatch(/export function desdeLaFicha/);
+    expect(movimiento).toMatch(/desdeLaFicha/);
+
+    /*
+      §2.5 cierra con *"la pantalla debe funcionar entera con
+      `prefers-reduced-motion`"*. Para quien pidió menos movimiento, una ventana
+      que se dispara desde el pie de la pantalla **es exactamente el gesto que
+      tiene desactivado**.
+    */
+    expect(movimiento).toMatch(/prefers-reduced-motion: reduce/);
+    expect(movimiento).toMatch(/if \(movimientoReducido\(\)\) return null;/);
+
+    /*
+      Y los números salen de §2.5, no de la intuición: *"nunca `ease` de 400
+      ms"*. El rango observado es 180–220 ms.
+    */
+    const duracion = /export const DURACION = (\d+);/.exec(movimiento);
+    expect(duracion).not.toBeNull();
+    expect(Number(duracion?.[1])).toBeGreaterThanOrEqual(180);
+    expect(Number(duracion?.[1])).toBeLessThanOrEqual(220);
+
+    /*
+      ⚠️ **El origen de la transformación, que es el defecto invisible.** Con el
+      origen al centro —el que trae el navegador— la ventana sale de un lugar
+      cercano y equivocado, y no se lee como un error sino como mala puntería.
+    */
+    expect(panel).toMatch(/transformOrigin: "0 0"/);
+  });
+
+  /**
+   * ⚠️ **Primero se guarda en la ficha, DESPUÉS se minimiza. Se midió al revés.**
+   *
+   * La primera versión minimizaba y retenía la ventana desmontada para animarla:
+   * React alcanzaba a sacarla del árbol en el frame del medio y a volver a
+   * montarla, así que lo que se veía era un desvanecido en el lugar. Muestreando
+   * el `transform` cada 28 ms en el navegador, **la escala no se movía de 1**.
+   */
+  it("minimizar anima antes de tocar el estado, no después", () => {
+    expect(movimiento).toMatch(/export function guardarEnLaFicha/);
+    // El gesto pasa por la animación y minimiza en su callback.
+    expect(panel).toMatch(/guardarEnLaFicha\(clave, \(\) => minimizarPanel\(clave\)\)/);
+    // Y la barra hace lo mismo: minimizar desde la ficha no puede verse distinto
+    // de minimizar desde la ventana, porque es el mismo gesto.
+    expect(barra).toMatch(/guardarEnLaFicha\(/);
+
+    /*
+      ⚠️ **Y si la animación se cancela, igual se minimiza.** Con sólo
+      `onfinish`, una animación cancelada dejaría la ficha marcada como
+      desplegada sobre una ventana que ya no está.
+    */
+    expect(movimiento).toMatch(/animacion\.oncancel = /);
+  });
+
+  /**
+   * ⚠️ **El nombre del objeto — Enmienda 5.** Dos reglas que se rompen callado:
+   * el color que se copia en vez de compartirse, y el renombre disfrazado de
+   * presentación.
+   */
+  it("el color de una materia es uno solo, compartido entre la lista y el escritorio", () => {
+    const compartido = readFileSync(resolve(ROOT, "lib/domain/color-de-materia.ts"), "utf8");
+    expect(compartido).toMatch(/export function colorDeMateria/);
+    // Puro, como todo `lib/domain/`.
+    expect(compartido).not.toMatch(/from "react"|document\.|window\./);
+
+    /*
+      ⚠️ **La paleta existe UNA sola vez.** Con una copia en el índice y otra en
+      el escritorio, el día que alguien toque una, la lista y las ventanas dirían
+      colores distintos para la misma materia — y el color pasaría a mentir sobre
+      la identidad en vez de fijarla.
+    */
+    const indice = readFileSync(resolve(ROOT, "components/screens/indice-de-materias.tsx"), "utf8");
+    expect(indice).toMatch(/from "@\/lib\/domain\/color-de-materia"/);
+    expect(indice).not.toMatch(/const PALETA/);
+    expect(barra).toMatch(/colorDelObjeto\(/);
+    expect(panel).toMatch(/colorDelObjeto\(/);
+  });
+
+  it("el nombre se presenta distinto, pero **no se renombra el dato**", () => {
+    const nombre = readFileSync(resolve(ROOT, "lib/domain/nombre-de-objeto.ts"), "utf8");
+    expect(nombre).toMatch(/export function nombreDeObjeto/);
+
+    /*
+      ⚠️ **No repone acentos ni expande abreviaturas.** La fuente oficial dice
+      `ANALISIS`; ponerle la tilde en la capa de dibujo sería corregir el dato
+      donde nadie lo puede auditar — *omitir, no inventar* (§2.7). El arreglo de
+      verdad es un backfill con su procedencia.
+    */
+    expect(nombre).toMatch(/No repone acentos/);
+    expect(nombre).not.toMatch(/normalize\(|["']á["']|replace\(\/A\//);
+
+    // Y los números romanos sobreviven: son lo único que distingue `I` de `II`.
+    expect(nombre).toMatch(/\^\[IVX\]\+\$/);
   });
 
   it("5 · comportamiento a escala: se reparte, no se comprime — `A-07`", () => {

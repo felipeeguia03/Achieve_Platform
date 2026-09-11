@@ -6,6 +6,7 @@ import {
   areaDe,
   comoMarco,
   encuadrar,
+  desdeLaFicha,
   marcoInicial,
   mover,
   redimensionar,
@@ -227,5 +228,67 @@ describe("lo que se lee del navegador no se cree", () => {
     const m = comoMarco({ x: 1, y: 2, ancho: 400, alto: 300, expandido: true, previo: { x: "no" } });
     expect(m).not.toBeNull();
     expect(m?.previo).toBeNull();
+  });
+});
+
+/**
+ * El efecto de escala del escritorio — ADR-088, Enmienda 4.
+ *
+ * ⚠️ **Esto es aritmética, y por eso se prueba acá y no con un navegador.** Que
+ * la ventana salga **exactamente** de su ficha es una multiplicación y una
+ * resta; verificarla moviendo un mouse de mentira probaría el doble y no diría
+ * si el número está bien.
+ */
+describe("desdeLaFicha — la ventana sale de su ficha", () => {
+  const MARCO = { x: 100, y: 200, ancho: 940, alto: 660 };
+  const FICHA = { x: 628, y: 833, ancho: 188, alto: 44 };
+
+  /**
+   * Aplicando la transformación con `transform-origin: 0 0`, la esquina de la
+   * ventana tiene que caer sobre la esquina de la ficha y su tamaño tiene que
+   * ser el de la ficha. Si esto falla, la ventana sale de un lugar **cercano y
+   * equivocado**, que es peor que no animar: parece un defecto de posición.
+   */
+  it("superpone la ventana sobre la ficha, exactamente", () => {
+    const d = desdeLaFicha(MARCO, FICHA);
+    expect(MARCO.x + d.x).toBe(FICHA.x);
+    expect(MARCO.y + d.y).toBe(FICHA.y);
+    expect(MARCO.ancho * d.escalaX).toBeCloseTo(FICHA.ancho, 6);
+    expect(MARCO.alto * d.escalaY).toBeCloseTo(FICHA.alto, 6);
+  });
+
+  /**
+   * ⚠️ **La escala es distinta en cada eje.** Una ficha es mucho más ancha que
+   * alta; una escala uniforme haría que la ventana saliera de un cuadrado que no
+   * está en ninguna parte, en vez de de la ficha que se tocó.
+   */
+  it("la escala de cada eje es la de su propio lado", () => {
+    const d = desdeLaFicha(MARCO, FICHA);
+    expect(d.escalaX).not.toBeCloseTo(d.escalaY, 2);
+    expect(d.escalaX).toBeCloseTo(188 / 940, 6);
+    expect(d.escalaY).toBeCloseTo(44 / 660, 6);
+  });
+
+  /**
+   * ⚠️ **Una escala cero es una matriz sin inversa**: el navegador no puede
+   * calcular los fotogramas intermedios y la animación se ve como un parpadeo.
+   * Una ficha todavía sin maquetar mide exactamente eso.
+   */
+  it("nunca devuelve escala cero, ni con una ficha sin medir", () => {
+    const d = desdeLaFicha(MARCO, { x: 0, y: 0, ancho: 0, alto: 0 });
+    expect(d.escalaX).toBeGreaterThan(0);
+    expect(d.escalaY).toBeGreaterThan(0);
+  });
+
+  it("no divide por cero si el marco viniera vacío", () => {
+    const d = desdeLaFicha({ x: 0, y: 0, ancho: 0, alto: 0 }, FICHA);
+    expect(Number.isFinite(d.escalaX)).toBe(true);
+    expect(Number.isFinite(d.escalaY)).toBe(true);
+  });
+
+  /** Una ficha que ya mide lo mismo que la ventana no mueve ni escala nada. */
+  it("una ficha del tamaño del marco es la identidad", () => {
+    const d = desdeLaFicha(MARCO, { x: MARCO.x, y: MARCO.y, ancho: MARCO.ancho, alto: MARCO.alto });
+    expect(d).toEqual({ x: 0, y: 0, escalaX: 1, escalaY: 1 });
   });
 });

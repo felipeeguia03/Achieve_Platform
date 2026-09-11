@@ -228,14 +228,67 @@ describe("activar y cerrar", () => {
     expect(push).toHaveBeenCalledWith("/materia?cursada=ce-3");
   });
 
-  it("cerrar el objeto del panel **se lleva el panel**: no queda una ventana huérfana", async () => {
+  /**
+   * ⚠️ **Cambió con la Enmienda 3, y la diferencia es exactamente el
+   * multiventana.**
+   *
+   * Con una sola ventana, cerrar su objeto desplegaba la del vecino: era eso o
+   * dejar la pantalla sin nada. Con varias, abrir una ventana que el estudiante
+   * no pidió **encima de las que ya tenía** es un escritorio que se reordena
+   * solo. Se lleva la suya, y **sólo la suya**.
+   */
+  it("cerrar el objeto de una ventana se lleva su ventana, y no abre otra", async () => {
     sembrar(3);
     rutaActual = "/hoy?abierto=materia:ce-1";
     await montar();
 
     fireEvent.click(screen.getByRole("button", { name: "Cerrar: Materia 1" }));
-    // Pasa al vecino más reciente, **sin sacar al estudiante de `/hoy`**.
+    // Sin ventana huérfana y sin ventana nueva, **sin sacar al estudiante de `/hoy`**.
+    expect(push).toHaveBeenCalledWith("/hoy");
+  });
+
+  it("con tres ventanas, cerrar una deja las otras dos donde estaban", async () => {
+    sembrar(3);
+    rutaActual = "/hoy?abierto=materia:ce-1,materia:ce-2,materia:ce-3";
+    await montar();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar: Materia 2" }));
+    expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-1%2Cmateria%3Ace-3");
+  });
+
+  /** El pedido del owner, en su forma más literal: dos o tres a la vez. */
+  it("desplegar una ficha **no baja las que ya estaban**", async () => {
+    sembrar(3);
+    rutaActual = "/hoy?abierto=materia:ce-1";
+    await montar();
+
+    fireEvent.click(screen.getAllByRole("tab")[2] as HTMLElement);
+    expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-1%2Cmateria%3Ace-3");
+  });
+
+  it("volver a tocar una desplegada la baja, y las otras se quedan", async () => {
+    sembrar(3);
+    rutaActual = "/hoy?abierto=materia:ce-1,materia:ce-3";
+    await montar();
+
+    fireEvent.click(screen.getAllByRole("tab")[0] as HTMLElement);
     expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-3");
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+  });
+
+  /**
+   * ⚠️ **La de adelante es la última de la lista, no la primera.** Si el orden
+   * se leyera al revés, `Escape` bajaría la de atrás y el activo de la barra
+   * marcaría una ventana tapada.
+   */
+  it("el activo es **la ventana de adelante**, la última del apilamiento", async () => {
+    sembrar(3);
+    rutaActual = "/hoy?abierto=materia:ce-3,materia:ce-1";
+    await montar();
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    expect(tabs[2]).toHaveAttribute("aria-selected", "false");
   });
 
   it("cerrar el último con el panel abierto deja la pantalla sin panel y entera", async () => {

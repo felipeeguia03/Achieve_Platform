@@ -87,11 +87,12 @@ describe("UX01 — omitir, no inventar", () => {
   });
 
   it("una materia sin avance registrado no dice 'hace 0 días'", () => {
-    // La tercera materia de FX-DAY-BASE tiene ultimoAvance en null.
+    // La cola `1 de N` que mostraba esto salió de `UX01` por ADR-093; la
+    // garantía se mudó a la tarjeta del tablero (`tests/hoy-anticipar.test.tsx`,
+    // *"sin avance no dice «hace 0 días»"*). Acá queda lo que el Track A
+    // sigue pudiendo afirmar: sin tablero no se dibuja ninguna cuenta de avance.
     renderHoy("FX-DAY-BASE");
-    fireEvent.click(screen.getByLabelText("Siguiente"));
-    fireEvent.click(screen.getByLabelText("Siguiente"));
-    expect(screen.getByText("Sin avance registrado")).toBeInTheDocument();
+    expect(screen.queryByText(/hace 0 días/)).toBeNull();
     expect(screen.queryByText(/Último avance/)).toBeNull();
   });
 });

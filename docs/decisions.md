@@ -135,8 +135,14 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-088](#adr-088) | **El espacio de trabajo**: los objetos abiertos, y ADR-019 queda `SUPERSEDED` | ✅ `ACCEPTED` *(10 sep 2026 · decidido por el owner · **los seis requisitos del multiventana, cumplidos**)* | — |
 | [ADR-088 · Enm. 1](#adr-088-enmienda-1) | **La ventana interna**: la ficha despliega, minimiza y cierra | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **el panel consulta, la superficie trabaja**)* | — |
 | [ADR-088 · Enm. 2](#adr-088-enmienda-2) | **El marco**: se arrastra, se estira, se expande y recuerda dónde quedó | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **«marco», no «ventana»: `A-04`**)* | — |
+| [ADR-088 · Enm. 3](#adr-088-enmienda-3) | **El escritorio**: abrir va a la materia, la superficie se minimiza y las ventanas conviven | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **retira la trampa de foco de la Enm. 1**)* | — |
+| [ADR-088 · Enm. 4](#adr-088-enmienda-4) | **El movimiento**: la ventana sale de su ficha y vuelve a entrar | ✅ `ACCEPTED` *(11 sep 2026 · pedida por el owner · **§2.5, y `prefers-reduced-motion` la apaga**)* | — |
+| [ADR-088 · Enm. 5](#adr-088-enmienda-5) | **El nombre y el color**: cómo se escribe un objeto y cómo se distingue de otro | ✅ `ACCEPTED` *(11 sep 2026 · pedida por el owner · **presentación, no renombre**)* | [ADR-075](#adr-075) |
 | [ADR-089](#adr-089) | `UX01` gana la capa **«anticipar»**: próxima evaluación y mapa de 14 días | ✅ `ACCEPTED` *(10 sep 2026 · **sin contrato nuevo**: reusa `GET /api/materias`)* | — |
 | [ADR-090](#adr-090) | El **radar académico** de `UX01` | 🟡 `PROPOSED` — **no se construye** | `C01-021`, `C01-036`, `C01-044` |
+| [ADR-091](#adr-091) | La fila del índice es un solo destino, y la miga nombra el objeto | ✅ `ACCEPTED` *(10 sep 2026 · pedido del owner)* | — |
+| [ADR-092](#adr-092) | **Dos materias del Plan 2016 se llamaban igual**: `ARQUITECTURA DE COMPUTADORAS I` y `II` | ✅ `ACCEPTED` *(11 sep 2026 · **con los programas oficiales delante**)* | [ADR-053](#adr-053), [ADR-086](#adr-086) |
+| [ADR-093](#adr-093) | **`UX01` es un tablero**: evaluaciones en dos opciones, riesgos de planificación `PLAN-v0.1` y los próximos 7 días | ✅ `ACCEPTED` *(11 sep 2026 · **decidido por el owner con la referencia delante**)* | [ADR-089](#adr-089), [ADR-090](#adr-090), [ADR-072](#adr-072), [ADR-073](#adr-073) |
 
 ---
 
@@ -7731,7 +7737,9 @@ test se pierde en dos meses"*, y eso vale igual para la regla nueva. El `describ
 
 ### ADR-088 · Enmienda 1 — la ventana interna
 
-**Estado:** `ACCEPTED` · 10 sep 2026 · **pedida por el owner con las capturas delante**
+**Estado:** `ACCEPTED` · 10 sep 2026 · **pedida por el owner con las capturas delante** —
+⚠️ **enmendada en sus puntos 1, 2, 3 y 4 por la [Enmienda 3](#adr-088-enmienda-3)**, que separó
+*abrir un objeto* de *desplegar su ventana* y pasó de una ventana a varias.
 
 #### Contexto
 
@@ -7751,6 +7759,10 @@ de verdad**.
 
 **1. Tocar una ficha despliega el panel; volver a tocarla lo minimiza.** El gesto es uno solo.
 
+⚠️ **La [Enmienda 3](#adr-088-enmienda-3) mantiene este gesto pero le saca `abrir`:** entrar a una
+materia desde el índice o el mapa **va a su superficie completa**, y la ventana chica es lo que se
+elige después. Y desplegar una ficha **no baja las otras**.
+
 **2. El panel vive en la URL** — `?abierto=<clave>` sobre la ruta actual. Es el requisito 1
 (*URL por ficha*) y no es ceremonia: hace que el panel se pueda compartir, que **el botón atrás lo
 cierre** y que recargar lo reponga. Una clave que no corresponde a un objeto abierto **se ignora**:
@@ -7760,9 +7772,19 @@ no existe la ventana huérfana.
 el foco vuelve a donde estaba. `Escape` cierra primero un menú abierto y sólo después minimiza:
 **nunca cierra el objeto**, porque cerrar es destructivo y no se hace con una tecla de escape.
 
+⚠️ **La trampa de foco y el `aria-modal` los retira la [Enmienda 3](#adr-088-enmienda-3), con su
+razón**: eran correctos con **una** ventana modal y, con varias no modales, encerrarían al teclado en
+la última que se abrió. Lo que se conserva es devolver el foco a donde estaba, y que `Escape` minimice
+**la ventana que tiene el foco** y nunca cierre el objeto.
+
 **4. Minimizar y cerrar son dos cosas, y por eso son dos botones.** Minimizar guarda el panel y
 **deja el objeto en la barra**; cerrar saca el objeto. Tocar afuera minimiza. Dos controles que
 hicieran lo mismo serían ruido.
+
+⚠️ **El *«tocar afuera minimiza»* también lo retira la [Enmienda 3](#adr-088-enmienda-3):** con varias
+ventanas, el afuera es la pantalla que seguís usando, y cada clic en `Hoy` bajaría el escritorio
+entero. La distinción entre minimizar y cerrar **no se toca**, y con la Enmienda 3 se dice con dos
+controles del semáforo.
 
 **5. ⚠️ El panel consulta; la superficie trabaja.** Adentro **no hay CTA de dominio**:
 comprometerse, empezar y entregar tienen su precedencia y su CTA única en `UX02`–`UX05` (`I-06`), y
@@ -7783,7 +7805,9 @@ una pantalla parecida.
 - El objeto activo pasa a ser **el del panel** cuando hay panel. Es lo que el estudiante está
   mirando; si mandara la ruta, la barra marcaría como activo algo que quedó atrás de la ventana.
 - Cerrar el objeto del panel **se lleva el panel** y pasa al vecino, sin sacar al estudiante de la
-  pantalla en la que estaba.
+  pantalla en la que estaba. ⚠️ **La [Enmienda 3](#adr-088-enmienda-3) saca el «pasa al vecino»**: con
+  varias ventanas, abrir una que el estudiante no pidió encima de las que ya tenía es un escritorio
+  que se reordena solo.
 - **Ninguna superficie nueva, ninguna CTA nueva, ningún contrato de backend nuevo.** El panel relee
   `GET /api/materia`, la misma lectura de `UX02`.
 
@@ -7846,11 +7870,472 @@ y hay test que lo comprueba campo por campo.
 
 ---
 
+<a id="adr-088-enmienda-3"></a>
+
+### ADR-088 · Enmienda 3 — el escritorio: primero la materia, después las ventanas
+
+**Estado:** `ACCEPTED` · 10 sep 2026 · **pedida por el owner con la pantalla delante**
+
+#### Contexto
+
+La Enmienda 1 hizo que **abrir una materia desplegara una ventana chica** encima de la pantalla
+actual, y la Enmienda 2 le dio manejo de ventana. Las dos resolvían un problema real —consultar en
+qué anda Álgebra no debería costar perder `Hoy`—, pero al mirarlo funcionando aparecieron dos cosas
+que no cerraban, y el owner las nombró en una sola frase:
+
+> *"ahora mismo cuando abrís una materia se abre el cuadro ese que está conectado con la barra de
+> pestañas, primero quiero que se abra la materia normal, luego se puede minimizar con un botón
+> arriba, al estilo mac, luego, cuando abrís dos o tres de esos cuadros de la barra de pestañas
+> deberían existir todos, y poder acomodarlos, como una mac"*
+
+Son **dos defectos distintos**, y conviene separarlos porque se arreglan en lugares distintos:
+
+1. **El orden estaba invertido.** Entrar a una materia es ir a trabajar en ella: `UX02` es la
+   superficie donde se ve el Gantt por tema, se activa Modo Examen y se avanza. La Enmienda 1 la
+   metía en un rectángulo de 1080×760 **desde el primer gesto**, y para llegar a la pantalla entera
+   había que apretar *«Ver como página»*. La ventana chica es para consultar: es el **segundo** paso,
+   no el primero.
+2. **Había una sola ventana, y eso no es un escritorio.** Desplegar la segunda ficha bajaba la
+   primera. Todo el argumento de ADR-088 —*"un estudiante con cinco materias tiene abiertos, a la
+   vez, una unidad de Análisis, el TP2 de Computación Gráfica y la evaluación de Historia
+   Económica"*— pedía que existieran **a la vez**, y la implementación lo contradecía.
+
+#### Decisión
+
+**1. Abrir un objeto lleva a su superficie completa.** `abrir` vuelve a hacer `router.push` a la
+`ruta` del objeto, como antes de la Enmienda 1. Lo que la Enmienda 1 agregó y **se conserva** es que
+el objeto quede en la barra para volver.
+
+**2. La superficie tiene su barra de título, y ahí está el botón de minimizar.** Cuando la pantalla
+que estás mirando **es la de un objeto abierto**, arriba de la columna aparece su semáforo:
+
+| Control | Qué hace |
+|---|---|
+| **Cerrar** | Saca el objeto de la barra y vuelve a la pantalla de la que salió |
+| **Minimizar** | **El objeto queda en la barra** y la pantalla vuelve de donde vino. No se cierra nada |
+| **Reducir** | La convierte en una ventana sobre la pantalla de la que salió |
+
+⚠️ **El tercero reduce, no expande, y no es un detalle de copy.** La materia a pantalla completa **ya
+está expandida**: un botón de expandir ahí sería un control muerto (`P-07`). Es la misma razón por la
+que en un escritorio el botón verde de una ventana en pantalla completa la saca de pantalla completa.
+
+⚠️ **De dónde vino es estado de sesión y NO se persiste**, a diferencia del marco. El marco es *cómo
+quedó la ventana* —algo que el estudiante eligió y espera encontrar mañana—; de dónde vino es *qué
+estaba haciendo hace un minuto*, y reponerlo de una sesión anterior mandaría a alguien a una pantalla
+que dejó ayer. Sin origen se vuelve a `Hoy`, que es la única pantalla que nunca es un callejón.
+
+⚠️ **El semáforo aparece sólo si el objeto está abierto**, y eso es correcto: *estar en una pantalla
+no es tener su objeto abierto* es la regla de `sincronizarConRuta` desde ADR-088 §2. Llegar pegando
+la URL a mano no dibuja el semáforo — y ahí tampoco habría «de dónde volver».
+
+**3. Todas las ventanas existen a la vez, y se apilan.** Desplegar una ficha **no baja las otras**.
+Tocar una ventana la sube al frente; `Escape` baja **la que tiene el foco**, no el escritorio.
+
+**4. El escritorio entero vive en la URL** — `?abierto=<a>,<b>,<c>`, y **el orden de la lista es el
+apilamiento**. Es el requisito 1 ejercitado más fuerte que antes: se comparte el link con las tres
+ventanas puestas y en su orden, el botón atrás deshace el último gesto y recargar repone todo.
+
+⚠️ **Traer una ventana al frente usa `replace`, no `push`.** Tocar tres ventanas por turno son tres
+entradas de historial que no llevan a ninguna parte: el botón atrás tendría que apretarse quince
+veces para salir de una pantalla. **Cambiar el apilamiento no es navegar.**
+
+⚠️ **Una coma, no un parámetro repetido.** `?abierto=a&abierto=b` obligaría a `getAll` en la lectura
+y a cuidar el orden de los repetidos, que nadie garantiza. Con una clave y una lista, **el orden es
+el dato**.
+
+**5. Se retira el fondo oscurecido y el «tocar afuera minimiza».** Los dos eran correctos con una
+ventana modal y son un defecto con tres: el escritorio se apagaría entero apenas tocás la pantalla de
+atrás, que es exactamente lo que tener tres ventanas viene a permitir.
+
+**6. ⚠️ Se retira la trampa de foco de la Enmienda 1 §3, y hay que decir por qué.** Atrapar el `Tab`
+adentro del panel **correspondía** cuando era una ventana modal, sola y con su fondo. Con varias
+ventanas no modales, mantenerla dejaría al teclado **encerrado en la última que se abrió**, sin forma
+de llegar ni a las otras ventanas ni a la barra: sería un defecto de accesibilidad, no una garantía.
+Por lo mismo se saca `aria-modal` — anunciar como modal algo que no lo es le dice al lector de
+pantalla que el resto de la página no existe, cuando el resto de la página es lo que se sigue usando.
+
+**Lo que sí se conserva de ese punto es la otra mitad, que es la que importa:** el foco entra a la
+ventana al abrirse y **vuelve a donde estaba** al bajarla. Y sólo vuelve si quedó sin dueño: con
+varias ventanas, bajar la de atrás no puede arrancarte el foco de la de adelante.
+
+**7. No se agrega un segundo límite duro.** Nunca puede haber más ventanas que objetos abiertos, así
+que el techo de **12** del requisito 6 ya está puesto. Un número nuevo para las ventanas sería una
+regla inventada (`CLAUDE.md`, regla 1).
+
+**8. La barra dice cuáles están desplegadas.** Un punto en la ficha ⇒ tiene ventana abierta; el fondo
+⇒ es la de adelante. **Son dos hechos distintos y se dicen con dos señales distintas**: con tres
+desplegadas, un solo tratamiento para las dos cosas deja sin decir cuál te va a contestar el
+`Escape`.
+
+**9. A menos de 768 px se dibuja sólo la ventana de adelante, a pantalla completa.** Tres rectángulos
+apilados en un teléfono no son tres ventanas: son una tapando a dos que no se pueden agarrar.
+
+**10. El semáforo no usa los colores semánticos, ni los de ningún otro sistema operativo.** Achieve
+tiene tres colores y **los tres significan algo del dominio**: `--exito-fill` en un botón de expandir
+diría *"esto salió bien"* sobre un control de cromo, que es `A-04` por el eje del color. Y los
+colores literales de otro producto tampoco entran: de una fuente se toma **el mecanismo**, nunca su
+marca (`AGENTS.md` §1.5). Lo que hace que se lean como controles de ventana es **la forma, el tamaño,
+el orden y el lugar**.
+
+⚠️ **Y llevan su glifo puesto, no al pasar el mouse.** Un control que sólo dice qué hace cuando ya lo
+estás por apretar es `P-05` al revés. Con tres círculos mudos, cerrar y minimizar se distinguen por
+la posición — y equivocarse cierra el objeto.
+
+#### Consecuencias
+
+- **Cerrar el objeto de una ventana se lleva su ventana y no abre otra.** La Enmienda 1 desplegaba la
+  del vecino, porque era eso o dejar la pantalla sin nada. Con varias, abrir una ventana que el
+  estudiante no pidió **encima de las que ya tenía** es un escritorio que se reordena solo. §10.7
+  sigue cumplido: la pantalla actual nunca queda rota.
+- *«Ver como página»* **se lleva su propia ventana**. Dejarla desplegada encima de su propia
+  superficie sería la misma materia dos veces en la misma pantalla, una tapando a la otra.
+- **El apilamiento se cuenta desde 1 adentro de su contenedor**, no como `40 + i`: con la suma, la
+  undécima ventana pasaría por encima de la barra de objetos y volvería el defecto de la Enmienda 1
+  —la barra visible y no clickeable—. Hay guard.
+- **Los controles se nombran con el objeto** (*«Minimizar: Álgebra»*). Con una sola ventana
+  *«Minimizar»* alcanzaba; con tres, tres controles con el mismo nombre no le dicen nada a nadie.
+- **Ninguna superficie nueva, ninguna CTA nueva, ningún contrato de backend nuevo.** Las ventanas
+  releen `GET /api/materia`, la misma lectura de `UX02`. El registro sigue en **20 CTAs** y las nueve
+  superficies siguen siendo nueve.
+- [ADR-019](#adr-019) §2 sigue vigente: **el breadcrumb no se reemplaza.** La barra de título de la
+  superficie dice *qué objeto es esta ventana y qué podés hacer con ella*; la miga sigue diciendo
+  dónde estás, en la topbar.
+
+#### Cómo se verifica
+
+`tests/espacio-de-trabajo.test.ts` — la lista de la URL en orden, una clave inventada entre dos
+válidas que no se lleva puestas a las válidas, sin repetidos, y las tres operaciones de apilamiento.
+`tests/panel-de-objeto.test.tsx` — tres claves dan tres ventanas, minimizar una baja sólo ésa, tocar
+afuera no baja nada, `Tab` no queda atrapado, y los cuatro gestos de la barra de título de la
+superficie. `tests/barra-de-objetos.test.tsx` — desplegar no baja las que ya estaban, y el activo es
+la de adelante. `tests/ausencia.test.tsx` — sin `aria-modal`, sin fondo, sin segundo límite duro, y
+el apilamiento relativo al contenedor.
+
+---
+
+<a id="adr-088-enmienda-4"></a>
+
+### ADR-088 · Enmienda 4 — el movimiento: la ventana sale de su ficha
+
+**Estado:** `ACCEPTED` · 11 sep 2026 · **pedida por el owner**
+
+#### Contexto
+
+La Enmienda 3 dejó el escritorio funcionando: varias ventanas, apiladas, que se bajan a la barra y se
+vuelven a subir. Lo que quedó sin contestar es **de dónde sale cada una**. Tocar una ficha hacía
+aparecer una ventana de 940×660 en el lugar, sin relación visible con el control que se había tocado.
+El owner lo pidió así:
+
+> *"cuando apreté una de las cosas abiertas en la barra de tareas, se abra al estilo de como se abre
+> una app en mac, cuando tocás en la barra de tareas, esa animación"*
+
+No es decoración. Con tres ventanas abiertas y cinco fichas en la barra, *"¿cuál de las fichas abrió
+esta ventana?"* es una pregunta real, y hoy se contesta leyendo el título. El movimiento la contesta
+**sin texto y sin tiempo**.
+
+#### Decisión
+
+**1. La ventana sale de su ficha y vuelve a entrar.** Al desplegarla, crece desde el rectángulo exacto
+de su ficha hasta su marco. Al minimizarla, hace el recorrido inverso. Es el efecto de escala de un
+escritorio.
+
+**2. La aritmética es dominio puro**, en `desdeLaFicha()` de `lib/domain/marco-de-panel.ts` — el mismo
+criterio que la Enmienda 2 aplicó al marco. Que la ventana salga **exactamente** de su ficha es una
+multiplicación y una resta; verificarlo moviendo un mouse de mentira probaría el doble y no diría si
+el número está bien.
+
+**3. Los números salen de `design-system-capturas.md` §2.5**, no de la intuición: `200 ms` y
+`cubic-bezier(.34, 1.56, .64, 1)`. *"Nunca `ease` de 400 ms."*
+
+⚠️ **Están escritos en `components/shell/movimiento.ts` porque §2.5 nunca se tokenizó.** El documento
+especifica `--curva` y `--duracion`; `app/globals.css` no los tiene, y ese archivo **no se reescribe**
+(regla 6 de `CLAUDE.md`). Se citan con su fuente en vez de inventarse, y el día que los tokens existan
+esto es un `var()` y nada más. **Queda anotado como deuda de tokens.**
+
+**4. ⚠️ `prefers-reduced-motion` lo apaga entero, y no es opcional.** §2.5 cierra con *"la pantalla
+debe funcionar entera con `prefers-reduced-motion`"*. Para quien pidió menos movimiento, una ventana
+que se dispara desde el pie de la pantalla no es una ayuda de orientación: **es exactamente el gesto
+que tiene desactivado**. Sin animación la ventana aparece puesta —el comportamiento de la Enmienda 3,
+que funciona— y **minimizar no espera nada**: esperar 200 ms de nada sería peor que no animar.
+
+**5. ⚠️ Primero se guarda en la ficha, DESPUÉS se minimiza — y se midió al revés.** La primera versión
+minimizaba y **retenía la ventana desmontada** para animarle la salida. React alcanzaba a sacarla del
+árbol en el frame del medio y a volver a montarla, así que lo que se veía era una ventana nueva
+desvaneciéndose en el lugar. Muestreando el `transform` cada 28 ms en el navegador, **la escala no se
+movía de `1`**.
+
+Invirtiendo el orden no hay nada que retener: la URL todavía no cambió, así que la ventana sigue
+montada, se encoge, y **al terminar** se minimiza de verdad. Se borró toda la maquinaria de retención.
+
+**6. Las dos puntas se encuentran por el DOM, y ninguna conoce a la otra.** La ficha lleva
+`data-objeto`; la ventana, `data-ventana`. La ventana necesita **medir** dónde quedó su ficha —el
+reparto entre visibles y desbordadas, el ancho de la columna y la barra lateral colapsada la mueven— y
+la barra necesita animar la ventana antes de minimizarla, porque **tocar una ficha desplegada la baja**
+y ese gesto nace en la barra. Publicar coordenadas en el estado compartido sería publicar coordenadas
+viejas apenas alguien colapse la barra lateral.
+
+⚠️ **Minimizar desde la ficha y desde el semáforo son el mismo gesto**, así que se ven igual. Si la
+barra minimizara en seco, el mismo gesto tendría dos movimientos según dónde lo hicieras.
+
+**7. Sin ficha a la vista no hay animación, y está bien.** Con seis objetos abiertos, el sexto vive en
+el menú de desbordamiento y su ficha **no existe en el DOM**. Ahí la ventana aparece puesta en vez de
+salir disparada desde una coordenada inventada.
+
+#### Lo que no es obvio, y rompe callado
+
+| | Por qué |
+|---|---|
+| **`transform-origin: 0 0`** | Con el origen al centro —el que trae el navegador— el `translate` tendría que compensar media escala por eje. El error **no se ve como error**: se ve como una ventana que sale de un lugar cercano y equivocado |
+| **La escala es distinta en cada eje** | Una ficha es mucho más ancha que alta. Una escala uniforme haría que la ventana saliera de un cuadrado que no está en ninguna parte |
+| **Nunca escala cero** | Una ficha todavía sin maquetar mide `0`, y una escala `0` es una matriz sin inversa: el navegador no puede calcular los fotogramas intermedios y se ve un parpadeo |
+| **`fill: "backwards"` al entrar** | Toma el primer fotograma antes de arrancar. Con `"both"`, el `transform` queda puesto al terminar y cualquier cosa `fixed` de adentro pasa a medirse contra la ventana |
+| **`fill: "forwards"` al salir** | La ventana tiene que **quedarse chica** hasta que la saquen del árbol. Sin eso, el último fotograma la devuelve a tamaño completo y se ve un destello |
+| **`oncancel` además de `onfinish`** | Una animación cancelada sin `oncancel` **nunca minimizaría**, y la ficha quedaría marcada como desplegada sobre una ventana que ya no está |
+| **La caja se mide del DOM, no del `Marco`** | A menos de 768 px la ventana se dibuja con un `inset`, no con el marco: el marco diría una cosa y la caja mide otra |
+
+#### Consecuencias
+
+- **Cerrar no anima hacia la ficha, y es una distinción del producto.** Sólo minimizar se guarda en la
+  barra; cerrar saca el objeto, y meter la ventana en una ficha que ya no existe sería **mentir sobre
+  dónde quedó**. Lo mismo *«Ver como página»*: no bajó a la barra, se abrió entera.
+- **Ninguna superficie nueva, ninguna CTA nueva, ningún contrato de backend nuevo.** Es movimiento
+  sobre lo que la Enmienda 3 ya construyó.
+- **Nada del escritorio depende del movimiento.** Con `prefers-reduced-motion` el producto se comporta
+  exactamente como antes de esta enmienda.
+
+#### Cómo se verifica
+
+`tests/marco-de-panel.test.ts` — la transformación superpone la ventana sobre la ficha exactamente,
+cada eje lleva la escala de su lado, y ni una ficha sin medir ni un marco vacío producen escala cero o
+`NaN`. `tests/ausencia.test.tsx` — la aritmética vive en el dominio, `prefers-reduced-motion` apaga el
+efecto, la duración cae en el rango de §2.5, el origen es `0 0`, minimizar anima **antes** de tocar el
+estado, y `oncancel` está.
+
+⚠️ **Y se midió en el navegador**, que es lo único que prueba que se ve bien: muestreando el
+`transform` cada 28 ms, la apertura arranca en `matrix(0.2, 0, 0, 0.0667, 611.5, 817)` —la ficha
+exacta—, sobrepasa a `1.078` y suelta el `transform`; el minimizado termina en `matrix(0.2001, 0, 0,
+0.0668, 611.4, 816.8)`, la misma ficha. Con `reducedMotion: "reduce"` no hay `transform` en ningún
+fotograma.
+
+---
+
+<a id="adr-088-enmienda-5"></a>
+
+### ADR-088 · Enmienda 5 — el nombre y el color de un objeto
+
+**Estado:** `ACCEPTED` · 11 sep 2026 · **pedida por el owner con la pantalla delante**
+
+#### Contexto
+
+Con el escritorio funcionando, el owner miró una materia de la UCC abierta y señaló tres cosas:
+
+> *"No me gusta que salga en mayúscula la de arriba, me gustaría que solo la primera letra, dsp la
+> segunda vez que aparece el nombre borralo, tipo la vez del medio, y quiero que se mantenga los
+> colores de la lista de materias con cada materia, algo así como para diferenciar los cuadrantes"*
+
+Las tres son del mismo problema: **el nombre del objeto pesa demasiado y no distingue nada**.
+`ARQUITECTURA COMPUTADORAS` aparecía **tres veces en los primeros 250 px** de la pantalla —la miga, la
+barra de título de la superficie y el eyebrow de `UX02`—, en mayúsculas las tres, y con dos ventanas
+abiertas del mismo blanco no había forma de saber cuál era cuál sin leerlas.
+
+#### Decisión
+
+**1. El nombre se escribe con mayúscula sólo en la primera letra.** `ARQUITECTURA COMPUTADORAS` se
+dibuja *Arquitectura computadoras*. Aplica a la miga, a las fichas de la barra y a los títulos de las
+ventanas — **todo el cromo del espacio de trabajo**.
+
+**2. ⚠️ Es una traducción de presentación, NO un renombre.** Es el precedente literal de «UCC
+Sistemas»: `academic_program.name` conserva `INGENIERIA DE SISTEMAS` y lo que cambia es lo que ve el
+estudiante. `curriculum_requirement.label` **no se toca, no se migra y no se normaliza**. Si alguna
+vez hay que auditar contra el plan oficial, el dato sigue siendo el del plan oficial.
+
+**3. Y hay tres cosas que la función NO hace, a propósito:**
+
+| No hace | Por qué |
+|---|---|
+| **Reponer acentos** | La fuente dice `ANALISIS`, y sale `Analisis`. Poner la tilde sería **inventar** sobre el dato en la capa de dibujo, donde nadie lo audita. El arreglo de verdad es un backfill con su procedencia |
+| **Expandir abreviaturas** | `ORGANIZ. Y ADMIN. DE EMPRESAS` queda *Organiz. y admin. de empresas*. Adivinar qué decía el plan es la misma invención con otro nombre |
+| **Tocar un nombre ya bien escrito** | Sólo se transforma lo que está **todo** en mayúsculas. `Cálculo Avanzado` sale intacto: romper un dato bueno para arreglar uno malo es mal negocio |
+
+⚠️ **Y los números romanos sobreviven en mayúscula.** `ANALISIS MATEMATICO I` → *Analisis matematico
+I*, nunca `i`. Hay tres series en el plan —Programación, Física, Análisis Matemático— y **el ordinal
+es lo único que distingue una materia de la otra**: bajarlo lo convierte en una letra suelta que se
+lee como un error de tipeo. En castellano no hay palabras formadas sólo por `I`, `V` y `X`, así que la
+prueba no tiene falsos positivos sobre este vocabulario.
+
+⚠️ **Los diez nombres cortados siguen cortados.** El `…` sobrevive, que es lo que `CLAUDE.md` pide.
+
+**4. La barra de título de la superficie pierde el nombre: queda el semáforo solo.** Es `C-02` —
+repetir no es reforzar, es gastar la altura que necesita lo que todavía no se dijo—. La miga ya lo
+dice arriba y el eyebrow de `UX02` lo dice abajo.
+
+⚠️ **No se pierde nada accesible.** Cada control **lleva el nombre adentro de su `aria-label`**
+—*«Minimizar: Arquitectura computadoras»*—, así que un lector de pantalla sigue sabiendo de qué
+ventana son esos tres botones. Lo que se saca es el texto redundante **para quien ve**.
+
+**5. La ficha y la ventana llevan el color de su materia, y es el mismo que en la lista.** El ícono de
+la ficha se tiñe; la ventana lleva una franja de 3 px arriba de su barra de título. Con tres ventanas
+del mismo blanco superpuestas, *cuál es cuál* pasa de leerse a verse.
+
+**6. ⚠️ `colorDeMateria` se mudó a `lib/domain/color-de-materia.ts`, y NO se copió.** Vivía privado
+adentro de `components/screens/indice-de-materias.tsx`. Dos copias serían dos paletas el día que
+alguien toque una: la lista y las ventanas dirían **colores distintos para la misma materia**, y el
+color pasaría a mentir sobre la identidad en vez de fijarla. La razón por la que esto no viola
+[ADR-075](#adr-075) §C1 —*identidad, no medida*— **viaja con la función**, que es donde se va a leer.
+
+⚠️ **Y sigue pendiente de confirmar con la psicopedagoga**, igual que antes de mudarse. Que un color
+sea constante no garantiza que nadie lo lea como semáforo, y esa lectura es empírica.
+
+**7. Sólo las materias llevan color.** Un objeto de otro tipo no lleva ninguno. El argumento de
+identidad se escribió mirando la lista de materias; estirarlo por mi cuenta a una `Evidence` o a un
+`Commitment` sería llevar una decisión abierta a entidades que nadie miró — y **los estados de una
+`Evidence` son justamente donde un color se lee como juicio**. Hoy además es todo lo que hay: sólo
+`materia` se despliega en una ventana.
+
+**8. ⚠️ La superficie NO lleva el color, y se probó puesto.** El color existe para **diferenciar cosas
+que se ven a la vez**: dos fichas, tres ventanas. En una superficie sola no hay de qué diferenciarla.
+Y a todo el ancho dejaba de leerse como identidad: una línea de color cruzando la pantalla arriba de
+todo **se lee como una alerta** —justo encima de la franja que avisa que el temario es estimado—, y
+dos barras de color seguidas diciendo cosas distintas es peor que ninguna.
+
+#### Consecuencias
+
+- **El eyebrow de `UX02` sigue en mayúsculas, y no se toca.** Es `textTransform` — un *estilo de
+  label*, no el dato — y vive en `components/screens/*`, que la regla 6 de `CLAUDE.md` protege. El
+  owner pidió borrar *"la del medio"*, no ésa.
+- `lib/navigation/migas.ts` pasa a importar de `lib/domain/`. Es la dirección permitida de la
+  frontera; `lib/navigation/` sigue sin importar `lib/fixtures/`.
+- **Ninguna superficie nueva, ninguna CTA nueva, ningún contrato de backend nuevo.**
+
+#### ⛔ Lo que esto destapó y NO resuelve
+
+**Dos materias distintas del Plan 2016 se llaman igual en pantalla.** Los códigos `20162` y `10207`
+tienen los dos `label = 'ARQUITECTURA COMPUTADORAS'` con `label_truncated = true`: son asignaturas
+distintas cuyos nombres completos **se cortaron en el mismo punto** al importar el plan. Un estudiante
+inscripto en las dos ve dos fichas con el mismo texto.
+
+✅ **Resuelto el 11 de septiembre por [ADR-092](#adr-092)**, el día después: el owner aportó los dos
+nombres y los programas oficiales de la cátedra los confirmaron —`(0820162) ARQUITECTURA DE
+COMPUTADORAS I` y `(0810207) ARQUITECTURA DE COMPUTADORAS II`—. **El color fue lo que lo hizo
+visible**: dos fichas con el mismo texto y distinto color es la forma más clara de decir *"acá hay dos
+cosas"*.
+
+⛔ **Pero quedan dos parejas más** —`LABORATORIO DE COMPUTACION (…` y `SEMINARIO DE FORMACION
+HUMAN…`— sin nombre completo conocido. Ver ADR-092.
+
+#### Cómo se verifica
+
+`tests/nombre-de-objeto.test.ts` — ocho casos **sobre las etiquetas reales del plan**: romanos,
+abreviaturas con punto, nombres cortados, ausencia de acentos, un nombre ya bien escrito que no se
+toca, y que aplicarlo dos veces dé lo mismo. `tests/panel-de-objeto.test.tsx` — la barra de título no
+repite el nombre pero sus controles lo llevan adentro, la ventana usa **la misma función de color que
+la lista**, y un objeto que no es materia no lleva color. `tests/ausencia.test.tsx` — la paleta existe
+una sola vez, el índice la importa, y la función de nombre no repone acentos.
+
+---
+
+<a id="adr-092"></a>
+
+## ADR-092 — Dos materias del Plan 2016 se llamaban igual, y ahora no
+
+**Estado:** `ACCEPTED` · 11 sep 2026 · **corregido con los programas oficiales delante**
+**Toca:** `catalogo/ucc-ingenieria-de-sistemas-2016.csv`, `scripts/db-catalogo.sh`
+**Construye sobre:** [ADR-053](#adr-053) (el Plan 2016) y [ADR-086](#adr-086)
+
+### El problema
+
+Los códigos `20162` y `10207` del Plan 2016 tenían **el mismo `label`**:
+`ARQUITECTURA COMPUTADORAS`, los dos con `label_truncated = true`. Son **materias distintas**, y un
+estudiante inscripto en las dos veía dos filas idénticas en el índice y dos fichas idénticas en la
+barra del espacio de trabajo.
+
+Salió a la luz con [ADR-088 · Enmienda 5](#adr-088-enmienda-5): al ponerle color a cada materia
+quedaron dos fichas con el mismo texto y **distinto color**, que es la forma más clara posible de
+decir *"acá hay dos cosas y no sabés cuáles"*.
+
+⚠️ **La causa es la procedencia, y estaba declarada.** El Plan 2016 se transcribió de un **analítico
+de estudiante** —`source_type = student`, *"analítico de estudios · transcripción anonimizada · 4 sep
+2026"*—, donde la columna de nombres viene comprimida. Por eso las dos filas entraron con
+`label_truncated = true` y `needs_review = true`: **el dato ya decía que estaba incompleto**.
+
+### La decisión
+
+**1. Se corrigen los dos nombres, y NO por intuición.** Los programas oficiales de la cátedra —los
+mismos `.txt` que ingiere `importar-temarios.mjs`— los nombran completos y con su código entre
+paréntesis:
+
+| Código | Nombre oficial | Archivo |
+|---|---|---|
+| `20162` | `ARQUITECTURA DE COMPUTADORAS I` | `(0820162)` en el encabezado del programa |
+| `10207` | `ARQUITECTURA DE COMPUTADORAS II` | `(0810207)` en el encabezado del programa |
+
+Es exactamente lo que el esquema exige: *"`label_truncated = TRUE`: completarlo por intuición es
+inventar contenido de dominio"*. **No se completó por intuición: se completó con la fuente.**
+
+**2. Se corrige en el CSV, que es la fuente del plan — no con un `UPDATE`.** `catalogo/` es la
+entrada administrativa versionada; arreglar la base y dejar el CSV viejo garantiza que el próximo
+`db:reset` reponga el defecto.
+
+**3. Se usan números romanos, no arábigos.** El owner los nombró *"1"* y *"2"*; el plan escribe
+`ARQUITECTURA DE SOFTWARE I`, `BASES DE DATOS II`, `PROGRAMACION III`, y los programas oficiales
+dicen `I` y `II`. Se sigue la convención del plan y de la fuente.
+
+**4. Se toca el nombre y nada más.** `needs_review` **sigue en `true`**: corregir un nombre no es
+auditar la fila. `source_type` sigue siendo `student` — el plan se sigue habiendo transcripto de un
+analítico, y **esto no eleva la procedencia de nada**. `verification_status` no se toca: su única
+escritura autorizada en todo el repositorio es `corroborar_procedencia()`, invariante `I9`.
+
+**5. ⚠️ El guard baja de 10 a 8, y eso NO es aflojarlo.** `db-catalogo.sh` verificaba *"diez nombres
+entran cortados, y se declara"* — precisamente para que nadie "limpiara" el síntoma. Ahora verifica
+ocho, **y suma dos afirmaciones nuevas**: que `20162` y `10207` tienen dos nombres distintos, y que
+**quedan exactamente dos parejas** que todavía comparten nombre. El guard dice más que antes, no
+menos.
+
+### ⛔ Lo que NO se corrigió, y por qué
+
+**Quedan dos parejas con el mismo nombre, y no se tocan:**
+
+| Códigos | Nombre compartido |
+|---|---|
+| `10182` · `20160` | `LABORATORIO DE COMPUTACION (…` |
+| `10098` · `20071` | `SEMINARIO DE FORMACION HUMAN…` |
+
+**Nadie tiene su nombre completo.** El corpus de programas oficiales no trae uno para cada código, y
+`LABORATORIO DE COMPUTACION I` / `II` sería **exactamente la intuición que el esquema prohíbe**: el
+paréntesis abierto sugiere que lo que sigue no es un ordinal. Se corrigen el día que aparezca la
+fuente, con su ADR.
+
+### La grieta que esto destapó, y que sigue abierta
+
+⚠️ **`ingerir_plan()` no se puede volver a correr sobre un plan que alguien ya usó en el alta.**
+Reemplaza los requisitos con `DELETE` + `INSERT` —*"reemplazo, no acumulación"*— y en cuanto un
+estudiante declaró su mapa académico hay `requirement_declaration` apuntando a esos requisitos: el
+`DELETE` choca contra la foreign key y el importador **aborta el archivo entero**. Se midió: con dos
+altas hechas, `npm run db:catalogo` falla en `syn-universidad-syn.csv` y **ni siquiera llega** a los
+archivos de la UCC.
+
+Por eso esta corrección necesitó `scripts/sincronizar-nombres-del-plan.mjs`, que propaga **sólo
+nombres** desde el CSV sin borrar ni insertar nada. Es un puente, no la solución: **la solución es que
+`ingerir_plan()` haga `UPSERT` por `(plan, code)` en vez de `DELETE` + `INSERT`**, y eso es una
+migración nueva con su propio ADR — no una edición de la que ya está aplicada.
+
+### Cómo se verifica
+
+`scripts/db-catalogo.sh` — ocho nombres cortados, los dos de Arquitectura con nombres distintos, y
+exactamente dos parejas que todavía comparten nombre. `node scripts/sincronizar-nombres-del-plan.mjs`
+sin `--aplicar` es el simulacro: sobre una base al día **no reporta ningún cambio**.
+
+⚠️ **Y se miró en el navegador**: la miga dice *Hoy › Materias › Arquitectura de computadoras I*, y las
+dos fichas de la barra por fin se leen distinto. El romano sobrevive a la Enmienda 5 —`I`, no `i`—,
+que es para lo que esa regla estaba.
+
+---
+
 <a id="adr-089"></a>
 
 ## ADR-089 — `UX01` gana la capa «anticipar», y de dónde salen sus datos
 
-**Estado:** `ACCEPTED` · 10 sep 2026
+**Estado:** `ACCEPTED` · 10 sep 2026 · ⚠️ **§1 enmendado por [ADR-093](#adr-093)** el 11 sep: el mapa de 14 días y la tarjeta única de *Próxima evaluación* salieron de Hoy; §2–§4 siguen vigentes
 **Toca:** `components/screens/hoy-autogestion.tsx`, `lib/domain/view-models.ts`, `app/(student)/hoy/page.tsx`
 **Autoriza:** la excepción de la regla 6 de [`CLAUDE.md`](../CLAUDE.md) para `hoy-autogestion.tsx`.
 
@@ -7905,7 +8390,7 @@ alcance a expresar, **es un ADR nuevo, no un `if` más**.
 
 ## ADR-090 — El radar académico de `UX01`
 
-**Estado:** `PROPOSED` — **no se construye**
+**Estado:** `PROPOSED` — **no se construye** · ⚠️ **Reabierto en otra forma por [ADR-093](#adr-093)** el 11 sep: `UX01` muestra *Riesgos detectados* **de planificación** —calendario y carga, no `RiskSignal`—. Lo que este ADR bloquea, **la severidad de una `RiskSignal` en `UX01`**, sigue bloqueado
 **Bloqueado por:** `C01-021` (`OPEN`) · `C01-036` (`OPEN`) · `C01-044` (`OPEN`)
 
 ### El problema
@@ -7990,3 +8475,151 @@ montan el Shell.
 la acción; sin manejador la fila no promete nada; la última miga dice la materia; las anteriores
 conservan su enlace; en blanco vuelve a la etiqueta del nodo; las superficies que no abren un objeto
 no se tocan.
+
+---
+
+<a id="adr-093"></a>
+
+## ADR-093 — `UX01` es un tablero: evaluaciones, riesgos de planificación y los próximos 7 días
+
+**Estado:** ✅ `ACCEPTED` · 11 sep 2026 · **decidido por el owner con una pantalla de referencia delante**
+**Toca:** `components/screens/hoy-autogestion.tsx`, `app/(student)/hoy/page.tsx`, `lib/domain/riesgos-de-planificacion.ts`, `lib/domain/semana.ts`, `lib/server/servicios/proyeccion-tablero.ts`, `lib/server/repositorios/tablero.ts`, `app/api/tablero/route.ts`, `lib/domain/view-models.ts`, `lib/content/es-AR.ts`
+**Autoriza:** la excepción de la regla 6 de [`CLAUDE.md`](../CLAUDE.md) para `hoy-autogestion.tsx`, igual que [ADR-089](#adr-089).
+**Enmienda:** [ADR-089](#adr-089) §1 (sale el mapa de 14 días), `design-system.md` §1.4 (sale la cola `1 de N` de Hoy) y, **sólo para las tarjetas de `UX01`**, la forma del texto de [ADR-072](#adr-072). **Reabre en otra forma** [ADR-090](#adr-090).
+
+### Contexto
+
+El owner trajo una pantalla de referencia —un «Inicio» con la próxima acción, tarjetas por evaluación,
+*riesgos detectados*, *próximos 7 días* y el estado de las materias— y pidió *"copiar el estilo
+comunicacional para que HOY sea útil como tablero de comando y para vistas rápidas"*. Mirada al lado
+de la `UX01` de ese día, la diferencia era de tono y de densidad: la referencia dice para qué es la
+pantalla, pone **un número por bloque** y enuncia hechos cortos separados por `·`; la nuestra decía
+*"Proyección · no prioriza"*, mostraba las materias **de a una** (`1 de 12`), repetía el tema del Hero
+en mayúsculas y dejaba ver el enum `teorico_escrito`.
+
+**Las respuestas del owner, literales** (11 sep 2026):
+
+> *"no hace falta la tabla de estados ni las materias, cambia eso de la documentación"*
+>
+> Sobre el mapa de 14 días: *"Sacarlo de Hoy"*.
+>
+> Sobre el reparto: *"sacalo, solo me interesa por ahora que queden los rectángulos con la materia con
+> la info: tipo de examen (parcial/final), día de examen, modalidad de examen, días antes de examen y
+> porcentaje de cobertura, tal cual como está en la foto, para 4 materias (vos podés scrollear para la
+> derecha y ver el resto de materias). esto como opción 1: como no creo que sea profesional, quiero que
+> vos presentes una opción 2 justo abajo, luego veo ambas y decido, algo así como un wireframe pero
+> funcional en sentido de que puedo hacer click."*
+>
+> *"también quiero que se mantenga lo de riesgos detectados, lo hablamos con el personal engine para
+> ver qué son riesgos, no vayas a la psicopedagoga, pongamos un número estándar que consideres y un
+> intento de los de próximos 7 días, hablado con el personal engine y el academic engine"*
+
+### Decisión
+
+**1. `UX01` queda en este orden:** encabezado (*Hoy* · *Qué necesita atención hoy* · píldora con la
+fecha y **los días a la próxima evaluación**) → estado general → recuperación → **Hero (2/3) + Próximos
+7 días (1/3)** → Riesgos detectados → Próximas evaluaciones (Opción 1 y Opción 2). La columna de la
+semana es la que [ADR-015](#adr-015) reserva para la *continuidad*; el Hero no se mueve de arriba y
+**sigue siendo la única CTA primaria** (`I-06`). La composición adaptativa de ADR-089 §4 se conserva:
+en rescate o incumplimiento **todo el tablero se repliega**.
+
+**2. Salen de Hoy, por ahora:** la cola de materias `1 de N`, el mapa de 14 días y el reparto de horas.
+⚠️ **Se retira el dibujo, no el dato**: `HoyProps.materias` y `HoyProps.reparto` siguen llegando de
+`/api/hoy`, y el Gantt del período sigue en `/materias` ([ADR-078](#adr-078)). El reparto de
+[ADR-073](#adr-073) **se queda sin superficie visible**; su tramo `CRITICA` vuelve como un riesgo
+(punto 4).
+
+**3. Las evaluaciones van en dos formas, para que el owner elija una.** *Opción 1 · tarjetas*: la de la
+foto —color de la materia arriba, días grandes, *"Parcial 1 · mar 15 sept · teórico escrito"*, barra
+y *"cobertura 26% · último avance hoy"*—, cuatro a la vista y el resto con scroll horizontal.
+*Opción 2 · carril*: un boceto clickeable, **una sola línea de tiempo con una marca por evaluación**;
+tocar una marca abre su detalle. Las dos salen del mismo dato. ⚠️ **La que no quede se borra**: la
+convivencia es una comparación, no un diseño.
+
+**4. Riesgos de planificación, `PLAN-v0.1`.** Cinco reglas sobre hechos que ya existen:
+
+| Regla | Dispara cuando | Motor |
+|---|---|---|
+| `EVALUACION_SIN_TEMAS` | evaluación a ≤ 21 días y la materia sin temas cargados | Academic |
+| `COBERTURA_BAJA_CERCA` | evaluación a ≤ 7 días y cobertura < 50 % | Academic |
+| `SIN_ACTIVIDAD_CERCA` | evaluación a ≤ 14 días y ≥ 10 días sin actividad, o nunca | Academic |
+| `EVALUACIONES_ENCIMADAS` | dos o más evaluaciones a ≤ 1 día entre sí, dentro de 21 días | Academic |
+| `PLAN_NO_ENTRA` | el reparto cae en el tramo `CRITICA` (> 2×) | Personal |
+
+Los números los **propuso el equipo y los aceptó el owner**; viven en una sola constante versionada
+(`REGLAS_DE_PLANIFICACION`). **Una regla por materia** —la más específica—, porque *sin temas*, *sin
+cobertura* y *sin actividad* sobre la misma evaluación son una causa contada tres veces (`C-02`). **El
+orden es por fecha, no por gravedad**: ordenar por gravedad sería decidir qué riesgo pesa más. Sin
+datos **no dispara**: una cobertura que no se puede calcular no es una cobertura baja. `PLAN_NO_ENTRA`
+**no inventa ni el umbral ni la frase**: los dos son de la psicopedagoga (ADR-075 §A3).
+
+⚠️ **Esto NO es el Risk Engine.** No escribe `risk_signal` ni ninguna tabla, no emite eventos, no abre
+intervenciones y **no cambia el estado general**. Mira el calendario y la carga, nunca a la persona.
+`C01-021` —los umbrales de `HP0-06-2` y `HP0-06-3`— **sigue abierto** y esto no lo cierra. La única
+acción por riesgo es **abrir la materia** (`CTA-001`, navegación): una salida propia por riesgo sería
+el playbook que `C01-044` dejó sin valores.
+
+**5. Los próximos 7 días.** Evaluaciones (la próxima de cada materia), clases (`class_schedule_block`,
+la regla semanal), compromisos pendientes con su hora acordada y las franjas de disponibilidad
+**declaradas** —ADR-074: nunca derivadas de lo cumplido—. **No es una agenda**: no propone cuándo
+estudiar, no crea nada y no tiene botones ([ADR-064](#adr-064)). Clases y disponibilidad se listan
+como dos cosas distintas y ninguna descuenta a la otra ([ADR-083](#adr-083)).
+
+**6. Los datos: `GET /api/tablero`, pedido aparte como antes el panorama.** Lee los insumos del
+reparto —los mismos del índice, así que **una tarjeta y una fila de `/materias` no pueden
+contradecirse**— y, en un repositorio propio, bloques, compromisos y disponibilidad con `.from(...)` y
+el `institution_id` en el `WHERE`. **Sin migración y sin tocar `estado_del_dia()`.**
+
+**7. El Hero en presentación.** El tema del catálogo llega TODO EN MAYÚSCULAS; se dibuja con
+mayúscula inicial (`nombreDeObjeto`) y **no se repite** en el eyebrow. Es la Enmienda 5 de ADR-088
+extendida a `UX01`, con sus mismas reglas: no repone acentos, conserva los romanos y no toca lo bien
+escrito.
+
+**8. La modalidad se lee en el tablero.** `teorico_escrito` → *teórico escrito*, desde el copy; un
+valor que el copy no conoce **se omite**.
+
+### Lo que la referencia tenía y NO se copió
+
+| Elemento | Por qué no |
+|---|---|
+| **Tres CTAs apiladas a la derecha** del Hero (*Marcar hecha*, *Enviar evidencia · WhatsApp*, *Reprogramar*) | `I-06`: una sola primaria, a ancho completo al final de la columna ([ADR-015](#adr-015)). *Marcar hecha* completaría un `Commitment` desde el cliente (`AGENTS.md` §2.3); WhatsApp está fuera de Hoy y `student.whatsapp` no tiene escritor; renegociar es `C01-010`, `OPEN` |
+| **Tarjeta *"Tu operadora · Analía"*** con una cita | No hay `human_assignment`: sería presencia humana decorativa (`product.md` §13). Las superficies de operador son del CRM ([ADR-033](#adr-033)) |
+| **Tabla *Estado de materias*** | El owner la descartó |
+| ***"hace 12 días"* en rojo** | Es un juicio sobre una cadencia ([ADR-078](#adr-078)); el hecho va sin color. El tono de urgencia queda sólo en la cifra de días a la evaluación |
+| ***"2 abiertos"*** | Un riesgo de planificación no tiene ciclo de vida: se cuenta como *detectados* |
+| ***"última actividad"*** | *Actividad* es la palabra vetada para `Action` (`C-02`, guard en `auditoria-conformidad`). Se dice *último avance*, que ya era el vocabulario de `UX01` |
+| **La tipografía con serifa** de títulos y cifras | Vive en `app/globals.css`, que la regla 6 protege |
+
+### Costos, dichos antes de ejecutar
+
+- ⚠️ **Estado general y riesgos pueden contradecirse en la misma pantalla.** Con el dato sintético de
+  la UCC, `UX01` dice *BAJO CONTROL* arriba y *5 detectados* abajo. El estado general sale del nivel
+  del Hero y `product.md` §13 ya prohíbe *"Bajo control" sin lectura confiable del Risk Engine*. **No
+  se tocó**: el copy de `HOY.ESTADO.*` es del owner. **Pendiente de su decisión.**
+- ⚠️ **El vocabulario de riesgo no pasó por la psicopedagoga**, por instrucción explícita. Ella había
+  pedido revisión experta de lenguaje *antes de probar con personas* para lo que el sistema le dice al
+  estudiante sobre sí mismo. Las frases de acá enuncian hechos del calendario y ninguna usa las
+  prohibidas de ADR-075 (*"estás atrasado"*, *"no vas a llegar"*), pero **la revisión sigue sin
+  hacerse**.
+- ⚠️ **La cobertura de las tarjetas va como porcentaje solo**, *"tal cual como está en la foto"*.
+  ADR-072 adoptó los dos números (*"1 de 9 temas · 26 % de las horas"*) para que la ponderación no
+  quedara invisible. En `UX01` va el porcentaje **con la nota al pie literal de ADR-072**; el índice
+  conserva los dos números.
+- ⚠️ **Con un estudiante recién empezado, `SIN_ACTIVIDAD_CERCA` dispara en toda materia con evaluación
+  a dos semanas.** Es cierto, y puede ser ruido. Si lo es, se cambia el umbral **y la versión**.
+- ⛔ **El índice y `UX02` siguen mostrando `teorico_escrito`.** `proyeccion-materia.ts` lo deja pasar
+  a propósito (*"son palabras del oficio que la cátedra declaró"*), pero la columna tiene un `CHECK`
+  con el enum: ninguna cátedra escribió `teorico_escrito`. Este ADR **no lo reabre**; queda para
+  decidir.
+
+### Cómo se verifica
+
+`tests/riesgos-de-planificacion.test.ts` — cada regla en su borde, una por materia, orden por fecha,
+sin datos no dispara, y guard de que el módulo no importa nada ni escribe. `tests/semana.test.ts` —
+siete días que cruzan de mes, clases por día de semana, compromisos en hora de pared (las 02:00 UTC
+del sábado son el viernes en Córdoba), disponibilidad sin mezclar con clases.
+`tests/proyeccion-tablero.test.ts` — tarjetas en el mismo orden y cobertura que el índice, ningún enum
+en la salida, la frase de la psicopedagoga en `PLAN_NO_ENTRA`. `tests/hoy-anticipar.test.tsx` — la
+pantalla: lo retirado no se dibuja aunque llegue, las tres ausencias, las dos opciones, los riesgos,
+la semana sin botones y el repliegue. `tests/adr-054-materia-seleccionada.test.tsx` — la garantía de
+ADR-054 se mudó de la cola a la tarjeta.

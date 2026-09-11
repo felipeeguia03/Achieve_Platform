@@ -1,26 +1,45 @@
 "use client";
 
 /**
- * La ventana interna del espacio de trabajo — [ADR-088](../../docs/decisions.md#adr-088),
- * Enmienda 1.
+ * Las ventanas internas del espacio de trabajo — [ADR-088](../../docs/decisions.md#adr-088),
+ * Enmiendas 1, 2 y 3.
  *
- * Tocar una ficha de la barra **despliega el objeto encima de la pantalla en la
- * que estás**, en vez de sacarte de ella. Volver a tocarla lo minimiza.
+ * Cada ficha desplegada de la barra es **una ventana**, y **todas existen a la
+ * vez**: se apilan, se traen al frente tocándolas, se arrastran, se estiran y se
+ * bajan a la barra de a una. La Enmienda 3 es exactamente eso — *"cuando abrís
+ * dos o tres de esos cuadros de la barra de pestañas deberían existir todos, y
+ * poder acomodarlos"*.
  *
  * ## Por qué esto sube el listón, y no lo baja
  *
  * ADR-019 descartó el multiventana por seis requisitos innegociables. ADR-088 se
- * comprometió a cumplirlos; una ventana interna real **ejercita tres de ellos de
- * verdad** por primera vez:
+ * comprometió a cumplirlos, y con varias ventanas **tres de ellos se ejercitan
+ * más fuerte**, no menos:
  *
- * - **1 · URL por ficha.** El panel vive en `?abierto=<clave>`. Se puede
- *   compartir, el botón atrás lo cierra y recargar lo repone. Un panel que
- *   viviera sólo en memoria no tendría ninguna de las tres.
- * - **3 · Trampa de foco.** Mientras está abierto, `Tab` circula **adentro**.
- *   Al cerrarse, el foco vuelve a donde estaba.
+ * - **1 · URL por ficha.** El escritorio entero vive en `?abierto=<a>,<b>` —y el
+ *   orden de la lista **es el apilamiento**—. Se puede compartir con las tres
+ *   ventanas puestas, el botón atrás deshace el último gesto y recargar repone
+ *   todo. Nada de esto tendría un apilamiento guardado en memoria.
  * - **4 · Jerarquía de `Escape` con dos capas.** `Escape` cierra primero un menú
- *   abierto; sólo si no hay menú, minimiza el panel. **Nunca cierra el objeto**:
- *   cerrar es destructivo y no se hace con una tecla de escape.
+ *   abierto; sin menú, minimiza **la ventana que tiene el foco**, no todas.
+ *   **Nunca cierra el objeto**: cerrar es destructivo y no se hace con una tecla
+ *   de escape.
+ * - **6 · Límite duro.** Sigue siendo el de los objetos abiertos: **no se agrega
+ *   un segundo límite para las ventanas**. Nunca puede haber más ventanas que
+ *   objetos, así que el techo ya está puesto y un segundo número sería una regla
+ *   inventada.
+ *
+ * ## ⚠️ Y una que la Enmienda 3 tuvo que retirar: la trampa de foco
+ *
+ * La Enmienda 1 atrapaba el `Tab` adentro del panel, **y correspondía**: era una
+ * ventana modal, con su fondo oscurecido y una sola por vez. Con varias ventanas
+ * **no hay nada modal que atrapar**: el fondo se sigue usando, la barra se sigue
+ * tocando y `Tab` tiene que poder salir de una ventana y llegar a la otra.
+ * Mantener la trampa dejaría al teclado encerrado en la última ventana abierta,
+ * que es un defecto de accesibilidad, no una garantía.
+ *
+ * Lo que **sí** se conserva es la otra mitad, que es la que importa: al abrirse
+ * el foco entra a la ventana, y al bajarla vuelve a donde estaba.
  *
  * ## Se maneja como una ventana — Enmienda 2
  *
@@ -33,9 +52,10 @@
  * respetar el mínimo y restaurar al tamaño previo son **reglas**, y probarlas
  * con un mouse de mentira sería probar el doble.
  *
- * ⚠️ **A menos de 768 px no hay ventana que manejar.** El panel ocupa la
- * pantalla, como corresponde: arrastrar un rectángulo por un teléfono no es una
- * función, es una forma de perderlo.
+ * ⚠️ **A menos de 768 px no hay escritorio que acomodar.** Se dibuja **sólo la
+ * ventana de adelante**, a pantalla completa. Tres rectángulos apilados en un
+ * teléfono no son tres ventanas: son una sola tapando a dos que no se pueden
+ * agarrar.
  *
  * ## El panel consulta; la superficie trabaja
  *
@@ -43,22 +63,21 @@
  * —si no, quedarían muertas: ver `VistaDeMateria`— pero **todas navegan**. La
  * precedencia y la CTA única (`I-06`) siguen viviendo en `UX02`–`UX05`; lo que
  * el panel hace es llevarte hasta ellas.
- *
- * Es la misma distinción que hace el software de `docs/diseño/` en su propia
- * ficha —*"se listan para consultarlas: renovar, triagear y editar el legajo se
- * hacen en la cartera, que sigue siendo la única superficie de trabajo"*—. Se
- * toma **el mecanismo**, no su dominio.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Maximize2, Minimize2, Minus, X } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import { MateriaCursado } from "@/components/screens/materia-cursado";
 import { NoSePudoCargar } from "./no-se-pudo-cargar";
+import { Semaforo } from "./controles-de-ventana";
+import { guardarEnLaFicha, salirDeLaFicha } from "./movimiento";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCta, rutaDeCtaCon } from "@/lib/navigation";
 import { t } from "@/lib/content/es-AR";
+import { colorDelObjeto } from "@/lib/domain/color-de-materia";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import {
   alternarExpandido,
   areaDe,
@@ -100,9 +119,67 @@ function useArea(): { area: Area | null; escritorio: boolean } {
 }
 
 export function PanelDeObjeto() {
-  const { panel, espacio, minimizarPanel, cerrar, verComoPagina, encuadrar: guardarMarco } =
-    useEspacioDeTrabajo();
+  const { paneles, espacio } = useEspacioDeTrabajo();
   const { area, escritorio } = useArea();
+
+  // Sin medir todavía no se dibuja: una ventana que aparece en un lugar y salta
+  // a otro un frame después es peor que esperar ese frame (`P-12`).
+  if (paneles.length === 0 || area === null) return null;
+
+  /*
+    En móvil sólo la de adelante. **`slice(-1)`, no `[0]`**: la de adelante es la
+    última del apilamiento, que es la que el estudiante tocó más recientemente.
+  */
+  const visibles = escritorio ? paneles : paneles.slice(-1);
+
+  return (
+    /*
+      ⚠️ **El contenedor no intercepta nada** (`pointerEvents: none`), y ésa es
+      la diferencia con la Enmienda 1. Antes había un fondo oscurecido que
+      tomaba el clic de afuera para minimizar; con varias ventanas eso sería un
+      escritorio que se apaga solo apenas tocás la pantalla de atrás. Ahora lo
+      de atrás **se sigue usando**, que es lo que hace que tener tres ventanas
+      sirva para algo.
+    */
+    <div role="presentation" style={{ position: "fixed", inset: 0, zIndex: 40, pointerEvents: "none" }}>
+      {visibles.map((objeto, i) => (
+        <Ventana
+          key={objeto.clave}
+          objeto={objeto}
+          area={area}
+          escritorio={escritorio}
+          /*
+            El apilamiento, **relativo al contenedor**. El contenedor ya está en
+            40 y crea su contexto, así que estos números nunca alcanzan a la
+            barra de objetos (50): por más ventanas que se abran, la barra de la
+            que salieron **sigue arriba y sigue clickeable**.
+          */
+          apilado={i + 1}
+          cascada={Math.max(0, espacio.objetos.findIndex((o) => o.clave === objeto.clave))}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Ventana({
+  objeto,
+  area,
+  escritorio,
+  apilado,
+  cascada,
+}: {
+  objeto: ObjetoAbierto;
+  area: Area;
+  escritorio: boolean;
+  apilado: number;
+  /** Su posición en la barra, para que la segunda ventana no nazca encima de la primera. */
+  cascada: number;
+}) {
+  const { minimizarPanel, traerAlFrente, cerrar, verComoPagina, encuadrar: guardarMarco } =
+    useEspacioDeTrabajo();
+
+  const clave = objeto.clave;
 
   /**
    * El marco que se está dibujando.
@@ -130,69 +207,77 @@ export function PanelDeObjeto() {
   } | null>(null);
 
   const caja = useRef<HTMLDivElement>(null);
-  /** Dónde estaba el foco antes de abrir, para devolverlo al cerrar. */
-  const foco = useRef<HTMLElement | null>(null);
 
-  const clave = panel?.clave ?? null;
-
+  /**
+   * El foco entra al abrirse y vuelve al bajarse — la mitad de la Enmienda 1 §3
+   * que la Enmienda 3 **sí** conserva.
+   *
+   * ⚠️ **Sólo se devuelve si el foco se quedó sin dueño.** Con varias ventanas,
+   * bajar la de atrás mientras trabajás en la de adelante no puede arrancarte el
+   * foco de donde lo tenías: si `document.activeElement` ya es otra cosa, es
+   * porque alguien lo tiene, y no se le saca.
+   */
   useEffect(() => {
-    if (clave === null) return;
-    foco.current = document.activeElement as HTMLElement | null;
+    const anterior = document.activeElement as HTMLElement | null;
     // El primer foco va al contenedor, no al primer botón: leer antes de actuar.
     caja.current?.focus();
-    const anterior = foco.current;
-    return () => anterior?.focus?.();
+    return () => {
+      const ahora = document.activeElement;
+      if (ahora === null || ahora === document.body) anterior?.focus?.();
+    };
+  }, []);
+
+  /**
+   * La ventana sale de su ficha — Enmienda 4.
+   *
+   * ⚠️ **Corre una sola vez, al aparecer.** Con `marco` en las dependencias se
+   * volvería a disparar en cada arrastre: la ventana se metería en su ficha y
+   * saldría de nuevo mientras la estás moviendo. Y no lo necesita — el efecto
+   * mide la caja del DOM, que ya dice dónde está.
+   */
+  useEffect(() => {
+    const nodo = caja.current;
+    if (!nodo) return;
+    const animacion = salirDeLaFicha(nodo, clave);
+    return () => animacion?.cancel();
   }, [clave]);
+
+  /**
+   * Minimizar: **primero se guarda en su ficha, después se minimiza.**
+   *
+   * ⚠️ **El orden es la corrección de un defecto medido.** Al revés —minimizar
+   * y animar lo que quedó— React desmonta la ventana en el frame del medio y lo
+   * que se ve es un desvanecido en el lugar, no algo que se guarda.
+   */
+  const guardar = useCallback(() => {
+    guardarEnLaFicha(clave, () => minimizarPanel(clave));
+  }, [clave, minimizarPanel]);
 
   /**
    * `Escape`, capa 2.
    *
    * ⚠️ **No usa captura, y ésa es la jerarquía.** Los menús de la barra sí
    * escuchan en captura y llaman a `stopPropagation`, así que cuando hay uno
-   * abierto el evento no llega hasta acá. Con nada encima, minimiza.
+   * abierto el evento no llega hasta acá. Con nada encima, minimiza **esta**
+   * ventana: la que tiene el foco, no el escritorio entero.
    */
   const alTeclear = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        minimizarPanel();
-        return;
-      }
-      if (e.key !== "Tab" || !caja.current) return;
-
-      // Trampa de foco (requisito 3): `Tab` circula adentro del panel.
-      const focos = caja.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      const primero = focos[0];
-      const ultimo = focos[focos.length - 1];
-      if (!primero || !ultimo) return;
-
-      if (e.shiftKey && document.activeElement === primero) {
-        e.preventDefault();
-        ultimo.focus();
-      } else if (!e.shiftKey && document.activeElement === ultimo) {
-        e.preventDefault();
-        primero.focus();
-      }
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      guardar();
     },
-    [minimizarPanel],
+    [guardar],
   );
-
-  // Sin medir todavía no se dibuja: una ventana que aparece en un lugar y salta
-  // a otro un frame después es peor que esperar ese frame (`P-12`).
-  if (!panel || clave === null || area === null) return null;
 
   // El marco efectivo: el del arrastre si hay uno, si no el guardado, y si nunca
   // se abrió, uno en cascada. `encuadrar` lo mete en la pantalla de ahora, que
   // puede no ser la de cuando se guardó.
-  const indice = espacio.objetos.findIndex((o) => o.clave === clave);
   const marco =
-    arrastre ??
-    (panel.marco ? encuadrar(panel.marco, area) : marcoInicial(area, Math.max(0, indice)));
+    arrastre ?? (objeto.marco ? encuadrar(objeto.marco, area) : marcoInicial(area, cascada));
 
   function empezarGesto(e: React.PointerEvent, borde: Borde | null) {
-    if (!escritorio || area === null) return;
+    if (!escritorio) return;
     // Expandida no se mueve ni se estira: ocupa todo, no hay a dónde llevarla.
     if (marco.expandido) return;
     e.preventDefault();
@@ -203,7 +288,7 @@ export function PanelDeObjeto() {
 
   function seguirGesto(e: React.PointerEvent) {
     const g = gesto.current;
-    if (!g || area === null) return;
+    if (!g) return;
     const dx = e.clientX - g.x;
     const dy = e.clientY - g.y;
     const siguiente =
@@ -215,7 +300,7 @@ export function PanelDeObjeto() {
   function terminarGesto() {
     const g = gesto.current;
     gesto.current = null;
-    if (!g || clave === null) return;
+    if (!g) return;
     // Recién acá se escribe en el estado compartido, y por lo tanto en la
     // memoria: en cada `pointermove` sería un render de la barra y de `UX02` por
     // píxel. Y se guarda **lo que el gesto calculó**, no lo que el estado alcanzó
@@ -225,169 +310,172 @@ export function PanelDeObjeto() {
   }
 
   function expandir() {
-    if (area === null || clave === null) return;
     guardarMarco(clave, alternarExpandido(marco, area));
   }
 
+  const nombre = nombreDeObjeto(objeto.etiqueta);
+  const completo = objeto.etiquetaSecundaria
+    ? `${nombre} · ${nombreDeObjeto(objeto.etiquetaSecundaria)}`
+    : nombre;
+  const color = colorDelObjeto(objeto.tipo, objeto.entidadId);
+
   /*
-    ⚠️ **A menos de 768 px el panel ocupa la pantalla y no se maneja.** Arrastrar
-    y estirar un rectángulo en un teléfono no es una función: es una forma de
-    perderlo detrás del borde.
+    ⚠️ **A menos de 768 px la ventana ocupa la pantalla y no se maneja.**
+    Arrastrar y estirar un rectángulo en un teléfono no es una función: es una
+    forma de perderlo detrás del borde.
   */
   const estiloDeVentana: React.CSSProperties = escritorio
-    ? {
-        position: "absolute",
-        left: marco.x,
-        top: marco.y,
-        width: marco.ancho,
-        height: marco.alto,
-      }
-    : { position: "absolute", inset: "16px 16px 96px" };
+    ? { left: marco.x, top: marco.y, width: marco.ancho, height: marco.alto }
+    : { inset: "16px 16px 96px" };
 
   return (
     <div
-      role="presentation"
-      onMouseDown={(e) => {
-        // Tocar afuera **minimiza**, no cierra: el objeto sigue en la barra.
-        if (e.target === e.currentTarget) minimizarPanel();
-      }}
+      ref={caja}
+      data-ventana={clave}
+      role="dialog"
+      /*
+        ⚠️ **Sin `aria-modal`, y es la corrección de la Enmienda 3.** Anunciar
+        como modal algo que no lo es le dice al lector de pantalla que el resto
+        de la página **no existe** — cuando el resto de la página es justamente
+        lo que se sigue usando, incluida la barra y las otras dos ventanas.
+      */
+      aria-label={completo}
+      tabIndex={-1}
+      onKeyDown={alTeclear}
+      /*
+        Tocar una ventana la sube al frente, como cualquier escritorio. Va en
+        captura para que también cuente tocar algo de adentro: subir sólo cuando
+        se toca el borde obligaría a apuntar a un marco de medio píxel.
+      */
+      onPointerDownCapture={() => traerAlFrente(clave)}
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 40,
-        background: "rgba(0,0,0,0.18)",
+        ...estiloDeVentana,
+        position: "absolute",
+        zIndex: apilado,
+        pointerEvents: "auto",
+        // El efecto de escala necesita el origen arriba a la izquierda: con el
+        // origen al centro, la ventana sale de un lugar cercano y equivocado.
+        transformOrigin: "0 0",
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--card)",
+        border: ".5px solid var(--border)",
+        borderRadius: "var(--radius)",
+        /*
+          ⚠️ **La de adelante se despega más que las de atrás.** Con tres
+          ventanas del mismo color y la misma sombra, cuál está activa es una
+          adivinanza; la profundidad es la única señal que no gasta ni color ni
+          texto.
+        */
+        boxShadow: apilado > 1 ? "0 32px 80px rgba(0,0,0,0.22)" : "0 18px 48px rgba(0,0,0,0.16)",
+        outline: "none",
+        overflow: "hidden",
+        /*
+          Sin transición mientras se arrastra: animar el tamaño durante un
+          gesto lo vuelve pastoso y lo despega del puntero.
+
+          ⚠️ Se mira `arrastre` —estado— y no el `ref` del gesto: leer un `ref`
+          durante el render es exactamente lo que el lint rechaza, y con razón
+          —su valor no dispara un render, así que la transición podría quedar
+          de un frame anterior—.
+        */
+        transition: arrastre ? "none" : "width 140ms ease, height 140ms ease",
       }}
     >
-      <div
-        ref={caja}
-        role="dialog"
-        aria-modal="true"
-        aria-label={panel.etiqueta}
-        tabIndex={-1}
-        onKeyDown={alTeclear}
-        style={{
-          ...estiloDeVentana,
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--card)",
-          border: ".5px solid var(--border)",
-          borderRadius: "var(--radius)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.22)",
-          outline: "none",
-          overflow: "hidden",
-          /*
-            Sin transición mientras se arrastra: animar el tamaño durante un
-            gesto lo vuelve pastoso y lo despega del puntero.
+      {escritorio && !marco.expandido && (
+        <Agarres onEmpezar={empezarGesto} onSeguir={seguirGesto} onSoltar={terminarGesto} />
+      )}
 
-            ⚠️ Se mira `arrastre` —estado— y no el `ref` del gesto: leer un `ref`
-            durante el render es exactamente lo que el lint rechaza, y con razón
-            —su valor no dispara un render, así que la transición podría quedar
-            de un frame anterior—.
+      <header
+        className="flex items-center gap-3"
+        onPointerDown={(e) => {
+          /*
+            ⚠️ **Se agarra de toda la barra menos de sus botones.**
+
+            La primera versión exigía `e.target === e.currentTarget`, o sea
+            **sólo el fondo**: agarrar del nombre del objeto —que es de donde
+            agarra cualquiera— no movía nada. Se midió en el navegador.
+
+            Lo que sí hay que excluir son los botones: si no, apretar
+            «minimizar» movería la ventana.
           */
-          transition: arrastre ? "none" : "width 140ms ease, height 140ms ease",
+          if ((e.target as HTMLElement).closest("button")) return;
+          empezarGesto(e, null);
+        }}
+        onPointerMove={seguirGesto}
+        onPointerUp={terminarGesto}
+        onPointerCancel={terminarGesto}
+        onDoubleClick={expandir}
+        aria-label={escritorio ? t("PANEL.MOVER") : undefined}
+        style={{
+          flexShrink: 0,
+          padding: "10px 12px 10px 14px",
+          /*
+            ⚠️ **La franja de identidad — Enmienda 5, y es lo que distingue un
+            cuadrante de otro.** Con tres ventanas del mismo blanco superpuestas,
+            cuál es cuál se contesta leyendo el título de cada una; el color la
+            contesta de un vistazo, y es **el mismo** que esa materia tiene en la
+            lista y en su ficha.
+
+            Va arriba y no a la izquierda como en la lista porque acá el borde
+            izquierdo lo ocupan los agarres de redimensionar: una franja de 3 px
+            ahí sería un blanco falso sobre el que se intenta estirar la ventana.
+          */
+          borderTop: color ? `3px solid ${color}` : undefined,
+          borderBottom: ".5px solid var(--border)",
+          cursor: escritorio && !marco.expandido ? "grab" : "default",
+          touchAction: "none",
         }}
       >
-        {escritorio && !marco.expandido && <Agarres onEmpezar={empezarGesto} onSeguir={seguirGesto} onSoltar={terminarGesto} />}
+        {/*
+          El semáforo, arriba a la izquierda. Es el mismo componente que la
+          superficie usa: dos semáforos distintos serían dos gramáticas para el
+          mismo gesto.
+        */}
+        <Semaforo
+          nombre={completo}
+          expandido={marco.expandido}
+          onCerrar={() => cerrar(clave)}
+          onMinimizar={guardar}
+          onExpandir={escritorio ? expandir : undefined}
+        />
 
-        <header
-          className="flex items-center gap-3"
-          onPointerDown={(e) => {
-            /*
-              ⚠️ **Se agarra de toda la barra menos de sus botones.**
+        <p
+          className="truncate"
+          style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)", minWidth: 0 }}
+        >
+          {completo}
+        </p>
 
-              La primera versión exigía `e.target === e.currentTarget`, o sea
-              **sólo el fondo**: agarrar del nombre del objeto —que es de donde
-              agarra cualquiera— no movía nada. Se midió en el navegador.
-
-              Lo que sí hay que excluir son los botones: si no, apretar
-              «minimizar» movería la ventana.
-            */
-            if ((e.target as HTMLElement).closest("button")) return;
-            empezarGesto(e, null);
-          }}
-          onPointerMove={seguirGesto}
-          onPointerUp={terminarGesto}
-          onPointerCancel={terminarGesto}
-          onDoubleClick={expandir}
-          aria-label={escritorio ? t("PANEL.MOVER") : undefined}
+        <button
+          onClick={() => verComoPagina(clave)}
+          className="ml-auto flex items-center gap-1"
           style={{
             flexShrink: 0,
-            padding: "10px 12px 10px 18px",
-            borderBottom: ".5px solid var(--border)",
-            cursor: escritorio && !marco.expandido ? "grab" : "default",
-            touchAction: "none",
+            minHeight: 36,
+            padding: "0 12px",
+            borderRadius: "var(--radius-pildora)",
+            border: ".5px solid var(--border)",
+            fontSize: "var(--text-label)",
+            color: "var(--foreground)",
           }}
         >
-          <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>
-            {panel.etiquetaSecundaria
-              ? `${panel.etiqueta} · ${panel.etiquetaSecundaria}`
-              : panel.etiqueta}
-          </p>
+          {t("PANEL.VER_COMO_PAGINA")}
+          <ArrowUpRight size={14} aria-hidden />
+        </button>
+      </header>
 
-          <button
-            onClick={() => verComoPagina(clave)}
-            className="ml-auto flex items-center gap-1"
-            style={{
-              minHeight: 36,
-              padding: "0 12px",
-              borderRadius: "var(--radius-pildora)",
-              border: ".5px solid var(--border)",
-              fontSize: "var(--text-label)",
-              color: "var(--foreground)",
-            }}
-          >
-            {t("PANEL.VER_COMO_PAGINA")}
-            <ArrowUpRight size={14} aria-hidden />
-          </button>
-
-          {/*
-            ⚠️ **Minimizar y cerrar NO son lo mismo, y por eso son dos.**
-            Minimizar guarda el panel y **deja el objeto en la barra**; cerrar
-            saca el objeto. Dos botones que hicieran lo mismo serían ruido.
-          */}
-          {escritorio && (
-            <button
-              onClick={expandir}
-              aria-label={marco.expandido ? t("PANEL.RESTAURAR") : t("PANEL.EXPANDIR")}
-              title={marco.expandido ? t("PANEL.RESTAURAR") : t("PANEL.EXPANDIR")}
-              className="flex items-center justify-center"
-              style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", color: "var(--muted-foreground)" }}
-            >
-              {marco.expandido ? <Minimize2 size={15} aria-hidden /> : <Maximize2 size={15} aria-hidden />}
-            </button>
-          )}
-          <button
-            onClick={minimizarPanel}
-            aria-label={t("PANEL.MINIMIZAR")}
-            title={t("PANEL.MINIMIZAR")}
-            className="flex items-center justify-center"
-            style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", color: "var(--muted-foreground)" }}
-          >
-            <Minus size={16} aria-hidden />
-          </button>
-          <button
-            onClick={() => cerrar(clave)}
-            aria-label={`${t("PANEL.CERRAR")}: ${panel.etiqueta}`}
-            title={t("PANEL.CERRAR")}
-            className="flex items-center justify-center"
-            style={{ width: 36, height: 36, borderRadius: "var(--radius-control)", color: "var(--muted-foreground)" }}
-          >
-            <X size={16} aria-hidden />
-          </button>
-        </header>
-
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 4 }}>
-          <Contenido objeto={panel} />
-          <p
-            style={{
-              padding: "4px 18px 16px",
-              fontSize: "var(--text-meta)",
-              color: "var(--muted-foreground)",
-            }}
-          >
-            {t("PANEL.SOLO_CONSULTA")}
-          </p>
-        </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 4 }}>
+        <Contenido objeto={objeto} />
+        <p
+          style={{
+            padding: "4px 18px 16px",
+            fontSize: "var(--text-meta)",
+            color: "var(--muted-foreground)",
+          }}
+        >
+          {t("PANEL.SOLO_CONSULTA")}
+        </p>
       </div>
     </div>
   );

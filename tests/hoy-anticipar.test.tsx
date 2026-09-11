@@ -1,23 +1,25 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
 import type {
   HeroProjection,
   HoyProps,
-  MateriaEnIndice,
-  MateriasProps,
+  RepartoProjection,
+  RiesgoProyectado,
+  TableroProps,
+  TarjetaDeEvaluacion,
 } from "@/lib/domain/view-models";
 import type { HeroLevel } from "@/lib/domain/precedence";
 
 /**
- * La capa «anticipar» de `UX01` — [ADR-089](../docs/decisions.md#adr-089).
+ * El tablero de `UX01` — [ADR-093](../docs/decisions.md#adr-093), que reemplaza
+ * la capa «anticipar» de ADR-089.
  *
- * Lo que se prueba no es que el mapa se dibuje: es que **diga la verdad cuando
- * no sabe**. Las tres ausencias que ADR-078 y ADR-072 dejaron escritas —sin
- * fecha de evaluación no hay ventana, sin primera clase el inicio no es un
- * hecho, sin cobertura no se dibuja barra— son exactamente donde una pantalla
- * de panorama se vuelve una pantalla que promete.
+ * Lo que se prueba no es que las tarjetas se dibujen: es que **digan la verdad
+ * cuando no saben**. Sin fecha no hay cuenta regresiva, sin cobertura no hay
+ * barra, sin actividad no hay «hace 0 días», y ningún vacío se lee como
+ * «no tenés evaluaciones».
  */
 
 const HERO: HeroProjection = {
@@ -40,212 +42,336 @@ const BASE: HoyProps = {
   recuperacion: null,
   reparto: null,
   verProgreso: null,
-  panorama: null,
+  tablero: null,
 };
 
-function materia(over: Partial<MateriaEnIndice> = {}): MateriaEnIndice {
+const NOTA = "* temas marcados por vos sobre el total cargado. No es una nota ni una predicción.";
+
+function tarjeta(over: Partial<TarjetaDeEvaluacion> = {}): TarjetaDeEvaluacion {
   return {
     cursadaId: "ce-1",
     nombre: "Análisis Matemático II",
-    evaluacion: "Final · escrito · vie 12 sep",
+    evaluacion: { rotulo: "Final", fecha: "vie 12 sept", modalidad: "teórico escrito" },
+    dias: 12,
     faltan: "12 d",
-    cobertura: { fraccion: 0.26, texto: "1 de 9 temas · 26% de las horas" },
+    cobertura: { fraccion: 0.26, porcentaje: 26 },
     sinCobertura: null,
     ultimoAvance: "hace 7 días",
-    ventana: { desde: 0.1, hasta: 0.7, inicioDesconocido: false },
-    etiqueta: "Abrir",
     tono: "neutral",
     ...over,
   };
 }
 
-function panorama(over: Partial<MateriasProps> = {}): MateriasProps {
+function tablero(over: Partial<TableroProps> = {}): TableroProps {
   return {
-    fecha: "jue 10 sep",
-    eje: {
-      marcas: [
-        { etiqueta: "−2 sem", posicion: 0, esHoy: false },
-        { etiqueta: "hoy", posicion: 0.4, esHoy: true },
-        { etiqueta: "+3 sem", posicion: 1, esHoy: false },
-      ],
-      hoy: 0.4,
-    },
-    proximaEvaluacion: "12 días para el próximo final",
-    materias: [materia()],
-    aclaracion: "Cobertura: temas con evidencia enviada sobre el total cargado.",
+    proximaEvaluacion: { dias: 12 },
+    tarjetas: [tarjeta()],
+    aclaracionDeCobertura: NOTA,
+    horizonteEnDias: 14,
+    riesgos: [],
+    semana: [
+      {
+        fecha: "2026-09-10",
+        etiqueta: "hoy",
+        items: [{ tipo: "CLASE", hora: "08:00–10:00", texto: "Clase · Física I", cursadaId: "ce-2" }],
+      },
+      { fecha: "2026-09-11", etiqueta: "mañana", items: [] },
+    ],
     ...over,
   };
 }
 
-describe("sin panorama, `UX01` es exactamente la de antes", () => {
-  it("no dibuja ni la evaluación ni el mapa", () => {
+const riesgo = (over: Partial<RiesgoProyectado> = {}): RiesgoProyectado => ({
+  regla: "COBERTURA_BAJA_CERCA",
+  motor: "ACADEMICO",
+  titulo: "Análisis Matemático II: evaluación en 4 días con 0% de cobertura",
+  detalle: "Menos de la mitad del tiempo estimado tiene evidencia enviada, a una semana o menos.",
+  cursadaId: "ce-1",
+  ...over,
+});
+
+const opcion1 = () => screen.getByLabelText("Opción 1 · tarjetas");
+const opcion2 = () => screen.getByLabelText("Opción 2 · carril");
+
+describe("sin tablero, `UX01` sigue siendo la pantalla que conduce", () => {
+  it("no dibuja la semana, los riesgos ni las evaluaciones", () => {
     render(<HoyAutogestion {...BASE} />);
-    expect(screen.queryByLabelText("Próxima evaluación")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Los próximos 14 días")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Próximos 7 días")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Riesgos detectados")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Próximas evaluaciones")).not.toBeInTheDocument();
   });
 
   it("el Hero sigue estando: la capa que conduce no depende de la que acompaña", () => {
     render(<HoyAutogestion {...BASE} />);
     expect(screen.getByText("Completá la práctica de Modelo de negocio")).toBeInTheDocument();
   });
-});
-
-describe("próxima evaluación", () => {
-  it("muestra los días que faltan, la materia y la evaluación", () => {
-    render(<HoyAutogestion {...BASE} panorama={panorama()} />);
-    const card = screen.getByLabelText("Próxima evaluación");
-    expect(card).toHaveTextContent("12 d");
-    expect(card).toHaveTextContent("Análisis Matemático II");
-    expect(card).toHaveTextContent("Final · escrito · vie 12 sep");
-  });
-
-  it("la cobertura va **con su texto**, nunca sola como porcentaje", () => {
-    render(<HoyAutogestion {...BASE} panorama={panorama()} />);
-    // ADR-072: los dos números conviven a propósito. Una barra sin el conteo
-    // sería el score de máquina que el producto se prohíbe.
-    expect(screen.getByLabelText("Próxima evaluación")).toHaveTextContent(
-      "1 de 9 temas · 26% de las horas",
-    );
-  });
-
-  it("sin cobertura dice **por qué**, en lugar de dibujar una barra vacía", () => {
-    const p = panorama({
-      materias: [materia({ cobertura: null, sinCobertura: "todavía no cargaste temas" })],
-    });
-    render(<HoyAutogestion {...BASE} panorama={p} />);
-    expect(screen.getByLabelText("Próxima evaluación")).toHaveTextContent(
-      "todavía no cargaste temas",
-    );
-  });
 
   /**
-   * ⚠️ **La diferencia que más importa de toda la capa.**
-   *
-   * *"No tenés evaluaciones"* es una afirmación tranquilizadora sobre algo que
-   * nadie verificó. Lo que el sistema sabe es que **nadie cargó la fecha**, y
-   * eso es *sin datos no es cero* (`AGENTS.md` §2.5).
+   * ADR-093: el owner sacó de Hoy la cola, el mapa y el reparto. **Los datos
+   * siguen en `HoyProps`**; si la pantalla los volviera a dibujar, esto rompe.
    */
-  it("sin fechas cargadas NO dice «no tenés evaluaciones»", () => {
-    const p = panorama({
-      materias: [materia({ evaluacion: null, faltan: null, ventana: null })],
-      proximaEvaluacion: null,
+  it("lo que ADR-093 retiró no se dibuja aunque los datos lleguen", () => {
+    const reparto: RepartoProjection = {
+      disponible: "0,5 h",
+      requerido: "49 h",
+      falta: true,
+      tramo: "CRITICA",
+      titulo: "Tu plan no entra completo en el tiempo disponible.",
+      cifras: "Esta semana declaraste 0,5 h disponibles.",
+      aclaracion: "Es una estimación para organizarte; no predice tu resultado.",
+      acciones: ["Elegir qué priorizar"],
+      materias: [{ cursadaId: "ce-9", nombre: "Física I", asignado: "0 h", motivo: "POR_URGENCIA" }],
+      regla: "Es una estimación, no una agenda.",
+    };
+    render(
+      <HoyAutogestion
+        {...BASE}
+        materias={[{ cursadaId: "ce-9", nombre: "Física I", estado: null, ultimoAvance: null, tono: "neutral" }]}
+        reparto={reparto}
+        tablero={tablero()}
+      />,
+    );
+    expect(screen.queryByText("Física I")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tus horas esta semana")).not.toBeInTheDocument();
+    expect(screen.queryByText("Los próximos 14 días")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Siguiente")).not.toBeInTheDocument();
+  });
+});
+
+describe("el encabezado", () => {
+  it("dice para qué es la pantalla", () => {
+    render(<HoyAutogestion {...BASE} />);
+    expect(screen.getByText("Qué necesita atención hoy")).toBeInTheDocument();
+  });
+
+  it("la píldora lleva la fecha y los días a la próxima evaluación", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    expect(screen.getByText("12 días")).toBeInTheDocument();
+    expect(screen.getByText(/para la próxima evaluación/)).toBeInTheDocument();
+  });
+
+  it("si es hoy, lo dice en vez de «0 días»", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero({ proximaEvaluacion: { dias: 0 } })} />);
+    expect(screen.getByText("Hoy tenés una evaluación")).toBeInTheDocument();
+    expect(screen.queryByText("0 días")).not.toBeInTheDocument();
+  });
+
+  it("sin ninguna fecha, la píldora es la fecha sola: no inventa una cuenta", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero({ proximaEvaluacion: null })} />);
+    expect(screen.getByText("jue 10 sep")).toBeInTheDocument();
+    expect(screen.queryByText(/para la próxima evaluación/)).not.toBeInTheDocument();
+  });
+});
+
+describe("Opción 1 · tarjetas", () => {
+  it("cada tarjeta dice tipo, día, modalidad, días que faltan y cobertura", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    const t = opcion1();
+    expect(t).toHaveTextContent("Análisis Matemático II");
+    expect(t).toHaveTextContent("Final · vie 12 sept · teórico escrito");
+    expect(t).toHaveTextContent("12 d");
+    expect(t).toHaveTextContent("cobertura 26%");
+    expect(t).toHaveTextContent("último avance hace 7 días");
+  });
+
+  it("la nota de ADR-072 acompaña a las barras", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    expect(screen.getByLabelText("Próximas evaluaciones")).toHaveTextContent(NOTA);
+  });
+
+  it("sin cobertura dice **por qué**, en lugar de una cifra o una barra vacía", () => {
+    const tb = tablero({
+      tarjetas: [tarjeta({ cobertura: null, sinCobertura: "sin temas cargados — no puedo estimar" })],
+      aclaracionDeCobertura: null,
     });
-    render(<HoyAutogestion {...BASE} panorama={p} />);
-    const card = screen.getByLabelText("Próxima evaluación");
-    expect(card).toHaveTextContent("Ninguna de tus materias tiene fecha de evaluación cargada");
-    expect(card.textContent ?? "").not.toMatch(/no ten[ée]s (evaluaciones|ex[áa]menes)/i);
+    render(<HoyAutogestion {...BASE} tablero={tb} />);
+    expect(opcion1()).toHaveTextContent("sin temas cargados — no puedo estimar");
+    expect(opcion1()).not.toHaveTextContent(/cobertura \d/);
   });
 
-  it("no toma una evaluación ya pasada: sin fecha futura, la fila no cuenta", () => {
-    const p = panorama({ materias: [materia({ evaluacion: "Parcial 1", faltan: null })] });
-    render(<HoyAutogestion {...BASE} panorama={p} />);
-    expect(screen.getByLabelText("Próxima evaluación")).toHaveTextContent(
-      "Ninguna de tus materias tiene fecha",
-    );
-  });
-});
-
-describe("el mapa de catorce días", () => {
-  it("dibuja una fila por materia y la etiqueta del eje", () => {
-    render(<HoyAutogestion {...BASE} panorama={panorama()} />);
-    const mapa = screen.getByLabelText("Los próximos 14 días");
-    expect(mapa).toHaveTextContent("Análisis Matemático II");
-    expect(mapa).toHaveTextContent("hoy");
+  it("sin fecha dice que no hay, y **no dibuja una cuenta en cero**", () => {
+    const tb = tablero({ tarjetas: [tarjeta({ evaluacion: null, dias: null, faltan: null })] });
+    render(<HoyAutogestion {...BASE} tablero={tb} />);
+    expect(opcion1()).toHaveTextContent("sin evaluación con fecha");
+    expect(opcion1()).not.toHaveTextContent(/\b0 d\b/);
   });
 
-  /** ADR-078: una barra hasta el borde del eje le inventaría un plazo. */
-  it("sin fecha de evaluación **no hay ventana**, y lo dice", () => {
-    const p = panorama({ materias: [materia({ ventana: null, faltan: null })] });
-    render(<HoyAutogestion {...BASE} panorama={p} />);
-    expect(screen.getByLabelText("Los próximos 14 días")).toHaveTextContent(
-      "sin ventana de preparación",
-    );
+  it("sin avance no dice «hace 0 días»", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero({ tarjetas: [tarjeta({ ultimoAvance: null })] })} />);
+    expect(opcion1()).toHaveTextContent("sin avance registrado");
   });
 
-  it("lleva la aclaración de cobertura de ADR-072 cuando hay barras", () => {
-    render(<HoyAutogestion {...BASE} panorama={panorama()} />);
-    expect(screen.getByLabelText("Los próximos 14 días")).toHaveTextContent(
-      "Cobertura: temas con evidencia enviada sobre el total cargado.",
-    );
+  /** *Sin datos no es cero* (`AGENTS.md` §2.5): nadie verificó que no haya evaluaciones. */
+  it("sin ninguna fecha cargada NO dice «no tenés evaluaciones»", () => {
+    const tb = tablero({
+      proximaEvaluacion: null,
+      tarjetas: [tarjeta({ evaluacion: null, dias: null, faltan: null })],
+    });
+    render(<HoyAutogestion {...BASE} tablero={tb} />);
+    const seccion = screen.getByLabelText("Próximas evaluaciones");
+    expect(seccion).toHaveTextContent("Ninguna de tus materias tiene fecha de evaluación cargada");
+    expect(seccion.textContent ?? "").not.toMatch(/no ten[ée]s (evaluaciones|ex[áa]menes)/i);
   });
 
-  it("explica qué significa una barra: sin eso, las formas no dicen nada", () => {
-    render(<HoyAutogestion {...BASE} panorama={panorama()} />);
-    expect(screen.getByLabelText("Los próximos 14 días")).toHaveTextContent(
-      "Cada barra es la ventana de preparación hasta la evaluación",
-    );
-  });
-
-  it("sin materias no dibuja un mapa vacío que parezca un plan", () => {
-    render(<HoyAutogestion {...BASE} panorama={panorama({ materias: [], proximaEvaluacion: null })} />);
-    expect(screen.getByLabelText("Los próximos 14 días")).toHaveTextContent(
-      "Todavía no hay materias con fechas",
-    );
-  });
-
-  it("el mapa **no es una agenda**: ninguna fila crea nada", () => {
+  it("tocar una tarjeta abre la materia **con su cursada**", () => {
     const abrir = vi.fn();
-    render(<HoyAutogestion {...BASE} panorama={panorama()} onAbrirMateria={abrir} />);
-    // Los únicos controles del mapa navegan. No hay «agendar», «reprogramar» ni
-    // nada que escriba: el *cuándo* vive en el `Commitment` (ADR-064).
-    const mapa = screen.getByLabelText("Los próximos 14 días");
-    for (const boton of mapa.querySelectorAll("button")) {
-      expect(boton.textContent ?? "").not.toMatch(/agendar|reprogramar|planificar|guardar/i);
-    }
+    render(<HoyAutogestion {...BASE} tablero={tablero()} onAbrirMateria={abrir} />);
+    fireEvent.click(within(opcion1()).getByRole("button", { name: /Análisis Matemático II/ }));
+    expect(abrir.mock.calls[0]?.[0]).toMatchObject({ cursadaId: "ce-1" });
+  });
+
+  it("sin espacio de trabajo, cae a `CTA-001` con la misma cursada (ADR-054)", () => {
+    const ver = vi.fn();
+    render(<HoyAutogestion {...BASE} tablero={tablero()} onVerMateria={ver} />);
+    fireEvent.click(within(opcion1()).getByRole("button", { name: /Análisis Matemático II/ }));
+    expect(ver).toHaveBeenCalledWith("ce-1");
+  });
+
+  it("sin ningún destino, la tarjeta **no es un botón**", () => {
+    // Una CTA que no lleva a ningún lado sería peor que la ausencia (`AGENTS.md` §2.2).
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    expect(within(opcion1()).queryByRole("button", { name: /Análisis/ })).not.toBeInTheDocument();
   });
 });
 
-describe("la composición adaptativa — ADR-089 §4", () => {
-  const rescate: HeroProjection = { ...HERO, nivel: "RESCUE_REQUIRED" };
-  const incumplido: HeroProjection = { ...HERO, nivel: "COMMITMENT_MISSED" };
+describe("Opción 2 · carril", () => {
+  const dos = () =>
+    tablero({
+      horizonteEnDias: 21,
+      tarjetas: [
+        tarjeta(),
+        tarjeta({ cursadaId: "ce-2", nombre: "Física I", faltan: "18 d", dias: 18 }),
+        tarjeta({ cursadaId: "ce-3", nombre: "Química", evaluacion: null, dias: null, faltan: null }),
+      ],
+    });
 
+  it("una marca por evaluación con fecha, y el detalle de la primera", () => {
+    render(<HoyAutogestion {...BASE} tablero={dos()} />);
+    const c = opcion2();
+    expect(within(c).getAllByRole("button", { pressed: false }).length).toBeGreaterThan(0);
+    expect(within(c).getByRole("button", { pressed: true })).toHaveAccessibleName(/Análisis Matemático II/);
+    expect(c.querySelector("[data-detalle]")).toHaveAttribute("data-detalle", "ce-1");
+  });
+
+  it("tocar otra marca cambia el detalle", () => {
+    render(<HoyAutogestion {...BASE} tablero={dos()} />);
+    fireEvent.click(within(opcion2()).getByRole("button", { name: /Física I · 18 d/ }));
+    expect(opcion2().querySelector("[data-detalle]")).toHaveAttribute("data-detalle", "ce-2");
+  });
+
+  it("las que no tienen fecha **no se ubican en el eje**: van aparte", () => {
+    render(<HoyAutogestion {...BASE} tablero={dos()} />);
+    const c = opcion2();
+    expect(within(c).queryByRole("button", { name: /Química ·/ })).not.toBeInTheDocument();
+    expect(c).toHaveTextContent("Sin fecha:");
+    fireEvent.click(within(c).getByRole("button", { name: "Química" }));
+    expect(opcion2().querySelector("[data-detalle]")).toHaveAttribute("data-detalle", "ce-3");
+  });
+
+  it("el detalle abre la materia elegida, no la primera", () => {
+    const abrir = vi.fn();
+    render(<HoyAutogestion {...BASE} tablero={dos()} onAbrirMateria={abrir} />);
+    fireEvent.click(within(opcion2()).getByRole("button", { name: /Física I · 18 d/ }));
+    fireEvent.click(within(opcion2()).getByRole("button", { name: "Abrir materia" }));
+    expect(abrir.mock.calls[0]?.[0]).toMatchObject({ cursadaId: "ce-2" });
+  });
+});
+
+describe("riesgos detectados", () => {
+  it("cuenta los que hay y los enuncia", () => {
+    const tb = tablero({
+      riesgos: [riesgo(), riesgo({ regla: "PLAN_NO_ENTRA", motor: "PERSONAL", titulo: "Tu plan no entra completo en el tiempo disponible.", detalle: null, cursadaId: null })],
+    });
+    render(<HoyAutogestion {...BASE} tablero={tb} />);
+    const r = screen.getByLabelText("Riesgos detectados");
+    expect(r).toHaveTextContent("2 detectados");
+    expect(r).toHaveTextContent("evaluación en 4 días con 0% de cobertura");
+  });
+
+  it("en singular con uno", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero({ riesgos: [riesgo()] })} />);
+    expect(screen.getByLabelText("Riesgos detectados")).toHaveTextContent("1 detectado");
+  });
+
+  it("sin riesgos lo dice, **sin afirmar que todo está bien**", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    const r = screen.getByLabelText("Riesgos detectados");
+    expect(r).toHaveTextContent("Ninguna regla se cumple con lo que está cargado hoy.");
+    expect(r.textContent ?? "").not.toMatch(/todo bien|vas bien|bajo control/i);
+  });
+
+  it("uno de una materia ofrece abrirla; uno sin materia no ofrece nada", () => {
+    const abrir = vi.fn();
+    const tb = tablero({
+      riesgos: [riesgo(), riesgo({ regla: "EVALUACIONES_ENCIMADAS", titulo: "2 evaluaciones el mismo día", cursadaId: null })],
+    });
+    render(<HoyAutogestion {...BASE} tablero={tb} onAbrirMateria={abrir} />);
+    const botones = within(screen.getByLabelText("Riesgos detectados")).getAllByRole("button", { name: "Abrir materia" });
+    expect(botones).toHaveLength(1);
+    fireEvent.click(botones[0] as HTMLElement);
+    expect(abrir.mock.calls[0]?.[0]).toMatchObject({ cursadaId: "ce-1", nombre: "Análisis Matemático II" });
+  });
+
+  it("dice qué son: avisos para organizarse, no una evaluación de la persona", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    expect(screen.getByLabelText("Riesgos detectados")).toHaveTextContent(
+      /no evalúan cómo vas ni predicen tu resultado/,
+    );
+  });
+});
+
+describe("próximos 7 días", () => {
+  it("lista cada día con su hora y lo que tiene", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    const s = screen.getByLabelText("Próximos 7 días");
+    expect(s).toHaveTextContent("hoy");
+    expect(s).toHaveTextContent("08:00–10:00");
+    expect(s).toHaveTextContent("Clase · Física I");
+  });
+
+  it("**no es una agenda**: no tiene un solo botón", () => {
+    render(<HoyAutogestion {...BASE} tablero={tablero()} />);
+    expect(screen.getByLabelText("Próximos 7 días").querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("si no hay nada en ningún día, lo dice una vez", () => {
+    const semana = tablero().semana.map((d) => ({ ...d, items: [] }));
+    render(<HoyAutogestion {...BASE} tablero={tablero({ semana })} />);
+    expect(screen.getByLabelText("Próximos 7 días")).toHaveTextContent("Nada cargado para estos 7 días.");
+  });
+});
+
+describe("la composición adaptativa — ADR-089 §4, conservada por ADR-093", () => {
   it.each<[string, HeroLevel]>([
     ["rescate", "RESCUE_REQUIRED"],
     ["incumplimiento", "COMMITMENT_MISSED"],
   ])("en %s la pantalla se repliega: menos información, no más", (_, nivel) => {
-    render(<HoyAutogestion {...BASE} hero={{ ...HERO, nivel }} panorama={panorama()} />);
-    expect(screen.queryByLabelText("Los próximos 14 días")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Próxima evaluación")).not.toBeInTheDocument();
-  });
-
-  it("y el Hero **nunca** se repliega: es la única conducta primaria", () => {
-    for (const hero of [rescate, incumplido]) {
-      const { unmount } = render(<HoyAutogestion {...BASE} hero={hero} panorama={panorama()} />);
-      expect(screen.getByText("Completá la práctica de Modelo de negocio")).toBeInTheDocument();
-      unmount();
-    }
-  });
-
-  it("en cursado normal el contexto sí se muestra", () => {
-    render(<HoyAutogestion {...BASE} panorama={panorama()} />);
-    expect(screen.getByLabelText("Los próximos 14 días")).toBeInTheDocument();
+    render(<HoyAutogestion {...BASE} hero={{ ...HERO, nivel }} tablero={tablero({ riesgos: [riesgo()] })} />);
+    expect(screen.queryByLabelText("Próximos 7 días")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Riesgos detectados")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Próximas evaluaciones")).not.toBeInTheDocument();
+    // El Hero **nunca** se repliega: es la única conducta primaria.
+    expect(screen.getByText("Completá la práctica de Modelo de negocio")).toBeInTheDocument();
   });
 });
 
-describe("abrir un objeto desde `UX01` — ADR-088 §10.6", () => {
-  it("tocar una materia del mapa la abre **con su cursada**", () => {
-    const abrir = vi.fn();
-    render(<HoyAutogestion {...BASE} panorama={panorama()} onAbrirMateria={abrir} />);
-
-    const mapa = screen.getByLabelText("Los próximos 14 días");
-    fireEvent.click(mapa.querySelectorAll("button")[0] as HTMLElement);
-
-    expect(abrir).toHaveBeenCalledTimes(1);
-    expect(abrir.mock.calls[0]?.[0]).toMatchObject({ cursadaId: "ce-1" });
+describe("el Hero — ADR-088 Enmienda 5 aplicada a `UX01`", () => {
+  it("un tema TODO EN MAYÚSCULAS se escribe con mayúscula inicial, y una sola vez", () => {
+    const hero: HeroProjection = {
+      ...HERO,
+      contexto: "ANALISIS MATEMATICO III · FUNCIONES DE VARIABLE COMPLEJA",
+      titulo: "FUNCIONES DE VARIABLE COMPLEJA",
+    };
+    render(<HoyAutogestion {...BASE} hero={hero} />);
+    expect(screen.getByText("Funciones de variable compleja")).toBeInTheDocument();
+    // El romano sobrevive, y el tema no se repite en el eyebrow.
+    expect(screen.getByText("Analisis matematico III")).toBeInTheDocument();
+    expect(screen.getAllByText(/funciones de variable compleja/i)).toHaveLength(1);
   });
 
-  it("tocar la evaluación abre la misma materia", () => {
-    const abrir = vi.fn();
-    render(<HoyAutogestion {...BASE} panorama={panorama()} onAbrirMateria={abrir} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Abrir" }));
-    expect(abrir.mock.calls[0]?.[0]).toMatchObject({ cursadaId: "ce-1" });
-  });
-
-  it("sin espacio de trabajo montado, el mapa **no ofrece la acción**", () => {
-    // `undefined` es el Track A sin sesión. Una CTA que no lleva a ningún lado
-    // sería peor que la ausencia (`AGENTS.md` §2.2).
-    render(<HoyAutogestion {...BASE} panorama={panorama()} />);
-    expect(screen.queryByRole("button", { name: "Abrir" })).not.toBeInTheDocument();
+  it("un título ya bien escrito no se toca", () => {
+    render(<HoyAutogestion {...BASE} />);
+    expect(screen.getByText("Completá la práctica de Modelo de negocio")).toBeInTheDocument();
+    expect(screen.getByText("Emprendedorismo")).toBeInTheDocument();
   });
 });

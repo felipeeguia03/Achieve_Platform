@@ -750,7 +750,7 @@ export const copy = {
    */
   "HOY.SIN_EVALUACIONES": "Ninguna de tus materias tiene fecha de evaluación cargada.",
   "HOY.SIN_EVALUACIONES.AYUDA":
-    "Cargá la fecha en la materia y Achieve puede ubicarla en el mapa.",
+    "Cargá la fecha en la materia y aparece acá, con los días que faltan.",
   "HOY.PANORAMA": "Los próximos 14 días",
   /**
    * La nota que hace legible el mapa. **Sin esto las formas no dicen nada**, y
@@ -760,6 +760,81 @@ export const copy = {
     "Cada barra es la ventana de preparación hasta la evaluación. El relleno es lo que ya cubriste.",
   "HOY.PANORAMA.SIN_VENTANA": "sin ventana de preparación",
   "HOY.PANORAMA.VACIO": "Todavía no hay materias con fechas para ubicar en el mapa.",
+
+  // ── `UX01` · el tablero ([ADR-093](../../docs/decisions.md#adr-093)) ──────
+  "HOY.PROPOSITO": "Qué necesita atención hoy",
+  "HOY.PILDORA.DIAS": "para la próxima evaluación",
+  "HOY.PILDORA.HOY": "Hoy tenés una evaluación",
+  "HOY.EVALUACIONES": "Próximas evaluaciones",
+  "HOY.EVALUACIONES.OPCION_1": "Opción 1 · tarjetas",
+  "HOY.EVALUACIONES.OPCION_2": "Opción 2 · carril",
+  /**
+   * ⚠️ **Las dos opciones conviven a propósito y por poco tiempo**: el owner
+   * las pidió juntas para elegir una. La que no quede se borra (ADR-093).
+   */
+  "HOY.EVALUACIONES.COMPARACION":
+    "Dos formas de mirar las mismas evaluaciones, para elegir una. La que no quede se borra.",
+  "HOY.EVALUACIONES.SIN_FECHA": "sin evaluación con fecha",
+  "HOY.EVALUACIONES.COBERTURA": "cobertura",
+  // «avance» y no «actividad»: la segunda es la palabra vetada para `Action` (`C-02`),
+  // y «Último avance» / «Sin avance registrado» ya son el vocabulario de `UX01`.
+  "HOY.EVALUACIONES.SIN_AVANCE": "sin avance registrado",
+  "HOY.EVALUACIONES.ULTIMO_AVANCE": "último avance",
+  /** La nota al pie de [ADR-072](../../docs/decisions.md#adr-072), literal: la escribió el owner. */
+  "HOY.EVALUACIONES.NOTA": "* temas marcados por vos sobre el total cargado. No es una nota ni una predicción.",
+  "HOY.EVALUACIONES.CARRIL.AYUDA":
+    "Cada marca es una evaluación, a su distancia de hoy. Tocala para ver el detalle.",
+  "HOY.EVALUACIONES.CARRIL.SIN_FECHA": "Sin fecha:",
+  "HOY.EVALUACIONES.ABRIR": "Abrir materia",
+
+  /**
+   * **Riesgos de planificación** — ADR-093. ⚠️ **No son `RiskSignal`**: miran el
+   * calendario y la carga, nunca a la persona. Cada frase enuncia **el hecho**
+   * que disparó la regla; ninguna dice *"estás atrasado"* ni *"no vas a
+   * llegar"*, que [ADR-075](../../docs/decisions.md#adr-075) prohibió textual.
+   */
+  "HOY.RIESGOS": "Riesgos detectados",
+  "HOY.RIESGOS.UNO": "detectado",
+  "HOY.RIESGOS.VARIOS": "detectados",
+  "HOY.RIESGOS.VACIO": "Ninguna regla se cumple con lo que está cargado hoy.",
+  "HOY.RIESGOS.AYUDA":
+    "Cinco reglas sobre tus fechas, temas, avance y horas declaradas. Son avisos para organizarte: no evalúan cómo vas ni predicen tu resultado.",
+  "HOY.RIESGOS.SIN_TEMAS": "{materia}: {evaluacion} el {fecha} sin temas cargados",
+  "HOY.RIESGOS.SIN_TEMAS.DETALLE":
+    "Sin temas no se puede estimar cuánto falta preparar. Cargarlos desbloquea la estimación.",
+  "HOY.RIESGOS.COBERTURA": "{materia}: evaluación {cuando} con {porcentaje}% de cobertura",
+  "HOY.RIESGOS.COBERTURA.DETALLE":
+    "Menos de la mitad del tiempo estimado tiene evidencia enviada, a una semana o menos.",
+  "HOY.RIESGOS.AVANCE": "{materia}: evaluación {cuando} y {avance}",
+  "HOY.RIESGOS.AVANCE.NUNCA": "ningún avance registrado",
+  "HOY.RIESGOS.AVANCE.HACE": "sin avance hace {n} días",
+  "HOY.RIESGOS.ENCIMADAS.MISMO_DIA": "{n} evaluaciones el mismo día ({fecha})",
+  "HOY.RIESGOS.ENCIMADAS.SEGUIDAS": "{n} evaluaciones en días seguidos, desde el {fecha}",
+  "HOY.RIESGOS.ENCIMADAS.DETALLE": "{materias}, sin un día libre entre medio.",
+  "HOY.RIESGOS.ABRIR": "Abrir materia",
+
+  "HOY.SEMANA": "Próximos 7 días",
+  "HOY.SEMANA.HOY": "hoy",
+  "HOY.SEMANA.MANANA": "mañana",
+  "HOY.SEMANA.CLASE": "Clase · {materia}",
+  "HOY.SEMANA.COMPROMISO": "Compromiso · {titulo}",
+  "HOY.SEMANA.DISPONIBLE": "Disponible para estudiar",
+  "HOY.SEMANA.DISPONIBLE.MINUTOS": "Disponible para estudiar · {horas}",
+  "HOY.SEMANA.VACIO": "Nada cargado para estos 7 días.",
+  "HOY.SEMANA.AYUDA":
+    "Evaluaciones, compromisos y clases cargadas, y las franjas que declaraste para estudiar. No agenda nada.",
+
+  /**
+   * La modalidad de una evaluación, para leer. ⚠️ **El enum nunca es copy**
+   * (`AGENTS.md` §2.6): `teorico_escrito` se veía crudo en `UX01` y en el índice.
+   * En minúscula porque va en medio de una línea: *"Parcial 1 · teórico escrito"*.
+   * Una modalidad fuera de P0 se **nombra**, no se mapea a una de P0 (`C01-047`).
+   */
+  "EVALUACION.MODALIDAD.practico": "práctico",
+  "EVALUACION.MODALIDAD.teorico_escrito": "teórico escrito",
+  "EVALUACION.MODALIDAD.oral": "oral",
+  "EVALUACION.MODALIDAD.mixta": "mixta",
+  "EVALUACION.MODALIDAD.otra": "otra modalidad",
 
   // ── El espacio de trabajo ([ADR-088](../../docs/decisions.md#adr-088)) ────
   /**
@@ -800,6 +875,7 @@ export const copy = {
   "PANEL.EXPANDIR": "Expandir",
   "PANEL.RESTAURAR": "Restaurar el tamaño",
   "PANEL.MOVER": "Mover la ventana",
+  "PANEL.CONTROLES": "Controles de esta ventana",
   "PANEL.REDIMENSIONAR": "Cambiar el tamaño",
 } as const;
 

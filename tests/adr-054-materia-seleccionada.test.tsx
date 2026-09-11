@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
 import { ctaRegistry } from "@/lib/navigation/cta-registry";
 import { rutaDeCta, rutaDeCtaCon } from "@/lib/navigation";
 import { proyectarDia, type EstadoDelDia } from "@/lib/server/servicios/proyeccion-hoy";
-import type { HoyProps, MateriaResumen } from "@/lib/domain/view-models";
+import type { HoyProps, MateriaResumen, TableroProps, TarjetaDeEvaluacion } from "@/lib/domain/view-models";
 
 /**
  * **[ADR-054](../docs/decisions.md#adr-054), opción `B`** — decidida por el
@@ -53,20 +53,44 @@ const BASE: HoyProps = {
   recuperacion: null,
   // Fixture anterior a ADR-073: declara un mundo sin reparto.
   reparto: null,
-  panorama: null,
+  tablero: null,
   verProgreso: null,
 };
 
-/** Avanza la cola hasta el índice pedido y devuelve la cursada que se abrió. */
+/**
+ * Las mismas nueve, como tarjetas del tablero. ⚠️ **La cola `1 de N` salió de
+ * `UX01` por [ADR-093](../docs/decisions.md#adr-093)**: la garantía de ADR-054 no
+ * se perdió, se mudó a la tarjeta, que es ahora por donde se entra a una
+ * materia desde Hoy.
+ */
+const TABLERO: TableroProps = {
+  proximaEvaluacion: null,
+  tarjetas: NUEVE.map(
+    (m): TarjetaDeEvaluacion => ({
+      cursadaId: m.cursadaId as string,
+      nombre: m.nombre,
+      evaluacion: null,
+      dias: null,
+      faltan: null,
+      cobertura: null,
+      sinCobertura: null,
+      ultimoAvance: null,
+      tono: "neutral",
+    }),
+  ),
+  aclaracionDeCobertura: null,
+  horizonteEnDias: 14,
+  riesgos: [],
+  semana: [],
+};
+
+/** Toca la tarjeta pedida y devuelve la cursada que se abrió. */
 function abrirLaMateria(indice: number): string | null | undefined {
   const abierta = vi.fn();
-  render(<HoyAutogestion {...BASE} onVerMateria={abierta} />);
+  render(<HoyAutogestion {...BASE} tablero={TABLERO} onVerMateria={abierta} />);
 
-  const siguiente = screen.getByLabelText("Siguiente");
-  for (let i = 0; i < indice; i++) fireEvent.click(siguiente);
-
-  // La fila visible es el botón que lleva el nombre de la materia.
-  fireEvent.click(screen.getByText(`Materia ${indice + 1}`));
+  const tarjetas = screen.getByLabelText("Opción 1 · tarjetas");
+  fireEvent.click(within(tarjetas).getByRole("button", { name: new RegExp(`^Materia ${indice + 1}\\b`) }));
   return abierta.mock.calls[0]?.[0];
 }
 
@@ -135,17 +159,14 @@ describe("§2 · La segunda, la séptima y la novena no abren la primera", () =>
     expect(abrirLaMateria(0)).toBe("ce-1");
   });
 
-  it("una materia sin cursada persistida no inventa un id", () => {
+  it("sin tablero —el Track A, sin cursadas persistidas— no hay tarjeta que invente un id", () => {
+    // Antes esto lo cubría la cola con `cursadaId: null`. La tarjeta **siempre**
+    // viene con su cursada, porque sólo existe con datos persistidos: sin ellos
+    // no se dibuja, y no hay nada que abrir.
     const abierta = vi.fn();
-    render(
-      <HoyAutogestion
-        {...BASE}
-        materias={[{ ...NUEVE[0], cursadaId: null }]}
-        onVerMateria={abierta}
-      />,
-    );
-    fireEvent.click(screen.getByText("Materia 1"));
-    expect(abierta).toHaveBeenCalledWith(null);
+    render(<HoyAutogestion {...BASE} onVerMateria={abierta} />);
+    expect(screen.queryByLabelText("Opción 1 · tarjetas")).not.toBeInTheDocument();
+    expect(abierta).not.toHaveBeenCalled();
   });
 });
 

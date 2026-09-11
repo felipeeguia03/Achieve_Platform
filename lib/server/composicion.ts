@@ -87,6 +87,9 @@ import { proyectarMaterias } from "./servicios/proyeccion-materias";
 import { proyectarFormacion } from "./servicios/proyeccion-formacion";
 import { formacionReal } from "./repositorios/formacion";
 import { repartoReal } from "./repositorios/reparto";
+import { tableroReal } from "./repositorios/tablero";
+import { proyectarTablero } from "./servicios/proyeccion-tablero";
+import type { TableroProps } from "@/lib/domain/view-models";
 import { proyectarMateria } from "./servicios/proyeccion-materia";
 import { proyectarAccion } from "./servicios/proyeccion-accion";
 import { proyectarCompromiso } from "./servicios/proyeccion-compromiso";
@@ -1187,6 +1190,30 @@ export async function materiasDe(
 ): Promise<MateriasProps> {
   const insumos = await repartoReal.insumos(institutionId, studentId, ahora);
   return proyectarMaterias(insumos, ahora, zona);
+}
+
+/**
+ * El tablero de `UX01` — [ADR-093](../../docs/decisions.md#adr-093).
+ *
+ * Los insumos del reparto (los mismos que el índice, para que una tarjeta y una
+ * fila no se contradigan) y los de la semana, en paralelo. La ventana de
+ * compromisos arranca **un día antes** de `ahora`: uno de esta mañana que
+ * todavía está `DUE` es de hoy, y la proyección lo ubica por fecha local.
+ */
+export async function tableroDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  ahora: string = new Date().toISOString(),
+): Promise<TableroProps> {
+  const instante = Date.parse(ahora);
+  const desde = new Date(instante - 86_400_000).toISOString();
+  const hasta = new Date(instante + 8 * 86_400_000).toISOString();
+  const [insumos, semana] = await Promise.all([
+    repartoReal.insumos(institutionId, studentId, ahora),
+    tableroReal.insumosDeSemana(institutionId, studentId, desde, hasta),
+  ]);
+  return proyectarTablero(insumos, semana, ahora, zona);
 }
 
 /**

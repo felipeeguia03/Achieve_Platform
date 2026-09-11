@@ -98,6 +98,18 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
+🆕 **`UX01` es un tablero desde el 11 de septiembre** — [ADR-093](docs/decisions.md#adr-093). Hero +
+próximos 7 días, *Riesgos detectados* y las evaluaciones **en dos opciones que conviven sólo hasta que
+el owner elija una**. Salieron de Hoy la cola `1 de N`, el mapa de 14 días y el reparto (los datos
+siguen en `HoyProps`).
+
+⚠️ **Los riesgos de `UX01` NO son `RiskSignal`.** Son reglas de **planificación** sobre el calendario y
+la carga (`lib/domain/riesgos-de-planificacion.ts`, `PLAN-v0.1`): no escriben, no emiten eventos, no
+abren intervenciones y **no cambian el estado general**. `C01-021` sigue abierto. Si tocás un umbral,
+**cambiá la versión**.
+
+⚠️ **Los próximos 7 días no son una agenda**: no proponen cuándo estudiar y no tienen botones.
+
 ✅ **El apartado «Materias» quedó decidido** el 5 de septiembre de 2026:
 [ADR-054](docs/decisions.md#adr-054), **opción `B`** — `CTA-001` transporta el `CourseEnrollment`
 seleccionado y la pantalla abre exactamente ése. El incumplimiento de `VI.2` §5.2 está cerrado.

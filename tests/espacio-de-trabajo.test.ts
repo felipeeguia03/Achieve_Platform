@@ -6,14 +6,21 @@ import {
   VISIBLES,
   abrir,
   activar,
+  alternarDespliegue,
   cerrar,
   cerrarOtros,
   cerrarTodos,
+  claveAlFrente,
   claveDe,
+  clavesDesplegadas,
+  desplegar,
   encuadrarObjeto,
+  minimizarPanelDe,
   mover,
+  objetosDe,
   reordenar,
   repartir,
+  rutaConPaneles,
   sincronizarConRuta,
   validarContra,
   type EspacioDeTrabajo,
@@ -271,6 +278,92 @@ describe("sincronizar con la ruta — requisito 2", () => {
   it("no cicla: sin cambios devuelve el mismo objeto", () => {
     const base = sincronizarConRuta(conObjetos(2), "/materia?cursada=c1", T2);
     expect(sincronizarConRuta(base, "/materia?cursada=c1", T2)).toBe(base);
+  });
+});
+
+
+/**
+ * El escritorio en la URL — ADR-088, Enmienda 3.
+ *
+ * ⚠️ **Todo esto se prueba en el dominio y no con un navegador**, por el mismo
+ * motivo que el marco: cuántas ventanas hay y en qué orden se apilan son
+ * **reglas**, y una clave inventada entre dos válidas es el caso que las rompe.
+ */
+describe("las ventanas desplegadas — requisito 1 con varias", () => {
+  const U1 = claveDe("unidad", "u1");
+  const U2 = claveDe("unidad", "u2");
+  const U3 = claveDe("unidad", "u3");
+
+  it("sin parámetro no hay ninguna", () => {
+    expect(clavesDesplegadas(conObjetos(3), "/hoy")).toEqual([]);
+  });
+
+  it("la lista se lee en orden, y el orden **es el apilamiento**", () => {
+    expect(clavesDesplegadas(conObjetos(3), `/hoy?abierto=${U3},${U1}`)).toEqual([U3, U1]);
+    expect(claveAlFrente(clavesDesplegadas(conObjetos(3), `/hoy?abierto=${U3},${U1}`))).toBe(U1);
+  });
+
+  /**
+   * ⚠️ **Y una clave inventada NO se lleva puestas a las válidas.** La URL se
+   * puede editar a mano; perder las dos ventanas buenas por una tercera que no
+   * existe sería castigar al que compartió el link.
+   */
+  it("descarta las claves que no corresponden a un objeto abierto, y sólo ésas", () => {
+    expect(clavesDesplegadas(conObjetos(2), `/hoy?abierto=${U1},unidad:fantasma,${U2}`)).toEqual([
+      U1,
+      U2,
+    ]);
+  });
+
+  it("no admite repetidos: la misma clave dos veces es una ventana", () => {
+    expect(clavesDesplegadas(conObjetos(2), `/hoy?abierto=${U1},${U1}`)).toEqual([U1]);
+  });
+
+  it("un parámetro vacío es ninguna, no una ventana sin nombre", () => {
+    expect(clavesDesplegadas(conObjetos(2), "/hoy?abierto=")).toEqual([]);
+    expect(clavesDesplegadas(conObjetos(2), `/hoy?abierto=,${U1},`)).toEqual([U1]);
+  });
+
+  it("la ruta se arma con la lista, y sin ventanas el parámetro se va", () => {
+    expect(rutaConPaneles("/hoy", [U1, U2])).toBe(
+      `/hoy?abierto=${encodeURIComponent(`${U1},${U2}`)}`,
+    );
+    expect(rutaConPaneles(`/hoy?abierto=${U1}`, [])).toBe("/hoy");
+  });
+
+  it("no pisa los otros parámetros de la ruta", () => {
+    const ruta = rutaConPaneles("/materia?cursada=c1&escenario=FX", [U1]);
+    expect(ruta).toContain("cursada=c1");
+    expect(ruta).toContain("escenario=FX");
+  });
+
+  it("desplegar agrega al frente; si ya estaba, **la trae al frente** sin duplicarla", () => {
+    expect(desplegar([U1], U2)).toEqual([U1, U2]);
+    expect(desplegar([U1, U2, U3], U1)).toEqual([U2, U3, U1]);
+  });
+
+  it("minimizar saca una y **deja las otras donde estaban**", () => {
+    expect(minimizarPanelDe([U1, U2, U3], U2)).toEqual([U1, U3]);
+    // Minimizar algo que no está desplegado no cambia nada.
+    expect(minimizarPanelDe([U1], U3)).toEqual([U1]);
+  });
+
+  /**
+   * ⚠️ **Estar desplegada pero atrás cuenta como desplegada, y la ficha la
+   * minimiza.** La alternativa —traerla al frente— dejaría a la barra sin forma
+   * de bajar lo que ella misma abrió. Subir al frente es tocar la ventana.
+   */
+  it("la ficha alterna: despliega si no está, minimiza si está — incluso desde atrás", () => {
+    expect(alternarDespliegue([], U1)).toEqual([U1]);
+    expect(alternarDespliegue([U1, U2], U1)).toEqual([U2]);
+    expect(alternarDespliegue([U1, U2], U3)).toEqual([U1, U2, U3]);
+  });
+
+  it("los objetos salen **en el orden del apilamiento**, no en el de la barra", () => {
+    const espacio = conObjetos(3);
+    expect(objetosDe(espacio, [U3, U1]).map((o) => o.clave)).toEqual([U3, U1]);
+    // Una clave que no está abierta no aparece como un hueco.
+    expect(objetosDe(espacio, [U1, "unidad:fantasma"])).toHaveLength(1);
   });
 });
 

@@ -16,11 +16,22 @@
  * hasta que la memoria se leyó: mostrar objetos equivocados y corregirlos un
  * frame después es peor que esperar un frame (`P-12`, *nada salta al cargar*).
  *
+ * ## Abrir es ir a la materia; la ventana viene después — Enmienda 3
+ *
+ * ⚠️ **Cambió respecto de la Enmienda 1, y lo pidió el owner.** Abrir una
+ * materia **lleva a su superficie completa**, como antes de la Enmienda 1: es la
+ * pantalla donde se trabaja, y meterla en una ventana chica desde el primer
+ * gesto era resolver el segundo problema antes del primero.
+ *
+ * La ventana es lo que se hace **después**, y por dos caminos: el control de
+ * minimizar de la superficie, o la ficha de la barra. **Y hay tantas ventanas
+ * como fichas desplegadas**, no una.
+ *
  * ## Activar no es un re-render global
  *
- * Activar un objeto hace `router.push`, y el `pathname` que vuelve reactiva el
- * objeto que corresponde. **El estado no se duplica**: no hay un «activo» que
- * la barra mantenga por su cuenta y que pueda quedar en desacuerdo con la URL.
+ * El objeto activo se deriva de la URL: del apilamiento si hay ventanas, y del
+ * `pathname` si no. **El estado no se duplica**: no hay un «activo» que la barra
+ * mantenga por su cuenta y que pueda quedar en desacuerdo con la URL.
  */
 
 import {
@@ -38,16 +49,21 @@ import {
   ESPACIO_VACIO,
   abrir as abrirEnDominio,
   activar as activarEnDominio,
+  alternarDespliegue,
   cerrar as cerrarEnDominio,
   cerrarOtros as cerrarOtrosEnDominio,
   cerrarTodos as cerrarTodosEnDominio,
-  mover as moverEnDominio,
-  reordenar as reordenarEnDominio,
-  claveDelPanel,
+  claveAlFrente,
   claveEnRuta,
+  clavesDesplegadas,
+  desplegar,
   encuadrarObjeto,
+  minimizarPanelDe,
+  mover as moverEnDominio,
   objetoDe,
-  rutaConPanel,
+  objetosDe,
+  reordenar as reordenarEnDominio,
+  rutaConPaneles,
   vecinoAlCerrar,
   validarContra,
   type EspacioDeTrabajo,
@@ -59,6 +75,14 @@ import { rutaConocida } from "@/lib/navigation";
 import { identidadDeSesion } from "@/lib/client/api";
 import { guardar, leer } from "@/lib/client/espacio-de-trabajo/persistencia";
 
+/**
+ * A dónde se vuelve al minimizar una superficie que no se sabe de dónde vino.
+ *
+ * `Hoy` es la pantalla que contesta *"¿qué necesito hacer ahora?"*: es el único
+ * destino que nunca es un callejón. **No se inventa una ruta**: es la del menú.
+ */
+const RUTA_BASE = "/hoy";
+
 export interface ContextoDeEspacio {
   espacio: EspacioDeTrabajo;
   /** `false` ⇒ la memoria todavía no se leyó y **no se dibuja nada**. */
@@ -69,18 +93,40 @@ export interface ContextoDeEspacio {
    */
   desalojado: ObjetoAbierto | null;
   /**
-   * El objeto desplegado en el panel — ADR-088, Enmienda 1. `null` ⇒ minimizado
-   * o cerrado, que **para el estudiante es lo mismo**: la barra es lo que queda.
+   * Las ventanas desplegadas, **en orden de apilamiento** — Enmienda 3.
+   *
+   * La última es la de adelante. Vacío ⇒ todas minimizadas o ninguna abierta,
+   * que **para el estudiante es lo mismo**: la barra es lo que queda.
    */
-  panel: ObjetoAbierto | null;
+  paneles: readonly ObjetoAbierto[];
+  /**
+   * El objeto cuya **superficie completa** se está mirando. `null` ⇒ la pantalla
+   * actual no es la de ningún objeto abierto, y entonces no hay ventana que
+   * minimizar.
+   */
+  enSuperficie: ObjetoAbierto | null;
+  /** Abre el objeto **y va a su superficie**: la materia, entera — Enmienda 3. */
   abrir: (objeto: ObjetoPorAbrir) => void;
   activar: (clave: string) => void;
-  /** Despliega el panel del objeto, o lo minimiza si ya estaba desplegado. */
+  /** Despliega la ventana del objeto, o la minimiza si ya estaba desplegada. */
   alternarPanel: (clave: string) => void;
-  /** Minimiza: el panel se guarda, **el objeto sigue en la barra**. */
-  minimizarPanel: () => void;
-  /** Lleva el objeto a su superficie completa y cierra el panel. */
+  /** Minimiza **esa** ventana. El objeto sigue en la barra. */
+  minimizarPanel: (clave: string) => void;
+  /** Sube una ventana al frente del apilamiento. */
+  traerAlFrente: (clave: string) => void;
+  /** Lleva el objeto a su superficie completa y se lleva su ventana. */
   verComoPagina: (clave: string) => void;
+  /**
+   * Minimiza la **superficie** que se está mirando — Enmienda 3.
+   *
+   * El objeto queda en la barra y la pantalla vuelve de donde vino. Es el gesto
+   * de una ventana que baja al dock: no se cierra nada.
+   */
+  minimizarSuperficie: () => void;
+  /** Convierte la superficie que se está mirando en una ventana sobre su origen. */
+  superficieAVentana: () => void;
+  /** Cierra el objeto de la superficie que se está mirando y vuelve de donde vino. */
+  cerrarSuperficie: () => void;
   /** Guarda dónde quedó la ventana de un objeto — Enmienda 2. */
   encuadrar: (clave: string, marco: Marco) => void;
   cerrar: (clave: string) => void;
@@ -114,12 +160,17 @@ const INERTE: ContextoDeEspacio = {
   espacio: ESPACIO_VACIO,
   listo: false,
   desalojado: null,
-  panel: null,
+  paneles: [],
+  enSuperficie: null,
   abrir: NADA,
   activar: NADA,
   alternarPanel: NADA,
   minimizarPanel: NADA,
+  traerAlFrente: NADA,
   verComoPagina: NADA,
+  minimizarSuperficie: NADA,
+  superficieAVentana: NADA,
+  cerrarSuperficie: NADA,
   encuadrar: NADA,
   cerrar: NADA,
   cerrarOtros: NADA,
@@ -147,6 +198,21 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
   );
 
   /**
+   * De qué pantalla salió cada objeto, para volver ahí al minimizarlo.
+   *
+   * ⚠️ **Es estado de sesión y NO se persiste**, a diferencia del marco. El
+   * marco es *cómo* quedó la ventana —algo que el estudiante eligió y espera
+   * encontrar mañana—; de dónde vino es *qué estaba haciendo hace un minuto*, y
+   * restaurarlo de una sesión anterior mandaría a alguien a una pantalla que
+   * dejó ayer. Sin origen se vuelve a `Hoy`, que nunca es un callejón.
+   */
+  const origen = useRef<Map<string, string>>(new Map());
+  const origenDe = useCallback(
+    (clave: string) => origen.current.get(clave) ?? RUTA_BASE,
+    [],
+  );
+
+  /**
    * Quién es. Sin sesión —Track A con `?escenario=`— **no hay memoria**, y eso
    * no es un fallo: es la regla de cero persistencia siguiendo vigente donde
    * ADR-088 no la levantó.
@@ -169,31 +235,43 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
   }, []);
 
   /**
-   * **El objeto activo se DERIVA de la URL; no se guarda** — requisito 2 del
+   * **El apilamiento se DERIVA de la URL; no se guarda** — requisito 1 y 2 del
    * multiventana, y la razón por la que atrás y adelante funcionan solos.
    *
-   * ⚠️ **La primera versión lo sincronizaba con un efecto, y estaba mal.** Un
-   * `setState` dentro de un efecto encadena renders —el lint lo rechaza, y con
-   * razón— pero el problema de fondo era peor: había **dos fuentes de verdad**
-   * sobre qué está activo, la URL y el estado, y cualquier navegación que no
-   * pasara por la barra las dejaba en desacuerdo.
+   * ⚠️ **La primera versión sincronizaba el activo con un efecto, y estaba
+   * mal.** Un `setState` dentro de un efecto encadena renders —el lint lo
+   * rechaza, y con razón— pero el problema de fondo era peor: había **dos
+   * fuentes de verdad** sobre qué está activo, la URL y el estado, y cualquier
+   * navegación que no pasara por la barra las dejaba en desacuerdo.
    *
-   * Derivándolo hay una sola. El botón atrás del navegador reactiva el objeto
-   * correcto **sin que nadie escuche nada**.
+   * Derivándolo hay una sola, y con la Enmienda 3 eso vale para **cuántas
+   * ventanas hay y en qué orden se apilan**: compartir la URL comparte el
+   * escritorio.
    */
-  const clavePanel = useMemo(() => claveDelPanel(espacio, rutaActual), [espacio, rutaActual]);
+  const clavesPanel = useMemo(
+    () => clavesDesplegadas(espacio, rutaActual),
+    [espacio, rutaActual],
+  );
 
   /**
-   * ⚠️ **El panel manda sobre la ruta.** Con la ficha de Álgebra desplegada
-   * encima de `Hoy`, el objeto activo es Álgebra: es lo que el estudiante está
-   * mirando. Si mandara la ruta, la barra marcaría como activo algo que quedó
-   * atrás del panel.
+   * ⚠️ **La ventana de adelante manda sobre la ruta.** Con la de Álgebra al
+   * frente encima de `Hoy`, el objeto activo es Álgebra: es lo que el estudiante
+   * está mirando. Si mandara la ruta, la barra marcaría como activo algo que
+   * quedó atrás de las ventanas.
    */
-  const activo = useMemo(
-    () => clavePanel ?? claveEnRuta(espacio, rutaActual),
-    [clavePanel, espacio, rutaActual],
+  const claveEnSuperficie = useMemo(
+    () => claveEnRuta(espacio, rutaActual),
+    [espacio, rutaActual],
   );
-  const panel = useMemo(() => objetoDe(espacio, clavePanel), [espacio, clavePanel]);
+  const activo = useMemo(
+    () => claveAlFrente(clavesPanel) ?? claveEnSuperficie,
+    [clavesPanel, claveEnSuperficie],
+  );
+  const paneles = useMemo(() => objetosDe(espacio, clavesPanel), [espacio, clavesPanel]);
+  const enSuperficie = useMemo(
+    () => objetoDe(espacio, claveEnSuperficie),
+    [espacio, claveEnSuperficie],
+  );
   const espacioVisible = useMemo<EspacioDeTrabajo>(
     () => ({ objetos: espacio.objetos, activo }),
     [espacio.objetos, activo],
@@ -222,59 +300,26 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
       const resultado = abrirEnDominio(espacio, objeto, new Date().toISOString());
       setEspacio(resultado.espacio);
       if (resultado.desalojado) setDesalojado(resultado.desalojado);
+
+      const clave = resultado.espacio.activo;
       /*
-        Abrir desde una tarjeta **despliega el panel encima**, sin sacarte de la
-        pantalla. Tocar una materia del mapa de 14 días para ver cómo viene no
-        debería costarte perder Hoy.
+        ⚠️ **Se recuerda de dónde salió, sin las ventanas de la URL.** Guardar
+        `?abierto=…` como origen haría que minimizar la superficie repusiera
+        ventanas que el estudiante ya había bajado.
       */
-      router.push(rutaConPanel(rutaActual, resultado.espacio.activo));
+      if (clave !== null) origen.current.set(clave, rutaConPaneles(rutaActual, []));
+
+      /*
+        **Abrir lleva a la materia, entera** — Enmienda 3. Es la pantalla donde
+        se trabaja; la ventana chica es para consultar, y se elige después.
+      */
+      router.push(objeto.ruta);
     },
     [espacio, router, rutaActual],
   );
 
-  /**
-   * Activar **despliega el panel**; no navega — ADR-088, Enmienda 1.
-   *
-   * ⚠️ **Cambió respecto de la primera versión, y a propósito.** Antes tocar una
-   * ficha te sacaba de la pantalla en la que estabas: consultar en qué anda
-   * Álgebra te costaba perder Hoy y volver. El panel es para consultar sin
-   * moverse; ir a la superficie sigue estando, y es `verComoPagina`.
-   */
+  /** Activar es ir a la superficie del objeto. La ventana la maneja la ficha. */
   const activar = useCallback(
-    (clave: string) => {
-      const objeto = espacio.objetos.find((o) => o.clave === clave);
-      if (!objeto) return;
-      setEspacio(activarEnDominio(espacio, clave, new Date().toISOString()));
-      router.push(rutaConPanel(rutaActual, clave));
-    },
-    [espacio, router, rutaActual],
-  );
-
-  /** Tocar la ficha desplegada la minimiza. Es el gesto que pidió el owner. */
-  const alternarPanel = useCallback(
-    (clave: string) => {
-      if (clavePanel === clave) {
-        router.push(rutaConPanel(rutaActual, null));
-        return;
-      }
-      activar(clave);
-    },
-    [clavePanel, rutaActual, router, activar],
-  );
-
-  const minimizarPanel = useCallback(() => {
-    router.push(rutaConPanel(rutaActual, null));
-  }, [rutaActual, router]);
-
-  /**
-   * A la superficie completa.
-   *
-   * ⚠️ **El panel consulta; la superficie trabaja.** Es la distinción que el
-   * software de `docs/diseño/` enuncia en su propia ficha —*"se listan para
-   * consultarlas… la cartera sigue siendo la única superficie de trabajo"*— y
-   * acá vale igual: comprometerse, empezar y entregar pasan en `UX02`–`UX05`.
-   */
-  const verComoPagina = useCallback(
     (clave: string) => {
       const objeto = espacio.objetos.find((o) => o.clave === clave);
       if (!objeto) return;
@@ -285,6 +330,101 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
   );
 
   /**
+   * El gesto de la ficha: despliega su ventana, o la minimiza si ya estaba.
+   *
+   * ⚠️ **No saca las otras.** Es la Enmienda 3 entera: dos o tres fichas
+   * desplegadas son dos o tres ventanas, y tocar la cuarta no baja las tres
+   * primeras. Un escritorio donde abrir algo cierra lo anterior no es un
+   * escritorio.
+   */
+  const alternarPanel = useCallback(
+    (clave: string) => {
+      if (!espacio.objetos.some((o) => o.clave === clave)) return;
+      setEspacio(activarEnDominio(espacio, clave, new Date().toISOString()));
+      router.push(rutaConPaneles(rutaActual, alternarDespliegue(clavesPanel, clave)));
+    },
+    [espacio, clavesPanel, rutaActual, router],
+  );
+
+  const minimizarPanel = useCallback(
+    (clave: string) => {
+      router.push(rutaConPaneles(rutaActual, minimizarPanelDe(clavesPanel, clave)));
+    },
+    [clavesPanel, rutaActual, router],
+  );
+
+  /**
+   * Subir una ventana al frente.
+   *
+   * ⚠️ **`replace`, no `push`, y es la diferencia entre un historial y un
+   * basurero.** Tocar tres ventanas por turno son tres entradas de historial que
+   * no llevan a ninguna parte: el botón atrás tendría que apretarse quince veces
+   * para salir de una pantalla. Cambiar el apilamiento **no es navegar**.
+   */
+  const traerAlFrente = useCallback(
+    (clave: string) => {
+      if (claveAlFrente(clavesPanel) === clave) return;
+      if (!clavesPanel.includes(clave)) return;
+      router.replace(rutaConPaneles(rutaActual, desplegar(clavesPanel, clave)));
+    },
+    [clavesPanel, rutaActual, router],
+  );
+
+  /**
+   * A la superficie completa.
+   *
+   * ⚠️ **Y se lleva su ventana.** Dejarla desplegada encima de su propia
+   * superficie sería la misma materia dos veces en la misma pantalla, una tapando
+   * a la otra.
+   */
+  const verComoPagina = useCallback(
+    (clave: string) => {
+      const objeto = espacio.objetos.find((o) => o.clave === clave);
+      if (!objeto) return;
+      setEspacio(activarEnDominio(espacio, clave, new Date().toISOString()));
+      router.push(rutaConPaneles(objeto.ruta, minimizarPanelDe(clavesPanel, clave)));
+    },
+    [espacio, clavesPanel, router],
+  );
+
+  /**
+   * Minimizar la superficie — el gesto que pidió el owner en la Enmienda 3.
+   *
+   * La materia **no se cierra**: baja a la barra y la pantalla vuelve de donde
+   * vino. Es exactamente lo que hace el botón del medio de una ventana de
+   * escritorio, y la ficha de la barra es el dock donde queda.
+   */
+  const minimizarSuperficie = useCallback(() => {
+    if (claveEnSuperficie === null) return;
+    router.push(rutaConPaneles(origenDe(claveEnSuperficie), clavesPanel));
+  }, [claveEnSuperficie, clavesPanel, origenDe, router]);
+
+  /** La superficie se vuelve una ventana sobre la pantalla de la que salió. */
+  const superficieAVentana = useCallback(() => {
+    if (claveEnSuperficie === null) return;
+    router.push(
+      rutaConPaneles(origenDe(claveEnSuperficie), desplegar(clavesPanel, claveEnSuperficie)),
+    );
+  }, [claveEnSuperficie, clavesPanel, origenDe, router]);
+
+  /**
+   * Cerrar desde la superficie.
+   *
+   * ⚠️ **Vuelve al origen, no al vecino.** Quedarse en la pantalla de un objeto
+   * que se acaba de cerrar dejaría la barra sin la ficha y la URL con la
+   * materia: la pantalla seguiría entera y **nada explicaría por qué la ficha se
+   * fue**.
+   */
+  const cerrarSuperficie = useCallback(() => {
+    if (claveEnSuperficie === null) return;
+    setEspacio(cerrarEnDominio(espacio, claveEnSuperficie));
+    origen.current.delete(claveEnSuperficie);
+    router.push(
+      rutaConPaneles(origenDe(claveEnSuperficie), minimizarPanelDe(clavesPanel, claveEnSuperficie)),
+    );
+  }, [espacio, claveEnSuperficie, clavesPanel, origenDe, router]);
+
+  /**
    * Cerrar.
    *
    * ⚠️ **Navega sólo si se cerró el que se está mirando.** §10.7 pide activar el
@@ -292,33 +432,45 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
    * decir navegar. Cerrar un objeto **de fondo** no mueve a nadie de pantalla:
    * el que ordena la barra no pidió irse a ningún lado.
    *
-   * Sin vecinos se conserva la ruta actual, que es la otra salida que §10.7
-   * admite. **Nunca queda una pantalla rota.**
+   * ⚠️ **Cerrar un objeto con ventana desplegada se lleva su ventana y sólo la
+   * suya** — Enmienda 3. Las otras siguen donde estaban: no son de este objeto.
    */
   const cerrar = useCallback(
     (clave: string) => {
       const vecino = vecinoAlCerrar(espacio, clave);
       setEspacio(cerrarEnDominio(espacio, clave));
+      origen.current.delete(clave);
 
-      // Cerrar el objeto del panel **se lleva el panel**: una ventana de algo que
-      // ya no está abierto es una ventana huérfana.
-      if (clave === clavePanel) {
-        router.push(rutaConPanel(rutaActual, vecino ? vecino.clave : null));
+      const quedan = minimizarPanelDe(clavesPanel, clave);
+
+      if (clavesPanel.includes(clave)) {
+        router.push(rutaConPaneles(rutaActual, quedan));
         return;
       }
-      // Sin panel, cerrar el que se está mirando lleva al vecino, como antes.
-      if (clavePanel === null && clave === activo && vecino) router.push(vecino.ruta);
+      // Sin ventana propia, cerrar el que se está mirando lleva al vecino.
+      if (clave === claveEnSuperficie && vecino) {
+        router.push(rutaConPaneles(vecino.ruta, quedan));
+      }
     },
-    [espacio, activo, clavePanel, rutaActual, router],
+    [espacio, claveEnSuperficie, clavesPanel, rutaActual, router],
   );
 
-  const cerrarOtros = useCallback((clave: string) => {
-    setEspacio((actual) => cerrarOtrosEnDominio(actual, clave));
-  }, []);
+  const cerrarOtros = useCallback(
+    (clave: string) => {
+      setEspacio((actual) => cerrarOtrosEnDominio(actual, clave));
+      // Las ventanas de los que se fueron **no pueden quedar**: serían huérfanas.
+      const quedan = clavesPanel.filter((c) => c === clave);
+      if (quedan.length !== clavesPanel.length) {
+        router.push(rutaConPaneles(rutaActual, quedan));
+      }
+    },
+    [clavesPanel, rutaActual, router],
+  );
 
   const cerrarTodos = useCallback(() => {
     setEspacio(cerrarTodosEnDominio());
-  }, []);
+    if (clavesPanel.length > 0) router.push(rutaConPaneles(rutaActual, []));
+  }, [clavesPanel, rutaActual, router]);
 
   const reordenar = useCallback((clave: string, destino: number) => {
     setEspacio((actual) => reordenarEnDominio(actual, clave, destino));
@@ -337,12 +489,17 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
       espacio: espacioVisible,
       listo,
       desalojado,
-      panel,
+      paneles,
+      enSuperficie,
       abrir,
       activar,
       alternarPanel,
       minimizarPanel,
+      traerAlFrente,
       verComoPagina,
+      minimizarSuperficie,
+      superficieAVentana,
+      cerrarSuperficie,
       encuadrar,
       cerrar,
       cerrarOtros,
@@ -351,8 +508,10 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
       mover,
     }),
     [
-      espacioVisible, listo, desalojado, panel, abrir, activar, alternarPanel,
-      minimizarPanel, verComoPagina, encuadrar, cerrar, cerrarOtros, cerrarTodos, reordenar, mover,
+      espacioVisible, listo, desalojado, paneles, enSuperficie, abrir, activar,
+      alternarPanel, minimizarPanel, traerAlFrente, verComoPagina, minimizarSuperficie,
+      superficieAVentana, cerrarSuperficie, encuadrar, cerrar, cerrarOtros, cerrarTodos,
+      reordenar, mover,
     ],
   );
 

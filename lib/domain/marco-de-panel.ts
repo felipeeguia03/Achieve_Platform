@@ -74,6 +74,29 @@ export function areaDe(viewport: { ancho: number; alto: number }): Area {
 }
 
 /**
+ * Cuánto mide una ventana que nunca se abrió.
+ *
+ * ⚠️ **Se achicó con la Enmienda 3, y se midió en el navegador.** Con
+ * `1080 × 760` en un área de `1408 × 788`, la segunda ventana tapaba el 96 % de
+ * la primera: tres ventanas se veían **como una**, que es exactamente lo que la
+ * Enmienda 3 vino a arreglar. El tamaño por defecto de un escritorio con varias
+ * ventanas no puede ser casi la pantalla entera.
+ *
+ * Sigue siendo cómodo para leer `UX02` —el Gantt por tema entra sin comprimirse—
+ * y el que quiera la materia entera tiene *«Ver como página»*.
+ */
+const MARCO_INICIAL = { ancho: 940, alto: 660 } as const;
+
+/**
+ * Cuánto se corre cada ventana nueva respecto de la anterior.
+ *
+ * ⚠️ **Tiene que alcanzar para agarrar la de abajo.** El corrimiento no es
+ * decoración: es lo que deja asomando un pedazo de barra de título de la ventana
+ * anterior, y sin barra de título no hay de dónde arrastrarla.
+ */
+const CASCADA = 32;
+
+/**
  * Dónde nace una ventana que nunca se abrió.
  *
  * **En cascada**, como cualquier manejo de ventanas: la segunda no nace encima
@@ -81,9 +104,9 @@ export function areaDe(viewport: { ancho: number; alto: number }): Area {
  * mande fuera de cuadro.
  */
 export function marcoInicial(area: Area, indice: number): Marco {
-  const corrimiento = (indice % 5) * 28;
-  const ancho = Math.min(1080, area.ancho);
-  const alto = Math.min(760, area.alto);
+  const corrimiento = (indice % 5) * CASCADA;
+  const ancho = Math.min(MARCO_INICIAL.ancho, area.ancho);
+  const alto = Math.min(MARCO_INICIAL.alto, area.alto);
   return encuadrar(
     {
       x: area.x + corrimiento,
@@ -193,6 +216,55 @@ export function alternarExpandido(marco: Marco, area: Area): Marco {
     ...expandidoEn(area),
     expandido: true,
     previo: { x: marco.x, y: marco.y, ancho: marco.ancho, alto: marco.alto },
+  };
+}
+
+/**
+ * Un rectángulo medido en la pantalla — el de la ficha en la barra.
+ *
+ * Está en las mismas coordenadas que el marco: el contenedor de las ventanas es
+ * `fixed` con `inset: 0`, así que `marco.x` y un `getBoundingClientRect()` miden
+ * desde el mismo origen. **Si eso dejara de ser cierto, la ventana saldría
+ * disparada desde otro lado** y no habría nada en el cálculo que lo delatara.
+ */
+export interface Rect {
+  x: number;
+  y: number;
+  ancho: number;
+  alto: number;
+}
+
+/**
+ * De dónde nace la ventana cuando se la despliega desde su ficha — Enmienda 4.
+ *
+ * Devuelve la transformación que hace que la ventana **coincida exactamente con
+ * su ficha**: aplicándola, el rectángulo de 940×660 se superpone al de ~190×44
+ * de la barra. Animar de ahí a la identidad es el efecto de escala de un
+ * escritorio — la ventana sale de la ficha que la abrió.
+ *
+ * ⚠️ **Va con `transform-origin: 0 0`.** Con el origen al centro —que es el que
+ * trae el navegador— el `translate` tendría que compensar media escala en cada
+ * eje, y el error no se ve como error: se ve como una ventana que sale de un
+ * lugar cercano pero equivocado.
+ *
+ * ⚠️ **La escala es distinta en cada eje, y es a propósito.** Una ficha es mucho
+ * más ancha que alta; forzar una escala uniforme haría que la ventana saliera de
+ * un cuadrado que no está en ninguna parte en vez de de la ficha que se tocó.
+ *
+ * ⚠️ **Nunca devuelve escala cero.** Una ficha todavía sin maquetar mide `0` y
+ * una escala `0` es una matriz sin inversa: el navegador deja de poder calcular
+ * los fotogramas intermedios y la animación se ve como un parpadeo.
+ */
+export function desdeLaFicha(
+  marco: Pick<Marco, "x" | "y" | "ancho" | "alto">,
+  ficha: Rect,
+): { x: number; y: number; escalaX: number; escalaY: number } {
+  const MINIMA = 0.01;
+  return {
+    x: ficha.x - marco.x,
+    y: ficha.y - marco.y,
+    escalaX: Math.max(MINIMA, ficha.ancho / Math.max(1, marco.ancho)),
+    escalaY: Math.max(MINIMA, ficha.alto / Math.max(1, marco.alto)),
   };
 }
 
