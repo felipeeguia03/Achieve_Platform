@@ -27,6 +27,9 @@ una persona conteste**.
 | **9** | El dictamen legal de [ADR-006](decisions.md#adr-006) | Asesoría jurídica | Toda la Fase B7, y B7 destraba B8 | 🔴 |
 | **10** | `C01-042` · el golden dataset y su autorización | Product Data + institución | La Etapa B2b.3 y el piloto | 🟠 |
 | **11** | El §2 del contrato congelado, y el `applied` del `202` | CTO, con el CRM | Que la firma HMAC no esté especificada de dos formas | 🟡 |
+| **12** | **Qué opción de evaluaciones queda en `UX01`**: tarjetas (Opción 1) o carril (Opción 2) | **Owner** | Que se borre la otra. Hoy conviven a propósito, y eso es una comparación, no un diseño — [ADR-093](decisions.md#adr-093) | 🟠 |
+| **13** | **Si el estado general puede decir `BAJO CONTROL` con riesgos detectados debajo** | **Owner** | Una contradicción visible en la misma pantalla. `product.md` §13 ya prohíbe *"bajo control"* sin lectura confiable del Risk Engine | 🟠 |
+| **14** | **Cuándo se corre `db:verify`** ahora que ADR-094 tocó schema | **Owner** | Verificar la base. El comando **vacía la base de demo en uso**, así que necesita una ventana | 🟡 |
 
 ---
 

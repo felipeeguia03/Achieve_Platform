@@ -144,6 +144,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-092](#adr-092) | **Dos materias del Plan 2016 se llamaban igual**: `ARQUITECTURA DE COMPUTADORAS I` y `II` | ✅ `ACCEPTED` *(11 sep 2026 · **con los programas oficiales delante**)* | [ADR-053](#adr-053), [ADR-086](#adr-086) |
 | [ADR-093](#adr-093) | **`UX01` es un tablero**: evaluaciones en dos opciones, riesgos de planificación `PLAN-v0.1` y los próximos 7 días | ✅ `ACCEPTED` *(11 sep 2026 · **decidido por el owner con la referencia delante**)* | [ADR-089](#adr-089), [ADR-090](#adr-090), [ADR-072](#adr-072), [ADR-073](#adr-073) |
 | [ADR-094](#adr-094) | **El cuadro de hoy**: clases con `Un.` y aula, *Podés avanzar* y horarios; el bloque horario gana el aula (simulada) | ✅ `ACCEPTED` *(11 sep 2026 · pedido del owner)* | [ADR-093](#adr-093), [ADR-062](#adr-062), [ADR-083](#adr-083) |
+| [ADR-095](#adr-095) | **Materias**: la fila dice el horario con su aula, la cobertura se muestra corta y la modalidad se lee | ✅ `ACCEPTED` *(12 sep 2026 · con la captura delante)* | [ADR-077](#adr-077), [ADR-072](#adr-072), [ADR-094](#adr-094) |
 
 ---
 
@@ -6235,10 +6236,15 @@ tomó todavía. El Gantt del período se decide cuando esa pregunta tenga respue
 ℹ️ **El Gantt por materia no está afectado.** Es otro objeto: [ADR-066](#adr-066), dentro de `UX02`,
 sobre las unidades de una cursada. Ése ya existe y se queda donde está.
 
-### La cola de materias de `HOY` se queda
+### ~~La cola de materias de `HOY` se queda~~ — ⚠️ **caducó el 11 sep de 2026**
+
+⚠️ **La sacó el owner** con [ADR-093](#adr-093): *"no hace falta la tabla de estados ni las materias"*.
+De a una no se puede ver nada rápido, y `UX01` pasó a mostrar **tarjetas de evaluación**. `DD7` no
+quedó sin respuesta —`P-10` lo cumplen las tarjetas—, y `design-system.md` §1.4 lo dice tachado. Lo
+de abajo se conserva como el razonamiento de su momento.
 
 [ADR-054](#adr-054) había señalado que la lista completa vivía *"sólo en `HOY`, debajo del fold y de a
-una"*. Con el índice construido, la tentación es sacarla. **No se saca:**
+una"*. Con el índice construido, la tentación es sacarla. ~~**No se saca:**~~
 
 | Superficie | La pregunta que contesta |
 |---|---|
@@ -6257,6 +6263,7 @@ Tocarlo sería reabrir `DD7` de refilón, sin decirlo.
 | Días que faltan | `diasHastaEvaluacion` | `—` |
 | Barra de cobertura | `coberturaDeMateria()` | **No se dibuja** ([ADR-072](#adr-072) §4) |
 | Última actividad | `topic_progress` | *"Sin avance registrado"*, **nunca cero** |
+| 🆕 **Horario de cursada, con su aula** ([ADR-095](#adr-095)) | `class_schedule_block`, por **su propia lectura** — `insumos_de_reparto` tiene prohibido mirarla | La línea **no se dibuja**: no saber el horario no es tener la semana libre |
 
 **El orden es por próxima evaluación, con las sin fecha al fondo.** Es lo que hace el mockup y es lo
 que [ADR-072](#adr-072) exige: *"ordenar por cobertura es un ranking de qué tan mal vas"*.
@@ -8484,7 +8491,7 @@ no se tocan.
 ## ADR-093 — `UX01` es un tablero: evaluaciones, riesgos de planificación y los próximos 7 días
 
 **Estado:** ✅ `ACCEPTED` · 11 sep 2026 · **decidido por el owner con una pantalla de referencia delante**
-**Toca:** `components/screens/hoy-autogestion.tsx`, `app/(student)/hoy/page.tsx`, `lib/domain/riesgos-de-planificacion.ts`, `lib/domain/semana.ts`, `lib/server/servicios/proyeccion-tablero.ts`, `lib/server/repositorios/tablero.ts`, `app/api/tablero/route.ts`, `lib/domain/view-models.ts`, `lib/content/es-AR.ts`
+**Toca:** `components/screens/hoy-autogestion.tsx`, `app/(student)/hoy/page.tsx`, `lib/domain/riesgos-de-planificacion.ts`, `lib/domain/semana.ts` (**reemplazado el mismo día** por `lib/domain/cuadro-de-hoy.ts`, [ADR-094](#adr-094)), `lib/server/servicios/proyeccion-tablero.ts`, `lib/server/repositorios/tablero.ts`, `app/api/tablero/route.ts`, `lib/domain/view-models.ts`, `lib/content/es-AR.ts`
 **Autoriza:** la excepción de la regla 6 de [`CLAUDE.md`](../CLAUDE.md) para `hoy-autogestion.tsx`, igual que [ADR-089](#adr-089).
 **Enmienda:** [ADR-089](#adr-089) §1 (sale el mapa de 14 días), `design-system.md` §1.4 (sale la cola `1 de N` de Hoy) y, **sólo para las tarjetas de `UX01`**, la forma del texto de [ADR-072](#adr-072). **Reabre en otra forma** [ADR-090](#adr-090).
 
@@ -8699,3 +8706,72 @@ tope y resto; el vacío sin clases dadas; compromisos en hora de pared. `tests/a
 — la columna es nullable y sin procedencia paralela, el simulador sólo toca `inference` y no inserta
 ni borra, y la lectura marca como estimado todo bloque `inference`. `tests/proyeccion-tablero.test.ts`
 y `tests/hoy-anticipar.test.tsx` — el cuadro redactado, las notas y la pantalla.
+
+---
+
+<a id="adr-095"></a>
+
+## ADR-095 — Materias, con el mockup del owner delante: horario con aula, cobertura corta y la modalidad que se lee
+
+**Estado:** ✅ `ACCEPTED` · 12 sep 2026 · **decidido por el owner, con la captura delante**
+**Toca:** `lib/server/servicios/proyeccion-materias.ts`, `proyeccion-materia.ts`, `proyeccion-tablero.ts`, `lib/server/repositorios/horarios.ts`, `lib/server/composicion.ts`, `components/screens/indice-de-materias.tsx`, `materia-cursado.tsx`, `lib/domain/view-models.ts`, `supabase/migrations/20261007000000_aula_en_estado_de_materia.sql`
+**Enmienda:** [ADR-077](#adr-077) §*Qué muestra cada fila* (suma el horario) y la forma —no el contenido— del texto de [ADR-072](#adr-072) en el índice.
+
+### Contexto
+
+El owner trajo la captura de *Materias* —la misma familia que la de `UX01`— y pidió trabajarla. La
+pantalla ya tenía lo estructural (dos vistas, ventana con rombo, color por materia, leyenda y la nota
+al pie); lo que faltaba era **lenguaje**: nombres en mayúsculas, el enum `teorico_escrito` a la vista,
+el texto de cobertura ocupando dos renglones y **sin la línea de horario** que el mockup pedía desde
+el principio.
+
+### Decisión
+
+**1. Cada fila dice el horario, con su aula.** *"Cursás Lun 10:00–12:00 · Aula 3.02"*. Sale de
+`class_schedule_block` ([ADR-083](#adr-083)) y el aula de [ADR-094](#adr-094). `null` ⇒ **no se sabe
+el horario** y la línea no se dibuja: no saberlo no es tener la semana libre.
+
+⚠️ **No llega por `insumos_de_reparto`, y no puede.** Esa función tiene **prohibido** mirar los
+bloques de clase ([ADR-063](#adr-063), con guard): el presupuesto de estudio sale de `availability` y
+de nada más. El horario va por su propia lectura, `horariosReal.deCursadas()`, **que es la misma que
+usa el tablero de `UX01`** — dos consultas podrían divergir y la misma materia tendría dos horarios.
+
+⚠️ **Si el horario es estimado, la lista lo dice una vez**, con la frase de ADR-094. Sin eso, el aula
+simulada se lee como dato de la facultad.
+
+**2. La cobertura se muestra corta: *"cobertura 52% · 3 de 9 temas"*.** ⚠️ **Siguen siendo los dos
+números que exige [ADR-072](#adr-072)** —el ponderado por horas y el conteo—: cambia el largo, no lo
+que se afirma. El literal completo **no se pierde**: viaja en el `aria-label` de la barra, y el pie de
+`UX02` no se toca. La nota al pie sigue siendo obligatoria.
+
+**3. La modalidad se traduce, en el índice y en `UX02`.** `teorico_escrito` → *teórico escrito*.
+⚠️ **Esto revierte un argumento escrito en `proyeccion-materia.ts`**, que decía que `practico` y
+`escrito` eran *"palabras del oficio que declaró la cátedra"*. No se sostenía: la columna tiene un
+`CHECK` con cinco valores, así que **`teorico_escrito` no lo escribió ninguna cátedra, lo escribió el
+enum**. Un valor que el copy no conoce **se omite** (`AGENTS.md` §2.6). `modalidadVisible` vive ahora
+en `proyeccion-materia.ts`, porque la usan **tres** proyecciones.
+
+**4. El aula viaja hasta `UX02`.** `estado_de_materia()` devolvía el horario sin el lugar. La
+migración `20261007000000` agrega `'aula', b.room` **y nada más**: el resto del cuerpo es el vigente,
+volcado con `pg_get_functiondef` — retipear una función de 290 líneas es como se pierde una cláusula
+sin que nadie lo note.
+
+**5. Los nombres, en capitalización normal.** Es la Enmienda 5 de [ADR-088](#adr-088) aplicada acá:
+presentación, no renombre. El dato del plan no se toca.
+
+### Lo que NO se copió del mockup, y por qué
+
+| En la captura | Por qué no |
+|---|---|
+| ***"52% · 3/9 dominados"*** | `dominados` es la **primera prohibición** de [ADR-072](#adr-072): el dominio exige evaluación; la cobertura sólo exige haber producido algo |
+| **Barras que arrancan todas en el borde izquierdo** | [ADR-078](#adr-078) ya lo descartó: la primera clase es un hecho y **distingue** una materia que empezó en marzo de una que empezó la semana pasada |
+| ***"+ Agregar materia o evaluación"*** | Sigue siendo **el único elemento sin destino definido**. No se inventa uno |
+| **La navegación lateral del mockup** (*Calendario*, *Mi seguimiento*) | No son superficies de este producto |
+
+### Cómo se verifica
+
+`tests/proyeccion-materias.test.ts` — la modalidad desconocida se omite, la forma corta convive con el
+literal, el horario llega con su aula y sin segundos, un bloque de otra cursada no se cuela y un día
+fuera de escala se omite. `tests/horario-de-cursado.test.tsx` — el aula viaja hasta `UX02` y `null` no
+es «sin aula». Los guards de ADR-063 siguen intactos: `insumos_de_reparto` no menciona
+`class_schedule_block`.

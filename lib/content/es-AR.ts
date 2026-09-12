@@ -830,8 +830,12 @@ export const copy = {
   "HOY.CUADRO.COMPROMISO": "Compromiso · {titulo}",
   "HOY.CUADRO.DISPONIBLE": "Disponible para estudiar",
   "HOY.CUADRO.DISPONIBLE.MINUTOS": "Disponible para estudiar · {horas}",
-  /** ⚠️ **Obligatoria si alguna clase de hoy es simulada.** Sin esto el aula se lee como dato de la facultad. */
-  "HOY.CUADRO.NOTA.ESTIMADO": "Horarios y aulas estimados por Achieve, no publicados por la facultad.",
+  /**
+   * ⚠️ **Obligatoria donde se muestre un horario estimado.** Sin esto el aula se
+   * lee como dato de la facultad. La usan el cuadro de hoy y el índice de
+   * materias: **una sola frase**, para que no deriven (ADR-095).
+   */
+  "COMUN.HORARIO_ESTIMADO": "Horarios y aulas estimados por Achieve, no publicados por la facultad.",
   /** ⚠️ `Un.` **no es la unidad de hoy**: no hay cronograma de clases futuras (ADR-094). */
   "HOY.CUADRO.NOTA.UNIDAD": "Un.: la unidad de la última clase dada.",
   "HOY.CUADRO.NOTA.AVANZAR": "Podés avanzar: unidades dadas en clase sin evidencia, por evaluación más cercana.",

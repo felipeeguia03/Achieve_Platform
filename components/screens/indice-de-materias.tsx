@@ -28,6 +28,7 @@
 
 import { useState } from "react";
 import { ReglaDeNegocio, TituloDePanel } from "./design-system";
+import { t } from "@/lib/content/es-AR";
 import type { EjeDelPeriodo, MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
 
@@ -145,6 +146,12 @@ export function IndiceDeMaterias({
         ruido, y el porcentaje sin ella se lee como una nota.
       */}
       {aclaracion && <ReglaDeNegocio>{aclaracion}</ReglaDeNegocio>}
+
+      {/*
+        ⚠️ **Obligatoria si algún horario es estimado** (ADR-094): sin esto el
+        aula se lee como dato de la facultad. Una sola vez para toda la lista.
+      */}
+      {materias.some((m) => m.horarioEstimado) && <ReglaDeNegocio>{t("COMUN.HORARIO_ESTIMADO")}</ReglaDeNegocio>}
     </div>
   );
 }
@@ -192,6 +199,23 @@ function Fila({ m, onAbrir }: { m: MateriaEnIndice; onAbrir?: (id: string) => vo
           {[m.evaluacion ?? "Sin evaluación cargada", m.ultimoAvance ?? "Sin avance registrado"]
             .join(" · ")}
         </p>
+      {/*
+        `CURSÁS` — el horario semanal, con su aula (ADR-094, ADR-095). El mockup
+        del owner lo pedía desde el principio; hasta ADR-083 el bloque **no
+        existía en el schema**, y derivarlo de las clases dictadas habría sido
+        inferir la regla desde sus instancias.
+
+        `null` ⇒ **no se sabe el horario**, y la línea no se dibuja: no saberlo no
+        es tener la semana libre.
+      */}
+      {m.horario && (
+        <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)", margin: "2px 0 0" }}>
+          {t("MATERIA.CURSAS")}{" "}
+          {m.horario
+            .map((b) => [b.cuando, b.aula].filter(Boolean).join(" · "))
+            .join(" · ")}
+        </p>
+      )}
       </div>
 
       <div style={{ flex: "0 1 260px", minWidth: 140 }}>
@@ -221,7 +245,12 @@ function Fila({ m, onAbrir }: { m: MateriaEnIndice; onAbrir?: (id: string) => vo
                 margin: "4px 0 0",
               }}
             >
-              {m.cobertura.texto}
+              {/*
+                ADR-095: lo que se ve es la forma corta —*"cobertura 52% · 3 de 9
+                temas"*—. **Siguen siendo los dos números de ADR-072**, y el
+                literal completo viaja en el `aria-label` de la barra.
+              */}
+              {m.cobertura.compacto}
             </p>
           </>
         ) : (
@@ -364,17 +393,12 @@ function FilaDelGantt({
             margin: "2px 0 0",
           }}
         >
-          {m.cobertura?.texto ?? m.sinCobertura}
+          {m.cobertura?.compacto ?? m.sinCobertura}
         </p>
         {/*
           ⚠️ **El hecho, no el juicio.** El mockup decía «frenada hace 7 días».
           Siete días sin actividad en una materia que se cursa una vez por semana
           es lo normal; llamarla frenada convierte una cadencia en un problema.
-
-          ⚠️ **Y falta la línea de horarios del mockup a propósito**: el bloque
-          horario de cursada está decidido (ADR-062) y **no existe en el
-          schema**. Derivarlo de las horas de las clases dictadas sería inferir
-          la regla desde sus instancias.
         */}
         <p
           style={{
@@ -385,6 +409,24 @@ function FilaDelGantt({
         >
           {m.ultimoAvance ? `última actividad ${m.ultimoAvance}` : "Sin avance registrado"}
         </p>
+      {/*
+        `CURSÁS` — el horario semanal, con su aula (ADR-094, ADR-095). El mockup
+        del owner lo pedía desde el principio; hasta ADR-083 el bloque **no
+        existía en el schema**, y derivarlo de las clases dictadas habría sido
+        inferir la regla desde sus instancias.
+
+        `null` ⇒ **no se sabe el horario**, y la línea no se dibuja: no saberlo no
+        es tener la semana libre.
+      */}
+      {m.horario && (
+        <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)", margin: "2px 0 0" }}>
+          {t("MATERIA.CURSAS")}{" "}
+          {m.horario
+            .map((b) => [b.cuando, b.aula].filter(Boolean).join(" · "))
+            .join(" · ")}
+        </p>
+      )}
+
       </div>
 
       <div style={{ flex: "1 1 auto", position: "relative", height: 34, minWidth: 200 }}>

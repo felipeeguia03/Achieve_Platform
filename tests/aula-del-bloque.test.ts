@@ -46,6 +46,15 @@ describe("el simulador", () => {
 
 describe("la lectura", () => {
   it("marca como estimado todo bloque `inference`", () => {
-    expect(LEER("lib/server/repositorios/tablero.ts")).toContain('estimada: b.source_type === "inference"');
+    // ⚠️ **Una sola lectura de bloques para las dos superficies** (ADR-095): el
+    // índice de materias y el tablero de `UX01` leen de acá. Dos consultas
+    // podrían divergir, y la misma materia tendría dos horarios.
+    expect(LEER("lib/server/repositorios/horarios.ts")).toContain('estimada: b.source_type === "inference"');
+  });
+
+  it("y el tablero no se arma una consulta propia", () => {
+    const tablero = LEER("lib/server/repositorios/tablero.ts");
+    expect(tablero).toContain("horariosReal.deCursadas(");
+    expect(tablero).not.toContain('.from("class_schedule_block")');
   });
 });

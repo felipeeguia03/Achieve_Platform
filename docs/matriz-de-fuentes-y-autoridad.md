@@ -317,7 +317,12 @@ docente a propósito.** Los 80 libros del corpus real traen nombre y legajo del 
 
 **Qué es.** Los bloques semanales en que se dicta la materia.
 
-> 🟢 **No existe ninguna tabla de bloque horario.** Verificado sobre las 61 tablas de `public`.
+> ~~🟢 **No existe ninguna tabla de bloque horario.** Verificado sobre las 61 tablas de `public`.~~
+>
+> ⚠️ **Caducó.** `class_schedule_block` existe desde [ADR-083](decisions.md#adr-083), con procedencia
+> propia y exactamente un dueño; y desde [ADR-094](decisions.md#adr-094) lleva `room`. **El aula no
+> tiene procedencia propia: es la del bloque**, y hoy toda aula es simulada sobre un bloque
+> `inference`.
 > [ADR-062](decisions.md#adr-062) lo decidió —con **dos dueños posibles y excluyentes**: la offering
 > (horario publicado) o la cursada (horario que el estudiante declara sin saber su comisión)— y
 > **nunca se implementó**.
@@ -717,7 +722,7 @@ score, sin porcentaje.
 | **`resource` no tiene escritor en el producto** | No aparece en ninguna de las 30 funciones que escriben |
 | **`rights_status` no se consulta en ninguna parte** | La única lectura de `resource` no lo menciona |
 | **`reflection.difficulty` se escribe y nadie la lee** | Dos escritores, cero lectores en `lib/domain/` |
-| **No existe entidad de bloque horario** | 61 tablas revisadas |
+| ~~**No existe entidad de bloque horario**~~ ⚠️ caducó: existe desde ADR-083, con `room` desde ADR-094 | 61 tablas revisadas |
 
 Y el hallazgo que ordena todo lo demás:
 

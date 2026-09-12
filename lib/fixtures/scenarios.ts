@@ -119,9 +119,12 @@ export const FX_DAY_BASE: Escenario = {
     // El horario de cursado — ADR-063. **Solo muestra**: el escenario declara
     // que la cátedra publicó estos dos bloques, y la pantalla los proyecta sin
     // agendar nada ni descontarle nada al presupuesto de estudio.
+    // ⚠️ **Sin aula, y no es un olvido** (ADR-094): el escenario declara un mundo
+    // donde la cátedra publicó el horario y **no dijo dónde**. `null` es «no se
+    // sabe dónde», que no es lo mismo que «sin aula».
     clasesDeLaSemana: [
-      { cuando: "Mar 18:00–20:00", procedencia: "Institución · sin verificar" },
-      { cuando: "Jue 18:00–20:00", procedencia: "Institución · sin verificar" },
+      { cuando: "Mar 18:00–20:00", aula: null, procedencia: "Institución · sin verificar" },
+      { cuando: "Jue 18:00–20:00", aula: null, procedencia: "Institución · sin verificar" },
     ],
     // Hay historial: `CTA-009` se ofrece. Ver `MateriaProps.verRegistro`.
     verRegistro: "Ver avance",

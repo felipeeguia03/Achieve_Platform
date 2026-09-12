@@ -280,7 +280,7 @@ con una lista.
 
 | Pantalla del mockup | Superficie | Estado |
 |---|---|---|
-| *Inicio · Qué necesita atención hoy* — las tarjetas con `15 d` y cobertura | **`UX01` Hoy / Autogestión** | Existe. `estado_del_dia()` ya devuelve `materias[]` |
+| *Inicio · Qué necesita atención hoy* — las tarjetas con `15 d` y cobertura | **`UX01` Hoy / Autogestión** | ✅ **Construidas el 11 sep de 2026** ([ADR-093](decisions.md#adr-093)). ⚠️ **No salen de `estado_del_dia()`**: salen de `GET /api/tablero`, sobre los insumos del reparto — los mismos del índice, para que una tarjeta y una fila no se contradigan |
 | *El Gantt de una materia* | **`UX02` Materia / Cursado** | Existe. `estado_de_materia()` ya devuelve unidades y examen |
 
 ### Cuánto del Gantt ya está en `estado_de_materia()`

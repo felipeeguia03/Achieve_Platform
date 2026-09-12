@@ -45,10 +45,14 @@ Los seis puntos que el owner fijó como definición del MVP, en un solo recorrid
 
 ```bash
 npm run db:start        # Docker tiene que estar corriendo
-npm run db:reset        # 54 migraciones desde cero
+npm run db:reset        # 86 migraciones desde cero
 npm run db:catalogo     # el catálogo curricular — VA ANTES que db:demo
 npm run db:demo         # el mundo sintético, sobre ese catálogo
 npm run db:sesion       # las dos identidades sintéticas
+node scripts/simular-aulas.mjs --aplicar   # ADR-094: aulas simuladas, sólo sobre
+                                           # bloques `inference`. Va DESPUÉS de
+                                           # cualquier corrida de simular-temarios,
+                                           # que regenera los bloques sin aula
 npm run dev
 ```
 

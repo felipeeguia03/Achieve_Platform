@@ -731,6 +731,26 @@ habilitar"*.
 
 ---
 
+### 10.4 Qué muestra `UX01`, además del Hero
+
+Desde [ADR-093](decisions.md#adr-093) y [ADR-094](decisions.md#adr-094), `UX01` es un **tablero**. El
+orden es el de §10.2 —conducta primero, contexto después— y **la única CTA primaria sigue siendo la
+del Hero** (`I-06`).
+
+| Bloque | Qué afirma | Qué NO afirma |
+|---|---|---|
+| **Tu día** | Clases de hoy con su hora, su aula y `Un. N`; unidades dadas sin evidencia; evaluaciones, compromisos y franjas declaradas de hoy | No agenda nada: no propone cuándo estudiar y no tiene botones. **`Un.` es la unidad de la última clase dada, no la de hoy** |
+| **Riesgos detectados** | Cinco reglas sobre fechas, temas, avance y horas declaradas (`PLAN-v0.1`) | **No son `RiskSignal`**: no se persisten, no emiten eventos, no abren intervención y **no cambian el estado general**. `C01-021` sigue abierto |
+| **Próximas evaluaciones** | Por materia: tipo, fecha, modalidad, días que faltan y cobertura, con la nota al pie de [ADR-072](decisions.md#adr-072) | La cobertura **no es readiness** ni un pronóstico |
+
+⚠️ **Nada de esto rankea.** El orden es por próxima evaluación —el que ADR-072 aceptó— y los riesgos
+se ordenan **por fecha, no por gravedad**: elegir qué riesgo pesa más no lo decidió nadie.
+
+⚠️ **En rescate o incumplimiento, todo el tablero se repliega.** Al que está atrasado se le muestra
+menos, no más ([ADR-089](decisions.md#adr-089) §4).
+
+---
+
 ## 11. Product Event Model
 
 Eventos aprobados. Los nombres son provisionales; lo obligatorio es preservar **actor, timestamp,

@@ -481,6 +481,19 @@ export interface MateriaEnIndice {
    */
   ventana: VentanaEnIndice | null;
   /**
+   * El horario semanal de cursado, con su aula — ADR-094 y ADR-095.
+   *
+   * *"Lun 10:00–12:00"* + *"Aula 3.02"*. `null` ⇒ **no se sabe el horario**, y la
+   * línea no se dibuja: no saberlo no es tener la semana libre.
+   */
+  horario: readonly { cuando: string; aula: string | null }[] | null;
+  /**
+   * `true` ⇒ el horario —y su aula— **los estimó Achieve**, no los publicó la
+   * facultad. Obliga a la nota al pie: sin ella, el aula se lee como dato de la
+   * institución.
+   */
+  horarioEstimado: boolean;
+  /**
    * La etiqueta del botón — *Abrir*, *Completar*, *Agregar examen*.
    *
    * ⚠️ **Es copy, no contrato.** Las tres son `CTA-001` y las tres hacen lo
@@ -494,6 +507,15 @@ export interface MateriaEnIndice {
 export interface CoberturaEnIndice {
   /** `0`–`1`. Es lo que se dibuja: **ponderado por horas**, no por conteo. */
   fraccion: number;
+  /**
+   * *"cobertura 26% · 1 de 9 temas"* — la forma corta que pidió el owner
+   * (ADR-095), y **lo que se ve** en la fila.
+   *
+   * ⚠️ **Siguen siendo los dos números de ADR-072**: el ponderado por horas y el
+   * conteo. Lo que cambia es el largo, no lo que se afirma, y la nota al pie
+   * sigue siendo obligatoria. `texto` se conserva para el `aria-label`.
+   */
+  compacto: string;
   /**
    * *"1 de 9 temas · 26% de las horas"* — el copy literal que aprobó el owner
    * en [ADR-072](../../docs/decisions.md#adr-072).
@@ -705,7 +727,7 @@ export interface MateriaProps {
    * `null` ⇒ **no se sabe el horario**, y la sección no se dibuja vacía. No
    * saberlo **no significa tener la semana libre**.
    */
-  clasesDeLaSemana: readonly { cuando: string; procedencia: string }[] | null;
+  clasesDeLaSemana: readonly { cuando: string; aula: string | null; procedencia: string }[] | null;
   actividadReciente: readonly EntradaDeBitacora[] | null;
   /**
    * `CTA-009` — *ver progreso*, con la materia puesta. `null` ⇒ **no se

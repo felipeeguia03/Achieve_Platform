@@ -130,7 +130,12 @@ navegación para acomodar ideas que todavía no tienen función"*), resuelta as�
 > más de una materia con algo pendiente el mismo día, esa lista deja de ser plana y se convierte en
 > paginable (`1 de N`, con flechas). No se agrega pantalla ni CTA nuevo.
 
-Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.
+~~Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.~~
+
+⚠️ **La cola salió de Hoy el 11 de septiembre de 2026** ([ADR-093](decisions.md#adr-093)), por pedido
+del owner: de a una no se puede ver nada rápido. `P-10` se cumple ahora con las **tarjetas de
+evaluación** —todas a la vez, cuatro a la vista y el resto con scroll—, y entrar a una materia sigue
+siendo `CTA-001` **con su cursada**.
 
 ---
 
@@ -193,5 +198,5 @@ hasta que se revise el glosario completo — **no bloquea ninguna etapa de la Fa
 | `DD1` | Cerrar `P-11` en la auditoría de conformidad: no hace falta patrón de deshacer |
 | `DD2` | Definir el orden por defecto de las listas (`P-05`) en la Etapa 0.2 |
 | `DD6` | Reconciliar `--chart-2` en la Etapa 0.1 |
-| `DD7` | `MateriasQueue` ya cumple `P-10`; queda verificarlo en la auditoría |
+| `DD7` | `P-10` lo cumplen las **tarjetas de evaluación** de `UX01` desde [ADR-093](decisions.md#adr-093); `MateriasQueue` se retiró |
 | `DD9` | Confirma el layout base de una Action por vez — ya implementado |

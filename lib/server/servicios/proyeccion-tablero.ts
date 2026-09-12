@@ -1,8 +1,9 @@
-import { copy, t, type CopyId } from "@/lib/content/es-AR";
+import { t } from "@/lib/content/es-AR";
 import { hayActividad } from "@/lib/domain/cobertura";
 import { cuadroDeHoy, type HorarioDeHoy } from "@/lib/domain/cuadro-de-hoy";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { fechaEnZona } from "@/lib/domain/zona";
+import { modalidadVisible } from "./proyeccion-materia";
 import {
   riesgosDePlanificacion,
   type MateriaParaRiesgo,
@@ -17,7 +18,7 @@ import type {
   TarjetaDeEvaluacion,
 } from "@/lib/domain/view-models";
 import { enHoras, proyectarReparto, type InsumosDeReparto } from "./proyeccion-reparto";
-import { proyectarMaterias } from "./proyeccion-materias";
+import { proyectarMaterias, type BloqueDeCursada } from "./proyeccion-materias";
 import { fechaDeCalendario } from "./tiempo";
 
 /**
@@ -40,7 +41,7 @@ import { fechaDeCalendario } from "./tiempo";
  */
 
 export interface InsumosDelDia {
-  clases: Array<{ cursadaId: string; dia: number; desde: string; hasta: string; aula: string | null; estimada: boolean }>;
+  clases: BloqueDeCursada[];
   /** Pendientes: `CONFIRMED`, `DUE` o `STARTED`. `titulo` es el objetivo de la `Action`. */
   compromisos: Array<{ cursadaId: string; inicio: string; minutos: number; titulo: string }>;
   /** Sólo la **declarada** ([ADR-074](../../../docs/decisions.md#adr-074)). */
@@ -62,16 +63,12 @@ export interface RepositorioDeTablero {
 }
 
 /**
- * La modalidad, para leer. ⚠️ **Sólo en el tablero**: el índice y `UX02` la
- * muestran como llega, por una decisión escrita en `proyeccion-materia.ts` que
- * este ADR no reabre. Un valor que el copy no conoce **se omite** — el enum
- * nunca es copy (`AGENTS.md` §2.6).
+ * ⚠️ **Se mudó a `proyeccion-materia.ts` con ADR-095**, cuando el owner pidió la
+ * modalidad legible también en el índice y en `UX02`: la usan **tres**
+ * proyecciones, y tres copias serían tres vocabularios. Se re-exporta para no
+ * romper a quien la importaba de acá.
  */
-export function modalidadVisible(m: string | null): string | null {
-  if (!m) return null;
-  const id = `EVALUACION.MODALIDAD.${m}`;
-  return id in copy ? t(id as CopyId) : null;
-}
+export { modalidadVisible } from "./proyeccion-materia";
 
 /**
  * El número de una unidad: el del código (`U5` → `5`) y, si no hay, su
@@ -207,7 +204,9 @@ export function proyectarTablero(
   zona: string,
 ): TableroProps {
   // El orden, la cobertura y la urgencia **son los del índice**: no se recalculan.
-  const indice = proyectarMaterias(i, ahora, zona);
+  // Las mismas filas que `/materias`, **con el mismo horario**: dos lecturas del
+  // mismo bloque no pueden decir cosas distintas.
+  const indice = proyectarMaterias(i, ahora, zona, s.clases);
   const crudas = new Map(i.materias.map((m) => [m.cursadaId, m]));
   const filas = indice.materias.flatMap((f) => {
     const m = crudas.get(f.cursadaId);
@@ -308,7 +307,7 @@ function proyectarCuadro(
   // ⚠️ **La nota de estimado es obligatoria** si alguna clase de hoy es
   // simulada: sin ella, el aula se lee como dato de la facultad (ADR-094).
   const notas = [
-    ...(c.clases.some((x) => x.estimada) ? [t("HOY.CUADRO.NOTA.ESTIMADO")] : []),
+    ...(c.clases.some((x) => x.estimada) ? [t("COMUN.HORARIO_ESTIMADO")] : []),
     ...(c.clases.some((x) => x.unidad !== null) ? [t("HOY.CUADRO.NOTA.UNIDAD")] : []),
     ...(c.avanzar.length > 0 ? [t("HOY.CUADRO.NOTA.AVANZAR")] : []),
   ];

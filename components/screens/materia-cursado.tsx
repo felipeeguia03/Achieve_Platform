@@ -354,6 +354,8 @@ export function MateriaCursado({
                     title={b.procedencia}
                   >
                     {b.cuando}
+                    {/* ADR-094. `null` ⇒ no se sabe dónde, y la parte se omite. */}
+                    {b.aula && <span style={{ marginLeft: 8 }}>{b.aula}</span>}
                     <span style={{ ...meta, marginLeft: 8 }}>{b.procedencia}</span>
                   </span>
                 ))}

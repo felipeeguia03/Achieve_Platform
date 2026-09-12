@@ -361,6 +361,9 @@ app/
     │
     │  ── Con JWT del estudiante ──────────────────────────────────────────
     ├── hoy · materia · accion · compromiso · evidencia · progreso
+    ├── tablero           ← GET. El tablero de `UX01` (ADR-093) con el cuadro de
+    │                        hoy (ADR-094). **Se pide APARTE de `hoy`**: quien lo
+    │                        quiere lo paga, y si falla `UX01` se dibuja sin él
     ├── reflexion         ← POST. La Reflection existe y se escribe por acá.
     │                        NO hay formulario: la superficie no está construida
     ├── rescate           ← POST. La salida de un `MISSED`. Empieza OTRO objeto;
@@ -401,6 +404,10 @@ lib/
 ├── client/               ← el cliente de /api/*: token, tipo suma de respuesta, hook
 ├── domain/               ← PURO. Tipos, máquinas de estado, precedencia,
 │   ├── product-events.ts    el Product Event Model (§16) con su cobertura
+│   ├── riesgos-de-planificacion.ts
+│   │                        las cinco reglas de `UX01` (ADR-093). NO es el Risk
+│   │                        Engine: no persiste, no emite y no llama a nadie
+│   ├── cuadro-de-hoy.ts     clases, «podés avanzar» y horarios del día (ADR-094)
 │   └── view-models.ts       lo que cada pantalla recibe
 └── server/
     ├── composicion.ts    ← composition root: EL único lugar que ata implementaciones

@@ -171,9 +171,23 @@ describe("§3 · La tarjeta de evaluación no completa lo que falta", () => {
     const p = proyectarMateria({
       ...base,
       evidenciasEnviadas: 2,
+      examen: { titulo: "Final", fechaEn: "2026-09-15", tipo: "final", modalidad: "practico" },
+    });
+    // ADR-095: la modalidad **se lee**. El enum nunca es copy (`AGENTS.md` §2.6).
+    expect(p.evaluacion!.detalle).toBe("6 días · práctico · 2 evidencias enviadas");
+  });
+
+  it("una modalidad que el copy no conoce se omite, en vez de mostrar el enum", () => {
+    // `escrito` no está en el vocabulario de modalidades: la parte desaparece.
+    // Antes se mostraba crudo, con el argumento de que era «palabra del oficio»;
+    // la columna tiene un `CHECK` con cinco valores, así que no lo escribió
+    // ninguna cátedra (ADR-095).
+    const p = proyectarMateria({
+      ...base,
+      evidenciasEnviadas: 2,
       examen: { titulo: "Final", fechaEn: "2026-09-15", tipo: "final", modalidad: "escrito" },
     });
-    expect(p.evaluacion!.detalle).toBe("6 días · escrito · 2 evidencias enviadas");
+    expect(p.evaluacion!.detalle).toBe("6 días · 2 evidencias enviadas");
   });
 
   it("una evaluación ya pasada no muestra días en negativo", () => {

@@ -1189,8 +1189,13 @@ export async function materiasDe(
   zona: string,
   ahora: string = new Date().toISOString(),
 ): Promise<MateriasProps> {
-  const insumos = await repartoReal.insumos(institutionId, studentId, ahora);
-  return proyectarMaterias(insumos, ahora, zona);
+  // El horario **no llega por los insumos del reparto**: esa función tiene
+  // prohibido mirar los bloques de clase (ADR-063, con guard). Va aparte.
+  const [insumos, bloques] = await Promise.all([
+    repartoReal.insumos(institutionId, studentId, ahora),
+    horariosReal.deCursadas(institutionId, studentId),
+  ]);
+  return proyectarMaterias(insumos, ahora, zona, bloques);
 }
 
 /**

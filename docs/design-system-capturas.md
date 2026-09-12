@@ -968,7 +968,12 @@ ventana modal y, con varias no modales, encerraría al teclado en la última que
 El 11 de septiembre el owner trajo una pantalla de referencia para `UX01` —no una de las 34 capturas—
 y pidió su **estilo comunicacional**. Se tomó: el propósito de la pantalla en mono al lado del título, la
 píldora con **un solo número**, tarjetas con color de identidad y días grandes, *riesgos detectados* con
-contador, *próximos 7 días* y la nota al pie que define la métrica.
+contador, la vista del día y la nota al pie que define la métrica.
+
+⚠️ **Los *próximos 7 días* duraron un día.** El owner los cambió por **Tu día**
+([ADR-094](decisions.md#adr-094)): clases de hoy con su unidad y su aula, *Podés avanzar* y horarios.
+Lo que se conservó de la referencia es el mecanismo —un bloque, un renglón por cosa, la nota al pie—,
+no la ventana de siete días.
 
 **Donde la referencia y la spec hablaban del mismo píxel, ganó la spec** (ADR-015), y queda anotado:
 

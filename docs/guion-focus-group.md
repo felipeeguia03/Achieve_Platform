@@ -39,8 +39,8 @@ explique.
 `localStorage`, sin `sessionStorage`, sin `IndexedDB`, sin red—, así que lo único que sobrevive a una
 navegación es el estado local de un componente montado, y una recarga lo descarta.
 
-> Verificado con un test: tras adjuntar una evidencia y paginar la lista de materias, una recarga
-> devuelve el DOM inicial idéntico.
+> Verificado con un test: tras adjuntar una evidencia y recorrer las tarjetas de evaluación, una
+> recarga devuelve el DOM inicial idéntico.
 
 ### Dispositivo
 
@@ -107,6 +107,12 @@ ahora, qué tiene que entregar para demostrar que avanzó y qué va a pasar desp
 | 5 | ¿Qué pasa si tocás el botón? | Queda definido cuándo va a hacerla — **no** que ya la hizo |
 
 **PASS:** 5/5, y **sin decir que el botón completa la acción**.
+
+⚠️ **Desde [ADR-093](decisions.md#adr-093) y [ADR-094](decisions.md#adr-094), `UX01` trae además el
+cuadro de hoy, los riesgos de planificación y las tarjetas de evaluación.** Son **contexto**: ninguna
+de las cinco preguntas debería contestarse con ellos. **Si un participante contesta la 2 mirando una
+tarjeta en vez del Hero, eso es un hallazgo**, no un detalle — quiere decir que el contexto le está
+ganando a la conducta.
 
 ### Estación 2 · `UX03` Próxima Acción
 

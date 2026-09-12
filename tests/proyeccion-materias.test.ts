@@ -175,7 +175,8 @@ describe("El rótulo de la evaluación no repite lo que ya dijo", () => {
         evaluacion: { titulo: "Parcial 1", tipo: "parcial", modalidad: "practico", fecha: "2026-09-15" },
       }),
     ]).materias;
-    expect(m.evaluacion).toBe("Parcial 1 · practico · mar 15 sept");
+    // ADR-095: la modalidad se lee. El enum nunca es copy (`AGENTS.md` §2.6).
+    expect(m.evaluacion).toBe("Parcial 1 · práctico · mar 15 sept");
   });
 
   it("sin título, el tipo ocupa su lugar en vez de dejar la instancia sin nombre", () => {
@@ -254,5 +255,54 @@ describe("ADR-078 · el Gantt del período", () => {
     ]);
     expect(eje.marcas.length).toBeGreaterThan(6);
     expect(eje.marcas[eje.marcas.length - 1].etiqueta).toBe("+8 sem");
+  });
+});
+
+describe("ADR-095 · lo que el owner pidió con el mockup delante", () => {
+  it("una modalidad que el copy no conoce se omite, en vez de mostrar el enum", () => {
+    // `escrito` no está en el vocabulario: la parte desaparece, no se inventa.
+    const [m] = proyectar([
+      materia({ evaluacion: { titulo: "Final", tipo: "final", modalidad: "escrito", fecha: "2026-09-23" } }),
+    ]).materias;
+    expect(m.evaluacion).toBe("Final · mié 23 sept");
+  });
+
+  it("la cobertura trae su forma corta, y el literal de ADR-072 se conserva", () => {
+    const [m] = proyectar([materia()]).materias;
+    // Lo que se ve en la fila…
+    expect(m.cobertura!.compacto).toBe("cobertura 50% · 1 de 2 temas");
+    // …y lo que sigue viajando al `aria-label`, que es el texto que aprobó el owner.
+    expect(m.cobertura!.texto).toContain("1 de 2 temas tiene alguna evidencia");
+  });
+
+  const bloque = {
+    cursadaId: "c1",
+    dia: 1,
+    desde: "10:00:00",
+    hasta: "12:00:00",
+    aula: "Aula 3.02",
+    estimada: true,
+  };
+
+  it("el horario llega con su aula, y sin segundos", () => {
+    const r = proyectarMaterias(insumos([materia()]), AHORA, ZONA, [bloque]);
+    expect(r.materias[0]?.horario).toEqual([{ cuando: "Lun 10:00–12:00", aula: "Aula 3.02" }]);
+    expect(r.materias[0]?.horarioEstimado).toBe(true);
+  });
+
+  it("sin bloques, el horario es `null`: no se sabe, y eso no es «semana libre»", () => {
+    const r = proyectarMaterias(insumos([materia()]), AHORA, ZONA, []);
+    expect(r.materias[0]?.horario).toBeNull();
+    expect(r.materias[0]?.horarioEstimado).toBe(false);
+  });
+
+  it("un bloque de otra cursada no se cuela en esta fila", () => {
+    const r = proyectarMaterias(insumos([materia()]), AHORA, ZONA, [{ ...bloque, cursadaId: "otra" }]);
+    expect(r.materias[0]?.horario).toBeNull();
+  });
+
+  it("un día fuera de escala se omite, no se dibuja como uno cualquiera", () => {
+    const r = proyectarMaterias(insumos([materia()]), AHORA, ZONA, [{ ...bloque, dia: 9 }]);
+    expect(r.materias[0]?.horario).toBeNull();
   });
 });

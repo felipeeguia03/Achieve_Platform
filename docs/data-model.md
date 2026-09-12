@@ -501,6 +501,10 @@ CREATE TABLE class_schedule_block (
   day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
   start_time  TIME NOT NULL,
   end_time    TIME NOT NULL,
+  -- ADR-094. Dónde se dicta. NULL = no se sabe, que NO es «sin aula». No tiene
+  -- procedencia propia: es la del bloque. Un aula simulada sólo existe sobre un
+  -- bloque `inference`, así nunca parece más verificada que su horario.
+  room        TEXT,
   -- provenance obligatoria: un horario declarado por el estudiante se usa sin
   -- corroborar y NADIE lo eleva (I9).
   source_type TEXT NOT NULL CHECK (source_type IN
@@ -518,6 +522,10 @@ CREATE TABLE class_schedule_block (
 );
 -- ⛔ SIN `kind` y SIN `course_enrollment.schedule_status`: las dos se decidieron
 -- NO agregar, con su motivo, en ADR-083.
+-- 🆕 CON `room` desde ADR-094: ADR-062 lo había dejado afuera a propósito y el
+-- owner lo pidió. Lo llena `scripts/simular-aulas.mjs`, sólo sobre `inference`.
+-- Y desde ADR-095 `estado_de_materia()` lo devuelve dentro de `horario`, así que
+-- el aula llega a `UX02` y al índice de materias.
 
 CREATE TABLE class_session_topic (
   class_session_id UUID NOT NULL REFERENCES class_session(id) ON DELETE CASCADE,

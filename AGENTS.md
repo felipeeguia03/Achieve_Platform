@@ -252,6 +252,7 @@ La lista completa está en `docs/product.md` §13.
 | [`docs/agenda-po-superficie-academica.md`](docs/agenda-po-superficie-academica.md) | ✅ **Respondido** por [ADR-076](docs/decisions.md#adr-076). Una afirmación suya fue rechazada por el owner y está corregida ahí |
 | [`docs/informe-superficie-academica.md`](docs/informe-superficie-academica.md) | 🆕 **Informe de solo lectura.** Qué está soportado, qué falta, y el primer corte propuesto. ⛔ **La construcción NO está autorizada** | Antes de tocar cualquier cosa de la superficie académica |
 | [`docs/guion-focus-group.md`](docs/guion-focus-group.md) | El recorrido de sesión y el test de 10 segundos por pantalla | Antes de correr un focus group |
+| [`docs/agenda-del-owner.md`](docs/agenda-del-owner.md) | **Todo lo que espera una decisión, por persona.** Es el más nuevo de los tres mapas de decisiones | Antes de llevarle algo al owner |
 
 ### Documentos de referencia — **no se editan**
 
@@ -307,6 +308,14 @@ alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el
 
 En el Track B, hoy:
 
+- **`UX01` es un tablero** ([ADR-093](docs/decisions.md#adr-093)) con el **cuadro de hoy**
+  ([ADR-094](docs/decisions.md#adr-094)): Hero + *Tu día*, *Riesgos detectados*, y las evaluaciones
+  en **dos opciones que conviven hasta que el owner elija una**. Salieron de Hoy la cola `1 de N`, el
+  mapa de 14 días y el reparto. ⚠️ **Los riesgos NO son `RiskSignal`**: son reglas de planificación
+  (`PLAN-v0.1`), no persisten, no emiten eventos y no cambian el estado general — `C01-021` sigue
+  abierto. ⚠️ **`Un.` es la unidad de la última clase dada**, no la de hoy: no hay cronograma futuro.
+  ⚠️ **Toda aula es simulada** y sólo se escribe sobre bloques `inference`.
+
 - **Las nueve superficies leen de Postgres** con sesión real, cada una con una función de lectura
   propia, y ninguna cae al fixture en silencio. El catálogo sintético sigue disponible bajo
   `?escenario=`. `UX07`–`UX09` se conectaron en la Fase B5.
@@ -350,7 +359,7 @@ Dónde vive cada cosa hoy:
 
 | Carpeta | Qué es |
 |---|---|
-| `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, y los view models de `UX01`–`UX06`. **Puro:** sin React, sin I/O |
+| `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, los view models de `UX01`–`UX06`, y desde ADR-093·094 `riesgos-de-planificacion.ts` y `cuadro-de-hoy.ts`. **Puro:** sin React, sin I/O |
 | `lib/content/` | El copy con ID tipado (regla `C-07`) |
 | `lib/navigation/` | El grafo del Golden Path y el registro de las 20 CTAs. **No importa `lib/fixtures/`** |
 | `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |

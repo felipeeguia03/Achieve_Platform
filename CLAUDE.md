@@ -119,6 +119,14 @@ simular clases futuras estiraba el Gantt de `UX02`. **No lo "arregles" inventand
 simulada: `node scripts/simular-aulas.mjs --aplicar` sólo escribe sobre bloques `inference`, y hay
 que correrlo **después** de `simular-temarios --aplicar`, que regenera los bloques sin aula.
 
+🆕 **Materias muestra el horario con su aula** — [ADR-095](docs/decisions.md#adr-095), 12 de
+septiembre. Además la cobertura se ve corta (*«cobertura 52% · 3 de 9 temas»*; el literal de ADR-072
+sigue en el `aria-label`) y **la modalidad se traduce** también en `UX02`.
+
+⚠️ **El horario del índice NO sale de `insumos_de_reparto`**: esa función tiene prohibido mirar
+`class_schedule_block` (ADR-063, con guard). Sale de `horariosReal.deCursadas()`, **la misma lectura
+que usa el tablero de Hoy**. Si necesitás horarios en otra superficie, usá ésa.
+
 ✅ **El apartado «Materias» quedó decidido** el 5 de septiembre de 2026:
 [ADR-054](docs/decisions.md#adr-054), **opción `B`** — `CTA-001` transporta el `CourseEnrollment`
 seleccionado y la pantalla abre exactamente ése. El incumplimiento de `VI.2` §5.2 está cerrado.

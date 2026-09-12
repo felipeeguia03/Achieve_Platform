@@ -7,7 +7,7 @@ import {
   type Cobertura,
   type EstadoDeUnidad,
 } from "@/lib/domain/cobertura";
-import { nombreDeDia, t } from "@/lib/content/es-AR";
+import { copy, nombreDeDia, t, type CopyId } from "@/lib/content/es-AR";
 import {
   provenanceVisible,
   type SourceType,
@@ -103,6 +103,12 @@ export interface DimensionesPersistidas {
 export interface BloqueDeCursado {
   /** `0`–`6`, domingo a sábado. La misma escala que `availability`. */
   dia: number;
+  /**
+   * Dónde se dicta — [ADR-094](../../../docs/decisions.md#adr-094). `null` ⇒ **no
+   * se sabe dónde**, que no es «sin aula». No trae procedencia propia: la suya es
+   * la del bloque, que viaja al lado en `fuente` y `verificacion`.
+   */
+  aula: string | null;
   /** `HH:MM:SS`, como lo entrega Postgres. La proyección lo recorta. */
   desde: string;
   hasta: string;
@@ -267,6 +273,8 @@ function clasesDeLaSemanaDe(e: EstadoDeMateria): MateriaProps["clasesDeLaSemana"
       if (dia === null) return null;
       return {
         cuando: `${dia} ${hhmm(b.desde)}–${hhmm(b.hasta)}`,
+        // ADR-094. `null` ⇒ la línea del aula **no se dibuja**: no se sabe dónde.
+        aula: b.aula,
         // La procedencia **no se eleva**: que la fuente sea la institución no
         // vuelve el dato verificado. Sin los dos campos, la frase de «no
         // disponible» — que es lo que `provenanceVisible` ya decide (`I9`).
@@ -465,6 +473,38 @@ export const ACLARACION_DE_COBERTURA =
  * coinciden a propósito: la ponderación por horas es el motivo de que existan
  * los dos—. Sin barra, el conteo solo, que sigue siendo un hecho.
  */
+/**
+ * La modalidad, para leer — ADR-095. Vive acá porque la usan **tres**
+ * proyecciones: `UX02`, el índice y el tablero de `UX01`. Una copia por
+ * superficie serían tres vocabularios el día que alguien agregue una modalidad.
+ *
+ * `null` ⇒ no hay modalidad declarada, **o** el copy no la conoce: en los dos
+ * casos la parte se omite en vez de mostrar el enum.
+ */
+export function modalidadVisible(m: string | null): string | null {
+  if (!m) return null;
+  const id = `EVALUACION.MODALIDAD.${m}`;
+  return id in copy ? t(id as CopyId) : null;
+}
+
+/**
+ * La forma corta de la cobertura, para una fila del índice — ADR-095.
+ *
+ * *"cobertura 52% · 3 de 9 temas"*. ⚠️ **Siguen siendo los dos números que exige
+ * [ADR-072](../../../docs/decisions.md#adr-072)** —el ponderado por horas y el
+ * conteo—: lo que cambia es el largo, no lo que se afirma, y la nota al pie
+ * sigue siendo obligatoria. `null` ⇒ no hay barra, y entonces habla
+ * `textoDeCobertura`, que dice **por qué**.
+ */
+export function textoCompactoDeCobertura(
+  cobertura: Cobertura,
+  totalDeTemas: number,
+): string | null {
+  const barra = porcentajeDeHoras(cobertura);
+  if (barra === null) return null;
+  return `cobertura ${barra}% · ${cobertura.temasTrabajados} de ${totalDeTemas} temas`;
+}
+
 export function textoDeCobertura(cobertura: Cobertura, totalDeTemas: number): string {
   const barra = porcentajeDeHoras(cobertura);
   const trabajados = cobertura.temasTrabajados;
@@ -633,10 +673,13 @@ function detalleDeEvaluacion(e: EstadoDeMateria): string | null {
     // Una evaluación pasada no dice «−3 días»: no se muestra la cuenta.
     if (dias >= 0) partes.push(dias === 1 ? "1 día" : `${dias} días`);
   }
-  // El enum crudo nunca es copy visible (AGENTS.md §2.6), pero éstos son
-  // palabras del oficio que la cátedra declaró —`practico`, `escrito`— y viajan
-  // como las declaró. Traducirlas sería reescribir lo que dijo la fuente.
-  if (e.examen?.modalidad) partes.push(e.examen.modalidad);
+  // ⚠️ **El enum se traduce, y el argumento anterior no se sostenía** (ADR-095,
+  // pedido del owner). Decía que `practico` y `escrito` eran *"palabras del
+  // oficio que declaró la cátedra"*, pero la columna tiene un `CHECK` con cinco
+  // valores: `teorico_escrito` **no lo escribió ninguna cátedra**, lo escribió el
+  // enum. Un valor que el copy no conoce **se omite** (`AGENTS.md` §2.6).
+  const modalidad = modalidadVisible(e.examen?.modalidad ?? null);
+  if (modalidad) partes.push(modalidad);
   if (e.evidenciasEnviadas > 0) {
     partes.push(
       e.evidenciasEnviadas === 1 ? "1 evidencia enviada" : `${e.evidenciasEnviadas} evidencias enviadas`,

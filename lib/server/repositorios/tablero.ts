@@ -2,6 +2,7 @@ import "server-only";
 
 import type { InsumosDelDia, RepositorioDeTablero } from "../servicios/proyeccion-tablero";
 import { clienteDeServicio } from "../supabase";
+import { horariosReal } from "./horarios";
 
 /**
  * Lo que el tablero de `UX01` necesita y el reparto no trae —
@@ -76,34 +77,10 @@ async function insumosDelDia(
   );
   const ofertas = [...porOferta.keys()];
 
-  // Los dos dueños posibles del bloque (ADR-083): la cursada o su oferta.
-  const duenios = [
-    `course_enrollment_id.in.(${ids.join(",")})`,
-    ...(ofertas.length > 0 ? [`offering_id.in.(${ofertas.join(",")})`] : []),
-  ].join(",");
-  const bloques = await db
-    .from("class_schedule_block")
-    .select("day_of_week, start_time, end_time, offering_id, course_enrollment_id, room, source_type")
-    .eq("institution_id", institutionId)
-    .or(duenios);
-  if (bloques.error) throw new Error(`No se pudieron leer los horarios: ${bloques.error.message}`);
-  const clases = ((bloques.data ?? []) as Array<Record<string, unknown>>).flatMap((b) => {
-    const cursadaId =
-      (b.course_enrollment_id as string | null) ?? porOferta.get(b.offering_id as string) ?? null;
-    return cursadaId
-      ? [
-          {
-            cursadaId,
-            dia: b.day_of_week as number,
-            desde: b.start_time as string,
-            hasta: b.end_time as string,
-            aula: (b.room as string | null) ?? null,
-            // ADR-094: el aula hereda la procedencia del bloque.
-            estimada: b.source_type === "inference",
-          },
-        ]
-      : [];
-  });
+  // ⚠️ **Los bloques salen de `horarios.ts`, no de una consulta propia** (ADR-095).
+  // El índice de materias lee los mismos: dos consultas podrían divergir, y
+  // entonces la misma materia tendría dos horarios.
+  const clases = await horariosReal.deCursadas(institutionId, studentId);
 
   const pendientes = await db
     .from("commitment")

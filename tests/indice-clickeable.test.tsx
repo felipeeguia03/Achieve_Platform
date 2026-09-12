@@ -33,6 +33,9 @@ const base: MateriasProps = {
       sinCobertura: "0 de 6 temas tiene alguna evidencia",
       ultimoAvance: null,
       ventana: { desde: 0.1, hasta: 0.6, inicioDesconocido: false },
+      // ADR-094 · ADR-095: el horario con su aula, y si lo estimó Achieve.
+      horario: [{ cuando: "Lun 10:00–12:00", aula: "Aula 3.02" }],
+      horarioEstimado: true,
       etiqueta: "Abrir",
       tono: "neutral",
     },

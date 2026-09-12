@@ -186,7 +186,7 @@ pantalla, y `C01-030` —la identidad de quien interviene— está **`DEFERRED` 
 [ADR-006](decisions.md#adr-006)**. Mostrar un nombre real es dato personal.
 
 **`Aula 305`.** Sigue sin tener dónde ir, y no es un olvido: [ADR-062](decisions.md#adr-062) modeló
-el bloque horario sin aula, y [ADR-083](decisions.md#adr-083) lo construyó así. El horario **sí**
+el bloque horario sin aula, y [ADR-083](decisions.md#adr-083) lo construyó así. ⚠️ **Cambió el 11 de septiembre con [ADR-094](decisions.md#adr-094)**: `class_schedule_block.room` existe, y hoy sólo lo llenan aulas **simuladas** sobre horarios simulados. Desde [ADR-095](decisions.md#adr-095) el aula se ve en «Clases de la semana» y en cada fila del índice de materias. El horario **sí**
 llegó; el aula no.
 
 **Y una pregunta nueva, que abrió el corte 3.** Un estudiante puede declarar disponibilidad **encima**

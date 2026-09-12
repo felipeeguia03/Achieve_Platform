@@ -74,6 +74,8 @@ const MARTES = {
   dia: 2,
   desde: "14:00:00",
   hasta: "16:00:00",
+  // ADR-094: el aula viaja con el bloque, y hereda su procedencia.
+  aula: "Aula 3.02",
   origen: "catedra" as const,
   fuente: "institution" as const,
   verificacion: "unverified" as const,
@@ -156,7 +158,7 @@ describe("§2 · No se mezcla con la disponibilidad", () => {
 describe("§3 · La proyección dice el hecho y su procedencia", () => {
   it("arma el cuándo con el nombre del día y sin segundos", () => {
     expect(proyectarMateria({ ...base, horario: [MARTES] }).clasesDeLaSemana).toEqual([
-      { cuando: "Mar 14:00–16:00", procedencia: "Institución · sin verificar" },
+      { cuando: "Mar 14:00–16:00", aula: "Aula 3.02", procedencia: "Institución · sin verificar" },
     ]);
   });
 
@@ -165,6 +167,14 @@ describe("§3 · La proyección dice el hecho y su procedencia", () => {
     // Que el dato venga de la institución no lo vuelve oficial.
     const p = proyectarMateria({ ...base, horario: [MARTES] });
     expect(p.clasesDeLaSemana![0].procedencia).not.toContain("oficial");
+  });
+
+  it("sin aula cargada, la parte se omite: no se sabe dónde", () => {
+    // ADR-094: `null` no es «sin aula». Es que nadie lo cargó.
+    const p = proyectarMateria({ ...base, horario: [{ ...MARTES, aula: null }] });
+    expect(p.clasesDeLaSemana).toEqual([
+      { cuando: "Mar 14:00–16:00", aula: null, procedencia: "Institución · sin verificar" },
+    ]);
   });
 
   it("sin bloques la sección no existe, y eso no es «semana libre»", () => {

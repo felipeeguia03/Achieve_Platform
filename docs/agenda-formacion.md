@@ -2,8 +2,11 @@
 
 **Documento:** `docs/agenda-formacion.md`
 **Para:** el owner. Una de las dos conviene consultarla con la psicopedagoga.
-**Estado del trabajo:** [ADR-087](decisions.md#adr-087) está escrito y `PROPOSED`. **No se escribió
-código todavía**, a pedido del owner: *"ADR primero, después código"*.
+**Estado del trabajo:** ⚠️ **Desactualizado.** [ADR-087](decisions.md#adr-087) quedó `ACCEPTED` el 10
+de septiembre de 2026 y **la biblioteca se construyó como V1 de sólo lectura**: cinco piezas en
+`DRAFT`, sin publicar hasta que la psicopedagoga confirme vigencia. Las dos preguntas de abajo son
+las que el ADR respondió —`D1` prohibió clasificar al estudiante y la aplicación quedó para V2—, y
+este documento se conserva **como registro de lo que se preguntó**, no como pendiente.
 **Qué destraba:** sin estas dos, la superficie no se puede construir sin inventar una regla de
 negocio — y eso lo prohíbe la regla 1 de [`CLAUDE.md`](../CLAUDE.md).
 
