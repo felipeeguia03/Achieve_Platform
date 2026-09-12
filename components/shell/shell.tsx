@@ -60,7 +60,7 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
       rutas.
     */
     <Suspense>
-      <ProveedorDeEspacioDeTrabajo>
+      <ProveedorDeEspacioDeTrabajo nombreEnPantalla={objeto}>
         <div className="flex" style={{ minHeight: "100vh", background: "var(--background)" }}>
           <NavegacionLateral
             nodoActivo={nodo}
@@ -73,10 +73,10 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
             <main className="min-w-0 flex-1" style={{ padding: "24px 24px 88px" }}>
               <div style={{ maxWidth: 1120, margin: "0 auto" }}>
                 {/*
-                  El semáforo de **esta** pantalla, cuando la pantalla es la de
-                  un objeto abierto — ADR-088, Enmienda 3. Va acá y no adentro de
-                  la superficie: es cromo del marco, y `components/screens/*` no
-                  se toca (regla 6 de `CLAUDE.md`).
+                  El semáforo de **esta** pantalla, cuando es la de un objeto —
+                  ADR-088, Enmiendas 3 y 7. Va acá y no adentro de la superficie:
+                  es cromo del marco, y `components/screens/*` no se toca (regla
+                  6 de `CLAUDE.md`).
                 */}
                 <BarraDeSuperficie />
                 <ProveedorDeMigaDelObjeto value={setObjeto}>{children}</ProveedorDeMigaDelObjeto>

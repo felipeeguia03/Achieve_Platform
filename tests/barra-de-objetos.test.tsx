@@ -6,8 +6,8 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
  *
  * Los tests del dominio prueban las reglas; éstos prueban **lo que ADR-088
  * prometió del lado de la pantalla**: los roles ARIA, el teclado, que cerrar el
- * que se está mirando lleve al vecino, y que la memoria se restaure sin
- * parpadeo.
+ * que se está mirando no mueva a nadie de pantalla (Enmienda 7), y que la
+ * memoria se restaure sin parpadeo.
  */
 
 const push = vi.fn();
@@ -218,14 +218,20 @@ describe("activar y cerrar", () => {
     }
   });
 
-  it("cerrar **el que se está mirando** lleva al vecino más reciente — §10.7", async () => {
+  /**
+   * ⚠️ **Cambió con la Enmienda 7.** Cerrar la ficha de la materia que se está
+   * mirando llevaba al vecino más reciente (§10.7): era mover al estudiante de
+   * pantalla por ordenar la barra. Ahora la ficha se va y **la pantalla se
+   * queda** — sigue siendo la materia, sólo que ya no está guardada.
+   */
+  it("cerrar **el que se está mirando** saca la ficha y no navega — Enmienda 7", async () => {
     sembrar(3);
     rutaActual = "/materia?cursada=ce-1";
     await montar();
 
     fireEvent.click(screen.getByRole("button", { name: "Cerrar: Materia 1" }));
-    // `ce-3` es el de `visitadoEn` más alto entre los que quedan.
-    expect(push).toHaveBeenCalledWith("/materia?cursada=ce-3");
+    await waitFor(() => expect(screen.getAllByRole("tab")).toHaveLength(2));
+    expect(push).not.toHaveBeenCalled();
   });
 
   /**

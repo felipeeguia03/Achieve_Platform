@@ -98,6 +98,15 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
+🆕 **La barra de objetos no se llena sola** — [ADR-088 · Enmienda
+7](docs/decisions.md#adr-088-enmienda-7), 12 de septiembre. Entrar a una pantalla **no guarda su
+ficha**; minimizar o achicar sí. Las secciones del menú no llevan controles, la pantalla completa
+**no tiene cruz**, y la miga **empieza en la sección**, no en `Hoy`.
+
+⚠️ **Antes de tocar la barra:** qué pantalla lleva controles lo contesta `objetoEnPantalla`, y el
+único lugar donde algo entra a la barra es `guardarEnBarra`. **No vuelvas a llamar a `abrir` al
+navegar**: es exactamente lo que la Enmienda 7 retiró.
+
 🆕 **`UX01` es un tablero de tres cuerpos** — [ADR-093](docs/decisions.md#adr-093) y
 [ADR-096](docs/decisions.md#adr-096): **Hero**, **Tu día** y **Riesgos detectados**. Salieron de Hoy
 la cola `1 de N`, el mapa de 14 días y el reparto (los datos siguen en `HoyProps`), y **las dos

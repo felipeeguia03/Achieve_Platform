@@ -78,8 +78,6 @@
  */
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUpRight } from "lucide-react";
-
 import { Semaforo } from "./controles-de-ventana";
 import { guardarEnLaFicha, salirDeLaFicha } from "./movimiento";
 import { ProveedorDeMigaDelObjeto } from "./miga-del-objeto";
@@ -320,8 +318,24 @@ function Ventana({
     setArrastre(null);
   }
 
+  /**
+   * Expandir — Enmienda 7: **va a la pantalla del objeto**.
+   *
+   * ⚠️ **Salvo que esté acomodada en una zona**, y ahí restaura. Desde media
+   * pantalla el gesto que falta es volver al tamaño propio (Enmienda 6); si
+   * expandir llevara directo a la página, no habría forma de sacar una ventana
+   * del mosaico sin arrastrarla.
+   *
+   * Lo que ya no existe es la ventana a pantalla completa: *«Ver como página»* y
+   * *expandir* eran dos controles que terminaban mostrando lo mismo, y el owner
+   * pidió que quedara uno.
+   */
   function expandir() {
-    guardarMarco(clave, alternarExpandido(marco, area));
+    if (marco.expandido || marco.zona !== null) {
+      guardarMarco(clave, alternarExpandido(marco, area));
+      return;
+    }
+    verComoPagina(clave);
   }
 
   /**
@@ -452,15 +466,18 @@ function Ventana({
       >
         {/*
           El semáforo, arriba a la izquierda. Es el mismo componente que la
-          superficie usa: dos semáforos distintos serían dos gramáticas para el
+          pantalla usa: dos semáforos distintos serían dos gramáticas para el
           mismo gesto.
+
+          ⚠️ **Sin «Ver como página»** — Enmienda 7. Expandir hace eso mismo, y
+          el owner pidió que quedara un solo control.
         */}
         <Semaforo
           nombre={completo}
           /*
-            ⚠️ **Amosaicada también cuenta como «agrandada»**, y por eso el
-            control dice *Restaurar*: desde media pantalla el gesto que falta es
-            volver al tamaño propio, no ocupar todo.
+            ⚠️ **Amosaicada cuenta como «agrandada»**, y por eso el control dice
+            *Restaurar*: desde media pantalla el gesto que falta es volver al
+            tamaño propio, no ir a la página.
           */
           expandido={marco.expandido || marco.zona !== null}
           zona={marco.zona}
@@ -477,23 +494,6 @@ function Ventana({
         >
           {completo}
         </p>
-
-        <button
-          onClick={() => verComoPagina(clave)}
-          className="ml-auto flex items-center gap-1"
-          style={{
-            flexShrink: 0,
-            minHeight: 36,
-            padding: "0 12px",
-            borderRadius: "var(--radius-pildora)",
-            border: ".5px solid var(--border)",
-            fontSize: "var(--text-label)",
-            color: "var(--foreground)",
-          }}
-        >
-          {t("PANEL.VER_COMO_PAGINA")}
-          <ArrowUpRight size={14} aria-hidden />
-        </button>
       </header>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "12px 16px 20px" }}>

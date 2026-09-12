@@ -874,16 +874,20 @@ export const copy = {
   // ── La ventana interna (ADR-088, Enmienda 1) ─────────────────────────────
   "PANEL.MINIMIZAR": "Minimizar",
   "PANEL.CERRAR": "Cerrar",
-  "PANEL.VER_COMO_PAGINA": "Ver como página",
   /** El objeto existe en la barra y su superficie todavía no se puede desplegar. */
   "PANEL.SIN_VISTA": "Todavía no se puede ver este objeto acá.",
-  "PANEL.SIN_VISTA_AYUDA": "Abrilo como página para verlo completo.",
+  "PANEL.SIN_VISTA_AYUDA": "Expandí la ventana para verlo completo.",
   // Enmienda 2 — el manejo de ventana.
+  /**
+   * ⚠️ **Expandir lleva a la pantalla del objeto** — Enmienda 7. Reemplaza a
+   * *«Ver como página»*, que se retiró: eran dos controles para lo mismo.
+   */
   "PANEL.EXPANDIR": "Expandir",
   "PANEL.RESTAURAR": "Restaurar el tamaño",
   "PANEL.MOVER": "Mover la ventana",
   "PANEL.CONTROLES": "Controles de esta ventana",
   "PANEL.REDIMENSIONAR": "Cambiar el tamaño",
+
 
   // ── El mosaico (ADR-088, Enmienda 6) ─────────────────────────────────────
   /**

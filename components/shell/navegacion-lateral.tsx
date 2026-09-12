@@ -29,9 +29,7 @@ import Link from "next/link";
 import { CalendarDays, ClipboardList, GraduationCap, LogOut, PanelLeft, Sun } from "lucide-react";
 import { cerrarSesion } from "@/lib/client/api";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
-import { objetoDeSuperficie } from "@/lib/navigation/objetos-de-superficie";
 import type { NodoId } from "@/lib/navigation/surfaces";
-import { useEspacioDeTrabajo } from "./espacio-de-trabajo";
 import { t } from "@/lib/content/es-AR";
 
 const ICONOS: Record<NodoId, typeof Sun> = {
@@ -51,42 +49,16 @@ export function Item({
   colapsada: boolean;
 }) {
   const Icono = ICONOS[item.nodo] ?? Sun;
-  const { abrir, montado } = useEspacioDeTrabajo();
-
-  /**
-   * Ir a una sección **la deja abierta en la barra** — [ADR-088](../../docs/decisions.md#adr-088),
-   * Enmienda 6.
-   *
-   * El owner lo pidió así: *"que todo pueda ponerse en la barra de pestañas, no
-   * sólo las materias"*. Hasta acá, entrar a Formación desde el menú no dejaba
-   * nada: salir de ahí era perderla, mientras que una materia quedaba a un clic.
-   * Las dos son cosas que se tienen abiertas.
-   *
-   * ⚠️ **Sigue siendo un `<Link>`, y eso importa más de lo que parece.** El
-   * `href` real es lo que hace que el clic del medio abra en otra pestaña, que
-   * el navegador muestre a dónde lleva en la barra de estado y que la
-   * navegación funcione **sin JavaScript**. Se intercepta el clic simple y nada
-   * más: los modificados —⌘, Ctrl, ⇧, botón del medio— se dejan pasar, porque el
-   * que aprieta ⌘ está pidiendo otra cosa.
-   *
-   * ⚠️ **Y sin espacio montado no se intercepta nada.** `/login` y el alta no lo
-   * montan: ahí `abrir` es inerte, y cancelar el clic esperándolo dejaría un
-   * menú que no lleva a ninguna parte. Por eso se pregunta por `montado` y no se
-   * confía en que el hook haga algo.
-   */
-  function alTocar(e: React.MouseEvent) {
-    if (!montado) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    const objeto = objetoDeSuperficie(item.nodo);
-    if (objeto === null) return;
-    e.preventDefault();
-    abrir(objeto);
-  }
-
+  /*
+    ⚠️ **Un ítem del menú navega, y nada más** — [ADR-088](../../docs/decisions.md#adr-088),
+    Enmienda 7. La Enmienda 6 lo interceptaba para dejar la sección abierta en
+    la barra de objetos, y la barra se llenaba sola con cada clic. Una sección
+    es un lugar al que se va: la barra lateral **ya es** su acceso a un clic, y
+    una ficha suya sería la segunda lista de destinos que ADR-019 temía.
+  */
   return (
     <Link
       href={rutaDelItem(item)}
-      onClick={alTocar}
       data-item-menu={item.nodo}
       aria-current={activo ? "page" : undefined}
       className={colapsada ? "flex flex-col items-center" : "flex items-center gap-3"}

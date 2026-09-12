@@ -139,6 +139,8 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-088 · Enm. 3](#adr-088-enmienda-3) | **El escritorio**: abrir va a la materia, la superficie se minimiza y las ventanas conviven | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **retira la trampa de foco de la Enm. 1**)* | — |
 | [ADR-088 · Enm. 4](#adr-088-enmienda-4) | **El movimiento**: la ventana sale de su ficha y vuelve a entrar | ✅ `ACCEPTED` *(11 sep 2026 · pedida por el owner · **§2.5, y `prefers-reduced-motion` la apaga**)* | — |
 | [ADR-088 · Enm. 5](#adr-088-enmienda-5) | **El nombre y el color**: cómo se escribe un objeto y cómo se distingue de otro | ✅ `ACCEPTED` *(11 sep 2026 · pedida por el owner · **presentación, no renombre**)* | [ADR-075](#adr-075) |
+| [ADR-088 · Enm. 6](#adr-088-enmienda-6) | **Todo entra a la barra**, un objeto un lugar, y el mosaico | ⚠️ `ACCEPTED` · **su punto 1 corregido por la Enm. 7** *(12 sep 2026 · pedida por el owner)* | — |
+| [ADR-088 · Enm. 7](#adr-088-enmienda-7) | **La barra no se llena sola**: entrar no guarda, minimizar sí; la miga empieza en la sección | ✅ `ACCEPTED` *(12 sep 2026 · pedida por el owner · **sin cruz en la pantalla completa**)* | — |
 | [ADR-089](#adr-089) | `UX01` gana la capa **«anticipar»**: próxima evaluación y mapa de 14 días | ✅ `ACCEPTED` *(10 sep 2026 · **sin contrato nuevo**: reusa `GET /api/materias`)* | — |
 | [ADR-090](#adr-090) | El **radar académico** de `UX01` | 🟡 `PROPOSED` — **no se construye** | `C01-021`, `C01-036`, `C01-044` |
 | [ADR-091](#adr-091) | La fila del índice es un solo destino, y la miga nombra el objeto | ✅ `ACCEPTED` *(10 sep 2026 · pedido del owner)* | — |
@@ -8324,6 +8326,8 @@ una sola vez, el índice la importa, y la función de nombre no repone acentos.
 
 ---
 
+<a id="adr-088-enmienda-6"></a>
+
 ### ADR-088 · Enmienda 6 — todo entra a la barra, un objeto un lugar, y el mosaico
 
 **Estado:** `ACCEPTED` · 12 sep 2026 · **pedida por el owner, cuatro puntos**
@@ -8475,6 +8479,124 @@ leídas desde `components/superficies/`.
 `704 × 788` cada una en un viewport de 1440 × 900 —las dos mitades exactas del área utilizable— y el
 hit-test confirma que cada una responde en su mitad; estando en `/materia?cursada=…` la ficha queda
 en la barra y **no hay ninguna ventana**.
+
+---
+
+<a id="adr-088-enmienda-7"></a>
+
+### ADR-088 · Enmienda 7 — la barra no se llena sola, y la miga empieza en la sección
+
+**Estado:** `ACCEPTED` · 12 sep 2026 · **pedida por el owner, con la pantalla delante** · corrige la
+Enmienda 6 en su punto 1
+
+#### Contexto
+
+Con la Enmienda 6 andando, el owner miró la barra y la rechazó: *"cada vez que entrás a una página
+se suma a la barra? eso no puede ser así"*. Tocar cinco ítems del menú eran cinco fichas que nadie
+pidió. El pedido de la Enmienda 6 decía *"que todo **pueda** ponerse en la barra"*, y se construyó
+como *"todo se pone solo al entrar"*: la barra se volvió **un historial**, que es justo lo que el
+comentario de `sincronizarConRuta` prohibía desde ADR-088 §2.
+
+Pidió cuatro cosas más, en la misma conversación:
+
+> *"1- quiero que no se popule la barra de pestañas apenas entrás a una pestaña, solo las que no son
+> del sidebar, y para que se popule tenés que minimizar […] no debería haber esos botones en las
+> pestañas que son producto de apretar los botones del sidebar, solo deberían aparecer luego de
+> entrar a un video por ejemplo, o algo dentro de esa pantalla. 2- ahí donde dice Hoy › Formación,
+> solo diga Formación, y en caso de entrar a un video diga Formación › Tengo mucho para estudiar y no
+> me alcanza el tiempo […] una ruta a una materia no es Hoy › Materias › Análisis, solo es Materias ›
+> Análisis. 3- no tiene sentido que haya un botón de cerrar cuando está puesto como pantalla […] 4-
+> minimizar: lleva a Hoy y guarda la pestaña en la barra; achicar: la hace modal. Quiero que saques
+> el botón de ver como pantalla, directamente se agranda tocando el botón de expandir."*
+
+Y cerró tres preguntas: al achicar **queda atrás la sección de la que cuelga** y la ficha entra a la
+barra; **la ventana conserva su cruz**; y el flujo de ejecución **empieza en la acción**, no en
+`Hoy`. Para el lugar de los controles se le mostraron tres opciones; eligió una píldora al lado de
+la miga, la vio construida y **la revirtió**: los círculos de siempre, sin cruz, **arriba a la
+derecha** del contenido.
+
+#### Decisión
+
+**1. Las secciones del menú no son objetos.** *Hoy*, *Materias*, *Progreso*, *Formación* y *Modo
+Examen* son lugares a los que se va: la barra lateral ya es su acceso a un clic, y una ficha suya es
+la segunda lista de destinos que [ADR-019](#adr-019) temía. La barra lateral **navega y nada más**;
+el buscador también, salvo una materia, que sigue abriéndose en ventana (Enmienda 6 §5).
+
+**2. Entrar no guarda nada; un gesto sí.** Un objeto entra a la barra **sólo** al minimizar su
+pantalla, al achicarla a ventana o al elegirlo en el buscador. Entrar a una materia desde `Hoy` o
+desde el índice sólo navega. `guardarEnBarra` es el único lugar donde algo entra.
+
+**3. Lo que lleva controles es lo que está *adentro* de una sección.** `objetoEnPantalla`
+(`lib/navigation/objeto-en-pantalla.ts`) contesta, para la pantalla actual, **qué objeto es aunque
+no esté guardado**: una materia (`?cursada=`), un video de Formación (`?pieza=`), la acción, el
+compromiso, la evidencia y los dos pasos de Modo Examen. Devuelve `null` —y no hay controles— en una
+sección, sin el parámetro que identifica al objeto, o sin nombre todavía.
+
+⚠️ **El video abierto pasó a vivir en la URL.** Era estado de la pantalla: sin URL no hay ficha que
+lo devuelva, ni miga que lo nombre, ni botón atrás que lo cierre. `Formacion` acepta la pieza
+controlada desde afuera; sin ese control, sigue siendo estado local.
+
+**4. Los controles de la pantalla.** Dos círculos —**minimizar** y **achicar**—, **sin cruz**, en la
+fila de arriba del contenido y **alineados a la derecha**.
+
+| Gesto | Qué hace |
+|---|---|
+| Minimizar | La guarda en la barra y lleva a `Hoy` |
+| Achicar | La guarda y la vuelve ventana **sobre la sección de la que cuelga**: una materia sobre *Materias*, un video sobre *Formación*, un paso sobre *Modo Examen*. Lo que no cuelga de ninguna vuelve a `Hoy` (`fondoDe`) |
+| Cerrar | **No existe en la pantalla completa.** Se sale de ella como de cualquier pantalla; cerrar es sacar la ficha, y va en la ficha |
+
+**5. La ventana.** Conserva sus tres círculos a la izquierda —cerrar, minimizar, expandir—. **«Ver
+como página» se retira**: expandir lleva a la pantalla del objeto, que es lo mismo. ⚠️ **Salvo
+acomodada en una zona del mosaico**, donde el control dice *Restaurar* y la devuelve a su tamaño:
+si expandir navegara siempre, no habría forma de sacar una ventana de media pantalla sin
+arrastrarla. La ventana a pantalla completa deja de ser alcanzable.
+
+**6. Cerrar una ficha no navega, nunca.** Cerrar la ficha de la materia que se está mirando la saca
+de la barra **y la pantalla se queda**, con sus controles. Antes llevaba al vecino más reciente
+(§10.7): era mover a alguien de pantalla por ordenar la barra.
+
+**7. La miga empieza en la sección.** Las cinco secciones del menú son raíces y **ninguna cadena
+empieza en `Hoy`** salvo la de `Hoy`: *Materias › Análisis*, *Próxima acción › Compromiso ›
+Evidencia*, *Modo Examen › Preparación › Paso*. `UX07` dejó de colgar de `UX02`: la miga no puede
+saber si se entró por `CTA-019` o por el menú, y la sección gana.
+
+⚠️ **Reemplaza o agrega, y lo decide el nodo.** En una pantalla que **es** de un objeto el nombre
+reemplaza a la última miga (*Materia* → *Análisis*); en una **sección**, el objeto cuelga de ella y
+la sección queda enlazada: *Formación › Tengo mucho para estudiar…*.
+
+#### Consecuencias
+
+- **Salen los tipos `hoy` y `materias`**, que existían sólo para que las secciones entraran a la
+  barra. Lo guardado con esos tipos se descarta al leer.
+- ⚠️ **Las fichas de sección que dejó la Enmienda 6 se descartan al restaurar** (`esFichaDeSeccion`:
+  su id es el de un nodo del menú). Sin eso, la barra de quien ya la usó seguiría llena de *Hoy* y
+  *Progreso*. **La clave de `localStorage` no se versiona.**
+- `objetos-de-superficie.ts` se reemplaza por `objeto-en-pantalla.ts`; el proveedor pierde `abrir`,
+  `activar`, `cerrarSuperficie` y el mapa de orígenes, y gana `enPantalla`, `minimizarPantalla` y
+  `achicarPantalla`.
+- **Ninguna superficie nueva, ninguna ruta nueva, ninguna CTA nueva.** `?pieza=` es un parámetro de
+  `/formacion`, que ya existía; `superficieIds` sigue devolviendo nueve.
+
+#### ⛔ Lo que NO resuelve
+
+**A 360 px la pantalla de un objeto no tiene controles propios que probar.** La fila del semáforo
+se dibuja igual que en escritorio; lo que no se midió es cómo convive con la píldora móvil de la
+barra. **Y en el Track A una materia sin `?cursada=` no lleva controles**: no hay de qué materia
+sería la ficha, y un id inventado sería una ficha que no vuelve a ningún lado.
+
+#### Cómo se verifica
+
+`tests/la-barra-no-se-llena-sola.test.tsx` —antes `todo-en-la-barra.test.tsx`— que ninguna sección
+del menú lleve controles ni con nombre, que la barra lateral, `Hoy` y el índice no guarden nada,
+qué objeto es cada pantalla de adentro, a dónde van minimizar y achicar, y que ninguna miga empiece
+en `Hoy`. `tests/panel-de-objeto.test.tsx` — controles sin guardar, **sin cruz**, ausentes en las
+secciones, minimizar a `Hoy`, achicar sobre *Materias* y sobre *Formación*, expandir a la página sin
+«Ver como página», y restaurar desde una zona sin navegar. `tests/barra-de-objetos.test.tsx` — cerrar
+la ficha que se está mirando no navega. `tests/paleta.test.ts` — ninguna pantalla del buscador trae
+objeto.
+
+⚠️ **No se recorrió en el navegador**, y `npm run db:verify` no se corrió: no hay cambio de base, y
+vacía la de la demo.
 
 ---
 

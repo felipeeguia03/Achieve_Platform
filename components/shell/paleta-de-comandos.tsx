@@ -28,7 +28,7 @@ import {
   type TipoDeEntrada,
 } from "@/lib/navigation/paleta";
 import { indiceDePaleta } from "@/lib/fixtures/indice-paleta";
-import { objetoDeMateria } from "@/lib/navigation/objetos-de-superficie";
+import { objetoDeMateria } from "@/lib/navigation/objeto-en-pantalla";
 import { rutaDeCtaCon } from "@/lib/navigation";
 import { pedir } from "@/lib/client/api";
 import { useEspacioDeTrabajo } from "./espacio-de-trabajo";
@@ -147,8 +147,11 @@ function Dialogo({ onCerrar }: { onCerrar: () => void }) {
    * el owner: *"que pueda buscar por materias y se abra el modal"*. El buscador
    * se usa **sin querer irse de donde estás**: interrumpir la pantalla para
    * contestar una consulta es justo lo que la ventana vino a evitar. La ficha
-   * queda en la barra, y desde ahí *«Ver como página»* lleva a la materia entera
-   * para el que sí quería mudarse.
+   * queda en la barra, y expandir la ventana lleva a la materia entera para el
+   * que sí quería mudarse.
+   *
+   * ⚠️ **Una pantalla navega** — Enmienda 7. Elegir *Progreso* en el buscador ya
+   * no deja su ficha: una sección es un lugar al que se va.
    *
    * ⚠️ **Un escenario navega, y no es una excepción caprichosa.** `?escenario=`
    * cambia de qué catálogo se proyecta **la pantalla**: abrirlo en una ventana

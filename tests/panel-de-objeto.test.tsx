@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 
 /**
- * Las ventanas internas — [ADR-088](../docs/decisions.md#adr-088), Enmiendas 1 y 3.
+ * Las ventanas internas — [ADR-088](../docs/decisions.md#adr-088), Enmiendas 1, 3 y 7.
  *
  * Lo que se prueba acá es **la parte cara del multiventana**: que el escritorio
  * entero viva en la URL, que `Escape` baje **una** ventana y no todas, y la
@@ -76,9 +76,12 @@ function comoRgb(hex: string): string {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
 
+/** El nombre que la pantalla declara con `useMigaDelObjeto`, como lo pasa el Shell. */
+let nombreEnPantalla: string | null = null;
+
 function Montado() {
   return (
-    <ProveedorDeEspacioDeTrabajo>
+    <ProveedorDeEspacioDeTrabajo nombreEnPantalla={nombreEnPantalla}>
       <BarraDeSuperficie />
       <BarraDeObjetos onAbrirPaleta={() => {}} />
       <PanelDeObjeto />
@@ -92,12 +95,23 @@ async function montar() {
   return utils;
 }
 
+/**
+ * Montar sin nada guardado: no hay barra que esperar. Los controles aparecen
+ * recién con la memoria leída, así que cada test los busca con `findBy`.
+ */
+async function montarVacio() {
+  const utils = render(<Montado />);
+  await act(async () => {});
+  return utils;
+}
+
 beforeEach(() => {
   window.localStorage.clear();
   push.mockClear();
   pedir.mockReset();
   pedir.mockResolvedValue({ estado: "ERROR" });
   rutaActual = "/hoy";
+  nombreEnPantalla = null;
 });
 
 describe("cuándo existe la ventana", () => {
@@ -311,43 +325,87 @@ describe("el foco, sin trampa — Enmienda 3", () => {
 });
 
 /**
- * La superficie con su semáforo — el primer tramo del pedido del owner:
- * *"primero quiero que se abra la materia normal, luego se puede minimizar con
- * un botón arriba"*.
+ * El semáforo de la pantalla — [ADR-088](../docs/decisions.md#adr-088),
+ * Enmienda 7: minimizar y achicar, arriba a la derecha, **sin cruz**, y sólo en
+ * las pantallas que son de un objeto.
  */
-describe("la barra de título de la superficie", () => {
-  it("en la pantalla del objeto aparece su semáforo", async () => {
-    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
+describe("los controles de la pantalla", () => {
+  it("en la pantalla de una materia aparecen, **aunque no esté guardada**", async () => {
     rutaActual = "/materia?cursada=ce-1";
-    await montar();
+    nombreEnPantalla = "Álgebra";
+    await montarVacio();
 
-    expect(screen.getByRole("button", { name: "Minimizar: Álgebra" })).toBeInTheDocument();
-    // Ya está expandida: el tercer control **reduce**, no expande.
-    expect(
-      screen.getByRole("button", { name: "Restaurar el tamaño: Álgebra" }),
-    ).toBeInTheDocument();
+    const grupo = await screen.findByRole("group", { name: "Controles de esta ventana" });
+    expect(within(grupo).getByRole("button", { name: "Minimizar: Álgebra" })).toBeInTheDocument();
+    expect(within(grupo).getByRole("button", { name: "Restaurar el tamaño: Álgebra" })).toBeInTheDocument();
+    // Entrar no guarda nada: no hay barra.
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
   });
 
   /**
-   * ⚠️ **El nombre NO se repite acá — Enmienda 5.**
-   *
-   * Con el nombre puesto, el mismo texto aparecía **tres veces en los primeros
-   * 250 px**: la miga, esta barra y el eyebrow de `UX02`. Es `C-02`: repetir no
-   * es reforzar.
+   * ⚠️ **Sin cruz.** La pantalla completa no se cierra: se sale de ella. Cerrar
+   * es sacar la ficha de la barra, y eso se hace en la ficha.
    */
-  it("el semáforo va solo: el nombre no se repite en la barra de título", async () => {
+  it("no hay cruz en la pantalla completa", async () => {
+    rutaActual = "/materia?cursada=ce-1";
+    nombreEnPantalla = "Álgebra";
+    await montarVacio();
+
+    const grupo = await screen.findByRole("group", { name: "Controles de esta ventana" });
+    expect(within(grupo).queryByRole("button", { name: /Cerrar/ })).not.toBeInTheDocument();
+    expect(within(grupo).getAllByRole("button")).toHaveLength(2);
+  });
+
+  it("en una sección del menú no hay controles", async () => {
+    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
+    for (const ruta of ["/hoy", "/materias", "/progreso", "/formacion"]) {
+      rutaActual = ruta;
+      const { unmount } = await montar();
+      expect(screen.queryByRole("group", { name: "Controles de esta ventana" }), ruta).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("minimizar la guarda en la barra y lleva a Hoy", async () => {
+    rutaActual = "/materia?cursada=ce-1";
+    nombreEnPantalla = "Álgebra";
+    await montarVacio();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Minimizar: Álgebra" }));
+    expect(push).toHaveBeenCalledWith("/hoy");
+    expect(await screen.findByRole("tab", { name: /Álgebra/ })).toBeInTheDocument();
+  });
+
+  it("achicar la guarda y la vuelve ventana sobre Materias", async () => {
+    rutaActual = "/materia?cursada=ce-1";
+    nombreEnPantalla = "Álgebra";
+    await montarVacio();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Restaurar el tamaño: Álgebra" }));
+    expect(push).toHaveBeenCalledWith("/materias?abierto=materia%3Ace-1");
+    expect(await screen.findByRole("tab", { name: /Álgebra/ })).toBeInTheDocument();
+  });
+
+  it("un video de Formación se achica sobre Formación", async () => {
+    rutaActual = "/formacion?pieza=p-3";
+    nombreEnPantalla = "Tengo mucho para estudiar";
+    await montarVacio();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Restaurar el tamaño: Tengo mucho para estudiar" }),
+    );
+    expect(push).toHaveBeenCalledWith("/formacion?abierto=formacion%3Ap-3");
+  });
+
+  /**
+   * ⚠️ **Guardada, manda la guardada.** Volviendo desde su ventana, la pantalla
+   * todavía no declaró su nombre; sin esto los controles parpadearían.
+   */
+  it("si ya está en la barra, los controles están aunque la pantalla no se haya nombrado", async () => {
     sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
     rutaActual = "/materia?cursada=ce-1";
     await montar();
-
-    const barra = screen.getByRole("group", { name: "Controles de esta ventana" });
-    expect(barra).not.toHaveTextContent("Álgebra");
-
-    /*
-      Y no se pierde nada accesible: **cada control lleva el nombre adentro**, así
-      que un lector de pantalla sigue sabiendo de qué ventana son estos botones.
-    */
-    expect(within(barra).getByRole("button", { name: "Cerrar: Álgebra" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Minimizar: Álgebra" })).toBeInTheDocument();
   });
 
   /**
@@ -391,53 +449,6 @@ describe("la barra de título de la superficie", () => {
     expect(cabecera.style.borderTopWidth).toBe("");
   });
 
-  it("en una pantalla que no es de ningún objeto abierto, no hay semáforo", async () => {
-    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
-    rutaActual = "/hoy";
-    await montar();
-    expect(screen.queryByRole("button", { name: /Minimizar/ })).not.toBeInTheDocument();
-  });
-
-  /**
-   * ⚠️ **Minimizar no cierra, y ésa es toda la distinción.** El objeto queda en
-   * la barra; lo que se va es la pantalla.
-   */
-  it("minimizar la superficie deja el objeto en la barra y vuelve a `Hoy`", async () => {
-    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
-    rutaActual = "/materia?cursada=ce-1";
-    await montar();
-
-    fireEvent.click(screen.getByRole("button", { name: "Minimizar: Álgebra" }));
-    expect(push).toHaveBeenCalledWith("/hoy");
-    expect(screen.getAllByRole("tab")).toHaveLength(1);
-  });
-
-  it("el tercer control la convierte en ventana sobre la pantalla de la que salió", async () => {
-    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
-    rutaActual = "/materia?cursada=ce-1";
-    await montar();
-
-    fireEvent.click(screen.getByRole("button", { name: "Restaurar el tamaño: Álgebra" }));
-    expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-1");
-  });
-
-  it("cerrar desde la superficie saca el objeto y no deja la pantalla huérfana", async () => {
-    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
-    rutaActual = "/materia?cursada=ce-1";
-    await montar();
-
-    /*
-      La ✕ de la ficha y el semáforo de la superficie tienen **el mismo nombre
-      accesible**, y está bien: hacen lo mismo. Por eso hay que decir cuál se
-      toca.
-    */
-    const enLaSuperficie = within(
-      screen.getByRole("group", { name: "Controles de esta ventana" }),
-    );
-    fireEvent.click(enLaSuperficie.getByRole("button", { name: "Cerrar: Álgebra" }));
-    expect(push).toHaveBeenCalledWith("/hoy");
-    await waitFor(() => expect(screen.queryByRole("tab")).not.toBeInTheDocument());
-  });
 });
 
 describe("la ventana dibuja la superficie, no una versión propia", () => {
@@ -460,12 +471,17 @@ describe("la ventana dibuja la superficie, no una versión propia", () => {
     expect(panel).toMatch(/VISTA_POR_CAMINO/);
   });
 
-  it("«Ver como página» lleva a la superficie del objeto", async () => {
+  /**
+   * ⚠️ **Expandir reemplaza a «Ver como página»** — Enmienda 7. Eran dos
+   * controles que terminaban mostrando lo mismo.
+   */
+  it("expandir lleva a la pantalla del objeto, y ya no hay «Ver como página»", async () => {
     sembrar([{ tipo: "unidad", id: "u1", etiqueta: "Unidad 1" }]);
     rutaActual = "/hoy?abierto=unidad:u1";
     await montar();
 
-    fireEvent.click(screen.getByRole("button", { name: /Ver como página/ }));
+    expect(screen.queryByRole("button", { name: /Ver como página/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Expandir: Unidad 1/ }));
     expect(push).toHaveBeenCalledWith("/materia?cursada=u1");
   });
 
@@ -619,6 +635,24 @@ describe("acomodar la ventana en media pantalla", () => {
   });
 
   /**
+   * ⚠️ **Desde una zona, el control restaura y no va a la página.** Si expandir
+   * navegara siempre, no habría forma de sacar una ventana del mosaico sin
+   * arrastrarla.
+   */
+  it("en una zona, «Restaurar» la saca del mosaico sin navegar", async () => {
+    const expandir = await conVentana();
+    fireEvent.keyDown(expandir, { key: "ArrowDown" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mitad izquierda" }));
+
+    const restaurar = await screen.findByRole("button", { name: /Restaurar el tamaño: Álgebra/ });
+    fireEvent.click(restaurar);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Expandir: Álgebra/ })).toBeInTheDocument(),
+    );
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  /**
    * ⚠️ **El clic de soltar no cuenta cuando el long-press ya disparó.**
    *
    * Es un defecto que se ve enseguida y se explica mal: mantener apretado abría
@@ -643,8 +677,9 @@ describe("acomodar la ventana en media pantalla", () => {
       fireEvent.click(expandir);
 
       expect(screen.getByRole("menu", { name: "Acomodar en la pantalla" })).toBeInTheDocument();
-      // Sigue diciendo «Expandir»: no se expandió nada.
+      // Sigue diciendo «Expandir», y no navegó a la materia.
       expect(screen.getByRole("button", { name: /Expandir: Álgebra/ })).toBeInTheDocument();
+      expect(push).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

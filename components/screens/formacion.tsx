@@ -32,11 +32,24 @@ import { t } from "@/lib/content/es-AR";
 import type { FormacionProps, GrupoDeFormacion, PiezaDeFormacion } from "@/lib/domain/view-models";
 import { ReglaDeNegocio, TituloDePanel } from "./design-system";
 
-export type FormacionScreenProps = FormacionProps;
+export interface FormacionScreenProps extends FormacionProps {
+  /**
+   * Qué pieza está abierta, **si la decide la URL** — ADR-088, Enmienda 7.
+   *
+   * ⚠️ Con `onAbrir` presente la pantalla no guarda la pieza por su cuenta: el
+   * video abierto vive en `?pieza=`, que es lo que le da miga, ficha en la barra
+   * y botón atrás. Sin él, sigue siendo estado local, como en los tests de la
+   * pantalla sola.
+   */
+  abierta?: string | null;
+  onAbrir?: (id: string | null) => void;
+}
 
-export function Formacion({ piezas, aviso, simulada, grupos }: FormacionScreenProps) {
+export function Formacion({ piezas, aviso, simulada, grupos, abierta: deAfuera, onAbrir }: FormacionScreenProps) {
   // Cuál está abierta. Estado de sesión, no de dominio: no se persiste.
-  const [abierta, setAbierta] = useState<string | null>(null);
+  const [local, setLocal] = useState<string | null>(null);
+  const abierta = onAbrir ? (deAfuera ?? null) : local;
+  const setAbierta = onAbrir ?? setLocal;
   const pieza = piezas.find((p) => p.id === abierta) ?? null;
 
   return (

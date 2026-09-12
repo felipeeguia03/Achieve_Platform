@@ -44,26 +44,16 @@ export type TipoDeObjeto =
   | "evidencia"
   | "evaluacion"
   | "modo-examen"
-  | "formacion"
-  | "bitacora"
   /**
-   * El día, y el índice de materias — Enmienda 6.
+   * Una pieza de la biblioteca: el video que se abrió **adentro** de Formación.
    *
-   * ⚠️ **Son los dos únicos tipos que NO nombran una entidad, y por eso son
-   * dos y no una familia.** El owner pidió que *todo* pueda quedar en la barra,
-   * no sólo las materias; de las superficies que eso agrega, siete ya tenían su
-   * tipo —`accion`, `compromiso`, `evidencia`, `modo-examen`, `formacion`,
-   * `bitacora`— porque **la pantalla es la de un objeto del dominio**. `UX01` y
-   * el índice no: contestan una pregunta sobre *todo*, y su `entidadId` es el
-   * `NodoId` de la superficie, no una fila de ninguna tabla.
-   *
-   * La regla de arriba **no se afloja**: siguen correspondiendo a algo que
-   * existe —un nodo del grafo con su ruta—, y `objetoDeSuperficie` es el único
-   * lugar que los construye. Lo que no se hace es inventar un tipo por objeto
-   * que quede lindo en la barra.
+   * ⚠️ **No es la sección** — Enmienda 7. La Enmienda 6 guardaba *Formación*
+   * como ficha, y con ella `hoy` y `materias`, los dos tipos que se inventaron
+   * para que las secciones del menú entraran a la barra. Esos dos se retiraron:
+   * una sección es un lugar al que se va, no algo que se tiene abierto.
    */
-  | "hoy"
-  | "materias";
+  | "formacion"
+  | "bitacora";
 
 import type { Marco } from "./marco-de-panel";
 
@@ -568,7 +558,20 @@ export function validarContra(
   espacio: EspacioDeTrabajo,
   rutaEsValida: (ruta: string) => boolean,
 ): EspacioDeTrabajo {
-  const objetos = espacio.objetos.filter((o) => rutaEsValida(o.ruta));
+  return retener(espacio, (o) => rutaEsValida(o.ruta));
+}
+
+/**
+ * Se queda con los objetos que cumplen, y **el activo sólo si sobrevive**.
+ *
+ * Es lo que usa la restauración para descartar lo que una versión anterior dejó
+ * guardado y hoy ya no corresponde —las fichas de sección de la Enmienda 6—.
+ */
+export function retener(
+  espacio: EspacioDeTrabajo,
+  queda: (objeto: ObjetoAbierto) => boolean,
+): EspacioDeTrabajo {
+  const objetos = espacio.objetos.filter(queda);
   if (objetos.length === espacio.objetos.length) return espacio;
   const activo = objetos.some((o) => o.clave === espacio.activo) ? espacio.activo : null;
   return { objetos, activo };

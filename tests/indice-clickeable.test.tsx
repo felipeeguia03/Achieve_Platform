@@ -86,9 +86,14 @@ describe("La fila del índice abre la materia desde cualquier parte", () => {
 });
 
 describe("La última miga nombra el objeto abierto", () => {
-  it("dice la materia, no «Materia»", () => {
+  /**
+   * ⚠️ **Sin «Hoy ›» delante** — ADR-088, Enmienda 7. Materias es una sección
+   * del menú y la cadena empieza ahí: *"una ruta a una materia no es Hoy ›
+   * Materias › Análisis, sólo es Materias › Análisis"*.
+   */
+  it("dice la materia, no «Materia», y arranca en Materias", () => {
     const migas = migasDe("UX02", "Emprendedorismo");
-    expect(migas.map((m) => m.etiqueta)).toEqual(["Hoy", "Materias", "Emprendedorismo"]);
+    expect(migas.map((m) => m.etiqueta)).toEqual(["Materias", "Emprendedorismo"]);
   });
 
   /**
@@ -98,10 +103,8 @@ describe("La última miga nombra el objeto abierto", () => {
    */
   it("las anteriores siguen siendo las del grafo, y conservan su enlace", () => {
     const migas = migasDe("UX02", "Emprendedorismo");
-    expect(migas[0]).toEqual({ etiqueta: "Hoy", href: "/hoy" });
-    expect(migas[1].etiqueta).toBe("Materias");
-    expect(migas[1].href).not.toBeNull();
-    expect(migas[2].href).toBeNull();
+    expect(migas[0]).toEqual({ etiqueta: "Materias", href: "/materias" });
+    expect(migas[1].href).toBeNull();
   });
 
   /**

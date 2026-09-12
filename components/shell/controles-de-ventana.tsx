@@ -440,7 +440,11 @@ export function Semaforo({
   zona?: Zona | null;
   /** El área utilizable, para saber **qué zonas entran**. Sin ella no hay mosaico. */
   area?: Area;
-  onCerrar: () => void;
+  /**
+   * Ausente ⇒ **no hay cruz** — Enmienda 7. Es el caso de la pantalla completa:
+   * no se cierra, se sale de ella; cerrar es sacar la ficha, y eso va en la ficha.
+   */
+  onCerrar?: () => void;
   onMinimizar: () => void;
   onExpandir?: () => void;
   /** Ausente ⇒ no hay mosaico: es el caso de la superficie, que ya ocupa todo. */
@@ -450,9 +454,11 @@ export function Semaforo({
 
   return (
     <span className="flex items-center" style={{ gap: 8, flexShrink: 0 }}>
-      <ControlRedondo etiqueta={`${t("PANEL.CERRAR")}: ${nombre}`} onClick={onCerrar}>
-        <X size={9} strokeWidth={2.5} aria-hidden />
-      </ControlRedondo>
+      {onCerrar && (
+        <ControlRedondo etiqueta={`${t("PANEL.CERRAR")}: ${nombre}`} onClick={onCerrar}>
+          <X size={9} strokeWidth={2.5} aria-hidden />
+        </ControlRedondo>
+      )}
 
       {/*
         ⚠️ **Minimizar y cerrar NO son lo mismo, y por eso son dos.** Minimizar

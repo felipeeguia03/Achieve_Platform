@@ -8,8 +8,6 @@ import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
-import { useEspacioDeTrabajo } from "@/components/shell/espacio-de-trabajo";
-import { objetoDeMateria } from "@/lib/navigation/objetos-de-superficie";
 import type { HoyProps, TableroProps } from "@/lib/domain/view-models";
 
 // Los tres destinos salen del registro canónico, no de un recorrido escrito a
@@ -97,23 +95,17 @@ function Pantalla({
   params: URLSearchParams;
 }) {
   const destino = siguienteUrl("/hoy", params.get("escenario")) ?? A_ACCION;
-  const { abrir } = useEspacioDeTrabajo();
 
   /**
-   * Abrir una materia **como objeto del espacio de trabajo** —
-   * [ADR-088](../../docs/decisions.md#adr-088) §10.6.
+   * Entrar a una materia — `CTA-001` con la cursada de la fila.
    *
-   * ⚠️ **No duplica la navegación ni el objeto.** La ruta sale del registro
-   * canónico (`rutaDeCtaCon` la lee de `CTA-001`), igual que `onVerMateria`; el
-   * objeto lo arma `objetoDeMateria`, que es **el único lugar** donde se decide
-   * con qué etiqueta y con qué contexto entra una materia a la barra. Estaba
-   * escrito igual acá y en el índice, que es cómo dos pantallas terminan
-   * abriendo la misma materia de dos formas distintas.
+   * ⚠️ **Entrar no la guarda en la barra** — [ADR-088](../../docs/decisions.md#adr-088),
+   * Enmienda 7. La materia se abre entera, con sus controles al lado de la
+   * miga; queda en la barra cuando el estudiante la minimiza o la achica.
    */
   function abrirMateria(m: { cursadaId: string; nombre: string }) {
     const ruta = rutaDeCtaCon("CTA-001", m.cursadaId) ?? A_MATERIA;
-    if (!ruta) return;
-    abrir(objetoDeMateria(m.cursadaId, m.nombre, ruta));
+    if (ruta) router.push(ruta);
   }
 
   return (

@@ -29,18 +29,14 @@ describe("El índice cubre lo que se puede alcanzar", () => {
   });
 
   /**
-   * Elegir una pantalla en el buscador **la deja abierta en la barra** —
-   * Enmienda 6. La excepción es `UX02`: una materia se abre con su cursada, y
-   * una ficha *«Materia / Cursado»* en singular sería la promesa incumplida que
-   * ADR-077 cerró.
+   * Elegir una pantalla en el buscador **navega, y no deja ficha** — ADR-088,
+   * Enmienda 7. Lo que el buscador abre en ventana son las materias, con su
+   * cursada; una sección es un lugar al que se va.
    */
-  it("cada pantalla abrible trae su objeto, y la materia genérica no", () => {
-    const porUrl = new Map(
-      indiceDePaleta.filter((e) => e.tipo === "superficie").map((e) => [e.url, e]),
-    );
-    expect(porUrl.get(nodos.FORMACION.ruta!)?.objeto?.tipo).toBe("formacion");
-    expect(porUrl.get(nodos.UX01.ruta!)?.objeto?.tipo).toBe("hoy");
-    expect(porUrl.get(nodos.UX02.ruta!)?.objeto).toBeUndefined();
+  it("ninguna pantalla trae objeto: elegirla es ir", () => {
+    for (const e of indiceDePaleta.filter((x) => x.tipo === "superficie")) {
+      expect(e.objeto, e.titulo).toBeUndefined();
+    }
   });
 
   /** Un escenario **no es un objeto**: es el conmutador del catálogo sintético. */

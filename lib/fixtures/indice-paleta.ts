@@ -10,7 +10,6 @@
 
 import { normalizar, type EntradaDePaleta } from "@/lib/navigation/paleta";
 import { nodoIds, nodos, type NodoId } from "@/lib/navigation/surfaces";
-import { objetoDeSuperficie } from "@/lib/navigation/objetos-de-superficie";
 import { escenarios, type EscenarioId } from "./scenarios";
 
 /** Qué vista de escenario corresponde a cada ruta, para armar la URL. */
@@ -46,20 +45,16 @@ export const indiceDePaleta: readonly EntradaDePaleta[] = [
     .map((id: NodoId): EntradaDePaleta => {
       const nodo = nodos[id];
       /*
-        ⚠️ **Si la pantalla se puede tener abierta, el buscador la abre; si no,
-        navega.** `objetoDeSuperficie` contesta cuál es cuál, y devuelve `null`
-        para `UX02`: la materia se abre **con su cursada**, y para eso están las
-        entradas de materia de más abajo. Una ficha *«Materia / Cursado»* en
-        singular sería la promesa incumplida que ADR-077 cerró.
+        ⚠️ **Una pantalla del buscador navega, y no trae objeto** — ADR-088,
+        Enmienda 7. Elegirla es ir; lo que se abre en ventana desde acá son las
+        materias, con su cursada, en las entradas de más abajo.
       */
-      const objeto = objetoDeSuperficie(id);
       return {
         tipo: "superficie",
         titulo: nodo.nombre,
         detalle: nodo.pregunta ?? "",
         url: nodo.ruta!,
         indice: normalizar(`${id} ${nodo.nombre} ${nodo.pregunta ?? ""}`),
-        ...(objeto === null ? {} : { objeto }),
       };
     }),
   ...(Object.keys(escenarios) as EscenarioId[]).flatMap((id): EntradaDePaleta[] => {
