@@ -45,7 +45,25 @@ export type TipoDeObjeto =
   | "evaluacion"
   | "modo-examen"
   | "formacion"
-  | "bitacora";
+  | "bitacora"
+  /**
+   * El día, y el índice de materias — Enmienda 6.
+   *
+   * ⚠️ **Son los dos únicos tipos que NO nombran una entidad, y por eso son
+   * dos y no una familia.** El owner pidió que *todo* pueda quedar en la barra,
+   * no sólo las materias; de las superficies que eso agrega, siete ya tenían su
+   * tipo —`accion`, `compromiso`, `evidencia`, `modo-examen`, `formacion`,
+   * `bitacora`— porque **la pantalla es la de un objeto del dominio**. `UX01` y
+   * el índice no: contestan una pregunta sobre *todo*, y su `entidadId` es el
+   * `NodoId` de la superficie, no una fila de ninguna tabla.
+   *
+   * La regla de arriba **no se afloja**: siguen correspondiendo a algo que
+   * existe —un nodo del grafo con su ruta—, y `objetoDeSuperficie` es el único
+   * lugar que los construye. Lo que no se hace es inventar un tipo por objeto
+   * que quede lindo en la barra.
+   */
+  | "hoy"
+  | "materias";
 
 import type { Marco } from "./marco-de-panel";
 
@@ -397,6 +415,35 @@ export function clavesDesplegadas(espacio: EspacioDeTrabajo, ruta: string): read
 /** La de adelante. `null` ⇒ no hay ninguna desplegada. */
 export function claveAlFrente(claves: readonly string[]): string | null {
   return claves[claves.length - 1] ?? null;
+}
+
+/**
+ * Saca de las desplegadas a la que ya se está mirando entera — Enmienda 6.
+ *
+ * ⚠️ **Un objeto no puede estar en dos lugares a la vez, y el owner lo pidió
+ * literal**: *"si una pestaña se está mostrando atrás, no puede ser abierta
+ * simultáneamente"*. Una ventana de Álgebra flotando encima de la superficie de
+ * Álgebra es **la misma materia dos veces en la misma pantalla**, una tapando a
+ * la otra, y el estudiante no tiene cómo saber cuál de las dos está mirando —
+ * ni cuál le contesta el `Escape`.
+ *
+ * ⚠️ **Se filtra al derivar y no al navegar, y ésa es la diferencia entre una
+ * regla y un parche.** `verComoPagina` ya sacaba la ventana del objeto que abría
+ * como página, pero a la superficie se llega por otros cinco caminos —el
+ * buscador, la barra lateral, una CTA, el botón atrás, una URL pegada— y cada
+ * uno tendría que acordarse. Derivándolo, el caso no existe: mientras la
+ * superficie sea la del objeto, su ventana **no se dibuja**, y cuando se
+ * minimiza la superficie vuelve a estar disponible.
+ *
+ * La clave **sigue en la URL**: no se la borra. Es lo que hace que minimizar la
+ * superficie devuelva la ventana en lugar de perderla.
+ */
+export function sinLaDeLaSuperficie(
+  claves: readonly string[],
+  claveEnSuperficie: string | null,
+): readonly string[] {
+  if (claveEnSuperficie === null) return claves;
+  return claves.filter((c) => c !== claveEnSuperficie);
 }
 
 /** El objeto de una clave, si está abierto. */

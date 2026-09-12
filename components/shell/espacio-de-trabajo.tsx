@@ -64,6 +64,7 @@ import {
   objetosDe,
   reordenar as reordenarEnDominio,
   rutaConPaneles,
+  sinLaDeLaSuperficie,
   vecinoAlCerrar,
   validarContra,
   type EspacioDeTrabajo,
@@ -85,6 +86,13 @@ const RUTA_BASE = "/hoy";
 
 export interface ContextoDeEspacio {
   espacio: EspacioDeTrabajo;
+  /**
+   * `false` ⇒ **no hay espacio de trabajo montado** y todo lo de abajo es
+   * inerte. Lo mira quien tiene que elegir entre abrir un objeto y navegar a
+   * secas —la barra lateral—: sin esto, una pantalla fuera del Shell cancelaría
+   * su propio enlace esperando un `abrir` que no hace nada.
+   */
+  montado: boolean;
   /** `false` ⇒ la memoria todavía no se leyó y **no se dibuja nada**. */
   listo: boolean;
   /**
@@ -107,6 +115,15 @@ export interface ContextoDeEspacio {
   enSuperficie: ObjetoAbierto | null;
   /** Abre el objeto **y va a su superficie**: la materia, entera — Enmienda 3. */
   abrir: (objeto: ObjetoPorAbrir) => void;
+  /**
+   * Abre el objeto **como ventana, sin moverse de pantalla** — Enmienda 6.
+   *
+   * Es lo que hace el buscador: elegís una materia y aparece encima de lo que
+   * estabas haciendo, con su ficha en la barra. `abrir` es el otro gesto —el de
+   * ir a trabajar ahí—, y los dos existen porque son dos intenciones distintas:
+   * *consultar sin perder el lugar* y *cambiar de lugar*.
+   */
+  abrirEnVentana: (objeto: ObjetoPorAbrir) => void;
   activar: (clave: string) => void;
   /** Despliega la ventana del objeto, o la minimiza si ya estaba desplegada. */
   alternarPanel: (clave: string) => void;
@@ -158,11 +175,13 @@ export function useEspacioDeTrabajo(): ContextoDeEspacio {
 const NADA = () => {};
 const INERTE: ContextoDeEspacio = {
   espacio: ESPACIO_VACIO,
+  montado: false,
   listo: false,
   desalojado: null,
   paneles: [],
   enSuperficie: null,
   abrir: NADA,
+  abrirEnVentana: NADA,
   activar: NADA,
   alternarPanel: NADA,
   minimizarPanel: NADA,
@@ -248,7 +267,16 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
    * ventanas hay y en qué orden se apilan**: compartir la URL comparte el
    * escritorio.
    */
-  const clavesPanel = useMemo(
+  /**
+   * Lo que dice la URL, **crudo**.
+   *
+   * ⚠️ **No es lo que se dibuja, y la diferencia es la Enmienda 6.** Acá está
+   * también la ventana del objeto cuya superficie se está mirando, que no se
+   * dibuja pero **tampoco se pierde**: es lo que hace que al minimizar la
+   * superficie la ventana vuelva en vez de haberse esfumado. Las acciones que
+   * arman URLs trabajan sobre esta lista; lo que se dibuja sale de la de abajo.
+   */
+  const clavesEnUrl = useMemo(
     () => clavesDesplegadas(espacio, rutaActual),
     [espacio, rutaActual],
   );
@@ -262,6 +290,19 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
   const claveEnSuperficie = useMemo(
     () => claveEnRuta(espacio, rutaActual),
     [espacio, rutaActual],
+  );
+
+  /**
+   * Las que **se dibujan** — Enmienda 6: *"si una pestaña se está mostrando
+   * atrás, no puede ser abierta simultáneamente"*.
+   *
+   * La regla vive en el dominio (`sinLaDeLaSuperficie`) y acá sólo se aplica. El
+   * efecto es que estando en la materia de Álgebra su ventana **no existe**, y en
+   * cuanto se minimiza la superficie vuelve a existir: un objeto, un lugar.
+   */
+  const clavesPanel = useMemo(
+    () => sinLaDeLaSuperficie(clavesEnUrl, claveEnSuperficie),
+    [clavesEnUrl, claveEnSuperficie],
   );
   const activo = useMemo(
     () => claveAlFrente(clavesPanel) ?? claveEnSuperficie,
@@ -318,6 +359,33 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
     [espacio, router, rutaActual],
   );
 
+  /**
+   * Abrir **sin moverse de pantalla** — Enmienda 6, el gesto del buscador.
+   *
+   * ⚠️ **`push` y no `replace`, a diferencia de traer al frente.** Abrir algo
+   * *sí* es navegar: el estudiante quiere poder deshacerlo con el botón atrás,
+   * igual que deshace haber entrado a una materia. Lo que no es navegar es
+   * reordenar lo que ya está abierto.
+   *
+   * ⚠️ **Si la ventana cae sobre su propia superficie, no se dibuja** —es la
+   * regla de arriba— y lo que queda es la ficha en la barra. Es correcto: abrir
+   * *Progreso* estando en Progreso no puede duplicar la pantalla, y la ficha es
+   * la parte de «abrir» que todavía tiene sentido.
+   */
+  const abrirEnVentana = useCallback(
+    (objeto: ObjetoPorAbrir) => {
+      const resultado = abrirEnDominio(espacio, objeto, new Date().toISOString());
+      setEspacio(resultado.espacio);
+      if (resultado.desalojado) setDesalojado(resultado.desalojado);
+
+      const clave = resultado.espacio.activo;
+      if (clave === null) return;
+      origen.current.set(clave, rutaConPaneles(rutaActual, []));
+      router.push(rutaConPaneles(rutaActual, desplegar(clavesEnUrl, clave)));
+    },
+    [espacio, clavesEnUrl, rutaActual, router],
+  );
+
   /** Activar es ir a la superficie del objeto. La ventana la maneja la ficha. */
   const activar = useCallback(
     (clave: string) => {
@@ -340,17 +408,32 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
   const alternarPanel = useCallback(
     (clave: string) => {
       if (!espacio.objetos.some((o) => o.clave === clave)) return;
+
+      /*
+        ⚠️ **La ficha del objeto que se está mirando entero minimiza la
+        superficie** — Enmienda 6. Su ventana no puede desplegarse: ya está
+        ocupando la pantalla. Sin este caso, tocar esa ficha era el único gesto
+        de la barra que no hacía nada visible, y el estudiante no tenía cómo
+        saber si había apretado mal. Es el mismo gesto que el control del medio
+        de la barra de título, y termina en el mismo lugar: el objeto en la
+        barra y la pantalla de vuelta de donde vino.
+      */
+      if (clave === claveEnSuperficie) {
+        router.push(rutaConPaneles(origenDe(clave), clavesEnUrl));
+        return;
+      }
+
       setEspacio(activarEnDominio(espacio, clave, new Date().toISOString()));
-      router.push(rutaConPaneles(rutaActual, alternarDespliegue(clavesPanel, clave)));
+      router.push(rutaConPaneles(rutaActual, alternarDespliegue(clavesEnUrl, clave)));
     },
-    [espacio, clavesPanel, rutaActual, router],
+    [espacio, claveEnSuperficie, clavesEnUrl, origenDe, rutaActual, router],
   );
 
   const minimizarPanel = useCallback(
     (clave: string) => {
-      router.push(rutaConPaneles(rutaActual, minimizarPanelDe(clavesPanel, clave)));
+      router.push(rutaConPaneles(rutaActual, minimizarPanelDe(clavesEnUrl, clave)));
     },
-    [clavesPanel, rutaActual, router],
+    [clavesEnUrl, rutaActual, router],
   );
 
   /**
@@ -363,11 +446,14 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
    */
   const traerAlFrente = useCallback(
     (clave: string) => {
+      // Se pregunta por las **visibles** —subir al frente algo que no se ve no
+      // quiere decir nada— y se escribe sobre las de la URL, para no perder por
+      // el camino la ventana que la superficie está tapando.
       if (claveAlFrente(clavesPanel) === clave) return;
       if (!clavesPanel.includes(clave)) return;
-      router.replace(rutaConPaneles(rutaActual, desplegar(clavesPanel, clave)));
+      router.replace(rutaConPaneles(rutaActual, desplegar(clavesEnUrl, clave)));
     },
-    [clavesPanel, rutaActual, router],
+    [clavesPanel, clavesEnUrl, rutaActual, router],
   );
 
   /**
@@ -382,9 +468,9 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
       const objeto = espacio.objetos.find((o) => o.clave === clave);
       if (!objeto) return;
       setEspacio(activarEnDominio(espacio, clave, new Date().toISOString()));
-      router.push(rutaConPaneles(objeto.ruta, minimizarPanelDe(clavesPanel, clave)));
+      router.push(rutaConPaneles(objeto.ruta, minimizarPanelDe(clavesEnUrl, clave)));
     },
-    [espacio, clavesPanel, router],
+    [espacio, clavesEnUrl, router],
   );
 
   /**
@@ -396,16 +482,22 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
    */
   const minimizarSuperficie = useCallback(() => {
     if (claveEnSuperficie === null) return;
-    router.push(rutaConPaneles(origenDe(claveEnSuperficie), clavesPanel));
-  }, [claveEnSuperficie, clavesPanel, origenDe, router]);
+    /*
+      ⚠️ **Se llevan las de la URL, no las visibles.** La ventana del objeto que
+      se estaba mirando entero está en la primera lista y no en la segunda
+      (Enmienda 6): con las visibles, minimizar la superficie **borraría** la
+      ventana que este mismo gesto tiene que devolver.
+    */
+    router.push(rutaConPaneles(origenDe(claveEnSuperficie), clavesEnUrl));
+  }, [claveEnSuperficie, clavesEnUrl, origenDe, router]);
 
   /** La superficie se vuelve una ventana sobre la pantalla de la que salió. */
   const superficieAVentana = useCallback(() => {
     if (claveEnSuperficie === null) return;
     router.push(
-      rutaConPaneles(origenDe(claveEnSuperficie), desplegar(clavesPanel, claveEnSuperficie)),
+      rutaConPaneles(origenDe(claveEnSuperficie), desplegar(clavesEnUrl, claveEnSuperficie)),
     );
-  }, [claveEnSuperficie, clavesPanel, origenDe, router]);
+  }, [claveEnSuperficie, clavesEnUrl, origenDe, router]);
 
   /**
    * Cerrar desde la superficie.
@@ -420,9 +512,9 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
     setEspacio(cerrarEnDominio(espacio, claveEnSuperficie));
     origen.current.delete(claveEnSuperficie);
     router.push(
-      rutaConPaneles(origenDe(claveEnSuperficie), minimizarPanelDe(clavesPanel, claveEnSuperficie)),
+      rutaConPaneles(origenDe(claveEnSuperficie), minimizarPanelDe(clavesEnUrl, claveEnSuperficie)),
     );
-  }, [espacio, claveEnSuperficie, clavesPanel, origenDe, router]);
+  }, [espacio, claveEnSuperficie, clavesEnUrl, origenDe, router]);
 
   /**
    * Cerrar.
@@ -441,7 +533,7 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
       setEspacio(cerrarEnDominio(espacio, clave));
       origen.current.delete(clave);
 
-      const quedan = minimizarPanelDe(clavesPanel, clave);
+      const quedan = minimizarPanelDe(clavesEnUrl, clave);
 
       if (clavesPanel.includes(clave)) {
         router.push(rutaConPaneles(rutaActual, quedan));
@@ -452,25 +544,25 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
         router.push(rutaConPaneles(vecino.ruta, quedan));
       }
     },
-    [espacio, claveEnSuperficie, clavesPanel, rutaActual, router],
+    [espacio, claveEnSuperficie, clavesPanel, clavesEnUrl, rutaActual, router],
   );
 
   const cerrarOtros = useCallback(
     (clave: string) => {
       setEspacio((actual) => cerrarOtrosEnDominio(actual, clave));
       // Las ventanas de los que se fueron **no pueden quedar**: serían huérfanas.
-      const quedan = clavesPanel.filter((c) => c === clave);
-      if (quedan.length !== clavesPanel.length) {
+      const quedan = clavesEnUrl.filter((c) => c === clave);
+      if (quedan.length !== clavesEnUrl.length) {
         router.push(rutaConPaneles(rutaActual, quedan));
       }
     },
-    [clavesPanel, rutaActual, router],
+    [clavesEnUrl, rutaActual, router],
   );
 
   const cerrarTodos = useCallback(() => {
     setEspacio(cerrarTodosEnDominio());
-    if (clavesPanel.length > 0) router.push(rutaConPaneles(rutaActual, []));
-  }, [clavesPanel, rutaActual, router]);
+    if (clavesEnUrl.length > 0) router.push(rutaConPaneles(rutaActual, []));
+  }, [clavesEnUrl, rutaActual, router]);
 
   const reordenar = useCallback((clave: string, destino: number) => {
     setEspacio((actual) => reordenarEnDominio(actual, clave, destino));
@@ -487,11 +579,13 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
   const valor = useMemo<ContextoDeEspacio>(
     () => ({
       espacio: espacioVisible,
+      montado: true,
       listo,
       desalojado,
       paneles,
       enSuperficie,
       abrir,
+      abrirEnVentana,
       activar,
       alternarPanel,
       minimizarPanel,
@@ -508,7 +602,7 @@ export function ProveedorDeEspacioDeTrabajo({ children }: { children: React.Reac
       mover,
     }),
     [
-      espacioVisible, listo, desalojado, paneles, enSuperficie, abrir, activar,
+      espacioVisible, listo, desalojado, paneles, enSuperficie, abrir, abrirEnVentana, activar,
       alternarPanel, minimizarPanel, traerAlFrente, verComoPagina, minimizarSuperficie,
       superficieAVentana, cerrarSuperficie, encuadrar, cerrar, cerrarOtros, cerrarTodos,
       reordenar, mover,

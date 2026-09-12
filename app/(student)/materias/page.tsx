@@ -1,82 +1,30 @@
 "use client";
 
+/**
+ * La ruta de UX02_INDICE.
+ *
+ * ⚠️ **Acá sólo está el marco.** La superficie vive en
+ * `components/superficies/materias.tsx` porque se dibuja en dos lugares —esta
+ * pantalla y la ventana de su ficha en la barra de objetos— y tiene que ser
+ * **el mismo componente** ([ADR-088](../../../docs/decisions.md#adr-088),
+ * Enmienda 6). Lo que la ruta aporta, y la ventana no, es el `Shell` con su
+ * nodo: la navegación lateral, la miga y la barra.
+ *
+ * ⚠️ **El `Suspense` no es decorativo.** La superficie lee `useSearchParams`
+ * para `?escenario=` y `?cursada=`, y Next exige una frontera de suspensión
+ * alrededor de quien lo llame o el build falla.
+ */
+
 import { Suspense } from "react";
-import { useRouter } from "next/navigation";
 
 import { Shell } from "@/components/shell/shell";
-import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
-import { IndiceDeMaterias } from "@/components/screens/indice-de-materias";
-import { useSuperficie } from "@/lib/client/superficie";
-import { rutaDeCtaCon } from "@/lib/navigation";
-import { useEspacioDeTrabajo } from "@/components/shell/espacio-de-trabajo";
-import type { MateriasProps } from "@/lib/domain/view-models";
-
-/**
- * El área «Materias» — [ADR-077](../../../docs/decisions.md#adr-077).
- *
- * ⚠️ **No acepta `?escenario=`, a diferencia de las nueve superficies.** El
- * catálogo de fixtures proyecta las superficies del recorrido canónico y este
- * nodo **no es una de ellas**: inventarle un escenario sería agregarlo al guión
- * del focus group sin que nadie lo haya decidido. Sin sesión, la pantalla dice
- * que no pudo cargar — que es la verdad.
- */
-function Vista() {
-  const router = useRouter();
-  const { abrir } = useEspacioDeTrabajo();
-  const { respuesta, reintentar } = useSuperficie<MateriasProps>("/api/materias");
-
-  if (respuesta.estado === "CARGANDO") return null;
-  if (respuesta.estado !== "OK") {
-    return (
-      <NoSePudoCargar
-        motivo={respuesta.estado}
-        onReintentar={respuesta.estado === "SIN_PADRON" ? undefined : reintentar}
-      />
-    );
-  }
-
-  return (
-    <IndiceDeMaterias
-      {...respuesta.datos}
-      // `CTA-001` **con la cursada de la fila que se tocó**: es lo que ADR-054
-      // opción `B` corrigió, y el índice lo hereda sin trabajo adicional. Abrir
-      // la quinta fila abre la quinta materia.
-      /*
-        ⚠️ **La navegación es la misma que antes, y sigue saliendo del registro
-        canónico.** Lo que agrega [ADR-088](../../../docs/decisions.md#adr-088)
-        es que la materia quede **abierta como objeto**, para volver sin pasar
-        de nuevo por el índice.
-
-        Sin espacio de trabajo montado, `abrir` es inerte y `router.push` hace
-        exactamente lo que hacía: la pantalla no se entera.
-      */
-      onAbrirMateria={(cursadaId) => {
-        const destino = rutaDeCtaCon("CTA-001", cursadaId);
-        if (!destino) return;
-        const materia = respuesta.datos.materias.find((m) => m.cursadaId === cursadaId);
-        if (materia) {
-          abrir({
-            tipo: "materia",
-            entidadId: materia.cursadaId,
-            etiqueta: materia.nombre,
-            // Ver el comentario de `/hoy`: una materia es el objeto, no tiene
-            // contexto, y meterle la evaluación reproduce `A-07`.
-            etiquetaSecundaria: null,
-            ruta: destino,
-          });
-          return;
-        }
-        router.push(destino);
-      }}
-    />
-  );
-}
+import { VistaDeMaterias } from "@/components/superficies/materias";
 
 export default function MateriasPage() {
   return (
     <Shell nodo="UX02_INDICE">
       <Suspense>
-        <Vista />
+        <VistaDeMaterias />
       </Suspense>
     </Shell>
   );

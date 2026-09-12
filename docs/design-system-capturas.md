@@ -970,6 +970,11 @@ y pidió su **estilo comunicacional**. Se tomó: el propósito de la pantalla en
 píldora con **un solo número**, tarjetas con color de identidad y días grandes, *riesgos detectados* con
 contador, la vista del día y la nota al pie que define la métrica.
 
+⚠️ **Y las tarjetas de evaluación de la referencia duraron dos días**: se construyeron, se miraron
+con datos reales y el owner las descartó junto con el carril que se le propuso al lado
+([ADR-096](decisions.md#adr-096)). Lo que la referencia aportó y **sí quedó** es el mecanismo: un
+bloque por pregunta, un renglón por cosa, y la nota al pie que define la métrica.
+
 ⚠️ **Los *próximos 7 días* duraron un día.** El owner los cambió por **Tu día**
 ([ADR-094](decisions.md#adr-094)): clases de hoy con su unidad y su aula, *Podés avanzar* y horarios.
 Lo que se conservó de la referencia es el mecanismo —un bloque, un renglón por cosa, la nota al pie—,

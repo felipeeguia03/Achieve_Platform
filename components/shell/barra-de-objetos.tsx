@@ -32,10 +32,12 @@ import {
   FileText,
   GraduationCap,
   Layers,
+  Library,
   MoreHorizontal,
   NotebookPen,
   PlayCircle,
   Plus,
+  Sun,
   Target,
   Upload,
   X,
@@ -66,6 +68,14 @@ const ICONOS: Record<TipoDeObjeto, typeof BookOpen> = {
   "modo-examen": BookOpen,
   formacion: PlayCircle,
   bitacora: NotebookPen,
+  /*
+    ⚠️ **Los mismos íconos que la barra lateral, y no unos parecidos** —
+    Enmienda 6. Ahora que las secciones también entran a la barra, `Hoy` aparece
+    en dos lugares de la pantalla a la vez: con dos dibujos distintos, la ficha
+    no se lee como *la sección que abrí* sino como una cosa nueva.
+  */
+  hoy: Sun,
+  materias: Library,
 };
 
 /**

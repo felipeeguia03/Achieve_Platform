@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   MARCO_MINIMO,
+  ZONAS,
   alternarExpandido,
+  amosaicar,
   areaDe,
   comoMarco,
   encuadrar,
   desdeLaFicha,
   marcoInicial,
   mover,
+  rectanguloDeZona,
   redimensionar,
   type Marco,
 } from "@/lib/domain/marco-de-panel";
@@ -29,7 +32,7 @@ import {
 const AREA = areaDe({ ancho: 1440, alto: 900 });
 
 function marco(over: Partial<Marco> = {}): Marco {
-  return { x: 100, y: 100, ancho: 800, alto: 500, expandido: false, previo: null, ...over };
+  return { x: 100, y: 100, ancho: 800, alto: 500, expandido: false, zona: null, previo: null, ...over };
 }
 
 describe("el área", () => {
@@ -210,7 +213,24 @@ describe("expandir y restaurar", () => {
 describe("lo que se lee del navegador no se cree", () => {
   it("acepta un marco bien formado", () => {
     const m = { x: 1, y: 2, ancho: 400, alto: 300, expandido: false, previo: null };
-    expect(comoMarco(m)).toEqual(m);
+    // Un marco guardado antes de la Enmienda 6 no tiene `zona`, y eso **no lo
+    // invalida**: vuelve libre, que es el estado por defecto de una ventana.
+    expect(comoMarco(m)).toEqual({ ...m, zona: null });
+  });
+
+  it("acepta la zona, y descarta una inventada sin tirar el marco", () => {
+    const base = { x: 1, y: 2, ancho: 400, alto: 300, expandido: false, previo: null };
+    expect(comoMarco({ ...base, zona: "izquierda" })?.zona).toBe("izquierda");
+    // Un `localStorage` editado a mano no puede meter una zona que no existe —
+    // pero perder la ventana entera por eso sería peor que perder la zona.
+    expect(comoMarco({ ...base, zona: "diagonal" })).toEqual({ ...base, zona: null });
+  });
+
+  it("nunca devuelve expandido **y** amosaicado a la vez", () => {
+    const m = { x: 1, y: 2, ancho: 400, alto: 300, expandido: true, previo: null, zona: "derecha" };
+    // Es el invariante de `Marco.zona`: pantalla completa es el área entera y
+    // una zona es una parte de ella. Las dos juntas no quieren decir nada.
+    expect(comoMarco(m)?.zona).toBeNull();
   });
 
   it("rechaza lo que no tiene forma de marco", () => {
@@ -290,5 +310,150 @@ describe("desdeLaFicha — la ventana sale de su ficha", () => {
   it("una ficha del tamaño del marco es la identidad", () => {
     const d = desdeLaFicha(MARCO, { x: MARCO.x, y: MARCO.y, ancho: MARCO.ancho, alto: MARCO.alto });
     expect(d).toEqual({ x: 0, y: 0, escalaX: 1, escalaY: 1 });
+  });
+});
+
+/**
+ * El mosaico — [ADR-088](../docs/decisions.md#adr-088), Enmienda 6.
+ *
+ * El owner lo pidió con el gesto puesto: *"si mantenés apretado el símbolo de
+ * agrandar, que te deje optar por dejarla como pantalla dividida, para que si
+ * hago lo mismo con dos pantallas pueda ver ambas"*. Lo que se prueba acá es la
+ * aritmética, que es donde está la parte que se rompe sola: el reparto, el
+ * `previo`, y qué pasa cuando la pantalla cambia de tamaño.
+ */
+describe("el mosaico", () => {
+  it("dos zonas opuestas cubren el área entera y no se pisan", () => {
+    const izq = rectanguloDeZona(AREA, "izquierda");
+    const der = rectanguloDeZona(AREA, "derecha");
+
+    // Es el pedido literal: dos ventanas, las dos a la vista, sin hueco.
+    expect(izq.x).toBe(AREA.x);
+    expect(izq.x + izq.ancho).toBe(der.x);
+    expect(der.x + der.ancho).toBe(AREA.x + AREA.ancho);
+    expect(izq.alto).toBe(AREA.alto);
+    expect(der.alto).toBe(AREA.alto);
+  });
+
+  it("los cuatro cuartos suman el área y ninguno se superpone", () => {
+    const cuartos = (["sup-izq", "sup-der", "inf-izq", "inf-der"] as const).map((z) =>
+      rectanguloDeZona(AREA, z),
+    );
+    const suma = cuartos.reduce((t, r) => t + r.ancho * r.alto, 0);
+    expect(suma).toBeCloseTo(AREA.ancho * AREA.alto, 6);
+    // Ninguno empieza antes del área ni termina después.
+    for (const r of cuartos) {
+      expect(r.x).toBeGreaterThanOrEqual(AREA.x);
+      expect(r.y).toBeGreaterThanOrEqual(AREA.y);
+      expect(r.x + r.ancho).toBeLessThanOrEqual(AREA.x + AREA.ancho);
+      expect(r.y + r.alto).toBeLessThanOrEqual(AREA.y + AREA.alto);
+    }
+  });
+
+  it("reparte el **área**, que ya descuenta la barra de objetos", () => {
+    // Si repartiera el viewport, la mitad de abajo nacería debajo de la barra y
+    // su barra de título quedaría inalcanzable.
+    const abajo = rectanguloDeZona(AREA, "abajo");
+    expect(abajo.y + abajo.alto).toBe(AREA.y + AREA.alto);
+    expect(abajo.y + abajo.alto).toBeLessThan(900);
+  });
+
+  it("amosaicar guarda el tamaño libre, y restaurar vuelve **a ése**", () => {
+    const libre = marco({ x: 300, y: 200, ancho: 700, alto: 420 });
+    const izq = amosaicar(libre, "izquierda", AREA);
+
+    expect(izq.zona).toBe("izquierda");
+    expect(izq.ancho).toBe(AREA.ancho / 2);
+
+    const vuelta = alternarExpandido(izq, AREA);
+    expect(vuelta.zona).toBeNull();
+    expect(vuelta.ancho).toBe(700);
+    expect(vuelta.x).toBe(300);
+  });
+
+  it("pasar de una zona a otra **no** pisa el tamaño libre guardado", () => {
+    /*
+      ⚠️ El defecto que esto previene: con `previo` sobrescrito en cada salto,
+      ir de la mitad izquierda a la derecha y restaurar devolvía la ventana a
+      *media pantalla* — que es un lugar donde la puso el mosaico, no un tamaño
+      que el estudiante haya elegido nunca.
+    */
+    const libre = marco({ x: 300, y: 200, ancho: 700, alto: 420 });
+    const der = amosaicar(amosaicar(libre, "izquierda", AREA), "derecha", AREA);
+    expect(der.zona).toBe("derecha");
+
+    const vuelta = alternarExpandido(der, AREA);
+    expect(vuelta.ancho).toBe(700);
+    expect(vuelta.alto).toBe(420);
+  });
+
+  it("volver a elegir la misma zona la saca del mosaico", () => {
+    const izq = amosaicar(marco(), "izquierda", AREA);
+    expect(amosaicar(izq, "izquierda", AREA).zona).toBeNull();
+  });
+
+  it("expandir desde el mosaico restaura en vez de ocupar todo", () => {
+    /*
+      Es la única forma de volver al tamaño propio desde media pantalla: si el
+      tercer control expandiera, no habría gesto para recuperarlo.
+    */
+    const izq = amosaicar(marco({ ancho: 700, alto: 420 }), "izquierda", AREA);
+    const siguiente = alternarExpandido(izq, AREA);
+    expect(siguiente.expandido).toBe(false);
+    expect(siguiente.zona).toBeNull();
+  });
+
+  it("nunca queda expandida **y** amosaicada", () => {
+    const expandida = alternarExpandido(marco(), AREA);
+    expect(expandida.expandido).toBe(true);
+    const izq = amosaicar(expandida, "izquierda", AREA);
+    expect(izq.expandido).toBe(false);
+    expect(izq.zona).toBe("izquierda");
+  });
+
+  it("la zona se **recalcula** cuando cambia la pantalla, no se restaura", () => {
+    // Un mosaico que conservara los píxeles de ayer dejaría de ser un mosaico
+    // apenas alguien cambie el tamaño de la ventana del navegador.
+    const izq = amosaicar(marco(), "izquierda", AREA);
+    const chica = areaDe({ ancho: 1000, alto: 800 });
+    const reencuadrada = encuadrar(izq, chica);
+    expect(reencuadrada.ancho).toBe(chica.ancho / 2);
+    expect(reencuadrada.x).toBe(chica.x);
+  });
+
+  it("arrastrarla la saca del mosaico y la deja donde la mano la dejó", () => {
+    /*
+      Sin esto, el siguiente `encuadrar` —el próximo `resize`— la devolvería
+      sola a su zona, y el arrastre se vería como que no tomó.
+    */
+    const izq = amosaicar(marco(), "izquierda", AREA);
+    const movida = mover(izq, 120, 40, AREA);
+    expect(movida.zona).toBeNull();
+    expect(movida.x).toBe(izq.x + 120);
+  });
+
+  it("estirarla también la libera", () => {
+    const izq = amosaicar(marco(), "izquierda", AREA);
+    expect(redimensionar(izq, "e", 60, 0, AREA).zona).toBeNull();
+  });
+
+  it("una zona que no llega al mínimo se encuadra en vez de dibujarse ilegible", () => {
+    /*
+      En una pantalla chica un cuarto no entra. La aritmética **no lo fuerza**:
+      sube al mínimo y la ventana se sale un poco de su cuadrante. Quién decide
+      si esa zona se ofrece es la pantalla, que sabe cuánto mide — y no la
+      ofrece (ver `zonasQueEntran`).
+    */
+    const chica = areaDe({ ancho: 700, alto: 600 });
+    const cuarto = amosaicar(marco(), "sup-izq", chica);
+    expect(cuarto.ancho).toBeGreaterThanOrEqual(MARCO_MINIMO.ancho);
+    expect(cuarto.alto).toBeGreaterThanOrEqual(MARCO_MINIMO.alto);
+  });
+
+  it("son ocho: cuatro mitades y cuatro cuartos, sin tercios", () => {
+    // Un tercio de 1280 px queda en 405 px y el contenido de `UX02` deja de ser
+    // legible en cuanto alguien colapse menos que eso.
+    expect(ZONAS).toHaveLength(8);
+    expect(new Set(ZONAS).size).toBe(8);
   });
 });

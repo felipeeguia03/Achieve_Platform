@@ -28,13 +28,67 @@ export interface Marco {
   alto: number;
   expandido: boolean;
   /**
-   * A dónde vuelve al restaurar. `null` ⇒ no está expandido.
+   * En qué mitad o cuarto de la pantalla está encajada — Enmienda 6.
+   *
+   * `null` ⇒ la ventana es libre: está donde el estudiante la dejó. Un valor
+   * quiere decir que **la calcula el área**, no la memoria: cambiar el tamaño
+   * del navegador la vuelve a repartir sola, que es lo que un mosaico tiene que
+   * hacer para seguir siendo un mosaico.
+   *
+   * ⚠️ **Nunca conviven con `expandido`.** Pantalla completa es *el área
+   * entera*, y una zona es *una parte del área*: las dos a la vez no quieren
+   * decir nada, y el par se mantiene excluyente en `amosaicar` y en
+   * `alternarExpandido`, que son los dos únicos que lo escriben.
+   */
+  zona: Zona | null;
+  /**
+   * A dónde vuelve al restaurar. `null` ⇒ no está expandido **ni en mosaico**.
    *
    * ⚠️ **Se guarda al expandir, no se recalcula al restaurar.** Volver a un
    * tamaño «por defecto» perdería el que el estudiante eligió, que es
    * precisamente lo que un manejo de ventanas existe para conservar.
    */
   previo: { x: number; y: number; ancho: number; alto: number } | null;
+}
+
+/**
+ * Las zonas del mosaico — Enmienda 6.
+ *
+ * ⚠️ **Se toma el mecanismo, no la marca** (`AGENTS.md` §1.5). El gesto —
+ * mantener apretado el control de expandir y elegir a qué mitad va la ventana —
+ * es el de un escritorio conocido; los nombres son los de acá y en castellano,
+ * y las medidas salen del área utilizable de Achieve, que ya reserva la barra
+ * de objetos al pie.
+ *
+ * Cuatro mitades y cuatro cuartos. **No hay tercios**: con `MARCO_MINIMO.ancho`
+ * en 380 px, un tercio de una pantalla de 1280 px queda en 405 px y el contenido
+ * de `UX02` deja de ser legible en cuanto alguien colapsa menos de eso. Una zona
+ * que no se puede usar es peor que una zona que no existe.
+ */
+export type Zona =
+  | "izquierda"
+  | "derecha"
+  | "arriba"
+  | "abajo"
+  | "sup-izq"
+  | "sup-der"
+  | "inf-izq"
+  | "inf-der";
+
+export const ZONAS: readonly Zona[] = [
+  "izquierda",
+  "derecha",
+  "arriba",
+  "abajo",
+  "sup-izq",
+  "sup-der",
+  "inf-izq",
+  "inf-der",
+] as const;
+
+/** `true` si el valor es una zona conocida. Lo usa la validación de la memoria. */
+export function esZona(valor: unknown): valor is Zona {
+  return typeof valor === "string" && (ZONAS as readonly string[]).includes(valor);
 }
 
 /** El rectángulo donde el panel puede vivir. */
@@ -114,6 +168,7 @@ export function marcoInicial(area: Area, indice: number): Marco {
       ancho,
       alto,
       expandido: false,
+      zona: null,
       previo: null,
     },
     area,
@@ -131,15 +186,109 @@ export function marcoInicial(area: Area, indice: number): Marco {
 export function encuadrar(marco: Marco, area: Area): Marco {
   if (marco.expandido) return { ...marco, ...expandidoEn(area) };
 
-  const ancho = Math.min(Math.max(marco.ancho, MARCO_MINIMO.ancho), area.ancho);
-  const alto = Math.min(Math.max(marco.alto, MARCO_MINIMO.alto), area.alto);
-  const x = Math.min(Math.max(marco.x, area.x), area.x + area.ancho - ancho);
-  const y = Math.min(Math.max(marco.y, area.y), area.y + area.alto - alto);
-  return { ...marco, x, y, ancho, alto };
+  /*
+    ⚠️ **La zona se recalcula, no se restaura** — Enmienda 6. Una ventana
+    amosaicada a la izquierda tiene que seguir siendo *la mitad izquierda* de la
+    pantalla de ahora, no las 704 px que medía esa mitad en el monitor de ayer.
+    Es la diferencia entre un mosaico y dos ventanas que casualmente empezaron
+    partidas al medio.
+
+    El `Math.max` contra el mínimo sigue corriendo debajo: si el cuarto queda más
+    angosto que 380 px, gana el mínimo y la ventana se sale un poco de su cuarto
+    —ilegible es peor que desprolijo—.
+  */
+  const encajado = marco.zona === null ? marco : { ...marco, ...rectanguloDeZona(area, marco.zona) };
+
+  const ancho = Math.min(Math.max(encajado.ancho, MARCO_MINIMO.ancho), area.ancho);
+  const alto = Math.min(Math.max(encajado.alto, MARCO_MINIMO.alto), area.alto);
+  const x = Math.min(Math.max(encajado.x, area.x), area.x + area.ancho - ancho);
+  const y = Math.min(Math.max(encajado.y, area.y), area.y + area.alto - alto);
+  return { ...encajado, x, y, ancho, alto };
 }
 
 function expandidoEn(area: Area) {
   return { x: area.x, y: area.y, ancho: area.ancho, alto: area.alto };
+}
+
+/**
+ * El rectángulo de una zona, dentro del área — Enmienda 6.
+ *
+ * ⚠️ **Se reparte el área, no el viewport.** El área ya descuenta los 96 px que
+ * la barra de objetos necesita al pie: repartir la pantalla entera dejaría la
+ * mitad inferior por debajo de la barra, y las dos ventanas de abajo del mosaico
+ * de cuartos nacerían con su barra de título tapada.
+ *
+ * ⚠️ **No hay separación entre las dos mitades, y es a propósito.** Cada ventana
+ * tiene su borde de medio píxel y su sombra; un canal de 8 px entre las dos
+ * sumaría una tercera línea vertical que no separa nada que no esté ya separado.
+ */
+export function rectanguloDeZona(area: Area, zona: Zona): Rect {
+  const medioAncho = area.ancho / 2;
+  const medioAlto = area.alto / 2;
+  const derecha = area.x + medioAncho;
+  const abajo = area.y + medioAlto;
+
+  switch (zona) {
+    case "izquierda":
+      return { x: area.x, y: area.y, ancho: medioAncho, alto: area.alto };
+    case "derecha":
+      return { x: derecha, y: area.y, ancho: medioAncho, alto: area.alto };
+    case "arriba":
+      return { x: area.x, y: area.y, ancho: area.ancho, alto: medioAlto };
+    case "abajo":
+      return { x: area.x, y: abajo, ancho: area.ancho, alto: medioAlto };
+    case "sup-izq":
+      return { x: area.x, y: area.y, ancho: medioAncho, alto: medioAlto };
+    case "sup-der":
+      return { x: derecha, y: area.y, ancho: medioAncho, alto: medioAlto };
+    case "inf-izq":
+      return { x: area.x, y: abajo, ancho: medioAncho, alto: medioAlto };
+    case "inf-der":
+      return { x: derecha, y: abajo, ancho: medioAncho, alto: medioAlto };
+  }
+}
+
+/**
+ * Manda la ventana a una zona, o **la saca si ya estaba en ésa**.
+ *
+ * ⚠️ **El `previo` que se guarda es el de la ventana libre, no el de la zona
+ * anterior.** Pasar de la mitad izquierda a la derecha y después restaurar tiene
+ * que devolver la ventana al tamaño que el estudiante eligió a mano, no a media
+ * pantalla: media pantalla es un lugar donde la puso el mosaico, no un tamaño
+ * que ella haya tenido nunca.
+ *
+ * ⚠️ **Una zona puede quedar por debajo del mínimo, y no se fuerza.** Un cuarto
+ * de una pantalla de 1024 px mide 496 × 346, que entra; uno de 720 px mide 344 y
+ * **no**. `encuadrar` sube ese ancho a 380 px y la ventana se sale un poco de su
+ * cuarto: es mejor que dibujar un contenido ilegible adentro de un rectángulo
+ * prolijo. Quien decide si la zona se ofrece es la pantalla, que sabe cuánto
+ * mide.
+ */
+export function amosaicar(marco: Marco, zona: Zona, area: Area): Marco {
+  if (marco.zona === zona) return alternarExpandido(marco, area);
+
+  const previo =
+    marco.expandido || marco.zona !== null
+      ? marco.previo
+      : { x: marco.x, y: marco.y, ancho: marco.ancho, alto: marco.alto };
+
+  return encuadrar(
+    { ...rectanguloDeZona(area, zona), expandido: false, zona, previo },
+    area,
+  );
+}
+
+/**
+ * Saca la ventana del mosaico dejándola donde está.
+ *
+ * Es lo que pasa al arrastrarla o estirarla: en cuanto la mano la mueve deja de
+ * ser *"la mitad izquierda"* y pasa a ser *"donde la puse"*. Sin esto, mover una
+ * ventana amosaicada la haría volver sola a su zona en el próximo `encuadrar`
+ * —el siguiente `resize` de la ventana del navegador— y se vería como que el
+ * arrastre no tomó.
+ */
+function liberar(marco: Marco): Marco {
+  return marco.zona === null ? marco : { ...marco, zona: null, previo: null };
 }
 
 /**
@@ -151,7 +300,10 @@ function expandidoEn(area: Area) {
  */
 export function mover(marco: Marco, dx: number, dy: number, area: Area): Marco {
   if (marco.expandido) return marco;
-  return encuadrar({ ...marco, x: marco.x + dx, y: marco.y + dy }, area);
+  // ⚠️ **Arrastrarla la saca del mosaico** — Enmienda 6. En cuanto la mano la
+  // mueve deja de ser «la mitad izquierda» y pasa a ser «donde la puse».
+  const libre = liberar(marco);
+  return encuadrar({ ...libre, x: libre.x + dx, y: libre.y + dy }, area);
 }
 
 /** Los ocho agarres, en el vocabulario de los puntos cardinales. */
@@ -170,25 +322,27 @@ export type Borde = "n" | "s" | "e" | "o" | "ne" | "no" | "se" | "so";
 export function redimensionar(marco: Marco, borde: Borde, dx: number, dy: number, area: Area): Marco {
   if (marco.expandido) return marco;
 
-  let { x, y, ancho, alto } = marco;
+  // Estirarla también la saca del mosaico, por el mismo motivo que arrastrarla.
+  const base = liberar(marco);
+  let { x, y, ancho, alto } = base;
 
-  if (borde.includes("e")) ancho = marco.ancho + dx;
+  if (borde.includes("e")) ancho = base.ancho + dx;
   if (borde.includes("o")) {
-    ancho = marco.ancho - dx;
+    ancho = base.ancho - dx;
     // El mínimo topa el origen, no lo empuja.
     const efectivo = Math.max(ancho, MARCO_MINIMO.ancho);
-    x = marco.x + (marco.ancho - efectivo);
+    x = base.x + (base.ancho - efectivo);
   }
-  if (borde.includes("s")) alto = marco.alto + dy;
+  if (borde.includes("s")) alto = base.alto + dy;
   if (borde.includes("n")) {
-    alto = marco.alto - dy;
+    alto = base.alto - dy;
     const efectivo = Math.max(alto, MARCO_MINIMO.alto);
-    y = marco.y + (marco.alto - efectivo);
+    y = base.y + (base.alto - efectivo);
   }
 
   return encuadrar(
     {
-      ...marco,
+      ...base,
       x,
       y,
       ancho: Math.max(ancho, MARCO_MINIMO.ancho),
@@ -206,15 +360,23 @@ export function redimensionar(marco: Marco, borde: Borde, dx: number, dy: number
  * te tira el tamaño que elegiste.
  */
 export function alternarExpandido(marco: Marco, area: Area): Marco {
-  if (marco.expandido) {
+  /*
+    ⚠️ **Restaurar también saca del mosaico** — Enmienda 6. Con la ventana
+    encajada en media pantalla, el tercer control es el único que la devuelve a
+    su tamaño libre: si sólo mirara `expandido`, apretarlo sobre una ventana
+    amosaicada la expandiría a pantalla completa y no habría gesto para volver
+    al tamaño que el estudiante había elegido.
+  */
+  if (marco.expandido || marco.zona !== null) {
     const previo = marco.previo;
-    if (!previo) return encuadrar({ ...marco, expandido: false, previo: null }, area);
-    return encuadrar({ ...previo, expandido: false, previo: null }, area);
+    if (!previo) return encuadrar({ ...marco, expandido: false, zona: null, previo: null }, area);
+    return encuadrar({ ...previo, expandido: false, zona: null, previo: null }, area);
   }
 
   return {
     ...expandidoEn(area),
     expandido: true,
+    zona: null,
     previo: { x: marco.x, y: marco.y, ancho: marco.ancho, alto: marco.alto },
   };
 }
@@ -292,12 +454,24 @@ export function comoMarco(valor: unknown): Marco | null {
     }
   }
 
+  /*
+    ⚠️ **Una zona desconocida se descarta, y la ventana no.** Es lo mismo que
+    hace `clavesDesplegadas` con una clave inventada: un campo editado a mano no
+    es motivo para tirar el marco entero, que es lo único que sabe dónde estaba
+    la ventana. Sin zona vuelve a ser libre, que es el estado por defecto.
+
+    ⚠️ **Y nunca sale con `expandido` y zona a la vez.** Es el invariante de
+    `Marco.zona`, y acá es donde entra lo que escribió otra versión del código.
+  */
+  const zona = esZona(m.zona) && m.expandido !== true ? m.zona : null;
+
   return {
     x: m.x as number,
     y: m.y as number,
     ancho: m.ancho as number,
     alto: m.alto as number,
     expandido: m.expandido,
+    zona,
     previo: previoValido,
   };
 }

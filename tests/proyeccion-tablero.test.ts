@@ -5,7 +5,6 @@ import {
   proyectarTablero,
   type InsumosDelDia,
 } from "@/lib/server/servicios/proyeccion-tablero";
-import { proyectarMaterias } from "@/lib/server/servicios/proyeccion-materias";
 import { proyectarReparto, type InsumosDeReparto } from "@/lib/server/servicios/proyeccion-reparto";
 
 /**
@@ -53,61 +52,40 @@ const insumos = (materias: Materia[], minutosPorSemana: number | null = 600): In
 
 const SIN_DIA: InsumosDelDia = { clases: [], compromisos: [], disponibilidad: [], dictadas: [], temas: [] };
 
-describe("las tarjetas", () => {
-  it("siguen el orden y la cobertura del índice: no hay una segunda verdad", () => {
-    const i = insumos([
-      materia({ cursadaId: "lejos", nombre: "Lejos", diasHastaEvaluacion: 20 }),
-      materia({ cursadaId: "cerca", nombre: "Cerca", diasHastaEvaluacion: 5 }),
-    ]);
-    const t = proyectarTablero(i, SIN_DIA, AHORA, ZONA);
-    const indice = proyectarMaterias(i, AHORA, ZONA);
-    expect(t.tarjetas.map((c) => c.cursadaId)).toEqual(indice.materias.map((m) => m.cursadaId));
-    expect(t.tarjetas.map((c) => c.cobertura?.fraccion ?? null)).toEqual(
-      indice.materias.map((m) => m.cobertura?.fraccion ?? null),
-    );
-  });
-
-  it("parten la evaluación en tipo, fecha y modalidad **legible**", () => {
-    const [c] = proyectarTablero(insumos([materia()]), SIN_DIA, AHORA, ZONA).tarjetas;
-    expect(c?.evaluacion).toEqual({ rotulo: "Parcial 1", fecha: "mar 15 sept", modalidad: "teórico escrito" });
-    expect(c?.faltan).toBe("4 d");
-  });
-
-  it("una modalidad que el copy no conoce se omite: **el enum nunca es copy**", () => {
-    const [c] = proyectarTablero(
-      insumos([materia({ evaluacion: { titulo: "Final", tipo: "final", modalidad: "escrito", fecha: "2026-09-15" } })]),
+describe("la píldora, que es lo único que queda de las evaluaciones — ADR-096", () => {
+  it("cuenta los días de la más cercana", () => {
+    const t = proyectarTablero(
+      insumos([
+        materia({ cursadaId: "lejos", diasHastaEvaluacion: 20 }),
+        materia({ cursadaId: "cerca", diasHastaEvaluacion: 5 }),
+      ]),
       SIN_DIA,
       AHORA,
       ZONA,
-    ).tarjetas;
-    expect(c?.evaluacion?.modalidad).toBeNull();
+    );
+    expect(t.proximaEvaluacion).toEqual({ dias: 5 });
   });
 
-  it("ningún enum crudo llega a la pantalla", () => {
-    const t = proyectarTablero(insumos([materia()], 30), SIN_DIA, AHORA, ZONA);
-    expect(JSON.stringify(t)).not.toMatch(/teorico_escrito|sin_evidencia|CONFIRMED|declared/);
-  });
-
-  it("el nombre va con mayúscula inicial y el romano se conserva (ADR-088 E5)", () => {
-    const [c] = proyectarTablero(insumos([materia()]), SIN_DIA, AHORA, ZONA).tarjetas;
-    expect(c?.nombre).toBe("Analisis matematico I");
-  });
-
-  it("sin fecha no hay cifra ni píldora: ausencia, no cero", () => {
+  it("sin fecha no hay píldora: ausencia, no cero", () => {
     const t = proyectarTablero(
       insumos([materia({ diasHastaEvaluacion: null, evaluacion: null })]),
       SIN_DIA,
       AHORA,
       ZONA,
     );
-    expect(t.tarjetas[0]).toMatchObject({ evaluacion: null, dias: null, faltan: null });
     expect(t.proximaEvaluacion).toBeNull();
   });
 
-  it("el carril deja una semana de aire después de la más lejana, y nunca mide menos de 14 días", () => {
-    expect(proyectarTablero(insumos([materia()]), SIN_DIA, AHORA, ZONA).horizonteEnDias).toBe(14);
-    const lejos = proyectarTablero(insumos([materia({ diasHastaEvaluacion: 37 })]), SIN_DIA, AHORA, ZONA);
-    expect(lejos.horizonteEnDias).toBe(42);
+  it("ya no se arman tarjetas ni carril: el listado vive en `/materias`", () => {
+    const t = proyectarTablero(insumos([materia()]), SIN_DIA, AHORA, ZONA);
+    expect(t).not.toHaveProperty("tarjetas");
+    expect(t).not.toHaveProperty("horizonteEnDias");
+    expect(t).not.toHaveProperty("aclaracionDeCobertura");
+  });
+
+  it("ningún enum crudo llega a la pantalla", () => {
+    const t = proyectarTablero(insumos([materia()], 30), SIN_DIA, AHORA, ZONA);
+    expect(JSON.stringify(t)).not.toMatch(/teorico_escrito|sin_evidencia|CONFIRMED|declared/);
   });
 });
 

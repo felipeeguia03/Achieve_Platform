@@ -5,7 +5,7 @@ import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
 import { ctaRegistry } from "@/lib/navigation/cta-registry";
 import { rutaDeCta, rutaDeCtaCon } from "@/lib/navigation";
 import { proyectarDia, type EstadoDelDia } from "@/lib/server/servicios/proyeccion-hoy";
-import type { HoyProps, MateriaResumen, TableroProps, TarjetaDeEvaluacion } from "@/lib/domain/view-models";
+import type { HoyProps, MateriaResumen, TableroProps } from "@/lib/domain/view-models";
 
 /**
  * **[ADR-054](../docs/decisions.md#adr-054), opción `B`** — decidida por el
@@ -58,39 +58,36 @@ const BASE: HoyProps = {
 };
 
 /**
- * Las mismas nueve, como tarjetas del tablero. ⚠️ **La cola `1 de N` salió de
- * `UX01` por [ADR-093](../docs/decisions.md#adr-093)**: la garantía de ADR-054 no
- * se perdió, se mudó a la tarjeta, que es ahora por donde se entra a una
- * materia desde Hoy.
+ * Las mismas nueve, como **riesgos de planificación**.
+ *
+ * ⚠️ **La garantía de ADR-054 se mudó dos veces, y sigue siendo la misma.**
+ * Vivía en la cola `1 de N`, que [ADR-093](../docs/decisions.md#adr-093) retiró;
+ * pasó a las tarjetas de evaluación, que [ADR-096](../docs/decisions.md#adr-096)
+ * descartó. Hoy el único camino de `UX01` a una materia es **el botón de un
+ * riesgo**, y lo que se prueba es lo de siempre: abrir la séptima abre la
+ * séptima.
  */
 const TABLERO: TableroProps = {
   proximaEvaluacion: null,
-  tarjetas: NUEVE.map(
-    (m): TarjetaDeEvaluacion => ({
-      cursadaId: m.cursadaId as string,
-      nombre: m.nombre,
-      evaluacion: null,
-      dias: null,
-      faltan: null,
-      cobertura: null,
-      sinCobertura: null,
-      ultimoAvance: null,
-      tono: "neutral",
-    }),
-  ),
-  aclaracionDeCobertura: null,
-  horizonteEnDias: 14,
-  riesgos: [],
+  riesgos: NUEVE.map((m) => ({
+    regla: "SIN_ACTIVIDAD_CERCA" as const,
+    motor: "ACADEMICO" as const,
+    titulo: `${m.nombre}: evaluación en 4 días y ningún avance registrado`,
+    detalle: null,
+    cursadaId: m.cursadaId as string,
+    // ADR-096: el nombre viaja con el riesgo, y es lo que recibe `onAbrirMateria`.
+    materia: m.nombre,
+  })),
   hoy: { clases: [], avanzar: [], vacioDeAvance: "", horarios: [], notas: [] },
 };
 
-/** Toca la tarjeta pedida y devuelve la cursada que se abrió. */
+/** Toca el riesgo pedido y devuelve la cursada que se abrió. */
 function abrirLaMateria(indice: number): string | null | undefined {
   const abierta = vi.fn();
   render(<HoyAutogestion {...BASE} tablero={TABLERO} onVerMateria={abierta} />);
 
-  const tarjetas = screen.getByLabelText("Opción 1 · tarjetas");
-  fireEvent.click(within(tarjetas).getByRole("button", { name: new RegExp(`^Materia ${indice + 1}\\b`) }));
+  const riesgos = screen.getByLabelText("Riesgos detectados");
+  fireEvent.click(within(riesgos).getAllByRole("button", { name: "Abrir materia" })[indice] as HTMLElement);
   return abierta.mock.calls[0]?.[0];
 }
 
@@ -159,13 +156,13 @@ describe("§2 · La segunda, la séptima y la novena no abren la primera", () =>
     expect(abrirLaMateria(0)).toBe("ce-1");
   });
 
-  it("sin tablero —el Track A, sin cursadas persistidas— no hay tarjeta que invente un id", () => {
-    // Antes esto lo cubría la cola con `cursadaId: null`. La tarjeta **siempre**
-    // viene con su cursada, porque sólo existe con datos persistidos: sin ellos
-    // no se dibuja, y no hay nada que abrir.
+  it("sin tablero —el Track A, sin cursadas persistidas— no hay riesgo que invente un id", () => {
+    // Antes esto lo cubría la cola con `cursadaId: null`. Un riesgo **siempre**
+    // viene con su cursada o sin botón: sólo existe con datos persistidos, así
+    // que sin ellos no se dibuja y no hay nada que abrir.
     const abierta = vi.fn();
     render(<HoyAutogestion {...BASE} onVerMateria={abierta} />);
-    expect(screen.queryByLabelText("Opción 1 · tarjetas")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Riesgos detectados")).not.toBeInTheDocument();
     expect(abierta).not.toHaveBeenCalled();
   });
 });

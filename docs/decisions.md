@@ -145,6 +145,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-093](#adr-093) | **`UX01` es un tablero**: evaluaciones en dos opciones, riesgos de planificación `PLAN-v0.1` y los próximos 7 días | ✅ `ACCEPTED` *(11 sep 2026 · **decidido por el owner con la referencia delante**)* | [ADR-089](#adr-089), [ADR-090](#adr-090), [ADR-072](#adr-072), [ADR-073](#adr-073) |
 | [ADR-094](#adr-094) | **El cuadro de hoy**: clases con `Un.` y aula, *Podés avanzar* y horarios; el bloque horario gana el aula (simulada) | ✅ `ACCEPTED` *(11 sep 2026 · pedido del owner)* | [ADR-093](#adr-093), [ADR-062](#adr-062), [ADR-083](#adr-083) |
 | [ADR-095](#adr-095) | **Materias**: la fila dice el horario con su aula, la cobertura se muestra corta y la modalidad se lee | ✅ `ACCEPTED` *(12 sep 2026 · con la captura delante)* | [ADR-077](#adr-077), [ADR-072](#adr-072), [ADR-094](#adr-094) |
+| [ADR-096](#adr-096) | **Las dos opciones de evaluaciones se descartan**: `UX01` queda en Hero + Tu día + Riesgos | ✅ `ACCEPTED` *(12 sep 2026 · el owner miró las dos)* | [ADR-093](#adr-093), [ADR-077](#adr-077) |
 
 ---
 
@@ -8242,6 +8243,160 @@ una sola vez, el índice la importa, y la función de nombre no repone acentos.
 
 ---
 
+### ADR-088 · Enmienda 6 — todo entra a la barra, un objeto un lugar, y el mosaico
+
+**Estado:** `ACCEPTED` · 12 sep 2026 · **pedida por el owner, cuatro puntos**
+
+#### Contexto
+
+Con el escritorio andando, el owner pidió cuatro cosas de una vez:
+
+> *"1- que todo pueda ponerse en la barra de pestañas no solo las materias (entregas, formacion,
+> etc). 2- que si una pestaña se esta mostrando atrás, no puede ser abierta simultáneamente, es
+> decir, no pueden estar ambas abiertas al mismo tiempo. 3- al igual que iOS y mac, quiero que si
+> mantenés apretado el símbolo de agrandar, te deje optar por dejarla como pantalla dividida, para
+> que si hago lo mismo con dos pantallas, puedo ver ambas. 4- quiero que en la barra de búsqueda
+> pueda buscar por materias y se abra el modal."*
+
+Las cuatro son del mismo hueco: **el espacio de trabajo sólo sabía de materias**. Formación no se
+podía dejar abierta, el buscador contestaba con las nueve pantallas genéricas mientras la materia
+que se escribía no aparecía nunca, y la única forma de acomodar dos ventanas era arrastrarlas a ojo.
+
+#### Decisión
+
+**1. Cualquier superficie con ruta se abre como objeto.** El mapa vive en
+`lib/navigation/objetos-de-superficie.ts`: para cada nodo del grafo con pantalla, **qué objeto es**.
+No se inventa ninguna superficie ni ninguna ruta — la ruta sale de `surfaces.ts` y la etiqueta del
+menú cuando el menú tiene una. Tocar un ítem de la barra lateral **lo deja en la barra de objetos**,
+como ya pasaba con una materia.
+
+⚠️ **`UX02` no está en ese mapa, y no es un olvido.** Una materia se abre **con su cursada**
+—`materia:<cursadaId>`—, que es la identidad de §1 y la que hace que dos materias sean dos fichas.
+Una ficha *«Materia / Cursado»* en singular sería la promesa incumplida que [ADR-077](#adr-077)
+cerró.
+
+⚠️ **Dos tipos nuevos, `hoy` y `materias`, y son los únicos que no nombran una entidad.** Las otras
+siete superficies ya tenían tipo porque **su pantalla es la de un objeto del dominio**. `UX01` y el
+índice contestan una pregunta sobre *todo*, así que su `entidadId` es el `NodoId`. La regla de §1 no
+se afloja: siguen correspondiendo a algo que existe.
+
+**2. La ventana dibuja la superficie de verdad, y es EL MISMO componente.** Las once pantallas se
+mudaron de `app/(student)/*/page.tsx` a `components/superficies/`; la ruta quedó con el `Shell` y su
+nodo, y nada más. Una segunda versión «para la ventana» sería una segunda verdad sobre la misma
+pantalla.
+
+⚠️ **Cambia lo que la Enmienda 1 decía: la ventana ya no es sólo para consultar.** El aviso *"acá
+sólo se consulta"* se retiró porque pasó a ser falso — entregar desde una ventana entrega. Lo que
+**no** cambia es de quién es la decisión: la precedencia y la CTA única (`I-06`) siguen en
+`UX02`–`UX05` y en el registro canónico. La ventana no elige qué CTA mostrar; dibuja la pantalla que
+ya existe.
+
+⚠️ **Cada ventana lee SUS parámetros, no los de la barra de direcciones.** Dos ventanas de dos
+materias distintas están las dos sobre `/hoy?abierto=…`: leyendo `useSearchParams` mostrarían la
+misma. La consulta sale de la ruta del objeto (`useConsultaDeRuta`).
+
+⚠️ **Y la miga se apaga adentro de la ventana.** El breadcrumb dice *dónde estás*, y estás en la
+pantalla de atrás. Con dos ventanas abiertas, la última en montarse ganaría.
+
+**3. Un objeto no puede estar en dos lugares a la vez.** Mientras la superficie que se está mirando
+sea la de un objeto abierto, **su ventana no se dibuja** (`sinLaDeLaSuperficie`). Una ventana de
+Álgebra encima de la superficie de Álgebra es la misma materia dos veces, una tapando a la otra, y
+el estudiante no tiene cómo saber cuál le contesta el `Escape`.
+
+⚠️ **Se filtra al derivar, no al navegar, y ésa es la diferencia entre una regla y un parche.** A la
+superficie se llega por seis caminos —el buscador, la barra lateral, una CTA, el botón atrás, una
+URL pegada, *«Ver como página»*— y cada uno tendría que acordarse.
+
+⚠️ **La clave sigue en la URL: no se borra.** Es lo que hace que minimizar la superficie devuelva la
+ventana en vez de perderla. El proveedor guarda **dos listas** —la de la URL, para armar rutas; la
+visible, para dibujar—.
+
+⚠️ **Y la ficha del objeto que se está mirando entero minimiza la superficie.** Su ventana no se
+puede desplegar, así que sin este caso era el único gesto de la barra que no hacía nada visible.
+
+**4. El mosaico: mantener apretado el control de expandir ofrece ocho zonas.** Cuatro mitades y
+cuatro cuartos, con el rectángulo de cada una dibujado. Se toma **el mecanismo**, no la marca
+(`AGENTS.md` §1.5): los nombres son de acá y las medidas salen del área utilizable de Achieve, que
+ya reserva la barra al pie.
+
+| Regla | Por qué |
+|---|---|
+| **No hay tercios** | Un tercio de 1280 px son 405 px y `MARCO_MINIMO.ancho` es 380: el contenido de `UX02` deja de ser legible apenas alguien colapse algo. Una zona que no se puede usar es peor que una que no existe |
+| **Una zona que no entra no se dibuja** | En una pantalla de 720 px un cuarto no llega al mínimo. Es §2.7 —*omitir, no inventar*—: ofrecerla sería prometer una cuadrícula que la pantalla no puede dibujar |
+| **La zona se recalcula, no se restaura** | Amosaicada a la izquierda es *la mitad izquierda de la pantalla de ahora*, no las 704 px de ayer. Es la diferencia entre un mosaico y dos ventanas que casualmente empezaron partidas al medio |
+| **Arrastrarla o estirarla la libera** | En cuanto la mano la mueve deja de ser «la mitad izquierda». Sin esto, el siguiente `resize` la devolvería sola a su zona y el arrastre se vería como que no tomó |
+| **Restaurar vuelve al tamaño libre** | Y no a la zona anterior: media pantalla es un lugar donde la puso el mosaico, no un tamaño que la ventana haya tenido |
+| **`expandido` y `zona` nunca conviven** | Pantalla completa es *el área entera* y una zona es *una parte*: las dos a la vez no quieren decir nada |
+
+⚠️ **Tres caminos al mismo menú, y hacen falta los tres.** Mantener apretado (450 ms) es el gesto que
+pidió el owner; el clic derecho es el que prueba quien usa escritorio; y `↓` con el foco puesto es el
+que existe **sin mouse**, porque un long-press no se puede hacer con el teclado. El gesto se **dice**
+en el `aria-label` y en el `title` del propio control (`I-04`): un gesto escondido es `P-07` al revés.
+
+⚠️ **Si el long-press ya disparó, el clic de soltar NO cuenta.** Al revés, mantener apretado abría el
+menú **y al soltar expandía la ventana**.
+
+**5. El buscador encuentra materias, y elegir una abre la ventana.** Se agregó el tipo de entrada
+`materia`, con `@` como tercera vía de escape de `I-03` —los tres tipos colisionan de verdad—. Con
+algo escrito las materias van primero; **con el campo vacío mandan las pantallas**, porque sin nada
+escrito el buscador es un menú de *a dónde puedo ir* y siete materias arriba taparían todo.
+
+⚠️ **Elegir una materia abre la ventana, no navega.** El buscador se usa **sin querer irse de donde
+estás**. Un escenario, en cambio, sigue navegando: `?escenario=` es el conmutador del catálogo
+sintético, no un objeto que se pueda tener abierto.
+
+⚠️ **Se indexa el nombre y nada más.** La próxima evaluación va como contexto: indexarla haría que
+escribir *"parcial"* devolviera las siete materias.
+
+⚠️ **Y el buscador NUNCA navega solo. Esto se aprendió mirándolo en el navegador.** La primera
+versión pedía las materias con `useSuperficie`, que ante `SIN_SESION` **manda a `/login`** —correcto
+para una superficie, desastroso para el cromo—: abrir ⌘K en el recorrido del focus group, que corre
+con `?escenario=` y sin backend, **echaba al estudiante a la pantalla de ingreso**. Pide con `pedir`
+y, si no hay materias, ofrece las pantallas.
+
+**6. El índice del buscador pasa a ser «los nodos con ruta», no «las nueve superficies».** Con
+`superficieIds`, *Formación* y el índice de *Materias* —los dos con `wireframe: null` a propósito— no
+estaban en el buscador: se llegaba por el menú y no buscándolos. **La afirmación de que las
+superficies son nueve no se toca**: `superficieIds` sigue devolviendo nueve y su guard sigue en pie.
+
+#### Consecuencias
+
+- **Ninguna superficie nueva, ninguna CTA nueva, ningún contrato de backend nuevo.** Se agregó
+  `Marco.zona` —campo nuevo y opcional, así que lo guardado antes se sigue leyendo y **la clave de
+  `localStorage` no se versiona**—.
+- Las once rutas de `app/(student)/` quedan como marco. Hay guard: una ruta que vuelva a pedir datos
+  por su cuenta rompe `tests/superficies-conectadas.test.ts`.
+- **Navegar desde adentro de una ventana mueve la pantalla de atrás**, y es lo correcto: la
+  alternativa sería una historia de navegación por ventana, o sea un segundo router y una segunda
+  verdad sobre dónde está el estudiante.
+
+#### ⛔ Lo que NO resuelve
+
+**El color sigue siendo sólo de las materias.** Ahora hay ocho tipos más de objeto en la barra y
+ninguno lleva color: el argumento de identidad de la Enmienda 5 se escribió mirando la lista de
+materias y **sigue pendiente de la psicopedagoga**. Los estados de una `Evidence` son justamente
+donde un color se lee como juicio.
+
+#### Cómo se verifica
+
+`tests/todo-en-la-barra.test.tsx` — que cada ítem del menú tenga su objeto, que `UX02` no se abra
+suelto, que toda ruta abrible sea una ruta que la aplicación reconoce, que el buscador encuentre una
+materia por nombre sin acentos y la abra como objeto, y que **no importe el hook que redirige al
+login**. `tests/marco-de-panel.test.ts` — que dos zonas opuestas cubran el área sin pisarse, que los
+cuatro cuartos sumen el área, que `previo` sobreviva a saltar de zona, y que arrastrar libere.
+`tests/espacio-de-trabajo.test.ts` — `sinLaDeLaSuperficie`, y que no toque la URL.
+`tests/panel-de-objeto.test.tsx` — que estando en la materia su ventana no exista pero las otras sí,
+que minimizar la superficie la devuelva, el long-press y el camino de teclado.
+`tests/superficies-conectadas.test.ts` — las once superficies siguen sin caer al fixture, ahora
+leídas desde `components/superficies/`.
+
+**Y en el navegador, con la sesión sintética:** dos ventanas amosaicadas a izquierda y derecha miden
+`704 × 788` cada una en un viewport de 1440 × 900 —las dos mitades exactas del área utilizable— y el
+hit-test confirma que cada una responde en su mitad; estando en `/materia?cursada=…` la ficha queda
+en la barra y **no hay ninguna ventana**.
+
+---
+
 <a id="adr-092"></a>
 
 ## ADR-092 — Dos materias del Plan 2016 se llamaban igual, y ahora no
@@ -8537,7 +8692,9 @@ en rescate o incumplimiento **todo el tablero se repliega**.
 [ADR-073](#adr-073) **se queda sin superficie visible**; su tramo `CRITICA` vuelve como un riesgo
 (punto 4).
 
-**3. Las evaluaciones van en dos formas, para que el owner elija una.** *Opción 1 · tarjetas*: la de la
+**3. Las evaluaciones van en dos formas, para que el owner elija una.** ⚠️ **Resuelto el 12 de
+septiembre por [ADR-096](#adr-096): las descartó a las dos.** Lo que sigue es lo que se comparó.
+ *Opción 1 · tarjetas*: la de la
 foto —color de la materia arriba, días grandes, *"Parcial 1 · mar 15 sept · teórico escrito"*, barra
 y *"cobertura 26% · último avance hoy"*—, cuatro a la vista y el resto con scroll horizontal.
 *Opción 2 · carril*: un boceto clickeable, **una sola línea de tiempo con una marca por evaluación**;
@@ -8775,3 +8932,54 @@ literal, el horario llega con su aula y sin segundos, un bloque de otra cursada 
 fuera de escala se omite. `tests/horario-de-cursado.test.tsx` — el aula viaja hasta `UX02` y `null` no
 es «sin aula». Los guards de ADR-063 siguen intactos: `insumos_de_reparto` no menciona
 `class_schedule_block`.
+
+---
+
+<a id="adr-096"></a>
+
+## ADR-096 — Las dos opciones de evaluaciones se descartan: `UX01` queda en tres cuerpos
+
+**Estado:** ✅ `ACCEPTED` · 12 sep 2026 · **decidido por el owner, con las dos delante**
+**Toca:** `components/screens/hoy-autogestion.tsx`, `lib/domain/view-models.ts`, `lib/server/servicios/proyeccion-tablero.ts`
+**Enmienda:** [ADR-093](#adr-093) §3 — la comparación terminó, y **no ganó ninguna**.
+
+### Contexto
+
+[ADR-093](#adr-093) puso dos formas de listar las evaluaciones a convivir **a propósito y por poco
+tiempo**: *Opción 1 · tarjetas* —la de la referencia del owner— y *Opción 2 · carril* —un boceto
+clickeable—, con la regla escrita de que **la que no quedara se borraba**.
+
+El owner las miró y contestó: *"borra ambas"*, y sobre el resto de la pantalla: *"deja solo esto por
+ahora (la foto), lo de abajo sacalo"*.
+
+### Decisión
+
+**1. Salen las dos.** `UX01` queda con **tres cuerpos**, y ese es el contrato de la superficie:
+
+| | Qué contesta |
+|---|---|
+| **Hero** | ¿Qué hago ahora? — la única CTA primaria (`I-06`) |
+| **Tu día** | ¿Qué tengo hoy? — clases con `Un.` y aula, *Podés avanzar*, horarios |
+| **Riesgos detectados** | ¿Qué necesita atención? — las cinco reglas de planificación |
+
+**2. De las evaluaciones queda una sola cifra: la píldora del encabezado.** *"3 días para la próxima
+evaluación"*. El listado completo **ya existe y no se duplica**: es `/materias`, con sus dos vistas
+([ADR-077](#adr-077), [ADR-078](#adr-078)).
+
+**3. El contrato se achica con el dibujo.** `TableroProps` pierde `tarjetas`,
+`aclaracionDeCobertura` y `horizonteEnDias`. ⚠️ **Acá no se aplica el precedente de ADR-093** —*"se
+retira el dibujo, no el dato"*—, y la diferencia importa: `materias` y `reparto` siguen en `HoyProps`
+porque **`/api/hoy` los devolvía igual**; estos tres los calculaba esta proyección **sólo para esta
+sección**, así que mantenerlos sería pagar un payload que nadie lee.
+
+**4. Lo que se aprendió queda escrito, no en el código.** Las dos opciones se construyeron enteras,
+se vieron con datos reales y se descartaron. El carril —un eje con una marca por evaluación— **mostró
+lo que las tarjetas no**: dónde se amontonan las fechas. Si alguna vez se pide de nuevo *"ver todas
+las evaluaciones juntas"*, esa es la forma que ya se probó, y el lugar es `/materias`.
+
+### Consecuencia sobre `ADR-054`
+
+⚠️ **La garantía de [ADR-054](#adr-054) se mudó por segunda vez.** *"Abrir la séptima materia abre la
+séptima"* se probaba en la cola `1 de N`; ADR-093 la pasó a las tarjetas; ahora el único camino de
+`UX01` a una materia es **el botón de un riesgo**, y ahí se prueba. La regla no cambió: `CTA-001`
+viaja con su cursada.

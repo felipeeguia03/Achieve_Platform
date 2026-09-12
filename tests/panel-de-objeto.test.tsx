@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 
 /**
  * Las ventanas internas — [ADR-088](../docs/decisions.md#adr-088), Enmiendas 1 y 3.
@@ -36,10 +38,15 @@ const { BarraDeObjetos } = await import("@/components/shell/barra-de-objetos");
 const { BarraDeSuperficie } = await import("@/components/shell/barra-de-superficie");
 const { claveDeAlmacenamiento } = await import("@/lib/client/espacio-de-trabajo/persistencia");
 const { colorDeMateria } = await import("@/lib/domain/color-de-materia");
+const { areaDe } = await import("@/lib/domain/marco-de-panel");
+const { VISTA_POR_CAMINO } = await import("@/components/superficies/registro");
+const { nodoIds, nodos } = await import("@/lib/navigation/surfaces");
 
 const ANA = "est-SYN-ana";
 
-function sembrar(objetos: Array<{ tipo: string; id: string; etiqueta: string }>) {
+function sembrar(
+  objetos: Array<{ tipo: string; id: string; etiqueta: string; ruta?: string }>,
+) {
   window.localStorage.setItem(
     claveDeAlmacenamiento(ANA),
     JSON.stringify({
@@ -48,7 +55,13 @@ function sembrar(objetos: Array<{ tipo: string; id: string; etiqueta: string }>)
         entidadId: o.id,
         etiqueta: o.etiqueta,
         etiquetaSecundaria: null,
-        ruta: `/materia?cursada=${o.id}`,
+        /*
+          Por defecto la materia, que es el caso de casi todos estos tests. Se
+          puede pisar: desde la Enmienda 6 **la ruta decide qué dibuja la
+          ventana**, así que una ruta que el registro no conoce es la única
+          forma de ejercitar el caso «sin vista».
+        */
+        ruta: o.ruta ?? `/materia?cursada=${o.id}`,
         abiertoEn: `2026-09-10T0${i}:00:00.000Z`,
         visitadoEn: `2026-09-10T0${i}:00:00.000Z`,
       })),
@@ -347,7 +360,13 @@ describe("la barra de título de la superficie", () => {
    */
   it("la ventana lleva el color de su materia, el mismo que en la lista", async () => {
     sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
-    rutaActual = "/materia?cursada=ce-1&abierto=materia:ce-1";
+    /*
+      ⚠️ **Sobre `Hoy`, y no sobre la materia misma.** Desde la Enmienda 6 una
+      ventana **no se dibuja encima de su propia superficie** —ver el bloque de
+      abajo—, así que `/materia?cursada=ce-1&abierto=materia:ce-1` no tiene
+      ventana que mirarle el color: tiene la materia entera.
+    */
+    rutaActual = "/hoy?abierto=materia:ce-1";
     await montar();
 
     const cabecera = screen.getByRole("dialog").querySelector("header") as HTMLElement;
@@ -421,14 +440,24 @@ describe("la barra de título de la superficie", () => {
   });
 });
 
-describe("el panel consulta; la superficie trabaja", () => {
-  it("lo dice en pantalla, para que no parezca un lugar donde se opera", async () => {
-    sembrar([{ tipo: "unidad", id: "u1", etiqueta: "Unidad 1" }]);
-    rutaActual = "/hoy?abierto=unidad:u1";
-    await montar();
-    expect(screen.getByRole("dialog")).toHaveTextContent(
-      "Comprometerte, empezar y entregar se hacen en la materia",
+describe("la ventana dibuja la superficie, no una versión propia", () => {
+  /**
+   * ⚠️ **Cambió con la Enmienda 6, y lo decidió el owner.**
+   *
+   * Hasta la Enmienda 5 la ventana aclaraba al pie *"acá sólo se consulta"* y
+   * dibujaba una versión reducida de `UX02`. Ahora monta **el mismo componente
+   * que la ruta**, con sus CTAs vivas; la aclaración se retiró porque era falsa.
+   *
+   * Lo que este test fija es que no vuelva a haber dos versiones: el panel no
+   * importa ninguna pantalla de `components/screens/` por su cuenta.
+   */
+  it("no tiene una versión propia de ninguna pantalla", () => {
+    const panel = readFileSync(
+      resolve(process.cwd(), "components/shell/panel-de-objeto.tsx"),
+      "utf8",
     );
+    expect(panel).not.toMatch(/from "@\/components\/screens\//);
+    expect(panel).toMatch(/VISTA_POR_CAMINO/);
   });
 
   it("«Ver como página» lleva a la superficie del objeto", async () => {
@@ -441,17 +470,25 @@ describe("el panel consulta; la superficie trabaja", () => {
   });
 
   /**
-   * `AGENTS.md` §2.7 — *omitir, no inventar*. Un tipo sin vista **lo dice** y
-   * ofrece el camino que sí existe, en vez de caer a una pantalla parecida.
+   * ⚠️ **La red de seguridad de `Contenido` es eso, una red: hoy no se alcanza.**
+   *
+   * El panel dibuja *«Todavía no se puede ver este objeto acá»* cuando la ruta
+   * del objeto no está en el registro — y el espacio de trabajo **ya descarta**
+   * las rutas que la aplicación no reconoce (`validarContra`), así que para
+   * llegar a ese mensaje harían falta las dos cosas a la vez: una ruta del grafo
+   * **sin** vista registrada.
+   *
+   * Lo que corresponde probar entonces no es el mensaje: es que eso no pase.
+   * Este test es lo que hace que agregar una pantalla al grafo y olvidarse de
+   * registrarla rompa acá, en vez de aparecer como una ventana vacía en el
+   * navegador de alguien.
    */
-  it("un tipo sin vista propia lo dice, y ofrece abrirlo como página", async () => {
-    sembrar([{ tipo: "evidencia", id: "ev-1", etiqueta: "Evidencia del TP2" }]);
-    rutaActual = "/hoy?abierto=evidencia:ev-1";
-    await montar();
-
-    const panel = screen.getByRole("dialog");
-    expect(panel).toHaveTextContent("Todavía no se puede ver este objeto acá");
-    expect(panel).toHaveTextContent("Abrilo como página para verlo completo");
+  it("toda ruta que la aplicación reconoce tiene su vista registrada", () => {
+    for (const id of nodoIds) {
+      const ruta = nodos[id].ruta;
+      if (ruta === null) continue;
+      expect(VISTA_POR_CAMINO[ruta], `${id} (${ruta}) no tiene vista`).toBeDefined();
+    }
   });
 
   it("una materia que no carga degrada con su reintento, **sin inventar contenido**", async () => {
@@ -461,5 +498,155 @@ describe("el panel consulta; la superficie trabaja", () => {
 
     await waitFor(() => expect(pedir).toHaveBeenCalledWith("/api/materia?cursada=ce-1"));
     expect(screen.getByRole("dialog")).not.toHaveTextContent("Álgebra II");
+  });
+});
+
+/**
+ * Un objeto, un lugar — [ADR-088](../docs/decisions.md#adr-088), Enmienda 6.
+ *
+ * Lo pidió el owner: *"si una pestaña se está mostrando atrás, no puede ser
+ * abierta simultáneamente"*. Acá se prueba la mitad de integración; la regla
+ * pura está en `espacio-de-trabajo.test.ts`.
+ */
+describe("la ventana no se dibuja encima de su propia superficie", () => {
+  it("estando en la materia, su ventana no existe aunque la URL la traiga", async () => {
+    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
+    rutaActual = "/materia?cursada=ce-1&abierto=materia:ce-1";
+    await montar();
+
+    // La ficha sigue en la barra: el objeto está abierto, lo que no hay es una
+    // segunda copia de la misma materia flotando encima de la primera.
+    expect(screen.getByRole("tab", { name: /Álgebra/ })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("las otras ventanas sí se dibujan: se saca una, no el escritorio", async () => {
+    sembrar([
+      { tipo: "materia", id: "ce-1", etiqueta: "Álgebra" },
+      { tipo: "materia", id: "ce-2", etiqueta: "Economía" },
+    ]);
+    rutaActual = "/materia?cursada=ce-1&abierto=materia:ce-1,materia:ce-2";
+    await montar();
+
+    const ventanas = screen.getAllByRole("dialog");
+    expect(ventanas).toHaveLength(1);
+    expect(ventanas[0]).toHaveAccessibleName("Economía");
+  });
+
+  /**
+   * ⚠️ **La clave sigue en la URL, y por eso vuelve.** Si el filtro borrara la
+   * ventana en vez de ocultarla, minimizar la superficie dejaría al estudiante
+   * con la materia en la barra y sin la ventana que tenía puesta — y nada
+   * explicaría adónde se fue.
+   */
+  it("al minimizar la superficie, la ventana vuelve", async () => {
+    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
+    rutaActual = "/materia?cursada=ce-1&abierto=materia:ce-1";
+    await montar();
+
+    const controles = within(
+      screen.getByRole("group", { name: "Controles de esta ventana" }),
+    );
+    fireEvent.click(controles.getByRole("button", { name: "Minimizar: Álgebra" }));
+
+    // Vuelve al origen **con su ventana puesta**, no sin ella.
+    expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-1");
+  });
+
+  /**
+   * La ficha del objeto que se está mirando entero **minimiza la superficie**.
+   *
+   * ⚠️ Sin este caso, tocar esa ficha era el único gesto de la barra que no
+   * hacía nada visible: su ventana no se puede desplegar porque ya está
+   * ocupando la pantalla entera.
+   */
+  it("tocar su ficha baja la superficie a la barra", async () => {
+    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
+    rutaActual = "/materia?cursada=ce-1";
+    await montar();
+
+    fireEvent.click(screen.getByRole("tab", { name: /Álgebra/ }));
+    expect(push).toHaveBeenCalledWith("/hoy");
+  });
+});
+
+/**
+ * El mosaico, del lado del DOM — Enmienda 6.
+ *
+ * La aritmética se prueba en `marco-de-panel.test.ts`. Acá se prueba lo que esa
+ * no puede: que el gesto exista, que **no dispare dos cosas a la vez** y que se
+ * pueda llegar sin mouse.
+ */
+describe("acomodar la ventana en media pantalla", () => {
+  async function conVentana() {
+    sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
+    rutaActual = "/hoy?abierto=materia:ce-1";
+    await montar();
+    return screen.getByRole("button", { name: /Expandir: Álgebra/ });
+  }
+
+  it("el gesto está dicho en el control, no escondido", async () => {
+    const expandir = await conVentana();
+    // `I-04`: el atajo se muestra dentro del control que dispara. Un gesto que
+    // hay que descubrir es `P-07` al revés.
+    expect(expandir).toHaveAttribute("title", expect.stringContaining("Mantené apretado"));
+    expect(expandir).toHaveAttribute("aria-haspopup", "menu");
+  });
+
+  it("se llega sin mouse: `↓` con el foco puesto abre las zonas", async () => {
+    const expandir = await conVentana();
+    fireEvent.keyDown(expandir, { key: "ArrowDown" });
+
+    const menu = screen.getByRole("menu", { name: "Acomodar en la pantalla" });
+    expect(within(menu).getByRole("menuitem", { name: "Mitad izquierda" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "Mitad derecha" })).toBeInTheDocument();
+  });
+
+  it("elegir una zona la manda ahí, y el control pasa a decir «Restaurar»", async () => {
+    const expandir = await conVentana();
+    fireEvent.keyDown(expandir, { key: "ArrowDown" });
+    fireEvent.click(screen.getByRole("menuitem", { name: "Mitad izquierda" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Restaurar el tamaño: Álgebra/ })).toBeInTheDocument(),
+    );
+    // Media pantalla: el ancho de la ventana es la mitad del área utilizable.
+    const ventana = screen.getByRole("dialog");
+    expect(Number.parseFloat(ventana.style.width)).toBeCloseTo(
+      areaDe({ ancho: window.innerWidth, alto: window.innerHeight }).ancho / 2,
+      3,
+    );
+  });
+
+  /**
+   * ⚠️ **El clic de soltar no cuenta cuando el long-press ya disparó.**
+   *
+   * Es un defecto que se ve enseguida y se explica mal: mantener apretado abría
+   * el menú **y al soltar expandía la ventana**, así que el menú quedaba
+   * flotando sobre algo que ya había hecho la otra cosa.
+   */
+  it("mantener apretado abre el menú y NO expande al soltar", async () => {
+    /*
+      ⚠️ **El reloj falso se enciende DESPUÉS de montar.** Con los timers falsos
+      puestos desde el arranque, el `waitFor` de `montar` no avanza nunca —la
+      hidratación del espacio de trabajo espera una promesa— y el test se
+      cuelga cinco segundos en vez de probar nada.
+    */
+    const expandir = await conVentana();
+    vi.useFakeTimers();
+    try {
+      fireEvent.pointerDown(expandir);
+      // `act` porque el que abre el menú es un `setState` de adentro del
+      // `setTimeout`: sin él React no vuelve a renderizar y el menú no existe.
+      act(() => void vi.advanceTimersByTime(600));
+      fireEvent.pointerUp(expandir);
+      fireEvent.click(expandir);
+
+      expect(screen.getByRole("menu", { name: "Acomodar en la pantalla" })).toBeInTheDocument();
+      // Sigue diciendo «Expandir»: no se expandió nada.
+      expect(screen.getByRole("button", { name: /Expandir: Álgebra/ })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -1,15 +1,52 @@
 import { describe, expect, it } from "vitest";
 import { buscarEnPaleta } from "@/lib/navigation/paleta";
 import { indiceDePaleta } from "@/lib/fixtures/indice-paleta";
-import { superficieIds, nodos } from "@/lib/navigation/surfaces";
+import { nodoIds, superficieIds, nodos } from "@/lib/navigation/surfaces";
 import { escenarioIds } from "@/lib/fixtures";
 
 describe("El índice cubre lo que se puede alcanzar", () => {
-  it("incluye las nueve superficies", () => {
+  /**
+   * ⚠️ **Son las nueve superficies Y las pantallas que no son superficies** —
+   * ADR-088, Enmienda 6. `Formación` y el índice de `Materias` tienen
+   * `wireframe: null` a propósito —no son una décima superficie— y hasta acá el
+   * buscador los dejaba afuera: se podía llegar a ellos por el menú y no
+   * buscándolos, que es el defecto que la Enmienda 6 corrigió.
+   *
+   * La afirmación de que las superficies son nueve no se toca: se sigue
+   * verificando que estén **las nueve**, y aparte que estén todos los nodos con
+   * ruta.
+   */
+  it("incluye las nueve superficies y las demás pantallas con ruta", () => {
     const superficies = indiceDePaleta.filter((e) => e.tipo === "superficie");
-    expect(superficies).toHaveLength(superficieIds.length);
+    const conRuta = nodoIds.filter((id) => nodos[id].ruta !== null);
+    expect(superficies).toHaveLength(conRuta.length);
     for (const id of superficieIds) {
       expect(superficies.some((e) => e.url === nodos[id].ruta), id).toBe(true);
+    }
+    for (const id of conRuta) {
+      expect(superficies.some((e) => e.url === nodos[id].ruta), id).toBe(true);
+    }
+  });
+
+  /**
+   * Elegir una pantalla en el buscador **la deja abierta en la barra** —
+   * Enmienda 6. La excepción es `UX02`: una materia se abre con su cursada, y
+   * una ficha *«Materia / Cursado»* en singular sería la promesa incumplida que
+   * ADR-077 cerró.
+   */
+  it("cada pantalla abrible trae su objeto, y la materia genérica no", () => {
+    const porUrl = new Map(
+      indiceDePaleta.filter((e) => e.tipo === "superficie").map((e) => [e.url, e]),
+    );
+    expect(porUrl.get(nodos.FORMACION.ruta!)?.objeto?.tipo).toBe("formacion");
+    expect(porUrl.get(nodos.UX01.ruta!)?.objeto?.tipo).toBe("hoy");
+    expect(porUrl.get(nodos.UX02.ruta!)?.objeto).toBeUndefined();
+  });
+
+  /** Un escenario **no es un objeto**: es el conmutador del catálogo sintético. */
+  it("ningún escenario abre una ventana", () => {
+    for (const e of indiceDePaleta.filter((x) => x.tipo === "escenario")) {
+      expect(e.objeto, e.titulo).toBeUndefined();
     }
   });
 

@@ -70,6 +70,8 @@ const TIPOS: readonly TipoDeObjeto[] = [
   "modo-examen",
   "formacion",
   "bitacora",
+  "hoy",
+  "materias",
 ];
 
 /**

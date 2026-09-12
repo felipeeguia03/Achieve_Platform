@@ -3,7 +3,6 @@ import { hayActividad } from "@/lib/domain/cobertura";
 import { cuadroDeHoy, type HorarioDeHoy } from "@/lib/domain/cuadro-de-hoy";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { fechaEnZona } from "@/lib/domain/zona";
-import { modalidadVisible } from "./proyeccion-materia";
 import {
   riesgosDePlanificacion,
   type MateriaParaRiesgo,
@@ -15,7 +14,6 @@ import type {
   RepartoProjection,
   RiesgoProyectado,
   TableroProps,
-  TarjetaDeEvaluacion,
 } from "@/lib/domain/view-models";
 import { enHoras, proyectarReparto, type InsumosDeReparto } from "./proyeccion-reparto";
 import { proyectarMaterias, type BloqueDeCursada } from "./proyeccion-materias";
@@ -29,9 +27,8 @@ import { fechaDeCalendario } from "./tiempo";
  *
  * Por el mismo motivo que el índice de materias: una tarjeta de Hoy y una fila
  * de `/materias` **no pueden decir cosas distintas** sobre la misma materia. Las
- * tarjetas salen de `proyectarMaterias` —mismo orden, misma cobertura, misma
- * urgencia— y lo único que se agrega es la evaluación **en partes**, que el
- * índice entrega pegada en una sola línea.
+ * filas salen de `proyectarMaterias` —mismo orden, misma cobertura, misma
+ * urgencia—, así que los riesgos y la píldora hablan de lo mismo que `/materias`.
  *
  * ## Lo que se suma
  *
@@ -61,14 +58,6 @@ export interface RepositorioDeTablero {
     hoy: string,
   ): Promise<InsumosDelDia>;
 }
-
-/**
- * ⚠️ **Se mudó a `proyeccion-materia.ts` con ADR-095**, cuando el owner pidió la
- * modalidad legible también en el índice y en `UX02`: la usan **tres**
- * proyecciones, y tres copias serían tres vocabularios. Se re-exporta para no
- * romper a quien la importaba de acá.
- */
-export { modalidadVisible } from "./proyeccion-materia";
 
 /**
  * El número de una unidad: el del código (`U5` → `5`) y, si no hay, su
@@ -114,6 +103,7 @@ function redactarRiesgo(r: Riesgo, reparto: RepartoProjection | null): RiesgoPro
         }),
         detalle: t("HOY.RIESGOS.SIN_TEMAS.DETALLE"),
         cursadaId: r.cursadaId,
+        materia: r.nombre,
       };
     case "COBERTURA_BAJA_CERCA":
       return {
@@ -126,6 +116,7 @@ function redactarRiesgo(r: Riesgo, reparto: RepartoProjection | null): RiesgoPro
         }),
         detalle: t("HOY.RIESGOS.COBERTURA.DETALLE"),
         cursadaId: r.cursadaId,
+        materia: r.nombre,
       };
     case "SIN_ACTIVIDAD_CERCA":
       return {
@@ -141,6 +132,7 @@ function redactarRiesgo(r: Riesgo, reparto: RepartoProjection | null): RiesgoPro
         }),
         detalle: null,
         cursadaId: r.cursadaId,
+        materia: r.nombre,
       };
     case "EVALUACIONES_ENCIMADAS":
       return {
@@ -155,6 +147,7 @@ function redactarRiesgo(r: Riesgo, reparto: RepartoProjection | null): RiesgoPro
         }),
         // Es de varias materias a la vez: abrir una sería elegir cuál importa.
         cursadaId: null,
+        materia: null,
       };
     case "PLAN_NO_ENTRA":
       // ⚠️ **El título es el de la psicopedagoga, no uno nuevo** (ADR-075 §A3).
@@ -165,6 +158,7 @@ function redactarRiesgo(r: Riesgo, reparto: RepartoProjection | null): RiesgoPro
         titulo: t("HOY.REPARTO.CRITICA"),
         detalle: reparto?.cifras ?? null,
         cursadaId: null,
+        materia: null,
       };
   }
 }
@@ -214,28 +208,11 @@ export function proyectarTablero(
   });
   const rotulo = (e: NonNullable<InsumosDeReparto["materias"][number]["evaluacion"]>) => e.titulo ?? e.tipo;
 
-  const tarjetas: TarjetaDeEvaluacion[] = filas.map(({ f, m }) => ({
-    cursadaId: f.cursadaId,
-    nombre: nombreDeObjeto(f.nombre),
-    evaluacion: m.evaluacion
-      ? {
-          rotulo: rotulo(m.evaluacion),
-          fecha: fechaDeCalendario(m.evaluacion.fecha),
-          modalidad: modalidadVisible(m.evaluacion.modalidad),
-        }
-      : null,
-    dias: m.diasHastaEvaluacion,
-    faltan: f.faltan,
-    cobertura: f.cobertura
-      ? { fraccion: f.cobertura.fraccion, porcentaje: Math.round(f.cobertura.fraccion * 100) }
-      : null,
-    sinCobertura: f.sinCobertura,
-    ultimoAvance: f.ultimoAvance,
-    tono: f.tono,
-  }));
-
-  const dias = tarjetas.map((c) => c.dias).filter((d): d is number => d !== null && d >= 0);
-  const lejana = dias.length > 0 ? Math.max(...dias) : 0;
+  // ⚠️ **La única cifra de evaluaciones que queda** (ADR-096): la de la píldora.
+  // Las dos formas de listarlas se descartaron; el listado vive en `/materias`.
+  const dias = filas
+    .map(({ m }) => m.diasHastaEvaluacion)
+    .filter((d): d is number => d !== null && d >= 0);
 
   const reparto = proyectarReparto(i);
   const entrada: MateriaParaRiesgo[] = filas.map(({ f, m }) => ({
@@ -252,10 +229,6 @@ export function proyectarTablero(
 
   return {
     proximaEvaluacion: dias.length > 0 ? { dias: Math.min(...dias) } : null,
-    tarjetas,
-    aclaracionDeCobertura: tarjetas.some((c) => c.cobertura !== null) ? t("HOY.EVALUACIONES.NOTA") : null,
-    // Una semana de aire después de la más lejana, para que su marca no quede en el borde.
-    horizonteEnDias: Math.max(14, Math.ceil((lejana + 1) / 7) * 7),
     riesgos: riesgosDePlanificacion({ materias: entrada, tramoDelReparto: reparto?.tramo ?? null }).map(
       (r) => redactarRiesgo(r, reparto),
     ),

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  sinLaDeLaSuperficie,
   ESPACIO_VACIO,
   LIMITE_DURO,
   VISIBLES,
@@ -472,13 +473,13 @@ describe("persistencia", () => {
     let espacio = conObjetos(1);
     const clave = claveDe("unidad", "u1");
     espacio = encuadrarObjeto(espacio, clave, {
-      x: 40, y: 32, ancho: 900, alto: 600, expandido: false, previo: null,
+      x: 40, y: 32, ancho: 900, alto: 600, expandido: false, zona: null, previo: null,
     });
     guardar(ANA, espacio);
 
     const guardado = JSON.parse(window.localStorage.getItem(claveDeAlmacenamiento(ANA)) ?? "{}");
     const marco = guardado.objetos[0].marco;
-    expect(Object.keys(marco).sort()).toEqual(["alto", "ancho", "expandido", "previo", "x", "y"]);
+    expect(Object.keys(marco).sort()).toEqual(["alto", "ancho", "expandido", "previo", "x", "y", "zona"]);
     // Sólo números y un booleano: no hay por dónde filtrar un texto del dominio.
     for (const campo of ["x", "y", "ancho", "alto"]) expect(typeof marco[campo]).toBe("number");
     expect(typeof marco.expandido).toBe("boolean");
@@ -486,7 +487,7 @@ describe("persistencia", () => {
 
   it("el marco sobrevive a la recarga: la ventana vuelve donde estaba", () => {
     const clave = claveDe("unidad", "u1");
-    const marco = { x: 120, y: 64, ancho: 820, alto: 540, expandido: false, previo: null };
+    const marco = { x: 120, y: 64, ancho: 820, alto: 540, expandido: false, zona: null, previo: null };
     guardar(ANA, encuadrarObjeto(conObjetos(2), clave, marco));
 
     expect(leer(ANA).objetos[0]?.marco).toEqual(marco);
@@ -545,5 +546,45 @@ describe("persistencia", () => {
     expect(leer(BETO)).toEqual(ESPACIO_VACIO);
     // Y no barre el resto del almacenamiento del navegador.
     expect(window.localStorage.getItem("otra.cosa")).toBe("se queda");
+  });
+});
+
+/**
+ * Un objeto no está en dos lugares a la vez — [ADR-088](../docs/decisions.md#adr-088),
+ * Enmienda 6.
+ *
+ * El owner lo pidió literal: *"si una pestaña se está mostrando atrás, no puede
+ * ser abierta simultáneamente"*. Una ventana de Álgebra flotando encima de la
+ * superficie de Álgebra es la misma materia dos veces en la misma pantalla, una
+ * tapando a la otra — y el estudiante no tiene cómo saber cuál está mirando ni
+ * cuál le contesta el `Escape`.
+ */
+describe("la ventana y la superficie del mismo objeto no conviven", () => {
+  it("la del objeto que se está mirando entero **no se dibuja**", () => {
+    expect(sinLaDeLaSuperficie(["materia:a", "materia:b"], "materia:a")).toEqual(["materia:b"]);
+  });
+
+  it("las otras siguen desplegadas, y en el mismo orden", () => {
+    // El apilamiento es el orden de la lista: perderlo daría vuelta qué ventana
+    // está adelante cada vez que alguien entra a una materia.
+    expect(sinLaDeLaSuperficie(["a", "b", "c"], "b")).toEqual(["a", "c"]);
+  });
+
+  it("sin objeto en la superficie no saca nada", () => {
+    const claves = ["a", "b"];
+    expect(sinLaDeLaSuperficie(claves, null)).toBe(claves);
+  });
+
+  /**
+   * ⚠️ **La clave NO se borra de la URL, y ésa es la mitad que importa.**
+   *
+   * Esta función filtra **lo que se dibuja**; la URL conserva la ventana. Es lo
+   * que hace que minimizar la superficie la devuelva en vez de haberla perdido,
+   * y por eso el proveedor guarda las dos listas.
+   */
+  it("es un filtro de dibujo: no toca la URL", () => {
+    expect(rutaConPaneles("/materia?cursada=a", ["materia:a", "materia:b"])).toBe(
+      "/materia?cursada=a&abierto=materia%3Aa%2Cmateria%3Ab",
+    );
   });
 });

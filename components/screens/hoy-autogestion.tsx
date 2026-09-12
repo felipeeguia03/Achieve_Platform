@@ -7,19 +7,20 @@
  * ya resuelto por `selectHeroLevel` (`lib/domain/precedence.ts`); acá no se
  * rankea, no se prioriza y no se elige entre recomendaciones.
  *
- * Desde [ADR-093](../../docs/decisions.md#adr-093) es además un **tablero**:
- * el cuadro de hoy al lado del Hero ([ADR-094](../../docs/decisions.md#adr-094)), los riesgos de planificación y las
- * evaluaciones en dos formas —las dos opciones que el owner pidió ver juntas
- * para elegir una—. Los riesgos y la semana **llegan redactados** en
- * `TableroProps`: esta pantalla no evalúa ninguna regla.
+ * Desde [ADR-093](../../docs/decisions.md#adr-093) es además un **tablero**, y
+ * desde [ADR-096](../../docs/decisions.md#adr-096) tiene exactamente tres
+ * cuerpos: **el Hero**, **el cuadro de hoy** al lado
+ * ([ADR-094](../../docs/decisions.md#adr-094)) y **los riesgos de
+ * planificación**. Los dos últimos **llegan redactados** en `TableroProps`: esta
+ * pantalla no evalúa ninguna regla.
  *
- * Lo que salió de acá, por decisión del owner (ADR-093): la cola de materias
- * `1 de N`, el mapa de catorce días y el reparto de horas. **Los datos siguen en
- * `HoyProps`**; lo que se retiró es su dibujo.
+ * Lo que salió de acá, por decisión del owner: la cola de materias `1 de N`, el
+ * mapa de catorce días y el reparto (ADR-093), y **las dos opciones de
+ * evaluaciones —tarjetas y carril—, que se descartaron juntas** (ADR-096). Los
+ * datos que siguen llegando en `HoyProps` **no se dibujan**: lo que se retiró es
+ * su dibujo, no el contrato.
  */
 
-import { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   AccionDeObjeto,
   Eyebrow,
@@ -32,7 +33,6 @@ import {
 } from "./design-system";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara, ofreceCta } from "@/lib/content/hero";
-import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import type {
   CuadroDeHoy,
@@ -41,14 +41,12 @@ import type {
   RecuperacionProjection,
   RiesgoProyectado,
   TableroProps,
-  TarjetaDeEvaluacion,
 } from "@/lib/domain/view-models";
 import type { HeroLevel } from "@/lib/domain/precedence";
 
 /** Lo mínimo para abrir una materia: su cursada y cómo se llama. */
 type AbrirMateria = (m: { cursadaId: string; nombre: string }) => void;
 
-const pct = (n: number) => `${(Math.min(1, Math.max(0, n)) * 100).toFixed(2)}%`;
 const MONO = { fontFamily: "var(--font-mono)", fontSize: "var(--text-meta)" } as const;
 const TARJETA = {
   border: "1px solid var(--border)",
@@ -371,15 +369,7 @@ function CuadroHoy({ c, onAbrir }: { c: CuadroDeHoy; onAbrir?: AbrirMateria }) {
  * la materia**, que es navegación (`CTA-001`): ofrecer una salida propia por
  * riesgo sería el playbook que `C01-044` dejó sin valores.
  */
-function Riesgos({
-  riesgos,
-  nombres,
-  onAbrir,
-}: {
-  riesgos: RiesgoProyectado[];
-  nombres: ReadonlyMap<string, string>;
-  onAbrir?: AbrirMateria;
-}) {
+function Riesgos({ riesgos, onAbrir }: { riesgos: RiesgoProyectado[]; onAbrir?: AbrirMateria }) {
   return (
     <section aria-label={t("HOY.RIESGOS")}>
       <div className="flex items-baseline gap-3">
@@ -413,8 +403,13 @@ function Riesgos({
                     <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{r.detalle}</p>
                   )}
                 </div>
+                {/*
+                  ⚠️ **El nombre viaja en el riesgo** (ADR-096). Antes salía de las
+                  tarjetas de evaluación: al retirarlas, la sección habría quedado
+                  dependiendo de otra que ya no existe.
+                */}
                 {cursadaId && onAbrir && (
-                  <AccionDeObjeto onClick={() => onAbrir({ cursadaId, nombre: nombres.get(cursadaId) ?? "" })}>
+                  <AccionDeObjeto onClick={() => onAbrir({ cursadaId, nombre: r.materia ?? "" })}>
                     {t("HOY.RIESGOS.ABRIR")}
                   </AccionDeObjeto>
                 )}
@@ -424,359 +419,6 @@ function Riesgos({
         </ul>
       )}
       <ReglaDeNegocio>{t("HOY.RIESGOS.AYUDA")}</ReglaDeNegocio>
-    </section>
-  );
-}
-
-// ── Próximas evaluaciones ─────────────────────────────────────────────────────
-
-/** *"Parcial 1 · mar 15 sept · teórico escrito"* — lo que falta se omite. */
-function lineaDeEvaluacion(c: TarjetaDeEvaluacion): string {
-  if (!c.evaluacion) return t("HOY.EVALUACIONES.SIN_FECHA");
-  return [c.evaluacion.rotulo, c.evaluacion.fecha, c.evaluacion.modalidad].filter(Boolean).join(" · ");
-}
-
-/**
- * *"cobertura 26% · último avance hoy"*. Sin cobertura va el **por qué**, en
- * lugar de la cifra: una barra vacía por falta de datos y una por falta de
- * trabajo no se dibujan igual (ADR-072 §4).
- */
-function lineaDeHechos(c: TarjetaDeEvaluacion): string {
-  const cobertura = c.cobertura ? `${t("HOY.EVALUACIONES.COBERTURA")} ${c.cobertura.porcentaje}%` : c.sinCobertura;
-  const actividad = c.ultimoAvance
-    ? `${t("HOY.EVALUACIONES.ULTIMO_AVANCE")} ${c.ultimoAvance}`
-    : t("HOY.EVALUACIONES.SIN_AVANCE");
-  return [cobertura, actividad].filter(Boolean).join(" · ");
-}
-
-function Barra({ fraccion, color }: { fraccion: number; color: string }) {
-  return (
-    <div aria-hidden style={{ height: 6, borderRadius: 3, background: "var(--muted)", overflow: "hidden" }}>
-      <div style={{ width: pct(fraccion), height: "100%", background: color }} />
-    </div>
-  );
-}
-
-/**
- * **Opción 1 · tarjetas** — la referencia del owner, tal cual: el color de la
- * materia arriba, los días grandes, la barra y la línea de hechos.
- *
- * El color es **identidad, no medida** (ADR-088 Enmienda 5): la misma materia
- * tiene el mismo color al 3% y al 100%. La urgencia va en la cifra de días, que
- * es un hecho del calendario, nunca en la cobertura.
- */
-function Tarjeta({ c, onAbrir }: { c: TarjetaDeEvaluacion; onAbrir?: AbrirMateria }) {
-  const color = colorDeMateria(c.cursadaId);
-  const cuerpo = (
-    <>
-      <div className="flex items-start justify-between" style={{ gap: 10 }}>
-        <div className="min-w-0">
-          <p
-            title={c.nombre}
-            style={{
-              fontSize: "var(--text-body)",
-              fontWeight: 600,
-              color: "var(--foreground)",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {c.nombre}
-          </p>
-          <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{lineaDeEvaluacion(c)}</p>
-        </div>
-        {c.faltan && (
-          <span
-            style={{
-              fontSize: 28,
-              lineHeight: 1,
-              fontWeight: 300,
-              letterSpacing: "-0.02em",
-              whiteSpace: "nowrap",
-              fontVariantNumeric: "tabular-nums",
-              color: c.tono === "urgencia" ? "var(--urgencia-texto)" : "var(--foreground)",
-            }}
-          >
-            {c.faltan}
-          </span>
-        )}
-      </div>
-      {c.cobertura && <Barra fraccion={c.cobertura.fraccion} color={color} />}
-      <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{lineaDeHechos(c)}</p>
-    </>
-  );
-
-  const estilo = {
-    ...TARJETA,
-    borderTop: `3px solid ${color}`,
-    padding: "14px 16px",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 10,
-    textAlign: "left" as const,
-    scrollSnapAlign: "start" as const,
-    width: "100%",
-  };
-
-  return onAbrir ? (
-    <button data-tarjeta={c.cursadaId} onClick={() => onAbrir(c)} style={{ ...estilo, cursor: "pointer" }}>
-      {cuerpo}
-    </button>
-  ) : (
-    <div data-tarjeta={c.cursadaId} style={estilo}>
-      {cuerpo}
-    </div>
-  );
-}
-
-function OpcionTarjetas({ tarjetas, onAbrir }: { tarjetas: TarjetaDeEvaluacion[]; onAbrir?: AbrirMateria }) {
-  const carril = useRef<HTMLDivElement>(null);
-  const mover = (sentido: 1 | -1) => {
-    const el = carril.current;
-    if (el) el.scrollBy({ left: sentido * el.clientWidth, behavior: "smooth" });
-  };
-
-  return (
-    <section aria-label={t("HOY.EVALUACIONES.OPCION_1")}>
-      <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
-        <span style={{ ...MONO, color: "var(--muted-foreground)" }}>{t("HOY.EVALUACIONES.OPCION_1")}</span>
-        {tarjetas.length > 4 && (
-          <div className="flex items-center gap-2" style={{ color: "var(--muted-foreground)" }}>
-            <button aria-label="Anteriores" onClick={() => mover(-1)}>
-              <ArrowLeft size={14} />
-            </button>
-            <span style={MONO}>{tarjetas.length}</span>
-            <button aria-label="Siguientes" onClick={() => mover(1)}>
-              <ArrowRight size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-      {/*
-        Cuatro a la vista y el resto a la derecha, como pidió el owner. El scroll
-        vive **adentro de este contenedor**: el `body` nunca hace scroll horizontal.
-      */}
-      <div
-        ref={carril}
-        style={{
-          display: "grid",
-          gridAutoFlow: "column",
-          gridAutoColumns: "minmax(220px, calc((100% - 36px) / 4))",
-          gap: 12,
-          overflowX: "auto",
-          scrollSnapType: "x mandatory",
-          paddingBottom: 6,
-        }}
-      >
-        {tarjetas.map((c) => (
-          <Tarjeta key={c.cursadaId} c={c} onAbrir={onAbrir} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/**
- * **Opción 2 · carril** — un boceto clickeable, a propósito sin terminar.
- *
- * Un solo eje de tiempo con **una marca por evaluación**: lo que las tarjetas
- * cuentan de a una, esto lo muestra junto — dónde se amontonan las fechas y
- * dónde hay aire. Tocar una marca abre su detalle abajo; el detalle es la misma
- * información que la tarjeta.
- *
- * ⚠️ **La pantalla no hace aritmética de fechas**: recibe los días que faltan y
- * el largo del eje, y divide.
- */
-function OpcionCarril({
-  tarjetas,
-  horizonte,
-  onAbrir,
-}: {
-  tarjetas: TarjetaDeEvaluacion[];
-  horizonte: number;
-  onAbrir?: AbrirMateria;
-}) {
-  const conFecha = tarjetas.filter((c) => c.dias !== null && c.dias >= 0);
-  const sinFecha = tarjetas.filter((c) => c.dias === null || c.dias < 0);
-  const [elegida, setElegida] = useState<string | null>(null);
-  const actual =
-    tarjetas.find((c) => c.cursadaId === elegida) ?? conFecha[0] ?? tarjetas[0] ?? null;
-
-  // Dos marcas demasiado cerca se apilan en vez de taparse: la primera fila libre.
-  const finales: number[] = [];
-  const marcas = conFecha.map((c) => {
-    const pos = Math.min(1, (c.dias ?? 0) / horizonte);
-    let fila = finales.findIndex((p) => pos - p >= 0.04);
-    if (fila === -1) {
-      fila = finales.length;
-      finales.push(pos);
-    } else finales[fila] = pos;
-    return { c, pos, fila };
-  });
-  const semanas = Math.floor(horizonte / 7);
-
-  return (
-    <section
-      aria-label={t("HOY.EVALUACIONES.OPCION_2")}
-      style={{ border: "1px dashed var(--border)", borderRadius: "var(--radius)", padding: "12px 16px" }}
-    >
-      <div className="flex items-baseline justify-between" style={{ gap: 12 }}>
-        <span style={{ ...MONO, color: "var(--muted-foreground)" }}>{t("HOY.EVALUACIONES.OPCION_2")}</span>
-        <span style={{ ...MONO, color: "var(--muted-foreground)" }}>boceto</span>
-      </div>
-
-      <div style={{ overflowX: "auto" }}>
-        <div style={{ minWidth: 560, padding: "10px 12px 0" }}>
-          <div aria-hidden style={{ position: "relative", height: 16, ...MONO, color: "var(--muted-foreground)" }}>
-            {Array.from({ length: semanas + 1 }, (_, k) => (
-              <span
-                key={k}
-                style={{
-                  position: "absolute",
-                  left: pct((k * 7) / horizonte),
-                  // Las puntas se alinean hacia adentro: centradas, se salían del cuadro.
-                  transform: k === 0 ? "none" : k === semanas ? "translateX(-100%)" : "translateX(-50%)",
-                  whiteSpace: "nowrap",
-                  color: k === 0 ? "var(--foreground)" : undefined,
-                  fontWeight: k === 0 ? 600 : 400,
-                }}
-              >
-                {k === 0 ? "hoy" : `+${k} sem`}
-              </span>
-            ))}
-          </div>
-          <div style={{ position: "relative", height: 18 + Math.max(1, finales.length) * 20 }}>
-            <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 6, height: 1, background: "var(--border)" }} />
-            {Array.from({ length: semanas + 1 }, (_, k) => (
-              <div
-                key={k}
-                aria-hidden
-                style={{ position: "absolute", left: pct((k * 7) / horizonte), top: 2, width: 1, height: 9, background: "var(--border)" }}
-              />
-            ))}
-            {marcas.map(({ c, pos, fila }) => {
-              const activa = actual?.cursadaId === c.cursadaId;
-              return (
-                <button
-                  key={c.cursadaId}
-                  aria-label={`${c.nombre} · ${c.faltan ?? ""}`}
-                  aria-pressed={activa}
-                  title={`${c.nombre} · ${lineaDeEvaluacion(c)}`}
-                  onClick={() => setElegida(c.cursadaId)}
-                  style={{
-                    position: "absolute",
-                    left: pct(pos),
-                    top: 14 + fila * 20,
-                    transform: "translateX(-50%)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "1px 4px",
-                    borderRadius: 4,
-                    background: activa ? "var(--muted)" : "transparent",
-                  }}
-                >
-                  <span
-                    aria-hidden
-                    style={{
-                      width: activa ? 11 : 9,
-                      height: activa ? 11 : 9,
-                      transform: "rotate(45deg)",
-                      background: colorDeMateria(c.cursadaId),
-                      outline: activa ? "2px solid var(--foreground)" : undefined,
-                      outlineOffset: 1,
-                    }}
-                  />
-                  <span style={{ ...MONO, color: "var(--muted-foreground)" }}>{c.faltan}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {sinFecha.length > 0 && (
-        <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)", marginTop: 6 }}>
-          {t("HOY.EVALUACIONES.CARRIL.SIN_FECHA")}{" "}
-          {sinFecha.map((c, i) => (
-            <span key={c.cursadaId}>
-              {i > 0 && " · "}
-              <button
-                onClick={() => setElegida(c.cursadaId)}
-                style={{ textDecoration: actual?.cursadaId === c.cursadaId ? "underline" : undefined }}
-              >
-                {c.nombre}
-              </button>
-            </span>
-          ))}
-        </p>
-      )}
-
-      {actual && (
-        <div
-          data-detalle={actual.cursadaId}
-          style={{
-            marginTop: 10,
-            padding: "12px 14px",
-            borderLeft: `3px solid ${colorDeMateria(actual.cursadaId)}`,
-            background: "var(--muted)",
-            borderRadius: 6,
-            display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: "6px 16px",
-            alignItems: "center",
-          }}
-        >
-          <div className="min-w-0">
-            <p style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--foreground)" }}>{actual.nombre}</p>
-            <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{lineaDeEvaluacion(actual)}</p>
-          </div>
-          <span style={{ fontSize: 24, fontWeight: 300, fontVariantNumeric: "tabular-nums", color: "var(--foreground)" }}>
-            {actual.faltan ?? ""}
-          </span>
-          <div style={{ gridColumn: "1 / -1" }}>
-            {actual.cobertura && <Barra fraccion={actual.cobertura.fraccion} color={colorDeMateria(actual.cursadaId)} />}
-            <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)", marginTop: 4 }}>
-              {lineaDeHechos(actual)}
-            </p>
-          </div>
-          {onAbrir && (
-            <div style={{ gridColumn: "1 / -1" }}>
-              <AccionDeObjeto onClick={() => onAbrir(actual)}>{t("HOY.EVALUACIONES.ABRIR")}</AccionDeObjeto>
-            </div>
-          )}
-        </div>
-      )}
-
-      <ReglaDeNegocio>{t("HOY.EVALUACIONES.CARRIL.AYUDA")}</ReglaDeNegocio>
-    </section>
-  );
-}
-
-function Evaluaciones({ tablero, onAbrir }: { tablero: TableroProps; onAbrir?: AbrirMateria }) {
-  // Sin materias la sección no se dibuja vacía: no hay nada que comparar.
-  if (tablero.tarjetas.length === 0) return null;
-  return (
-    <section aria-label={t("HOY.EVALUACIONES")} className="space-y-3">
-      <div>
-        <Eyebrow>{t("HOY.EVALUACIONES")}</Eyebrow>
-        <ReglaDeNegocio>{t("HOY.EVALUACIONES.COMPARACION")}</ReglaDeNegocio>
-        {/*
-          ⚠️ **No es «no tenés evaluaciones»**: es que ninguna materia tiene la
-          fecha cargada — *sin datos no es cero* (`AGENTS.md` §2.5).
-        */}
-        {tablero.proximaEvaluacion === null && (
-          <ReglaDeNegocio>
-            {t("HOY.SIN_EVALUACIONES")} {t("HOY.SIN_EVALUACIONES.AYUDA")}
-          </ReglaDeNegocio>
-        )}
-      </div>
-      <OpcionTarjetas tarjetas={tablero.tarjetas} onAbrir={onAbrir} />
-      {/* La nota al pie de ADR-072, obligatoria si hay alguna barra. */}
-      {tablero.aclaracionDeCobertura && <ReglaDeNegocio>{tablero.aclaracionDeCobertura}</ReglaDeNegocio>}
-      <OpcionCarril tarjetas={tablero.tarjetas} horizonte={tablero.horizonteEnDias} onAbrir={onAbrir} />
     </section>
   );
 }
@@ -816,7 +458,6 @@ export function HoyAutogestion({
   // Sin ninguna de las dos, **no se ofrece la acción** (AGENTS.md §2.2).
   const abrir: AbrirMateria | undefined =
     onAbrirMateria ?? (onVerMateria ? (m) => onVerMateria(m.cursadaId) : undefined);
-  const nombres = new Map((tablero?.tarjetas ?? []).map((c) => [c.cursadaId, c.nombre]));
 
   return (
     <div
@@ -865,8 +506,7 @@ export function HoyAutogestion({
       */}
       {conTablero && (
         <>
-          <Riesgos riesgos={tablero.riesgos} nombres={nombres} onAbrir={abrir} />
-          <Evaluaciones tablero={tablero} onAbrir={abrir} />
+          <Riesgos riesgos={tablero.riesgos} onAbrir={abrir} />
         </>
       )}
     </div>

@@ -304,19 +304,33 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
     */
     expect(panel).toMatch(/minimizarPanel\(clave\)/);
     /*
-      **Ninguna CTA muerta.** `MateriaCursado` dibuja sus CTAs por el dato, no
-      por el manejador: sin cablearlas, *«Activar Modo Examen»* aparecía adentro
-      del panel y no hacía nada. Se midió en el navegador.
+      **Ninguna CTA muerta**, y desde la Enmienda 6 por otro camino.
 
-      Y cablearlas no rompe la Enmienda 1: **todas navegan**, así que el panel
-      sigue sin decidir — te lleva al lugar donde se decide.
+      Hasta la Enmienda 5 el panel cableaba a mano las CTAs de `MateriaCursado`,
+      porque la pantalla las dibuja **por el dato** y sin manejador *«Activar
+      Modo Examen»* aparecía sin hacer nada. Ahora la ventana **no dibuja una
+      versión propia de la materia**: monta la misma superficie que la ruta, con
+      su cableado ya puesto. La CTA muerta deja de ser posible porque no hay
+      segunda copia donde olvidarse de cablearla.
+
+      Lo que se verifica es eso: que el contenido salga del registro compartido
+      y no de un `if` por tipo escrito acá adentro.
     */
-    expect(panel).toMatch(/onAvanzar=/);
-    expect(panel).toMatch(/onModoExamen=/);
-    expect(panel).toMatch(/router\.push/);
-    // Y los destinos salen del registro canónico, no escritos a mano.
-    expect(panel).toMatch(/rutaDeCta\("CTA-002"\)/);
-    expect(panel).not.toMatch(/router\.push\("\/(materia|examen|progreso)/);
+    expect(panel).toMatch(/VISTA_POR_CAMINO/);
+    expect(panel).not.toMatch(/from "@\/components\/screens\//);
+
+    /*
+      ⚠️ **Y el cableado sigue existiendo — en la superficie compartida.** Sin
+      esta mitad, el test de arriba pasaría igual con una ventana que dibuja la
+      materia sin ninguna CTA viva: lo que se verifica no es que el panel no
+      cablee, es que **alguien** lo haga y que los destinos salgan del registro
+      canónico y no escritos a mano.
+    */
+    const superficie = readFileSync(resolve(ROOT, "components/superficies/materia.tsx"), "utf8");
+    expect(superficie).toMatch(/onModoExamen=/);
+    expect(superficie).toMatch(/router\.push/);
+    expect(superficie).toMatch(/rutaDeCta\("CTA-002"\)/);
+    expect(superficie).not.toMatch(/router\.push\("\/(materia|examen|progreso)/);
   });
 
   /**

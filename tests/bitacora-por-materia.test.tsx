@@ -163,9 +163,16 @@ describe("§3 · `UX02` sabe de qué cursada habla, y no la inventa", () => {
     expect(proyectarMateria(base).cursadaId).toBe("ce-algebra");
   });
 
-  it("la página de la materia se lo pasa a la CTA", () => {
-    const pagina = readFileSync(resolve(RAIZ, "app/(student)/materia/page.tsx"), "utf8");
-    expect(pagina).toContain('rutaDeCtaCon("CTA-009", props.cursadaId)');
+  /**
+   * ⚠️ **Vive en `components/superficies/`, no en `app/`** — ADR-088, Enmienda
+   * 6. `UX02` se dibuja en dos lugares —su pantalla y la ventana de su ficha— y
+   * es **el mismo componente**: cablear `CTA-009` en la ruta habría dejado la
+   * Bitácora sin cursada adentro de la ventana, que es justo el defecto que
+   * ADR-054 cerró.
+   */
+  it("la superficie de la materia se lo pasa a la CTA", () => {
+    const superficie = readFileSync(resolve(RAIZ, "components/superficies/materia.tsx"), "utf8");
+    expect(superficie).toContain('rutaDeCtaCon("CTA-009", props.cursadaId)');
   });
 });
 

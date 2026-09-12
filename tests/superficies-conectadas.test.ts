@@ -32,26 +32,33 @@ const RUTA = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
  * bloque que la recorre se conserva a propósito: el día que aparezca una
  * superficie nueva sin backend, tiene dónde declararse en vez de aparecer
  * conectada a medias.
+ *
+ * ⚠️ **Lo que se mira ahora es `components/superficies/`, no `app/`** —
+ * ADR-088, Enmienda 6. Las rutas quedaron con el `Shell` y nada más: la
+ * superficie vive aparte porque se dibuja en dos lugares —la pantalla y la
+ * ventana de su ficha— y **tiene que ser el mismo componente**. El guard sigue
+ * mirando el mismo código; cambió el archivo donde está, y se apunta a los dos
+ * para que mudarlo de vuelta a la ruta también rompa.
  */
 const CONECTADAS = [
-  { ux: "UX01", pagina: "app/(student)/hoy/page.tsx", api: "/api/hoy" },
-  { ux: "UX02", pagina: "app/(student)/materia/page.tsx", api: "/api/materia" },
-  { ux: "UX03", pagina: "app/(student)/accion/page.tsx", api: "/api/accion" },
-  { ux: "UX04", pagina: "app/(student)/compromiso/page.tsx", api: "/api/compromiso" },
-  { ux: "UX05", pagina: "app/(student)/evidencia/page.tsx", api: "/api/evidencia" },
-  { ux: "UX06", pagina: "app/(student)/progreso/page.tsx", api: "/api/progreso" },
-  { ux: "UX07", pagina: "app/(student)/examen/activar/page.tsx", api: "/api/examen/activacion" },
-  { ux: "UX08", pagina: "app/(student)/examen/overview/page.tsx", api: "/api/examen" },
-  { ux: "UX09", pagina: "app/(student)/examen/paso/page.tsx", api: "/api/examen/paso" },
+  { ux: "UX01", pagina: "app/(student)/hoy/page.tsx", superficie: "components/superficies/hoy.tsx", api: "/api/hoy" },
+  { ux: "UX02", pagina: "app/(student)/materia/page.tsx", superficie: "components/superficies/materia.tsx", api: "/api/materia" },
+  { ux: "UX03", pagina: "app/(student)/accion/page.tsx", superficie: "components/superficies/accion.tsx", api: "/api/accion" },
+  { ux: "UX04", pagina: "app/(student)/compromiso/page.tsx", superficie: "components/superficies/compromiso.tsx", api: "/api/compromiso" },
+  { ux: "UX05", pagina: "app/(student)/evidencia/page.tsx", superficie: "components/superficies/evidencia.tsx", api: "/api/evidencia" },
+  { ux: "UX06", pagina: "app/(student)/progreso/page.tsx", superficie: "components/superficies/progreso.tsx", api: "/api/progreso" },
+  { ux: "UX07", pagina: "app/(student)/examen/activar/page.tsx", superficie: "components/superficies/examen-activacion.tsx", api: "/api/examen/activacion" },
+  { ux: "UX08", pagina: "app/(student)/examen/overview/page.tsx", superficie: "components/superficies/examen-overview.tsx", api: "/api/examen" },
+  { ux: "UX09", pagina: "app/(student)/examen/paso/page.tsx", superficie: "components/superficies/examen-paso.tsx", api: "/api/examen/paso" },
 ] as const;
 
 /** Vacía desde la Fase B5. Las nueve superficies leen de la base. */
 const SIN_CONECTAR: ReadonlyArray<{ ux: string; pagina: string; falta: string }> = [];
 
 describe("B2.6 · las superficies conectadas no caen al fixture en silencio", () => {
-  for (const { ux, pagina, api } of CONECTADAS) {
+  for (const { ux, pagina, superficie, api } of CONECTADAS) {
     it(`${ux} pide a la API y trata el fallo como fallo`, () => {
-      const src = RUTA(pagina);
+      const src = RUTA(superficie);
       expect(src).toContain("useSuperficie");
       expect(src).toContain(api);
       // El fallo se dibuja como fallo. Sin esto vuelve el fallback silencioso.
@@ -59,7 +66,7 @@ describe("B2.6 · las superficies conectadas no caen al fixture en silencio", ()
     });
 
     it(`${ux} sólo toca el catálogo dentro de la rama de \`?escenario=\``, () => {
-      const src = RUTA(pagina);
+      const src = RUTA(superficie);
       const guarda = src.indexOf("if (escenario)");
       const fixture = src.indexOf("getEscenario(");
       expect(guarda).toBeGreaterThan(-1);
@@ -68,7 +75,22 @@ describe("B2.6 · las superficies conectadas no caen al fixture en silencio", ()
     });
 
     it(`${ux} no dibuja nada mientras carga (P-12)`, () => {
-      expect(RUTA(pagina)).toContain('respuesta.estado === "CARGANDO"');
+      expect(RUTA(superficie)).toContain('respuesta.estado === "CARGANDO"');
+    });
+
+    /**
+     * ⚠️ **La ruta no vuelve a pedir datos por su cuenta** — Enmienda 6.
+     *
+     * Si alguien copiara el `useSuperficie` de vuelta a `app/`, habría **dos**
+     * lugares pidiendo lo mismo con reglas propias: la pantalla y la ventana
+     * dejarían de mostrar lo mismo, que es exactamente lo que el componente
+     * compartido vino a impedir. La ruta es el `Shell` y nada más.
+     */
+    it(`${ux} deja la ruta como marco: ni API ni fixture`, () => {
+      const src = RUTA(pagina);
+      expect(src).toContain("Shell");
+      expect(src).not.toContain("useSuperficie");
+      expect(src).not.toContain("getEscenario(");
     });
   }
 });
@@ -78,6 +100,24 @@ describe("B2.6 · las que no se conectaron están declaradas, no olvidadas", () 
     expect(CONECTADAS).toHaveLength(9);
     expect(SIN_CONECTAR).toEqual([]);
   });
+
+  /**
+   * Las dos pantallas que **no** son superficies —ADR-077 y ADR-087— siguen la
+   * misma regla, y desde la Enmienda 6 también se dibujan adentro de una
+   * ventana. Van aparte para que el `toHaveLength(9)` de arriba siga diciendo lo
+   * que dice: las superficies son nueve.
+   */
+  for (const [nombre, archivo, api] of [
+    ["el índice de Materias", "components/superficies/materias.tsx", "/api/materias"],
+    ["Formación", "components/superficies/formacion.tsx", "/api/formacion"],
+  ] as const) {
+    it(`${nombre} pide a la API y trata el fallo como fallo`, () => {
+      const src = RUTA(archivo);
+      expect(src).toContain("useSuperficie");
+      expect(src).toContain(api);
+      expect(src).toContain("NoSePudoCargar");
+    });
+  }
 
   for (const { ux, pagina, falta } of SIN_CONECTAR) {
     it(`${ux} sigue en fixtures — falta ${falta}`, () => {

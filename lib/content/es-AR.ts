@@ -128,9 +128,11 @@ export const copy = {
   "PALETA.PLACEHOLDER": "Buscá una pantalla o un escenario…",
   // La vía de escape de I-03 se muestra: forzar la interpretación no sirve si
   // hay que adivinar cómo se fuerza.
-  "PALETA.AYUDA": "Escribí > para buscar sólo pantallas, o # para buscar sólo escenarios.",
+  "PALETA.AYUDA":
+    "Escribí el nombre de una materia, o > para buscar sólo pantallas, # para escenarios y @ para materias.",
   "PALETA.FORZADO.SUPERFICIE": "Buscando sólo pantallas.",
   "PALETA.FORZADO.ESCENARIO": "Buscando sólo escenarios.",
+  "PALETA.FORZADO.MATERIA": "Buscando sólo materias.",
   "PALETA.VACIO": "No encontramos nada con eso.",
   "PALETA.VACIO_AYUDA": "Probá con el nombre de una pantalla, o con el ID de un escenario.",
 
@@ -742,15 +744,6 @@ export const copy = {
 
   // ── `UX01` · la capa «anticipar» ([ADR-089](../../docs/decisions.md#adr-089)) ──
   "HOY.PROXIMA_EVALUACION": "Próxima evaluación",
-  /**
-   * ⚠️ **Dice qué falta, nunca si alcanza.** Una ventana corta no significa *"no
-   * llegás"*: [ADR-058](../../docs/decisions.md#adr-058) cerró las predicciones,
-   * y [ADR-078](../../docs/decisions.md#adr-078) dejó la ventana en días de
-   * calendario. Acá se cuentan días, y punto.
-   */
-  "HOY.SIN_EVALUACIONES": "Ninguna de tus materias tiene fecha de evaluación cargada.",
-  "HOY.SIN_EVALUACIONES.AYUDA":
-    "Cargá la fecha en la materia y aparece acá, con los días que faltan.",
   "HOY.PANORAMA": "Los próximos 14 días",
   /**
    * La nota que hace legible el mapa. **Sin esto las formas no dicen nada**, y
@@ -762,30 +755,15 @@ export const copy = {
   "HOY.PANORAMA.VACIO": "Todavía no hay materias con fechas para ubicar en el mapa.",
 
   // ── `UX01` · el tablero ([ADR-093](../../docs/decisions.md#adr-093)) ──────
+  //
+  // ⚠️ **Las claves de las evaluaciones se fueron con ADR-096**: el owner
+  // descartó las dos formas de listarlas, y de las evaluaciones quedó sólo la
+  // píldora. El listado vive en `/materias`, con su propio copy.
   "HOY.PROPOSITO": "Qué necesita atención hoy",
   "HOY.PILDORA.DIAS": "para la próxima evaluación",
   "HOY.PILDORA.HOY": "Hoy tenés una evaluación",
-  "HOY.EVALUACIONES": "Próximas evaluaciones",
-  "HOY.EVALUACIONES.OPCION_1": "Opción 1 · tarjetas",
-  "HOY.EVALUACIONES.OPCION_2": "Opción 2 · carril",
-  /**
-   * ⚠️ **Las dos opciones conviven a propósito y por poco tiempo**: el owner
-   * las pidió juntas para elegir una. La que no quede se borra (ADR-093).
-   */
-  "HOY.EVALUACIONES.COMPARACION":
-    "Dos formas de mirar las mismas evaluaciones, para elegir una. La que no quede se borra.",
-  "HOY.EVALUACIONES.SIN_FECHA": "sin evaluación con fecha",
-  "HOY.EVALUACIONES.COBERTURA": "cobertura",
   // «avance» y no «actividad»: la segunda es la palabra vetada para `Action` (`C-02`),
   // y «Último avance» / «Sin avance registrado» ya son el vocabulario de `UX01`.
-  "HOY.EVALUACIONES.SIN_AVANCE": "sin avance registrado",
-  "HOY.EVALUACIONES.ULTIMO_AVANCE": "último avance",
-  /** La nota al pie de [ADR-072](../../docs/decisions.md#adr-072), literal: la escribió el owner. */
-  "HOY.EVALUACIONES.NOTA": "* temas marcados por vos sobre el total cargado. No es una nota ni una predicción.",
-  "HOY.EVALUACIONES.CARRIL.AYUDA":
-    "Cada marca es una evaluación, a su distancia de hoy. Tocala para ver el detalle.",
-  "HOY.EVALUACIONES.CARRIL.SIN_FECHA": "Sin fecha:",
-  "HOY.EVALUACIONES.ABRIR": "Abrir materia",
 
   /**
    * **Riesgos de planificación** — ADR-093. ⚠️ **No son `RiskSignal`**: miran el
@@ -876,14 +854,6 @@ export const copy = {
   "PANEL.MINIMIZAR": "Minimizar",
   "PANEL.CERRAR": "Cerrar",
   "PANEL.VER_COMO_PAGINA": "Ver como página",
-  /**
-   * ⚠️ **La frase que separa consultar de trabajar.** El panel no ofrece
-   * comprometerse, empezar ni entregar: eso pasa en la superficie, con su
-   * precedencia y su CTA única (`I-06`). Sin decirlo, un panel que muestra una
-   * materia parece un lugar donde se puede operar.
-   */
-  "PANEL.SOLO_CONSULTA":
-    "Esto es para consultar. Comprometerte, empezar y entregar se hacen en la materia.",
   /** El objeto existe en la barra y su superficie todavía no se puede desplegar. */
   "PANEL.SIN_VISTA": "Todavía no se puede ver este objeto acá.",
   "PANEL.SIN_VISTA_AYUDA": "Abrilo como página para verlo completo.",
@@ -893,6 +863,32 @@ export const copy = {
   "PANEL.MOVER": "Mover la ventana",
   "PANEL.CONTROLES": "Controles de esta ventana",
   "PANEL.REDIMENSIONAR": "Cambiar el tamaño",
+
+  // ── El mosaico (ADR-088, Enmienda 6) ─────────────────────────────────────
+  /**
+   * ⚠️ **Se dice «acomodar», no «dividir la pantalla».** Lo que se mueve es
+   * **esta** ventana, a una parte de la pantalla; la pantalla no se parte en
+   * nada. *"Pantalla dividida"* describiría un modo del sistema —uno donde no
+   * se puede tener una tercera ventana encima— y acá no lo hay: las otras
+   * ventanas siguen donde estaban y se pueden apilar arriba.
+   */
+  "PANEL.MOSAICO": "Acomodar en la pantalla",
+  /**
+   * El atajo dicho dentro del control que lo dispara (`I-04`).
+   *
+   * ⚠️ **Y dicho, porque mantener apretado no se ve.** Un gesto oculto que hay
+   * que descubrir es `P-07` al revés; va en el `title` y en el
+   * `aria-description` del mismo botón de expandir.
+   */
+  "PANEL.MOSAICO_AYUDA": "Mantené apretado para acomodarla en media pantalla",
+  "PANEL.ZONA.IZQUIERDA": "Mitad izquierda",
+  "PANEL.ZONA.DERECHA": "Mitad derecha",
+  "PANEL.ZONA.ARRIBA": "Mitad de arriba",
+  "PANEL.ZONA.ABAJO": "Mitad de abajo",
+  "PANEL.ZONA.SUP_IZQ": "Cuarto de arriba a la izquierda",
+  "PANEL.ZONA.SUP_DER": "Cuarto de arriba a la derecha",
+  "PANEL.ZONA.INF_IZQ": "Cuarto de abajo a la izquierda",
+  "PANEL.ZONA.INF_DER": "Cuarto de abajo a la derecha",
 } as const;
 
 export type CopyId = keyof typeof copy;

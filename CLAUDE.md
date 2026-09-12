@@ -98,10 +98,15 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
-🆕 **`UX01` es un tablero desde el 11 de septiembre** — [ADR-093](docs/decisions.md#adr-093). Hero +
-próximos 7 días, *Riesgos detectados* y las evaluaciones **en dos opciones que conviven sólo hasta que
-el owner elija una**. Salieron de Hoy la cola `1 de N`, el mapa de 14 días y el reparto (los datos
-siguen en `HoyProps`).
+🆕 **`UX01` es un tablero de tres cuerpos** — [ADR-093](docs/decisions.md#adr-093) y
+[ADR-096](docs/decisions.md#adr-096): **Hero**, **Tu día** y **Riesgos detectados**. Salieron de Hoy
+la cola `1 de N`, el mapa de 14 días y el reparto (los datos siguen en `HoyProps`), y **las dos
+opciones de evaluaciones —tarjetas y carril— las descartó el owner el 12 de septiembre**: de las
+evaluaciones queda **sólo la píldora** del encabezado, y el listado es `/materias`.
+
+⚠️ **`TableroProps` perdió `tarjetas`, `aclaracionDeCobertura` y `horizonteEnDias`.** Acá **no** rige
+el *"se retira el dibujo, no el dato"* de ADR-093: esos tres los calculaba la proyección sólo para esa
+sección.
 
 ⚠️ **Los riesgos de `UX01` NO son `RiskSignal`.** Son reglas de **planificación** sobre el calendario y
 la carga (`lib/domain/riesgos-de-planificacion.ts`, `PLAN-v0.1`): no escriben, no emiten eventos, no

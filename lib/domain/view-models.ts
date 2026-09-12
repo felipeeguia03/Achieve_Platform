@@ -326,36 +326,6 @@ export interface HoyProps {
 
 // ── El tablero de `UX01` · ADR-093 ───────────────────────────────────────────
 
-/**
- * Una tarjeta de evaluación — la *Opción 1* de ADR-093, y los datos de la *Opción 2*.
- *
- * Sale de los mismos insumos que el índice de materias: una tarjeta y una fila
- * del índice **no pueden decir cosas distintas** sobre la misma materia.
- */
-export interface TarjetaDeEvaluacion {
-  cursadaId: string;
-  /** Ya en presentación (`nombreDeObjeto`, ADR-088 Enmienda 5). */
-  nombre: string;
-  /**
-   * `null` ⇒ **no hay evaluación con fecha futura**, y la tarjeta lo dice.
-   * `modalidad` ya traducida: el enum nunca es copy (`AGENTS.md` §2.6).
-   */
-  evaluacion: { rotulo: string | null; fecha: string; modalidad: string | null } | null;
-  /** Días que faltan. `null` ⇒ sin fecha, **no** cero. */
-  dias: number | null;
-  /** *"4 d"*. `null` ⇒ la cifra no se dibuja. */
-  faltan: string | null;
-  /**
-   * Cobertura ponderada por horas ([ADR-072](../../docs/decisions.md#adr-072)).
-   * `null` ⇒ **no hay barra**, y `sinCobertura` dice por qué.
-   */
-  cobertura: { fraccion: number; porcentaje: number } | null;
-  sinCobertura: string | null;
-  /** *"hace 3 días"*. `null` ⇒ sin actividad registrada, que **no es** «hace 0 días». */
-  ultimoAvance: string | null;
-  tono: "neutral" | "urgencia";
-}
-
 /** Un riesgo de planificación ya redactado. Ver `lib/domain/riesgos-de-planificacion.ts`. */
 export interface RiesgoProyectado {
   regla:
@@ -371,6 +341,16 @@ export interface RiesgoProyectado {
   detalle: string | null;
   /** `null` ⇒ el riesgo no es de una materia y **no ofrece abrir ninguna**. */
   cursadaId: string | null;
+  /**
+   * Cómo se llama esa materia, ya en presentación. `null` ⇒ el riesgo no es de
+   * una materia.
+   *
+   * ⚠️ **Viaja acá desde [ADR-096](../../docs/decisions.md#adr-096)**: antes la
+   * pantalla lo sacaba de las tarjetas de evaluación, que se retiraron. Un
+   * nombre que la pantalla tenga que ir a buscar a otra sección es una
+   * dependencia entre dos cosas que no tienen por qué convivir.
+   */
+  materia: string | null;
 }
 
 /** Un renglón de *Horarios* del cuadro de hoy, ya redactado. */
@@ -414,14 +394,15 @@ export interface CuadroDeHoy {
 }
 
 export interface TableroProps {
-  /** La cifra de la píldora del encabezado. `null` ⇒ ninguna materia tiene fecha. */
+  /**
+   * La cifra de la píldora del encabezado. `null` ⇒ ninguna materia tiene fecha.
+   *
+   * ⚠️ **Es lo único que queda de las evaluaciones en `UX01`.** Las dos formas
+   * de listarlas —tarjetas y carril— **las descartó el owner**
+   * ([ADR-096](../../docs/decisions.md#adr-096)): el listado vive en
+   * `/materias`, y acá quedó el número que ordena el día.
+   */
   proximaEvaluacion: { dias: number } | null;
-  /** Todas las materias, **por próxima evaluación** y las sin fecha al fondo (ADR-072). */
-  tarjetas: TarjetaDeEvaluacion[];
-  /** La nota al pie de ADR-072, obligatoria si hay alguna barra. */
-  aclaracionDeCobertura: string | null;
-  /** El largo del carril de la *Opción 2*, en días. Múltiplo de 7, nunca menos de 14. */
-  horizonteEnDias: number;
   riesgos: RiesgoProyectado[];
   /** El cuadro de hoy — ADR-094, que reemplaza los próximos 7 días. */
   hoy: CuadroDeHoy;

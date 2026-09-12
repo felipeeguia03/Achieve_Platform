@@ -57,29 +57,40 @@
  * teléfono no son tres ventanas: son una sola tapando a dos que no se pueden
  * agarrar.
  *
- * ## El panel consulta; la superficie trabaja
+ * ## La ventana ya no es sólo para consultar — Enmienda 6
  *
- * **El panel no decide nada.** Las CTAs que la superficie dibuja se cablean acá
- * —si no, quedarían muertas: ver `VistaDeMateria`— pero **todas navegan**. La
- * precedencia y la CTA única (`I-06`) siguen viviendo en `UX02`–`UX05`; lo que
- * el panel hace es llevarte hasta ellas.
+ * ⚠️ **Cambió, y lo decidió el owner.** Hasta la Enmienda 5 la ventana dibujaba
+ * `UX02` y nada más, con la aclaración *"acá sólo se consulta"* al pie; el resto
+ * de los objetos ni siquiera tenían vista. Ahora **la ventana dibuja la
+ * superficie entera**, la misma que la ruta, con sus CTAs vivas: entregar desde
+ * una ventana entrega.
+ *
+ * Lo que **no** cambió es de quién es la decisión: la precedencia y la CTA única
+ * (`I-06`) siguen viviendo en `UX02`–`UX05` y en el registro canónico. La
+ * ventana no elige qué CTA mostrar ni inventa destinos — dibuja la pantalla que
+ * ya existe, y por eso es **el mismo componente** y no una copia.
+ *
+ * ⚠️ **Y por eso navegar desde adentro mueve la pantalla de atrás.** Una CTA que
+ * lleva a `UX03` lleva a `UX03`: el fondo cambia y la ventana sigue donde
+ * estaba. Es lo que hace cualquier escritorio cuando una ventana abre algo en
+ * otra; la alternativa —una historia de navegación por ventana— sería un
+ * segundo router, y con él una segunda verdad sobre dónde está el estudiante.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 
-import { MateriaCursado } from "@/components/screens/materia-cursado";
-import { NoSePudoCargar } from "./no-se-pudo-cargar";
 import { Semaforo } from "./controles-de-ventana";
 import { guardarEnLaFicha, salirDeLaFicha } from "./movimiento";
-import { useSuperficie } from "@/lib/client/superficie";
-import { rutaDeCta, rutaDeCtaCon } from "@/lib/navigation";
+import { ProveedorDeMigaDelObjeto } from "./miga-del-objeto";
+import { VISTA_POR_CAMINO } from "@/components/superficies/registro";
+import { useConsultaDeRuta } from "@/components/superficies/consulta";
 import { t } from "@/lib/content/es-AR";
 import { colorDelObjeto } from "@/lib/domain/color-de-materia";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import {
   alternarExpandido,
+  amosaicar,
   areaDe,
   encuadrar,
   marcoInicial,
@@ -88,9 +99,9 @@ import {
   type Area,
   type Borde,
   type Marco,
+  type Zona,
 } from "@/lib/domain/marco-de-panel";
 import type { ObjetoAbierto } from "@/lib/domain/espacio-de-trabajo";
-import type { MateriaProps } from "@/lib/domain/view-models";
 import { useEspacioDeTrabajo } from "./espacio-de-trabajo";
 
 /**
@@ -313,6 +324,18 @@ function Ventana({
     guardarMarco(clave, alternarExpandido(marco, area));
   }
 
+  /**
+   * A media pantalla, o a un cuarto — Enmienda 6.
+   *
+   * ⚠️ **El gesto no es un botón nuevo, y eso es lo que lo hace descubrible.**
+   * Es *mantener apretado el control de expandir*, que es donde alguien ya va a
+   * buscar el tamaño de la ventana; un cuarto control al lado de los tres
+   * redondos sería un cuarto punto mudo que hay que aprender.
+   */
+  function alMosaico(zona: Zona) {
+    guardarMarco(clave, amosaicar(marco, zona, area));
+  }
+
   const nombre = nombreDeObjeto(objeto.etiqueta);
   const completo = objeto.etiquetaSecundaria
     ? `${nombre} · ${nombreDeObjeto(objeto.etiquetaSecundaria)}`
@@ -434,10 +457,18 @@ function Ventana({
         */}
         <Semaforo
           nombre={completo}
-          expandido={marco.expandido}
+          /*
+            ⚠️ **Amosaicada también cuenta como «agrandada»**, y por eso el
+            control dice *Restaurar*: desde media pantalla el gesto que falta es
+            volver al tamaño propio, no ocupar todo.
+          */
+          expandido={marco.expandido || marco.zona !== null}
+          zona={marco.zona}
           onCerrar={() => cerrar(clave)}
           onMinimizar={guardar}
           onExpandir={escritorio ? expandir : undefined}
+          onMosaico={escritorio ? alMosaico : undefined}
+          area={area}
         />
 
         <p
@@ -465,17 +496,8 @@ function Ventana({
         </button>
       </header>
 
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 4 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "12px 16px 20px" }}>
         <Contenido objeto={objeto} />
-        <p
-          style={{
-            padding: "4px 18px 16px",
-            fontSize: "var(--text-meta)",
-            color: "var(--muted-foreground)",
-          }}
-        >
-          {t("PANEL.SOLO_CONSULTA")}
-        </p>
       </div>
     </div>
   );
@@ -532,92 +554,75 @@ function Agarres({
 }
 
 /**
- * Qué se dibuja adentro, según el tipo.
+ * Qué se dibuja adentro de la ventana — Enmienda 6.
  *
- * ⚠️ **Los tipos que todavía no tienen vista lo dicen.** No se cae a una
- * pantalla parecida ni se deja el panel en blanco: se ofrece abrirlo como
- * página, que es el camino que sí existe (`AGENTS.md` §2.7).
+ * ⚠️ **Es la superficie de verdad, no una versión reducida.** Hasta la Enmienda
+ * 5 la ventana sabía dibujar `UX02` y nada más, y el resto de los objetos caían
+ * en *"abrilo como página"*. El owner pidió que **todo** pueda quedar en la
+ * barra, así que todo tiene que poder verse: lo que se dibuja acá es el mismo
+ * componente que dibuja la ruta, con los mismos datos y las mismas CTAs.
+ *
+ * ⚠️ **Se elige por la ruta del objeto, no por su tipo.** El tipo dice *qué es*
+ * —una evidencia, una acción— y hay tres objetos de tipo `modo-examen` que son
+ * tres pantallas distintas. La ruta es lo que el objeto ya lleva adentro y lo
+ * que la ficha usó para abrirlo: un solo dato, y ningún `if` por pantalla.
+ *
+ * ⚠️ **Una ruta desconocida lo dice y ofrece la página.** Es §2.7 —*omitir, no
+ * inventar*—: no se cae a una pantalla parecida ni se deja la ventana en blanco.
  */
 function Contenido({ objeto }: { objeto: ObjetoAbierto }) {
-  if (objeto.tipo === "materia") return <VistaDeMateria cursadaId={objeto.entidadId} />;
+  const camino = objeto.ruta.split("?")[0] ?? objeto.ruta;
+  const Vista = VISTA_POR_CAMINO[camino];
+  /*
+    ⚠️ **La consulta sale de la ruta DEL OBJETO, no de la barra de direcciones.**
+    Dos ventanas de dos materias distintas están las dos sobre `/hoy?abierto=…`:
+    si leyeran la URL del navegador, las dos mostrarían la misma materia. Es el
+    defecto que `useConsultaDeRuta` existe para que no ocurra.
+  */
+  const consulta = useConsultaDeRuta(objeto.ruta);
 
-  return (
-    <div style={{ padding: "28px 18px" }}>
-      <p style={{ fontSize: "var(--text-body)", color: "var(--foreground)" }}>
-        {t("PANEL.SIN_VISTA")}
-      </p>
-      <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>
-        {t("PANEL.SIN_VISTA_AYUDA")}
-      </p>
-    </div>
-  );
-}
-
-/**
- * `UX02` adentro del panel.
- *
- * ⚠️ **Es la misma lectura y el mismo componente**, con la cursada del objeto.
- * Una segunda versión de la materia «para el panel» sería una segunda verdad
- * sobre la misma pantalla — que es el motivo por el que `proyeccion-hoy.ts` no
- * tiene su propia tabla de precedencia.
- *
- * ## Por qué las CTAs se cablean, y no se dejan sin `onClick`
- *
- * ⚠️ **Se descubrió mirándolo en el navegador.** `MateriaCursado` decide qué
- * CTA dibuja **por el dato**, no por el manejador: sin cablearlas, *«Activar
- * Modo Examen»* aparecía y no hacía nada. Un control muerto es peor que
- * ninguno — `AGENTS.md` §2.2 es literal: *una CTA cuya condición de aparición no
- * se cumple no se renderiza*, y una que aparece tiene que llevar a algún lado.
- *
- * Cablearlas **no rompe** la distinción de la Enmienda 1: todas **navegan a la
- * superficie**. El panel sigue sin decidir nada; te lleva al lugar donde se
- * decide. Los destinos salen del registro canónico, igual que en `UX02`.
- */
-function VistaDeMateria({ cursadaId }: { cursadaId: string }) {
-  const router = useRouter();
-  const { respuesta, reintentar } = useSuperficie<MateriaProps>(
-    `/api/materia?cursada=${encodeURIComponent(cursadaId)}`,
-  );
-
-  // `P-12`: nada salta al cargar. Un esqueleto que se reemplaza es peor que un
-  // frame de espera dentro de una ventana que el estudiante acaba de abrir.
-  if (respuesta.estado === "CARGANDO") return <div style={{ minHeight: 240 }} />;
-
-  if (respuesta.estado !== "OK") {
+  if (!Vista) {
     return (
-      <div style={{ padding: 12 }}>
-        <NoSePudoCargar
-          motivo={respuesta.estado}
-          onReintentar={respuesta.estado === "SIN_PADRON" ? undefined : reintentar}
-        />
+      <div style={{ padding: "28px 18px" }}>
+        <p style={{ fontSize: "var(--text-body)", color: "var(--foreground)" }}>
+          {t("PANEL.SIN_VISTA")}
+        </p>
+        <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>
+          {t("PANEL.SIN_VISTA_AYUDA")}
+        </p>
       </div>
     );
   }
 
-  const props = respuesta.datos;
-  const aAccion = rutaDeCta("CTA-002");
-  const aRegistro = rutaDeCta("CTA-009");
-  const aModoExamen = rutaDeCta("CTA-019");
-
   return (
-    <MateriaCursado
-      {...props}
-      /*
-        Los tres destinos son los mismos que cablea `UX02`, y salen del registro
-        canónico. Navegar **deja el panel atrás**, que es lo correcto: a partir
-        de acá el estudiante está trabajando, no consultando.
-      */
-      onAvanzar={aAccion ? () => router.push(aAccion) : undefined}
-      onVerRegistro={
-        aRegistro
-          ? () => router.push(rutaDeCtaCon("CTA-009", props.cursadaId) ?? aRegistro)
-          : undefined
-      }
-      onModoExamen={
-        aModoExamen
-          ? () => router.push(rutaDeCtaCon("CTA-019", props.cursadaId) ?? aModoExamen)
-          : undefined
-      }
-    />
+    /*
+      ⚠️ **La miga se apaga adentro de la ventana, y no es cosmético.** El
+      breadcrumb de la topbar dice **dónde estás**, y estás en la pantalla de
+      atrás. Una ventana de Álgebra abierta sobre `Hoy` que renombrara la última
+      miga a *"Álgebra"* diría que navegaste a un lugar al que no fuiste — y con
+      dos ventanas abiertas, la última en montarse ganaría. El proveedor con un
+      `noop` deja que la superficie llame a `useMigaDelObjeto` como siempre sin
+      que nadie la escuche.
+    */
+    <ProveedorDeMigaDelObjeto value={SIN_MIGA}>
+      {/*
+        `useSearchParams` vive adentro de cada superficie. El `Shell` ya pone una
+        frontera arriba, pero la ventana se monta y se desmonta sola cada vez que
+        se despliega: con la suya, suspender no vacía la pantalla de atrás.
+      */}
+      <Suspense fallback={<div style={{ minHeight: 240 }} />}>
+        <Vista consulta={consulta} />
+      </Suspense>
+    </ProveedorDeMigaDelObjeto>
   );
 }
+
+/**
+ * El sumidero de la miga.
+ *
+ * ⚠️ **Fuera del componente a propósito.** `value={() => {}}` en el JSX crea una
+ * función nueva por render, y `useMigaDelObjeto` la tiene entre las dependencias
+ * de su efecto: cada arrastre de la ventana volvería a correr el efecto de cada
+ * superficie que hay adentro.
+ */
+const SIN_MIGA = () => {};
