@@ -190,6 +190,12 @@ causa.
 [ADR-087](docs/decisions.md#adr-087), 10 de septiembre. Cinco piezas de la psicopedagoga cargadas en
 `DRAFT`: el contenido **no se publica hasta que ella confirme vigencia** (`D5`).
 
+🆕 **Con `MODO_PRUEBA=1` la biblioteca se ve simulada** — [ADR-087 Enmienda
+3](docs/decisions.md#adr-087-enmienda-3), 12 de septiembre. Grupos por los cinco ejes del índice,
+portada de video, tips y ejemplos de entrega, **todo rotulado**; las cinco piezas se leen como
+*Borrador* por `vista_previa_de_formacion()`, que **no publica**. Sin la variable, V1 intacta. Lo
+simulado vive en `lib/server/simulacion/formacion.ts` y **no es esquema**: no lo migres a columnas.
+
 ⚠️ **`D1` prohíbe clasificar al estudiante.** No existe el Student Model, y hasta que exista **no se
 usan proxies, puntajes ni umbrales** para decidir quién es autónomo: la biblioteca es la misma para
 todos. Hay guard sobre el SQL de lectura y sobre la proyección.

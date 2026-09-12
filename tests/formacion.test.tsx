@@ -1,15 +1,16 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { Formacion } from "@/components/screens/formacion";
-import { proyectarFormacion } from "@/lib/server/servicios/proyeccion-formacion";
+import { proyectarFormacion, proyectarVistaSimulada } from "@/lib/server/servicios/proyeccion-formacion";
 import { ctaRegistry } from "@/lib/navigation";
 import { menu } from "@/lib/navigation/menu";
 import { nodos, superficieIds } from "@/lib/navigation/surfaces";
-import type { BibliotecaPersistida } from "@/lib/server/repositorios/formacion";
+import type { BibliotecaPersistida, VistaPreviaPersistida } from "@/lib/server/repositorios/formacion";
+import { GRUPOS, PIEZAS_SIMULADAS, SIMULACION_POR_PIEZA } from "@/lib/server/simulacion/formacion";
 
 /**
  * La biblioteca de Formación — [ADR-087](../docs/decisions.md#adr-087).
@@ -166,6 +167,11 @@ describe("Enmienda 2 · V1 es de solo lectura", () => {
     for (const b of botones) expect(b).toHaveAttribute("aria-expanded");
     expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByText(/¿A qué materia/)).not.toBeInTheDocument();
+
+    // Con la pieza abierta, el único botón es el que vuelve a la biblioteca.
+    fireEvent.click(botones[0]);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([expect.stringMatching(/Volver/)]);
+    expect(screen.queryByRole("combobox")).toBeNull();
   });
 
   it("la pieza se lee igual, sin ninguna cursada de por medio", () => {
@@ -191,9 +197,19 @@ describe("D4 · sin guion no hay video", () => {
     expect(creacion).not.toMatch(/video|reproductor|duracion_video/i);
   });
 
-  it("y la pantalla no anuncia uno", () => {
+  it("y la pantalla no anuncia uno, ni en la lista ni con la pieza abierta", () => {
     render(<Formacion {...proyectarFormacion(CON_TODO)} />);
     expect(document.body.textContent).not.toMatch(/video|próximamente|proximamente/i);
+    fireEvent.click(screen.getByRole("button", { name: /No sé por dónde empezar/ }));
+    expect(document.body.textContent).not.toMatch(/video|próximamente|proximamente|simulad/i);
+  });
+
+  it("el camino real no trae grupos ni simulación", () => {
+    const p = proyectarFormacion(CON_TODO);
+    expect(p.simulada).toBe(false);
+    expect(p.grupos).toEqual([]);
+    expect(p.piezas[0].simulacion).toBeNull();
+    expect(p.piezas[0].borrador).toBe(false);
   });
 });
 
@@ -276,5 +292,143 @@ describe("No promete aprendizaje", () => {
     const p = proyectarFormacion(CON_TODO);
     expect(p.piezas[0].procedencia).toBeTruthy();
     expect(p.piezas[0].procedencia).toMatch(/sin verificar/i);
+  });
+});
+
+/**
+ * La vista simulada de la demo — ADR-087 Enmienda 3.
+ *
+ * El owner pidió **ver** Formación con videos, tips y ejemplos, sabiendo que
+ * no existen. Estos guards cuidan las dos cosas que la enmienda no negocia:
+ * **que la simulación no salga de la demo, y que se vea qué es simulado.**
+ */
+const VISTA_PREVIA: VistaPreviaPersistida = {
+  piezas: ["F01", "F02", "F03", "F04", "F05"].map((codigo, i) => ({
+    ...pieza({ id: `f${i + 1}`, codigo, titulo: `Pieza ${codigo}` }),
+    publicacion: "DRAFT" as const,
+  })),
+};
+
+describe("Enmienda 3 · la simulación no sale de la demo", () => {
+  it("`formacionDe()` sólo sirve la vista simulada con `MODO_PRUEBA=1`", () => {
+    const src = readFileSync(resolve(RAIZ, "lib/server/composicion.ts"), "utf8");
+    const fn = src.slice(src.indexOf("export async function formacionDe"));
+    const cuerpo = fn.slice(0, fn.indexOf("\n}\n"));
+    expect(cuerpo).toMatch(/if \(process\.env\.MODO_PRUEBA === "1"\) \{\s*return proyectarVistaSimulada/);
+    expect(cuerpo).toMatch(/return proyectarFormacion\(await formacionReal\.biblioteca/);
+  });
+
+  it("la vista previa nunca devuelve `RETIRED`, no publica y no la ejecuta un estudiante", () => {
+    const sql = sinComentarios(
+      readFileSync(resolve(RAIZ, "supabase/migrations/20261008000000_vista_previa_de_formacion.sql"), "utf8"),
+    );
+    expect(sql).toMatch(/publication_status IN \('DRAFT', 'PUBLISHED'\)/);
+    expect(sql).not.toMatch(/'RETIRED'/);
+    expect(sql).not.toMatch(/UPDATE|INSERT|SET\s+publication_status/i);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.vista_previa_de_formacion FROM PUBLIC, anon, authenticated/);
+    expect(sql).not.toMatch(/GRANT[^;]*authenticated/);
+  });
+
+  it("y tampoco clasifica: no mira estudiante, evidencias ni cursadas", () => {
+    const fn = sinComentarios(funcionesVigentes().get("public.vista_previa_de_formacion") ?? "");
+    expect(fn).toBeTruthy();
+    expect(fn).not.toMatch(/\bstudent\b|\bevidence\b|\bcommitment\b|course_enrollment|topic_progress/i);
+  });
+
+  it("la biblioteca real sigue filtrando sólo lo publicado", () => {
+    const fn = sinComentarios(funcionesVigentes().get("public.biblioteca_de_formacion") ?? "");
+    expect(fn).toMatch(/publication_status\s*=\s*'PUBLISHED'/);
+  });
+
+  it("el esquema no gana columnas de video, tips ni ejemplos", () => {
+    const sql = sinComentarios(migraciones());
+    // El `ENABLE ROW LEVEL SECURITY` de la creación es el único `ALTER` legítimo.
+    expect(sql).not.toMatch(/ALTER TABLE formative_content\s+ADD/i);
+  });
+});
+
+describe("Enmienda 3 · lo simulado se ve simulado", () => {
+  const vista = proyectarVistaSimulada(VISTA_PREVIA);
+
+  it("el borrador de la autora se rotula, y su texto no se marca como simulado", () => {
+    const f01 = vista.piezas.find((p) => p.codigo === "F01")!;
+    expect(f01.borrador).toBe(true);
+    expect(f01.piezaSimulada).toBe(false);
+    expect(f01.procedencia).not.toMatch(/simulad/i);
+    expect(f01.simulacion).toEqual(SIMULACION_POR_PIEZA.F01);
+  });
+
+  it("una pieza inventada lo dice en su procedencia", () => {
+    const simuladas = vista.piezas.filter((p) => p.piezaSimulada);
+    expect(simuladas).toHaveLength(PIEZAS_SIMULADAS.length);
+    for (const p of simuladas) {
+      expect(p.procedencia).toMatch(/simulada/i);
+      expect(p.borrador).toBe(false);
+    }
+  });
+
+  /**
+   * Nombrar como el oficio: los ejes y los títulos simulados salen **literales**
+   * del índice. Si alguien «mejora» una frase, deja de ser del índice y esto
+   * rompe.
+   */
+  it("los grupos y los títulos simulados son literales del índice", () => {
+    const indice = readFileSync(resolve(RAIZ, "docs/indice-psicopedagogico-source.md"), "utf8");
+    for (const g of GRUPOS) expect(indice).toContain(`${g.titulo} — *${g.pregunta}*`);
+    for (const p of PIEZAS_SIMULADAS) expect(indice).toContain(`- ${p.titulo}.`);
+  });
+
+  it("cada pieza de la autora tiene su eje, y ninguna queda escondida", () => {
+    expect(vista.grupos.map((g) => g.titulo)).toEqual(["Planificar", "Ejecutar", "Aprender", "Monitorear", "Ajustar"]);
+    const agrupadas = vista.grupos.flatMap((g) => g.piezaIds);
+    for (const p of vista.piezas) expect(agrupadas).toContain(p.id);
+
+    // Una pieza nueva de la autora que ningún eje nombra se muestra igual.
+    const conNueva = proyectarVistaSimulada({
+      piezas: [...VISTA_PREVIA.piezas, { ...VISTA_PREVIA.piezas[0], id: "f6", codigo: "F06", titulo: "Pieza nueva" }],
+    });
+    render(<Formacion {...conNueva} />);
+    expect(screen.getByRole("button", { name: /Pieza nueva/ })).toBeInTheDocument();
+  });
+
+  it("la pantalla se anuncia simulada arriba de todo", () => {
+    render(<Formacion {...vista} />);
+    const nota = screen.getByRole("note");
+    expect(nota.textContent).toMatch(/Vista simulada/);
+    expect(nota.textContent).toMatch(/Borrador/);
+  });
+
+  /**
+   * ⚠️ **La portada no es un control.** Un botón de play que no reproduce es
+   * el control falso que `D4` prohíbe, y la Enmienda 3 no lo levanta.
+   */
+  it("la portada del video no es un control, y el material no se descarga", () => {
+    render(<Formacion {...vista} />);
+    expect(screen.getAllByRole("button")).toHaveLength(vista.piezas.length);
+    for (const b of screen.getAllByRole("button")) expect(b).toHaveAttribute("aria-expanded");
+
+    fireEvent.click(screen.getByRole("button", { name: /Pieza F01/ }));
+    expect(screen.getByText(/Video simulado · no se reproduce/)).toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(document.querySelector("video, audio, iframe")).toBeNull();
+    expect(screen.getByText(/archivo todavía no disponible/)).toBeInTheDocument();
+  });
+
+  it("tips y ejemplo de entrega llevan su rótulo de simulado", () => {
+    render(<Formacion {...vista} />);
+    fireEvent.click(screen.getByRole("button", { name: /Pieza F01/ }));
+    for (const nombre of [/^Tips/, /^Un ejemplo de entrega/]) {
+      const h = screen.getByRole("heading", { name: nombre });
+      expect(h.textContent).toMatch(/Simulado$/);
+    }
+    expect(screen.getByText(SIMULACION_POR_PIEZA.F01.ejemploDeEntregable)).toBeInTheDocument();
+    for (const tip of SIMULACION_POR_PIEZA.F01.tips) expect(screen.getByText(tip)).toBeInTheDocument();
+  });
+
+  it("lo simulado tampoco promete aprendizaje", () => {
+    const src = sinComentariosTs(readFileSync(resolve(RAIZ, "lib/server/simulacion/formacion.ts"), "utf8"));
+    expect(src).not.toMatch(/\bdominad[oa]\b|\bnivel\b|rendimiento|\d+\s?%/i);
   });
 });

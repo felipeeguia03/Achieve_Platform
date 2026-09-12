@@ -84,7 +84,7 @@ import { recomendarPara as recomendarPuro, type ResultadoDelMotor } from "./serv
 import { proyectarDia } from "./servicios/proyeccion-hoy";
 import { proyectarReparto } from "./servicios/proyeccion-reparto";
 import { proyectarMaterias } from "./servicios/proyeccion-materias";
-import { proyectarFormacion } from "./servicios/proyeccion-formacion";
+import { proyectarFormacion, proyectarVistaSimulada } from "./servicios/proyeccion-formacion";
 import { formacionReal } from "./repositorios/formacion";
 import { repartoReal } from "./repositorios/reparto";
 import { tableroReal } from "./repositorios/tablero";
@@ -1180,6 +1180,12 @@ export async function formacionDe(
   institutionId: string,
   studentId: string,
 ): Promise<FormacionProps> {
+  // ⚠️ **La vista simulada sólo existe en la demo** — ADR-087 Enmienda 3. Sin
+  // `MODO_PRUEBA=1` esta función responde exactamente lo de V1: sólo lo
+  // publicado, sin video, sin grupos. `D4` y `D5` siguen enteros en ese camino.
+  if (process.env.MODO_PRUEBA === "1") {
+    return proyectarVistaSimulada(await formacionReal.vistaPrevia());
+  }
   return proyectarFormacion(await formacionReal.biblioteca(institutionId, studentId));
 }
 

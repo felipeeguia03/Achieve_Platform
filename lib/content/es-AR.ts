@@ -730,6 +730,27 @@ export const copy = {
   "FORMACION.VACIO":
     "Todavía no hay contenido publicado. Lo estamos preparando con la psicopedagoga del equipo y va a aparecer acá cuando esté listo.",
 
+  /*
+   * ── La vista simulada · ADR-087 Enmienda 3 ──────────────────────────────
+   *
+   * ⚠️ **Todo lo simulado se nombra como simulado.** La demo muestra cómo se
+   * ve Formación, y el contenido habla con la voz de la psicopedagoga: si no
+   * se dice qué es simulado, se confunde con lo suyo.
+   */
+  "FORMACION.AVISO_SIMULADA":
+    "Vista simulada para la demo. Los videos, los tips y los ejemplos de entrega todavía no son contenido de la psicopedagoga. Las piezas marcadas «Borrador» son suyas y esperan su autorización para publicarse.",
+  "FORMACION.ROTULO_SIMULADO": "Simulado",
+  "FORMACION.ROTULO_BORRADOR": "Borrador",
+  "FORMACION.ROTULO_PIEZA_SIMULADA": "Pieza simulada",
+  "FORMACION.VIDEO_SIMULADO": "Video simulado · no se reproduce en esta versión",
+  "FORMACION.MINUTOS": "min",
+  "FORMACION.VOLVER": "Volver a Formación",
+  "FORMACION.TIPS": "Tips",
+  "FORMACION.EJEMPLO": "Un ejemplo de entrega",
+  "FORMACION.MATERIAL_NO_DISPONIBLE": "archivo todavía no disponible",
+  "FORMACION.OTRAS": "Otras piezas",
+  "FORMACION.PROCEDENCIA_SIMULADA": "Pieza simulada para la demo · no es contenido de la psicopedagoga",
+
   "MATERIA.CONTENIDO_ESTIMADO":
     "Estos temas los estimó Achieve porque la cátedra todavía no publicó su programa. " +
     "Sirven para organizarte, y conviene contrastarlos con el programa de la materia.",

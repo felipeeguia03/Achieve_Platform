@@ -549,6 +549,40 @@ export interface PiezaDeFormacion {
   material: string | null;
   /** *"Cátedra · sin verificar"*, ya traducida por `provenanceVisible()`. */
   procedencia: string;
+  /**
+   * `true` ⇒ la autora todavía no autorizó publicarla, y la pantalla lo rotula.
+   * Sólo puede ser `true` en la vista simulada (ADR-087 Enmienda 3): el camino
+   * real nunca recibe un borrador.
+   */
+  borrador: boolean;
+  /**
+   * `true` ⇒ **la pieza entera es simulada**: título del índice, contenido
+   * escrito para la demo. `false` ⇒ el texto es de la autora.
+   */
+  piezaSimulada: boolean;
+  /** Lo que la demo simula alrededor de la pieza. `null` ⇒ camino real: no se dibuja. */
+  simulacion: SimulacionDePieza | null;
+}
+
+/**
+ * Lo simulado de una pieza — ADR-087 Enmienda 3 `E3.4`. **Todo esto lleva
+ * rótulo en pantalla**: nada de acá es contenido de la psicopedagoga.
+ */
+export interface SimulacionDePieza {
+  /** Duración estimada del video que no existe, en minutos. */
+  duracionMinutos: number;
+  tips: readonly string[];
+  ejemploDeEntregable: string;
+}
+
+/** Un eje transversal del índice de la psicopedagoga, con sus piezas. */
+export interface GrupoDeFormacion {
+  codigo: string;
+  /** *"Planificar"*, literal del índice. */
+  titulo: string;
+  /** *"¿Qué tengo que hacer y cómo voy a hacerlo?"*, literal del índice. */
+  pregunta: string;
+  piezaIds: readonly string[];
 }
 
 /**
@@ -563,6 +597,13 @@ export interface FormacionProps {
   piezas: readonly PiezaDeFormacion[];
   /** Aviso de estado vacío. `null` ⇒ se omite. */
   aviso: string | null;
+  /**
+   * `true` ⇒ vista simulada de la demo (ADR-087 Enmienda 3), y la pantalla lo
+   * dice arriba de todo. `false` ⇒ el camino real, sin grupos ni simulación.
+   */
+  simulada: boolean;
+  /** Los ejes del índice. Vacío ⇒ la lista va sin agrupar. */
+  grupos: readonly GrupoDeFormacion[];
 }
 
 export interface MateriasProps {

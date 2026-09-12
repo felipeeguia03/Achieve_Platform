@@ -132,6 +132,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-083](#adr-083) | El bloque horario existe, entra por la ingesta y **no toca el reparto** | ✅ `ACCEPTED` *(9 sep 2026 · construye ADR-063 · **sin `kind` ni `schedule_status`**)* | El cuarto paso del alta (ADR-062), el conflicto de ADR-064 |
 | [ADR-084](#adr-084) | El compromiso **no se confirma encima de una clase** | ✅ `ACCEPTED` *(9 sep 2026 · construye ADR-064 · **falta la segunda salida**)* | «Corregir el bloque» necesita el cuarto paso del alta |
 | [ADR-085](#adr-085) | `UX02` se rearma alrededor del **Gantt por tema** | ✅ `ACCEPTED` *(9 sep 2026 · layout del owner · **sin `dominado`, `nivel` ni `3/3`**)* | El checklist de Confianza (corte 2) |
+| [ADR-087 · Enm. 3](#adr-087-enmienda-3) | **La vista simulada de Formación**: grupos por eje, video, tips y ejemplos simulados, sólo con `MODO_PRUEBA=1` | ✅ `ACCEPTED` *(12 sep 2026 · **delegada por el owner** · `D4` y `D5` intactos en el camino real)* | La vigencia y los guiones de la psicopedagoga |
 | [ADR-088](#adr-088) | **El espacio de trabajo**: los objetos abiertos, y ADR-019 queda `SUPERSEDED` | ✅ `ACCEPTED` *(10 sep 2026 · decidido por el owner · **los seis requisitos del multiventana, cumplidos**)* | — |
 | [ADR-088 · Enm. 1](#adr-088-enmienda-1) | **La ventana interna**: la ficha despliega, minimiza y cierra | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **el panel consulta, la superficie trabaja**)* | — |
 | [ADR-088 · Enm. 2](#adr-088-enmienda-2) | **El marco**: se arrastra, se estira, se expande y recuerda dónde quedó | ✅ `ACCEPTED` *(10 sep 2026 · pedida por el owner · **«marco», no «ventana»: `A-04`**)* | — |
@@ -7630,6 +7631,86 @@ columnas del `insert`, con guard que lo verifica. **Publicar es un acto de la au
 La implementación existente es **incompleta, no no-autorizada**: se escribió con autorización del
 owner, después de que el ADR incorporara D1–D5. **Será funcional cuando `CTA-021` realice la
 escritura y tenga pruebas.**
+
+<a id="adr-087-enmienda-3"></a>
+
+### Enmienda 3 · La vista simulada de Formación para el MVP · 12 de septiembre de 2026
+
+**Estado:** ✅ `ACCEPTED` · pedida por el owner, **con delegación explícita**: *"para el mvp los videos
+no se van a poder reproducir, solo queremos simular como se veria el modo formacion, pero necesitamos
+verlo, aproba todo como sientas, los titulos, grupos de videos formativos"*. Las decisiones de abajo
+las tomó el agente bajo esa delegación, y **el owner puede revertir cualquiera**.
+
+#### El problema
+
+Con `D4` y `D5` la biblioteca existe y **está vacía**: las cinco piezas están `DRAFT` y no hay video.
+Es correcto para producción, y **no deja ver cómo se ve Formación**, que es lo que el MVP necesita
+mostrar.
+
+#### E3.1 · La simulación vive detrás de `MODO_PRUEBA=1`, y sólo ahí
+
+**No se crea una bandera nueva.** `MODO_PRUEBA` ya es el interruptor del andamio de demo
+([ADR-079](#adr-079)): sin la variable, `/api/formacion` responde **exactamente lo que respondía**
+—sólo `PUBLISHED`, sin video, sin grupos— y **los guards de `D4` y `D5` siguen valiendo sobre ese
+camino**. Con la variable, la misma ruta devuelve la vista simulada.
+
+⚠️ **`D4` y `D5` no se derogan: se acotan al camino real.** Lo que la simulación muestra **nunca
+llega a un estudiante que no esté en una demo**.
+
+#### E3.2 · Las cinco piezas de la autora se muestran como borrador
+
+`vista_previa_de_formacion()` —función nueva, **sólo `service_role`**— devuelve `DRAFT` y `PUBLISHED`
+(**nunca `RETIRED`**) con su estado de publicación. `biblioteca_de_formacion()` **no se toca**.
+
+- **`publication_status` no se escribe.** Nadie publica nada: la pieza se ve **rotulada
+  «Borrador»**, y publicar sigue siendo un acto de la autora.
+- **El texto de la autora se muestra literal**, con sus tipeos (ADR-031).
+
+#### E3.3 · Los grupos son los cinco ejes transversales del índice
+
+Nombrar como nombra el oficio: los grupos son **Planificar · Ejecutar · Aprender · Monitorear ·
+Ajustar**, con la pregunta de cada eje **literal** de
+[`indice-psicopedagogico-source.md`](indice-psicopedagogico-source.md). La asignación es del agente:
+
+| eje | piezas de la autora | piezas simuladas |
+|---|---|---|
+| **Planificar** | F02 *"Tengo mucho para estudiar y no me alcanza el tiempo"* | *Cómo organizar la semana/semestre.* |
+| **Ejecutar** | F01 *"No sé por dónde empezar a estudiar"* · F05 *"Me distraigo fácil con el celu"* | — |
+| **Aprender** | F03 *"Leo, lo entiendo, pero después no me acuerdo"* | *Cómo hacer un resumen que realmente sirva.* |
+| **Monitorear** | F04 *"¿Cómo sé si realmente sé un tema?"* | *Cómo utilizar el error como información.* |
+| **Ajustar** | — | *Qué hacer cuando me atraso en el cronograma.* · *Qué hacer después de desaprobar.* |
+
+**Los títulos de las piezas simuladas son ítems literales del índice**, no frases inventadas. Su
+contenido sí es simulado, y **se rotula**.
+
+#### E3.4 · Lo que se simula, y cómo se ve que es simulado
+
+| parte | real o simulada | cómo se muestra |
+|---|---|---|
+| **Video** | simulado | Portada 16:9 con duración estimada y el rótulo *«Video simulado · no se reproduce en esta versión»*. **No es un botón**: no hay control que aparente reproducir |
+| **Tips** | simulados | Dos o tres por pieza, **derivados de la explicación de la autora**, rotulados *Simulado* |
+| **Ejemplo de entregable** | simulado | Uno por pieza, al lado de *Qué entregás*, rotulado *Simulado* |
+| **Material** | nombre real, archivo inexistente | El nombre que dio la autora y *«archivo todavía no disponible»*. **Sin enlace de descarga** |
+| **Problema, objetivo, explicación, acción, evidencia** | reales en F01–F05, simulados en el resto | Literal de la fuente; la pieza inventada lleva *Pieza simulada* y su procedencia lo dice |
+
+⚠️ **Todo lo simulado lleva rótulo en pantalla, pieza por pieza.** Una demo que no dice qué es
+simulado se confunde con el producto, y el contenido simulado habla con la voz de la psicopedagoga.
+
+#### E3.5 · Lo que la simulación NO hace
+
+- **No aplica.** Sigue siendo V1 de solo lectura: sin `CTA-021`, sin selector de materia, sin
+  `Action`. El registro sigue en **20 CTAs**.
+- **No clasifica** (`D1`), **no cuenta vistas** ni muestra progreso de biblioteca, **no promete
+  aprendizaje**.
+- **No toca el esquema de `formative_content`.** Tips, ejemplos, grupos y video **no son columnas**:
+  la forma de la entidad la dicta el contenido real (§*Actualización*), y cuando la autora los
+  escriba, entrarán con la forma que ella les dé.
+
+#### E3.6 · Lo que sigue abierto
+
+Todo lo de §*Lo que queda abierto*, sin cambios: vigencia, guiones, resto del índice. **Y además:**
+revisar con la psicopedagoga la asignación de piezas a ejes, y reemplazar los tips y ejemplos
+simulados por los suyos.
 
 ---
 

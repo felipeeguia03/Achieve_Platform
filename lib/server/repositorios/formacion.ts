@@ -41,8 +41,23 @@ export interface BibliotecaPersistida {
   piezas: PiezaPersistida[];
 }
 
+/**
+ * La vista previa de la demo — ADR-087 Enmienda 3. Las mismas piezas, **con su
+ * estado de publicación**, para que la pantalla rotule el borrador en vez de
+ * esconderlo. `RETIRED` nunca llega: lo filtra la base.
+ */
+export interface PiezaEnVistaPrevia extends PiezaPersistida {
+  publicacion: "DRAFT" | "PUBLISHED";
+}
+
+export interface VistaPreviaPersistida {
+  piezas: PiezaEnVistaPrevia[];
+}
+
 export interface RepositorioDeFormacion {
   biblioteca(institutionId: string, studentId: string): Promise<BibliotecaPersistida | null>;
+  /** ⚠️ Sólo con `MODO_PRUEBA=1`. Lo decide `formacionDe()`, no este repositorio. */
+  vistaPrevia(): Promise<VistaPreviaPersistida>;
 }
 
 export const formacionReal: RepositorioDeFormacion = {
@@ -53,5 +68,11 @@ export const formacionReal: RepositorioDeFormacion = {
     });
     if (error) throw new Error(`No se pudo leer la biblioteca: ${error.message}`);
     return (data ?? null) as BibliotecaPersistida | null;
+  },
+
+  async vistaPrevia() {
+    const { data, error } = await clienteDeServicio().rpc("vista_previa_de_formacion");
+    if (error) throw new Error(`No se pudo leer la vista previa de Formación: ${error.message}`);
+    return (data ?? { piezas: [] }) as VistaPreviaPersistida;
   },
 };

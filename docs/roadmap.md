@@ -4041,6 +4041,32 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+## Fase B6.27 — La vista simulada de Formación · ✅ COMPLETA *(sin `db:verify`)*
+
+**12 de septiembre de 2026** · [ADR-087 Enmienda 3](decisions.md#adr-087-enmienda-3), delegada por el
+owner: *"solo queremos simular como se veria el modo formacion, pero necesitamos verlo"*.
+
+| | qué se hizo |
+|---|---|
+| **La lectura de la demo** | `vista_previa_de_formacion()`: `DRAFT` y `PUBLISHED`, nunca `RETIRED`, **sólo `service_role`**. No publica nada |
+| **El interruptor** | `formacionDe()` la usa **sólo con `MODO_PRUEBA=1`**. Sin la variable, V1 intacta |
+| **Lo simulado** | `lib/server/simulacion/formacion.ts`: grupos, duración, tips, ejemplo de entrega y cinco piezas. **No es esquema** |
+| **Los grupos** | Los cinco ejes del índice —Planificar · Ejecutar · Aprender · Monitorear · Ajustar—, literales |
+| **La pantalla** | Biblioteca por eje con portadas; pieza abierta con video simulado, qué hacés, qué entregás + ejemplo, tips y material |
+| **Los rótulos** | *Borrador* en las piezas de la autora, *Pieza simulada* en las inventadas, *Simulado* en video, tips y ejemplo |
+
+⚠️ **La portada no es un control y el material no se descarga.** Hay guard: con la pieza abierta el
+único botón es *Volver*, y no hay `video`, `iframe` ni enlace.
+
+⚠️ **`db:verify` no se corrió**, por la misma razón que la deuda 11 de la B6.26: vacía la base que la
+demo necesita ver. La migración se aplicó a mano sobre la base local y se verificó (5 piezas,
+`authenticated` sin permiso). Las otras cuatro puertas están en verde.
+
+**Queda para la psicopedagoga:** revisar la asignación a ejes y reemplazar tips y ejemplos simulados
+por los suyos, además de la vigencia y los guiones que ya estaban pendientes.
+
+---
+
 ## Fase B6.26 — El rescate del árbol · ✅ COMPLETA
 
 **10 de septiembre de 2026** · [ADR-091](decisions.md#adr-091) y la Enmienda 2 de
