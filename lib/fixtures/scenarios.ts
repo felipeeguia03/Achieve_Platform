@@ -35,10 +35,15 @@ export const FX_DAY_BASE: Escenario = {
       recomendacionPrimariaVigente: true,
       progresoDisponible: true,
     }),
-    UX02: contexto({ courseVisible: true, recomendacionPrimariaVigente: true, progresoDisponible: true }),
+    UX02: contexto({ courseVisible: true, recomendacionPrimariaVigente: true, progresoDisponible: true, claseIniciable: true }),
     // ADR-087. La biblioteca de Formación. **V1 es de solo lectura**: no hay
     // CTA que pueda aparecer o no, así que el contexto no la condiciona.
     FORMACION: contexto({ courseVisible: true }),
+    // ADR-098. La materia está abierta y no hay otra clase activa: se puede
+    // entrar a una. Y la pantalla de la clase, con la clase `ACTIVE`, ofrece
+    // terminarla. **No es parte del loop del día**: es el mismo estudiante
+    // cursando, y el Hero no se entera.
+    CLASE: contexto({ claseActiva: true }),
     // La Action está recomendada y todavía no aceptada: se puede aceptar.
     UX03: contexto({ recomendacionPrimariaVigente: true, actionStatus: "RECOMMENDED" }),
     // Aceptada, con el draft del Commitment abierto. Aceptar NO creó el

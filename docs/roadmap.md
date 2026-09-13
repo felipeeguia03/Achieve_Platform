@@ -4055,7 +4055,7 @@ recomendados"*. Plan, API y recorrido de QA en [`modo-clase.md`](modo-clase.md).
 | 1 | Dominio puro | ✅ |
 | 2 | Migración y aislamiento | ✅ |
 | 3 | API y eventos | ✅ |
-| 4 | Pantalla `/clase` | ⬜ |
+| 4 | Pantalla `/clase` | ✅ |
 | 5 | Hoy | ⬜ |
 | 6 | Materia · *Tus clases* | ⬜ |
 

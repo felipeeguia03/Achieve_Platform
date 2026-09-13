@@ -229,6 +229,13 @@ describe("Bloque 6 · Interacción", () => {
       "app/alta/carrera/page.tsx",
       "app/alta/materias/page.tsx",
       "app/alta/disponibilidad/page.tsx",
+      /*
+        **Modo Clase** — ADR-098. Nodo sin wireframe, no superficie, y su estado
+        es **la clase de este estudiante**: los apuntes que escribió y los
+        momentos que marcó. Un escenario sintético ahí sería una clase ajena
+        dibujada como propia.
+      */
+      "app/(student)/clase/page.tsx",
     ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))

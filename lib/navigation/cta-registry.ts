@@ -54,7 +54,11 @@ export type CtaId =
   /** Corrección aprobada del registro. Ver ADR-016. */
   | "CTA-019"
   /** El alta de evaluación del estudiante. Ver ADR-067. */
-  | "CTA-020";
+  | "CTA-020"
+  /** Modo Clase: entrar o volver a la clase. Ver ADR-098. `CTA-021` está reservada. */
+  | "CTA-022"
+  /** Modo Clase: terminar la clase. Ver ADR-098. */
+  | "CTA-023";
 
 export interface Cta {
   id: CtaId;
@@ -500,6 +504,55 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
 
     Vuelve con la vertical de aplicación (V2), **junto con su escritura**.
   */
+
+  /**
+   * **Entrar a clase** — [ADR-098](../../docs/decisions.md#adr-098) §7.
+   *
+   * La tercera fila que no transcribe el spec. Tres etiquetas, **una CTA**,
+   * como las tres de `CTA-001`: *Entrar a clase* en la fila en curso de Hoy,
+   * *Iniciar clase* en la materia, *Volver a la clase* cuando ya hay una
+   * abierta. Las tres llegan a la misma clase.
+   *
+   * ⚠️ **`CTA-021` no se toma**: está reservada para Formación V2.
+   *
+   * ⚠️ **No graba nada.** Entrar a clase no pide micrófono ni lo prende: el
+   * audio está fuera de ADR-098 hasta que ADR-006 lo permita.
+   */
+  "CTA-022": {
+    id: "CTA-022",
+    origen: ["UX01", "UX02"],
+    condicion: "Clase en curso o próxima, o materia abierta, sin otra clase activa de otra materia",
+    accionSolicitada: "entrar a clase",
+    destino: "CLASE",
+    resultadoAutoritativo: "StudentClassSession `ACTIVE` —la que ya existía, si la había—; `ClassSessionStarted` si es nueva",
+    fallback: { nodo: "UX01", descripcion: "conservar la pantalla sin abrir nada" },
+    estadoError: "otra clase activa: ofrecer volver a ella; materia ajena: no presumir apertura",
+    // Vacío a propósito, como `CTA-020`: el spec nombra el momento (Parte I §20)
+    // y no tiene escenario para él.
+    escenarios: [],
+    aparece: (c) => c.claseIniciable,
+    habilitada: siempre,
+  },
+
+  /**
+   * **Finalizar clase** — [ADR-098](../../docs/decisions.md#adr-098) §7.
+   *
+   * No navega: la pantalla se queda y muestra el cierre. **El paso del tiempo no
+   * la dispara** (AGENTS.md §2.3): la clase la termina el estudiante.
+   */
+  "CTA-023": {
+    id: "CTA-023",
+    origen: ["CLASE"],
+    condicion: "Clase ACTIVE del estudiante",
+    accionSolicitada: "finalizar clase",
+    destino: null,
+    resultadoAutoritativo: "StudentClassSession `ENDED` con `ended_at` del servidor; `ClassSessionEnded` una sola vez",
+    fallback: { nodo: "CLASE", descripcion: "la clase sigue abierta; apuntes y marcas ya están guardados" },
+    estadoError: "no se pudo terminar: reintentar es seguro, la operación es idempotente",
+    escenarios: [],
+    aparece: (c) => c.claseActiva,
+    habilitada: siempre,
+  },
 } as const;
 
 export const ctaIds = Object.keys(ctaRegistry) as CtaId[];

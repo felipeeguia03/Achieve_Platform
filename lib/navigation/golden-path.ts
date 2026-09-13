@@ -112,6 +112,8 @@ export const aristasDeRetornoTransversales: readonly Arista[] = [
   // por qué está vacía y ofrece volver. **V1 no tiene CTA**: la arista es de
   // retorno, no de avance.
   { clase: "retornoSeguro", desde: "FORMACION", hasta: "UX01", cta: null, causa: "sin contenido publicado: empty honesto y retorno seguro" },
+  // ADR-098. Una clase ajena o que no existe no se dibuja: se vuelve a Hoy.
+  { clase: "retornoSeguro", desde: "CLASE", hasta: "UX01", cta: null, causa: "clase ajena o inexistente: no presumir apertura y retorno seguro" },
 ] as const;
 
 export const aristas: readonly Arista[] = [

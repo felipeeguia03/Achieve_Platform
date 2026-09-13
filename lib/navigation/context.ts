@@ -61,6 +61,17 @@ export interface ContextoCTA {
    * ciegas duplica.
    */
   errorRecuperableConOperacionIdempotente: boolean;
+
+  // ── Modo Clase · ADR-098 ──────────────────────────────────────────────────
+  /**
+   * Hay una clase que el estudiante puede abrir **o a la que puede volver**
+   * desde acá: en `UX01`, la fila en curso o próxima; en `UX02`, la materia
+   * abierta. `false` si hay otra activa de otra materia — ofrecer entrar
+   * terminaría en `409` (§2.2).
+   */
+  claseIniciable: boolean;
+  /** La clase de esta pantalla está `ACTIVE`. */
+  claseActiva: boolean;
 }
 
 /**
@@ -92,6 +103,8 @@ export const contextoVacio: ContextoCTA = {
   hayGate: false,
   objetoDeMayorPrecedencia: false,
   errorRecuperableConOperacionIdempotente: false,
+  claseIniciable: false,
+  claseActiva: false,
 };
 
 /**

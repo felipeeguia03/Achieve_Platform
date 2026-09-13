@@ -24,6 +24,8 @@ export type NodoId =
   | "UX02_INDICE"
   /** La biblioteca de Formación. **No es una superficie**: ver `nodos.FORMACION`. */
   | "FORMACION"
+  /** La clase que abre el estudiante. **No es una superficie**: ver `nodos.CLASE`. */
+  | "CLASE"
   | "UX03"
   | "UX04"
   | "UX04_RENEGOCIACION"
@@ -102,6 +104,24 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     nombre: "Formación",
     pregunta: "¿Cómo estudio mejor?",
     ruta: "/formacion",
+    pendienteDeEtapa: null,
+  },
+
+  /**
+   * **Modo Clase** — [ADR-098](../../docs/decisions.md#adr-098).
+   *
+   * ⚠️ **`wireframe: null`: NO es una décima superficie.** El mismo patrón que
+   * `UX02_INDICE` y `FORMACION`. `superficieIds` sigue devolviendo nueve.
+   *
+   * ⚠️ **Y no es la clase dictada** (`class_session`): es la que el estudiante
+   * abre mientras cursa, con sus apuntes y sus marcas.
+   */
+  CLASE: {
+    id: "CLASE",
+    wireframe: null,
+    nombre: "Clase",
+    pregunta: "¿Qué pasó en esta clase?",
+    ruta: "/clase",
     pendienteDeEtapa: null,
   },
 

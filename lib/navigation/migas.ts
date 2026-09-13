@@ -45,6 +45,8 @@ const padre: Partial<Record<NodoId, NodoId>> = {
   */
   UX08: "UX07",
   UX09: "UX08",
+  // ADR-098: la clase es de una materia, y se vuelve a ella desde Materias.
+  CLASE: "UX02_INDICE",
 };
 
 /** Las secciones de la barra lateral. **Ninguna tiene padre**, y hay test. */
@@ -54,6 +56,7 @@ const ETIQUETAS: Partial<Record<NodoId, string>> = {
   UX01: "Hoy",
   UX02_INDICE: "Materias",
   FORMACION: "Formación",
+  CLASE: "Clase",
   UX02: "Materia",
   UX03: "Próxima acción",
   UX04: "Compromiso",

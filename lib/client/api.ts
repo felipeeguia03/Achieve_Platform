@@ -182,7 +182,16 @@ export type ResultadoDeEnvio<T> =
    */
   | { estado: "NO_ENCONTRADO" };
 
-export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<ResultadoDeEnvio<T>> {
+/**
+ * `metodo` es `POST` salvo que se diga otra cosa: el autosave de los apuntes de
+ * Modo Clase es un `PATCH` (ADR-098), y una segunda función igual a ésta con
+ * otro verbo sería el mismo manejo de errores escrito dos veces.
+ */
+export async function enviar<T>(
+  ruta: string,
+  cuerpo: unknown,
+  metodo: "POST" | "PATCH" = "POST",
+): Promise<ResultadoDeEnvio<T>> {
   let token: string | null;
   try {
     token = await tokenDeSesion();
@@ -193,7 +202,7 @@ export async function enviar<T>(ruta: string, cuerpo: unknown): Promise<Resultad
 
   try {
     const r = await fetch(ruta, {
-      method: "POST",
+      method: metodo,
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify(cuerpo),
     });

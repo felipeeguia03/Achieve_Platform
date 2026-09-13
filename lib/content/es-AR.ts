@@ -929,6 +929,51 @@ export const copy = {
   "PANEL.ZONA.SUP_DER": "Cuarto de arriba a la derecha",
   "PANEL.ZONA.INF_IZQ": "Cuarto de abajo a la izquierda",
   "PANEL.ZONA.INF_DER": "Cuarto de abajo a la derecha",
+
+  // ── Modo Clase (ADR-098) ─────────────────────────────────────────────────
+  /**
+   * ⚠️ **«Apuntes», nunca «notas».** *Nota* es sinónimo prohibido de
+   * `Reflection`, y en la facultad además es la calificación.
+   */
+  "CLASE.TITULO_ACTIVA": "Clase en curso",
+  "CLASE.TITULO_TERMINADA": "Clase",
+  "CLASE.EN_CURSO": "En curso",
+  "CLASE.MANUAL": "Iniciada fuera de horario",
+  /** ADR-094 §2: `Un.` es la de la última clase dada, y la pantalla lo dice. */
+  "CLASE.UNIDAD": "Un. {n} · la unidad de la última clase dada",
+  /** ADR-094 §3: sin esta nota, un horario simulado se lee como de la facultad. */
+  "CLASE.HORARIO_ESTIMADO": "Horario estimado por Achieve, no publicado por la facultad",
+  "CLASE.AULA": "Aula {aula}",
+  "CLASE.COMISION": "Comisión {comision}",
+  "CLASE.RELOJ": "Tiempo en clase",
+  "CLASE.APUNTES": "Apuntes",
+  "CLASE.APUNTES_PLACEHOLDER": "Escribí lo que quieras de la clase…",
+  "CLASE.APUNTES_GUARDADOS": "Guardado",
+  "CLASE.APUNTES_GUARDANDO": "Guardando…",
+  "CLASE.APUNTES_ERROR": "No pudimos guardar tus apuntes. Reintentando…",
+  "CLASE.MARCAR": "Marcar",
+  "CLASE.MARCAR_REGLA": "Un toque guarda el momento. Si querés, después contás qué pasó.",
+  "CLASE.MARCA.QUESTION": "No entendí",
+  "CLASE.MARCA.IMPORTANT": "Importante",
+  /** `ASSESSMENT`: *"Parcial"* era falso cuando lo que viene es un final o un TP. */
+  "CLASE.MARCA.ASSESSMENT": "Posible evaluación",
+  "CLASE.MARCA.REVIEW": "Revisar",
+  "CLASE.MARCA_ERROR": "No se guardó. Tocá para reintentar",
+  "CLASE.MARCA_ENVIANDO": "Guardando…",
+  "CLASE.MOMENTOS": "Momentos marcados",
+  "CLASE.SIN_MOMENTOS": "Todavía no marcaste ningún momento.",
+  "CLASE.DETALLE": "Contá qué pasó",
+  "CLASE.DETALLE_PLACEHOLDER": "Opcional",
+  "CLASE.DETALLE_GUARDAR": "Guardar",
+  "CLASE.FINALIZAR": "Finalizar clase",
+  "CLASE.FINALIZAR_REGLA": "Tus apuntes y marcas ya están guardados. Después vas a poder seguir editando los apuntes.",
+  "CLASE.FINALIZAR_ERROR": "No pudimos finalizar la clase. Tus apuntes y marcas están guardados: probá de nuevo.",
+  /** Acuse persistente (`design-system-capturas.md` §9.4), no un toast. */
+  "CLASE.GUARDADA": "Clase guardada",
+  "CLASE.DURACION": "Duración",
+  "CLASE.SIN_CLASE_ACTIVA": "No tenés una clase abierta.",
+  "CLASE.SIN_CLASE_ACTIVA_REGLA": "Entrá a clase desde Hoy, cuando tengas una en curso, o desde tu materia.",
+  "CLASE.EN_UNA_MATERIA": "Clase de {materia}",
 } as const;
 
 export type CopyId = keyof typeof copy;
@@ -1031,3 +1076,24 @@ export const MOTIVO_DE_CAMBIO: Partial<Record<MotivoSinCambio, string>> = {
   CADENA_YA_RENEGOCIADA: t("COMPROMISO.MOTIVO_YA_CAMBIADO"),
   SIN_HORARIO_POSIBLE: t("COMPROMISO.MOTIVO_SIN_HORARIO"),
 };
+
+/**
+ * La duración de una clase, en palabras — ADR-098.
+ *
+ * **`0` minutos no se escribe «0 min»**: una clase de menos de un minuto duró
+ * algo, y *"0 min"* se lee como que no ocurrió.
+ */
+export function textoDeDuracion(minutos: number): string {
+  if (minutos < 1) return "menos de un minuto";
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
+/** Rellena `{clave}` en una copy. Una clave sin valor queda visible: se nota. */
+export function llenarCopy(id: CopyId, valores: Record<string, string | number>): string {
+  return copy[id].replace(/\{(\w+)\}/g, (entera, clave: string) =>
+    clave in valores ? String(valores[clave]) : entera,
+  );
+}
