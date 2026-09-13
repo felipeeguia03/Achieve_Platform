@@ -4,7 +4,13 @@ import { resolve } from "node:path";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { Calendario, type CalendarioPantallaProps } from "@/components/screens/calendario";
+import {
+  ALTO_GRILLA,
+  altoDeHora,
+  Calendario,
+  renglonesPorCelda,
+  type CalendarioPantallaProps,
+} from "@/components/screens/calendario";
 import { rutaDelEvento } from "@/components/superficies/calendario";
 import {
   desplazarVista,
@@ -334,6 +340,49 @@ describe("la pantalla", () => {
     expect(screen.getByText("sin hora")).toBeInTheDocument();
     const chip = screen.getByRole("button", { name: /^Parcial · Derecho/ });
     expect(within(chip).queryByText(/\d\d:\d\d/)).toBeNull();
+  });
+
+  describe("el alto no depende de las clases", () => {
+    const grilla = (vista: CalendarioPantallaProps["vista"]) =>
+      screen.getByLabelText(vista === "mes" ? "Mes" : vista === "semana" ? "Semana" : "Día");
+
+    it.each(["mes", "semana", "dia"] as const)("en %s la grilla mide lo mismo prendidas o apagadas", (vista) => {
+      const fecha = "2026-09-15";
+      const { unmount } = render(<Calendario {...base({ vista, fecha, mostrarClases: false })} />);
+      const sin = grilla(vista).style.height;
+      const pieSin = document.querySelector("[data-calendario]")?.children.length;
+      unmount();
+      render(<Calendario {...base({ vista, fecha, mostrarClases: true })} />);
+      expect(sin).toBe(`${ALTO_GRILLA}px`);
+      expect(grilla(vista).style.height).toBe(sin);
+      // La nota de las clases ocupa un renglón reservado: no agrega un bloque.
+      expect(document.querySelector("[data-calendario]")?.children.length).toBe(pieSin);
+    });
+
+    it("el mes resume con «+N más» según el alto de la fila, no según cuántos eventos haya", () => {
+      expect(renglonesPorCelda(5)).toBe(3);
+      expect(renglonesPorCelda(6)).toBe(2);
+      const evaluaciones = ["a", "b", "c", "d"].map((id) => ({
+        id, cursadaId: "c1", tipo: "parcial", titulo: `Parcial ${id}`, fecha: "2026-09-16", hora: null, modalidad: null,
+      }));
+      const datos = proyectarCalendario(insumos({ bloques: [], evaluaciones }), "2026-08-31", "2026-10-04", AHORA, ZONA);
+      render(<Calendario {...base({ datos })} />);
+      expect(document.querySelectorAll('[data-evento="evaluacion"]')).toHaveLength(2);
+      expect(screen.getByRole("button", { name: "+2 más" })).toBeInTheDocument();
+    });
+
+    it("la franja de horas reparte el mismo alto: más horas, horas más bajas", () => {
+      expect(altoDeHora(14, false) * 14).toBeCloseTo(altoDeHora(16, false) * 16);
+      expect(altoDeHora(14, true)).toBeLessThan(altoDeHora(14, false));
+      expect(altoDeHora(24, true)).toBeGreaterThanOrEqual(24);
+    });
+
+    it("el aviso de horario estimado sigue a la vista, literal, junto a la nota de las clases", () => {
+      const datos = { ...base().datos!, horarioEstimado: true };
+      render(<Calendario {...base({ datos })} />);
+      expect(screen.getByText(/Horarios y aulas estimados por Achieve, no publicados por la facultad\./)).toBeInTheDocument();
+      expect(screen.getByText(/no contemplan feriados, suspensiones ni el fin del cuatrimestre/)).toBeInTheDocument();
+    });
   });
 
   it("mientras carga dibuja la grilla, sin eventos ni píldora", () => {

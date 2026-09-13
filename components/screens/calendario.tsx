@@ -185,8 +185,14 @@ export function Calendario(p: CalendarioPantallaProps) {
         </div>
       </div>
 
-      {/* ── La grilla ─────────────────────────────────────────────────────── */}
-      <div aria-busy={p.datos === null} style={{ overflowX: "auto" }}>
+      {/*
+        ── La grilla ───────────────────────────────────────────────────────────
+        ⚠️ **Su alto no depende de los eventos** (13 sep 2026, pedido del owner):
+        prender las clases no puede empujar el calendario fuera de la pantalla.
+        El mes reparte `ALTO_GRILLA` entre sus semanas y la semana entre sus horas;
+        lo que no entra se resume en *"+N más"*.
+      */}
+      <div aria-busy={p.datos === null} style={{ overflowX: "auto", position: "relative" }}>
         {p.vista === "mes" ? (
           <Mes fecha={p.fecha} hoy={hoy} eventos={eventos} onDia={(f) => { p.onFecha(f); p.onVista("dia"); }} onAbrir={p.onAbrir} />
         ) : (
@@ -199,31 +205,61 @@ export function Calendario(p: CalendarioPantallaProps) {
             onAbrir={p.onAbrir}
           />
         )}
+        {/* Encima de la grilla y no debajo: debajo le sumaba una línea al alto. */}
+        {p.datos && enRango.length === 0 && (
+          <p
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              margin: 0,
+              padding: "8px 14px",
+              ...TARJETA,
+              borderRadius: 999,
+              fontSize: "var(--text-label)",
+              color: "var(--muted-foreground)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {p.vista === "dia" ? "Este día no tiene" : "Estas fechas no tienen"} clases, evaluaciones ni compromisos
+            {!p.mostrarClases || !p.mostrarCompromisos ? " a la vista" : ""}.
+          </p>
+        )}
       </div>
-
-      {p.datos && enRango.length === 0 && (
-        <p style={{ fontSize: "var(--text-body)", color: "var(--muted-foreground)", marginTop: 12 }}>
-          {p.vista === "dia" ? "Este día no tiene" : "Estas fechas no tienen"} clases, evaluaciones ni compromisos
-          {!p.mostrarClases || !p.mostrarCompromisos ? " a la vista" : ""}.
-        </p>
-      )}
 
       <Leyenda />
 
       {/*
-        ⚠️ **Obligatoria si algún horario es estimado** (ADR-094): sin esto el aula
-        y la hora se leen como dato de la facultad.
+        Una sola línea, **reservada aunque las clases estén apagadas**: si apareciera
+        sólo con ellas, prenderlas movería el pie. El texto largo va en `title`.
+
+        ⚠️ **El aviso de estimado es obligatorio y va literal** (ADR-094): sin él el
+        aula y la hora se leen como dato de la facultad. Y la otra mitad es la que
+        ADR-100 exige decir — que el calendario no sabe de feriados.
       */}
-      {p.datos?.horarioEstimado && p.mostrarClases && <ReglaDeNegocio>{t("COMUN.HORARIO_ESTIMADO")}</ReglaDeNegocio>}
-      {p.mostrarClases && (
-        <ReglaDeNegocio>
-          Las clases son tu horario semanal de cursada, repetido en cada semana: el calendario todavía no sabe de
-          feriados, suspensiones ni cuándo termina el cuatrimestre.
-        </ReglaDeNegocio>
-      )}
+      <div style={{ minHeight: 20 }}>
+        {p.mostrarClases && (
+          <ReglaDeNegocio>
+            <span title={EXPLICACION_DE_CLASES}>
+              Las clases repiten tu horario semanal: no contemplan feriados, suspensiones ni el fin del cuatrimestre.
+            </span>
+            {p.datos?.horarioEstimado && (
+              <>
+                <span aria-hidden> · </span>
+                {t("COMUN.HORARIO_ESTIMADO")}
+              </>
+            )}
+          </ReglaDeNegocio>
+        )}
+      </div>
     </div>
   );
 }
+
+const EXPLICACION_DE_CLASES =
+  "Las clases son tu horario semanal de cursada, repetido en cada semana: el calendario todavía no sabe de feriados, suspensiones ni cuándo termina el cuatrimestre.";
 
 // ── Controles ────────────────────────────────────────────────────────────────
 
@@ -355,10 +391,12 @@ function Chip({ e, onAbrir }: { e: EventoDeCalendario; onAbrir: (e: EventoDeCale
         ...estiloDeChip(e),
         gap: 6,
         minWidth: 0,
-        padding: "3px 7px",
-        borderRadius: 6,
+        flexShrink: 0,
+        height: ALTO_DE_CHIP,
+        padding: "0 6px",
+        borderRadius: 5,
         fontSize: 12,
-        lineHeight: 1.35,
+        lineHeight: 1,
         textAlign: "left",
         fontWeight: e.tipo === "evaluacion" ? 600 : 500,
       }}
@@ -385,8 +423,30 @@ function Chip({ e, onAbrir }: { e: EventoDeCalendario; onAbrir: (e: EventoDeCale
 
 // ── Mes ──────────────────────────────────────────────────────────────────────
 
-/** Cuántos eventos entran en una celda antes de *"+N más"*. */
-const POR_CELDA = 3;
+/**
+ * El alto de la grilla en las tres vistas, con el borde. Medido en 1440×900: con
+ * la barra de controles arriba y la leyenda y su nota abajo, el calendario entra
+ * entero sin scrollear.
+ */
+export const ALTO_GRILLA = 600;
+/** Un evento en la celda del mes o en la fila *sin hora*: una línea. */
+const ALTO_DE_CHIP = 20;
+const CABECERA_DEL_MES = 36;
+/** El número del día arriba de la celda. */
+const ALTO_DEL_NUMERO = 24;
+const HUECO = 3;
+const RELLENO_DE_CELDA = { arriba: 4, abajo: 6 };
+
+/**
+ * Cuántos renglones —eventos o *"+N más"*— entran en una celda del mes. Sale del
+ * alto de la fila, **no de cuántos eventos haya**: un mes de seis semanas tiene
+ * filas más bajas y muestra menos antes de resumir.
+ */
+export function renglonesPorCelda(semanas: number): number {
+  const fila = (ALTO_GRILLA - 2 - CABECERA_DEL_MES) / semanas;
+  const libre = fila - 1 - RELLENO_DE_CELDA.arriba - RELLENO_DE_CELDA.abajo - ALTO_DEL_NUMERO;
+  return Math.max(1, Math.floor(libre / (ALTO_DE_CHIP + HUECO)));
+}
 
 function Mes({
   fecha,
@@ -405,36 +465,49 @@ function Mes({
   const fechas = fechasEntre(desde, hasta);
   const mes = fecha.slice(0, 7);
   const porDia = agrupar(eventos);
+  const semanas = fechas.length / 7;
+  const renglones = renglonesPorCelda(semanas);
 
   return (
-    <div aria-label="Mes" style={{ ...TARJETA, overflow: "hidden", minWidth: 760 }}>
-      <div className="grid grid-cols-7" style={{ borderBottom: "1px solid var(--border)" }}>
+    <div
+      aria-label="Mes"
+      style={{
+        ...TARJETA,
+        overflow: "hidden",
+        minWidth: 760,
+        height: ALTO_GRILLA,
+        display: "grid",
+        gridTemplateRows: `${CABECERA_DEL_MES}px repeat(${semanas}, minmax(0, 1fr))`,
+      }}
+    >
+      <div className="grid grid-cols-7 items-center" style={{ borderBottom: "1px solid var(--border)" }}>
         {COLUMNAS.map((c) => (
           <div
             key={c}
-           
-            style={{ ...MONO, padding: "10px 12px", textAlign: "right", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted-foreground)" }}
+            style={{ ...MONO, padding: "0 12px", textAlign: "right", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted-foreground)" }}
           >
             {c}
           </div>
         ))}
       </div>
 
-      {Array.from({ length: fechas.length / 7 }, (_, fila) => (
-        <div key={fila} className="grid grid-cols-7">
+      {Array.from({ length: semanas }, (_, fila) => (
+        <div key={fila} className="grid grid-cols-7" style={{ minHeight: 0 }}>
           {fechas.slice(fila * 7, fila * 7 + 7).map((f, col) => {
             const delDia = porDia.get(f) ?? [];
+            // Si no entran todos, el último renglón es el *"+N más"*.
+            const visibles = delDia.length > renglones ? renglones - 1 : delDia.length;
             const fuera = f.slice(0, 7) !== mes;
             const esHoy = f === hoy;
             return (
               <div
                 key={f}
-               
                 onClick={() => onDia(f)}
                 className="cursor-pointer"
                 style={{
-                  minHeight: 118,
-                  padding: "6px 8px 8px",
+                  minHeight: 0,
+                  overflow: "hidden",
+                  padding: `${RELLENO_DE_CELDA.arriba}px 6px ${RELLENO_DE_CELDA.abajo}px`,
                   borderTop: fila === 0 ? undefined : "1px solid var(--border)",
                   borderLeft: col === 0 ? undefined : "1px solid var(--border)",
                   background: esHoy
@@ -444,11 +517,11 @@ function Mes({
                       : "var(--card)",
                   display: "flex",
                   flexDirection: "column",
-                  gap: 4,
+                  gap: HUECO,
                   minWidth: 0,
                 }}
               >
-                <div className="flex justify-end">
+                <div className="flex justify-end" style={{ height: ALTO_DEL_NUMERO, flexShrink: 0 }}>
                   <button
                     type="button"
                     onClick={(ev) => {
@@ -459,7 +532,7 @@ function Mes({
                     aria-current={esHoy ? "date" : undefined}
                     style={{
                       color: esHoy ? "var(--background)" : fuera ? "var(--muted-foreground)" : "var(--foreground)",
-                      fontSize: esHoy ? 14 : 18,
+                      fontSize: esHoy ? 13 : 16,
                       fontWeight: esHoy ? 600 : 300,
                       letterSpacing: "-0.02em",
                     }}
@@ -473,8 +546,8 @@ function Mes({
                         display: "inline-flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        minWidth: 28,
-                        height: 28,
+                        minWidth: ALTO_DEL_NUMERO,
+                        height: ALTO_DEL_NUMERO,
                         padding: esHoy ? 0 : "0 4px",
                         borderRadius: 999,
                         background: esHoy ? "var(--foreground)" : "transparent",
@@ -484,21 +557,11 @@ function Mes({
                     </span>
                   </button>
                 </div>
-                {delDia.slice(0, POR_CELDA).map((e) => (
+                {delDia.slice(0, visibles).map((e) => (
                   <Chip key={e.id} e={e} onAbrir={onAbrir} />
                 ))}
-                {delDia.length > POR_CELDA && (
-                  <button
-                    type="button"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      onDia(f);
-                    }}
-                    className="hover:underline"
-                    style={{ ...MONO, textAlign: "left", color: "var(--muted-foreground)", padding: "0 4px" }}
-                  >
-                    +{delDia.length - POR_CELDA} más
-                  </button>
+                {delDia.length > visibles && (
+                  <MasEventos cantidad={delDia.length - visibles} onClick={() => onDia(f)} />
                 )}
               </div>
             );
@@ -523,12 +586,54 @@ function agrupar(eventos: EventoDeCalendario[]): Map<string, EventoDeCalendario[
   return m;
 }
 
+/** *"+N más"*: abre el día, que es donde se ven todos. */
+function MasEventos({ cantidad, onClick }: { cantidad: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(ev) => {
+        ev.stopPropagation();
+        onClick();
+      }}
+      className="hover:underline"
+      style={{
+        ...MONO,
+        height: ALTO_DE_CHIP,
+        flexShrink: 0,
+        textAlign: "left",
+        color: "var(--muted-foreground)",
+        padding: "0 4px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      +{cantidad} más
+    </button>
+  );
+}
+
 // ── Semana y día ─────────────────────────────────────────────────────────────
 
-/** Alto de una hora en la grilla. */
-const HORA_PX = 52;
+const CABECERA_DE_HORAS = 48;
+/** La fila *sin hora*: **un solo renglón**, para que no le robe alto a la franja. */
+const FILA_SIN_HORA = ALTO_DE_CHIP + 12;
+/**
+ * Por debajo de esto una hora no se lee, y la franja scrollea **adentro** de la
+ * grilla en vez de achicarse. Pasa sólo si un evento estira el día a más de ~20 h.
+ */
+const HORA_MINIMA_PX = 24;
 /** Lo mínimo que ocupa un evento, para que su texto se lea. **No es una duración.** */
-const ALTO_MINIMO = 26;
+const ALTO_MINIMO = ALTO_DE_CHIP;
+/** Por debajo de este alto, el evento va en una línea: hora de inicio y título. */
+const ALTO_DE_DOS_LINEAS = 40;
+
+/**
+ * El alto de una hora: lo que queda de `ALTO_GRILLA` repartido entre las horas de
+ * la franja. **Más horas, horas más bajas**; el total no cambia.
+ */
+export function altoDeHora(horas: number, conFilaSinHora: boolean): number {
+  const cuerpo = ALTO_GRILLA - 2 - CABECERA_DE_HORAS - (conFilaSinHora ? FILA_SIN_HORA : 0);
+  return Math.max(HORA_MINIMA_PX, cuerpo / Math.max(1, horas));
+}
 
 function Horas({
   fechas,
@@ -554,12 +659,23 @@ function Horas({
   const primera = Math.max(0, Math.min(8, ...inicios.map((m) => Math.floor(m / 60))));
   const ultima = Math.min(24, Math.max(22, ...fines.map((m) => Math.ceil(m / 60))));
   const horas = Array.from({ length: ultima - primera }, (_, i) => primera + i);
+  const horaPx = altoDeHora(horas.length, sinHora.length > 0);
   const columnas = `64px repeat(${fechas.length}, minmax(0, 1fr))`;
 
   return (
-    <div aria-label={detallada ? "Día" : "Semana"} style={{ ...TARJETA, overflow: "hidden", minWidth: detallada ? 0 : 760 }}>
+    <div
+      aria-label={detallada ? "Día" : "Semana"}
+      style={{
+        ...TARJETA,
+        overflow: "hidden",
+        minWidth: detallada ? 0 : 760,
+        height: ALTO_GRILLA,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {/* Cabecera de días */}
-      <div className="grid" style={{ gridTemplateColumns: columnas, borderBottom: "1px solid var(--border)" }}>
+      <div className="grid" style={{ gridTemplateColumns: columnas, height: CABECERA_DE_HORAS, flexShrink: 0, borderBottom: "1px solid var(--border)" }}>
         <div />
         {fechas.map((f) => {
           const esHoy = f === hoy;
@@ -567,11 +683,10 @@ function Horas({
             <button
               key={f}
               type="button"
-             
               onClick={() => onDia(f)}
               aria-current={esHoy ? "date" : undefined}
               className="flex items-center justify-center"
-              style={{ gap: 8, padding: "10px 6px", borderLeft: "1px solid var(--border)" }}
+              style={{ gap: 8, padding: "0 6px", borderLeft: "1px solid var(--border)" }}
             >
               <span style={{ ...MONO, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--muted-foreground)" }}>
                 {COLUMNAS[(diaDeLaSemana(f) + 6) % 7]}
@@ -599,23 +714,40 @@ function Horas({
 
       {/* Lo que no tiene hora: una fila arriba, sin hora inventada. */}
       {sinHora.length > 0 && (
-        <div className="grid" style={{ gridTemplateColumns: columnas, borderBottom: "1px solid var(--border)" }}>
-          <div style={{ ...MONO, padding: "8px 8px", color: "var(--muted-foreground)", textAlign: "right" }}>sin hora</div>
-          {fechas.map((f) => (
-            <div key={f} className="flex flex-col" style={{ gap: 4, padding: 6, borderLeft: "1px solid var(--border)", minWidth: 0 }}>
-              {sinHora.filter((e) => e.fecha === f).map((e) => (
-                <Chip key={e.id} e={e} onAbrir={onAbrir} />
-              ))}
-            </div>
-          ))}
+        <div className="grid" style={{ gridTemplateColumns: columnas, height: FILA_SIN_HORA, flexShrink: 0, borderBottom: "1px solid var(--border)" }}>
+          <div className="flex items-center justify-end" style={{ ...MONO, padding: "0 8px", color: "var(--muted-foreground)", whiteSpace: "nowrap" }}>
+            sin hora
+          </div>
+          {fechas.map((f) => {
+            const delDia = sinHora.filter((e) => e.fecha === f);
+            // En la semana entra uno por día y el resto se resume; en el día van
+            // todos en fila, y si no entran la fila scrollea de costado.
+            const visibles = detallada ? delDia : delDia.slice(0, 1);
+            return (
+              <div
+                key={f}
+                className="flex items-center"
+                style={{ gap: 6, padding: "0 6px", borderLeft: "1px solid var(--border)", minWidth: 0, overflowX: detallada ? "auto" : "hidden" }}
+              >
+                {visibles.map((e) => (
+                  <span key={e.id} style={detallada ? { width: 260, flexShrink: 0 } : { flex: 1, minWidth: 0 }}>
+                    <Chip e={e} onAbrir={onAbrir} />
+                  </span>
+                ))}
+                {delDia.length > visibles.length && (
+                  <MasEventos cantidad={delDia.length - visibles.length} onClick={() => onDia(f)} />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
       {/* El cuerpo con horas */}
-      <div className="grid" style={{ gridTemplateColumns: columnas, position: "relative" }}>
+      <div className="grid" style={{ gridTemplateColumns: columnas, position: "relative", flex: 1, minHeight: 0, overflowY: "auto" }}>
         <div>
           {horas.map((h) => (
-            <div key={h} style={{ height: HORA_PX, position: "relative" }}>
+            <div key={h} style={{ height: horaPx, position: "relative" }}>
               <span style={{ ...MONO, position: "absolute", top: -7, right: 8, color: "var(--muted-foreground)" }}>
                 {h === primera ? "" : `${String(h).padStart(2, "0")}:00`}
               </span>
@@ -628,6 +760,7 @@ function Horas({
             eventos={conHora.filter((e) => e.fecha === f)}
             primera={primera}
             horas={horas.length}
+            horaPx={horaPx}
             esHoy={f === hoy}
             detallada={detallada}
             onAbrir={onAbrir}
@@ -642,6 +775,7 @@ function ColumnaDelDia({
   eventos,
   primera,
   horas,
+  horaPx,
   esHoy,
   detallada,
   onAbrir,
@@ -649,6 +783,7 @@ function ColumnaDelDia({
   eventos: EventoDeCalendario[];
   primera: number;
   horas: number;
+  horaPx: number;
   esHoy: boolean;
   detallada: boolean;
   onAbrir: (e: EventoDeCalendario) => void;
@@ -658,20 +793,20 @@ function ColumnaDelDia({
 
   return (
     <div
-     
       style={{
         position: "relative",
-        height: horas * HORA_PX,
+        height: horas * horaPx,
         borderLeft: "1px solid var(--border)",
         background: esHoy ? "color-mix(in srgb, var(--foreground) 3%, var(--card))" : undefined,
-        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${HORA_PX - 1}px, var(--border) ${HORA_PX - 1}px, var(--border) ${HORA_PX}px)`,
+        backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${horaPx - 1}px, var(--border) ${horaPx - 1}px, var(--border) ${horaPx}px)`,
       }}
     >
       {eventos.map((e) => {
         const desde = minutosDelDia(e.desde) as number;
         const hasta = minutosDelDia(e.hasta);
-        const top = ((desde - primera * 60) / 60) * HORA_PX;
-        const alto = hasta !== null && hasta > desde ? ((hasta - desde) / 60) * HORA_PX : ALTO_MINIMO;
+        const top = ((desde - primera * 60) / 60) * horaPx;
+        const alto = hasta !== null && hasta > desde ? ((hasta - desde) / 60) * horaPx : ALTO_MINIMO;
+        const unaLinea = Math.max(ALTO_MINIMO, alto - 2) < ALTO_DE_DOS_LINEAS;
         const carril = (carriles.get(e.id) ?? 1) - 1;
         const color = e.cursadaId ? colorDeMateria(e.cursadaId) : "var(--muted-foreground)";
         return (
@@ -690,29 +825,31 @@ function ColumnaDelDia({
               height: Math.max(ALTO_MINIMO, alto - 2),
               left: `calc(${(carril / total) * 100}% + 3px)`,
               width: `calc(${100 / total}% - 6px)`,
-              borderRadius: 7,
-              padding: "4px 7px",
+              borderRadius: 6,
+              padding: unaLinea ? "0 6px" : "3px 6px",
               overflow: "hidden",
               textAlign: "left",
               display: "flex",
-              flexDirection: "column",
-              gap: 1,
+              flexDirection: unaLinea ? "row" : "column",
+              alignItems: unaLinea ? "center" : undefined,
+              gap: unaLinea ? 6 : 1,
               fontSize: 12,
               lineHeight: 1.3,
             }}
           >
-            <span className="flex items-center" style={{ gap: 6, minWidth: 0 }}>
+            <span className="flex items-center" style={{ gap: 6, minWidth: 0, flexShrink: 0 }}>
               <Punto e={e} />
               <span style={{ ...MONO, fontSize: 11, opacity: 0.8, flexShrink: 0 }}>
-                {e.hasta ? `${e.desde}–${e.hasta}` : e.desde}
+                {e.hasta && !unaLinea ? `${e.desde}–${e.hasta}` : e.desde}
               </span>
             </span>
             <span
               style={{
                 fontWeight: 600,
+                minWidth: 0,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                whiteSpace: detallada ? "normal" : "nowrap",
+                whiteSpace: detallada && !unaLinea ? "normal" : "nowrap",
                 textDecoration: e.estado === "CUMPLIDO" ? "line-through" : undefined,
               }}
             >
@@ -759,7 +896,7 @@ function Leyenda() {
   return (
     <p
       className="flex flex-wrap items-center"
-      style={{ columnGap: 22, rowGap: 6, fontSize: "var(--text-label)", color: "var(--muted-foreground)", margin: "14px 0 8px" }}
+      style={{ columnGap: 22, rowGap: 6, fontSize: "var(--text-label)", color: "var(--muted-foreground)", margin: "12px 0 4px" }}
     >
       <span>
         <span style={{ ...muestra, background: "color-mix(in srgb, var(--materia-1) 16%, var(--card))", borderLeft: "3px solid var(--materia-1)" }} />
