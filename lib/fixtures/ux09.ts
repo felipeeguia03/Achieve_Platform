@@ -19,7 +19,7 @@ import type {
 
 const ASSESSMENT = "Parcial 1";
 const MATERIA = "Análisis II";
-const VOLVER = "VOLVER AL OVERVIEW";
+const VOLVER = "Volver a la preparación";
 
 // Copies de ausencia, literales de §27.
 const bloque = (titulo: string, valor: string | null, ausencia: string): BloqueDePaso => ({
@@ -239,7 +239,7 @@ export const FX_LOCAL_PASO_RECOMENDACION = esc(
   {
     estadoDominante: "PRÓXIMA ACCIÓN DISPONIBLE",
     ctaPrimaria: { texto: "COMPROMETERME", habilitada: true },
-    despues: "Abrís la recomendación. El Commitment se confirma en un flujo separado.",
+    despues: "Abrís la recomendación. El compromiso se confirma en un paso separado.",
     secundarios: ["El recurso del paso sigue disponible."],
   },
 );
@@ -259,7 +259,7 @@ export const FX_LOCAL_PASO_IN_PROGRESS = esc(
   {
     estadoDominante: "ACCIÓN EN CURSO",
     ctaPrimaria: { texto: "CONTINUAR", habilitada: true },
-    despues: "Abrís la Action vigente. Terminarla usa su cierre configurado.",
+    despues: "Abrís la acción vigente. Terminarla usa su cierre configurado.",
     secundarios: [
       "Hay un compromiso incumplido sin resolver.",
       "El recurso del paso sigue disponible.",
@@ -285,7 +285,7 @@ export const FX_LOCAL_PASO_COMMITMENT_DUE = esc(
   {
     estadoDominante: "ES MOMENTO DE EMPEZAR",
     ctaPrimaria: { texto: "EMPEZAR", habilitada: true },
-    despues: "El owner coordina el inicio. Abrir la pantalla no lo inicia.",
+    despues: "El inicio lo coordina Achieve. Abrir la pantalla no lo inicia.",
   },
 );
 
@@ -317,7 +317,7 @@ export const FX_LOCAL_PASO_EVIDENCE_PENDING = esc(
   {
     estadoDominante: "EVIDENCIA PENDIENTE",
     ctaPrimaria: { texto: "SUBIR EVIDENCIA", habilitada: true },
-    despues: "Abrís Evidence. Enviarla la deja SUBMITTED cuando el owner confirma recepción.",
+    despues: "Abrís la entrega. Queda enviada cuando Achieve confirma que la recibió.",
   },
 );
 
@@ -331,7 +331,7 @@ function conEvidencia(id: string, proposito: string, mensaje: string, gate = fal
       ? {
           estadoDominante: "EVIDENCIA EN REVISIÓN",
           ctaPrimaria: { texto: "VER EVIDENCIA", habilitada: true },
-          despues: "Abrís Evidence. Abrirla no la valida.",
+          despues: "Abrís la entrega. Abrirla no la valida.",
           secundarios: [mensaje],
         }
       : {
@@ -365,7 +365,7 @@ export const FX_LOCAL_PASO_GATE_REAL = conEvidencia(
 export const FX_LOCAL_PASO_EVIDENCE_INSUFFICIENT = conEvidencia(
   "FX-LOCAL-PASO-EVIDENCE-INSUFFICIENT",
   "Evidence INSUFFICIENT: no es un fracaso, y no habilita reenvío por sí sola",
-  "La evidencia no alcanzó el criterio mínimo. Sólo se reenvía si el owner lo solicita.",
+  "La evidencia no alcanzó el criterio mínimo. Sólo se reenvía si quien la revisa lo pide.",
 );
 
 export const FX_LOCAL_PASO_EVIDENCE_SUFFICIENT = conEvidencia(

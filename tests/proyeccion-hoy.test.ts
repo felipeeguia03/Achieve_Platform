@@ -81,7 +81,7 @@ describe("B2.5 · la precedencia es la misma de siempre", () => {
     // La ausencia **confirmada**: el ADE tenía sobre qué decidir y no hay nada.
     const r = proyectarDia(conCursada);
     expect(r.hero.titulo).toBeNull();
-    expect(r.estadoGeneral).toBe("SIN ACCIONES POR AHORA");
+    expect(r.estadoGeneral).toBe("Sin acciones por ahora");
   });
 
   it("sin ninguna cursada, no dice que no hay acción: dice que está preparando", () => {
@@ -95,8 +95,8 @@ describe("B2.5 · la precedencia es la misma de siempre", () => {
     const r = proyectarDia(vacio);
     expect(r.hero.variante).toBe("PREPARANDO_INFORMACION");
     expect(r.hero.nivel).toBe("CONTEXT_INCOMPLETE");
-    expect(r.estadoGeneral).toBe("PREPARANDO TU INFORMACIÓN");
-    expect(r.estadoGeneral).not.toBe("SIN ACCIONES POR AHORA");
+    expect(r.estadoGeneral).toBe("Preparando tu información");
+    expect(r.estadoGeneral).not.toBe("Sin acciones por ahora");
     expect(r.hero.titulo).toBe("Estamos preparando tu información académica.");
     expect(r.hero.queSigue?.conPrefijo).toBe(false);
     // Sin razón y sin CTA: no está esperando por algo que hizo.
@@ -266,7 +266,7 @@ describe("B6 · el riesgo modifica el estado, y nada más", () => {
 
   it("cambia el estado general a «necesita recuperación»", () => {
     const p = proyectarDia({ ...vacio, riesgo: riesgoAlto });
-    expect(p.estadoGeneral).toBe("NECESITA RECUPERACIÓN");
+    expect(p.estadoGeneral).toBe("Necesita recuperación");
   });
 
   it("no interrumpe una Action en curso: el Hero sigue siendo el trabajo", () => {

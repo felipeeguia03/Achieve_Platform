@@ -37,7 +37,7 @@ const NUEVE: MateriaResumen[] = Array.from({ length: 9 }, (_, i) => ({
 
 const BASE: HoyProps = {
   fecha: "sáb 5 sep",
-  estadoGeneral: "SIN ACCIONES POR AHORA",
+  estadoGeneral: "Sin acciones por ahora",
   hero: {
     nivel: "NO_ACTION_AVAILABLE",
     variante: null,

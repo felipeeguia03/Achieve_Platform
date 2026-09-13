@@ -31,7 +31,7 @@ import {
   CTAPrincipal,
   CTASecundaria,
   EstadoGeneral,
-  Eyebrow,
+  TituloDeSeccion,
   HeroCard,
   ReglaDeNegocio,
   TituloDePanel,
@@ -51,7 +51,7 @@ import type { BloqueDePaso, PasoProtocoloProps } from "@/lib/domain/view-models"
 function Bloque({ bloque }: { bloque: BloqueDePaso }) {
   return (
     <div data-bloque={bloque.titulo}>
-      <Eyebrow>{bloque.titulo}</Eyebrow>
+      <TituloDeSeccion>{bloque.titulo}</TituloDeSeccion>
       <p style={{ fontSize: "var(--text-body)", lineHeight: 1.5, color: "var(--foreground)" }}>
         {bloque.valor ?? <Ausencia tipo="SIN_ASIGNAR">{bloque.ausencia}</Ausencia>}
       </p>
@@ -93,17 +93,11 @@ export function PasoDeProtocolo({
   return (
     <div
       className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
       <TituloDePanel
         titulo={t("PASO.TITULO")}
-        eyebrow={
-          <>
-            <span aria-hidden="true">← </span>
-            {t("PASO.MODO_EXAMEN")} · {assessment}
-          </>
-        }
-        meta={`${materia} · ${modalidad}`}
+        meta={`${t("PASO.MODO_EXAMEN")} · ${assessment} · ${materia} · ${modalidad}`}
         subcopy={SUBCOPY.UX09}
       />
 
@@ -111,10 +105,10 @@ export function PasoDeProtocolo({
         {/* ── Columna principal: identidad, contenido, estado y decisión ── */}
         <div className="md:basis-2/3 space-y-4">
           <HeroCard>
-            <Eyebrow>
+            <TituloDeSeccion>
               {t("PASO.ACTUAL")}
               {labelDelPaso ? ` · ${labelDelPaso}` : ""}
-            </Eyebrow>
+            </TituloDeSeccion>
             {/*
               Sin número de posición: instancia y orden siguen pendientes de
               contrato, así que "Paso 5 de 12" no existe.
@@ -144,7 +138,7 @@ export function PasoDeProtocolo({
                   background: "var(--muted)",
                 }}
               >
-                <Eyebrow>{t("PASO.REENTRADA.EYEBROW")}</Eyebrow>
+                <TituloDeSeccion>{t("PASO.REENTRADA.EYEBROW")}</TituloDeSeccion>
                 <h2 id="reentrada-titulo" style={{ fontSize: "var(--text-title)", fontWeight: 650 }}>
                   {reentradaPendiente.titulo}
                 </h2>
@@ -190,7 +184,7 @@ export function PasoDeProtocolo({
 
             {secundarios.length > 0 && (
               <div>
-                <Eyebrow>{t("OVERVIEW.SECUNDARIOS")}</Eyebrow>
+                <TituloDeSeccion>{t("OVERVIEW.SECUNDARIOS")}</TituloDeSeccion>
                 {secundarios.map((linea) => (
                   <ReglaDeNegocio key={linea}>{linea}</ReglaDeNegocio>
                 ))}
@@ -204,7 +198,7 @@ export function PasoDeProtocolo({
           <Bloque bloque={explicacion} />
 
           <div>
-            <Eyebrow>{t("PASO.RECURSO")}</Eyebrow>
+            <TituloDeSeccion>{t("PASO.RECURSO")}</TituloDeSeccion>
             {recurso ? (
               <div data-recurso>
                 <p style={{ fontSize: "var(--text-body)" }}>{recurso.nombre}</p>
@@ -224,7 +218,7 @@ export function PasoDeProtocolo({
           </div>
 
           <div>
-            <Eyebrow>{t("PASO.CONFIGURACION")}</Eyebrow>
+            <TituloDeSeccion>{t("PASO.CONFIGURACION")}</TituloDeSeccion>
             <ReglaDeNegocio>
               {t("PASO.FUENTE_CONTENIDO")} {fuenteDelContenido}
             </ReglaDeNegocio>

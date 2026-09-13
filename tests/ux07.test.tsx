@@ -67,17 +67,17 @@ describe("§21.3 — cuando ya está ACTIVE, el estado reemplaza el CTA de activ
   it("no queda un botón Activar deshabilitado que sugiera una segunda operación", () => {
     for (const e of todos.filter((x) => x.ux07!.estado === "YA_ACTIVA")) {
       render(<ActivacionModoExamen {...e.ux07!} />);
-      expect(screen.queryByText(/ACTIVAR/), e.id).toBeNull();
-      expect(screen.getByRole("button", { name: "ABRIR PREPARACIÓN" })).toBeInTheDocument();
-      screen.getByText("MODO EXAMEN ACTIVO");
+      expect(screen.queryByRole("button", { name: /activar/i }), e.id).toBeNull();
+      expect(screen.getByRole("button", { name: "Abrir preparación" })).toBeInTheDocument();
+      screen.getByText("Modo Examen activo");
       document.body.innerHTML = "";
     }
   });
 
   it("un intento duplicado abre la existente y no ofrece crear otra", () => {
     render(<ActivacionModoExamen {...escenariosUX07["FX-LOCAL-EXAM-DUPLICADO"].ux07!} />);
-    expect(screen.getByRole("button", { name: "ABRIR PREPARACIÓN" })).toBeInTheDocument();
-    expect(screen.queryByText(/ACTIVAR/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Abrir preparación" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /activar/i })).toBeNull();
   });
 });
 

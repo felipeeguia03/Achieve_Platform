@@ -37,7 +37,6 @@ import {
   CTAPrincipal,
   CTASecundaria,
   ReglaDeNegocio,
-  TituloDePanel,
 } from "@/components/screens/design-system";
 import { ErrorDelAlta, MarcoDelAlta } from "./marco";
 
@@ -173,7 +172,13 @@ export function AltaMaterias({ anioElegido, requisitos, onConfirmar }: MateriasP
 
       {cupos.length > 0 && (
         <section style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <TituloDePanel titulo={t("ALTA.MATERIAS.ELECTIVAS")} />
+          {/*
+            Un subtítulo de sección, no la cabecera de la pantalla: el `h1` del
+            alta lo pone el marco, y `TituloDePanel` dibuja el título de pantalla.
+          */}
+          <h2 style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: 0 }}>
+            {t("ALTA.MATERIAS.ELECTIVAS")}
+          </h2>
           <ReglaDeNegocio>{t("ALTA.MATERIAS.ELECTIVA_AYUDA")}</ReglaDeNegocio>
           {cupos.map((c) => (
             <Cupo

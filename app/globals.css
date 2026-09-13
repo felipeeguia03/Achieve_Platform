@@ -228,10 +228,10 @@
     "Liberation Mono", "Courier New", monospace;
 }
 
-/* V-01: máximo 4 tamaños de texto por pantalla + eyebrow como quinto elemento fijo */
+/* V-01: máximo 4 tamaños de texto por pantalla */
 :root {
   --text-meta: 0.6875rem;   /* 11px: metadatos, fixture IDs */
-  --text-label: 0.8125rem;  /* 13px: labels, eyebrow */
+  --text-label: 0.8125rem;  /* 13px: labels */
   --text-body: 0.9375rem;   /* 15px: cuerpo */
   --text-title-sm: 1.1875rem; /* 19px: subtítulo de tarjeta */
   --text-title-lg: 1.875rem;  /* 30px: título de pantalla */
@@ -260,16 +260,18 @@ h2 {
   color: var(--foreground);
 }
 
-/* eyebrow: label de categoría, NO un identificador — V-02 reserva monoespaciada
-   solo para lo que se compara carácter por carácter. Antes usaba mono acá, corregido. */
-.eyebrow {
-  color: var(--muted-foreground);
+/* Título de sección dentro de una pantalla — «Temas del programa», «Qué cambia».
+   Era el eyebrow: 13px en MAYÚSCULAS con tracking. El owner sacó los rótulos en
+   mayúsculas el 13 sep 2026 (estilo de las capturas): ahora es un título en caja
+   normal, en tinta. Sans, nunca mono — V-02 reserva la monoespaciada para lo que
+   se compara carácter por carácter. */
+.titulo-de-seccion {
+  color: var(--foreground);
   font-family: var(--font-sans);
-  font-size: var(--text-label);
+  font-size: var(--text-body);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  line-height: 1.4;
   margin-bottom: 0.35rem;
-  text-transform: uppercase;
 }
 
 .subcopy {

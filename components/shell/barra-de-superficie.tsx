@@ -58,15 +58,15 @@ export function BarraDeSuperficie() {
       */
       role="group"
       aria-label={t("PANEL.CONTROLES")}
-      className="flex items-center justify-end"
-      style={{
-        gap: 12,
-        // Pegado al borde superior del contenido: es la barra de título de esta
-        // pantalla, no un módulo más de la columna.
-        margin: "-8px 0 16px",
-        paddingBottom: 12,
-        borderBottom: ".5px solid var(--border)",
-      }}
+      /*
+        ⚠️ **Flota en la franja de padding de arriba, no ocupa lugar.** Antes era
+        una fila con su línea divisoria y bajaba el título ~50 px en toda
+        pantalla de objeto: al pasar de una sección a una materia, la cabecera
+        saltaba. Ahora el título cae en el mismo lugar en todas, y los controles
+        quedan arriba a la derecha, que es donde los pidió el owner.
+      */
+      className="absolute right-0 -top-5 flex items-center justify-end md:-top-7"
+      style={{ gap: 12, zIndex: 1 }}
     >
       {/*
         ⚠️ **El nombre NO se repite acá** — Enmienda 5. Aparecía tres veces en los

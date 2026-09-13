@@ -124,7 +124,7 @@ describe("Precedencia en pantalla", () => {
     const v = escenariosUX08["FX-LOCAL-OV-IN-PROGRESS"].ux08!;
     expect(v.nivel).toBe(1);
     render(<OverviewModoExamen {...v} />);
-    expect(screen.getByRole("button", { name: "CONTINUAR" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeInTheDocument();
     expect(screen.getByText("Hay un compromiso incumplido sin resolver.")).toBeInTheDocument();
     expect(screen.getByText("Una evidencia anterior sigue en revisión.")).toBeInTheDocument();
   });
@@ -152,7 +152,7 @@ describe("Omitir, no inventar", () => {
     const v = escenariosUX08["FX-LOCAL-OV-SIN-RECORRIDO"].ux08!;
     expect(v.recorrido).toBeNull();
     const { container } = render(<OverviewModoExamen {...v} />);
-    expect(screen.getByText("RECORRIDO TODAVÍA NO DISPONIBLE")).toBeInTheDocument();
+    expect(screen.getByText("Recorrido todavía no disponible")).toBeInTheDocument();
     expect(container.textContent ?? "").not.toMatch(/de 12|Paso \d+ de/);
   });
 
@@ -192,7 +192,7 @@ describe("Provenance: por dato, y ninguna capa la eleva (§19)", () => {
     const v = escenariosUX08["FX-LOCAL-OV-CONTRADICTORIOS"].ux08!;
     render(<OverviewModoExamen {...v} />);
     expect(screen.getByText("Dato en revisión · hay versiones distintas")).toBeInTheDocument();
-    expect(screen.getByText("HAY DATOS CONTRADICTORIOS")).toBeInTheDocument();
+    expect(screen.getByText("Hay datos contradictorios")).toBeInTheDocument();
   });
 
   it("confianza y dominio se muestran separadas: la confianza no es dominio", () => {
@@ -237,11 +237,45 @@ describe("El Cursado no se interrumpe (§20)", () => {
   it("todos los escenarios conservan la banda de continuidad y su retorno", () => {
     for (const e of todos) {
       const { unmount } = render(<OverviewModoExamen {...e.ux08!} />);
-      expect(screen.getByText("CURSADO PERSISTENTE")).toBeInTheDocument();
+      expect(screen.getByText("Cursado persistente")).toBeInTheDocument();
       expect(
         screen.getByText("Cursado, sus cinco dimensiones y la Bitácora continúan disponibles."),
       ).toBeInTheDocument();
       unmount();
     }
+  });
+});
+
+describe("el status recibido se dice en palabras — 13 sep 2026", () => {
+  it("no se le muestra el enum crudo al estudiante", () => {
+    const v = vistas.find((x) => x.statusRecibido !== null)!;
+    const { container } = render(
+      <OverviewModoExamen
+        {...v}
+        estadoDominante="ACCIÓN EN CURSO"
+        statusRecibido={{ valor: "RECOMMENDED", descargo: "Todavía no la activaste." }}
+      />,
+    );
+    const status = container.querySelector("[data-status-recibido]")!;
+    expect(status.textContent).toContain("Recomendada");
+    expect(status.textContent).not.toContain("RECOMMENDED");
+  });
+
+  it("si la línea de estado ya lo nombra, no se repite: queda sólo el descargo", () => {
+    const v = vistas.find((x) => x.statusRecibido !== null)!;
+    const { container } = render(
+      <OverviewModoExamen
+        {...v}
+        estadoDominante="PREPARACIÓN RECOMENDADA"
+        statusRecibido={{ valor: "RECOMMENDED", descargo: "Todavía no la activaste." }}
+      />,
+    );
+    expect(container.querySelector("[data-status-recibido]")!.textContent).toBe("Todavía no la activaste.");
+  });
+
+  it("un status que no conoce se muestra tal cual, sin inventarle un nombre", () => {
+    const v = vistas.find((x) => x.statusRecibido !== null)!;
+    const { container } = render(<OverviewModoExamen {...v} statusRecibido={{ valor: "OTRO", descargo: "x" }} />);
+    expect(container.querySelector("[data-status-recibido]")!.textContent).toContain("OTRO");
   });
 });

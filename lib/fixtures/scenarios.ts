@@ -394,7 +394,7 @@ export const FX_LOCAL_PROG_VALIDATED: Escenario = {
       { label: "Práctica", valor: "12 → 19 ejercicios" },
       { label: "Recencia", valor: "hoy" },
     ],
-    fuenteCambio: "Evidence validada",
+    fuenteCambio: "Entrega validada",
     // `ADR-020`: el no-cambio **declarado** es un dato y va sin `ausencia`; la
     // dimensión que nadie midió sí es una ausencia. Antes compartían
     // tratamiento y el escenario prometía que eran distinguibles.

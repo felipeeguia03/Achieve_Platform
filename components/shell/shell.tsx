@@ -76,8 +76,14 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
 
           <div className="flex min-w-0 flex-1 flex-col">
             <BarraSuperior migas={migasDe(nodo, objeto, intermedia)} onAbrirPaleta={() => setPaleta(true)} />
-            <main className="min-w-0 flex-1" style={{ padding: "24px 24px 88px" }}>
-              <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+            {/*
+              ⚠️ **El encuadre es uno solo para todas las pantallas**, y es la
+              identidad del software de las capturas: el título cae siempre en el
+              mismo lugar. 48 px de lado y 40 arriba en desktop (§4.2); ninguna
+              pantalla agrega padding propio alrededor de su contenido.
+            */}
+            <main className="min-w-0 flex-1 px-4 pt-6 md:px-12 md:pt-10" style={{ paddingBottom: 88 }}>
+              <div style={{ maxWidth: 1120, margin: "0 auto", position: "relative" }}>
                 {/*
                   El semáforo de **esta** pantalla, cuando es la de un objeto —
                   ADR-088, Enmiendas 3 y 7. Va acá y no adentro de la superficie:

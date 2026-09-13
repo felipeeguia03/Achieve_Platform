@@ -233,7 +233,7 @@ describe("Ningún estado de Evidence es progreso (§21)", () => {
     const v = escenariosUX09["FX-LOCAL-PASO-EVIDENCE-INSUFFICIENT"].ux09!;
     expect(v.ctaPrimaria!.texto).not.toBe("PREPARAR NUEVA EVIDENCIA");
     render(<PasoDeProtocolo {...v} />);
-    expect(screen.getByText(/Sólo se reenvía si el owner lo solicita/)).toBeInTheDocument();
+    expect(screen.getByText(/Sólo se reenvía si quien la revisa lo pide/)).toBeInTheDocument();
   });
 
   it("solo RESUBMISSION_REQUESTED ofrece preparar una nueva", () => {
@@ -290,7 +290,7 @@ describe("Retorno seguro (§30)", () => {
   it("todos los escenarios conservan una salida al Overview", () => {
     for (const e of todos) {
       const { unmount } = render(<PasoDeProtocolo {...e.ux09!} />);
-      expect(screen.getAllByText("VOLVER AL OVERVIEW").length, e.id).toBeGreaterThan(0);
+      expect(screen.getAllByText("Volver a la preparación").length, e.id).toBeGreaterThan(0);
       unmount();
     }
   });

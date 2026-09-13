@@ -31,14 +31,35 @@ import {
   CTASecundaria,
   Dato,
   EstadoGeneral,
-  Eyebrow,
+  TituloDeSeccion,
   Fila,
   HeroCard,
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
-import { SUBCOPY, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t, type CopyId } from "@/lib/content/es-AR";
 import type { OverviewExamenProps } from "@/lib/domain/view-models";
+
+/**
+ * El status recibido **en palabras**, no el enum crudo. Se mostraba `RECOMMENDED`
+ * al estudiante: en inglés y en mayúsculas. Es sólo cómo se dice — el valor sigue
+ * siendo el que trae `ExamPreparation`, y un status que no está en la lista se
+ * muestra tal cual antes que inventarle un nombre.
+ */
+function estadoDePreparacion(valor: string): string {
+  // `t` no valida en tiempo de ejecución: una clave que no existe da `undefined`.
+  return (t(`OVERVIEW.STATUS.${valor}` as CopyId) as string | undefined) ?? valor;
+}
+
+/**
+ * `true` ⇒ la línea de estado de arriba **ya nombra** el status, y repetirlo
+ * debajo sobra: *«Preparación recomendada»* y, un renglón más abajo,
+ * *«Recomendada»*. El descargo se queda — es lo que el status no dice solo.
+ * Con otra línea arriba (*«Acción en curso»*) el status sí se muestra.
+ */
+function yaLoDice(estadoDominante: string, estado: string): boolean {
+  return estadoDominante.toLocaleLowerCase("es").includes(estado.toLocaleLowerCase("es"));
+}
 
 export function OverviewModoExamen({
   materia,
@@ -63,18 +84,11 @@ export function OverviewModoExamen({
   return (
     <div
       className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
       <TituloDePanel
         titulo={t("OVERVIEW.TITULO")}
-        eyebrow={
-          <>
-            {/* La flecha es afordancia visual de retorno, no parte del nombre
-                de la pantalla: fuera del nombre accesible. */}
-            <span aria-hidden="true">← </span>
-            {materia} · {t("OVERVIEW.EXAMEN")} · {evaluacion}
-          </>
-        }
+        meta={`${materia} · ${t("OVERVIEW.EXAMEN")} · ${evaluacion}`}
         subcopy={SUBCOPY.UX08}
       />
 
@@ -112,7 +126,9 @@ export function OverviewModoExamen({
             */}
             {statusRecibido && (
               <div data-status-recibido>
-                <ReglaDeNegocio>{statusRecibido.valor}</ReglaDeNegocio>
+                {!yaLoDice(estadoDominante, estadoDePreparacion(statusRecibido.valor)) && (
+                  <ReglaDeNegocio>{estadoDePreparacion(statusRecibido.valor)}</ReglaDeNegocio>
+                )}
                 <ReglaDeNegocio>{statusRecibido.descargo}</ReglaDeNegocio>
               </div>
             )}
@@ -132,7 +148,7 @@ export function OverviewModoExamen({
             {/* Lo secundario se muestra como secundario, no se esconde. */}
             {secundarios.length > 0 && (
               <div>
-                <Eyebrow>{t("OVERVIEW.SECUNDARIOS")}</Eyebrow>
+                <TituloDeSeccion>{t("OVERVIEW.SECUNDARIOS")}</TituloDeSeccion>
                 {secundarios.map((linea) => (
                   <ReglaDeNegocio key={linea}>{linea}</ReglaDeNegocio>
                 ))}
@@ -144,7 +160,7 @@ export function OverviewModoExamen({
         {/* ── Columna secundaria ── */}
         <div className="md:basis-1/3 space-y-4">
           <div>
-            <Eyebrow>{recorrido ? t("OVERVIEW.RECORRIDO") : t("OVERVIEW.SIN_RECORRIDO")}</Eyebrow>
+            <TituloDeSeccion>{recorrido ? t("OVERVIEW.RECORRIDO") : t("OVERVIEW.SIN_RECORRIDO")}</TituloDeSeccion>
             {/*
               `C-04` elevado: sin recorrido, la sección explica qué va a
               aparecer y por qué importa, en vez de dejar un rótulo con nada
@@ -163,7 +179,7 @@ export function OverviewModoExamen({
 
           {cambioConfirmado.length > 0 && (
             <div>
-              <Eyebrow>{t("OVERVIEW.ULTIMO_CAMBIO")}</Eyebrow>
+              <TituloDeSeccion>{t("OVERVIEW.ULTIMO_CAMBIO")}</TituloDeSeccion>
               {cambioConfirmado.map((f) => (
                 <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
               ))}
@@ -183,7 +199,7 @@ export function OverviewModoExamen({
 
           {pendiente.length > 0 && (
             <div>
-              <Eyebrow>{t("OVERVIEW.PENDIENTE")}</Eyebrow>
+              <TituloDeSeccion>{t("OVERVIEW.PENDIENTE")}</TituloDeSeccion>
               {pendiente.map((f) => (
                 <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
               ))}
@@ -194,7 +210,7 @@ export function OverviewModoExamen({
 
       {/* Banda de continuidad: el Cursado no se interrumpe por el Modo Examen. */}
       <div className="hairline-t pt-3">
-        <Eyebrow>{t("OVERVIEW.CURSADO")}</Eyebrow>
+        <TituloDeSeccion>{t("OVERVIEW.CURSADO")}</TituloDeSeccion>
         <ReglaDeNegocio>{cursadoPersistente}</ReglaDeNegocio>
         <CTASecundaria onClick={onVolver}>{ctaRetorno}</CTASecundaria>
       </div>

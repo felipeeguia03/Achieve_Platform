@@ -125,19 +125,31 @@ export function ModoClase(p: ModoClaseProps) {
   );
 
   return (
-    <div className="flex flex-col gap-4" data-modo-clase data-estado={clase.estado}>
+    <div data-modo-clase data-estado={clase.estado}>
+      {/*
+        La cabecera va **fuera** del contenedor con `gap`: trae su propia
+        distancia al contenido y adentro se sumarían. Por lo mismo, el aviso de
+        horario estimado va dentro de su línea de contexto y no debajo.
+      */}
       <TituloDePanel
-        eyebrow={
-          <span className="inline-flex items-center" style={{ gap: 8 }}>
-            <MarcaDeMateria cursadaId={clase.cursadaId} />
-            {nombreDeObjeto(clase.materia)}
-          </span>
-        }
         titulo={tituloDeClase(clase)}
-        meta={lineaDeHorario}
+        meta={
+          <>
+            <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 8 }}>
+              <MarcaDeMateria cursadaId={clase.cursadaId} />
+            </span>
+            <span>{nombreDeObjeto(clase.materia)}</span>
+            {" · "}
+            <span>{lineaDeHorario}</span>
+            {clase.horarioEstimado && (
+              <span style={{ ...meta, display: "block", marginTop: 2 }}>{t("CLASE.HORARIO_ESTIMADO")}</span>
+            )}
+          </>
+        }
         acciones={<EstadoDeLaClase activa={activa} segundos={segundos} duracion={clase.duracionMinutos} />}
       />
-      {clase.horarioEstimado && <p style={{ ...meta, marginTop: -8 }}>{t("CLASE.HORARIO_ESTIMADO")}</p>}
+
+      <div className="flex flex-col gap-4">
 
       {p.recienGuardada && (
         <div role="status" data-clase-guardada style={{ ...tarjeta, borderColor: "var(--foreground)" }}>
@@ -185,6 +197,7 @@ export function ModoClase(p: ModoClaseProps) {
       </div>
 
       <FranjaDeLaClase clase={clase} />
+      </div>
     </div>
   );
 }

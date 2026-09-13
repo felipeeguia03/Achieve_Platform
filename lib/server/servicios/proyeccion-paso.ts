@@ -232,6 +232,6 @@ export function proyectarPaso(e: EstadoDePaso): PasoProtocoloProps {
       : null,
     // La procedencia del contenido, dicha en la pantalla y sin oficializarla.
     fuenteDelContenido: fuenteDeContenido(e.contenido, e.contenidoVersion),
-    ctaRetorno: "VOLVER AL OVERVIEW",
+    ctaRetorno: "Volver a la preparación",
   };
 }

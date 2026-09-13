@@ -14,7 +14,7 @@ import {
   CTAPrincipal,
   CTASecundaria,
   EstadoGeneral,
-  Eyebrow,
+  TituloDeSeccion,
   HeroCard,
   ReglaDeNegocio,
   TituloDePanel,
@@ -67,13 +67,11 @@ export function Evidencia({
   return (
     <div
       className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
       <TituloDePanel
-        eyebrow={contexto}
         titulo={titulo}
-        escala={20}
-        meta={unidad}
+        meta={unidad ? <>{contexto} · {unidad}</> : contexto}
         subcopy={SUBCOPY.UX05}
       />
 
@@ -82,7 +80,7 @@ export function Evidencia({
         {estadoVisible && <EstadoGeneral>{estadoVisible}</EstadoGeneral>}
         {aviso && <ReglaDeNegocio>{aviso}</ReglaDeNegocio>}
 
-        <Eyebrow>{t("EVIDENCIA.ESPERADA")}</Eyebrow>
+        <TituloDeSeccion>{t("EVIDENCIA.ESPERADA")}</TituloDeSeccion>
         {(evidenciaEsperada || criterioCierre) && (
           <ReglaDeNegocio>
             {[
@@ -167,7 +165,7 @@ export function Evidencia({
         )}
         {reflection && desplegada && (
           <div style={{ marginTop: 10 }}>
-            <Eyebrow>{reflection.titulo}</Eyebrow>
+            <TituloDeSeccion>{reflection.titulo}</TituloDeSeccion>
             <textarea
               value={reflexionTexto}
               onChange={(e) => onReflexion?.(e.target.value)}

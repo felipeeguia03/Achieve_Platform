@@ -121,9 +121,7 @@ export function Calendario(p: CalendarioPantallaProps) {
   return (
     <div data-calendario>
       <TituloDePanel
-        eyebrow="Qué tenés y cuándo"
         titulo="Calendario"
-        escala={30}
         acciones={
           p.datos && (
             <span className="hidden md:inline-flex">
@@ -134,7 +132,7 @@ export function Calendario(p: CalendarioPantallaProps) {
       />
       {/* En el piso móvil la píldora baja: arriba a la derecha pisaba el título. */}
       {p.datos && (
-        <div className="md:hidden" style={{ marginTop: 10 }}>
+        <div className="md:hidden" style={{ marginTop: -20 }}>
           <Pildora fecha={p.datos.fechaDeHoy} dias={p.datos.proximaEvaluacionEnDias} />
         </div>
       )}

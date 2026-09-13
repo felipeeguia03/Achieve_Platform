@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { TituloDePanel, AccionDeObjeto } from "@/components/screens/design-system";
+import { TituloDePanel, AccionDeObjeto, CTAPrincipal, CTASecundaria, enCajaNormal } from "@/components/screens/design-system";
 import { SUBCOPY } from "@/lib/content/es-AR";
 
 /**
@@ -40,23 +40,29 @@ describe("D-01 · cada superficie tiene un `h1`, y uno solo", () => {
     expect(propios).toEqual([]);
   });
 
-  it("con título, hay exactamente un `h1` y es el título", () => {
-    const { container } = render(<TituloDePanel eyebrow="Programación" titulo="Cursado" />);
+  it("hay exactamente un `h1` y es el título", () => {
+    const { container } = render(<TituloDePanel titulo="Cursado" meta="Programación" />);
     const h1 = container.querySelectorAll("h1");
     expect(h1).toHaveLength(1);
     expect(h1[0].textContent).toBe("Cursado");
   });
 
   /**
-   * Cuatro superficies se identifican hoy sólo por su eyebrow. Promoverlo les
-   * da título de documento sin agregar una palabra; ponerles un título nuevo
-   * sería escribir copy de dominio.
+   * El owner sacó la línea en mayúsculas arriba del título (13 sep 2026): *"no
+   * sirven de nada"*. El título es lo primero de la cabecera; el contexto va
+   * debajo, en `meta`.
    */
-  it("sin título, el eyebrow se promueve a `h1` — y no se inventa texto", () => {
-    const { container } = render(<TituloDePanel eyebrow="← Modo Examen · Parcial 1" />);
-    const h1 = container.querySelectorAll("h1");
-    expect(h1).toHaveLength(1);
-    expect(h1[0].textContent).toBe("← Modo Examen · Parcial 1");
+  it("la cabecera no dibuja eyebrow: el título es lo primero", () => {
+    const { container } = render(<TituloDePanel titulo="Cursado" meta="Programación" />);
+    expect(container.querySelectorAll(".eyebrow")).toHaveLength(0);
+    expect(container.querySelector("header > div")?.firstElementChild?.tagName).toBe("H1");
+  });
+
+  it("ninguna superficie le pasa un eyebrow a la cabecera", () => {
+    const conEyebrow = pantallas().filter((f) =>
+      /<TituloDePanel\b[\s\S]*?\beyebrow=/.test(readFileSync(resolve(RAIZ, f), "utf8")),
+    );
+    expect(conEyebrow).toEqual([]);
   });
 });
 
@@ -64,12 +70,12 @@ describe("D-01 · cada superficie tiene un `h1`, y uno solo", () => {
 
 describe("D-02 · la subcopy no se inventa", () => {
   it("`null` no dibuja subcopy: omitir, no inventar", () => {
-    const { container } = render(<TituloDePanel eyebrow="X" titulo="Y" subcopy={null} />);
+    const { container } = render(<TituloDePanel titulo="Y" subcopy={null} />);
     expect(container.querySelectorAll("p.subcopy")).toHaveLength(0);
   });
 
   it("escrita, se dibuja bajo el título", () => {
-    const { container } = render(<TituloDePanel eyebrow="X" titulo="Y" subcopy="Qué es y por qué importa." />);
+    const { container } = render(<TituloDePanel titulo="Y" subcopy="Qué es y por qué importa." />);
     expect(container.textContent).toContain("Qué es y por qué importa.");
   });
 
@@ -139,5 +145,46 @@ describe("D-07 · acciones secundarias arriba a la derecha", () => {
     expect(boton.getAttribute("data-cta-primaria")).toBeNull();
     // Ancho de contenido, no ancho completo: §11.9.3.
     expect(boton.className).not.toContain("w-full");
+  });
+});
+
+// ── Sin rótulos en mayúsculas — 13 sep 2026 ─────────────────────────────────
+
+describe("los rótulos y las líneas de estado se dibujan en caja normal", () => {
+  it("un texto TODO EN MAYÚSCULAS sale con mayúscula inicial", () => {
+    expect(enCajaNormal("PREPARACIÓN ACTIVA")).toBe("Preparación activa");
+    expect(enCajaNormal("SIN ACCIONES POR AHORA")).toBe("Sin acciones por ahora");
+  });
+
+  it("respeta el nombre propio, las siglas con dígitos y los romanos", () => {
+    expect(enCajaNormal("MODO EXAMEN ACTIVO")).toBe("Modo Examen activo");
+    expect(enCajaNormal("RECORRIDO FUERA DE P0")).toBe("Recorrido fuera de P0");
+    expect(enCajaNormal("ANALISIS MATEMATICO II")).toBe("Analisis matematico II");
+  });
+
+  it("lo que ya está bien escrito, o no es texto, no se toca", () => {
+    expect(enCajaNormal("Cálculo Avanzado")).toBe("Cálculo Avanzado");
+    expect(enCajaNormal(3)).toBe(3);
+  });
+
+  it("tampoco un botón: el texto que llega en mayúsculas se dibuja en caja normal", () => {
+    const { getByRole } = render(
+      <>
+        <CTAPrincipal>ABRIR PASO ACTUAL</CTAPrincipal>
+        <CTASecundaria>VOLVER A CURSADO</CTASecundaria>
+      </>,
+    );
+    expect(getByRole("button", { name: "Abrir paso actual" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Volver a cursado" })).toBeInTheDocument();
+  });
+
+  it("ninguna pantalla vuelve a poner `uppercase` en un rótulo", () => {
+    // Los encabezados de columna (tablas, calendario, eje del Gantt) sí van en
+    // mayúsculas, como en las capturas: son los únicos permitidos.
+    const PERMITIDOS = ["calendario.tsx", "indice-de-materias.tsx"];
+    const con = pantallas()
+      .filter((f) => !PERMITIDOS.some((p) => f.endsWith(p)))
+      .filter((f) => /uppercase/.test(readFileSync(resolve(RAIZ, f), "utf8")));
+    expect(con).toEqual([]);
   });
 });

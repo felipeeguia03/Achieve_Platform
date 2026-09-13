@@ -782,7 +782,7 @@ export const FX_LOCAL_PROG_BITACORA = esc(
     progreso: {
       ...progresoBase,
       cambioConfirmado: [{ label: "Práctica", valor: "12 → 19 ejercicios" }],
-      fuenteCambio: "Evidence validada",
+      fuenteCambio: "Entrega validada",
       sinCambioConfirmado: NO_CAMBIO,
       fuenteSinCambio: "resultado de progreso confirmado",
       bitacora: [

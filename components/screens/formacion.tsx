@@ -53,18 +53,21 @@ export function Formacion({ piezas, aviso, simulada, grupos, abierta: deAfuera, 
   const pieza = piezas.find((p) => p.id === abierta) ?? null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div>
       {/*
         `D-01`: el `h1` lo dibuja la primitiva, no la pantalla. Hay guard, y es
         el que lo encontró: una superficie con su propio `h1` se sale de la
         escala tipográfica y del árbol de encabezados sin que nadie lo note.
+
+        Va **fuera** del contenedor con `gap`: la cabecera trae su distancia al
+        contenido, y adentro se sumarían las dos.
       */}
       <TituloDePanel
-        eyebrow={t("FORMACION.EYEBROW")}
         titulo={t("FORMACION.TITULO")}
-        escala={30}
         subcopy={t("FORMACION.SUBCOPY")}
       />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
       {/*
         La demo **se anuncia arriba de todo**, antes de cualquier pieza: quien
@@ -88,6 +91,7 @@ export function Formacion({ piezas, aviso, simulada, grupos, abierta: deAfuera, 
       ) : (
         <Biblioteca piezas={piezas} grupos={grupos} abierta={abierta} onAbrir={setAbierta} />
       )}
+      </div>
     </div>
   );
 }

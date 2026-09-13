@@ -126,7 +126,7 @@ export const FX_LOCAL_OV_RECOMENDACION = esc(
     estadoDominante: "PREPARACIÓN ACTIVA",
     objeto: "U4 · Resolver ejercicios 12–18",
     ctaPrimaria: { texto: "COMPROMETERME", habilitada: true },
-    despues: "abrís la acción y la aceptación. El Commitment se confirma aparte.",
+    despues: "abrís la acción y la aceptación. El compromiso se confirma aparte.",
     secundarios: ["Hay un paso del recorrido disponible."],
   },
   ["C01-024", "SC-EX-04"],
@@ -170,7 +170,7 @@ export const FX_LOCAL_OV_COMMITMENT_DUE = esc(
     estadoDominante: "PREPARACIÓN ACTIVA",
     objeto: "Hoy · 19:00 · Resolver ejercicios 12–18",
     ctaPrimaria: { texto: "EMPEZAR", habilitada: true },
-    despues: "el owner coordina el inicio. Abrir la pantalla no lo inicia.",
+    despues: "el inicio lo coordina Achieve. Abrir la pantalla no lo inicia.",
   },
 );
 
@@ -249,7 +249,7 @@ export const FX_LOCAL_OV_PROGRESS_UPDATED = esc(
     estadoDominante: "CAMBIO CONFIRMADO",
     ctaPrimaria: { texto: "VER AVANCE", habilitada: true },
     cambioConfirmado: [{ label: "Práctica", valor: "12 → 19 ejercicios" }],
-    fuenteProgreso: "Evidence validada",
+    fuenteProgreso: "Entrega validada",
     recorrido: null,
   },
   ["C01-024", "SC-PROG-01"],

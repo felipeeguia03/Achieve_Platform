@@ -12,18 +12,49 @@
  */
 
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { DatoDeEvaluacion, TipoDeAusencia, Tono } from "@/lib/domain/view-models";
 
-export function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="eyebrow">{children}</p>;
+/**
+ * El título de una sección dentro de la pantalla — *«Temas del programa»*,
+ * *«Qué cambia»*. **En caja normal**: era el eyebrow en mayúsculas, y el owner
+ * sacó todos los rótulos en mayúsculas el 13 sep 2026 (`design-system-capturas`
+ * §3.3). Los que sólo decoraban se fueron; los que distinguen un bloque de otro
+ * quedaron acá.
+ */
+export function TituloDeSeccion({ children }: { children: React.ReactNode }) {
+  return <p className="titulo-de-seccion">{enCajaNormal(children)}</p>;
+}
+
+/**
+ * Un rótulo o una línea de estado que llega **TODO EN MAYÚSCULAS**, en caja
+ * normal — 13 sep 2026, el owner sacó las mayúsculas de la interfaz.
+ *
+ * ⚠️ **Es presentación, no un renombre.** Las proyecciones y los fixtures
+ * siguen devolviendo `PREPARACIÓN ACTIVA`, y sus tests lo siguen afirmando: lo
+ * que cambia es lo que se dibuja, igual que `nombreDeObjeto` con los nombres del
+ * plan. Así una línea de estado nueva escrita en mayúsculas no vuelve a gritar.
+ *
+ * Sólo toca un `string` entero en mayúsculas. Respeta los romanos (vía
+ * `nombreDeObjeto`), las palabras con dígitos —`P0`— y el nombre propio
+ * *Modo Examen*.
+ */
+export function enCajaNormal(contenido: React.ReactNode): React.ReactNode {
+  if (typeof contenido !== "string" || contenido !== contenido.toUpperCase()) return contenido;
+  const conDigitos = new Set(contenido.split(" ").filter((p) => /\d/.test(p)));
+  return nombreDeObjeto(contenido)
+    .split(" ")
+    .map((p) => (conDigitos.has(p.toUpperCase()) ? p.toUpperCase() : p))
+    .join(" ")
+    .replace(/\bmodo examen\b/i, "Modo Examen");
 }
 
 export function EstadoGeneral({ children }: { children: React.ReactNode }) {
   return (
     <div className="hairline-b pb-2" style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--foreground)" }}>
-      {children}
+      {enCajaNormal(children)}
     </div>
   );
 }
@@ -34,7 +65,7 @@ export function ReglaDeNegocio({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * `TituloDePanel` — la cabecera de una superficie: eyebrow, título, meta,
+ * `TituloDePanel` — la cabecera de una superficie: título, línea de contexto,
  * subcopy explicativa y acciones secundarias del objeto.
  *
  * Cierra tres diferencias de `design-system-capturas.md` §14.2:
@@ -50,24 +81,36 @@ export function ReglaDeNegocio({ children }: { children: React.ReactNode }) {
  *   esto **no toca** [ADR-015](../../docs/decisions.md#adr-015): la CTA
  *   primaria sigue a ancho completo al final de la columna.
  *
- * **Cuando no hay `titulo`, el eyebrow es el `h1`.** Cuatro superficies
- * (`UX06`–`UX09`) hoy se identifican por su eyebrow y nada más. Promoverlo a
- * encabezado les da título de documento **sin agregar una palabra**; ponerles
- * un título nuevo sería escribir copy de dominio, que no es trabajo de esta
- * capa. Quedan listadas en `SUBCOPY`.
+ * ## Sin eyebrow — 13 sep 2026
+ *
+ * ⚠️ **La cabecera ya no lleva la línea en mayúsculas arriba del título**, y
+ * lo pidió el owner con las capturas delante: *"no sirven de nada"*. El título
+ * es lo primero de la pantalla, como en el software de referencia. Lo que el
+ * eyebrow decía **y era un dato** —la materia, la evaluación, la comisión— va
+ * en `meta`, en caja normal, debajo del título. Una frase de propósito que no
+ * decía nada que el título no dijera, se fue.
+ *
+ * ## Una sola medida para todas las pantallas
+ *
+ * ⚠️ **No hay `escala`, y no la vuelvas a agregar.** Cada pantalla le pasaba la
+ * suya —20, 22, 30— y el título saltaba de tamaño y de altura al cambiar de
+ * sección: la identidad del software de las capturas es que el título cae
+ * **siempre en el mismo lugar y con el mismo cuerpo**. El título es
+ * `--text-title-lg` (§3.1: *uno solo por pantalla*), y la cabecera lleva su
+ * propia distancia hasta el contenido (32 px, §4.2), para que no dependa del
+ * `space-y` o del `gap` de cada pantalla.
+ *
+ * ⚠️ **El `marginBottom` va en línea a propósito**: le gana al `space-y-*` del
+ * padre. Dentro de un contenedor con `gap` se sumaría — ahí la cabecera va
+ * **fuera** del contenedor con `gap`.
  */
 export function TituloDePanel({
-  eyebrow,
   titulo,
-  escala = 22,
   meta,
   subcopy,
   acciones,
 }: {
-  eyebrow?: React.ReactNode;
-  /** Si falta, el eyebrow se promueve a `h1`: nunca se inventa un título. */
-  titulo?: React.ReactNode;
-  escala?: number;
+  titulo: React.ReactNode;
   /** Línea de contexto bajo el título — una fecha, una modalidad. */
   meta?: React.ReactNode;
   /**
@@ -79,30 +122,27 @@ export function TituloDePanel({
   /** Navegación del objeto, arriba a la derecha. Nunca la decisión principal. */
   acciones?: React.ReactNode;
 }) {
-  const eyebrowEsTitulo = titulo === undefined;
   return (
-    <header className="flex items-start justify-between gap-4">
+    <header className="flex items-start justify-between gap-4" style={{ marginBottom: 32 }}>
       <div className="min-w-0">
-        {eyebrow &&
-          (eyebrowEsTitulo ? (
-            <h1 className="eyebrow" style={{ margin: 0 }}>
-              {eyebrow}
-            </h1>
-          ) : (
-            <Eyebrow>{eyebrow}</Eyebrow>
-          ))}
-        {!eyebrowEsTitulo && (
-          <h1 style={{ fontSize: escala, letterSpacing: escala >= 30 ? "-0.022em" : undefined, fontWeight: 600 }}>
-            {titulo}
-          </h1>
-        )}
+        <h1
+          style={{
+            fontSize: "var(--text-title-lg)",
+            lineHeight: 1.2,
+            letterSpacing: "-0.022em",
+            fontWeight: 600,
+            margin: 0,
+          }}
+        >
+          {titulo}
+        </h1>
         {meta && (
-          <p className="subcopy" style={{ marginTop: 2 }}>
+          <p className="subcopy" style={{ marginTop: 6, lineHeight: 1.5 }}>
             {meta}
           </p>
         )}
         {subcopy && (
-          <p className="subcopy" style={{ marginTop: 6, maxWidth: 620, lineHeight: 1.5 }}>
+          <p className="subcopy" style={{ marginTop: meta ? 4 : 8, maxWidth: 660, lineHeight: 1.6 }}>
             {subcopy}
           </p>
         )}
@@ -233,7 +273,8 @@ export function CTAPrincipal({ children, onClick, disabled }: { children: React.
         fontSize: "var(--text-body)",
       }}
     >
-      {children}
+      {/* Sin mayúsculas en un botón (§3.3): el texto puede llegar así de una proyección. */}
+      {enCajaNormal(children)}
     </Button>
   );
 }
@@ -241,7 +282,7 @@ export function CTAPrincipal({ children, onClick, disabled }: { children: React.
 export function CTASecundaria({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return (
     <button onClick={onClick} style={{ width: "100%", textAlign: "center", fontSize: "var(--text-label)", color: "var(--muted-foreground)", marginTop: 10, background: "transparent", border: "none" }}>
-      {children}
+      {enCajaNormal(children)}
     </button>
   );
 }

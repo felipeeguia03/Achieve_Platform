@@ -69,9 +69,7 @@ export function MarcoDelAlta({
           */}
           <p
             style={{
-              fontSize: "var(--text-meta)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
+              fontSize: "var(--text-label)",
               color: "var(--muted-foreground)",
               margin: 0,
             }}

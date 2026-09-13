@@ -38,9 +38,9 @@ export function ProximaAccion({
   return (
     <div
       className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
-      <TituloDePanel eyebrow={contexto} titulo={unidad} subcopy={SUBCOPY.UX03} />
+      <TituloDePanel titulo={unidad} meta={contexto} subcopy={SUBCOPY.UX03} />
 
       <HeroCard>
         <p

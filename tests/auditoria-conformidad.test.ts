@@ -194,10 +194,12 @@ describe("Bloque 5 · Visual", () => {
   });
 
   it("`V-02` — la monoespaciada sólo para lo que se compara carácter por carácter", () => {
-    // El eyebrow se corrigió a sans en su momento; que no vuelva.
+    // El título de sección (antes eyebrow) se corrigió a sans; que no vuelva.
     const css = readFileSync(resolve(ROOT, "app/globals.css"), "utf8");
-    const eyebrow = css.slice(css.indexOf(".eyebrow"), css.indexOf(".eyebrow") + 400);
-    expect(eyebrow).not.toContain("--font-mono");
+    const seccion = css.slice(css.indexOf(".titulo-de-seccion {"), css.indexOf(".titulo-de-seccion {") + 400);
+    expect(seccion).toContain("--font-sans");
+    expect(seccion).not.toContain("--font-mono");
+    expect(seccion).not.toContain("uppercase");
   });
 });
 

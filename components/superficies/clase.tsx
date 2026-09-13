@@ -75,10 +75,12 @@ export function VistaDeClase({ consulta }: PropsDeSuperficie) {
     // Sin clase abierta **no hay CTA**: desde acá no se sabe de qué materia
     // sería. Se dice dónde se entra.
     return (
-      <div className="flex flex-col gap-3" data-sin-clase>
+      <div data-sin-clase>
         <TituloDePanel titulo={t("CLASE.TITULO")} />
-        <p style={{ fontSize: "var(--text-body)", fontWeight: 500 }}>{t("CLASE.SIN_CLASE_ACTIVA")}</p>
-        <ReglaDeNegocio>{t("CLASE.SIN_CLASE_ACTIVA_REGLA")}</ReglaDeNegocio>
+        <div className="flex flex-col gap-3">
+          <p style={{ fontSize: "var(--text-body)", fontWeight: 500 }}>{t("CLASE.SIN_CLASE_ACTIVA")}</p>
+          <ReglaDeNegocio>{t("CLASE.SIN_CLASE_ACTIVA_REGLA")}</ReglaDeNegocio>
+        </div>
       </div>
     );
   }

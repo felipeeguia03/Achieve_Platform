@@ -89,7 +89,7 @@ export const FX_LOCAL_DAY_COMMITMENT_STARTABLE = esc(
     razon: "es la hora que acordaste.",
     tiempoOEstado: "Hoy · 19:00",
     evidenciaEsperada: "7 ejercicios",
-    queSigue: { texto: "el owner coordina el inicio. Abrir la pantalla no lo inicia.", conPrefijo: true },
+    queSigue: { texto: "el inicio lo coordina Achieve. Abrir la pantalla no lo inicia.", conPrefijo: true },
     chip: null,
   },
 );

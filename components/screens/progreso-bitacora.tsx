@@ -18,7 +18,7 @@ import {
   CTAPrincipal,
   CTASecundaria,
   EstadoChip,
-  Eyebrow,
+  TituloDeSeccion,
   Fila,
   HeroCard,
   ReglaDeNegocio,
@@ -44,9 +44,9 @@ export function ProgresoBitacora({
   return (
     <div
       className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
-      <TituloDePanel eyebrow={contexto} titulo={t("PROGRESO.TITULO")} subcopy={SUBCOPY.UX06} />
+      <TituloDePanel titulo={t("PROGRESO.TITULO")} meta={contexto} subcopy={SUBCOPY.UX06} />
 
       <div>
         <EstadoChip tone={estadoEvidencia.tono}>{estadoEvidencia.texto}</EstadoChip>
@@ -65,7 +65,7 @@ export function ProgresoBitacora({
 
       {cambioConfirmado.length > 0 && (
         <div>
-          <Eyebrow>{t("PROGRESO.CAMBIO_CONFIRMADO")}</Eyebrow>
+          <TituloDeSeccion>{t("PROGRESO.CAMBIO_CONFIRMADO")}</TituloDeSeccion>
           {cambioConfirmado.map((f) => (
             <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
           ))}
@@ -85,7 +85,7 @@ export function ProgresoBitacora({
 
       {sinCambioConfirmado.length > 0 && (
         <div>
-          <Eyebrow>{t("PROGRESO.SIN_CAMBIO")}</Eyebrow>
+          <TituloDeSeccion>{t("PROGRESO.SIN_CAMBIO")}</TituloDeSeccion>
           {sinCambioConfirmado.map((f) => (
             <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
           ))}
@@ -114,7 +114,7 @@ export function ProgresoBitacora({
       */}
       {bitacora && (
         <div data-bitacora>
-          <Eyebrow>{t("PROGRESO.BITACORA")}</Eyebrow>
+          <TituloDeSeccion>{t("PROGRESO.BITACORA")}</TituloDeSeccion>
           {bitacora.map((grupo) => (
             <div key={grupo.ciclo} data-ciclo={grupo.ciclo} className="hairline-t pt-2">
               <p style={{ fontSize: "var(--text-label)", fontWeight: 600 }}>{grupo.ciclo}</p>
@@ -141,7 +141,7 @@ export function ProgresoBitacora({
 
       {(queSigue || ctaPrimaria) && (
         <HeroCard>
-          <Eyebrow>{t("PROGRESO.QUE_SIGUE")}</Eyebrow>
+          <TituloDeSeccion>{t("PROGRESO.QUE_SIGUE")}</TituloDeSeccion>
           {queSigue && <ReglaDeNegocio>{queSigue}</ReglaDeNegocio>}
           {ctaPrimaria && (
             <CTAPrincipal onClick={onAvanzar} disabled={!ctaPrimaria.habilitada}>

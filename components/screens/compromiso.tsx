@@ -13,7 +13,7 @@ import {
   CTAPrincipal,
   CTASecundaria,
   EstadoChip,
-  Eyebrow,
+  TituloDeSeccion,
   Fila,
   HeroCard,
   ReglaDeNegocio,
@@ -59,9 +59,9 @@ export function Compromiso({
   return (
     <div
       className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
-      <TituloDePanel eyebrow={contexto} titulo={titulo} escala={20} subcopy={SUBCOPY.UX04} />
+      <TituloDePanel titulo={titulo} meta={contexto} subcopy={SUBCOPY.UX04} />
 
       {/*
         El Commitment original, cuando esta vista es una renegociación o un
@@ -70,7 +70,7 @@ export function Compromiso({
       */}
       {original && (
         <div data-original>
-          <Eyebrow>{t("COMPROMISO.ORIGINAL")}</Eyebrow>
+          <TituloDeSeccion>{t("COMPROMISO.ORIGINAL")}</TituloDeSeccion>
           {original.map((f) => (
             <Fila key={f.label} label={f.label} value={f.valor} ausencia={f.ausencia} tono={f.tono} />
           ))}
@@ -142,7 +142,7 @@ export function Compromiso({
           <div data-cambio-de-horario style={{ marginTop: 10 }}>
             {/* El horario actual, de sólo lectura: es el acuerdo vigente. */}
             <Fila label={t("COMPROMISO.HORARIO_ACTUAL")} value={cambioDeHorario.horaActual} />
-            <Eyebrow>{t("COMPROMISO.NUEVO_HORARIO")}</Eyebrow>
+            <TituloDeSeccion>{t("COMPROMISO.NUEVO_HORARIO")}</TituloDeSeccion>
             {/*
               El selector ofrece **sólo** horarios del mismo día institucional
               y a quince minutos o más de ahora. No los calcula: llegan

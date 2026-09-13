@@ -192,15 +192,15 @@ export const copy = {
     "Hoy no hay una acción recomendada. Acá aparece la que conviene hacer ahora: es lo que te evita tener que decidir por dónde empezar. Mientras tanto, podés revisar tus materias.",
 
   // Estado general por nivel de precedencia.
-  "HOY.ESTADO.ACTION_RECOMMENDED": "BAJO CONTROL",
-  "HOY.ESTADO.IN_PROGRESS": "ACCIÓN EN CURSO",
-  "HOY.ESTADO.EVIDENCE_PENDING": "FALTA CERRAR ESTA ACCIÓN",
-  "HOY.ESTADO.RESCUE_REQUIRED": "NECESITA RECUPERACIÓN",
-  "HOY.ESTADO.COMMITMENT_NEXT": "COMPROMISO ACORDADO",
-  "HOY.ESTADO.COMMITMENT_MISSED": "COMPROMISO INCUMPLIDO",
-  "HOY.ESTADO.CONTEXT_INCOMPLETE": "FALTA CONTEXTO DE CURSADO",
-  "HOY.ESTADO.EVIDENCE_INFO": "SIN ACCIÓN PENDIENTE",
-  "HOY.ESTADO.DEFECTO": "SIN ACCIONES POR AHORA",
+  "HOY.ESTADO.ACTION_RECOMMENDED": "Bajo control",
+  "HOY.ESTADO.IN_PROGRESS": "Acción en curso",
+  "HOY.ESTADO.EVIDENCE_PENDING": "Falta cerrar esta acción",
+  "HOY.ESTADO.RESCUE_REQUIRED": "Necesita recuperación",
+  "HOY.ESTADO.COMMITMENT_NEXT": "Compromiso acordado",
+  "HOY.ESTADO.COMMITMENT_MISSED": "Compromiso incumplido",
+  "HOY.ESTADO.CONTEXT_INCOMPLETE": "Falta contexto de cursado",
+  "HOY.ESTADO.EVIDENCE_INFO": "Sin acción pendiente",
+  "HOY.ESTADO.DEFECTO": "Sin acciones por ahora",
 
   /**
    * El estudiante recién dado de alta, todavía sin cursadas — Fase B6.14.
@@ -215,7 +215,7 @@ export const copy = {
    * eso"*. Es la misma disciplina de *sin datos no es cero*: **no evaluado no
    * es lo mismo que evaluado y vacío.**
    */
-  "HOY.ESTADO.PREPARANDO": "PREPARANDO TU INFORMACIÓN",
+  "HOY.ESTADO.PREPARANDO": "Preparando tu información",
   "HOY.PREPARANDO.TITULO": "Estamos preparando tu información académica.",
   "HOY.PREPARANDO.QUE_SIGUE":
     "Todavía no contamos con información suficiente para recomendarte una acción. Te avisaremos cuando tu recorrido esté listo.",
@@ -347,7 +347,7 @@ export const copy = {
   "ACCION.EVIDENCIA": "Evidencia",
 
   // ── UX04 · Compromiso ─────────────────────────────────────────────────────
-  "COMPROMISO.ORIGINAL": "COMPROMISO ORIGINAL",
+  "COMPROMISO.ORIGINAL": "Compromiso original",
   "COMPROMISO.ORIGINAL_NO_EDITABLE": "El original se conserva sin cambios.",
   "COMPROMISO.FECHA": "Fecha",
   "COMPROMISO.HORA": "Hora",
@@ -408,7 +408,7 @@ export const copy = {
   // Enviar no es demostrar suficiencia; suficiencia no es validación
   // (AGENTS.md §2.1). Esta frase es exactamente esa cadena de no-implicación.
   "EVIDENCIA.ENVIAR_IMPLICA":
-    "Enviar: queda SUBMITTED; sigue validación. No implica suficiencia ni dominio.",
+    "Al enviarla queda enviada, y después se valida. Enviar no implica que alcance ni que domines el tema.",
 
   // ── UX07 · Activación de Modo Examen ──────────────────────────────────────
   // Títulos de VI.7 §22.1 y CTAs semánticas de §22.2, literales.
@@ -420,27 +420,27 @@ export const copy = {
   // error que `C-02` previene.
   "EXAMEN.TITULO_PANTALLA": "Activación",
 
-  "EXAMEN.TITULO.RECOMENDACION": "RECOMENDACIÓN DE ACTIVACIÓN",
-  "EXAMEN.TITULO.REVISION": "REVISÁ ESTA EVALUACIÓN",
-  "EXAMEN.TITULO.NO_ACTIVO": "TODAVÍA NO ESTÁ ACTIVO",
-  "EXAMEN.TITULO.ACTIVO": "MODO EXAMEN ACTIVO",
-  "EXAMEN.TITULO.FALTAN_DATOS": "FALTAN DATOS PARA ACTIVAR",
-  "EXAMEN.TITULO.CONTRADICTORIOS": "HAY DATOS CONTRADICTORIOS",
-  "EXAMEN.TITULO.NO_DISPONIBLE": "NO PUDIMOS CARGAR LA EVALUACIÓN",
-  "EXAMEN.TITULO.VERIFICANDO": "ESTAMOS VERIFICANDO LA ACTIVACIÓN",
+  "EXAMEN.TITULO.RECOMENDACION": "Recomendación de activación",
+  "EXAMEN.TITULO.REVISION": "Revisá esta evaluación",
+  "EXAMEN.TITULO.NO_ACTIVO": "Todavía no está activo",
+  "EXAMEN.TITULO.ACTIVO": "Modo Examen activo",
+  "EXAMEN.TITULO.FALTAN_DATOS": "Faltan datos para activar",
+  "EXAMEN.TITULO.CONTRADICTORIOS": "Hay datos contradictorios",
+  "EXAMEN.TITULO.NO_DISPONIBLE": "No pudimos cargar la evaluación",
+  "EXAMEN.TITULO.VERIFICANDO": "Estamos verificando la activación",
 
-  "CTA.EXAMEN.ACTIVAR": "ACTIVAR PREPARACIÓN DE ESTE EXAMEN",
-  "CTA.EXAMEN.ACTIVAR_CON_ESTOS_DATOS": "ACTIVAR CON ESTOS DATOS",
-  "CTA.EXAMEN.REVISAR": "REVISAR EVALUACIÓN",
-  "CTA.EXAMEN.ABRIR": "ABRIR PREPARACIÓN",
-  "CTA.EXAMEN.REINTENTAR": "REINTENTAR",
-  "CTA.EXAMEN.VOLVER_CURSADO": "VOLVER A CURSADO",
+  "CTA.EXAMEN.ACTIVAR": "Activar preparación de este examen",
+  "CTA.EXAMEN.ACTIVAR_CON_ESTOS_DATOS": "Activar con estos datos",
+  "CTA.EXAMEN.REVISAR": "Revisar evaluación",
+  "CTA.EXAMEN.ABRIR": "Abrir preparación",
+  "CTA.EXAMEN.REINTENTAR": "Reintentar",
+  "CTA.EXAMEN.VOLVER_CURSADO": "Volver a cursado",
 
-  "EXAMEN.QUE_CAMBIA": "QUÉ CAMBIA",
-  "EXAMEN.QUE_NO_CAMBIA": "QUÉ NO CAMBIA",
-  "EXAMEN.DESPUES": "DESPUÉS",
-  "EXAMEN.FALTANTES": "FALTAN ESTOS DATOS",
-  "EXAMEN.ELEGI": "ELEGÍ UNA EVALUACIÓN",
+  "EXAMEN.QUE_CAMBIA": "Qué cambia",
+  "EXAMEN.QUE_NO_CAMBIA": "Qué no cambia",
+  "EXAMEN.DESPUES": "Después",
+  "EXAMEN.FALTANTES": "Faltan estos datos",
+  "EXAMEN.ELEGI": "Elegí una evaluación",
   "EXAMEN.ANTES": "antes:",
   // VI.7 §16.14: "lista sin ranking local". La UI no prioriza.
   "EXAMEN.ORDEN_RECIBIDO": "La lista conserva el orden recibido. No prioriza académicamente.",
@@ -451,9 +451,9 @@ export const copy = {
   // ── UX08 · Modo Examen / Overview ─────────────────────────────────────────
   // Microcopy de VI.8 §23, literal.
   "OVERVIEW.TITULO": "Modo Examen",
-  "OVERVIEW.EXAMEN": "EXAMEN",
-  "OVERVIEW.RECORRIDO": "RECORRIDO VIGENTE",
-  "OVERVIEW.SIN_RECORRIDO": "RECORRIDO TODAVÍA NO DISPONIBLE",
+  "OVERVIEW.EXAMEN": "Examen",
+  "OVERVIEW.RECORRIDO": "Recorrido vigente",
+  "OVERVIEW.SIN_RECORRIDO": "Recorrido todavía no disponible",
   /**
    * `C-04` elevado. **Dos cláusulas:** el recorrido lo arma el servicio
    * propietario, no el estudiante. Antes esta sección mostraba un rótulo y
@@ -464,49 +464,57 @@ export const copy = {
    */
   "OVERVIEW.SIN_RECORRIDO_EXPLICA":
     "Acá va a aparecer el orden de pasos de esta preparación. Es lo que te dice por dónde seguir sin tener que reconstruirlo vos.",
-  "OVERVIEW.ULTIMO_CAMBIO": "ÚLTIMO CAMBIO",
-  "OVERVIEW.PENDIENTE": "PENDIENTE",
+  "OVERVIEW.ULTIMO_CAMBIO": "Último cambio",
+  "OVERVIEW.PENDIENTE": "Pendiente",
   "OVERVIEW.DESPUES": "Después:",
-  "OVERVIEW.SECUNDARIOS": "TAMBIÉN",
-  "OVERVIEW.CURSADO": "CURSADO PERSISTENTE",
+  "OVERVIEW.SECUNDARIOS": "También",
+  "OVERVIEW.CURSADO": "Cursado persistente",
+  "OVERVIEW.STATUS.RECOMMENDED": "Recomendada",
+  "OVERVIEW.STATUS.ACTIVE": "Activa",
+  "OVERVIEW.STATUS.REPLANNED": "Replanificada",
+  "OVERVIEW.STATUS.BLOCKED": "Bloqueada",
+  "OVERVIEW.STATUS.EXAM_TAKEN": "Examen rendido",
+  "OVERVIEW.STATUS.CLOSED": "Cerrada",
+  "OVERVIEW.STATUS.CANCELLED": "Cancelada",
+  "OVERVIEW.STATUS.EXPLICITLY_ABANDONED": "Abandonada",
 
-  "CTA.OVERVIEW.CONTINUAR": "CONTINUAR",
-  "CTA.OVERVIEW.SUBIR_EVIDENCIA": "SUBIR EVIDENCIA",
-  "CTA.OVERVIEW.VER_COMPROMISO": "VER COMPROMISO",
-  "CTA.OVERVIEW.EMPEZAR": "EMPEZAR",
-  "CTA.OVERVIEW.RETOMAR": "RETOMAR",
-  "CTA.OVERVIEW.NUEVA_EVIDENCIA": "PREPARAR NUEVA EVIDENCIA",
-  "CTA.OVERVIEW.COMPROMETERME": "COMPROMETERME",
-  "CTA.OVERVIEW.ABRIR_PASO": "ABRIR PASO ACTUAL",
-  "CTA.OVERVIEW.VER_EVIDENCIA": "VER EVIDENCIA",
-  "CTA.OVERVIEW.VER_AVANCE": "VER AVANCE",
-  "CTA.OVERVIEW.VER_BITACORA": "VER BITÁCORA",
-  "CTA.OVERVIEW.VOLVER_CURSADO": "VOLVER A CURSADO",
+  "CTA.OVERVIEW.CONTINUAR": "Continuar",
+  "CTA.OVERVIEW.SUBIR_EVIDENCIA": "Subir evidencia",
+  "CTA.OVERVIEW.VER_COMPROMISO": "Ver compromiso",
+  "CTA.OVERVIEW.EMPEZAR": "Empezar",
+  "CTA.OVERVIEW.RETOMAR": "Retomar",
+  "CTA.OVERVIEW.NUEVA_EVIDENCIA": "Preparar nueva evidencia",
+  "CTA.OVERVIEW.COMPROMETERME": "Comprometerme",
+  "CTA.OVERVIEW.ABRIR_PASO": "Abrir paso actual",
+  "CTA.OVERVIEW.VER_EVIDENCIA": "Ver evidencia",
+  "CTA.OVERVIEW.VER_AVANCE": "Ver avance",
+  "CTA.OVERVIEW.VER_BITACORA": "Ver Bitácora",
+  "CTA.OVERVIEW.VOLVER_CURSADO": "Volver a cursado",
 
   // ── UX09 · Paso de Protocolo ──────────────────────────────────────────────
   // Microcopy de VI.9 §24, literal.
   "PASO.TITULO": "Paso",
-  "PASO.MODO_EXAMEN": "MODO EXAMEN",
-  "PASO.ACTUAL": "PASO ACTUAL",
-  "PASO.OBJETIVO": "OBJETIVO DEL PASO",
-  "PASO.ENTREGABLE": "ENTREGABLE ESPERADO",
-  "PASO.CRITERIO": "CRITERIO ESPERADO",
-  "PASO.COMO_TRABAJARLO": "CÓMO TRABAJARLO",
-  "PASO.RECURSO": "RECURSO CONFIGURADO",
-  "PASO.CONFIGURACION": "CONFIGURACIÓN",
+  "PASO.MODO_EXAMEN": "Modo Examen",
+  "PASO.ACTUAL": "Paso actual",
+  "PASO.OBJETIVO": "Objetivo del paso",
+  "PASO.ENTREGABLE": "Entregable esperado",
+  "PASO.CRITERIO": "Criterio esperado",
+  "PASO.COMO_TRABAJARLO": "Cómo trabajarlo",
+  "PASO.RECURSO": "Recurso configurado",
+  "PASO.CONFIGURACION": "Configuración",
   "PASO.FUENTE_CONTENIDO": "Fuente del contenido:",
   // §14: el objetivo del paso NO es una Action generada por el Engine.
   "PASO.SEPARACION": "Objetivo del paso. No es una próxima acción generada por el Engine.",
   "PASO.ABRIR_NO_COMPLETA": "Abriste este paso. Abrirlo no lo completa.",
   "PASO.CIERRE_NO_CONFIRMADO": "Cierre del paso todavía no confirmado.",
-  "PASO.REENTRADA.EYEBROW": "PROPUESTA DE REENTRADA",
+  "PASO.REENTRADA.EYEBROW": "Propuesta de reentrada",
   "PASO.REENTRADA.MOTIVO": "Por qué:",
   "PASO.REENTRADA.RECORRIDO": "La vuelta:",
   "PASO.REENTRADA.ACTIVIDAD": "Qué volvés a trabajar:",
   "PASO.REENTRADA.EVIDENCIA": "Qué sigue vigente:",
 
-  "CTA.PASO.ABRIR_RECURSO": "ABRIR RECURSO",
-  "CTA.PASO.VOLVER_OVERVIEW": "VOLVER AL OVERVIEW",
+  "CTA.PASO.ABRIR_RECURSO": "Abrir recurso",
+  "CTA.PASO.VOLVER_OVERVIEW": "Volver a la preparación",
 
   // ── UX06 · Progreso / Bitácora ────────────────────────────────────────────
   "PROGRESO.TITULO": "Progreso",
@@ -655,7 +663,7 @@ export const copy = {
   "CARGA.ERROR.TITULO": "No pudimos cargar esto",
   "CARGA.ERROR.CUERPO":
     "Falló la conexión con el servidor, así que no sabemos en qué estado estás. Lo que veas al reintentar es lo real.",
-  "CTA.CARGA.REINTENTAR": "REINTENTAR",
+  "CTA.CARGA.REINTENTAR": "Reintentar",
 
   // ── Las cinco dimensiones, y las tres formas de no tener dato ─────────────
   /**
@@ -711,7 +719,6 @@ export const copy = {
    * valen igual acá — nada de «dominado», «nivel» ni porcentajes de avance.
    */
   "FORMACION.TITULO": "Formación",
-  "FORMACION.EYEBROW": "CÓMO ESTUDIAR MEJOR",
   "FORMACION.SUBCOPY":
     "Contenido breve sobre cómo estudiar, para aplicar a las materias que estés cursando.",
   "FORMACION.PROBLEMA": "Cuándo sirve",
@@ -780,7 +787,6 @@ export const copy = {
   // ⚠️ **Las claves de las evaluaciones se fueron con ADR-096**: el owner
   // descartó las dos formas de listarlas, y de las evaluaciones quedó sólo la
   // píldora. El listado vive en `/materias`, con su propio copy.
-  "HOY.PROPOSITO": "Qué necesita atención hoy",
   "HOY.PILDORA.DIAS": "para la próxima evaluación",
   "HOY.PILDORA.HOY": "Hoy tenés una evaluación",
   // «avance» y no «actividad»: la segunda es la palabra vetada para `Action` (`C-02`),

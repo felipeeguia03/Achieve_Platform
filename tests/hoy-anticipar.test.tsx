@@ -120,9 +120,11 @@ describe("sin tablero, `UX01` sigue siendo la pantalla que conduce", () => {
 });
 
 describe("el encabezado", () => {
-  it("dice para qué es la pantalla", () => {
+  // El owner sacó la frase en mayúsculas de arriba del título (13 sep 2026).
+  it("el título es lo primero: no hay frase de propósito arriba", () => {
     render(<HoyAutogestion {...BASE} />);
-    expect(screen.getByText("Qué necesita atención hoy")).toBeInTheDocument();
+    expect(screen.queryByText("Qué necesita atención hoy")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Hoy");
   });
 
   it("la píldora lleva la fecha y los días a la próxima evaluación", () => {

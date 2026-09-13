@@ -254,9 +254,15 @@ dato destacado de una fila. **No hay `700` en ninguna captura.**
 
 ### 3.3 Mayúsculas
 
-Solo en dos sitios: header de columna de tabla y eyebrow de sección (`CONTACTOS`, `COBERTURA`,
-`PLAZO DE OPOSICIÓN`). Siempre en 11 px, `letter-spacing: .06em`, ink-3. **Nunca en un botón, nunca
-en un título.**
+Solo en **un** sitio: el encabezado de columna de una tabla o grilla (eje del Gantt, días del
+calendario). Siempre en 11 px, `letter-spacing: .06em`, ink-3. **Nunca en un botón, nunca en un
+título, nunca en un rótulo de sección.**
+
+⚠️ **13 sep 2026 — el eyebrow se fue.** El owner sacó todos los rótulos en mayúsculas. Los que sólo
+decoraban se borraron; los que distinguen un bloque de otro (*Qué cambia* / *Qué no cambia*,
+*Cambio confirmado*, *Compromiso original*) son `TituloDeSeccion`: 15 px, peso 600, tinta, caja
+normal. Las líneas de estado que llegan en mayúsculas desde una proyección o un fixture se dibujan
+en caja normal con `enCajaNormal` — **presentación, no renombre**: el dato sigue como está.
 
 ### 3.4 Monoespaciada
 
@@ -304,6 +310,24 @@ mono en tamaño de cuerpo. Los identificadores observados en los originales no s
 | Padding lateral del contenido | `--esp-12` | 48 |
 | Gap horizontal ícono ↔ label | `--esp-3` | 12 |
 | Gap en grilla de chips | `--esp-2` | 8 |
+
+### 4.2.1 El encuadre de pantalla es uno solo — 13 sep 2026
+
+Pedido del owner con las capturas delante: *"siempre es igual, siempre misma distancia y tamaño"*.
+El título de toda pantalla del shell cae **en el mismo punto y con el mismo cuerpo**:
+
+| Qué | Valor | Dónde vive |
+|---|---|---|
+| Padding del contenido | 40 arriba · 48 a los lados (16/24 en móvil) · ancho máx. 1120 centrado | `components/shell/shell.tsx` |
+| Título | `--text-title-lg` (30), peso 600, interlineado 1.2 | `TituloDePanel` — **sin `escala`** |
+| Primer elemento de la pantalla | **el título**. No hay eyebrow en mayúsculas arriba | `TituloDePanel` — **sin `eyebrow`** |
+| Título → línea de contexto | 6 · materia, evaluación, comisión, en caja normal | `TituloDePanel`, prop `meta` |
+| Título → subcopy | 8 (4 si hay línea de contexto) · subcopy de 660 máx. | `TituloDePanel` |
+| Cabecera → primer contenido | 32 | `TituloDePanel`, `marginBottom` en línea |
+
+⚠️ **Ninguna pantalla agrega padding propio alrededor de su contenido**, y la cabecera no va dentro de
+un contenedor con `gap` (el margen se sumaría). Los controles de minimizar y achicar **flotan en la
+franja de padding** y no bajan el título.
 
 ### 4.3 La regla que gobierna la escala
 

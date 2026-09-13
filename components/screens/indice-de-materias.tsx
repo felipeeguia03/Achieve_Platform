@@ -72,9 +72,7 @@ export function IndiceDeMaterias({
         y que sea hoy son cosas distintas (`P-09`).
       */}
       <TituloDePanel
-        eyebrow="Cómo está distribuida tu carga"
         titulo="Materias"
-        escala={30}
         meta={proximaEvaluacion ? `${fecha} · ${proximaEvaluacion}` : fecha}
       />
 

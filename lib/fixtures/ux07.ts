@@ -21,11 +21,11 @@ const OFICIAL = "Cátedra · oficial";
 const QUE_CAMBIA = ["Se crea una preparación sólo para esta evaluación."] as const;
 const QUE_NO_CAMBIA = [
   "Cursado, progreso y Bitácora siguen disponibles.",
-  "No crea Action ni Commitment.",
+  "No crea acciones ni compromisos.",
 ] as const;
 const DESPUES =
-  "Abriremos el contexto de esta preparación. Todavía no se crea una Action ni un Commitment.";
-const VOLVER = `VOLVER A ${MATERIA.toUpperCase()}`;
+  "Abriremos el contexto de esta preparación. Todavía no se crea ninguna acción ni compromiso.";
+const VOLVER = `Volver a ${MATERIA}`;
 
 function dato(label: string, valor: string, provenance: string | null = OFICIAL): DatoDeEvaluacion {
   return { label, valor, provenance, anterior: null };

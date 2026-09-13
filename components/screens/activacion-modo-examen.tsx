@@ -30,7 +30,7 @@ import {
   CTASecundaria,
   Dato,
   EstadoGeneral,
-  Eyebrow,
+  TituloDeSeccion,
   HeroCard,
   ReglaDeNegocio,
   TituloDePanel,
@@ -43,7 +43,7 @@ import type { ActivacionExamenProps, OpcionDeEvaluacion } from "@/lib/domain/vie
 function Opciones({ opciones }: { opciones: readonly OpcionDeEvaluacion[] }) {
   return (
     <div>
-      <Eyebrow>{t("EXAMEN.ELEGI")}</Eyebrow>
+      <TituloDeSeccion>{t("EXAMEN.ELEGI")}</TituloDeSeccion>
       {opciones.map((op) => (
         <div
           key={op.id}
@@ -89,17 +89,11 @@ export function ActivacionModoExamen({
   return (
     <div
       className="space-y-4"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
       <TituloDePanel
-        eyebrow={
-          <>
-            <span aria-hidden="true">← </span>
-            {materia}
-            {comision ? ` · ${comision}` : ""}
-          </>
-        }
         titulo={t("EXAMEN.TITULO_PANTALLA")}
+        meta={comision ? `${materia} · ${comision}` : materia}
         subcopy={SUBCOPY.UX07}
       />
 
@@ -147,7 +141,7 @@ export function ActivacionModoExamen({
 
             {faltantes.length > 0 && (
               <div>
-                <Eyebrow>{t("EXAMEN.FALTANTES")}</Eyebrow>
+                <TituloDeSeccion>{t("EXAMEN.FALTANTES")}</TituloDeSeccion>
                 {faltantes.map((f) => (
                   <ReglaDeNegocio key={f}>· {f}</ReglaDeNegocio>
                 ))}
@@ -180,7 +174,7 @@ export function ActivacionModoExamen({
         <div className="md:basis-1/3 space-y-4">
           {queCambia.length > 0 && (
             <div>
-              <Eyebrow>{t("EXAMEN.QUE_CAMBIA")}</Eyebrow>
+              <TituloDeSeccion>{t("EXAMEN.QUE_CAMBIA")}</TituloDeSeccion>
               {queCambia.map((linea) => (
                 <ReglaDeNegocio key={linea}>{linea}</ReglaDeNegocio>
               ))}
@@ -189,7 +183,7 @@ export function ActivacionModoExamen({
 
           {queNoCambia.length > 0 && (
             <div>
-              <Eyebrow>{t("EXAMEN.QUE_NO_CAMBIA")}</Eyebrow>
+              <TituloDeSeccion>{t("EXAMEN.QUE_NO_CAMBIA")}</TituloDeSeccion>
               {queNoCambia.map((linea) => (
                 <ReglaDeNegocio key={linea}>{linea}</ReglaDeNegocio>
               ))}
@@ -198,7 +192,7 @@ export function ActivacionModoExamen({
 
           {despues && (
             <div>
-              <Eyebrow>{t("EXAMEN.DESPUES")}</Eyebrow>
+              <TituloDeSeccion>{t("EXAMEN.DESPUES")}</TituloDeSeccion>
               <ReglaDeNegocio>{despues}</ReglaDeNegocio>
             </div>
           )}

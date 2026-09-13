@@ -11,7 +11,7 @@ import {
   CTASecundaria,
   EstadoChip,
   EstadoGeneral,
-  Eyebrow,
+  TituloDeSeccion,
   Fila,
   MarcaDeMateria,
   ReglaDeNegocio,
@@ -54,7 +54,7 @@ function Gantt({ gantt, color }: { gantt: GanttProjection; color: string }) {
   return (
     <div data-gantt style={tarjeta}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <Eyebrow>{t("MATERIA.TEMAS")}</Eyebrow>
+        <TituloDeSeccion>{t("MATERIA.TEMAS")}</TituloDeSeccion>
         <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
           {gantt.pie}
         </span>
@@ -219,10 +219,9 @@ function Columna({ fuente }: { fuente: ColumnaFuente }) {
     <div className="flex-1">
       <p
         style={{
-          fontSize: "var(--text-meta)",
+          fontSize: "var(--text-label)",
+          fontWeight: 500,
           color: "var(--muted-foreground)",
-          textTransform: "uppercase",
-          letterSpacing: ".04em",
         }}
       >
         {fuente.titulo}
@@ -302,17 +301,19 @@ export function MateriaCursado({
   onAbrirClase?: (clase: ClaseEnLista) => void;
 }) {
   return (
-    <div style={{ background: "var(--background)", padding: 16, borderRadius: "var(--radius)" }}>
+    <div style={{ background: "var(--background)" }}>
       <TituloDePanel
-        eyebrow={
+        titulo={t("MATERIA.TITULO")}
+        meta={
           // La marca de la materia delante de su nombre — ADR-097, el mismo
           // punto que tiene en el índice y en Hoy.
-          <span className="inline-flex items-center" style={{ gap: 8 }}>
-            <MarcaDeMateria cursadaId={cursadaId} />
+          <>
+            <span style={{ display: "inline-flex", verticalAlign: "middle", marginRight: 8 }}>
+              <MarcaDeMateria cursadaId={cursadaId} />
+            </span>
             {materia}
-          </span>
+          </>
         }
-        titulo={t("MATERIA.TITULO")}
         subcopy={SUBCOPY.UX02}
         acciones={
           // `CTA-009` — el historial completo de **esta** materia. Va arriba a
@@ -372,7 +373,7 @@ export function MateriaCursado({
           */}
           {clasesDeLaSemana && (
             <div data-horario style={tarjeta}>
-              <Eyebrow>{t("MATERIA.CLASES")}</Eyebrow>
+              <TituloDeSeccion>{t("MATERIA.CLASES")}</TituloDeSeccion>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
                 {clasesDeLaSemana.map((b) => (
                   <span
@@ -412,7 +413,7 @@ export function MateriaCursado({
               aceptarlo sería una descripción, no una propuesta.
             */}
             <div style={tarjeta}>
-              <Eyebrow>{t("MATERIA.PROXIMO_PASO")}</Eyebrow>
+              <TituloDeSeccion>{t("MATERIA.PROXIMO_PASO")}</TituloDeSeccion>
               {hero.contexto && <ReglaDeNegocio>{hero.contexto}</ReglaDeNegocio>}
               <p style={{ fontSize: "var(--text-body)", fontWeight: 600, margin: "6px 0" }}>
                 {hero.titulo}
@@ -442,7 +443,7 @@ export function MateriaCursado({
                 concepto**, y dos palabras para una cosa es `C-02` roto. Hay
                 guard de vocabulario y lo caza.
               */}
-              <Eyebrow>{t("MATERIA.ACTIVIDAD")}</Eyebrow>
+              <TituloDeSeccion>{t("MATERIA.ACTIVIDAD")}</TituloDeSeccion>
               {/*
                 `null` ⇒ **no hay actividad registrada**, y se dice. «Hace 0
                 días» sería inventar una que no ocurrió.
@@ -472,7 +473,7 @@ export function MateriaCursado({
           */}
           {evaluacion && (
             <div data-evaluacion style={tarjeta}>
-              <Eyebrow>{t("MATERIA.EVALUACION")}</Eyebrow>
+              <TituloDeSeccion>{t("MATERIA.EVALUACION")}</TituloDeSeccion>
               <p style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: "6px 0" }}>
                 {evaluacion.titulo}
               </p>
@@ -497,7 +498,7 @@ export function MateriaCursado({
           */}
           {actividadReciente && (
             <div data-actividad style={tarjeta}>
-              <Eyebrow>{t("MATERIA.REGISTRO")}</Eyebrow>
+              <TituloDeSeccion>{t("MATERIA.REGISTRO")}</TituloDeSeccion>
               {actividadReciente.map((e, i) => (
                 <div
                   key={`${i}-${e.titulo}`}
@@ -518,7 +519,7 @@ export function MateriaCursado({
           */}
           {dimensiones.length > 0 && (
             <div style={tarjeta}>
-              <Eyebrow>{t("MATERIA.DIMENSIONES")}</Eyebrow>
+              <TituloDeSeccion>{t("MATERIA.DIMENSIONES")}</TituloDeSeccion>
               {dimensiones.map((d) => (
                 <Fila key={d.label} label={d.label} value={d.valor} ausencia={d.ausencia} tono={d.tono} />
               ))}
@@ -530,7 +531,7 @@ export function MateriaCursado({
           */}
           {catedraYVos && (
             <div style={tarjeta}>
-              <Eyebrow>{t("MATERIA.CATEDRA_Y_VOS")}</Eyebrow>
+              <TituloDeSeccion>{t("MATERIA.CATEDRA_Y_VOS")}</TituloDeSeccion>
               <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
                 <Columna fuente={catedraYVos.catedra} />
                 <Columna fuente={catedraYVos.vos} />
@@ -570,7 +571,7 @@ function SeccionTusClases({
   return (
     <section data-tus-clases aria-labelledby="materia-tus-clases" style={tarjeta}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <h2 id="materia-tus-clases" className="eyebrow" style={{ margin: 0 }}>
+        <h2 id="materia-tus-clases" className="titulo-de-seccion" style={{ margin: 0 }}>
           {t("MATERIA.TUS_CLASES")}
         </h2>
         {tus.entrada && onEntrar && (

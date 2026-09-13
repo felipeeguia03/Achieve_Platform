@@ -23,7 +23,7 @@
 
 import {
   AccionDeObjeto,
-  Eyebrow,
+  TituloDeSeccion,
   EstadoGeneral,
   ReglaDeNegocio,
   HeroCard,
@@ -107,7 +107,7 @@ function HeroContent({ hero, onAvanzar }: { hero: HeroProjection; onAvanzar?: ()
   return (
     <HeroCard>
       {hero.chip && <EstadoChip tone={hero.chip.tono}>{hero.chip.texto}</EstadoChip>}
-      {contexto && <Eyebrow>{contexto}</Eyebrow>}
+      {contexto && <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{contexto}</p>}
       <p style={{ fontSize: 24, lineHeight: 1.2, letterSpacing: "-0.015em", fontWeight: 600, color: "var(--foreground)" }}>
         {titulo}
       </p>
@@ -164,7 +164,7 @@ function Recuperacion({ r }: { r: RecuperacionProjection | null }) {
         background: "var(--muted)",
       }}
     >
-      <Eyebrow>{r.titulo}</Eyebrow>
+      <TituloDeSeccion>{r.titulo}</TituloDeSeccion>
       <ReglaDeNegocio>{r.explicacion}</ReglaDeNegocio>
       <ReglaDeNegocio>{r.detalle}</ReglaDeNegocio>
       {r.queSigue ? <ReglaDeNegocio>{r.queSigue}</ReglaDeNegocio> : null}
@@ -239,7 +239,7 @@ function Pildora({ fecha, proxima }: { fecha: string; proxima: TableroProps["pro
 
 function Subtitulo({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ ...MONO, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>
+    <p style={{ fontSize: "var(--text-label)", fontWeight: 500, color: "var(--muted-foreground)", marginBottom: 2 }}>
       {children}
     </p>
   );
@@ -265,7 +265,7 @@ export type EntrarAClase = (clase: { cursadaId: string; bloqueId: string | null 
 function CuadroHoy({ c, onAbrir, onEntrar }: { c: CuadroDeHoy; onAbrir?: AbrirMateria; onEntrar?: EntrarAClase }) {
   return (
     <section aria-label={t("HOY.CUADRO")} className="space-y-3" style={{ ...TARJETA, padding: "14px 16px" }}>
-      <Eyebrow>{t("HOY.CUADRO")}</Eyebrow>
+      <TituloDeSeccion>{t("HOY.CUADRO")}</TituloDeSeccion>
 
       <div data-bloque="clases">
         <Subtitulo>{t("HOY.CUADRO.CLASES")}</Subtitulo>
@@ -415,7 +415,7 @@ function Riesgos({ riesgos, onAbrir }: { riesgos: RiesgoProyectado[]; onAbrir?: 
   return (
     <section aria-label={t("HOY.RIESGOS")}>
       <div className="flex items-baseline gap-3">
-        <Eyebrow>{t("HOY.RIESGOS")}</Eyebrow>
+        <TituloDeSeccion>{t("HOY.RIESGOS")}</TituloDeSeccion>
         {/* Chip tintado — ADR-097: la misma urgencia, en la forma de las capturas. */}
         {riesgos.length > 0 && (
           <EstadoChip tone="urgencia">
@@ -524,7 +524,7 @@ export function HoyAutogestion({
   return (
     <div
       className="space-y-5"
-      style={{ background: "var(--background)", padding: "16px", borderRadius: "var(--radius)" }}
+      style={{ background: "var(--background)" }}
     >
       {/*
         La cabecera es la primitiva (`D-01`: un `h1` por superficie, y es el de
@@ -532,9 +532,7 @@ export function HoyAutogestion({
         dentro de la píldora con el único número que ordena el día.
       */}
       <TituloDePanel
-        eyebrow={t("HOY.PROPOSITO")}
         titulo={t("HOY.TITULO")}
-        escala={30}
         subcopy={SUBCOPY.UX01}
         acciones={
           <div className="flex flex-wrap items-center justify-end" style={{ gap: 8 }}>

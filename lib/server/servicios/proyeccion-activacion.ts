@@ -56,10 +56,10 @@ const MODALIDADES_P0: Record<string, string> = {
 const QUE_CAMBIA = ["Se crea una preparación sólo para esta evaluación."] as const;
 const QUE_NO_CAMBIA = [
   "Cursado, progreso y Bitácora siguen disponibles.",
-  "No crea Action ni Commitment.",
+  "No crea acciones ni compromisos.",
 ] as const;
 const DESPUES =
-  "Abriremos el contexto de esta preparación. Todavía no se crea una Action ni un Commitment.";
+  "Abriremos el contexto de esta preparación. Todavía no se crea ninguna acción ni compromiso.";
 
 /** §22.1 — el título lo fija el estado, no la pantalla. */
 const TITULO: Record<EstadoActivacion, string> = {
@@ -140,7 +140,7 @@ function faltantesDe(ev: EvaluacionElegible): string[] {
 
 export function proyectarActivacion(estado: EstadoDeActivacion): ActivacionExamenProps {
   const { materia, comision, instante } = estado;
-  const volver = `VOLVER A ${materia.toUpperCase()}`;
+  const volver = `Volver a ${materia}`;
 
   const base = {
     materia,

@@ -84,7 +84,7 @@ describe("UX01 · la explicación de la propia señal", () => {
     const con = dibujar(elevada);
     const textoCon = con.container.textContent ?? "";
     expect(textoCon.length).toBeGreaterThan(textoSin.length);
-    expect(textoCon).toContain("NECESITA RECUPERACIÓN");
-    expect(textoSin).not.toContain("NECESITA RECUPERACIÓN");
+    expect(textoCon).toContain("Necesita recuperación");
+    expect(textoSin).not.toContain("Necesita recuperación");
   });
 });

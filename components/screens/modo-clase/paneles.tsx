@@ -108,11 +108,11 @@ export function BotonDeObjeto({
   );
 }
 
-/** Cabecera de tarjeta: eyebrow a la izquierda, lo que sea a la derecha. */
+/** Cabecera de tarjeta: título de sección a la izquierda, lo que sea a la derecha. */
 export function CabeceraDePanel({ id, titulo, children }: { id: string; titulo: string; children?: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h2 id={id} className="eyebrow" style={{ margin: 0 }}>
+      <h2 id={id} className="titulo-de-seccion" style={{ margin: 0 }}>
         {titulo}
       </h2>
       {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
@@ -962,7 +962,7 @@ export function PanelDeUnidades({ unidades: u, cursadaId }: { unidades: Unidades
       <CabeceraDePanel id="clase-unidades" titulo={t("CLASE.UNIDADES")} />
 
       <div className="mt-3" data-esta-clase>
-        <p className="eyebrow" style={{ margin: 0, fontSize: "var(--text-meta)" }}>
+        <p style={{ margin: 0, fontSize: "var(--text-label)", fontWeight: 500, color: "var(--muted-foreground)" }}>
           {t("CLASE.ESTA_CLASE")}
         </p>
         <p style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, lineHeight: 1.3 }}>

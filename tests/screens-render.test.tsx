@@ -29,7 +29,7 @@ describe("UX01 — el copy de la Etapa 0.1 se preserva en los cinco niveles", ()
     expect(screen.getByText("40 min · Entregá: 5 ejercicios")).toBeInTheDocument();
     expect(screen.getByText("Después: queda definido cuándo vas a hacerla.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Comprometerme" })).toBeInTheDocument();
-    expect(screen.getByText("BAJO CONTROL")).toBeInTheDocument();
+    expect(screen.getByText("Bajo control")).toBeInTheDocument();
   });
 
   it("IN_PROGRESS (FX-LOCAL-DAY-IN-PROGRESS)", () => {
@@ -39,7 +39,7 @@ describe("UX01 — el copy de la Etapa 0.1 se preserva en los cinco niveles", ()
     // Sin prefijo "Después:" — así estaba en la 0.1.
     expect(screen.getByText("Al terminar, subís la evidencia acordada.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continuar" })).toBeInTheDocument();
-    expect(screen.getByText("ACCIÓN EN CURSO")).toBeInTheDocument();
+    expect(screen.getByText("Acción en curso")).toBeInTheDocument();
   });
 
   it("EVIDENCE_PENDING (FX-EVD-BASE)", () => {
@@ -50,7 +50,7 @@ describe("UX01 — el copy de la Etapa 0.1 se preserva en los cinco niveles", ()
     expect(screen.getByText("Entregá: foto/archivo de 7 ejercicios")).toBeInTheDocument();
     expect(screen.getByText("Después: la evidencia queda pendiente de validación.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Subir evidencia" })).toBeInTheDocument();
-    expect(screen.getByText("FALTA CERRAR ESTA ACCIÓN")).toBeInTheDocument();
+    expect(screen.getByText("Falta cerrar esta acción")).toBeInTheDocument();
   });
 
   it("RESCUE_REQUIRED (FX-MISSED)", () => {
@@ -60,7 +60,7 @@ describe("UX01 — el copy de la Etapa 0.1 se preserva en los cinco niveles", ()
     expect(screen.getByText("Porque: el compromiso de las 19:00 quedó incumplido.")).toBeInTheDocument();
     expect(screen.getByText("Primero necesitamos acordar cómo retomar.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retomar" })).toBeInTheDocument();
-    expect(screen.getByText("NECESITA RECUPERACIÓN")).toBeInTheDocument();
+    expect(screen.getByText("Necesita recuperación")).toBeInTheDocument();
   });
 
   it("NO_ACTION_AVAILABLE (FX-ADE-NONE) — empty honesto", () => {
@@ -69,7 +69,7 @@ describe("UX01 — el copy de la Etapa 0.1 se preserva en los cinco niveles", ()
       screen.getByText(/Hoy no hay una acción recomendada\./),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ver materias" })).toBeInTheDocument();
-    expect(screen.getByText("SIN ACCIONES POR AHORA")).toBeInTheDocument();
+    expect(screen.getByText("Sin acciones por ahora")).toBeInTheDocument();
   });
 });
 
@@ -121,7 +121,7 @@ describe("UX05 — el adjunto es estado local, no de dominio", () => {
     expect(enviar).toBeEnabled();
     // Adjuntar NO produce SUBMITTED: la frase que lo aclara sigue en pantalla.
     expect(
-      screen.getByText("Enviar: queda SUBMITTED; sigue validación. No implica suficiencia ni dominio."),
+      screen.getByText("Al enviarla queda enviada, y después se valida. Enviar no implica que alcance ni que domines el tema."),
     ).toBeInTheDocument();
   });
 });
