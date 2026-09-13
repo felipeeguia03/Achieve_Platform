@@ -70,7 +70,7 @@ commit.
 | 0 | Decisión y documentación: ADR-098, este documento, glosario, agendas | ✅ |
 | 1 | Dominio puro: la clase de ahora, la máquina de estados, las marcas | ✅ |
 | 2 | Migración: `student_class_session`, `class_marker`, aislamiento | ✅ |
-| 3 | Repository, Service y API · los dos eventos | ⬜ |
+| 3 | Repository, Service y API · los dos eventos | ✅ |
 | 4 | La pantalla `/clase` | ⬜ |
 | 5 | Hoy: la fila en curso lleva *Entrar a clase* | ⬜ |
 | 6 | Materia: *Tus clases* | ⬜ |

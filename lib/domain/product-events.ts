@@ -449,6 +449,23 @@ export const EXTENSIONES: Readonly<
   ActionBlocked: { porQue: "Transición de `Action` bloqueada por el owner", nivel: "TRANSICION", enBitacora: false },
   ActionCancelled: { porQue: "Transición de `Action` cancelada", nivel: "TRANSICION", enBitacora: false },
   ActionReplaced: { porQue: "El ADE reemplazó la Action por otra", nivel: "TRANSICION", enBitacora: false },
+  // ── Modo Clase · ADR-098 ──────────────────────────────────────────────────
+  //
+  // Las dos puntas de la clase, y nada más: **una marca no es un evento** (el
+  // spec: *"evento nuevo para cada interacción: no está aprobado"*).
+  // `TRANSICION` y **no facturables**: abrir una clase no es producir
+  // (ADR-041). **Fuera de la Bitácora** hasta que se decida cómo entra, porque
+  // `hechos_de_cursada` se ata a una `Action` y una clase no la tiene.
+  ClassSessionStarted: {
+    porQue: "El estudiante abrió una clase de su materia (ADR-098). No es la clase dictada",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  ClassSessionEnded: {
+    porQue: "El estudiante terminó su clase (ADR-098). Terminarla no es evidencia de nada",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
 };
 
 /**

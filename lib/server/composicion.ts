@@ -88,6 +88,18 @@ import { proyectarFormacion, proyectarVistaSimulada } from "./servicios/proyecci
 import { formacionReal } from "./repositorios/formacion";
 import { repartoReal } from "./repositorios/reparto";
 import { tableroReal } from "./repositorios/tablero";
+import { clasesReal } from "./repositorios/clase";
+import {
+  completarMarca as completarMarcaPuro,
+  guardarApuntes as guardarApuntesPuro,
+  iniciarClase as iniciarClasePuro,
+  marcar as marcarPuro,
+  terminarClase as terminarClasePuro,
+  type ClaseFila,
+  type Dependencias as DependenciasDeClase,
+} from "./servicios/clase";
+import { proyectarClase, proyectarClaseEnLista } from "./servicios/proyeccion-clase";
+import type { ClaseEnLista, ClaseProps } from "@/lib/domain/view-models";
 import { proyectarTablero } from "./servicios/proyeccion-tablero";
 import { fechaEnZona } from "@/lib/domain/zona";
 import type { TableroProps } from "@/lib/domain/view-models";
@@ -1851,3 +1863,61 @@ export function corroborarProcedenciaDelADL(entrada: Corroboracion) {
     entrada,
   );
 }
+
+// ── Modo Clase · ADR-098 ─────────────────────────────────────────────────────
+
+const dependenciasDeClase = (): DependenciasDeClase => ({
+  repo: clasesReal,
+  eventos: eventosReal,
+  ahora: () => new Date().toISOString(),
+});
+
+/** La clase proyectada para su pantalla, con marcas y contexto. */
+async function proyectar(institutionId: string, clase: ClaseFila, zona: string): Promise<ClaseProps> {
+  const [marcas, contexto] = await Promise.all([
+    clasesReal.marcasDe(institutionId, clase.id),
+    clasesReal.contextoDe(institutionId, clase, fechaEnZona(Date.now(), zona)),
+  ]);
+  return proyectarClase(clase, marcas, contexto, zona);
+}
+
+/** La clase activa del estudiante, o `null`. */
+export async function claseActivaDe(institutionId: string, studentId: string, zona: string): Promise<ClaseProps | null> {
+  const activa = await clasesReal.activa(institutionId, studentId);
+  return activa ? proyectar(institutionId, activa, zona) : null;
+}
+
+/** Una clase del estudiante. La de otro **no existe**: `null`. */
+export async function claseDe(
+  institutionId: string,
+  studentId: string,
+  claseId: string,
+  zona: string,
+): Promise<ClaseProps | null> {
+  const clase = await clasesReal.delEstudiante(institutionId, studentId, claseId);
+  return clase ? proyectar(institutionId, clase, zona) : null;
+}
+
+/** *Tus clases* de una materia. `null` ⇒ la cursada no es suya. */
+export async function clasesDeCursada(
+  institutionId: string,
+  studentId: string,
+  cursadaId: string,
+  zona: string,
+): Promise<ClaseEnLista[] | null> {
+  if (!(await clasesReal.cursadaPropia(institutionId, studentId, cursadaId))) return null;
+  const filas = await clasesReal.deCursada(institutionId, studentId, cursadaId);
+  return filas.map((f) => proyectarClaseEnLista(f.clase, f.tipos, zona));
+}
+
+export const iniciarClase = (institutionId: string, pedido: Parameters<typeof iniciarClasePuro>[2]) =>
+  iniciarClasePuro(dependenciasDeClase(), institutionId, pedido);
+export const guardarApuntesDeClase = (institutionId: string, pedido: Parameters<typeof guardarApuntesPuro>[2]) =>
+  guardarApuntesPuro(dependenciasDeClase(), institutionId, pedido);
+export const terminarClase = (institutionId: string, pedido: Parameters<typeof terminarClasePuro>[2]) =>
+  terminarClasePuro(dependenciasDeClase(), institutionId, pedido);
+export const marcarEnClase = (institutionId: string, pedido: Parameters<typeof marcarPuro>[2]) =>
+  marcarPuro(dependenciasDeClase(), institutionId, pedido);
+export const completarMarcaDeClase = (institutionId: string, pedido: Parameters<typeof completarMarcaPuro>[2]) =>
+  completarMarcaPuro(dependenciasDeClase(), institutionId, pedido);
+

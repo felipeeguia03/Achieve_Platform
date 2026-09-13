@@ -1209,3 +1209,56 @@ export interface PasoProtocoloProps {
   fuenteDelContenido: string;
   ctaRetorno: string;
 }
+
+// ── CLASE · Modo Clase ───────────────────────────────────────────────────────
+
+/**
+ * La clase del estudiante, para su pantalla — [ADR-098](../../docs/decisions.md#adr-098).
+ *
+ * ⚠️ **Cada línea opcional es `null` cuando no se sabe**, y la pantalla la
+ * omite (AGENTS.md §2.7): la comisión y el docente casi siempre faltan
+ * (ADR-062 sin construir), y un aula `null` no es *"sin aula"*.
+ */
+export interface ClaseProps {
+  id: string;
+  cursadaId: string;
+  /** El nombre de la materia como lo trae el plan. La pantalla lo presenta. */
+  materia: string;
+  estado: "ACTIVE" | "ENDED";
+  /** ISO. El reloj de la pantalla lo cuenta desde acá; no escribe nada. */
+  iniciadaEn: string;
+  terminadaEn: string | null;
+  /** *"jue 17 sep"*, en la zona del estudiante. */
+  fecha: string;
+  /** `HH:MM`. `null` ⇒ la clase se inició a mano. */
+  horario: { desde: string; hasta: string } | null;
+  /** `true` ⇒ el horario lo estimó Achieve (`inference`). `null` ⇒ no se sabe: el bloque ya no existe. */
+  horarioEstimado: boolean | null;
+  aula: string | null;
+  comision: string | null;
+  docente: string | null;
+  /** **La unidad de la última clase dada**, no la de hoy (ADR-094 §2). */
+  unidadDeUltimaClase: number | null;
+  apuntes: string;
+  apuntesGuardadosEn: string | null;
+  marcas: ReadonlyArray<{
+    id: string;
+    tipo: "QUESTION" | "IMPORTANT" | "ASSESSMENT" | "REVIEW";
+    segundos: number;
+    texto: string | null;
+    creadaEn: string;
+  }>;
+  resumen: Record<"QUESTION" | "IMPORTANT" | "ASSESSMENT" | "REVIEW", number>;
+  /** `null` mientras está abierta. */
+  duracionMinutos: number | null;
+}
+
+/** Una clase en *Tus clases* de `UX02`: **sin apuntes ni marcas**, sólo lo que se lista. */
+export interface ClaseEnLista {
+  id: string;
+  estado: "ACTIVE" | "ENDED";
+  fecha: string;
+  iniciadaEn: string;
+  duracionMinutos: number | null;
+  resumen: Record<"QUESTION" | "IMPORTANT" | "ASSESSMENT" | "REVIEW", number>;
+}
