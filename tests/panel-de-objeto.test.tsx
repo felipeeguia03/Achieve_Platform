@@ -567,19 +567,17 @@ describe("la ventana no se dibuja encima de su propia superficie", () => {
   });
 
   /**
-   * La ficha del objeto que se está mirando entero **minimiza la superficie**.
-   *
-   * ⚠️ Sin este caso, tocar esa ficha era el único gesto de la barra que no
-   * hacía nada visible: su ventana no se puede desplegar porque ya está
-   * ocupando la pantalla entera.
+   * ⚠️ **Cambió con la Enmienda 9.** La ficha del objeto que se está mirando
+   * entero minimizaba la superficie (Enmienda 6). Ahora **no hace nada**: ya
+   * está a la vista, y bajarla es el botón de minimizar.
    */
-  it("tocar su ficha baja la superficie a la barra", async () => {
+  it("tocar su ficha **no** baja la superficie — Enmienda 9", async () => {
     sembrar([{ tipo: "materia", id: "ce-1", etiqueta: "Álgebra" }]);
     rutaActual = "/materia?cursada=ce-1";
     await montar();
 
     fireEvent.click(screen.getByRole("tab", { name: /Álgebra/ }));
-    expect(push).toHaveBeenCalledWith("/hoy");
+    expect(push).not.toHaveBeenCalled();
   });
 });
 

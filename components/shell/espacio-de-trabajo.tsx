@@ -48,7 +48,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ESPACIO_VACIO,
   abrir as abrirEnDominio,
-  alternarDespliegue,
   cerrar as cerrarEnDominio,
   cerrarOtros as cerrarOtrosEnDominio,
   cerrarTodos as cerrarTodosEnDominio,
@@ -114,8 +113,8 @@ export interface ContextoDeEspacio {
    * estabas haciendo, con su ficha en la barra.
    */
   abrirEnVentana: (objeto: ObjetoPorAbrir) => void;
-  /** Despliega la ventana del objeto, o la minimiza si ya estaba desplegada. */
-  alternarPanel: (clave: string) => void;
+  /** Despliega la ventana del objeto o la trae al frente. **Nunca la minimiza** — Enmienda 9. */
+  mostrarPanel: (clave: string) => void;
   /** Minimiza **esa** ventana. El objeto sigue en la barra. */
   minimizarPanel: (clave: string) => void;
   /** Sube una ventana al frente del apilamiento. */
@@ -163,7 +162,7 @@ const INERTE: ContextoDeEspacio = {
   paneles: [],
   enPantalla: null,
   abrirEnVentana: NADA,
-  alternarPanel: NADA,
+  mostrarPanel: NADA,
   minimizarPanel: NADA,
   traerAlFrente: NADA,
   verComoPagina: NADA,
@@ -343,31 +342,37 @@ export function ProveedorDeEspacioDeTrabajo({
   );
 
   /**
-   * El gesto de la ficha: despliega su ventana, o la minimiza si ya estaba.
+   * El gesto de la ficha: **muestra** su ventana — Enmienda 9.
+   *
+   * Minimizada, la despliega; desplegada pero atrás, la trae al frente; ya al
+   * frente, **no hace nada**. Es el dock de macOS: la ficha nunca minimiza, eso
+   * es sólo del botón de la ventana.
    *
    * ⚠️ **No saca las otras.** Es la Enmienda 3 entera: dos o tres fichas
    * desplegadas son dos o tres ventanas, y tocar la cuarta no baja las tres
    * primeras.
    */
-  const alternarPanel = useCallback(
+  const mostrarPanel = useCallback(
     (clave: string) => {
       if (!espacio.objetos.some((o) => o.clave === clave)) return;
 
       /*
-        ⚠️ **La ficha del objeto que se está mirando entero minimiza la
-        pantalla** — Enmienda 6. Su ventana no puede desplegarse: ya está
-        ocupando la pantalla. Termina en el mismo lugar que el botón de
-        minimizar: la ficha en la barra y `Hoy` adelante (Enmienda 7).
+        ⚠️ **La ficha del objeto que se está mirando entero no hace nada** —
+        Enmienda 9, que retira el «minimiza la pantalla» de la Enmienda 6. Ya
+        está a la vista; bajarla es el botón de minimizar.
       */
-      if (clave === claveEnSuperficie) {
-        router.push(rutaConPaneles(RUTA_AL_MINIMIZAR, clavesEnUrl));
-        return;
-      }
+      if (clave === claveEnSuperficie) return;
+      if (claveAlFrente(clavesPanel) === clave) return;
 
       setEspacio(activarEnDominio(espacio, clave, new Date().toISOString()));
-      router.push(rutaConPaneles(rutaActual, alternarDespliegue(clavesEnUrl, clave)));
+      // Traer al frente no es navegar (`replace`); desplegar sí (`push`).
+      if (clavesPanel.includes(clave)) {
+        router.replace(rutaConPaneles(rutaActual, desplegar(clavesEnUrl, clave)));
+      } else {
+        router.push(rutaConPaneles(rutaActual, desplegar(clavesEnUrl, clave)));
+      }
     },
-    [espacio, claveEnSuperficie, clavesEnUrl, rutaActual, router],
+    [espacio, claveEnSuperficie, clavesPanel, clavesEnUrl, rutaActual, router],
   );
 
   const minimizarPanel = useCallback(
@@ -492,7 +497,7 @@ export function ProveedorDeEspacioDeTrabajo({
       paneles,
       enPantalla,
       abrirEnVentana,
-      alternarPanel,
+      mostrarPanel,
       minimizarPanel,
       traerAlFrente,
       verComoPagina,
@@ -506,7 +511,7 @@ export function ProveedorDeEspacioDeTrabajo({
       mover,
     }),
     [
-      espacioVisible, listo, desalojado, paneles, enPantalla, abrirEnVentana, alternarPanel,
+      espacioVisible, listo, desalojado, paneles, enPantalla, abrirEnVentana, mostrarPanel,
       minimizarPanel, traerAlFrente, verComoPagina, minimizarPantalla, achicarPantalla,
       encuadrar, cerrar, cerrarOtros, cerrarTodos, reordenar, mover,
     ],

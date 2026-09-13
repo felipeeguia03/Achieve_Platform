@@ -264,3 +264,84 @@ export async function subirArchivoDeClase(url: string, archivo: Blob, tipo: stri
     return false;
   }
 }
+
+// ── Administrar cuenta (ADR-097 Enmienda 2) ───────────────────────────────────
+
+/**
+ * Quién es el estudiante, para el avatar y el modal de la cuenta.
+ *
+ * ⚠️ **Sale de Auth, como el email.** El nombre y el apellido los escribe el
+ * propio estudiante en «Actualizar perfil» y viven en los metadatos de su
+ * usuario de Auth, **no en una tabla**: ninguna regla de negocio los lee.
+ */
+export interface PerfilDeSesion {
+  email: string;
+  nombre: string | null;
+  apellido: string | null;
+}
+
+function perfilDe(user: { email?: string; user_metadata?: Record<string, unknown> } | null | undefined): PerfilDeSesion | null {
+  if (!user?.email) return null;
+  const texto = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  return { email: user.email, nombre: texto(user.user_metadata?.nombre), apellido: texto(user.user_metadata?.apellido) };
+}
+
+export async function perfilDeSesion(): Promise<PerfilDeSesion | null> {
+  try {
+    const { data } = await clienteDeNavegador().auth.getSession();
+    return perfilDe(data.session?.user);
+  } catch {
+    return null;
+  }
+}
+
+/** Avisa cuando el perfil cambia —guardar el nombre, cerrar sesión—. Devuelve cómo desuscribirse. */
+export function alCambiarElPerfil(cb: (perfil: PerfilDeSesion | null) => void): () => void {
+  try {
+    const { data } = clienteDeNavegador().auth.onAuthStateChange((_evento, sesion) => cb(perfilDe(sesion?.user)));
+    return () => data.subscription.unsubscribe();
+  } catch {
+    return () => {};
+  }
+}
+
+export async function guardarNombre(nombre: string, apellido: string): Promise<boolean> {
+  try {
+    const { error } = await clienteDeNavegador().auth.updateUser({
+      data: { nombre: nombre.trim(), apellido: apellido.trim() },
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Cambia la contraseña, y si se pide cierra las otras sesiones. `null` ⇒ salió
+ * bien; si no, el mensaje que se le muestra al estudiante.
+ */
+export async function cambiarContrasena(nueva: string, cerrarOtras: boolean): Promise<string | null> {
+  try {
+    const auth = clienteDeNavegador().auth;
+    const { error } = await auth.updateUser({ password: nueva });
+    if (error) return error.message;
+    if (cerrarOtras) await auth.signOut({ scope: "others" });
+    return null;
+  } catch {
+    return "No se pudo cambiar la contraseña";
+  }
+}
+
+/** Sube la foto a la URL firmada. La firma es el control de acceso, como en la evidencia. */
+export async function subirFotoDePerfil(url: string, archivo: File): Promise<boolean> {
+  try {
+    const r = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": archivo.type, "x-upsert": "true" },
+      body: archivo,
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}

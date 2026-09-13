@@ -10,6 +10,7 @@ import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { enviar } from "@/lib/client/api";
 import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
+import { nodos } from "@/lib/navigation/surfaces";
 import { MOTIVO_DE_CAMBIO, t } from "@/lib/content/es-AR";
 import type { CompromisoProps } from "@/lib/domain/view-models";
 
@@ -39,6 +40,7 @@ const EQUIVALENCIA: Record<string, string | undefined> = {
 };
 
 const DESTINO = rutaDeCta("CTA-004");
+const DESTINO_DEL_COMPROMISO = nodos.UX04.ruta ?? "/compromiso";
 
 /**
  * Etapa B2.6 — `UX04` desde la base.
@@ -61,7 +63,16 @@ export function VistaDeCompromiso({ consulta }: PropsDeSuperficie) {
   const [confirmacion, setConfirmacion] = useState<string | null>(null);
 
   const escenario = params.get("escenario");
-  const { respuesta, reintentar } = useSuperficie<ConPropuesta>("/api/compromiso", { omitir: !!escenario });
+  /*
+    `?compromiso=<id>` abre **ése** — ADR-100: el calendario lleva a cada
+    compromiso, no al vigente. La API lo aceptaba desde la B2.6 y la pantalla
+    nunca lo pasaba. Sin el parámetro, todo sigue igual.
+  */
+  const pedido = params.get("compromiso");
+  const { respuesta, reintentar } = useSuperficie<ConPropuesta>(
+    pedido ? `/api/compromiso?compromiso=${encodeURIComponent(pedido)}` : "/api/compromiso",
+    { omitir: !!escenario },
+  );
 
   if (escenario) {
     const id = escenarioDesde(escenario, "compromiso") ?? "FX-DAY-BASE";
@@ -181,6 +192,13 @@ function Pantalla({
       setCambioRechazado(null);
       // El sucesor es otra fila: sin releer, la pantalla seguiría mostrando el
       // acuerdo viejo, que ya está `RENEGOTIATED`.
+      //
+      // ⚠️ Con `?compromiso=` la URL apunta al viejo, y releer lo volvería a
+      // traer: se cambia la URL al sucesor (ADR-100).
+      if (params.get("compromiso") && r.datos.compromiso) {
+        router.replace(`${DESTINO_DEL_COMPROMISO}?compromiso=${encodeURIComponent(r.datos.compromiso)}`);
+        return;
+      }
       recargar?.();
       return;
     }

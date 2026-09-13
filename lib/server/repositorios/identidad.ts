@@ -22,3 +22,27 @@ export const identidadReal: RepositorioDeIdentidad = {
     return { authUserId: data.user.id };
   },
 };
+
+/**
+ * La identidad **y la sesión** del token — para «Dispositivos activos»
+ * ([ADR-097 · Enmienda 2](../../../docs/decisions.md#adr-097-enmienda-2)).
+ *
+ * El claim `session_id` se lee **después** de que el proveedor verificó el
+ * token: sin esa verificación, decodificarlo sería creerle a cualquiera.
+ */
+export async function identidadYSesionDeToken(
+  token: string,
+): Promise<{ authUserId: string; sesionId: string | null } | null> {
+  const usuario = await identidadReal.usuarioDeToken(token);
+  if (!usuario) return null;
+  let sesionId: string | null = null;
+  try {
+    const payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8")) as {
+      session_id?: unknown;
+    };
+    if (typeof payload.session_id === "string") sesionId = payload.session_id;
+  } catch {
+    sesionId = null;
+  }
+  return { ...usuario, sesionId };
+}

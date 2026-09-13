@@ -53,7 +53,9 @@ export type TipoDeObjeto =
    * una sección es un lugar al que se va, no algo que se tiene abierto.
    */
   | "formacion"
-  | "bitacora";
+  | "bitacora"
+  /** Una clase abierta en Modo Clase — ADR-088 · Enmienda 8. */
+  | "clase";
 
 import type { Marco } from "./marco-de-panel";
 
@@ -482,17 +484,6 @@ export function desplegar(claves: readonly string[], clave: string): readonly st
 /** Minimiza una ventana. **El objeto sigue abierto**: sale la ventana, no el objeto. */
 export function minimizarPanelDe(claves: readonly string[], clave: string): readonly string[] {
   return claves.filter((c) => c !== clave);
-}
-
-/**
- * El gesto de la ficha: desplegar si está minimizada, minimizar si está desplegada.
- *
- * ⚠️ **Estar desplegada pero atrás cuenta como desplegada, y se minimiza.** La
- * alternativa —traerla al frente— dejaría la ficha sin forma de minimizar lo
- * que ella misma abrió. Subir al frente es tocar la ventana; la ficha alterna.
- */
-export function alternarDespliegue(claves: readonly string[], clave: string): readonly string[] {
-  return claves.includes(clave) ? minimizarPanelDe(claves, clave) : desplegar(claves, clave);
 }
 
 export function claveEnRuta(espacio: EspacioDeTrabajo, ruta: string): string | null {

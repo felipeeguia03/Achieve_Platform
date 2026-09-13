@@ -26,6 +26,8 @@ export type NodoId =
   | "FORMACION"
   /** La clase que abre el estudiante. **No es una superficie**: ver `nodos.CLASE`. */
   | "CLASE"
+  /** El calendario del estudiante. **No es una superficie**: ver `nodos.CALENDARIO`. */
+  | "CALENDARIO"
   | "UX03"
   | "UX04"
   | "UX04_RENEGOCIACION"
@@ -122,6 +124,25 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     nombre: "Clase",
     pregunta: "¿Qué pasó en esta clase?",
     ruta: "/clase",
+    pendienteDeEtapa: null,
+  },
+
+  /**
+   * El **Calendario** — [ADR-100](../../docs/decisions.md#adr-100).
+   *
+   * ⚠️ **`wireframe: null`: NO es una décima superficie.** El mismo patrón que
+   * `UX02_INDICE`, `FORMACION` y `CLASE`. `superficieIds` sigue devolviendo nueve.
+   *
+   * ⚠️ **Y no es una agenda.** Proyecta lo que ya existe —horario de cursada,
+   * evaluaciones, compromisos— y lleva a cada objeto. No crea bloques de estudio
+   * ni compromisos: eso sigue siendo `UX04`.
+   */
+  CALENDARIO: {
+    id: "CALENDARIO",
+    wireframe: null,
+    nombre: "Calendario",
+    pregunta: "¿Qué tengo y cuándo?",
+    ruta: "/calendario",
     pendienteDeEtapa: null,
   },
 

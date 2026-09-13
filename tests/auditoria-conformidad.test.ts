@@ -236,6 +236,13 @@ describe("Bloque 6 · Interacción", () => {
         dibujada como propia.
       */
       "app/(student)/clase/page.tsx",
+      /*
+        **El Calendario** — ADR-100. Nodo sin wireframe, no superficie. **Lo que
+        se comparte por URL sí existe** —`?vista=`, `?fecha=`, `?clases=0`—, que
+        es lo que `I-01` pide; lo que no tiene es escenario, porque su contenido
+        es el horario, las evaluaciones y los compromisos **de este estudiante**.
+      */
+      "app/(student)/calendario/page.tsx",
     ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))

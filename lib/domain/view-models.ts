@@ -1335,3 +1335,67 @@ export interface ClaseEnLista {
   duracionMinutos: number | null;
   resumen: Record<"QUESTION" | "IMPORTANT" | "ASSESSMENT" | "REVIEW", number>;
 }
+
+// ── Calendario — ADR-100 ─────────────────────────────────────────────────────
+
+/**
+ * A dónde lleva tocar un evento del calendario — [ADR-100](../../docs/decisions.md#adr-100).
+ *
+ * ⚠️ **Son ids, no rutas.** La proyección no conoce el grafo de navegación: la
+ * superficie traduce con `rutaDeCtaCon` y `nodos`, igual que el índice de
+ * materias. Si mañana `/materia` se renombra, el calendario no se entera.
+ */
+export type EnlaceDeEvento =
+  | { a: "materia"; cursadaId: string }
+  | { a: "clase"; claseId: string; activa: boolean }
+  | { a: "compromiso"; compromisoId: string };
+
+/**
+ * En qué quedó un compromiso, **en palabras del estudiante**.
+ *
+ * `CLOSED` se lee `INCUMPLIDO`: su única entrada es `MISSED` (la máquina de
+ * estados lo impone), y mostrarlo de otro modo lo haría parecer cumplido
+ * (`AGENTS.md` §2.4).
+ */
+export type EstadoDeCompromisoEnCalendario = "PENDIENTE" | "EN_CURSO" | "CUMPLIDO" | "INCUMPLIDO";
+
+export interface EventoDeCalendario {
+  /** Único y estable dentro de la respuesta: `clase:<bloque>:<fecha>`, `evaluacion:<id>`… */
+  id: string;
+  tipo: "clase" | "evaluacion" | "compromiso";
+  /** `YYYY-MM-DD` en la zona del estudiante. */
+  fecha: string;
+  /** `HH:MM`. `null` ⇒ **no se sabe la hora**, y el evento va arriba del día, sin hora inventada. */
+  desde: string | null;
+  /** `HH:MM`. `null` ⇒ no se sabe cuándo termina. */
+  hasta: string | null;
+  /** Lo que se lee en el chip: la materia, el objetivo o *«Final · Análisis»*. */
+  titulo: string;
+  /** Una línea más: aula, modalidad, estado. `null` ⇒ no hay nada que agregar. */
+  detalle: string | null;
+  /** Para el color de identidad. `null` ⇒ el chip va sin color (ADR-088 Enm. 5). */
+  cursadaId: string | null;
+  enlace: EnlaceDeEvento;
+  /** Sólo clases: `true` ⇒ horario estimado por Achieve (`source_type = 'inference'`). */
+  estimado?: boolean;
+  /** Sólo compromisos. */
+  estado?: EstadoDeCompromisoEnCalendario;
+}
+
+export interface CalendarioProps {
+  /** `YYYY-MM-DD` de hoy en la zona del estudiante. */
+  hoy: string;
+  /** *"dom 13 sept"*. */
+  fechaDeHoy: string;
+  desde: string;
+  hasta: string;
+  /** Ordenados por fecha y hora; los sin hora, primero en su día. */
+  eventos: EventoDeCalendario[];
+  /**
+   * Días hasta la próxima evaluación con fecha, **mire o no el rango pedido**.
+   * `null` ⇒ no hay ninguna, que no es «0 días».
+   */
+  proximaEvaluacionEnDias: number | null;
+  /** Si algún bloque del rango es estimado: la leyenda lo tiene que decir (ADR-094). */
+  horarioEstimado: boolean;
+}

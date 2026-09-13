@@ -38,7 +38,16 @@ export const menu: readonly ItemDeMenu[] = [
   // ADR-077. El plural deja de ser una promesa incumplida: apunta al índice,
   // no al cursado de una sola materia. Cierra la opción `A` de ADR-054.
   { nodo: "UX02_INDICE", etiqueta: "Materias", contador: null },
-  { nodo: "UX06", etiqueta: "Progreso", contador: null },
+  // ADR-100. Va **pegado a Materias**: responde *cuándo* sobre los mismos objetos
+  // —la cursada, sus evaluaciones y los compromisos tomados—. Sin contador: el
+  // calendario no tiene nada que venza que no esté ya en su propio objeto.
+  { nodo: "CALENDARIO", etiqueta: "Calendario", contador: null },
+  /*
+    ⚠️ **Progreso y Modo Examen ya no están acá** — pedido del owner, 13 sep 2026
+    (ADR-100 · Enmienda 1): *"no tienen sentido que vivan ahí"*. Los dos son de
+    **una materia**: la Bitácora transporta la cursada (`CTA-009`, ADR-082) y Modo
+    Examen se activa desde ella (`CTA-019`). Siguen alcanzables por esas CTAs.
+  */
   // ADR-087 `D1`. Va **después** del cursado y antes de Modo Examen: es apoyo
   // de método, no el trabajo del día.
   //
@@ -48,7 +57,6 @@ export const menu: readonly ItemDeMenu[] = [
   // sería una urgencia inventada sobre algo que el estudiante puede no abrir
   // nunca sin consecuencia.
   { nodo: "FORMACION", etiqueta: "Formación", contador: null },
-  { nodo: "UX07", etiqueta: "Modo Examen", contador: null },
 ] as const;
 
 /**

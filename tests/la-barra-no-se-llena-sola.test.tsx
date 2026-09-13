@@ -8,11 +8,11 @@ import {
   objetoDeMateria,
   objetoEnPantalla,
 } from "@/lib/navigation/objeto-en-pantalla";
-import { migasDe } from "@/lib/navigation/migas";
+import { migasDe, seccionesDelMenu } from "@/lib/navigation/migas";
 import { buscarEnPaleta, entradasDeMaterias } from "@/lib/navigation/paleta";
 import { indiceDePaleta } from "@/lib/fixtures/indice-paleta";
 import { menu } from "@/lib/navigation/menu";
-import { nodoIds, nodos } from "@/lib/navigation/surfaces";
+import { nodoIds, nodos, type NodoId } from "@/lib/navigation/surfaces";
 import { claveDe } from "@/lib/domain/espacio-de-trabajo";
 import { rutaConocida } from "@/lib/navigation";
 
@@ -111,12 +111,14 @@ describe("§2 · a dónde van minimizar y achicar", () => {
   it("achicar deja atrás la sección de la que cuelga", () => {
     expect(fondoDe("UX02")).toBe("/materias");
     expect(fondoDe("FORMACION")).toBe("/formacion");
-    expect(fondoDe("UX09")).toBe("/examen/activar");
   });
 
   it("lo que no cuelga de ninguna sección se achica sobre Hoy", () => {
     expect(fondoDe("UX03")).toBe("/hoy");
     expect(fondoDe("UX05")).toBe("/hoy");
+    // ADR-100 · Enmienda 1: Modo Examen salió del menú, así que un paso del
+    // protocolo ya no cuelga de una sección.
+    expect(fondoDe("UX09")).toBe("/hoy");
   });
 });
 
@@ -254,5 +256,40 @@ describe("§1 · ninguna pantalla queda fuera del buscador", () => {
       if (ruta === null) continue;
       expect(urls.has(ruta), `${id} (${ruta})`).toBe(true);
     }
+  });
+});
+
+/**
+ * ADR-088 · Enmienda 8 — **toda pantalla que abre algo lleva minimizar y
+ * achicar.** Clase, Progreso y la activación de Modo Examen no los tenían.
+ */
+describe("§5 · toda pantalla de objeto lleva los controles", () => {
+  it("una clase, con su id o la activa", () => {
+    expect(objetoEnPantalla("CLASE", "/clase?clase=sc-1", "Clase práctica jueves 18/05")).toMatchObject({
+      tipo: "clase",
+      entidadId: "sc-1",
+    });
+    expect(objetoEnPantalla("CLASE", "/clase", "Clase teórica lunes 14/09")).toMatchObject({
+      tipo: "clase",
+      entidadId: "CLASE",
+    });
+    expect(fondoDe("CLASE")).toBe("/materias");
+  });
+
+  it("Progreso y Modo Examen son de una cursada, y su ficha no se toma por sección vieja", () => {
+    const progreso = objetoEnPantalla("UX06", "/progreso?cursada=ce-1", "Progreso · Álgebra");
+    const examen = objetoEnPantalla("UX07", "/examen/activar?cursada=ce-1", "Modo Examen · Álgebra");
+    expect(progreso).toMatchObject({ tipo: "bitacora", entidadId: "ce-1" });
+    expect(examen).toMatchObject({ tipo: "modo-examen", entidadId: "ce-1" });
+    expect(esFichaDeSeccion(progreso!)).toBe(false);
+    expect(esFichaDeSeccion(examen!)).toBe(false);
+  });
+
+  it("toda pantalla con ruta que no es sección del menú lleva controles", () => {
+    const sinControles = (Object.values(nodos) as { id: NodoId; ruta: string | null }[])
+      .filter((n) => n.ruta !== null && !seccionesDelMenu.has(n.id))
+      .filter((n) => objetoEnPantalla(n.id, `${n.ruta}?cursada=x&clase=x`, "Nombre") === null)
+      .map((n) => n.id);
+    expect(sinControles).toEqual([]);
   });
 });

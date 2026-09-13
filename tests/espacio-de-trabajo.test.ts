@@ -7,7 +7,6 @@ import {
   VISIBLES,
   abrir,
   activar,
-  alternarDespliegue,
   cerrar,
   cerrarOtros,
   cerrarTodos,
@@ -347,17 +346,6 @@ describe("las ventanas desplegadas — requisito 1 con varias", () => {
     expect(minimizarPanelDe([U1, U2, U3], U2)).toEqual([U1, U3]);
     // Minimizar algo que no está desplegado no cambia nada.
     expect(minimizarPanelDe([U1], U3)).toEqual([U1]);
-  });
-
-  /**
-   * ⚠️ **Estar desplegada pero atrás cuenta como desplegada, y la ficha la
-   * minimiza.** La alternativa —traerla al frente— dejaría a la barra sin forma
-   * de bajar lo que ella misma abrió. Subir al frente es tocar la ventana.
-   */
-  it("la ficha alterna: despliega si no está, minimiza si está — incluso desde atrás", () => {
-    expect(alternarDespliegue([], U1)).toEqual([U1]);
-    expect(alternarDespliegue([U1, U2], U1)).toEqual([U2]);
-    expect(alternarDespliegue([U1, U2], U3)).toEqual([U1, U2, U3]);
   });
 
   it("los objetos salen **en el orden del apilamiento**, no en el de la barra", () => {

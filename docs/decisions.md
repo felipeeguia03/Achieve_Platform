@@ -141,6 +141,8 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-088 · Enm. 5](#adr-088-enmienda-5) | **El nombre y el color**: cómo se escribe un objeto y cómo se distingue de otro | ✅ `ACCEPTED` *(11 sep 2026 · pedida por el owner · **presentación, no renombre**)* | [ADR-075](#adr-075) |
 | [ADR-088 · Enm. 6](#adr-088-enmienda-6) | **Todo entra a la barra**, un objeto un lugar, y el mosaico | ⚠️ `ACCEPTED` · **su punto 1 corregido por la Enm. 7** *(12 sep 2026 · pedida por el owner)* | — |
 | [ADR-088 · Enm. 7](#adr-088-enmienda-7) | **La barra no se llena sola**: entrar no guarda, minimizar sí; la miga empieza en la sección | ✅ `ACCEPTED` *(12 sep 2026 · pedida por el owner · **sin cruz en la pantalla completa**)* | — |
+| [ADR-088 · Enm. 8](#adr-088-enmienda-8) | **Toda pantalla que abre algo lleva minimizar y achicar** — Clase, Progreso y la activación de Modo Examen | ✅ `ACCEPTED` *(13 sep 2026 · pedida por el owner · **las secciones del menú siguen sin controles**)* | [ADR-100 · Enm. 1](#adr-100) |
+| [ADR-088 · Enm. 9](#adr-088-enmienda-9) | **La ficha no minimiza**: tocarla muestra la ventana; minimizar es sólo el botón | ✅ `ACCEPTED` *(13 sep 2026 · pedida por el owner · **al estilo del dock de macOS**)* | — |
 | [ADR-089](#adr-089) | `UX01` gana la capa **«anticipar»**: próxima evaluación y mapa de 14 días | ✅ `ACCEPTED` *(10 sep 2026 · **sin contrato nuevo**: reusa `GET /api/materias`)* | — |
 | [ADR-090](#adr-090) | El **radar académico** de `UX01` | 🟡 `PROPOSED` — **no se construye** | `C01-021`, `C01-036`, `C01-044` |
 | [ADR-091](#adr-091) | La fila del índice es un solo destino, y la miga nombra el objeto | ✅ `ACCEPTED` *(10 sep 2026 · pedido del owner)* | — |
@@ -151,8 +153,11 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-096](#adr-096) | **Las dos opciones de evaluaciones se descartan**: `UX01` queda en Hero + Tu día + Riesgos | ✅ `ACCEPTED` *(12 sep 2026 · el owner miró las dos)* | [ADR-093](#adr-093), [ADR-077](#adr-077) |
 | [ADR-097](#adr-097) | **Modo noche, la cuenta en el topbar y color que identifica** — revierte §12.4 | ✅ `ACCEPTED` *(12 sep 2026 · pedida por el owner · **la tabla de contrastes es un test**)* | [ADR-018](#adr-018), [ADR-088 · Enm. 5](#adr-088-enmienda-5) |
 | [ADR-097 · Enm. 1](#adr-097-enmienda-1) | **La campanita, con avisos simulados** — sólo con `MODO_PRUEBA=1` | 🧪 `ACCEPTED · SIMULADO` *(13 sep 2026 · pedida por el owner · **nada de la lista ocurrió**)* | [ADR-087 · Enm. 3](#adr-087-enmienda-3) |
+| [ADR-097 · Enm. 2](#adr-097-enmienda-2) | **Administrar cuenta** — perfil, contraseña y dispositivos activos; la institución se ve entera | ✅ `ACCEPTED` *(13 sep 2026 · pedida por el owner · **sin agregar correos ni eliminar la cuenta**)* | [ADR-039](#adr-039), [ADR-006](#adr-006) |
 | [ADR-098](#adr-098) | **Modo Clase**: la clase que el estudiante abre es suya, no la clase dictada; **sin audio y sin checkpoint** | ✅ `ACCEPTED` *(13 sep 2026 · el owner aceptó las doce recomendaciones · **enmienda ADR-094 §5**)* | El checkpoint (psicopedagoga), el audio (ADR-006 + legal) |
 | [ADR-099](#adr-099) | **Modo Clase, segunda vuelta**: grabación de audio con etiquetas, apuntes que se guardan con Enter, material de la clase, unidades y *cómo venís*, y la miga de la clase | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «quiero que apruebes lo que haga falta» · **enmienda ADR-098** §1, §4 y la tabla de lo que queda afuera)* | Grabar en un aula real (ADR-006 + legal, `legal-package.md` §5.1) |
+| [ADR-100](#adr-100) | **El Calendario**: clases del horario semanal, evaluaciones y compromisos en día · semana · mes, con enlace a cada objeto. **No agenda** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con un mockup · `CTA-001` gana el origen `CALENDARIO`)* | Recortar el horario al período real (ADR-060…065, corte 2) |
+| [ADR-100 · Enm. 1](#adr-100-enmienda-1) | **Progreso y Modo Examen salen de la barra lateral**: se abren desde la materia (`CTA-009`, `CTA-019`) | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner)* | Colgar sus migas de la materia |
 
 ---
 
@@ -7855,6 +7860,9 @@ de verdad**.
 
 **1. Tocar una ficha despliega el panel; volver a tocarla lo minimiza.** El gesto es uno solo.
 
+⚠️ **La [Enmienda 9](#adr-088-enmienda-9) retira el «volver a tocarla lo minimiza»:** la ficha
+sólo muestra —despliega o trae al frente—, y minimizar es el botón de la ventana.
+
 ⚠️ **La [Enmienda 3](#adr-088-enmienda-3) mantiene este gesto pero le saca `abrir`:** entrar a una
 materia desde el índice o el mapa **va a su superficie completa**, y la ventana chica es lo que se
 elige después. Y desplegar una ficha **no baja las otras**.
@@ -8403,6 +8411,8 @@ visible, para dibujar—.
 ⚠️ **Y la ficha del objeto que se está mirando entero minimiza la superficie.** Su ventana no se
 puede desplegar, así que sin este caso era el único gesto de la barra que no hacía nada visible.
 
+⚠️ **Retirado por la [Enmienda 9](#adr-088-enmienda-9):** tocar esa ficha ya no hace nada.
+
 **4. El mosaico: mantener apretado el control de expandir ofrece ocho zonas.** Cuatro mitades y
 cuatro cuartos, con el rectángulo de cada una dibujado. Se toma **el mecanismo**, no la marca
 (`AGENTS.md` §1.5): los nombres son de acá y las medidas salen del área utilizable de Achieve, que
@@ -8601,6 +8611,90 @@ objeto.
 
 ⚠️ **No se recorrió en el navegador**, y `npm run db:verify` no se corrió: no hay cambio de base, y
 vacía la de la demo.
+
+---
+
+<a id="adr-088-enmienda-8"></a>
+
+### ADR-088 · Enmienda 8 — toda pantalla que abre algo lleva los controles
+
+**Estado:** `ACCEPTED` · 13 sep 2026 · **pedida por el owner**
+
+#### Contexto
+
+*"Acordate de agregar en todas las pantallas como la clase los botones de minimizar o achicar."* Modo
+Clase (ADR-098) entró sin ellos, y Progreso y la activación de Modo Examen quedaron igual al salir del
+menú con [ADR-100 · Enmienda 1](#adr-100): dejaron de ser secciones, pero nadie los sumó a
+`objetoEnPantalla`.
+
+#### Decisión
+
+**Toda pantalla con ruta que no sea una sección del menú es un objeto y lleva minimizar y achicar.**
+Las secciones —Hoy, Materias, Calendario, Formación— siguen sin controles (Enmienda 7).
+
+| Pantalla | Tipo | Identidad | Nombre de la ficha |
+|---|---|---|---|
+| `CLASE` | `clase` (nuevo) | `?clase=`; sin él, la clase activa, que es una sola | el de su miga: *Clase teórica domingo 13/09* |
+| `UX06` | `bitacora` | `?cursada=` (`CTA-009`) | *Progreso · Análisis II* |
+| `UX07` | `modo-examen` | `?cursada=` (`CTA-019`) | *Modo Examen · Análisis II* |
+
+⚠️ **Progreso y Modo Examen se identifican por la cursada, no por el nodo.** Un id `UX06` o `UX07`
+lo descarta `esFichaDeSeccion` como ficha vieja de sección.
+
+⚠️ **Sin clase abierta, `/clase` no tiene controles**: no hay nada que guardar.
+
+**De paso:** con una miga larga, el topbar volvía a cortar la institución. Ahora se recorta la miga.
+
+#### Cómo se verifica
+
+`tests/la-barra-no-se-llena-sola.test.tsx` §5 — la clase con id y sin él; Progreso y Modo Examen por
+cursada y no tomados por sección; y **un guard: toda pantalla con ruta que no es sección del menú
+tiene objeto**, así una pantalla nueva sin controles rompe el test. **En el navegador**, con
+`estudiante.ucc@achieve.local`: los tres muestran los controles y la institución se ve entera.
+
+---
+
+<a id="adr-088-enmienda-9"></a>
+
+### ADR-088 · Enmienda 9 — la ficha no minimiza
+
+**Estado:** `ACCEPTED` · 13 sep 2026 · **pedida por el owner**
+
+#### Contexto
+
+*"Que las pestañas en la barra de pestañas no se puedan minimizar tocando sobre ellas: al estilo mac,
+solo se pueden minimizar (cuando están en modo ventana/modal) si se toca sobre el botón de minimizar;
+tocarlas en la barra de pestañas no hace nada."*
+
+Desde la [Enmienda 1](#adr-088-enmienda-1) la ficha **alternaba**: desplegaba la ventana y, tocada de
+nuevo, la minimizaba —incluso si estaba atrás—. Y desde la [Enmienda 6](#adr-088-enmienda-6) la ficha
+de la pantalla completa la minimizaba a la barra.
+
+#### Decisión
+
+**Tocar una ficha la muestra y nunca la minimiza.** Es el dock de macOS.
+
+| Estado de su ventana | Tocar la ficha |
+|---|---|
+| Minimizada | La despliega (`push`: es navegar) |
+| Desplegada, atrás | La trae al frente (`replace`: apilar no es navegar) |
+| Desplegada, adelante | **Nada** |
+| Es la pantalla completa | **Nada** |
+
+**Minimizar queda en el botón de la ventana** y en `Escape`, que ya minimizaba la de adelante. Vale
+igual para el menú de desbordamiento y la hoja móvil.
+
+⚠️ **Traer al frente desde la ficha** no lo pidió el owner en esas palabras: se tomó del mismo
+modelo (el dock trae la ventana adelante). La razón que lo impedía —*"la ficha quedaría sin forma de
+minimizar lo que abrió"*— deja de valer cuando la ficha ya no minimiza.
+
+`alternarDespliegue` sale del dominio y `alternarPanel` pasa a llamarse `mostrarPanel`.
+
+#### Cómo se verifica
+
+`tests/barra-de-objetos.test.tsx` — adelante no navega; atrás hace `replace` al frente sin bajar
+las otras. `tests/panel-de-objeto.test.tsx` — la ficha de la pantalla completa no navega.
+`tests/ausencia.test.tsx` — la barra no llama a `minimizarPanel` ni a `guardarEnLaFicha`.
 
 ---
 
@@ -9376,6 +9470,69 @@ contador; tocar un aviso navega.
 
 ---
 
+<a id="adr-097-enmienda-2"></a>
+
+### ADR-097 · Enmienda 2 — Administrar cuenta
+
+**Estado:** `ACCEPTED` · 13 sep 2026 · **pedida por el owner con capturas del software de referencia**
+**Revierte:** la fila *«Administrar cuenta · No está»* de ADR-097 §2
+
+#### Contexto
+
+El owner mandó el topbar con *«Universidad Católica de Córdoba · UC…»* cortado y pidió: *"no se logra
+ver el UCC, soluciona, y cuando en el símbolo de la persona puedas configurar cuenta tal cual como
+esto"*, con el modal de cuenta del software (Perfil y Seguridad).
+
+Antes de construir se le marcaron las tres piezas que chocan con decisiones vigentes, y eligió:
+
+| Del software | Decisión | Por qué |
+|---|---|---|
+| Foto, nombre y apellido · email primario · cambiar contraseña | **Sí** | No tocan el padrón ni el dominio |
+| Dispositivos activos con IP y ciudad | **Sí** — elegido sabiendo que la IP es dato personal y que la ciudad sale de un servicio externo | Pedido explícito |
+| Agregar otro correo | **No** | [ADR-039](#adr-039): quién entra lo decide el padrón por email; un segundo correo es otra puerta |
+| Eliminar cuenta | **No** | La cuenta la da de alta el padrón, y retención y borrado son [ADR-006](#adr-006) |
+
+#### Decisión
+
+**1. La institución se ve entera.** Tenía un tope fijo de 280 px; ahora ocupa lo que necesita y sólo
+se trunca si la ventana no alcanza.
+
+**2. «Administrar cuenta» en el menú del avatar**, que abre un modal con dos secciones.
+
+- **Perfil.** Foto, nombre y apellido los escribe el estudiante. **Nombre y apellido van en los
+  metadatos de su usuario de Auth, no en una tabla**: ninguna regla los lee, y el avatar sigue saliendo
+  del email cuando no los cargó. La foto va al bucket privado `foto-de-perfil` (10 MB; JPG, PNG, GIF,
+  WEBP, que hace cumplir Storage), con URL firmada como `evidencia`.
+- **Seguridad.** Cambiar contraseña, por Auth desde el navegador, con la opción de cerrar las otras
+  sesiones. **Dispositivos activos** lee `auth.sessions` con `sesiones_de_auth()` —`SECURITY DEFINER`,
+  sólo `service_role`— y cierra una ajena con `cerrar_sesion_de_auth()`. La de este dispositivo no se
+  cierra desde ahí: para eso está *Cerrar sesión*, que además limpia el espacio de trabajo (ADR-088 §4).
+
+⚠️ **La ciudad sale de `ipapi.co`, y sólo para IPs públicas.** Una IP de red local no sale de la máquina.
+Si el servicio no contesta en 1,5 s la línea dice la IP sola: omitir, no inventar.
+
+⚠️ **Rutas nuevas sin padrón.** `GET/POST /api/cuenta/foto` y `GET/POST /api/cuenta/dispositivos`
+exigen un token válido y **no** un `student`: la cuenta de Auth se administra aunque el alta no
+exista. El `authUserId` sale siempre del token verificado.
+
+#### ⛔ Lo que NO resuelve
+
+- **Esto no levanta [ADR-006](#adr-006).** Nombre, foto e IP son datos personales; con una persona real
+  vuelven a la consulta legal, y la geolocalización externa con ellos.
+- **Las sesiones de Auth no vencen** en la configuración local: la lista junta scripts (`curl`, `node`)
+  y navegadores viejos. Acotarla es configuración de Auth, no de esta pantalla.
+- **La contraseña no pide la actual** (`secure_password_change = false`).
+
+#### Cómo se verifica
+
+`tests/administrar-cuenta.test.ts` — iniciales y nombre, lectura del agente, IPs privadas, orden de
+dispositivos y fechas en palabras. `tests/tema.test.ts` — la cuenta ofrece *Administrar cuenta* y ni el
+copy ni el modal dicen *Eliminar cuenta* ni *Agregar correo*. **En el navegador**, con
+`estudiante.ucc@achieve.local` en claro y en oscuro: institución completa, nombre guardado y avatar
+actualizado, foto subida, y cerrar la sesión de un segundo navegador la saca de la lista.
+
+---
+
 <a id="adr-098"></a>
 
 ## ADR-098 — Modo Clase: la clase que el estudiante abre es suya, no la clase dictada
@@ -9666,3 +9823,109 @@ estudiante; los `CHECK` rechazan un adjunto con archivo y link a la vez, una eti
 duración fuera de rango. En la API, lo ajeno es `404`. En la pantalla: Enter guarda y Shift+Enter no; no
 se graba sin confirmar el aviso; sin micrófono no hay error que bloquee la clase; y la línea *"te
 faltan"* sale del mismo estado que el Gantt de Materia.
+
+---
+
+<a id="adr-100"></a>
+
+## ADR-100 — El Calendario: clases, evaluaciones y compromisos en una grilla que lleva a cada objeto
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner**, con un mockup delante
+**No levanta:** [ADR-006](#adr-006), [ADR-064](#adr-064) (*el ADE no agenda*), ADR-060…065 corte 2 (el
+período sin fechas).
+
+### Contexto
+
+El owner pidió, textual:
+
+> *"agregemos un calendario parecido a este, que muestre las clases (con opcion de no mostrar),
+> evaliaciones, y compromisos del alumno si es que se los propone, todo lindo, con el mismo estilo y
+> colores del software en general, tambien quiero que tenga vinculos a las clases, examenes,
+> compromisos, etc. mantene el mismo estilo — sale del sidebar"*
+
+El mockup muestra una grilla mensual con vistas Día · Semana · Mes, alternadores *Clases* y *Plan de
+estudio*, un aviso de dos finales el mismo día con *"Ver propuesta"*, y la leyenda *"Click en un día
+para agendar un bloque · 5 bloques de estudio esta semana"*.
+
+### Decisión
+
+**1. Un nodo nuevo, `CALENDARIO`, con ruta `/calendario` y `wireframe: null`.** El mismo patrón que
+`UX02_INDICE`, `FORMACION` y `CLASE`: tiene ruta y **no es una superficie**. `superficieIds` sigue en
+nueve. Entra a la barra lateral **después de Materias**, sin contador, y es raíz de su miga.
+
+**2. Proyecta tres cosas que ya existen, y ninguna más:**
+
+| Qué | De dónde | Cómo se dibuja |
+|---|---|---|
+| **Clases** | `class_schedule_block` por `horariosReal.deCursadas()` —la lectura de Hoy y Materias (ADR-095)— repetido sobre cada fecha del rango | Relleno suave del color de la materia; filete punteado si es `inference` |
+| **Evaluaciones** | `assessment` con fecha, visibles según `declared_by` (ADR-067) | Tinta invertida. **Siempre visibles** |
+| **Compromisos** | `commitment` en `CONFIRMED`·`DUE`·`STARTED`·`COMPLETED`·`MISSED`·`CLOSED` | Tarjeta con borde; punteada y rotulada *incumplido* si lo es |
+
+⚠️ **Expandir el horario semanal no crea clases.** No escribe `class_session`, no mueve el Gantt y no
+afirma que la clase se dictó. El período no tiene fechas en el schema, así que la pantalla **dice** que
+no sabe de feriados, suspensiones ni del fin del cuatrimestre, en vez de inventar uno.
+
+⚠️ **`CLOSED` se lee *incumplido*.** Su única entrada es `MISSED`; mostrarlo de otro modo lo haría
+parecer cumplido (`AGENTS.md` §2.4). `RENEGOTIATED` no se dibuja porque lo reemplaza el sucesor, y `DRAFT`
+no es un compromiso tomado.
+
+**3. Cada evento lleva a su objeto.** Clase abierta por el estudiante ese día → esa clase
+(`/clase?clase=`); clase sin abrir y evaluación → su materia con `CTA-001` (que **gana el origen
+`CALENDARIO`**, como lo ganó `UX02_INDICE`); compromiso → ese compromiso (`/compromiso?compromiso=`).
+La pantalla de compromiso **pasa por fin el parámetro a la API**, que lo aceptaba desde la B2.6.
+
+**4. Clases y compromisos se apagan; las evaluaciones no.** El estado de la vista vive en la URL
+(`?vista=`, `?fecha=`, `?clases=0`, `?compromisos=0`): no en el navegador ni en la base.
+
+### Lo que del mockup NO se construyó
+
+| Qué | Por qué |
+|---|---|
+| ⛔ **"Click en un día para agendar un bloque"** | El ADE no agenda (ADR-064) y un compromiso nace en `UX04` con su acción. Tocar un día **abre ese día** |
+| ⛔ **"Plan de estudio"** y **"5 bloques de estudio esta semana"** | No existe un plan de bloques que proyectar; dibujarlo sería afirmar un plan que nadie hizo |
+| ⛔ **El aviso "dos finales el mismo día · Ver propuesta"** | La regla ya existe (`EVALUACIONES_ENCIMADAS`, `PLAN-v0.1`) y se muestra en `UX01`; la *propuesta* no tiene escritor |
+| **"Choques y huecos"** como eyebrow | La pantalla no detecta ninguno de los dos. Dice *"Qué tenés y cuándo"* |
+
+### Consecuencias
+
+- **Trece rutas bajo `app/(student)`, nueve superficies.** `tests/shell.test.tsx` lo verifica por separado.
+- **El registro sigue en 22 CTAs.** Abrir una clase o un compromiso es navegación; la materia es `CTA-001`.
+- **Ninguna tabla nueva, ninguna migración, ninguna escritura.** `GET /api/calendario` acota el rango a 42
+  días. No toca `limpiar_mundo` ni `db:verify`.
+- **No hay eventos nuevos.**
+
+### Lo que queda abierto
+
+| Qué | Quién |
+|---|---|
+| **Recortar el horario al período real** (inicio y fin de cursado, feriados, clases suspendidas) | Owner — depende del corte 2 de ADR-060…065 |
+| **Abrir un `MISSED` desde el calendario no ofrece *Retomar*.** La API sólo propone el rescate sin `?compromiso=`; desde el calendario se ve el incumplido y su estado | Owner, si se quiere la salida también desde acá |
+| **Mostrar las evaluaciones encimadas en la grilla** | Owner: hoy vive sólo en `UX01` |
+
+### Cómo se verifica
+
+`tests/calendario.test.tsx`: el horario cae en su día y su hora; una clase abierta enlaza a la clase; una
+evaluación sin hora va sin hora y sin título no recibe nombre; un compromiso se ubica por fecha local;
+`MISSED` y `CLOSED` se ven incumplidos y `RENEGOTIATED`/`DRAFT` no se dibujan; nada de una cursada ajena;
+las cuatro rutas de enlace; apagar clases y compromisos deja la evaluación; y la pantalla no ofrece
+agendar ni un plan. El repositorio no escribe y lee los bloques de `horarios.ts`.
+
+<a id="adr-100-enmienda-1"></a>
+
+### ADR-100 · Enmienda 1 — Progreso y Modo Examen salen de la barra lateral
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner**: *"borra las pestañas de progreso y modo
+examen del sidebar, no tienen sentido que vivan ahi"*.
+
+**Decisión.** La barra lateral queda en **Hoy · Materias · Calendario · Formación**. Progreso (`UX06`) y
+Modo Examen (`UX07`) son de **una materia** y se siguen abriendo desde ella: la Bitácora con `CTA-009`,
+que transporta la cursada (ADR-082), y la activación con `CTA-019` (ADR-016). El guard *"ninguna
+superficie depende sólo del menú"* ya lo garantizaba.
+
+**Consecuencias.**
+- **Dejan de ser raíz de sección.** La miga no cambia (*Progreso*; *Modo Examen › Preparación › Paso*),
+  pero achicar un paso del protocolo a ventana deja **Hoy** detrás, no la activación.
+- Las fichas viejas `progreso:UX06` y `modo-examen:UX07` guardadas en el navegador **se siguen
+  limpiando** (`SECCIONES_RETIRADAS`).
+- **Abierto:** colgar las dos migas de su materia (*Materias › Análisis › Progreso*). Necesita que cada
+  pantalla declare su materia, como Modo Clase (ADR-099 §9).

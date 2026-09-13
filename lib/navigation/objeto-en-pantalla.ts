@@ -52,7 +52,18 @@ export const PARAM_PIEZA = "pieza";
  * es el valor, y dos materias son dos fichas.
  */
 const PANTALLAS_DE_OBJETO: Partial<
-  Record<NodoId, { tipo: TipoDeObjeto; parametro: string | null }>
+  Record<
+    NodoId,
+    {
+      tipo: TipoDeObjeto;
+      parametro: string | null;
+      /**
+       * Sin el parámetro, la pantalla muestra **su único objeto vigente** y su id
+       * es el `NodoId`. Es `/clase` pelada: la clase activa, que hay una sola.
+       */
+      sinParametroEsElNodo?: true;
+    }
+  >
 > = {
   // El nombre del parámetro sale del registro canónico, no se escribe acá.
   UX02: { tipo: "materia", parametro: ctaRegistry["CTA-001"].parametro?.nombre ?? null },
@@ -62,6 +73,16 @@ const PANTALLAS_DE_OBJETO: Partial<
   UX05: { tipo: "evidencia", parametro: null },
   UX08: { tipo: "modo-examen", parametro: null },
   UX09: { tipo: "modo-examen", parametro: null },
+  /*
+    ADR-088 · Enmienda 8 — **toda pantalla que abre algo lleva los controles**.
+    Progreso y la activación de Modo Examen dejaron el menú con ADR-100 · Enm. 1:
+    ya no son lugares, son de **una** materia, y por eso llevan su cursada. Sin
+    ella el id sería `UX06`/`UX07`, que `esFichaDeSeccion` descarta como ficha
+    vieja de sección.
+  */
+  UX06: { tipo: "bitacora", parametro: ctaRegistry["CTA-009"].parametro?.nombre ?? null },
+  UX07: { tipo: "modo-examen", parametro: ctaRegistry["CTA-019"].parametro?.nombre ?? null },
+  CLASE: { tipo: "clase", parametro: "clase", sinParametroEsElNodo: true },
 };
 
 /** A dónde se vuelve cuando no hay una sección de la que se salió. */
@@ -92,8 +113,8 @@ export function objetoEnPantalla(
   let entidadId: string = nodo;
   if (regla.parametro !== null) {
     const valor = new URLSearchParams(ruta.split("?")[1] ?? "").get(regla.parametro);
-    if (!valor) return null;
-    entidadId = valor;
+    if (valor) entidadId = valor;
+    else if (!regla.sinParametroEsElNodo) return null;
   }
 
   const propio = (nombre ?? "").trim();
@@ -141,8 +162,17 @@ export const RUTA_AL_MINIMIZAR = RUTA_BASE;
  * `modo-examen:UX07`); una materia o un video nunca tienen ese id.
  */
 export function esFichaDeSeccion(objeto: Pick<ObjetoAbierto, "entidadId">): boolean {
-  return seccionesDelMenu.has(objeto.entidadId as NodoId);
+  return seccionesDelMenu.has(objeto.entidadId as NodoId) || SECCIONES_RETIRADAS.has(objeto.entidadId as NodoId);
 }
+
+/**
+ * Las que **fueron** secciones y salieron del menú — ADR-100 · Enmienda 1.
+ *
+ * ⚠️ Sus fichas viejas (`progreso:UX06`, `modo-examen:UX07`) siguen en el
+ * navegador de quien usó la Enmienda 6: sin esto dejarían de reconocerse y se
+ * quedarían en la barra para siempre.
+ */
+const SECCIONES_RETIRADAS = new Set<NodoId>(["UX06", "UX07"]);
 
 /**
  * El objeto de una materia, para abrirla **en ventana** desde el buscador.

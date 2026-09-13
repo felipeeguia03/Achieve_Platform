@@ -39,6 +39,7 @@ import {
   Target,
   Upload,
   X,
+  Presentation,
 } from "lucide-react";
 
 import {
@@ -51,7 +52,6 @@ import { t } from "@/lib/content/es-AR";
 import { colorDelObjeto } from "@/lib/domain/color-de-materia";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { useEspacioDeTrabajo } from "./espacio-de-trabajo";
-import { guardarEnLaFicha } from "./movimiento";
 
 /** Un ícono por tipo. **No hay emoji**: el set es el de la aplicación (Lucide). */
 const ICONOS: Record<TipoDeObjeto, typeof BookOpen> = {
@@ -66,6 +66,7 @@ const ICONOS: Record<TipoDeObjeto, typeof BookOpen> = {
   "modo-examen": BookOpen,
   formacion: PlayCircle,
   bitacora: NotebookPen,
+  clase: Presentation,
 };
 
 /**
@@ -82,7 +83,7 @@ const ANCHO_DE_OBJETO = 192;
 const ANCHO_DE_CONTROLES = 110;
 
 export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void }) {
-  const { espacio, listo, desalojado, paneles, alternarPanel, cerrar } = useEspacioDeTrabajo();
+  const { espacio, listo, desalojado, paneles, mostrarPanel, cerrar } = useEspacioDeTrabajo();
   /*
     ⚠️ **Cuáles están desplegadas, y no sólo cuál está activa** — Enmienda 3.
     Con varias ventanas abiertas, «activo» dice **una** cosa (la de adelante) y
@@ -174,8 +175,7 @@ export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void })
           Ahora se puede pasar de un objeto a otro **sin cerrar la ventana**.
 
           El envoltorio no intercepta nada (`pointerEvents: none`); sólo la
-          píldora. Tocar el hueco de al lado sigue siendo *tocar afuera*, que
-          minimiza.
+          píldora.
         */
         style={{ bottom: 16, zIndex: 50, padding: "0 16px", pointerEvents: "none" }}
       >
@@ -208,20 +208,12 @@ export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void })
               onCerrarMenu={() => setMenu(null)}
               onArrastrar={setArrastrando}
               /*
-                ⚠️ **Tocar una ficha desplegada guarda su ventana primero.** El
-                gesto nace acá, pero el efecto es el mismo que el del semáforo de
-                la ventana: si la barra minimizara en seco, minimizar desde la
-                ficha se vería distinto de minimizar desde la ventana — y son
-                **el mismo gesto**.
-
-                Desplegar, en cambio, no espera nada: la animación de apertura la
-                corre la ventana al aparecer.
+                ⚠️ **Tocar una ficha nunca minimiza** — Enmienda 9, al estilo del
+                dock de macOS. Despliega su ventana o la trae al frente; si ya
+                está adelante no hace nada. Minimizar es sólo el botón de la
+                ventana.
               */
-              onActivar={() =>
-                desplegados.has(objeto.clave)
-                  ? guardarEnLaFicha(objeto.clave, () => alternarPanel(objeto.clave))
-                  : alternarPanel(objeto.clave)
-              }
+              onActivar={() => mostrarPanel(objeto.clave)}
               onCerrar={() => cerrar(objeto.clave)}
             />
           ))}
@@ -269,7 +261,7 @@ function Objeto({
 }: {
   objeto: ObjetoAbierto;
   activo: boolean;
-  /** `true` ⇒ su ventana está desplegada, y volver a tocarla la baja. */
+  /** `true` ⇒ su ventana está desplegada. Volver a tocarla **no** la baja (Enmienda 9). */
   desplegado: boolean;
   indice: number;
   total: number;
@@ -467,7 +459,7 @@ function Desbordamiento({
   onAlternar: () => void;
   onCerrar: () => void;
 }) {
-  const { alternarPanel, cerrar, espacio, paneles } = useEspacioDeTrabajo();
+  const { mostrarPanel, cerrar, espacio, paneles } = useEspacioDeTrabajo();
   const desplegados = new Set(paneles.map((o) => o.clave));
   return (
     <span style={{ position: "relative", display: "inline-flex" }}>
@@ -494,10 +486,7 @@ function Desbordamiento({
           opciones={objetos.map((o) => ({
             texto: o.etiquetaSecundaria ? `${o.etiqueta} · ${o.etiquetaSecundaria}` : o.etiqueta,
             destacada: espacio.activo === o.clave || desplegados.has(o.clave),
-            alElegir: () =>
-              desplegados.has(o.clave)
-                ? guardarEnLaFicha(o.clave, () => alternarPanel(o.clave))
-                : alternarPanel(o.clave),
+            alElegir: () => mostrarPanel(o.clave),
             alCerrar: () => cerrar(o.clave),
           }))}
         />
@@ -631,7 +620,7 @@ export { arrastrandoGlobal };
  * de un iPhone, que es donde el pulgar no llega.
  */
 function PildoraMovil({ onAbrirPaleta }: { onAbrirPaleta: () => void }) {
-  const { espacio, alternarPanel, cerrar } = useEspacioDeTrabajo();
+  const { espacio, mostrarPanel, cerrar } = useEspacioDeTrabajo();
   const [hoja, setHoja] = useState(false);
 
   const activo = espacio.objetos.find((o) => o.clave === espacio.activo) ?? espacio.objetos[0];
@@ -686,7 +675,7 @@ function PildoraMovil({ onAbrirPaleta }: { onAbrirPaleta: () => void }) {
             onAbrirPaleta();
           }}
           onActivar={(clave) => {
-            alternarPanel(clave);
+            mostrarPanel(clave);
             setHoja(false);
           }}
           onCerrarObjeto={cerrar}

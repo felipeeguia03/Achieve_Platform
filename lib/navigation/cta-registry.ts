@@ -125,7 +125,9 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     // ADR-077: el índice de materias emite la misma CTA que la cola de `HOY`, y
     // ya transporta la cursada desde ADR-054 opción `B`. **El registro no
     // crece**: es la misma navegación desde otro lugar.
-    origen: ["UX01", "UX02_INDICE"],
+    // ADR-100: el calendario también abre la materia de una clase o una
+    // evaluación, con la misma cursada. Mismo contrato, otro origen.
+    origen: ["UX01", "UX02_INDICE", "CALENDARIO"],
     condicion: "Course visible",
     accionSolicitada: "abrir materia",
     destino: "UX02",

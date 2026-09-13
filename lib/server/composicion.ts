@@ -1,7 +1,10 @@
 import "server-only";
 
 import { estudiantesReal } from "./repositorios/estudiante";
-import { identidadReal } from "./repositorios/identidad";
+import { identidadReal, identidadYSesionDeToken } from "./repositorios/identidad";
+import { cuentaDeAuthReal } from "./repositorios/cuenta-de-auth";
+import { ubicacionDeIp } from "./repositorios/geolocalizacion";
+import { dispositivos as dispositivosPuro, type Dispositivo } from "./servicios/dispositivos";
 import { eventosReal } from "./repositorios/eventos";
 import { ingestaReal } from "./repositorios/ingesta";
 import { compromisosReal } from "./repositorios/compromiso";
@@ -88,6 +91,8 @@ import { proyectarFormacion, proyectarVistaSimulada } from "./servicios/proyecci
 import { formacionReal } from "./repositorios/formacion";
 import { repartoReal } from "./repositorios/reparto";
 import { tableroReal } from "./repositorios/tablero";
+import { calendarioReal } from "./repositorios/calendario";
+import { proyectarCalendario } from "./servicios/proyeccion-calendario";
 import { clasesReal } from "./repositorios/clase";
 import {
   completarMarca as completarMarcaPuro,
@@ -122,7 +127,7 @@ import type { UnidadDeMateria } from "@/lib/domain/unidades-de-clase";
 import type { ClaseEnLista, ClaseProps } from "@/lib/domain/view-models";
 import { numeroDeUnidad, proyectarTablero } from "./servicios/proyeccion-tablero";
 import { diaDeSemana, fechaEnZona } from "@/lib/domain/zona";
-import type { TableroProps } from "@/lib/domain/view-models";
+import type { CalendarioProps, TableroProps } from "@/lib/domain/view-models";
 import { ganttDeMateria, proyectarMateria } from "./servicios/proyeccion-materia";
 import { proyectarAccion } from "./servicios/proyeccion-accion";
 import { proyectarCompromiso } from "./servicios/proyeccion-compromiso";
@@ -257,6 +262,32 @@ export function resolverSesion(token: string | null): Promise<ResultadoDeSesion>
 /** De quién es la cuenta, para el topbar — ADR-097. Sólo nombres, sólo lectura. */
 export function cuentaDe(institutionId: string, carreraId: string | null): Promise<CuentaProps> {
   return cuentaPura(cuentaReal, institutionId, carreraId);
+}
+
+// ── Administrar cuenta (ADR-097 Enmienda 2) ─────────────────────────────────
+
+/**
+ * Quién es el dueño del token, **sin mirar el padrón**: la cuenta de Auth se
+ * administra aunque todavía no haya `student`. `null` ⇒ token inválido.
+ */
+export function identidadDeCuenta(token: string | null) {
+  return token ? identidadYSesionDeToken(token) : Promise.resolve(null);
+}
+
+export function dispositivosDe(authUserId: string, sesionActual: string | null): Promise<Dispositivo[]> {
+  return dispositivosPuro({ cuenta: cuentaDeAuthReal, ubicacion: ubicacionDeIp }, authUserId, sesionActual);
+}
+
+export function cerrarSesionDeDispositivo(authUserId: string, sesionId: string): Promise<boolean> {
+  return cuentaDeAuthReal.cerrarSesion(authUserId, sesionId);
+}
+
+export function firmarSubidaDeFoto(authUserId: string) {
+  return cuentaDeAuthReal.firmarSubidaDeFoto(authUserId);
+}
+
+export function fotoDePerfil(authUserId: string) {
+  return cuentaDeAuthReal.firmarLecturaDeFoto(authUserId);
 }
 
 // ── El alta académica · Etapa B6.14.4 (ADR-052) ──────────────────────────────
@@ -1289,6 +1320,25 @@ export async function tableroDe(
     tableroReal.insumosDelDia(institutionId, studentId, desde, hasta, fechaEnZona(instante, zona)),
   ]);
   return proyectarTablero(insumos, dia, ahora, zona);
+}
+
+/**
+ * El calendario — [ADR-100](../../docs/decisions.md#adr-100).
+ *
+ * `desde` y `hasta` son fechas locales ya validadas por la ruta. **Sólo lee**:
+ * horario semanal, evaluaciones con fecha y compromisos tomados.
+ */
+export async function calendarioDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  desde: string,
+  hasta: string,
+  ahora: string = new Date().toISOString(),
+): Promise<CalendarioProps> {
+  const hoy = fechaEnZona(Date.parse(ahora), zona);
+  const insumos = await calendarioReal.insumos(institutionId, studentId, desde, hasta, hoy);
+  return proyectarCalendario(insumos, desde, hasta, ahora, zona);
 }
 
 /**

@@ -99,6 +99,13 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
+🆕 **Hay Calendario** — [ADR-100](docs/decisions.md#adr-100), 13 de septiembre. `/calendario`, en la barra
+lateral después de Materias: día · semana · mes con el horario semanal, las evaluaciones y los
+compromisos, y cada uno lleva a su objeto. **Sólo lee y no agenda**: nada de *"agendar un bloque"* ni
+*"plan de estudio"*. ⚠️ El horario se repite en toda semana pedida porque el período no tiene fechas —
+**no le inventes un fin de cuatrimestre**—. Y desde su **Enmienda 1** la barra lateral es **Hoy · Materias · Calendario · Formación**:
+Progreso y Modo Examen se abren desde la materia (`CTA-009`, `CTA-019`), no desde el menú.
+
 🆕 **Modo Clase existe** — [ADR-098](docs/decisions.md#adr-098), 13 de septiembre. El estudiante abre
 una clase de su materia (`/clase`), escribe apuntes, marca momentos con un toque —*No entendí*,
 *Importante*, *Posible evaluación*, *Revisar*— y la finaliza. Hoy ofrece *Entrar a clase* en la fila
@@ -109,7 +116,8 @@ dictada y mueve el Gantt de todos. **Una marca no es `class_event_record`** (`C0
 ni un evento: son filas. Abrir una clase **no** produce `Evidence`, progreso ni `Action`s.
 
 ⚠️ **Los números cambiaron:** **22 CTAs** (`CTA-022` y `CTA-023`; `CTA-021` sigue reservada para
-Formación) y **doce rutas** bajo `app/(student)`, **nueve superficies**. `CLASE` es nodo sin
+Formación) y **doce rutas** bajo `app/(student)`, **nueve superficies** — ⚠️ **trece desde
+[ADR-100](docs/decisions.md#adr-100)**, que suma `/calendario`. `CLASE` es nodo sin
 wireframe. Y ADR-094 §5 quedó enmendado: **sólo** la fila en curso o por empezar lleva botón.
 
 🆕 **Y el mismo día, la segunda vuelta** — [ADR-099](docs/decisions.md#adr-099): pantalla rediseñada,

@@ -70,6 +70,7 @@ const TIPOS: readonly TipoDeObjeto[] = [
   "modo-examen",
   "formacion",
   "bitacora",
+  "clase",
   // ⚠️ `hoy` y `materias` salieron con la Enmienda 7: lo que quedó guardado con
   // esos tipos se descarta al leer, que es exactamente lo que tiene que pasar.
 ];

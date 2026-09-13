@@ -80,7 +80,8 @@ export function BarraSuperior({
         como en el software de las capturas. Van juntos y empujados a la
         derecha: separados, la institución quedaría flotando en el medio.
       */}
-      <div className="ml-auto flex items-center" style={{ gap: 12 }}>
+      {/* No se encoge: con una miga larga se recorta la miga, no la institución. */}
+      <div className="ml-auto flex items-center" style={{ gap: 12, flexShrink: 0 }}>
         {/*
           `I-04`: el atajo se muestra **dentro del control que dispara**, no en un
           tooltip. Y `P-07`: el atajo no elimina su camino visible — el mismo
@@ -91,6 +92,7 @@ export function BarraSuperior({
           aria-keyshortcuts="Meta+K Control+K"
           className="hidden lg:flex items-center gap-2"
           style={{
+            flexShrink: 0,
             background: "var(--muted)",
             border: ".5px solid var(--border)",
             borderRadius: "var(--radius-pildora)",

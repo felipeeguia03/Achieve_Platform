@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActivacionModoExamen } from "@/components/screens/activacion-modo-examen";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
+import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { getEscenario, escenarioUX07Desde } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { enviar } from "@/lib/client/api";
@@ -40,6 +42,11 @@ export function VistaDeActivacionDeExamen({ consulta }: PropsDeSuperficie) {
   const { respuesta, reintentar } = useSuperficie<ActivacionExamenProps>(ruta, {
     omitir: !!escenario,
   });
+
+  // ADR-088 · Enm. 8: la ficha dice de qué materia es — *Modo Examen · Análisis II*.
+  useMigaDelObjeto(
+    respuesta.estado === "OK" ? `Modo Examen · ${nombreDeObjeto(respuesta.datos.materia)}` : null,
+  );
 
   if (escenario) {
     const id = escenarioUX07Desde(escenario) ?? "FX-EXAM-BASE";

@@ -26,7 +26,7 @@
  */
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, Library, PanelLeft, PlayCircle, Sun } from "lucide-react";
+import { CalendarRange, Library, PanelLeft, PlayCircle, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
 import type { NodoId } from "@/lib/navigation/surfaces";
@@ -42,9 +42,8 @@ import { t } from "@/lib/content/es-AR";
 const ICONOS: Partial<Record<NodoId, typeof Sun>> = {
   UX01: Sun,
   UX02_INDICE: Library,
-  UX06: ClipboardList,
+  CALENDARIO: CalendarRange,
   FORMACION: PlayCircle,
-  UX07: CalendarDays,
 };
 
 export function Item({

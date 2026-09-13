@@ -5,6 +5,8 @@ import { useConsulta, type PropsDeSuperficie } from "./consulta";
 import { useRouter } from "next/navigation";
 import { ProgresoBitacora } from "@/components/screens/progreso-bitacora";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
+import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
@@ -31,6 +33,14 @@ export function VistaDeProgreso({ consulta }: PropsDeSuperficie) {
   const cursada = params.get("cursada");
   const ruta = cursada ? `/api/progreso?cursada=${encodeURIComponent(cursada)}` : "/api/progreso";
   const { respuesta, reintentar } = useSuperficie<ProgresoProps>(ruta, { omitir: !!escenario });
+
+  /*
+    ADR-088 · Enm. 8: la ficha dice de qué materia es — *Progreso · Análisis II*.
+    La materia es lo que va antes del primer ` · ` de `contexto`: la proyección lo
+    arma como `materia · unidad` (`proyeccion-progreso.ts`).
+  */
+  const materia = respuesta.estado === "OK" ? respuesta.datos.contexto.split(" · ")[0]?.trim() : "";
+  useMigaDelObjeto(materia ? `Progreso · ${nombreDeObjeto(materia)}` : null);
 
   if (escenario) {
     const id = escenarioDesde(escenario, "progreso") ?? "FX-LOCAL-PROG-VALIDATED";

@@ -11,10 +11,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
  */
 
 const push = vi.fn();
+const replace = vi.fn();
 let rutaActual = "/hoy";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ push, replace }),
   usePathname: () => rutaActual.split("?")[0],
   useSearchParams: () => new URLSearchParams(rutaActual.split("?")[1] ?? ""),
 }));
@@ -68,6 +69,7 @@ async function montar() {
 beforeEach(() => {
   window.localStorage.clear();
   push.mockClear();
+  replace.mockClear();
   rutaActual = "/hoy";
 });
 
@@ -187,15 +189,23 @@ describe("activar y cerrar", () => {
     expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-3");
   });
 
-  it("volver a tocarla la minimiza: el parámetro se va, el objeto queda", async () => {
+  /**
+   * ⚠️ **Cambió con la Enmienda 9, al estilo del dock de macOS.** Tocar la
+   * ficha de una ventana desplegada la minimizaba; ahora **no hace nada** si
+   * está adelante, y la trae al frente si está atrás. Minimizar es sólo el
+   * botón de la ventana.
+   */
+  it("volver a tocarla **no la minimiza** — Enmienda 9", async () => {
     sembrar(3);
     rutaActual = "/hoy?abierto=materia:ce-2";
     await montar();
 
     fireEvent.click(screen.getAllByRole("tab")[1] as HTMLElement);
-    expect(push).toHaveBeenCalledWith("/hoy");
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
     expect(screen.getAllByRole("tab")).toHaveLength(3);
   });
+
 
   it("con el panel desplegado, **el activo es el del panel** y no el de la ruta", async () => {
     sembrar(3);
@@ -272,13 +282,19 @@ describe("activar y cerrar", () => {
     expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-1%2Cmateria%3Ace-3");
   });
 
-  it("volver a tocar una desplegada la baja, y las otras se quedan", async () => {
+  /**
+   * ⚠️ **Enmienda 9.** Desplegada pero atrás, tocarla la **trae al frente** —
+   * como el dock de macOS— y las otras se quedan. Es `replace`: cambiar el
+   * apilamiento no es navegar.
+   */
+  it("tocar una desplegada de atrás la trae al frente, y las otras se quedan", async () => {
     sembrar(3);
     rutaActual = "/hoy?abierto=materia:ce-1,materia:ce-3";
     await montar();
 
     fireEvent.click(screen.getAllByRole("tab")[0] as HTMLElement);
-    expect(push).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-3");
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledWith("/hoy?abierto=materia%3Ace-3%2Cmateria%3Ace-1");
     expect(screen.getAllByRole("tab")).toHaveLength(3);
   });
 

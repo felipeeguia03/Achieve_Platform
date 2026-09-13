@@ -146,17 +146,24 @@ describe("el menú lateral y la cuenta", () => {
   });
 
   /**
-   * ⚠️ **Sin «Crear organización» ni «Administrar cuenta».** El estudiante tiene
-   * una sola institución, que decide el padrón, y no hay cuenta que administrar
-   * desde acá (ADR-039). La campanita vive en su propio componente, con avisos
-   * simulados y sólo en la demo (ADR-097 Enm. 1, `tests/avisos.test.tsx`).
+   * ⚠️ **Sin «Crear organización».** El estudiante tiene una sola institución,
+   * que decide el padrón. «Administrar cuenta» llegó con ADR-097 Enm. 2, pero
+   * **sin agregar correos ni eliminar la cuenta**: quién entra lo decide el
+   * padrón por email (ADR-039) y el borrado espera a ADR-006. La campanita vive
+   * en su propio componente (ADR-097 Enm. 1, `tests/avisos.test.tsx`).
    */
   it("la cuenta no promete lo que Achieve no tiene", () => {
     const cuenta = LEER("components/shell/cuenta.tsx");
-    // Se mira lo que se dibuja y lo que se importa, no los comentarios: el de
-    // arriba del componente explica justamente por qué no están.
-    expect(cuenta).not.toMatch(/>\s*(Crear organizaci|Administrar cuenta)/);
+    expect(cuenta).not.toMatch(/>\s*Crear organizaci/);
     expect(cuenta).not.toMatch(/import \{[^}]*\bBell\b/);
+    expect(cuenta).toContain('t("CUENTA.ADMINISTRAR")');
+
+    const modal = LEER("components/shell/administrar-cuenta.tsx");
+    const copy = LEER("lib/content/es-AR.ts");
+    for (const prohibido of [/Eliminar cuenta/i, /Agregar (una dirección de )?correo/i]) {
+      expect(copy).not.toMatch(prohibido);
+      expect(modal).not.toMatch(new RegExp(`>\\s*${prohibido.source}`, "i"));
+    }
   });
 
   it("las iniciales salen del email, que es lo único que hay", () => {

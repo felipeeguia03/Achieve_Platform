@@ -343,7 +343,6 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
   it("hay tantas ventanas como fichas desplegadas, y ninguna tapa la pantalla de atrás", () => {
     // El dominio sabe manejar una lista, no una clave.
     expect(dominio).toMatch(/export function desplegar/);
-    expect(dominio).toMatch(/export function alternarDespliegue/);
     expect(dominio).toMatch(/export function rutaConPaneles/);
 
     // Y el componente dibuja una por cada una.
@@ -416,9 +415,8 @@ describe("ADR-088 · el espacio de trabajo cumple los seis requisitos", () => {
     expect(movimiento).toMatch(/export function guardarEnLaFicha/);
     // El gesto pasa por la animación y minimiza en su callback.
     expect(panel).toMatch(/guardarEnLaFicha\(clave, \(\) => minimizarPanel\(clave\)\)/);
-    // Y la barra hace lo mismo: minimizar desde la ficha no puede verse distinto
-    // de minimizar desde la ventana, porque es el mismo gesto.
-    expect(barra).toMatch(/guardarEnLaFicha\(/);
+    // Y la barra **no minimiza** — Enmienda 9: tocar la ficha sólo muestra.
+    expect(barra).not.toMatch(/guardarEnLaFicha\(|minimizarPanel/);
 
     /*
       ⚠️ **Y si la animación se cancela, igual se minimiza.** Con sólo
