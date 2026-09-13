@@ -35,7 +35,11 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # cinco de la Fase B6.14 faltaban, y `curriculum_requirement` → `course` bastaba
 # para dejar el verificador sin correr (roadmap.md §0.2).
 limpiar_mundo() {
-  q "delete from class_marker; \
+  q "delete from class_recording_tag; \
+   delete from class_recording; \
+   delete from class_attachment; \
+   delete from class_note_entry; \
+   delete from class_marker; \
    delete from student_class_session; \
    delete from requirement_declaration; \
    delete from whatsapp_consent; \
@@ -1526,6 +1530,73 @@ corre "insert into student_class_session (institution_id,student_id,course_enrol
   && ok "abrir clases no crea clases dictadas" || mal "apareció una class_session"
 
 corre "delete from class_marker; delete from student_class_session;"
+
+echo "→ ADR-099 · lo que se guarda de una clase: apuntes, material, grabaciones y etiquetas"
+
+SC=c9000000-0000-0000-0000-000000000099
+corre "insert into student_class_session (id,institution_id,student_id,course_enrollment_id) values ('$SC','$A','a5000000-0000-0000-0000-000000000001','$CLA');"
+
+corre "insert into class_note_entry (institution_id,student_class_session_id,body,elapsed_seconds,idempotency_key) values ('$A','$SC','bus de datos',12,'n1');" \
+  && ok "una entrada de apuntes entra" || mal "no entró la entrada de apuntes"
+if corre "insert into class_note_entry (institution_id,student_class_session_id,body,idempotency_key) values ('$A','$SC','otra','n1');"; then
+  mal "la misma clave de apunte entró dos veces"
+else
+  ok "Enter repetido (misma clave) no duplica en la base"
+fi
+if corre "insert into class_note_entry (institution_id,student_class_session_id,body,idempotency_key) values ('$A','$SC','   ','n2');"; then
+  mal "entró un apunte vacío"
+else
+  ok "un apunte vacío se rechaza"
+fi
+
+corre "insert into class_attachment (institution_id,student_class_session_id,kind,title,url) values ('$A','$SC','LINK','Campus','https://campus.edu/tp');" \
+  && ok "un link entra" || mal "no entró el link"
+if corre "insert into class_attachment (institution_id,student_class_session_id,kind,title,url,storage_key,size_bytes) values ('$A','$SC','LINK','x','https://a.b','k',10);"; then
+  mal "entró un material con link y archivo a la vez"
+else
+  ok "link y archivo a la vez se rechaza"
+fi
+if corre "insert into class_attachment (institution_id,student_class_session_id,kind,title,url) values ('$A','$SC','LINK','x','javascript:alert(1)');"; then
+  mal "entró un link javascript:"
+else
+  ok "un link que no es http(s) se rechaza"
+fi
+if corre "insert into class_attachment (institution_id,student_class_session_id,kind,title,storage_key,size_bytes) values ('$A','$SC','FILE','grande','k-grande',26214401);"; then
+  mal "entró un archivo de más de 25 MB"
+else
+  ok "un archivo de más de 25 MB se rechaza"
+fi
+
+corre "insert into class_recording (id,institution_id,student_class_session_id,storage_key,mime_type,size_bytes,duration_seconds,started_at_seconds,idempotency_key) values ('c9100000-0000-0000-0000-000000000001','$A','$SC','$A/$SC/g/grabacion.webm','audio/webm',5000,600,0,'g1');" \
+  && ok "una grabación entra" || mal "no entró la grabación"
+if corre "insert into class_recording (institution_id,student_class_session_id,storage_key,mime_type,size_bytes,duration_seconds,started_at_seconds,idempotency_key) values ('$A','$SC','k2','audio/webm',5000,0,0,'g2');"; then
+  mal "entró una grabación de 0 segundos"
+else
+  ok "una duración fuera de 1…14 400 s se rechaza"
+fi
+corre "insert into class_recording_tag (institution_id,class_recording_id,label,at_seconds) values ('$A','c9100000-0000-0000-0000-000000000001','Ejercicio 3',375);" \
+  && ok "una etiqueta entra" || mal "no entró la etiqueta"
+if corre "insert into class_recording_tag (institution_id,class_recording_id,label) values ('$A','c9100000-0000-0000-0000-000000000001','');"; then
+  mal "entró una etiqueta vacía"
+else
+  ok "una etiqueta vacía se rechaza"
+fi
+
+# La lectura del repositorio: por institución y **uniendo con la clase del estudiante**.
+[ "$(q "select count(*) from class_recording r join student_class_session c on c.id=r.student_class_session_id where r.institution_id='$A' and c.student_id='$OTRO';" | tr -d '[:space:]')" = "0" ] \
+  && ok "otro estudiante no alcanza la grabación" || mal "otro estudiante vio la grabación"
+[ "$(q "select count(*) from class_note_entry e join student_class_session c on c.id=e.student_class_session_id where e.institution_id='$B';" | tr -d '[:space:]')" = "0" ] \
+  && ok "B no alcanza los apuntes de A" || mal "B vio los apuntes de A"
+
+# Borrar la grabación se lleva sus etiquetas y deja los apuntes.
+corre "delete from class_recording where id='c9100000-0000-0000-0000-000000000001';"
+[ "$(q "select (select count(*) from class_recording_tag) || '-' || (select count(*) from class_note_entry where student_class_session_id='$SC');" | tr -d '[:space:]')" = "0-1" ] \
+  && ok "borrar la grabación se lleva las etiquetas y deja los apuntes" || mal "borrar la grabación tocó otra cosa"
+
+[ "$(q "select count(*) from storage.buckets where id in ('clase-audio','clase-material') and public = false;" | tr -d '[:space:]')" = "2" ] \
+  && ok "los dos buckets de la clase existen y son privados" || mal "falta un bucket de la clase o es público"
+
+corre "delete from class_recording_tag; delete from class_recording; delete from class_attachment; delete from class_note_entry; delete from class_marker; delete from student_class_session;"
 
 limpiar_mundo
 ok "limpiado"

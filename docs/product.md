@@ -111,6 +111,10 @@ es exactamente la deriva de vocabulario).
 | **AcademicGoal** | Objetivo de semestre, materia o examen |
 | **StudentClassSession** | **La clase que el estudiante abre** mientras cursa: de una cursada, con apuntes y marcas. En la UI, *«clase»*. ⚠️ **No es `ClassSession`**, que es la clase dictada de la comisión ([ADR-098](decisions.md#adr-098)) |
 | **ClassMarker** | Una marca de un toque durante la clase —`QUESTION`, `IMPORTANT`, `ASSESSMENT`, `REVIEW`— con su momento. **Señalador privado**: no es un reporte de clase (`class_event_record`) ni voz de la cátedra |
+| **ClassNoteEntry** | Una entrada de apuntes: lo que el estudiante escribe entre dos Enter, con el momento de la clase. Reemplaza el texto único de ADR-098 ([ADR-099](decisions.md#adr-099)) |
+| **ClassRecording** | Una grabación de audio de la clase, **opt-in**, nunca automática y sin transcripción. Se escucha y se borra. Grabar en un aula real espera a ADR-006 ([ADR-099](decisions.md#adr-099)) |
+| **ClassRecordingTag** | Una etiqueta de texto sobre una grabación, en un segundo o para la grabación entera. **No es una marca** |
+| **ClassAttachment** | Un archivo o link que el estudiante guardó de su clase. **No es `Evidence`** ni material de cátedra |
 
 ### 3.4 Entidades de ejecución — el loop diario
 

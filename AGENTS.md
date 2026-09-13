@@ -284,7 +284,11 @@ de vocabulario es el anti-patrón `A-04`.
 | `CourseEnrollment` | materia *(en código; en UI se dice "materia")* |
 | `Operador` | coach, tutor, mentor — **ver [ADR-003](docs/decisions.md#adr-003)** |
 | `StudentClassSession` | grabación, sesión de estudio *(en UI se dice "clase")* — **ver [ADR-098](docs/decisions.md#adr-098)** |
-| `ClassMarker` | etiqueta, tag, nota *(en UI se dice "marca")* |
+| `ClassMarker` | etiqueta, tag, nota *(en UI se dice "marca"; "etiqueta" es de una grabación)* |
+| `ClassRecording` | transcripción, clase grabada *(en UI se dice "grabación")* — **ver [ADR-099](docs/decisions.md#adr-099)** |
+| `ClassRecordingTag` | marca, tag *(en UI se dice "etiqueta")* |
+| `ClassAttachment` | entrega, evidencia *(en UI se dice "material de la clase": no es `Evidence`)* |
+| `ClassNoteEntry` | nota *(en UI, "apunte")* |
 | apuntes | notas *(lo que el estudiante escribe durante la clase)* |
 
 Glosario completo: `docs/product.md` §3.

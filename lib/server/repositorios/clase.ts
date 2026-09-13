@@ -2,7 +2,6 @@ import "server-only";
 
 import type { ClaseFila, MarcaFila, RepositorioDeClases } from "../servicios/clase";
 import type { ContextoDeClase } from "../servicios/proyeccion-clase";
-import { numeroDeUnidad } from "../servicios/proyeccion-tablero";
 import { clienteDeServicio } from "../supabase";
 
 /**
@@ -12,15 +11,15 @@ import { clienteDeServicio } from "../supabase";
  * ajena no se lee y después se descarta — no se lee. Para quien pregunta, la
  * clase de otro **no existe**, y la ruta contesta `404`.
  *
- * ⚠️ **No toca `class_session` para escribir.** La lee sólo para decir la unidad
- * de la última clase dada, que es lo que ya muestra Hoy.
+ * ⚠️ **No toca `class_session` para escribir.** La lee sólo para ubicar la unidad
+ * de la clase (ADR-099 §8).
  */
 
 /** La violación de unicidad de Postgres: la base ganó una carrera. */
 const UNICIDAD = "23505";
 
 const COLUMNAS_CLASE =
-  "id, student_id, course_enrollment_id, class_schedule_block_id, scheduled_start, scheduled_end, status, started_at, ended_at, notes, notes_updated_at";
+  "id, student_id, course_enrollment_id, class_schedule_block_id, scheduled_start, scheduled_end, status, started_at, ended_at";
 const COLUMNAS_MARCA = "id, student_class_session_id, marker_type, elapsed_seconds, detail, idempotency_key, created_at";
 
 function aClase(f: Record<string, unknown>): ClaseFila {
@@ -34,8 +33,6 @@ function aClase(f: Record<string, unknown>): ClaseFila {
     estado: f.status as ClaseFila["estado"],
     iniciadaEn: f.started_at as string,
     terminadaEn: (f.ended_at as string | null) ?? null,
-    apuntes: (f.notes as string | null) ?? null,
-    apuntesGuardadosEn: (f.notes_updated_at as string | null) ?? null,
   };
 }
 
@@ -132,18 +129,6 @@ const escrituras: RepositorioDeClases = {
     return aClase(data);
   },
 
-  async guardarApuntes(institutionId, claseId, apuntes, ahora) {
-    const { data, error } = await clienteDeServicio()
-      .from("student_class_session")
-      .update({ notes: apuntes, notes_updated_at: ahora })
-      .eq("institution_id", institutionId)
-      .eq("id", claseId)
-      .select(COLUMNAS_CLASE)
-      .single();
-    if (error) throw new Error(`No se pudieron guardar los apuntes: ${error.message}`);
-    return aClase(data);
-  },
-
   async terminar(institutionId, claseId, ahora) {
     // Compare-and-swap: el estado esperado va en el `WHERE`.
     const { data, error } = await clienteDeServicio()
@@ -232,7 +217,7 @@ const uno = <T>(x: Uno<T>): T | null => (Array.isArray(x) ? (x[0] ?? null) : x);
  * Lo que la pantalla dice arriba: materia, comisión, docente, aula y la unidad
  * de la última clase dada. **Cada una `null` si no se sabe.**
  */
-async function contextoDe(institutionId: string, clase: ClaseFila, hoy: string): Promise<ContextoDeClase> {
+async function contextoDe(institutionId: string, clase: ClaseFila, fecha: string): Promise<ContextoDeClase> {
   const db = clienteDeServicio();
 
   const cursada = await db
@@ -248,47 +233,51 @@ async function contextoDe(institutionId: string, clase: ClaseFila, hoy: string):
   };
   const oferta = uno(fila.oferta);
 
-  let aula: string | null = null;
-  let horarioEstimado: boolean | null = null;
-  if (clase.bloqueId) {
-    const bloque = await db
-      .from("class_schedule_block")
-      .select("room, source_type")
-      .eq("institution_id", institutionId)
-      .eq("id", clase.bloqueId)
-      .maybeSingle();
-    if (bloque.error) throw new Error(`No se pudo leer el bloque: ${bloque.error.message}`);
-    const b = bloque.data as { room: string | null; source_type: string } | null;
-    if (b) {
-      aula = b.room;
-      horarioEstimado = b.source_type === "inference";
-    }
-  }
+  // Los bloques de la semana, de los dos dueños posibles (ADR-083). Dan el aula
+  // y el orden que usa la simulación del tipo de clase (ADR-099 §7).
+  const bloques = await db
+    .from("class_schedule_block")
+    .select("id, day_of_week, start_time, room, source_type")
+    .eq("institution_id", institutionId)
+    .or(`offering_id.eq.${fila.offering_id},course_enrollment_id.eq.${clase.cursadaId}`);
+  if (bloques.error) throw new Error(`No se pudieron leer los bloques: ${bloques.error.message}`);
+  const semana = ((bloques.data ?? []) as Array<{
+    id: string;
+    day_of_week: number;
+    start_time: string;
+    room: string | null;
+    source_type: string;
+  }>).sort(
+    // La semana de cursado empieza el lunes: el domingo (`0`) va al final.
+    (x, y) => (x.day_of_week + 6) % 7 - (y.day_of_week + 6) % 7 || x.start_time.localeCompare(y.start_time),
+  );
+  const bloque = clase.bloqueId ? semana.find((b) => b.id === clase.bloqueId) : undefined;
 
-  // La última clase dada con temas. Una futura no se dio (ADR-094).
+  // Las clases dictadas hasta ese día, con sus temas. **Sólo se leen** (ADR-094):
+  // la de esa fecha es un hecho; la última anterior da la estimación.
   const dadas = await db
     .from("class_session")
-    .select("session_date, class_session_topic(topic:topic_id(code, sequence))")
+    .select("session_date, class_session_topic(topic_id)")
     .eq("offering_id", fila.offering_id)
-    .lte("session_date", hoy)
+    .lte("session_date", fecha)
     .order("session_date", { ascending: false })
-    .limit(20);
+    .limit(30);
   if (dadas.error) throw new Error(`No se pudieron leer las clases dadas: ${dadas.error.message}`);
-  const conTemas = ((dadas.data ?? []) as unknown as Array<{
-    class_session_topic: Array<{ topic: Uno<{ code: string | null; sequence: number | null }> }> | null;
-  }>).find((s) => (s.class_session_topic ?? []).length > 0);
-  const numeros = (conTemas?.class_session_topic ?? [])
-    .map((t) => uno(t.topic))
-    .map((t) => (t ? numeroDeUnidad(t.code, t.sequence) : null))
-    .filter((n): n is number => n !== null);
+  const sesiones = ((dadas.data ?? []) as unknown as Array<{
+    session_date: string;
+    class_session_topic: Array<{ topic_id: string }> | null;
+  }>).map((d) => ({ fecha: d.session_date, temas: (d.class_session_topic ?? []).map((t) => t.topic_id) }));
 
   return {
     materia: uno(oferta?.course ?? null)?.name ?? "",
+    ofertaId: fila.offering_id,
     comision: oferta?.commission ?? null,
     docente: uno(oferta?.instructor ?? null)?.name ?? null,
-    aula,
-    horarioEstimado,
-    unidadDeUltimaClase: numeros.length > 0 ? Math.max(...numeros) : null,
+    aula: bloque?.room ?? null,
+    horarioEstimado: bloque ? bloque.source_type === "inference" : null,
+    bloquesDeLaSemana: semana.map((b) => ({ id: b.id, dia: b.day_of_week })),
+    temasDeEsaFecha: sesiones.filter((x) => x.fecha === fecha).flatMap((x) => x.temas),
+    temasDeLaUltimaDada: sesiones.find((x) => x.fecha < fecha && x.temas.length > 0)?.temas ?? [],
   };
 }
 

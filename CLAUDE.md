@@ -75,7 +75,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
 | Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — veinte filas, **ocho abiertas**, por lo que destraban |
-| **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
+| **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) y [ADR-099](docs/decisions.md#adr-099) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
 | Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
 | Qué decidió el owner el 5 de septiembre | [`docs/respuesta-po-agenda-decisiones-source.md`](docs/respuesta-po-agenda-decisiones-source.md) — **fuente literal**, manda sobre cualquier paráfrasis |
@@ -112,8 +112,24 @@ ni un evento: son filas. Abrir una clase **no** produce `Evidence`, progreso ni 
 Formación) y **doce rutas** bajo `app/(student)`, **nueve superficies**. `CLASE` es nodo sin
 wireframe. Y ADR-094 §5 quedó enmendado: **sólo** la fila en curso o por empezar lleva botón.
 
-⛔ **Sin audio y sin *"¿cómo te quedó?"*.** El audio graba a terceros reales (ADR-006, pregunta en
-`legal-package.md` §5.1); el checkpoint es la dimensión Confianza y espera a la psicopedagoga
+🆕 **Y el mismo día, la segunda vuelta** — [ADR-099](docs/decisions.md#adr-099): pantalla rediseñada,
+**grabación de audio con etiquetas**, apuntes que se guardan **con Enter** (`class_note_entry`),
+material de la clase (archivos y links), franja con comisión/aula/inscriptos **simulados** y las
+unidades de la clase con *"te faltan las unidades 1, 2, 3 y 4"*. La miga es *Materias › materia › clase*.
+
+⚠️ **Grabar no levanta ADR-006.** Opt-in, nunca automática, aviso de permiso al docente, bucket privado,
+borrable, **sin transcripción**. Usarla en un aula real espera a legal (`legal-package.md` §5.1).
+
+⚠️ **Antes de tocar Modo Clase:** `student_class_session.notes` **quedó sin escritor** y `PATCH
+/api/clase` no existe. *"Te faltan"* sale de **`ganttDeMateria`**, la misma derivación que `UX02` — no
+de otra lectura. La unidad «de esta clase» es un hecho sólo si hay `class_session` esa fecha; si no es
+**estimada y lo dice**. Comisión, inscriptos, tipo de clase y el aula que falta salen de
+`lib/server/simulacion/clase.ts` **sólo con `MODO_PRUEBA=1`**: no los migres a columnas.
+
+⚠️ **El único borrado de storage del repo** es el de grabaciones y material (objeto primero, fila
+después). `Evidence` sigue sin borrado.
+
+⛔ **Sin *"¿cómo te quedó?"*.** El checkpoint es la dimensión Confianza y espera a la psicopedagoga
 (`agenda-cierre-psicopedagoga.md` §10). **No crees las columnas antes que su escritor.**
 
 🆕 **Hay modo noche** — [ADR-097](docs/decisions.md#adr-097), 12 de septiembre, que revierte

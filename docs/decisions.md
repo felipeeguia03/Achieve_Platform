@@ -152,6 +152,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-097](#adr-097) | **Modo noche, la cuenta en el topbar y color que identifica** — revierte §12.4 | ✅ `ACCEPTED` *(12 sep 2026 · pedida por el owner · **la tabla de contrastes es un test**)* | [ADR-018](#adr-018), [ADR-088 · Enm. 5](#adr-088-enmienda-5) |
 | [ADR-097 · Enm. 1](#adr-097-enmienda-1) | **La campanita, con avisos simulados** — sólo con `MODO_PRUEBA=1` | 🧪 `ACCEPTED · SIMULADO` *(13 sep 2026 · pedida por el owner · **nada de la lista ocurrió**)* | [ADR-087 · Enm. 3](#adr-087-enmienda-3) |
 | [ADR-098](#adr-098) | **Modo Clase**: la clase que el estudiante abre es suya, no la clase dictada; **sin audio y sin checkpoint** | ✅ `ACCEPTED` *(13 sep 2026 · el owner aceptó las doce recomendaciones · **enmienda ADR-094 §5**)* | El checkpoint (psicopedagoga), el audio (ADR-006 + legal) |
+| [ADR-099](#adr-099) | **Modo Clase, segunda vuelta**: grabación de audio con etiquetas, apuntes que se guardan con Enter, material de la clase, unidades y *cómo venís*, y la miga de la clase | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «quiero que apruebes lo que haga falta» · **enmienda ADR-098** §1, §4 y la tabla de lo que queda afuera)* | Grabar en un aula real (ADR-006 + legal, `legal-package.md` §5.1) |
 
 ---
 
@@ -9528,3 +9529,140 @@ tabla con test; **un estudiante no lee ni escribe la clase de otro** (`404`, en 
 `db-aislamiento.sh`); dos clases activas no entran a la base; finalizar dos veces y marcar dos veces
 con la misma clave no duplican; sin horarios no aparece nada en Hoy; y la clase funciona entera sin
 micrófono, porque no lo pide.
+
+---
+
+## ADR-099 — Modo Clase, segunda vuelta: grabar, etiquetar, apuntar con Enter y saber cómo venís
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **decidido por el owner**
+**Enmienda:** [ADR-098](#adr-098) §1 (la columna de apuntes), §4 (los apuntes), §6 (la miga) y la tabla
+*"Lo que queda afuera"* (la grabación).
+**No levanta:** [ADR-006](#adr-006), [ADR-080](#adr-080), `C01-004`.
+
+### Contexto
+
+El owner recorrió Modo Clase y pidió, textual:
+
+> *"en el apartado de clase no me gusto el diseño, propone otro mucho más profesional, como esta el
+> resto del software. luego quiero que apruebes lo que haga falta para poder grabar sonido y poder
+> etiquetar dichas grabaciones. dsp en los apuntes quiero la opcion de ir haciendo "Enter" y que queden
+> guardados, dsp quiero poder subir pdfs o archivos de la clase o links, abajo quiero que diga la
+> comision de la clase, el aula y la cantidad de estudiantes inscriptos en esa clase, obvio simula
+> todos esos datos. quiero que en algun lado diga las unidades que van a dar, y que puedas saber como
+> venis para esta clase, con ya sea un gannt de contenidos de unidades o "te faltan las unidadaes
+> 1,2,3,4" si es que estan dando la 5. quiero que eso ultimo se tome realmente de las unidades que
+> viene avanzando el chico, que se ven en Materia. por ultimo, en la parte de arriba es decir el
+> "PATH", deberia decir: Materias > Arquitectura de computadoras I > Clase Practica Jueves 18/05"*
+
+ADR-098 había dejado **la grabación afuera** porque un micrófono en un aula graba a terceros. El owner
+la autoriza ahora para el MVP. **Esto es una decisión de producto y no un dictamen legal**: el gate
+de ADR-006 sobre datos reales sigue en pie, y lo que cambia es que el producto ya sabe grabar.
+
+### Decisión
+
+**1. La pantalla se rediseña** con el lenguaje de `UX02`: cabecera con la materia, título *Clase
+práctica · jueves 18/05* y el estado; dos columnas —el trabajo de la clase a la izquierda (apuntes,
+grabaciones, material), lo que se toca y se consulta a la derecha (marcas, unidades, momentos,
+*Finalizar clase*)— y **una franja al pie con comisión, aula e inscriptos**. En móvil las marcas van
+primero. Sigue habiendo **una sola CTA principal** (`CTA-023`).
+
+**2. La grabación de audio existe: `class_recording`.** Las tres condiciones que ADR-098 dejó escritas
+se cumplen:
+
+| Condición | Cómo |
+|---|---|
+| **Es un objeto aparte** | Si falla la grabación o la subida, la clase sigue. Se borra sin tocar apuntes ni marcas |
+| **Bucket privado con URL firmada** | `clase-audio`, como `evidencia`. La clave del objeto la deriva el servidor, con la institución y la clase adentro |
+| **Ninguna transcripción sin ADR** | No hay transcripción, resumen ni temas inferidos. ADR-080 sigue candidato |
+
+- ⛔ **Nunca empieza sola.** La inicia un toque en *Grabar audio*, y **la primera vez de cada clase**
+  la pantalla pide confirmar un aviso: *"Vas a grabar el audio de la clase. Pedile permiso a tu docente
+  y avisá a quienes estén cerca: la grabación puede incluir sus voces."* Sin micrófono, o si el
+  navegador lo niega, **la clase funciona entera**.
+- **Se graba sólo con la clase `ACTIVE`.** Una grabación terminada se escucha y se etiqueta después.
+- **La duración la declara el cliente y el servidor la acota** (`1`…`14 400` s): es un dato del archivo,
+  no un reloj que escribe dominio.
+- **Se puede borrar**, y **es el único borrado de storage del repositorio**. Evidence sigue sin borrado
+  (ADR-006 §3): aquélla es producción del estudiante con reglas de retención abiertas; una grabación es
+  material propio que el estudiante tiene que poder sacar, sobre todo si grabó a alguien sin querer.
+
+**3. Las grabaciones se etiquetan: `class_recording_tag`.** Una etiqueta es **texto corto** (hasta 60
+caracteres) con **un segundo de la grabación opcional**: *"Ejercicio 3"* en el 12:30, o *"Teoría"* para
+la grabación entera. Mientras se graba, *Etiquetar este momento* guarda el segundo; las etiquetas viajan
+con la grabación al subirla. Se sugieren cinco —*Teoría*, *Ejercicio*, *Consigna*, *Posible evaluación*,
+*Repasar*— y **ninguna es un tipo del dominio**: son texto del estudiante.
+
+⚠️ **Una etiqueta no es una marca.** Las marcas (ADR-098 §3) son cuatro tipos cerrados sobre la clase;
+una etiqueta es texto libre sobre un archivo. No se convierten una en otra.
+
+**4. Los apuntes pasan a ser entradas: `class_note_entry`.** Se escribe y **Enter guarda** —Shift+Enter
+hace un salto de línea—. Cada entrada lleva su momento de la clase (calculado por el servidor, `NULL` si
+se escribió con la clase terminada), se edita y se borra. **Enmienda ADR-098 §4**: el autosave del texto
+entero y `PATCH /api/clase` **se retiran**; la columna `student_class_session.notes` **queda, sin
+escritor**, y lo que tenía se copia a una entrada en la migración. Idempotente por `clave`.
+
+**5. Material de la clase: `class_attachment`.** Un archivo (PDF, imagen, Office, texto, hasta 25 MB) en
+el bucket privado `clase-material`, **o** un link `http(s)`. El `CHECK` exige exactamente uno de los dos.
+Se abre con URL firmada y se borra. ⚠️ **No es `Evidence` ni material de cátedra** (`rights_status`,
+ADR-006 §4): es lo que el estudiante guardó de su clase.
+
+**6. La franja del pie: comisión, aula e inscriptos, simulados y rotulados.** El aula es la del bloque
+cuando la tiene (`simular-aulas` sólo escribe bloques `inference`); si falta —un horario de otra fuente, o
+una clase iniciada a mano— se simula. La **comisión** y los **inscriptos** no existen en el schema como
+dato de la clase —la comisión casi siempre es `NULL` (ADR-062) y contar `course_enrollment` en la demo da
+`1`—, así que salen de `lib/server/simulacion/clase.ts`, **sólo con `MODO_PRUEBA=1`**, determinísticos por
+oferta y con el rótulo *Simulado*. Sin la variable, la parte que falta **no se dibuja**. Mismo patrón que
+ADR-097 Enm. 1: **no se migra a columnas**.
+
+**7. El tipo de clase —*teórica* o *práctica*— también es simulado.** El bloque no tiene esa columna;
+`class_session.stream` es de la clase **dictada**. La simulación alterna por el orden de los bloques de la
+semana; una clase iniciada a mano toma el bloque de ese día de la semana, y si no hay, la huella de la
+clase. Sin `MODO_PRUEBA=1` el título dice *Clase* y la miga *Clase jueves 18/05*.
+
+**8. Unidades de esta clase y *cómo venís*.** Una sección de la columna derecha con **todas las unidades
+de la materia en el orden dictado**, la de esta clase señalada, y una línea:
+
+> *Te faltan las unidades 1, 2, 3 y 4* · o · *Venís al día con las unidades anteriores*
+
+| Qué | De dónde sale | Qué es |
+|---|---|---|
+| **El estado de cada unidad** | `estado_de_materia()` — **la misma lectura y el mismo estado que el Gantt de `UX02`** | Hecho |
+| **Qué unidades faltan** | Las anteriores a la de esta clase **sin `criterio_alcanzado`** | Derivado |
+| **La unidad de esta clase** | Si hay una clase dictada **esa fecha** con temas, ésos. Si no, **la que sigue a la última clase dada**, rotulada *estimada por Achieve* | Hecho · o · inferencia rotulada |
+
+⚠️ **Sigue sin inventarse cronograma.** ADR-094 prohibió simular clases futuras porque estiraban el
+Gantt: esto **no escribe `class_session`**, se calcula al leer y lo dice. Y el *"te faltan"* describe
+**actividad registrada, no conocimiento** (ADR-075 §C1): el rótulo aclara que es lo que Materia muestra.
+El dibujo **no usa color por estado** (ADR-085): relleno, trama y contorno, con el estado en palabras.
+
+**9. La miga: `Materias › Arquitectura de computadoras I › Clase práctica · jueves 18/05`.** `CLASE`
+pasa a colgar de `UX02` (y `UX02` de `UX02_INDICE`), y la miga intermedia enlaza a esa materia
+(`/materia?cursada=`). `useMigaDelObjeto` acepta el nombre y el enlace de la miga intermedia.
+**Enmienda ADR-098 §6** en la miga, no en el nodo: `CLASE` sigue sin wireframe.
+
+### Lo que sigue afuera
+
+| Qué | Por qué | Quién |
+|---|---|---|
+| **Grabar en un aula real, en producción** | Es tratar la voz de terceros reales: ADR-006 es bloqueo absoluto, y el despliegue no está autorizado | Owner + asesoría legal — `legal-package.md` §5.1 |
+| **Transcribir, resumir o buscar dentro del audio** | ADR-080 candidato; ningún proveedor autorizado | Owner |
+| **Compartir grabaciones o material con compañeros** | Sería publicar material de cátedra y voces ajenas | Owner + legal |
+| **La unidad confirmada por el estudiante al cerrar** | Sigue siendo P1: necesita su escritor (ADR-098) | P1 |
+| **Comisión e inscriptos reales** | ADR-062 sin construir; el padrón de la comisión lo trae el CRM | CTO |
+
+### Consecuencias
+
+- **Cuatro tablas nuevas y dos buckets.** Las cuatro entran a `limpiar_mundo` en el mismo commit.
+- **El registro sigue en 22 CTAs.** Grabar, etiquetar, apuntar y adjuntar son acciones **dentro** de la
+  clase, como marcar: ninguna navega ni solicita al dominio fuera de ella.
+- **No hay eventos nuevos.** Ninguna de estas acciones es facturable ni entra a la Bitácora, y *"evento
+  nuevo para cada interacción: no está aprobado"*.
+- ⚠️ **Se toca `components/screens/modo-clase.tsx` entero**: lo autoriza este ADR.
+
+### Cómo se verifica
+
+`db-aislamiento.sh`: nadie lee ni borra la grabación, la etiqueta, la entrada ni el material de otro
+estudiante; los `CHECK` rechazan un adjunto con archivo y link a la vez, una etiqueta vacía y una
+duración fuera de rango. En la API, lo ajeno es `404`. En la pantalla: Enter guarda y Shift+Enter no; no
+se graba sin confirmar el aviso; sin micrófono no hay error que bloquee la clase; y la línea *"te
+faltan"* sale del mismo estado que el Gantt de Materia.

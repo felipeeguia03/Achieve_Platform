@@ -20,7 +20,15 @@
 
 import { createContext, useContext, useEffect } from "react";
 
-const Contexto = createContext<((nombre: string | null) => void) | null>(null);
+/**
+ * La miga **del medio**, cuando el objeto abierto cuelga de otro objeto —
+ * [ADR-099](../../docs/decisions.md#adr-099) §9: *Materias › Arquitectura de
+ * computadoras I › Clase práctica jueves 18/05*. El grafo sabe que `CLASE`
+ * cuelga de `UX02`; qué materia es, y a qué URL vuelve, sólo lo sabe la pantalla.
+ */
+export type MigaIntermedia = { etiqueta: string; href: string };
+
+const Contexto = createContext<((nombre: string | null, intermedia?: MigaIntermedia | null) => void) | null>(null);
 
 export const ProveedorDeMigaDelObjeto = Contexto.Provider;
 
@@ -30,11 +38,15 @@ export const ProveedorDeMigaDelObjeto = Contexto.Provider;
  * `null` la deja como está. Al desmontar se limpia, para que volver al índice no
  * arrastre el nombre de la materia anterior.
  */
-export function useMigaDelObjeto(nombre: string | null): void {
+export function useMigaDelObjeto(nombre: string | null, intermedia?: MigaIntermedia | null): void {
   const avisar = useContext(Contexto);
+  // Primitivos en las dependencias: un objeto nuevo en cada render volvería a
+  // avisar sin fin.
+  const etiqueta = intermedia?.etiqueta ?? null;
+  const href = intermedia?.href ?? null;
   useEffect(() => {
     if (!avisar) return;
-    avisar(nombre);
-    return () => avisar(null);
-  }, [avisar, nombre]);
+    avisar(nombre, etiqueta !== null && href !== null ? { etiqueta, href } : null);
+    return () => avisar(null, null);
+  }, [avisar, nombre, etiqueta, href]);
 }

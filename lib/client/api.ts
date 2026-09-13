@@ -183,14 +183,14 @@ export type ResultadoDeEnvio<T> =
   | { estado: "NO_ENCONTRADO" };
 
 /**
- * `metodo` es `POST` salvo que se diga otra cosa: el autosave de los apuntes de
- * Modo Clase es un `PATCH` (ADR-098), y una segunda función igual a ésta con
- * otro verbo sería el mismo manejo de errores escrito dos veces.
+ * `metodo` es `POST` salvo que se diga otra cosa: editar un apunte de Modo Clase
+ * es un `PATCH` y borrarlo un `DELETE` (ADR-099), y una segunda función igual a
+ * ésta con otro verbo sería el mismo manejo de errores escrito dos veces.
  */
 export async function enviar<T>(
   ruta: string,
   cuerpo: unknown,
-  metodo: "POST" | "PATCH" = "POST",
+  metodo: "POST" | "PATCH" | "DELETE" = "POST",
 ): Promise<ResultadoDeEnvio<T>> {
   let token: string | null;
   try {
@@ -241,6 +241,24 @@ export async function subirEvidencia(url: string, contenido: string): Promise<bo
       headers: { "Content-Type": "text/plain" },
       body: contenido,
     });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sube un archivo de Modo Clase —material o grabación— a la URL firmada que
+ * devolvió el servidor ([ADR-099](../../docs/decisions.md#adr-099)).
+ *
+ * Mismo criterio que `subirEvidencia`: vive acá por la regla de cero red de la
+ * presentación, y no manda el token de sesión porque la firma ya es el acceso.
+ * El `Content-Type` importa: es el tipo que el servidor lee del storage al
+ * registrar, y lo compara contra la lista cerrada.
+ */
+export async function subirArchivoDeClase(url: string, archivo: Blob, tipo: string): Promise<boolean> {
+  try {
+    const r = await fetch(url, { method: "PUT", headers: { "Content-Type": tipo }, body: archivo });
     return r.ok;
   } catch {
     return false;

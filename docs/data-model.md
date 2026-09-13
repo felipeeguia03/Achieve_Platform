@@ -778,9 +778,48 @@ CREATE TABLE class_marker (
 );
 ```
 
-⛔ **Sin unidad, sin comprensión declarada y sin audio.** Las tres ausencias son decisiones: la unidad
-llega con quien la escriba, la comprensión espera a la psicopedagoga y el audio a ADR-006. Cuando
-llegue el audio es **otra tabla**.
+⛔ **Sin unidad y sin comprensión declarada.** Las dos ausencias siguen siendo decisiones: la unidad
+llega con quien la escriba y la comprensión espera a la psicopedagoga. El audio llegó con ADR-099, y
+es **otra tabla**, como estaba escrito.
+
+### 8.2 Lo que se guarda de una clase — [ADR-099](decisions.md#adr-099)
+
+Cuatro tablas colgadas de `student_class_session`, con RLS y `institution_id`. ⛔ **Ninguna produce
+`Evidence`, progreso, `Action`s ni eventos.** `student_class_session.notes` **queda sin escritor**: lo
+que tenía se copió a `class_note_entry` en la migración.
+
+```sql
+CREATE TABLE class_note_entry (               -- los apuntes: una fila por Enter
+  student_class_session_id UUID NOT NULL REFERENCES student_class_session(id) ON DELETE CASCADE,
+  body            TEXT NOT NULL,              -- 1…4000, no vacío
+  elapsed_seconds INTEGER,                    -- lo calcula el servidor; NULL = escrito con la clase terminada
+  idempotency_key TEXT NOT NULL, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ,
+  UNIQUE (student_class_session_id, idempotency_key)
+);
+
+CREATE TABLE class_attachment (               -- archivo O link; NO es Evidence ni material de cátedra
+  kind TEXT CHECK (kind IN ('FILE','LINK')), title TEXT NOT NULL,
+  storage_key TEXT UNIQUE, mime_type TEXT, size_bytes INTEGER,   -- FILE: bucket clase-material, ≤ 25 MB
+  url TEXT                                                        -- LINK: sólo http(s)
+);
+
+CREATE TABLE class_recording (                -- ⛔ nunca empieza sola, sin transcripción
+  storage_key TEXT NOT NULL UNIQUE,           -- bucket privado clase-audio, ≤ 50 MB
+  mime_type TEXT NOT NULL, size_bytes INTEGER NOT NULL,           -- los dice el storage, no el cliente
+  duration_seconds INTEGER CHECK (duration_seconds BETWEEN 1 AND 14400),
+  started_at_seconds INTEGER NOT NULL,        -- momento de la clase; lo calcula el servidor
+  idempotency_key TEXT NOT NULL, UNIQUE (student_class_session_id, idempotency_key)
+);
+
+CREATE TABLE class_recording_tag (            -- texto libre sobre un archivo; NO es class_marker
+  class_recording_id UUID NOT NULL REFERENCES class_recording(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,                        -- 1…60
+  at_seconds INTEGER                          -- segundo de la grabación; NULL = la grabación entera
+);
+```
+
+⚠️ **El único borrado de storage del repositorio** es el de estas dos tablas: el objeto primero, la fila
+después. `Evidence` sigue sin borrado (ADR-006 §3).
 
 ---
 

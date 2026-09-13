@@ -935,22 +935,33 @@ export const copy = {
    * ⚠️ **«Apuntes», nunca «notas».** *Nota* es sinónimo prohibido de
    * `Reflection`, y en la facultad además es la calificación.
    */
-  "CLASE.TITULO_ACTIVA": "Clase en curso",
-  "CLASE.TITULO_TERMINADA": "Clase",
+  "CLASE.TITULO": "Clase",
+  /** ADR-099 §7: el tipo es **simulado**. Sin simulación el título es «Clase». */
+  "CLASE.TITULO.TEORICA": "Clase teórica",
+  "CLASE.TITULO.PRACTICA": "Clase práctica",
   "CLASE.EN_CURSO": "En curso",
+  "CLASE.TERMINADA": "Terminada",
   "CLASE.MANUAL": "Iniciada fuera de horario",
-  /** ADR-094 §2: `Un.` es la de la última clase dada, y la pantalla lo dice. */
-  "CLASE.UNIDAD": "Un. {n} · la unidad de la última clase dada",
   /** ADR-094 §3: sin esta nota, un horario simulado se lee como de la facultad. */
   "CLASE.HORARIO_ESTIMADO": "Horario estimado por Achieve, no publicado por la facultad",
-  "CLASE.AULA": "Aula {aula}",
-  "CLASE.COMISION": "Comisión {comision}",
   "CLASE.RELOJ": "Tiempo en clase",
+
+  // Apuntes · ADR-099 §4
   "CLASE.APUNTES": "Apuntes",
-  "CLASE.APUNTES_PLACEHOLDER": "Escribí lo que quieras de la clase…",
-  "CLASE.APUNTES_GUARDADOS": "Guardado",
-  "CLASE.APUNTES_GUARDANDO": "Guardando…",
-  "CLASE.APUNTES_ERROR": "No pudimos guardar tus apuntes. Reintentando…",
+  "CLASE.APUNTES_PLACEHOLDER": "Escribí y apretá Enter para guardar",
+  "CLASE.APUNTES_AYUDA": "Enter guarda · Shift + Enter hace un salto de línea",
+  "CLASE.APUNTES_VACIO": "Todavía no escribiste nada. Cada Enter queda guardado con el momento de la clase.",
+  "CLASE.APUNTES_CANTIDAD": "{n} guardados",
+  "CLASE.APUNTE_GUARDANDO": "Guardando…",
+  "CLASE.APUNTE_ERROR": "No se guardó. Tocá para reintentar",
+  "CLASE.APUNTE_DESPUES": "Después",
+  "CLASE.APUNTE_EDITAR": "Editar apunte",
+  "CLASE.APUNTE_BORRAR": "Borrar apunte",
+  "CLASE.APUNTE_EDITADO": "editado",
+  "CLASE.GUARDAR": "Guardar",
+  "CLASE.CANCELAR": "Cancelar",
+
+  // Marcas · ADR-098 §3
   "CLASE.MARCAR": "Marcar",
   "CLASE.MARCAR_REGLA": "Un toque guarda el momento. Si querés, después contás qué pasó.",
   "CLASE.MARCA.QUESTION": "No entendí",
@@ -964,16 +975,89 @@ export const copy = {
   "CLASE.SIN_MOMENTOS": "Todavía no marcaste ningún momento.",
   "CLASE.DETALLE": "Contá qué pasó",
   "CLASE.DETALLE_PLACEHOLDER": "Opcional",
-  "CLASE.DETALLE_GUARDAR": "Guardar",
+
+  // Grabaciones · ADR-099 §2–§3
+  "CLASE.GRABACIONES": "Grabaciones",
+  "CLASE.GRABACIONES_REGLA": "Opcional. Nunca empieza sola, no se transcribe y la podés borrar cuando quieras.",
+  "CLASE.GRABACIONES_VACIO": "No grabaste esta clase.",
+  "CLASE.GRABAR": "Grabar audio",
+  /** ADR-099 §2: se confirma la primera vez de cada clase. Texto del ADR. */
+  "CLASE.GRABAR_AVISO":
+    "Vas a grabar el audio de la clase. Pedile permiso a tu docente y avisá a quienes estén cerca: la grabación puede incluir sus voces.",
+  "CLASE.GRABAR_CONFIRMAR": "Entendido, grabar",
+  "CLASE.GRABANDO": "Grabando",
+  "CLASE.DETENER": "Detener",
+  "CLASE.ETIQUETAR_MOMENTO": "Etiquetar este momento",
+  "CLASE.ETIQUETA_PLACEHOLDER": "Ej.: Ejercicio 3",
+  "CLASE.ETIQUETA_AGREGAR": "Agregar etiqueta",
+  "CLASE.ETIQUETA_EN": "en {momento}",
+  "CLASE.ETIQUETA_TODA": "toda la grabación",
+  "CLASE.ETIQUETA_BORRAR": "Quitar etiqueta {texto}",
+  "CLASE.SUBIENDO_GRABACION": "Subiendo la grabación…",
+  "CLASE.GRABACION_ERROR": "No se pudo subir la grabación. Sigue en esta pestaña: reintentá.",
+  "CLASE.REINTENTAR": "Reintentar",
+  "CLASE.SIN_MICROFONO": "Este navegador no permite grabar audio. La clase sigue igual.",
+  "CLASE.MICROFONO_DENEGADO": "No diste permiso para usar el micrófono. La clase sigue igual.",
+  "CLASE.GRABACION": "Grabación {n}",
+  "CLASE.GRABACION_META": "{duracion} · empieza en el {momento} de la clase · {tamano}",
+  "CLASE.ESCUCHAR": "Escuchar",
+  "CLASE.BORRAR_GRABACION": "Borrar grabación",
+  "CLASE.BORRAR_CONFIRMAR": "¿Borrar? No se puede deshacer.",
+  "CLASE.BORRAR_SI": "Sí, borrar",
+
+  // Material · ADR-099 §5
+  "CLASE.MATERIAL": "Material de la clase",
+  "CLASE.MATERIAL_REGLA": "PDF, imágenes, documentos o links. Es tuyo: no se comparte con nadie.",
+  "CLASE.MATERIAL_VACIO": "Arrastrá un archivo acá o hacé clic para elegirlo · hasta 25 MB",
+  "CLASE.SUBIR_ARCHIVO": "Subir archivo",
+  "CLASE.AGREGAR_LINK": "Agregar link",
+  "CLASE.LINK_URL": "https://…",
+  "CLASE.LINK_TITULO": "Título (opcional)",
+  "CLASE.LINK_INVALIDO": "El link tiene que empezar con http:// o https://",
+  "CLASE.SUBIENDO": "Subiendo {nombre}…",
+  "CLASE.MATERIAL_ERROR": "No se pudo subir {nombre}.",
+  "CLASE.MATERIAL_TIPO": "Ese tipo de archivo no se puede subir.",
+  "CLASE.MATERIAL_GRANDE": "{nombre} supera los 25 MB.",
+  "CLASE.ABRIR": "Abrir",
+  "CLASE.BORRAR_MATERIAL": "Borrar {titulo}",
+  "CLASE.LINK": "Link",
+
+  // Unidades y cómo venís · ADR-099 §8
+  "CLASE.UNIDADES": "Unidades de la materia",
+  "CLASE.ESTA_CLASE": "Esta clase",
+  "CLASE.UNIDAD_N": "Unidad {n}",
+  /** ⚠️ Inferencia rotulada: ADR-094 prohíbe presentar un cronograma que nadie publicó. */
+  "CLASE.UNIDAD_ESTIMADA": "Estimada por Achieve: la que sigue a la última clase dada",
+  "CLASE.UNIDAD_DICTADA": "Según el libro de temas de esta fecha",
+  "CLASE.TE_FALTAN_UNA": "Te falta la unidad {lista}",
+  "CLASE.TE_FALTAN": "Te faltan las unidades {lista}",
+  "CLASE.AL_DIA": "Venís al día con las unidades anteriores",
+  /** ADR-075 §C1: dice qué mide, no sólo qué no es. */
+  "CLASE.UNIDADES_REGLA": "Es el estado que ves en Materia: trabajo registrado, no comprensión.",
+  "CLASE.UNIDAD.sin_evidencia": "Sin registro",
+  "CLASE.UNIDAD.enviada": "Enviada",
+  "CLASE.UNIDAD.requiere_revision": "En revisión",
+  "CLASE.UNIDAD.criterio_alcanzado": "Criterio alcanzado",
+
+  // La franja del pie · ADR-099 §6
+  "CLASE.PIE": "Datos de la clase",
+  "CLASE.PIE.COMISION": "Comisión",
+  "CLASE.PIE.AULA": "Aula",
+  "CLASE.PIE.INSCRIPTOS": "Inscriptos",
+  "CLASE.PIE.DOCENTE": "Docente",
+  "CLASE.PIE.SIMULADO": "Simulado",
+  "CLASE.PIE.SIMULADO_REGLA": "Comisión e inscriptos simulados para la demo.",
+
+  // Finalizar · CTA-023
   "CLASE.FINALIZAR": "Finalizar clase",
-  "CLASE.FINALIZAR_REGLA": "Tus apuntes y marcas ya están guardados. Después vas a poder seguir editando los apuntes.",
+  "CLASE.FINALIZAR_REGLA": "Lo que escribiste, marcaste, grabaste y subiste ya quedó guardado. Después vas a poder seguir editándolo.",
   "CLASE.FINALIZAR_ERROR": "No pudimos finalizar la clase. Tus apuntes y marcas están guardados: probá de nuevo.",
   /** Acuse persistente (`design-system-capturas.md` §9.4), no un toast. */
   "CLASE.GUARDADA": "Clase guardada",
   "CLASE.DURACION": "Duración",
+  "CLASE.RESUMEN": "Resumen",
   "CLASE.SIN_CLASE_ACTIVA": "No tenés una clase abierta.",
   "CLASE.SIN_CLASE_ACTIVA_REGLA": "Entrá a clase desde Hoy, cuando tengas una en curso, o desde tu materia.",
-  "CLASE.EN_UNA_MATERIA": "Clase de {materia}",
   "MATERIA.TUS_CLASES": "Tus clases",
   /** Sin esta línea se confunden con las clases de la semana o las dictadas. */
   "MATERIA.TUS_CLASES.REGLA": "Las clases que abriste en Achieve, con tus apuntes y tus marcas.",

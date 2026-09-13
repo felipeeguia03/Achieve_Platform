@@ -10,7 +10,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   completarMarca,
-  guardarApuntes,
   iniciarClase,
   marcar,
   terminarClase,
@@ -62,11 +61,6 @@ function mundo(opciones: { carreraEnCrear?: boolean; carreraEnMarca?: boolean } 
       clases.push(c);
       return c;
     },
-    async guardarApuntes(_i, claseId, apuntes, ahora) {
-      const c = clases.find((x) => x.id === claseId)!;
-      Object.assign(c, { apuntes, apuntesGuardadosEn: ahora });
-      return c;
-    },
     async terminar(_i, claseId, ahora) {
       const c = clases.find((x) => x.id === claseId && x.estado === "ACTIVE");
       if (!c) return null;
@@ -105,7 +99,7 @@ function mundo(opciones: { carreraEnCrear?: boolean; carreraEnMarca?: boolean } 
   function fila(p: Partial<ClaseFila> & Pick<ClaseFila, "studentId" | "cursadaId">): ClaseFila {
     return {
       id: `cl-${++n}`, bloqueId: null, horarioDesde: null, horarioHasta: null, estado: "ACTIVE",
-      iniciadaEn: iso(), terminadaEn: null, apuntes: null, apuntesGuardadosEn: null, ...p,
+      iniciadaEn: iso(), terminadaEn: null, ...p,
     };
   }
 
@@ -179,33 +173,7 @@ describe("iniciar una clase", () => {
   });
 });
 
-describe("los apuntes", () => {
-  it("se guardan, y siguen siendo editables con la clase terminada", async () => {
-    const { d } = mundo();
-    const r = await iniciar(d);
-    if (r.estado !== "OK") throw new Error();
-    expect(await guardarApuntes(d, INST, { studentId: ANA, claseId: r.clase.id, apuntes: "Cambio de variables" }))
-      .toMatchObject({ estado: "OK", clase: { apuntes: "Cambio de variables" } });
-    await terminarClase(d, INST, { studentId: ANA, claseId: r.clase.id });
-    expect(await guardarApuntes(d, INST, { studentId: ANA, claseId: r.clase.id, apuntes: "y el jacobiano" }))
-      .toMatchObject({ estado: "OK", clase: { apuntes: "y el jacobiano" } });
-  });
-
-  it("los de otro estudiante no existen", async () => {
-    const { d } = mundo();
-    const r = await iniciar(d, "cur-beto", BETO);
-    if (r.estado !== "OK") throw new Error();
-    expect(await guardarApuntes(d, INST, { studentId: ANA, claseId: r.clase.id, apuntes: "x" })).toEqual({ estado: "NO_ENCONTRADA" });
-  });
-
-  it("un texto por encima del límite técnico se rechaza", async () => {
-    const { d } = mundo();
-    const r = await iniciar(d);
-    if (r.estado !== "OK") throw new Error();
-    expect(await guardarApuntes(d, INST, { studentId: ANA, claseId: r.clase.id, apuntes: "x".repeat(50_001) }))
-      .toEqual({ estado: "DEMASIADO_LARGO" });
-  });
-});
+// Los apuntes por entrada (ADR-099 §4) se prueban en `servicio-clase-material.test.ts`.
 
 describe("terminar", () => {
   it("termina con fecha del servidor y publica ClassSessionEnded", async () => {

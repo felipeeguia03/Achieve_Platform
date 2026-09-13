@@ -5,7 +5,6 @@ import {
   claseActivaDe,
   claseDe,
   clasesDeCursada,
-  guardarApuntesDeClase,
   iniciarClase,
   resolverSesion,
 } from "@/lib/server/composicion";
@@ -101,28 +100,5 @@ export async function POST(request: Request) {
   }
 }
 
-/** `PATCH { clase, apuntes }` — el autosave de los apuntes. */
-export async function PATCH(request: Request) {
-  const s = await sesionDe(request);
-  if ("error" in s) return s.error;
-
-  const cuerpo = (await request.json().catch(() => null)) as { clase?: string; apuntes?: unknown } | null;
-  if (!cuerpo?.clase || typeof cuerpo.apuntes !== "string") {
-    return NextResponse.json({ error: "Faltan `clase` y `apuntes`" }, { status: 400 });
-  }
-  if (!UUID.test(cuerpo.clase)) return noEncontrada();
-
-  const r = await guardarApuntesDeClase(s.estudiante.institutionId, {
-    studentId: s.estudiante.id,
-    claseId: cuerpo.clase,
-    apuntes: cuerpo.apuntes,
-  });
-  switch (r.estado) {
-    case "OK":
-      return NextResponse.json({ guardadosEn: r.clase.apuntesGuardadosEn });
-    case "NO_ENCONTRADA":
-      return noEncontrada();
-    case "DEMASIADO_LARGO":
-      return NextResponse.json({ error: "Los apuntes superan el máximo" }, { status: 400 });
-  }
-}
+// ⚠️ **Ya no hay `PATCH`** (ADR-099 §4): los apuntes son entradas y viven en
+// `/api/clase/apunte`. El texto único de ADR-098 quedó sin escritor.

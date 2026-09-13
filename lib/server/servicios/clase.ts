@@ -16,7 +16,6 @@
 import { canTransition, classSessionTransitions } from "@/lib/domain/state-machines";
 import {
   esTipoDeMarca,
-  MAXIMO_DE_APUNTES,
   MAXIMO_DE_TEXTO_DE_MARCA,
   segundosEntre,
   type TipoDeMarca,
@@ -34,8 +33,6 @@ export interface ClaseFila {
   estado: ClassSessionStatus;
   iniciadaEn: string;
   terminadaEn: string | null;
-  apuntes: string | null;
-  apuntesGuardadosEn: string | null;
 }
 
 export interface MarcaFila {
@@ -65,7 +62,6 @@ export interface RepositorioDeClases {
     institutionId: string,
     datos: { studentId: string; cursadaId: string; bloqueId: string | null; desde: string | null; hasta: string | null },
   ): Promise<ClaseFila | null>;
-  guardarApuntes(institutionId: string, claseId: string, apuntes: string, ahora: string): Promise<ClaseFila>;
   /** Compare-and-swap: sólo si sigue `ACTIVE`. `null` ⇒ no encontró ese estado. */
   terminar(institutionId: string, claseId: string, ahora: string): Promise<ClaseFila | null>;
   marcaPorClave(institutionId: string, claseId: string, clave: string): Promise<MarcaFila | null>;
@@ -153,27 +149,10 @@ export async function iniciarClase(
 }
 
 // ── Apuntes ──────────────────────────────────────────────────────────────────
-
-export type ResultadoDeApuntes =
-  | { estado: "OK"; clase: ClaseFila }
-  | { estado: "NO_ENCONTRADA" }
-  | { estado: "DEMASIADO_LARGO" };
-
-/**
- * Guardar los apuntes. **Editables siempre**, también con la clase terminada:
- * son material del estudiante, no un reporte (ADR-098 §4). El último que llega
- * gana; el cliente manda el texto entero.
- */
-export async function guardarApuntes(
-  d: Dependencias,
-  institutionId: string,
-  pedido: { studentId: string; claseId: string; apuntes: string },
-): Promise<ResultadoDeApuntes> {
-  if (pedido.apuntes.length > MAXIMO_DE_APUNTES) return { estado: "DEMASIADO_LARGO" };
-  const clase = await d.repo.delEstudiante(institutionId, pedido.studentId, pedido.claseId);
-  if (!clase) return { estado: "NO_ENCONTRADA" };
-  return { estado: "OK", clase: await d.repo.guardarApuntes(institutionId, clase.id, pedido.apuntes, d.ahora()) };
-}
+//
+// ⚠️ **Los apuntes ya no son un texto que se guarda entero** (ADR-099 §4): son
+// entradas, y viven en `clase-material.ts`. `student_class_session.notes` quedó
+// sin escritor.
 
 // ── Terminar ─────────────────────────────────────────────────────────────────
 

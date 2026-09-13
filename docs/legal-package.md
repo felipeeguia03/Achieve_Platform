@@ -129,8 +129,14 @@ usar: hoy no hay ni un dato real cargado.
 **Contexto:** [ADR-098](decisions.md#adr-098), 13 de septiembre de 2026. Achieve incorpora **Modo
 Clase**: el estudiante abre una clase de su materia y toma apuntes. El pedido incluye **grabar el audio
 de la clase** con el celular o la notebook, por decisión explícita del estudiante, y más adelante
-transcribirlo. **No lo construimos** hasta tener respuesta a estas preguntas: un audio de clase
-**contiene la voz del docente y de compañeros**, que no son usuarios de Achieve.
+transcribirlo. Un audio de clase **contiene la voz del docente y de compañeros**, que no son usuarios
+de Achieve.
+
+> 🆕 **Actualización, 13 de septiembre de 2026 — [ADR-099](decisions.md#adr-099).** El owner autorizó
+> **construir** la grabación para el MVP: opt-in, nunca automática, con un aviso que pide permiso al
+> docente, bucket privado, **borrable por el estudiante** y **sin transcripción**. Corre sólo sobre la
+> demo local: **no hay despliegue autorizado y ADR-006 sigue siendo bloqueo absoluto**. Las preguntas
+> de abajo siguen abiertas y **deciden si esto puede usarse en un aula real**.
 
 24. ¿Puede un estudiante grabar una clase **con su dispositivo y a través de nuestro producto**? ¿Qué
     cambia si la institución lo autoriza, lo prohíbe o no dice nada?

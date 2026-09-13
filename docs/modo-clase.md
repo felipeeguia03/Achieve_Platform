@@ -83,7 +83,7 @@ commit.
 | `GET /api/clase?clase=<id>` | Una clase, con apuntes y marcas | `200` · `404` si no es suya |
 | `GET /api/clase?cursada=<id>` | Las clases de una materia, **sin apuntes** | `200` · `404` |
 | `POST /api/clase` | Iniciar: `{ cursada, bloque? }` | `201` · `200` (la misma, repetido) · `409` otra activa · `404` |
-| `PATCH /api/clase` | Apuntes: `{ clase, apuntes }` | `200` · `404` |
+| ~~`PATCH /api/clase`~~ | ~~Apuntes: `{ clase, apuntes }`~~ — **retirada por ADR-099 §4** | — |
 | `POST /api/clase/fin` | Finalizar: `{ clase }` | `200` (repetido también) · `404` |
 | `POST /api/clase/marca` | Marcar: `{ clase, tipo, clave, texto? }` | `201` · `200` repetido · `409` clase terminada · `409` clave de otro pedido · `404` |
 | `PATCH /api/clase/marca` | Texto de una marca: `{ marca, texto }` | `200` · `404` |
@@ -134,3 +134,57 @@ nunca `403`**: `403` confirmaría que existe.
   shell; cerrar la pestaña no garantiza el upload, así que se sube por partes.
 - **Grabar se inicia con una acción explícita**, nunca al entrar, y sin permiso de micrófono la clase
   funciona igual.
+
+---
+
+## H. Segunda vuelta — [ADR-099](decisions.md#adr-099), 13 de septiembre de 2026
+
+El owner recorrió la pantalla y pidió otro diseño, grabar y etiquetar audio, apuntes con Enter,
+material, comisión/aula/inscriptos simulados, unidades y *cómo venís*, y la miga de tres niveles. Todo
+construido.
+
+### La pantalla
+
+El lenguaje de `UX02`: cabecera con materia, *Clase práctica* y estado con reloj; a la izquierda
+**Apuntes, Grabaciones y Material**; a la derecha **Marcar, Unidades de la materia, Momentos marcados y
+*Finalizar clase***; al pie la franja **Comisión · Aula · Inscriptos** con el rótulo *Simulado*. En móvil
+el orden es marcas → apuntes → lo demás. `components/screens/modo-clase.tsx` (layout) y
+`components/screens/modo-clase/paneles.tsx` (paneles).
+
+### La API nueva
+
+| Ruta | Qué | Respuestas |
+|---|---|---|
+| `POST /api/clase/apunte` | Enter: `{ clase, texto, clave }` | `201` · `200` repetido · `400` vacío/largo · `404` |
+| `PATCH` · `DELETE /api/clase/apunte` | Editar `{ apunte, texto }` · borrar `{ apunte }` | `200` · `404` |
+| `POST /api/clase/material/firma` | `{ clase, nombre, mime, bytes }` → URL firmada | `200` · `400` tipo/tamaño · `404` |
+| `POST /api/clase/material` | `{ clase, archivo: { clave, nombre } }` ya subido · o `{ clase, link: { url, titulo? } }` | `201` · `200` repetido · `409 NO_SUBIDO` · `400` · `404` |
+| `GET /api/clase/material?material=` · `DELETE` | Abrir (link o firma de lectura) · borrar objeto y fila | `200` · `404` |
+| `POST /api/clase/grabacion/firma` | `{ clase, mime, bytes }` — **sólo con la clase activa** | `200` · `409 CLASE_TERMINADA` · `400` · `404` |
+| `POST /api/clase/grabacion` | `{ clase, clave, idempotencia, duracion, etiquetas }` ya subida | `201` · `200` repetido · `409 NO_SUBIDO` · `400` · `404` |
+| `GET /api/clase/grabacion?grabacion=` · `DELETE` | Escuchar (firma de 1 h) · borrar audio, fila y etiquetas | `200` · `404` |
+| `POST` · `DELETE /api/clase/grabacion/etiqueta` | `{ grabacion, texto, segundo? }` · `{ etiqueta }` | `201`/`200` · `400` · `404` |
+
+### Recorrido verificado en el navegador (13 sep)
+
+Con `estudiante.sintetico`, Chromium con micrófono falso: tres Enter seguidos quedan **en orden**;
+Shift+Enter hace salto de línea; un PDF sube y se lista *PDF · 1 KB*; un link se agrega; *Grabar audio*
+muestra el aviso, confirmar graba, *Etiquetar este momento → Ejercicio* queda en `0:03`, *Detener* sube
+y la grabación se reproduce (`readyState 4`); la miga dice *Materias › Bases de Datos › Clase práctica
+domingo 13/09*; a 390 px no hay scroll horizontal; *Finalizar* muestra el resumen. Sin errores de consola
+ni respuestas ≥ 400.
+
+### Lo que quedó sabido
+
+- **Los apuntes van en fila, de a uno.** Mandados en paralelo, dos Enter seguidos llegaban al revés y el
+  servidor los fechaba en el orden de la red.
+- **Finalizar con el micrófono abierto sube primero la grabación**, porque la firma exige la clase
+  activa.
+- **`db:verify` se corrió con copia y restauración** de `public` y `auth` (`pg_dump --data-only` →
+  `TRUNCATE` → `pg_restore --disable-triggers`, como `supabase_admin`): la demo, incluida la cuenta UCC
+  con el alta completa, quedó con los mismos conteos.
+
+### Sigue afuera
+
+Grabar en un aula real en producción (ADR-006 + [`legal-package.md`](legal-package.md) §5.1),
+transcribir, compartir material o grabaciones, y comisión e inscriptos reales (ADR-062).

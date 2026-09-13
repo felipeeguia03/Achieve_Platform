@@ -15,6 +15,7 @@
  * placeholder" (AGENTS.md §2.7, "omitir, no inventar").
  */
 
+import type { UnidadesDeClase } from "./unidades-de-clase";
 import type { HeroLevel, HeroVariante } from "./precedence";
 import type { NivelOverview, VarianteOverview } from "./overview-precedence";
 import type { NivelPaso, VariantePaso } from "./step-precedence";
@@ -1243,17 +1244,27 @@ export interface ClaseProps {
   terminadaEn: string | null;
   /** *"jue 17 sep"*, en la zona del estudiante. */
   fecha: string;
+  /** *"jueves 18/05"* — el título y la miga ([ADR-099](../../docs/decisions.md#adr-099) §9). */
+  dia: string;
+  /**
+   * Teórica o práctica. ⚠️ **Simulado** (ADR-099 §7), sólo con `MODO_PRUEBA=1`.
+   * `null` ⇒ no se dice: el título queda *Clase · jueves 18/05*.
+   */
+  tipo: "TEORICA" | "PRACTICA" | null;
   /** `HH:MM`. `null` ⇒ la clase se inició a mano. */
   horario: { desde: string; hasta: string } | null;
   /** `true` ⇒ el horario lo estimó Achieve (`inference`). `null` ⇒ no se sabe: el bloque ya no existe. */
   horarioEstimado: boolean | null;
-  aula: string | null;
-  comision: string | null;
   docente: string | null;
-  /** **La unidad de la última clase dada**, no la de hoy (ADR-094 §2). */
-  unidadDeUltimaClase: number | null;
-  apuntes: string;
-  apuntesGuardadosEn: string | null;
+  /**
+   * La franja del pie — ADR-099 §6. Cada `null` **no se dibuja**. `simulado`
+   * ⇒ la comisión o los inscriptos salieron de la simulación, y se rotula.
+   */
+  pie: { comision: string | null; aula: string | null; inscriptos: number | null; simulado: boolean };
+  /** Las unidades de la materia con la de esta clase señalada. `null` ⇒ sin temario. */
+  unidades: UnidadesDeClase | null;
+  /** Las entradas de apuntes, en el orden en que se escribieron (ADR-099 §4). */
+  apuntes: ReadonlyArray<ApunteDeClase>;
   marcas: ReadonlyArray<{
     id: string;
     tipo: "QUESTION" | "IMPORTANT" | "ASSESSMENT" | "REVIEW";
@@ -1264,6 +1275,42 @@ export interface ClaseProps {
   resumen: Record<"QUESTION" | "IMPORTANT" | "ASSESSMENT" | "REVIEW", number>;
   /** `null` mientras está abierta. */
   duracionMinutos: number | null;
+  material: ReadonlyArray<MaterialDeClase>;
+  grabaciones: ReadonlyArray<GrabacionDeClase>;
+}
+
+export interface ApunteDeClase {
+  id: string;
+  texto: string;
+  /** Momento de la clase. `null` ⇒ se escribió con la clase terminada. */
+  segundos: number | null;
+  creadoEn: string;
+  editadoEn: string | null;
+}
+
+/** Un archivo o un link de la clase (ADR-099 §5). **No es `Evidence`.** */
+export interface MaterialDeClase {
+  id: string;
+  tipo: "ARCHIVO" | "LINK";
+  titulo: string;
+  /** Sólo los links. Un archivo se abre con URL firmada, que no viaja acá. */
+  url: string | null;
+  mime: string | null;
+  bytes: number | null;
+  creadoEn: string;
+}
+
+/** Una grabación de audio (ADR-099 §2). Se escucha con URL firmada. */
+export interface GrabacionDeClase {
+  id: string;
+  duracion: number;
+  /** En qué segundo de la clase empezó. */
+  inicioEnClase: number;
+  bytes: number;
+  mime: string;
+  creadaEn: string;
+  /** Ordenadas por segundo; las de la grabación entera (`segundo: null`) primero. */
+  etiquetas: ReadonlyArray<{ id: string; texto: string; segundo: number | null }>;
 }
 
 /**

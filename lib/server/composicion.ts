@@ -91,7 +91,6 @@ import { tableroReal } from "./repositorios/tablero";
 import { clasesReal } from "./repositorios/clase";
 import {
   completarMarca as completarMarcaPuro,
-  guardarApuntes as guardarApuntesPuro,
   iniciarClase as iniciarClasePuro,
   marcar as marcarPuro,
   terminarClase as terminarClasePuro,
@@ -99,11 +98,32 @@ import {
   type Dependencias as DependenciasDeClase,
 } from "./servicios/clase";
 import { proyectarClase, proyectarClaseEnLista } from "./servicios/proyeccion-clase";
+import { materialDeClaseReal } from "./repositorios/clase-material";
+import { almacenDeClaseReal } from "./repositorios/almacenamiento-de-clase";
+import {
+  abrirMaterial as abrirMaterialPuro,
+  anotar as anotarPuro,
+  borrarApunte as borrarApuntePuro,
+  borrarEtiqueta as borrarEtiquetaPuro,
+  borrarGrabacion as borrarGrabacionPuro,
+  borrarMaterial as borrarMaterialPuro,
+  editarApunte as editarApuntePuro,
+  escucharGrabacion as escucharGrabacionPuro,
+  etiquetar as etiquetarPuro,
+  firmarGrabacion as firmarGrabacionPuro,
+  firmarMaterial as firmarMaterialPuro,
+  registrarArchivo as registrarArchivoPuro,
+  registrarGrabacion as registrarGrabacionPuro,
+  registrarLink as registrarLinkPuro,
+  type DependenciasDeMaterial,
+} from "./servicios/clase-material";
+import { datosSimuladosDeClase, simulacionDeClaseActiva } from "./simulacion/clase";
+import type { UnidadDeMateria } from "@/lib/domain/unidades-de-clase";
 import type { ClaseEnLista, ClaseProps } from "@/lib/domain/view-models";
-import { proyectarTablero } from "./servicios/proyeccion-tablero";
-import { fechaEnZona } from "@/lib/domain/zona";
+import { numeroDeUnidad, proyectarTablero } from "./servicios/proyeccion-tablero";
+import { diaDeSemana, fechaEnZona } from "@/lib/domain/zona";
 import type { TableroProps } from "@/lib/domain/view-models";
-import { proyectarMateria } from "./servicios/proyeccion-materia";
+import { ganttDeMateria, proyectarMateria } from "./servicios/proyeccion-materia";
 import { proyectarAccion } from "./servicios/proyeccion-accion";
 import { proyectarCompromiso } from "./servicios/proyeccion-compromiso";
 import { proyectarEvidencia } from "./servicios/proyeccion-evidencia";
@@ -1872,13 +1892,43 @@ const dependenciasDeClase = (): DependenciasDeClase => ({
   ahora: () => new Date().toISOString(),
 });
 
-/** La clase proyectada para su pantalla, con marcas y contexto. */
+/**
+ * Las unidades de la materia **con el mismo estado que el Gantt de `UX02`**
+ * (ADR-099 §8): la misma lectura (`estado_de_materia`) y la misma derivación
+ * (`ganttDeMateria`). Dos fuentes dirían dos cosas del mismo avance.
+ */
+async function unidadesDeCursada(institutionId: string, studentId: string, cursadaId: string): Promise<UnidadDeMateria[]> {
+  const estado = await materiaReal.estadoDeMateria(institutionId, studentId, new Date().toISOString(), cursadaId);
+  if (!estado) return [];
+  const gantt = ganttDeMateria(estado);
+  return gantt.unidades.map((u, i) => {
+    const codigo = estado.unidades[i]?.codigo ?? null;
+    return { id: u.id, numero: numeroDeUnidad(codigo, i + 1), codigo, nombre: u.nombre, estado: u.estado, minutos: u.minutos };
+  });
+}
+
+/** La clase proyectada para su pantalla, con marcas, lo guardado, unidades y contexto. */
 async function proyectar(institutionId: string, clase: ClaseFila, zona: string): Promise<ClaseProps> {
-  const [marcas, contexto] = await Promise.all([
+  const [marcas, contexto, apuntes, material, grabaciones, unidades] = await Promise.all([
     clasesReal.marcasDe(institutionId, clase.id),
-    clasesReal.contextoDe(institutionId, clase, fechaEnZona(Date.now(), zona)),
+    clasesReal.contextoDe(institutionId, clase, fechaEnZona(Date.parse(clase.iniciadaEn), zona)),
+    materialDeClaseReal.apuntesDe(institutionId, clase.id),
+    materialDeClaseReal.materialDe(institutionId, clase.id),
+    materialDeClaseReal.grabacionesDe(institutionId, clase.id),
+    unidadesDeCursada(institutionId, clase.studentId, clase.cursadaId),
   ]);
-  return proyectarClase(clase, marcas, contexto, zona);
+  // ⚠️ **Lo simulado sólo existe en la demo** — ADR-099 §6. Sin `MODO_PRUEBA=1`
+  // la comisión que falta y los inscriptos no se dibujan.
+  const simulado = simulacionDeClaseActiva()
+    ? datosSimuladosDeClase({
+        ofertaId: contexto.ofertaId,
+        claseId: clase.id,
+        bloqueId: clase.bloqueId,
+        semana: contexto.bloquesDeLaSemana,
+        diaDeLaClase: diaDeSemana(fechaEnZona(Date.parse(clase.iniciadaEn), zona)),
+      })
+    : null;
+  return proyectarClase(clase, marcas, contexto, zona, { apuntes, material, grabaciones }, unidades, simulado);
 }
 
 /** La clase activa del estudiante, o `null`. */
@@ -1912,8 +1962,6 @@ export async function clasesDeCursada(
 
 export const iniciarClase = (institutionId: string, pedido: Parameters<typeof iniciarClasePuro>[2]) =>
   iniciarClasePuro(dependenciasDeClase(), institutionId, pedido);
-export const guardarApuntesDeClase = (institutionId: string, pedido: Parameters<typeof guardarApuntesPuro>[2]) =>
-  guardarApuntesPuro(dependenciasDeClase(), institutionId, pedido);
 export const terminarClase = (institutionId: string, pedido: Parameters<typeof terminarClasePuro>[2]) =>
   terminarClasePuro(dependenciasDeClase(), institutionId, pedido);
 export const marcarEnClase = (institutionId: string, pedido: Parameters<typeof marcarPuro>[2]) =>
@@ -1921,3 +1969,42 @@ export const marcarEnClase = (institutionId: string, pedido: Parameters<typeof m
 export const completarMarcaDeClase = (institutionId: string, pedido: Parameters<typeof completarMarcaPuro>[2]) =>
   completarMarcaPuro(dependenciasDeClase(), institutionId, pedido);
 
+// ── Lo que se guarda de una clase · ADR-099 ──────────────────────────────────
+
+const dependenciasDeMaterial = (): DependenciasDeMaterial => ({
+  repo: materialDeClaseReal,
+  clases: clasesReal,
+  almacen: almacenDeClaseReal,
+  ahora: () => new Date().toISOString(),
+  nuevoId: () => crypto.randomUUID(),
+});
+
+type Pedido<F extends (d: DependenciasDeMaterial, i: string, p: never) => unknown> = Parameters<F>[2];
+
+export const anotarEnClase = (i: string, p: Pedido<typeof anotarPuro>) => anotarPuro(dependenciasDeMaterial(), i, p);
+export const editarApunteDeClase = (i: string, p: Pedido<typeof editarApuntePuro>) =>
+  editarApuntePuro(dependenciasDeMaterial(), i, p);
+export const borrarApunteDeClase = (i: string, p: Pedido<typeof borrarApuntePuro>) =>
+  borrarApuntePuro(dependenciasDeMaterial(), i, p);
+export const firmarMaterialDeClase = (i: string, p: Pedido<typeof firmarMaterialPuro>) =>
+  firmarMaterialPuro(dependenciasDeMaterial(), i, p);
+export const registrarArchivoDeClase = (i: string, p: Pedido<typeof registrarArchivoPuro>) =>
+  registrarArchivoPuro(dependenciasDeMaterial(), i, p);
+export const registrarLinkDeClase = (i: string, p: Pedido<typeof registrarLinkPuro>) =>
+  registrarLinkPuro(dependenciasDeMaterial(), i, p);
+export const abrirMaterialDeClase = (i: string, p: Pedido<typeof abrirMaterialPuro>) =>
+  abrirMaterialPuro(dependenciasDeMaterial(), i, p);
+export const borrarMaterialDeClase = (i: string, p: Pedido<typeof borrarMaterialPuro>) =>
+  borrarMaterialPuro(dependenciasDeMaterial(), i, p);
+export const firmarGrabacionDeClase = (i: string, p: Pedido<typeof firmarGrabacionPuro>) =>
+  firmarGrabacionPuro(dependenciasDeMaterial(), i, p);
+export const registrarGrabacionDeClase = (i: string, p: Pedido<typeof registrarGrabacionPuro>) =>
+  registrarGrabacionPuro(dependenciasDeMaterial(), i, p);
+export const escucharGrabacionDeClase = (i: string, p: Pedido<typeof escucharGrabacionPuro>) =>
+  escucharGrabacionPuro(dependenciasDeMaterial(), i, p);
+export const borrarGrabacionDeClase = (i: string, p: Pedido<typeof borrarGrabacionPuro>) =>
+  borrarGrabacionPuro(dependenciasDeMaterial(), i, p);
+export const etiquetarGrabacion = (i: string, p: Pedido<typeof etiquetarPuro>) =>
+  etiquetarPuro(dependenciasDeMaterial(), i, p);
+export const borrarEtiquetaDeGrabacion = (i: string, p: Pedido<typeof borrarEtiquetaPuro>) =>
+  borrarEtiquetaPuro(dependenciasDeMaterial(), i, p);

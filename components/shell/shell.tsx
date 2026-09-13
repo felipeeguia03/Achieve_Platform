@@ -16,12 +16,12 @@
  * se apila es el marco, no el contenido.
  */
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { NavegacionLateral } from "./navegacion-lateral";
 import { BarraSuperior } from "./barra-superior";
 import { PaletaDeComandos } from "./paleta-de-comandos";
 import { migasDe } from "@/lib/navigation/migas";
-import { ProveedorDeMigaDelObjeto } from "./miga-del-objeto";
+import { ProveedorDeMigaDelObjeto, type MigaIntermedia } from "./miga-del-objeto";
 import { ProveedorDeEspacioDeTrabajo } from "./espacio-de-trabajo";
 import { BarraDeObjetos } from "./barra-de-objetos";
 import { PanelDeObjeto } from "./panel-de-objeto";
@@ -37,6 +37,12 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
   // Lo declara ella con `useMigaDelObjeto`, porque el nombre llega en la
   // respuesta de la API y para cuando el Shell renderiza todavía no existe.
   const [objeto, setObjeto] = useState<string | null>(null);
+  // ADR-099 §9: la miga del medio, cuando el objeto cuelga de otro objeto.
+  const [intermedia, setIntermedia] = useState<MigaIntermedia | null>(null);
+  const nombrarObjeto = useCallback((nombre: string | null, medio?: MigaIntermedia | null) => {
+    setObjeto(nombre);
+    setIntermedia(medio ?? null);
+  }, []);
 
   // ⌘K / Ctrl+K. El atajo no reemplaza al control: la topbar sigue siendo
   // clickeable (`P-07`, ningún atajo elimina su camino visible).
@@ -69,7 +75,7 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
           />
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <BarraSuperior migas={migasDe(nodo, objeto)} onAbrirPaleta={() => setPaleta(true)} />
+            <BarraSuperior migas={migasDe(nodo, objeto, intermedia)} onAbrirPaleta={() => setPaleta(true)} />
             <main className="min-w-0 flex-1" style={{ padding: "24px 24px 88px" }}>
               <div style={{ maxWidth: 1120, margin: "0 auto" }}>
                 {/*
@@ -79,7 +85,7 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
                   6 de `CLAUDE.md`).
                 */}
                 <BarraDeSuperficie />
-                <ProveedorDeMigaDelObjeto value={setObjeto}>{children}</ProveedorDeMigaDelObjeto>
+                <ProveedorDeMigaDelObjeto value={nombrarObjeto}>{children}</ProveedorDeMigaDelObjeto>
               </div>
             </main>
 

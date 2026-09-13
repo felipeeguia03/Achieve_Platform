@@ -45,8 +45,10 @@ const padre: Partial<Record<NodoId, NodoId>> = {
   */
   UX08: "UX07",
   UX09: "UX08",
-  // ADR-098: la clase es de una materia, y se vuelve a ella desde Materias.
-  CLASE: "UX02_INDICE",
+  // ADR-099 §9: la clase cuelga **de su materia** — *Materias › Arquitectura de
+  // computadoras I › Clase práctica jueves 18/05*. Qué materia, y a qué URL
+  // vuelve, lo dice la pantalla con `intermedia`.
+  CLASE: "UX02",
 };
 
 /** Las secciones de la barra lateral. **Ninguna tiene padre**, y hay test. */
@@ -99,7 +101,15 @@ export function cadenaDe(nodo: NodoId): NodoId[] {
  *   texto no sería una miga: sería un hueco donde el usuario perdería dónde está
  *   mientras la pantalla carga.
  */
-export function migasDe(nodo: NodoId, etiquetaFinal?: string | null): Miga[] {
+export function migasDe(
+  nodo: NodoId,
+  etiquetaFinal?: string | null,
+  /**
+   * La miga del medio con nombre y enlace propios — ADR-099 §9. Reemplaza a la
+   * del **padre** del nodo; sin ella, el padre queda genérico (*Materia*).
+   */
+  intermedia?: { etiqueta: string; href: string } | null,
+): Miga[] {
   /*
     ⚠️ **La miga del objeto se escribe con mayúscula sólo en la primera letra.**
     Los nombres del Plan 2016 llegan en mayúsculas de la fuente oficial, y
@@ -113,6 +123,9 @@ export function migasDe(nodo: NodoId, etiquetaFinal?: string | null): Miga[] {
 
   const migas = cadena.map((id, i) => {
     const ultima = i === cadena.length - 1 && !agrega;
+    if (intermedia && i === cadena.length - 2 && !agrega) {
+      return { etiqueta: nombreDeObjeto(intermedia.etiqueta.trim()) || etiquetaDeMiga(id), href: intermedia.href };
+    }
     return {
       etiqueta: ultima && propio ? propio : etiquetaDeMiga(id),
       href: ultima ? null : nodos[id].ruta,
