@@ -733,6 +733,55 @@ CREATE TABLE availability (
 );
 ```
 
+### 8.1 Modo Clase — [ADR-098](decisions.md#adr-098)
+
+La clase que **abre el estudiante** mientras cursa. ⛔ **No es `class_session`** (§7): aquélla es la
+clase dictada de la comisión y mueve el Gantt de todos; ésta es de uno solo y no le cambia nada a
+nadie. No produce `Evidence`, progreso, `Action`s ni entradas al ADE.
+
+```sql
+ALTER TABLE course_enrollment
+  ADD CONSTRAINT course_enrollment_id_estudiante_unico UNIQUE (id, student_id);
+
+CREATE TABLE student_class_session (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  student_id     UUID NOT NULL REFERENCES student(id) ON DELETE CASCADE,
+  course_enrollment_id UUID NOT NULL,           -- FK compuesta con student_id: la cursada es suya
+  -- NULL = iniciada a mano. SET NULL: los bloques se regeneran y la clase no se borra por eso
+  class_schedule_block_id UUID REFERENCES class_schedule_block(id) ON DELETE SET NULL,
+  scheduled_start TIME, scheduled_end TIME,     -- COPIA del horario del bloque al entrar
+  status     TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','ENDED')),
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ended_at   TIMESTAMPTZ,                       -- NOT NULL si y sólo si ENDED
+  notes            TEXT,                        -- los apuntes: texto plano, sin versionar
+  notes_updated_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  FOREIGN KEY (course_enrollment_id, student_id) REFERENCES course_enrollment (id, student_id)
+);
+-- Una sola activa por estudiante (ADR-098 §2)
+CREATE UNIQUE INDEX student_class_session_una_activa
+  ON student_class_session (student_id) WHERE status = 'ACTIVE';
+
+-- ⛔ NO es class_event_record (C01-004) ni un product_event por marca.
+CREATE TABLE class_marker (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institution(id) ON DELETE RESTRICT,
+  student_class_session_id UUID NOT NULL REFERENCES student_class_session(id) ON DELETE CASCADE,
+  marker_type    TEXT NOT NULL CHECK (marker_type IN ('QUESTION','IMPORTANT','ASSESSMENT','REVIEW')),
+  elapsed_seconds INTEGER NOT NULL CHECK (elapsed_seconds >= 0),   -- lo calcula el servidor
+  detail         TEXT,                          -- opcional y posterior: marcar no espera a escribir
+  idempotency_key TEXT NOT NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  detail_updated_at TIMESTAMPTZ,
+  UNIQUE (student_class_session_id, idempotency_key)
+);
+```
+
+⛔ **Sin unidad, sin comprensión declarada y sin audio.** Las tres ausencias son decisiones: la unidad
+llega con quien la escriba, la comprensión espera a la psicopedagoga y el audio a ADR-006. Cuando
+llegue el audio es **otra tabla**.
+
 ---
 
 ## 9. Schema — capa de ejecución (el loop diario)

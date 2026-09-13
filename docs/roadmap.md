@@ -4053,7 +4053,7 @@ recomendados"*. Plan, API y recorrido de QA en [`modo-clase.md`](modo-clase.md).
 |---|---|---|
 | 0 | ADR-098, informe, glosario, agendas de la psicopedagoga (§10) y legal (§5.1) | ✅ |
 | 1 | Dominio puro | ✅ |
-| 2 | Migración y aislamiento | ⬜ |
+| 2 | Migración y aislamiento | ✅ |
 | 3 | API y eventos | ⬜ |
 | 4 | Pantalla `/clase` | ⬜ |
 | 5 | Hoy | ⬜ |

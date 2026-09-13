@@ -43,7 +43,11 @@ function migraciones(): string {
 function funcionesVigentes(): Map<string, string> {
   const vigentes = new Map<string, string>();
   for (const fn of migraciones().split(/CREATE OR REPLACE FUNCTION|CREATE FUNCTION/).slice(1)) {
-    vigentes.set(fn.trim().split(/[(\s]/)[0], fn);
+    // El cuerpo termina en su `$$;`. Sin este corte, la última función del
+    // historial se lleva puesta toda migración posterior que no declare
+    // funciones — y el guard lee SQL ajeno como si fuera suyo (ADR-098).
+    const fin = fn.indexOf("$$;");
+    vigentes.set(fn.trim().split(/[(\s]/)[0], fin === -1 ? fn : fn.slice(0, fin));
   }
   return vigentes;
 }

@@ -35,7 +35,9 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # cinco de la Fase B6.14 faltaban, y `curriculum_requirement` → `course` bastaba
 # para dejar el verificador sin correr (roadmap.md §0.2).
 limpiar_mundo() {
-  q "delete from requirement_declaration; \
+  q "delete from class_marker; \
+   delete from student_class_session; \
+   delete from requirement_declaration; \
    delete from whatsapp_consent; \
    delete from elective_option; \
    delete from curriculum_requirement; \
@@ -1453,6 +1455,77 @@ corre "update course_offering set declared_study_min = 5400, declared_study_sour
   && ok "y también en los insumos del reparto: las dos funciones coinciden" || mal "el reparto no la ve"
 
 corre "update course_offering set declared_study_min = null, declared_study_source = null where id='a4000000-0000-0000-0000-000000000001';"
+
+echo "→ ADR-098 · Modo Clase: la clase es del estudiante, y una sola activa"
+
+CLA=a6000000-0000-0000-0000-000000000001   # cursada de a5…01 en A
+DICTADAS_ANTES=$(q "select count(*) from class_session;" | tr -d '[:space:]')
+OTRO=a5000000-0000-0000-0000-000000000098
+corre "insert into student (id,institution_id) values ('$OTRO','$A');
+ insert into course_enrollment (id,institution_id,student_id,offering_id) values ('a6000000-0000-0000-0000-000000000098','$A','$OTRO','a4000000-0000-0000-0000-000000000001');"
+
+corre "insert into student_class_session (id,institution_id,student_id,course_enrollment_id) values ('c9000000-0000-0000-0000-000000000001','$A','a5000000-0000-0000-0000-000000000001','$CLA');" \
+  && ok "una clase entra sin bloque: iniciarla a mano es válido" || mal "no entró una clase sin bloque"
+
+# La FK compuesta: la cursada tiene que ser del mismo estudiante.
+if corre "insert into student_class_session (institution_id,student_id,course_enrollment_id) values ('$A','$OTRO','$CLA');"; then
+  mal "un estudiante abrió una clase sobre la cursada de otro"
+else
+  ok "la cursada de otro estudiante no admite su clase"
+fi
+
+if corre "insert into student_class_session (institution_id,student_id,course_enrollment_id) values ('$A','a5000000-0000-0000-0000-000000000001','$CLA');"; then
+  mal "entraron dos clases activas del mismo estudiante"
+else
+  ok "una segunda clase activa del mismo estudiante se rechaza en la base"
+fi
+
+corre "insert into student_class_session (institution_id,student_id,course_enrollment_id) values ('$A','$OTRO','a6000000-0000-0000-0000-000000000098');" \
+  && ok "otro estudiante sí puede tener la suya activa al mismo tiempo" || mal "la unicidad alcanzó a otro estudiante"
+
+if corre "update student_class_session set status='ENDED' where id='c9000000-0000-0000-0000-000000000001';"; then
+  mal "una clase terminó sin fecha de fin"
+else
+  ok "ENDED sin fecha de fin se rechaza"
+fi
+if corre "insert into student_class_session (institution_id,student_id,course_enrollment_id,scheduled_start) values ('$A','$OTRO','a6000000-0000-0000-0000-000000000098','08:00');"; then
+  mal "entró un horario con inicio y sin fin"
+else
+  ok "el horario copiado va completo o no va"
+fi
+
+corre "insert into class_marker (institution_id,student_class_session_id,marker_type,elapsed_seconds,idempotency_key) values ('$A','c9000000-0000-0000-0000-000000000001','QUESTION',61,'k1');" \
+  && ok "una marca QUESTION entra" || mal "no entró la marca"
+if corre "insert into class_marker (institution_id,student_class_session_id,marker_type,elapsed_seconds,idempotency_key) values ('$A','c9000000-0000-0000-0000-000000000001','QUESTION',62,'k1');"; then
+  mal "la misma clave entró dos veces"
+else
+  ok "la misma clave en la misma clase se rechaza"
+fi
+if corre "insert into class_marker (institution_id,student_class_session_id,marker_type,elapsed_seconds,idempotency_key) values ('$A','c9000000-0000-0000-0000-000000000001','EXAM',1,'k2');"; then
+  mal "entró el tipo EXAM, que no es del vocabulario"
+else
+  ok "EXAM no es un tipo: el vocabulario es ASSESSMENT"
+fi
+if corre "insert into class_marker (institution_id,student_class_session_id,marker_type,elapsed_seconds,idempotency_key) values ('$A','c9000000-0000-0000-0000-000000000001','REVIEW',-1,'k3');"; then
+  mal "una marca entró con tiempo negativo"
+else
+  ok "tiempo negativo se rechaza"
+fi
+
+corre "update student_class_session set status='ENDED', ended_at=now() where id='c9000000-0000-0000-0000-000000000001';" \
+  && ok "terminada con su fin" || mal "no terminó"
+corre "insert into student_class_session (institution_id,student_id,course_enrollment_id) values ('$A','a5000000-0000-0000-0000-000000000001','$CLA');" \
+  && ok "con la anterior terminada, puede abrir otra" || mal "la unicidad cuenta clases terminadas"
+
+# I11: el scoping va en el WHERE.
+[ "$(q "select count(*) from student_class_session where institution_id='$B' and id='c9000000-0000-0000-0000-000000000001';" | tr -d '[:space:]')" = "0" ] \
+  && ok "B no alcanza la clase de A" || mal "B vio la clase de A"
+
+# Una clase no toca la clase dictada ni el progreso.
+[ "$(q "select count(*) from class_session;" | tr -d '[:space:]')" = "$DICTADAS_ANTES" ] \
+  && ok "abrir clases no crea clases dictadas" || mal "apareció una class_session"
+
+corre "delete from class_marker; delete from student_class_session;"
 
 limpiar_mundo
 ok "limpiado"
