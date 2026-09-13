@@ -99,6 +99,23 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
+🆕 **Modo Clase existe** — [ADR-098](docs/decisions.md#adr-098), 13 de septiembre. El estudiante abre
+una clase de su materia (`/clase`), escribe apuntes, marca momentos con un toque —*No entendí*,
+*Importante*, *Posible evaluación*, *Revisar*— y la finaliza. Hoy ofrece *Entrar a clase* en la fila
+en curso y Materia muestra *Tus clases*. Plan, API y QA en [`modo-clase.md`](docs/modo-clase.md).
+
+⚠️ **La clase del estudiante es `student_class_session`, NO `class_session`.** Aquélla es la clase
+dictada y mueve el Gantt de todos. **Una marca no es `class_event_record`** (`C01-004` sigue `OPEN`)
+ni un evento: son filas. Abrir una clase **no** produce `Evidence`, progreso ni `Action`s.
+
+⚠️ **Los números cambiaron:** **22 CTAs** (`CTA-022` y `CTA-023`; `CTA-021` sigue reservada para
+Formación) y **doce rutas** bajo `app/(student)`, **nueve superficies**. `CLASE` es nodo sin
+wireframe. Y ADR-094 §5 quedó enmendado: **sólo** la fila en curso o por empezar lleva botón.
+
+⛔ **Sin audio y sin *"¿cómo te quedó?"*.** El audio graba a terceros reales (ADR-006, pregunta en
+`legal-package.md` §5.1); el checkpoint es la dimensión Confianza y espera a la psicopedagoga
+(`agenda-cierre-psicopedagoga.md` §10). **No crees las columnas antes que su escritor.**
+
 🆕 **Hay modo noche** — [ADR-097](docs/decisions.md#adr-097), 12 de septiembre, que revierte
 `design-system-capturas` §12.4. Sigue al sistema; el botón al pie del menú lateral guarda la elección
 en el navegador.

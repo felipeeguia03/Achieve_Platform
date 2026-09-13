@@ -18,9 +18,10 @@ import {
   TituloDePanel,
 } from "./design-system";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
-import { SUBCOPY, t } from "@/lib/content/es-AR";
+import { SUBCOPY, t, textoDeDuracion, type CopyId } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
-import type { ColumnaFuente, GanttProjection, MateriaProps } from "@/lib/domain/view-models";
+import type { ClaseEnLista, ColumnaFuente, GanttProjection, MateriaProps, TusClases } from "@/lib/domain/view-models";
+import { TIPOS_DE_MARCA } from "@/lib/domain/sesion-de-clase";
 
 /**
  * **El Gantt de preparación** — [ADR-072](../../docs/decisions.md#adr-072).
@@ -281,11 +282,24 @@ export function MateriaCursado({
   onCapturar,
   onVerRegistro,
   onModoExamen,
+  tusClases,
+  onEntrarAClase,
+  onAbrirClase,
 }: MateriaProps & {
   onAvanzar?: () => void;
   onCapturar?: () => void;
   onVerRegistro?: () => void;
   onModoExamen?: () => void;
+  /**
+   * *Tus clases* — [ADR-098](../../docs/decisions.md#adr-098) §9. Llega aparte
+   * de `MateriaProps`, como el tablero de Hoy: si no carga, la materia se
+   * dibuja igual y la sección no está.
+   */
+  tusClases?: TusClases | null;
+  /** `CTA-022`: iniciar una clase de esta materia, o volver a la abierta. */
+  onEntrarAClase?: () => void;
+  /** Abrir una clase de la lista. **Navegación, no CTA**: no solicita nada al dominio. */
+  onAbrirClase?: (clase: ClaseEnLista) => void;
 }) {
   return (
     <div style={{ background: "var(--background)", padding: 16, borderRadius: "var(--radius)" }}>
@@ -379,6 +393,10 @@ export function MateriaCursado({
                 ))}
               </div>
             </div>
+          )}
+
+          {tusClases && (
+            <SeccionTusClases t={tusClases} onEntrar={onEntrarAClase} onAbrir={onAbrirClase} />
           )}
 
           <div
@@ -522,5 +540,86 @@ export function MateriaCursado({
         </div>
       </div>
     </div>
+  );
+}
+
+const COPY_DE_MARCA: Record<(typeof TIPOS_DE_MARCA)[number], CopyId> = {
+  QUESTION: "CLASE.MARCA.QUESTION",
+  IMPORTANT: "CLASE.MARCA.IMPORTANT",
+  ASSESSMENT: "CLASE.MARCA.ASSESSMENT",
+  REVIEW: "CLASE.MARCA.REVIEW",
+};
+
+/**
+ * *Tus clases* — [ADR-098](../../docs/decisions.md#adr-098) §9.
+ *
+ * ⚠️ **Distinta del panel «Clases de la semana»**, que es el horario, y de las
+ * clases dictadas, que son de la cátedra. Éstas las abrió el estudiante: fecha,
+ * duración y cuántas marcas de cada tipo, **derivadas**. Sin apuntes: se leen
+ * adentro.
+ */
+function SeccionTusClases({
+  t: tus,
+  onEntrar,
+  onAbrir,
+}: {
+  t: TusClases;
+  onEntrar?: () => void;
+  onAbrir?: (c: ClaseEnLista) => void;
+}) {
+  return (
+    <section data-tus-clases aria-labelledby="materia-tus-clases" style={tarjeta}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <h2 id="materia-tus-clases" className="eyebrow" style={{ margin: 0 }}>
+          {t("MATERIA.TUS_CLASES")}
+        </h2>
+        {tus.entrada && onEntrar && (
+          <AccionDeObjeto onClick={onEntrar}>
+            {t(tus.entrada === "INICIAR" ? "MATERIA.TUS_CLASES.INICIAR" : "MATERIA.TUS_CLASES.VOLVER")}
+          </AccionDeObjeto>
+        )}
+      </div>
+      <ReglaDeNegocio>{t("MATERIA.TUS_CLASES.REGLA")}</ReglaDeNegocio>
+      {tus.clases.length === 0 ? (
+        <p style={{ ...meta, marginTop: 8 }}>{t("MATERIA.TUS_CLASES.VACIO")}</p>
+      ) : (
+        <ul style={{ marginTop: 8 }}>
+          {tus.clases.map((c) => {
+            const marcas = TIPOS_DE_MARCA.filter((tipo) => c.resumen[tipo] > 0)
+              .map((tipo) => `${c.resumen[tipo]} ${t(COPY_DE_MARCA[tipo])}`)
+              .join(" · ");
+            const cuanto =
+              c.estado === "ACTIVE"
+                ? t("MATERIA.TUS_CLASES.EN_CURSO")
+                : c.duracionMinutos !== null
+                  ? textoDeDuracion(c.duracionMinutos)
+                  : null;
+            const contenido = (
+              <>
+                <span style={{ fontSize: "var(--text-label)", fontWeight: 500 }}>{c.fecha}</span>
+                <span style={meta}>
+                  {[cuanto, marcas || t("MATERIA.TUS_CLASES.SIN_MARCAS")].filter(Boolean).join(" · ")}
+                </span>
+              </>
+            );
+            return (
+              <li key={c.id} className="hairline-b" data-clase-en-lista={c.estado}>
+                {onAbrir ? (
+                  <button
+                    type="button"
+                    onClick={() => onAbrir(c)}
+                    style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", width: "100%", padding: "8px 0", textAlign: "left" }}
+                  >
+                    {contenido}
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", padding: "8px 0" }}>{contenido}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

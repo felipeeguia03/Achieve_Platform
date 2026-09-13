@@ -974,6 +974,14 @@ export const copy = {
   "CLASE.SIN_CLASE_ACTIVA": "No tenés una clase abierta.",
   "CLASE.SIN_CLASE_ACTIVA_REGLA": "Entrá a clase desde Hoy, cuando tengas una en curso, o desde tu materia.",
   "CLASE.EN_UNA_MATERIA": "Clase de {materia}",
+  "MATERIA.TUS_CLASES": "Tus clases",
+  /** Sin esta línea se confunden con las clases de la semana o las dictadas. */
+  "MATERIA.TUS_CLASES.REGLA": "Las clases que abriste en Achieve, con tus apuntes y tus marcas.",
+  "MATERIA.TUS_CLASES.VACIO": "Todavía no abriste ninguna clase de esta materia.",
+  "MATERIA.TUS_CLASES.INICIAR": "Iniciar clase",
+  "MATERIA.TUS_CLASES.VOLVER": "Volver a la clase",
+  "MATERIA.TUS_CLASES.EN_CURSO": "En curso",
+  "MATERIA.TUS_CLASES.SIN_MARCAS": "sin marcas",
   "HOY.CUADRO.CLASE.AHORA": "Ahora",
   "HOY.CUADRO.CLASE.EMPIEZA": "Empieza en {n} min",
   /** `CTA-022`: tres etiquetas, una CTA. */

@@ -1266,6 +1266,19 @@ export interface ClaseProps {
   duracionMinutos: number | null;
 }
 
+/**
+ * *Tus clases* en `UX02` — [ADR-098](../../docs/decisions.md#adr-098) §9.
+ *
+ * ⚠️ **No es el panel de clases de la semana ni las clases dictadas**: son las
+ * que el estudiante abrió. `entrada` es `CTA-022`: *Iniciar clase* sin otra
+ * abierta, *Volver a la clase* si la abierta es de esta materia, `null` si hay
+ * otra abierta de otra materia —ofrecerla terminaría en `409`—.
+ */
+export interface TusClases {
+  clases: ClaseEnLista[];
+  entrada: "INICIAR" | "VOLVER" | null;
+}
+
 /** Una clase en *Tus clases* de `UX02`: **sin apuntes ni marcas**, sólo lo que se lista. */
 export interface ClaseEnLista {
   id: string;

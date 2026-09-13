@@ -73,7 +73,7 @@ commit.
 | 3 | Repository, Service y API · los dos eventos | ✅ |
 | 4 | La pantalla `/clase` | ✅ |
 | 5 | Hoy: la fila en curso lleva *Entrar a clase* | ✅ |
-| 6 | Materia: *Tus clases* | ⬜ |
+| 6 | Materia: *Tus clases* | ✅ |
 
 ### La API
 
@@ -101,6 +101,15 @@ nunca `403`**: `403` confirmaría que existe.
 6. *Finalizar clase*: duración y cantidades.
 7. Materia → *Tus clases*: la clase está. Abrirla: apunte y marcas. Recargar.
 8. Con otro estudiante sintético, `GET /api/clase?clase=<id>` de la primera: `404`.
+
+### Lo que quedó sabido al construirlo
+
+- ⚠️ **`/clase?clase=<id>` de otro estudiante muestra *"No se pudo cargar"*.** La API contesta `404`
+  bien; es `pedir()`, compartido por las nueve superficies, el que no distingue `404` de un error.
+  No hay fuga —no se ve nada ajeno— pero el texto invita a reintentar.
+- ⚠️ **Si el Hero se repliega, Hoy no muestra el tablero** y con él la fila de *Entrar a clase*.
+  Se entra igual desde la materia.
+- ⚠️ **La demo local conserva tres clases sintéticas** de *Bases de Datos*, creadas al recorrerla.
 
 ## F. Riesgos
 
