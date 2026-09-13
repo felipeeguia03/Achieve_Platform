@@ -12,6 +12,7 @@
 
 import type {
   ActionStatus,
+  ClassSessionStatus,
   CommitmentState,
   EvidenceState,
   ExamPreparationStatus,
@@ -209,6 +210,23 @@ export const interventionTransitions: Readonly<
   open: ["acknowledged"],
   acknowledged: ["closed"],
   closed: [],
+} as const;
+
+/**
+ * La clase del estudiante — [ADR-098](../../docs/decisions.md#adr-098).
+ *
+ * `ENDED` es terminal: **no se reabre una clase terminada.** Volver a cursar
+ * esa materia es otra clase, con otra fecha. Lo que sí se edita después
+ * —apuntes, el texto de una marca— no es una transición.
+ *
+ * ⚠️ **El paso del tiempo no lleva a `ENDED`** (AGENTS.md §2.3): la termina el
+ * estudiante, aunque haya pasado el horario del bloque.
+ */
+export const classSessionTransitions: Readonly<
+  Record<ClassSessionStatus, readonly ClassSessionStatus[]>
+> = {
+  ACTIVE: ["ENDED"],
+  ENDED: [],
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -34,6 +34,16 @@ export type CommitmentState =
   | "MISSED"
   | "CLOSED";
 
+/**
+ * El lifecycle de la clase que abre el estudiante — [ADR-098](../../docs/decisions.md#adr-098).
+ *
+ * **Dos estados, a propósito.** El pedido original tenía seis —`STARTED`,
+ * `PROCESSING`, `PROCESSED`, `CLOSED`…— y los cuatro de más describen un
+ * procesamiento (audio, transcripción) que no existe. Un estado que nada
+ * alcanza es una promesa escrita en el enum.
+ */
+export type ClassSessionStatus = "ACTIVE" | "ENDED";
+
 export type EvidenceState =
   | "EXPECTED"
   | "SUBMITTED"
