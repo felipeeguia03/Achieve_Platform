@@ -974,6 +974,12 @@ export const copy = {
   "CLASE.SIN_CLASE_ACTIVA": "No tenés una clase abierta.",
   "CLASE.SIN_CLASE_ACTIVA_REGLA": "Entrá a clase desde Hoy, cuando tengas una en curso, o desde tu materia.",
   "CLASE.EN_UNA_MATERIA": "Clase de {materia}",
+  "HOY.CUADRO.CLASE.AHORA": "Ahora",
+  "HOY.CUADRO.CLASE.EMPIEZA": "Empieza en {n} min",
+  /** `CTA-022`: tres etiquetas, una CTA. */
+  "HOY.CUADRO.CLASE.ENTRAR": "Entrar a clase",
+  "HOY.CUADRO.CLASE.VOLVER": "Volver a la clase",
+  "HOY.CUADRO.CLASE.ABIERTA": "Tenés una clase abierta",
 } as const;
 
 export type CopyId = keyof typeof copy;

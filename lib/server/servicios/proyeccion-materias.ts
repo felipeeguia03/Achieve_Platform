@@ -50,6 +50,11 @@ import type { MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
  */
 export interface BloqueDeCursada {
   cursadaId: string;
+  /**
+   * El id del bloque — ADR-098: entrar a clase desde Hoy copia su horario.
+   * Ausente ⇒ quien lo leyó no lo trae, y la fila no ofrece entrar.
+   */
+  bloqueId?: string;
   dia: number;
   desde: string;
   hasta: string;

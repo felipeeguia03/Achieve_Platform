@@ -4056,7 +4056,7 @@ recomendados"*. Plan, API y recorrido de QA en [`modo-clase.md`](modo-clase.md).
 | 2 | Migración y aislamiento | ✅ |
 | 3 | API y eventos | ✅ |
 | 4 | Pantalla `/clase` | ✅ |
-| 5 | Hoy | ⬜ |
+| 5 | Hoy | ✅ |
 | 6 | Materia · *Tus clases* | ⬜ |
 
 ⛔ **Lo que esta fase no hace:** audio, transcripción, checkpoint de comprensión, Bitácora, barra de

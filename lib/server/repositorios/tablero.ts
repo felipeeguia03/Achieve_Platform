@@ -3,6 +3,8 @@ import "server-only";
 import type { InsumosDelDia, RepositorioDeTablero } from "../servicios/proyeccion-tablero";
 import { clienteDeServicio } from "../supabase";
 import { horariosReal } from "./horarios";
+import { clasesReal } from "./clase";
+import { institucionReal } from "./institucion";
 
 /**
  * Lo que el tablero de `UX01` necesita y el reparto no trae —
@@ -127,7 +129,14 @@ async function insumosDelDia(
     }));
   }
 
-  return { clases, compromisos, disponibilidad: franjas, dictadas, temas };
+  // ADR-098: la clase abierta y la zona del horario de cursado.
+  const [activa, zonaInstitucional] = await Promise.all([
+    clasesReal.activa(institutionId, studentId),
+    institucionReal.zonaHoraria(institutionId),
+  ]);
+  const claseActiva = activa ? { id: activa.id, cursadaId: activa.cursadaId } : null;
+
+  return { clases, compromisos, disponibilidad: franjas, dictadas, temas, claseActiva, zonaInstitucional };
 }
 
 export const tableroReal: RepositorioDeTablero = { insumosDelDia };

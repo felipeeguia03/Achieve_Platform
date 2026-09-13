@@ -373,6 +373,13 @@ export interface ClaseDeHoy {
    * ⚠️ `Un.` es la unidad de la **última clase dada**, no la de hoy.
    */
   detalle: string | null;
+  /** *"Ahora"* · *"Empieza en 10 min"*. `null` ⇒ no está en curso ni por empezar. */
+  cuando: string | null;
+  /**
+   * `CTA-022` en la fila — [ADR-098](../../docs/decisions.md#adr-098) §8.
+   * `null` ⇒ **la fila no lleva botón**, que es el caso de casi todas.
+   */
+  entrada: { tipo: "ENTRAR" | "VOLVER"; bloqueId: string | null } | null;
 }
 
 /** Una materia de *Podés avanzar*: unidades dadas en clase y todavía sin evidencia. */
@@ -385,6 +392,12 @@ export interface AvanceDisponible {
 
 export interface CuadroDeHoy {
   clases: ClaseDeHoy[];
+  /**
+   * La clase abierta del estudiante **cuando no es una fila de hoy** — ADR-098.
+   * `null` ⇒ no hay, o ya la ofrece su fila con *Volver a la clase*.
+   * `materia` `null` ⇒ la cursada no está en el índice; se vuelve igual.
+   */
+  claseAbierta: { cursadaId: string; materia: string | null } | null;
   avanzar: AvanceDisponible[];
   /** Qué decir cuando `avanzar` está vacío. **No es lo mismo sin clases dadas que con todo hecho.** */
   vacioDeAvance: string;

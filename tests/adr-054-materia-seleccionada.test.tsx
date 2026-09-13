@@ -78,7 +78,7 @@ const TABLERO: TableroProps = {
     // ADR-096: el nombre viaja con el riesgo, y es lo que recibe `onAbrirMateria`.
     materia: m.nombre,
   })),
-  hoy: { clases: [], avanzar: [], vacioDeAvance: "", horarios: [], notas: [] },
+  hoy: { clases: [], claseAbierta: null, avanzar: [], vacioDeAvance: "", horarios: [], notas: [] },
 };
 
 /** Toca el riesgo pedido y devuelve la cursada que se abrió. */

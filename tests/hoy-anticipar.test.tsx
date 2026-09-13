@@ -49,7 +49,8 @@ function tablero(over: Partial<TableroProps> = {}): TableroProps {
     proximaEvaluacion: { dias: 12 },
     riesgos: [],
     hoy: {
-      clases: [{ cursadaId: "ce-2", hora: "08:00–10:00", materia: "Química", detalle: "Un. 5 · Aula 3.12" }],
+      clases: [{ cursadaId: "ce-2", hora: "08:00–10:00", materia: "Química", detalle: "Un. 5 · Aula 3.12", cuando: null, entrada: null }],
+      claseAbierta: null,
       avanzar: [{ cursadaId: "ce-1", materia: "Análisis Matemático II", unidades: "Un. 1 · 2 · 3 +2" }],
       vacioDeAvance: "Lo dado en clase ya tiene evidencia.",
       horarios: [{ tipo: "DISPONIBLE", hora: "18:00–20:00", texto: "Disponible para estudiar", cursadaId: null }],
@@ -240,8 +241,58 @@ describe("el cuadro de hoy — ADR-094", () => {
     expect(bloque("horarios").querySelectorAll("button")).toHaveLength(0);
   });
 
+  /*
+    **ADR-098 §8 enmienda ADR-094 §5**, y lo hace angosto: sólo la fila de una
+    clase en curso o por empezar lleva `CTA-022`. Sigue sin haber agenda —ni
+    un botón en *Horarios*, ni en las filas que no están ahora—.
+  */
+  it("ADR-098: la fila en curso lleva «Entrar a clase», y sólo ésa", () => {
+    const entrar = vi.fn();
+    const hoy = {
+      ...tablero().hoy,
+      clases: [
+        { cursadaId: "ce-2", hora: "08:00–10:00", materia: "Química", detalle: null, cuando: "Ahora", entrada: { tipo: "ENTRAR" as const, bloqueId: "b-1" } },
+        { cursadaId: "ce-3", hora: "14:00–16:00", materia: "Física", detalle: null, cuando: null, entrada: null },
+      ],
+    };
+    render(<HoyAutogestion {...BASE} tablero={tablero({ hoy })} onEntrarAClase={entrar} />);
+    const botones = within(bloque("clases")).getAllByRole("button");
+    expect(botones).toHaveLength(1);
+    expect(bloque("clases")).toHaveTextContent("Ahora");
+    fireEvent.click(within(bloque("clases")).getByRole("button", { name: /Entrar a clase/ }));
+    expect(entrar).toHaveBeenCalledWith({ cursadaId: "ce-2", bloqueId: "b-1" });
+    expect(bloque("horarios").querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("ADR-098: con la clase ya abierta, la fila dice «Volver a la clase»", () => {
+    const hoy = {
+      ...tablero().hoy,
+      clases: [{ cursadaId: "ce-2", hora: "08:00–10:00", materia: "Química", detalle: null, cuando: "Ahora", entrada: { tipo: "VOLVER" as const, bloqueId: "b-1" } }],
+    };
+    render(<HoyAutogestion {...BASE} tablero={tablero({ hoy })} onEntrarAClase={vi.fn()} />);
+    expect(within(bloque("clases")).getByRole("button", { name: /Volver a la clase/ })).toBeInTheDocument();
+  });
+
+  it("ADR-098: una clase abierta que no es de hoy igual se ve, con su vuelta", () => {
+    const volver = vi.fn();
+    const hoy = { ...tablero().hoy, claseAbierta: { cursadaId: "ce-9", materia: "Álgebra" } };
+    render(<HoyAutogestion {...BASE} tablero={tablero({ hoy })} onEntrarAClase={volver} />);
+    expect(bloque("clases")).toHaveTextContent("Tenés una clase abierta");
+    fireEvent.click(within(bloque("clases")).getByRole("button", { name: /Volver a la clase/ }));
+    expect(volver).toHaveBeenCalledWith({ cursadaId: "ce-9", bloqueId: null });
+  });
+
+  it("ADR-098: sin quién atienda la entrada, no se dibuja el botón", () => {
+    const hoy = {
+      ...tablero().hoy,
+      clases: [{ cursadaId: "ce-2", hora: "08:00–10:00", materia: "Química", detalle: null, cuando: "Ahora", entrada: { tipo: "ENTRAR" as const, bloqueId: "b-1" } }],
+    };
+    render(<HoyAutogestion {...BASE} tablero={tablero({ hoy })} />);
+    expect(bloque("clases").querySelectorAll("button")).toHaveLength(0);
+  });
+
   it("cada bloque vacío dice lo suyo, y avanzar no confunde «sin clases dadas» con «todo hecho»", () => {
-    const hoy = { clases: [], avanzar: [], vacioDeAvance: "Todavía no hay clases dadas cargadas.", horarios: [], notas: [] };
+    const hoy = { clases: [], claseAbierta: null, avanzar: [], vacioDeAvance: "Todavía no hay clases dadas cargadas.", horarios: [], notas: [] };
     render(<HoyAutogestion {...BASE} tablero={tablero({ hoy })} />);
     expect(bloque("clases")).toHaveTextContent("Hoy no tenés clases cargadas.");
     expect(bloque("avanzar")).toHaveTextContent("Todavía no hay clases dadas cargadas.");

@@ -2,11 +2,13 @@
 
 import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
+import { enviar } from "@/lib/client/api";
 import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
 import type { HoyProps, TableroProps } from "@/lib/domain/view-models";
 
@@ -15,6 +17,8 @@ import type { HoyProps, TableroProps } from "@/lib/domain/view-models";
 const A_ACCION = rutaDeCta("CTA-002");
 const A_MATERIA = rutaDeCta("CTA-001");
 const A_PROGRESO = rutaDeCta("CTA-009");
+// ADR-098: `CTA-022` lleva a la clase. Entrar y volver terminan en la misma pantalla.
+const A_CLASE = rutaDeCta("CTA-022");
 
 /**
  * Etapa B2.6 — de dónde salen los datos, y qué pasa cuando no salen.
@@ -108,6 +112,25 @@ function Pantalla({
     if (ruta) router.push(ruta);
   }
 
+  /**
+   * Entrar a clase — `CTA-022`, [ADR-098](../../docs/decisions.md#adr-098).
+   *
+   * Pide la clase y va a ella. **Si ya había una abierta**, de esta materia o de
+   * otra, el servidor la devuelve o contesta `409` con ella: en los dos casos se
+   * va a `/clase`, que muestra la abierta. Lo que no se hace es abrir otra.
+   *
+   * ⚠️ **Sólo en el camino real.** Bajo `?escenario=` no hay backend que abra
+   * nada, y la fila no ofrece entrar.
+   */
+  const [entrando, setEntrando] = useState(false);
+  async function entrarAClase(c: { cursadaId: string; bloqueId: string | null }) {
+    if (!A_CLASE || entrando) return;
+    setEntrando(true);
+    const r = await enviar<{ clase: string }>("/api/clase", { cursada: c.cursadaId, bloque: c.bloqueId });
+    setEntrando(false);
+    if (r.estado === "OK" || r.estado === "RECHAZADO") router.push(A_CLASE);
+  }
+
   return (
     <HoyAutogestion
       {...props}
@@ -125,6 +148,7 @@ function Pantalla({
         A_MATERIA ? (cursadaId) => router.push(rutaDeCtaCon("CTA-001", cursadaId) ?? A_MATERIA) : undefined
       }
       onVerProgreso={A_PROGRESO ? () => router.push(A_PROGRESO) : undefined}
+      onEntrarAClase={params.get("escenario") ? undefined : (c) => void entrarAClase(c)}
     />
   );
 }

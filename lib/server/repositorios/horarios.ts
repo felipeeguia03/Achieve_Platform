@@ -66,7 +66,7 @@ async function deCursadas(institutionId: string, studentId: string): Promise<Blo
   ].join(",");
   const bloques = await db
     .from("class_schedule_block")
-    .select("day_of_week, start_time, end_time, offering_id, course_enrollment_id, room, source_type")
+    .select("id, day_of_week, start_time, end_time, offering_id, course_enrollment_id, room, source_type")
     .eq("institution_id", institutionId)
     .or(duenios)
     .order("day_of_week", { ascending: true })
@@ -80,6 +80,7 @@ async function deCursadas(institutionId: string, studentId: string): Promise<Blo
       ? [
           {
             cursadaId,
+            bloqueId: b.id as string,
             dia: b.day_of_week as number,
             desde: b.start_time as string,
             hasta: b.end_time as string,

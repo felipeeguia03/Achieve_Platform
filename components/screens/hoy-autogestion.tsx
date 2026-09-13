@@ -259,13 +259,34 @@ function Vacio({ children }: { children: React.ReactNode }) {
  * único que se toca es el nombre de una materia en *Podés avanzar*, y abre esa
  * materia (`CTA-001`) — navegación, no una acción nueva.
  */
-function CuadroHoy({ c, onAbrir }: { c: CuadroDeHoy; onAbrir?: AbrirMateria }) {
+/** Entrar a una clase desde Hoy, o volver a la abierta. `bloqueId` `null` ⇒ sin horario que copiar. */
+export type EntrarAClase = (clase: { cursadaId: string; bloqueId: string | null }) => void;
+
+function CuadroHoy({ c, onAbrir, onEntrar }: { c: CuadroDeHoy; onAbrir?: AbrirMateria; onEntrar?: EntrarAClase }) {
   return (
     <section aria-label={t("HOY.CUADRO")} className="space-y-3" style={{ ...TARJETA, padding: "14px 16px" }}>
       <Eyebrow>{t("HOY.CUADRO")}</Eyebrow>
 
       <div data-bloque="clases">
         <Subtitulo>{t("HOY.CUADRO.CLASES")}</Subtitulo>
+        {/*
+          ADR-098: una clase abierta que no es ninguna fila de hoy **igual se ve**.
+          Una clase abierta y escondida no se cierra nunca.
+        */}
+        {c.claseAbierta && onEntrar && (
+          <div data-clase-abierta className="flex items-center justify-between gap-2" style={{ marginBottom: 6 }}>
+            <p className="truncate" style={{ fontSize: "var(--text-label)" }}>
+              <span style={{ marginRight: 6 }}>
+                <MarcaDeMateria cursadaId={c.claseAbierta.cursadaId} tamano={7} />
+              </span>
+              {t("HOY.CUADRO.CLASE.ABIERTA")}
+              {c.claseAbierta.materia ? ` · ${c.claseAbierta.materia}` : ""}
+            </p>
+            <AccionDeObjeto onClick={() => onEntrar({ cursadaId: c.claseAbierta!.cursadaId, bloqueId: null })}>
+              {t("HOY.CUADRO.CLASE.VOLVER")}
+            </AccionDeObjeto>
+          </div>
+        )}
         {c.clases.length === 0 ? (
           <Vacio>{t("HOY.CUADRO.CLASES.VACIO")}</Vacio>
         ) : (
@@ -284,10 +305,22 @@ function CuadroHoy({ c, onAbrir }: { c: CuadroDeHoy; onAbrir?: AbrirMateria }) {
                 </span>
                 <span style={{ color: "var(--foreground)" }}>{cl.materia}</span>
               </p>
-              {cl.detalle && (
+              {(cl.detalle || cl.cuando) && (
                 <p style={{ ...MONO, color: "var(--muted-foreground)", paddingLeft: 78, lineHeight: 1.4 }}>
-                  {cl.detalle}
+                  {[cl.cuando, cl.detalle].filter(Boolean).join(" · ")}
                 </p>
+              )}
+              {/*
+                `CTA-022`, **sólo en la fila en curso o por empezar** — ADR-098 §8,
+                que enmienda el *"sin botones"* de ADR-094 §5. Secundaria: el Hero
+                sigue siendo la única recomendación.
+              */}
+              {cl.entrada && onEntrar && (
+                <div style={{ paddingLeft: 78, marginTop: 4 }}>
+                  <AccionDeObjeto onClick={() => onEntrar({ cursadaId: cl.cursadaId, bloqueId: cl.entrada!.bloqueId })}>
+                    {t(cl.entrada.tipo === "ENTRAR" ? "HOY.CUADRO.CLASE.ENTRAR" : "HOY.CUADRO.CLASE.VOLVER")}
+                  </AccionDeObjeto>
+                </div>
               )}
             </div>
           ))
@@ -458,6 +491,7 @@ export function HoyAutogestion({
   onVerMateria,
   onVerProgreso,
   onAbrirMateria,
+  onEntrarAClase,
 }: HoyProps & {
   onAvanzar?: () => void;
   /**
@@ -473,6 +507,12 @@ export function HoyAutogestion({
    * `CTA-001`; lo que agrega es que el objeto quede abierto para volver.
    */
   onAbrirMateria?: AbrirMateria;
+  /**
+   * `CTA-022` — entrar a la clase de esa fila, o volver a la abierta
+   * ([ADR-098](../../docs/decisions.md#adr-098)). Sin quién la atienda, **la
+   * fila no lleva botón** (AGENTS.md §2.2).
+   */
+  onEntrarAClase?: EntrarAClase;
 }) {
   const replegado = seRepliega(hero.nivel);
   const conTablero = tablero !== null && !replegado;
@@ -519,7 +559,7 @@ export function HoyAutogestion({
         <div className={conTablero ? "lg:col-span-2" : undefined}>
           <HeroContent hero={hero} onAvanzar={onAvanzar} />
         </div>
-        {conTablero && <CuadroHoy c={tablero.hoy} onAbrir={abrir} />}
+        {conTablero && <CuadroHoy c={tablero.hoy} onAbrir={abrir} onEntrar={onEntrarAClase} />}
       </div>
 
       {/*

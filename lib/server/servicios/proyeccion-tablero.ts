@@ -1,6 +1,7 @@
 import { t } from "@/lib/content/es-AR";
 import { hayActividad } from "@/lib/domain/cobertura";
 import { cuadroDeHoy, type HorarioDeHoy } from "@/lib/domain/cuadro-de-hoy";
+import { clasesDeAhora } from "@/lib/domain/clase-en-curso";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { fechaEnZona } from "@/lib/domain/zona";
 import {
@@ -47,6 +48,18 @@ export interface InsumosDelDia {
   dictadas: Array<{ cursadaId: string; fecha: string; temas: string[] }>;
   /** Código y secuencia de los temas de esas clases, para escribir `Un. N`. */
   temas: Array<{ id: string; codigo: string | null; secuencia: number | null }>;
+  /**
+   * La clase que el estudiante tiene abierta — ADR-098. Ausente o `null` ⇒ ninguna.
+   * ⚠️ **No es una clase dictada**: es la suya.
+   */
+  claseActiva?: { id: string; cursadaId: string } | null;
+  /**
+   * La zona de la institución, que es **la del horario de cursado**
+   * ([ADR-049](../../../docs/decisions.md#adr-049)). Ausente o `null` ⇒ no se
+   * puede decir si una clase está en curso, y no se ofrece entrar: evaluarlo
+   * con otra zona sería otra regla.
+   */
+  zonaInstitucional?: string | null;
 }
 
 export interface RepositorioDeTablero {
@@ -285,13 +298,60 @@ function proyectarCuadro(
     ...(c.avanzar.length > 0 ? [t("HOY.CUADRO.NOTA.AVANZAR")] : []),
   ];
 
-  return {
-    clases: c.clases.map((x) => ({
+  /*
+    ⚠️ **ADR-098 §8, la enmienda a ADR-094 §5.** La fila de una clase en curso,
+    o que empieza en 15 minutos o menos, lleva *Entrar a clase*; con una clase
+    ya abierta, esa fila dice *Volver a la clase* y **las demás no ofrecen
+    nada** —entrar terminaría en `409`—. Ninguna otra fila lleva botón.
+  */
+  const activa = s.claseActiva ?? null;
+  const zonaDeCursado = s.zonaInstitucional ?? null;
+  const deAhora = zonaDeCursado
+    ? clasesDeAhora(
+        s.clases.filter((x) => conocidas.has(x.cursadaId)).map((x) => ({ ...x, bloqueId: x.bloqueId ?? null })),
+        Date.parse(ahora),
+        zonaDeCursado,
+      )
+    : [];
+  const filaDeAhora = (cursadaId: string, desde: string) =>
+    deAhora.find((x) => x.cursadaId === cursadaId && x.desde === desde) ?? null;
+  const nombres = new Map(materias.map((m) => [m.cursadaId, nombreDeObjeto(m.nombre)]));
+
+  const clases = c.clases.map((x) => {
+    const ahoraMismo = filaDeAhora(x.cursadaId, x.desde);
+    const entrada =
+      ahoraMismo === null
+        ? null
+        : activa === null
+          ? { tipo: "ENTRAR" as const, bloqueId: ahoraMismo.bloqueId }
+          : activa.cursadaId === x.cursadaId
+            ? { tipo: "VOLVER" as const, bloqueId: ahoraMismo.bloqueId }
+            : null;
+    return {
       cursadaId: x.cursadaId,
       hora: `${x.desde}–${x.hasta}`,
       materia: x.nombre,
       detalle: [x.unidad !== null ? `Un. ${x.unidad}` : null, x.aula].filter(Boolean).join(" · ") || null,
-    })),
+      cuando:
+        ahoraMismo === null
+          ? null
+          : ahoraMismo.momento === "EN_CURSO"
+            ? t("HOY.CUADRO.CLASE.AHORA")
+            : llenar(t("HOY.CUADRO.CLASE.EMPIEZA"), { n: ahoraMismo.minutosParaEmpezar }),
+      entrada,
+    };
+  });
+
+  // Una clase abierta que no es ninguna fila de hoy **igual se ve**: una clase
+  // abierta y escondida no se cierra nunca.
+  const claseAbierta =
+    activa && !clases.some((x) => x.entrada?.tipo === "VOLVER")
+      ? { cursadaId: activa.cursadaId, materia: nombres.get(activa.cursadaId) ?? null }
+      : null;
+
+  return {
+    clases,
+    claseAbierta,
     avanzar: c.avanzar.map((a) => ({
       cursadaId: a.cursadaId,
       materia: a.nombre,

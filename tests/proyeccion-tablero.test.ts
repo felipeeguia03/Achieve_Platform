@@ -140,8 +140,65 @@ describe("el cuadro de hoy — ADR-094", () => {
 
   it("la clase de hoy dice su unidad y su aula, en poco", () => {
     expect(cuadro().clases).toEqual([
-      { cursadaId: "c1", hora: "10:00–12:00", materia: "Analisis matematico I", detalle: "Un. 2 · Aula 3.12" },
+      { cursadaId: "c1", hora: "10:00–12:00", materia: "Analisis matematico I", detalle: "Un. 2 · Aula 3.12", cuando: null, entrada: null },
     ]);
+  });
+
+  /*
+    **ADR-098 §8** — la fila en curso o por empezar lleva `CTA-022`. Con la zona
+    de la institución, porque el horario de cursado es suyo (ADR-049).
+  */
+  describe("Modo Clase: entrar desde la fila — ADR-098", () => {
+    const CON_BLOQUE: InsumosDelDia = {
+      ...DIA,
+      clases: [{ ...DIA.clases[0], bloqueId: "b-1" }],
+      zonaInstitucional: ZONA,
+    };
+    const en = (iso: string, dia: InsumosDelDia = CON_BLOQUE, materias: Materia[] = [materia()]) =>
+      proyectarTablero(insumos(materias), dia, iso, ZONA).hoy;
+
+    it("en curso: «Ahora» y Entrar a clase, con el bloque", () => {
+      const fila = en("2026-09-11T14:00:00.000Z").clases[0];
+      expect(fila.cuando).toBe("Ahora");
+      expect(fila.entrada).toEqual({ tipo: "ENTRAR", bloqueId: "b-1" });
+    });
+
+    it("a 10 minutos: «Empieza en 10 min», y también se puede entrar", () => {
+      const fila = en("2026-09-11T12:50:00.000Z").clases[0];
+      expect(fila.cuando).toBe("Empieza en 10 min");
+      expect(fila.entrada?.tipo).toBe("ENTRAR");
+    });
+
+    it("fuera de la ventana, la fila no lleva botón", () => {
+      expect(en("2026-09-11T12:00:00.000Z").clases[0].entrada).toBeNull();
+      // A la hora exacta del fin ya no está en curso.
+      expect(en(AHORA).clases[0].entrada).toBeNull();
+    });
+
+    it("sin zona de la institución no se afirma que esté en curso", () => {
+      const fila = en("2026-09-11T14:00:00.000Z", { ...CON_BLOQUE, zonaInstitucional: null }).clases[0];
+      expect(fila.entrada).toBeNull();
+      expect(fila.cuando).toBeNull();
+    });
+
+    it("con la clase de esa materia abierta, la fila dice Volver, y no se repite arriba", () => {
+      const hoy = en("2026-09-11T14:00:00.000Z", { ...CON_BLOQUE, claseActiva: { id: "cl-1", cursadaId: "c1" } });
+      expect(hoy.clases[0].entrada?.tipo).toBe("VOLVER");
+      expect(hoy.claseAbierta).toBeNull();
+    });
+
+    it("con otra clase abierta, la fila no ofrece entrar, y la abierta se ve arriba", () => {
+      const otra = materia({ cursadaId: "c2", nombre: "FISICA I" });
+      const hoy = en("2026-09-11T14:00:00.000Z", { ...CON_BLOQUE, claseActiva: { id: "cl-9", cursadaId: "c2" } }, [materia(), otra]);
+      expect(hoy.clases[0].entrada).toBeNull();
+      expect(hoy.claseAbierta).toEqual({ cursadaId: "c2", materia: "Fisica I" });
+    });
+
+    it("una clase abierta un día sin clases igual se ve", () => {
+      const hoy = en("2026-09-12T14:00:00.000Z", { ...CON_BLOQUE, claseActiva: { id: "cl-1", cursadaId: "c1" } });
+      expect(hoy.clases).toEqual([]);
+      expect(hoy.claseAbierta).toEqual({ cursadaId: "c1", materia: "Analisis matematico I" });
+    });
   });
 
   it("una clase simulada lleva la nota de estimado, y `Un.` la suya", () => {
