@@ -124,6 +124,24 @@ usar: hoy no hay ni un dato real cargado.
     autorización de la universidad alcanza, o cada docente tiene derechos propios?
 23. Si más adelante la institución **revoca**, ¿qué hay que poder deshacer, y en qué plazo?
 
+## 5.1 Grabar una clase 🆕
+
+**Contexto:** [ADR-098](decisions.md#adr-098), 13 de septiembre de 2026. Achieve incorpora **Modo
+Clase**: el estudiante abre una clase de su materia y toma apuntes. El pedido incluye **grabar el audio
+de la clase** con el celular o la notebook, por decisión explícita del estudiante, y más adelante
+transcribirlo. **No lo construimos** hasta tener respuesta a estas preguntas: un audio de clase
+**contiene la voz del docente y de compañeros**, que no son usuarios de Achieve.
+
+24. ¿Puede un estudiante grabar una clase **con su dispositivo y a través de nuestro producto**? ¿Qué
+    cambia si la institución lo autoriza, lo prohíbe o no dice nada?
+25. ¿Hace falta **consentimiento del docente**? ¿Y de los compañeros que hablan? ¿Alcanza con un
+    aviso en pantalla que le recuerde al estudiante grabar sólo cuando esté permitido?
+26. **¿La voz es dato biométrico o sensible** a estos efectos? Cambia cómo se almacena.
+27. **Retención y borrado:** ¿qué plazo es razonable para un audio de clase, y puede el estudiante
+    borrar la grabación conservando sus apuntes?
+28. Si más adelante el audio se envía a un **proveedor externo para transcribir**, ¿qué instrumento
+    hace falta con ese proveedor, y qué hay que decirle al estudiante antes?
+
 ---
 
 ## 6. Qué necesitamos de vuelta, en concreto

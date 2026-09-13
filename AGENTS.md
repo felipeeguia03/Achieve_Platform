@@ -283,6 +283,9 @@ de vocabulario es el anti-patrón `A-04`.
 | `TopicProgress` | avance, porcentaje |
 | `CourseEnrollment` | materia *(en código; en UI se dice "materia")* |
 | `Operador` | coach, tutor, mentor — **ver [ADR-003](docs/decisions.md#adr-003)** |
+| `StudentClassSession` | grabación, sesión de estudio *(en UI se dice "clase")* — **ver [ADR-098](docs/decisions.md#adr-098)** |
+| `ClassMarker` | etiqueta, tag, nota *(en UI se dice "marca")* |
+| apuntes | notas *(lo que el estudiante escribe durante la clase)* |
 
 Glosario completo: `docs/product.md` §3.
 

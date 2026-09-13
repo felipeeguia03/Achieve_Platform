@@ -75,6 +75,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Aplicar un principio del manual de diseño | [`docs/domain-translation-dd1-dd10.md`](docs/domain-translation-dd1-dd10.md) |
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
 | Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — veinte filas, **ocho abiertas**, por lo que destraban |
+| **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
 | Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
 | Qué decidió el owner el 5 de septiembre | [`docs/respuesta-po-agenda-decisiones-source.md`](docs/respuesta-po-agenda-decisiones-source.md) — **fuente literal**, manda sobre cualquier paráfrasis |

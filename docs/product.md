@@ -109,6 +109,8 @@ es exactamente la deriva de vocabulario).
 | **TopicProgress** | Estado personal por tema, en cinco dimensiones separadas |
 | **Availability** | Restricciones y ventanas horarias útiles del estudiante |
 | **AcademicGoal** | Objetivo de semestre, materia o examen |
+| **StudentClassSession** | **La clase que el estudiante abre** mientras cursa: de una cursada, con apuntes y marcas. En la UI, *«clase»*. ⚠️ **No es `ClassSession`**, que es la clase dictada de la comisión ([ADR-098](decisions.md#adr-098)) |
+| **ClassMarker** | Una marca de un toque durante la clase —`QUESTION`, `IMPORTANT`, `ASSESSMENT`, `REVIEW`— con su momento. **Señalador privado**: no es un reporte de clase (`class_event_record`) ni voz de la cátedra |
 
 ### 3.4 Entidades de ejecución — el loop diario
 

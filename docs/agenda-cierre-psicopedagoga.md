@@ -246,6 +246,32 @@ pregunta que quedó abierta en la §*"Antes que las ocho"*.
 
 ---
 
+## 10. Modo Clase: ¿se pregunta cómo le quedó la clase? 🆕
+
+**13 de septiembre de 2026** · [ADR-098](decisions.md#adr-098).
+
+Construimos **Modo Clase**: durante una clase el estudiante escribe apuntes y marca momentos —*No
+entendí*, *Importante*, *Posible evaluación*, *Revisar*— y al terminar la cierra. El pedido original
+incluía, al cerrar, esta pregunta:
+
+> *¿Cómo te quedó esta clase?* — 🟢 Entendí bien · 🟡 Algunas cosas · 🔴 Estoy perdido
+
+**No la construimos**, por tres razones que son tuyas y no nuestras: es un **autorreporte de
+comprensión**, que es la dimensión Confianza cuyo vocabulario está esperando tu revisión; los tres
+colores son una **escala por nivel**, que descartaste en tiempo y carga (§C1); y *"Estoy perdido"*
+**describe a la persona**, no a la clase.
+
+**Lo que necesitamos de vos:**
+
+1. **¿Se pregunta?** ¿Tiene valor al terminar cada clase, o agrega carga en el peor momento?
+2. Si se pregunta, **¿sobre qué?** ¿La clase entera, o algo más acotado como *"lo que marcaste"*?
+3. **¿Con qué palabras y cuántas opciones?** Y si puede llevar color.
+4. **¿Qué puede hacer el sistema con la respuesta?** Hoy la guardaríamos y **no la leería nadie**:
+   no toca progreso, ni el ADE, ni el riesgo. Si alguna vez tiene que tocar algo, ¿qué, y con qué
+   cuidado?
+
+---
+
 ## Hasta que esta conversación se cierre
 
 Las reglas derivadas de estos ocho residuos —y los seis valores de §9— se usan **únicamente como

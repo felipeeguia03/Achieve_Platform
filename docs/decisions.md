@@ -151,6 +151,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-096](#adr-096) | **Las dos opciones de evaluaciones se descartan**: `UX01` queda en Hero + Tu día + Riesgos | ✅ `ACCEPTED` *(12 sep 2026 · el owner miró las dos)* | [ADR-093](#adr-093), [ADR-077](#adr-077) |
 | [ADR-097](#adr-097) | **Modo noche, la cuenta en el topbar y color que identifica** — revierte §12.4 | ✅ `ACCEPTED` *(12 sep 2026 · pedida por el owner · **la tabla de contrastes es un test**)* | [ADR-018](#adr-018), [ADR-088 · Enm. 5](#adr-088-enmienda-5) |
 | [ADR-097 · Enm. 1](#adr-097-enmienda-1) | **La campanita, con avisos simulados** — sólo con `MODO_PRUEBA=1` | 🧪 `ACCEPTED · SIMULADO` *(13 sep 2026 · pedida por el owner · **nada de la lista ocurrió**)* | [ADR-087 · Enm. 3](#adr-087-enmienda-3) |
+| [ADR-098](#adr-098) | **Modo Clase**: la clase que el estudiante abre es suya, no la clase dictada; **sin audio y sin checkpoint** | ✅ `ACCEPTED` *(13 sep 2026 · el owner aceptó las doce recomendaciones · **enmienda ADR-094 §5**)* | El checkpoint (psicopedagoga), el audio (ADR-006 + legal) |
 
 ---
 
@@ -9371,3 +9372,159 @@ campanita; el contador está en el nombre accesible; *Simulado* se ve al abrirla
 contador; tocar un aviso navega.
 
 ⚠️ **No se vio en el navegador**: la ruta exige una sesión real con `MODO_PRUEBA=1`.
+
+---
+
+<a id="adr-098"></a>
+
+## ADR-098 — Modo Clase: la clase que el estudiante abre es suya, no la clase dictada
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **decidido por el owner**
+**Enmienda:** [ADR-094](#adr-094) §5 (*"Clases y horarios no tienen botones"*).
+**Construye sobre:** [ADR-063](#adr-063), [ADR-083](#adr-083), [ADR-049](#adr-049), [ADR-088](#adr-088),
+[ADR-041](#adr-041), [ADR-027](#adr-027).
+**No levanta:** [ADR-006](#adr-006), [ADR-080](#adr-080), `C01-004`.
+**Informe y plan:** [`modo-clase.md`](modo-clase.md).
+
+### Contexto
+
+El owner pidió incorporar **Modo Clase** al MVP: *"el estudiante está cursando una materia ahora"*, y
+Achieve lo acompaña antes, durante y después. Antes de construir se hizo una auditoría de solo lectura
+([`modo-clase.md`](modo-clase.md) §A–§B) que encontró la base casi entera —el bloque horario, la zona
+de la institución, la lectura única de horarios, `product_event`— y **cinco choques con decisiones
+aceptadas**. Se le presentaron doce decisiones con una recomendación cada una, y contestó, textual:
+
+> *"todos los D hacé los recomendados"*
+
+El spec ya nombraba el momento: Parte I §20, *"Cursado continuo: antes, durante y después de clase"*,
+con *"Audio/texto interpretado por IA durante clase"* como `HIPOTESIS` y la *"comprensión automática de
+audio de clase"* **fuera de alcance** (`product.md` §12.3).
+
+### Decisión
+
+**1. La sesión es una entidad nueva, del estudiante: `student_class_session`.** ⛔ **No es
+`class_session`.** Aquélla es una clase **dictada**, de la comisión, con procedencia: alimenta el
+Gantt, el `Un.` de Hoy y el ritmo de cátedra **para todos los alumnos**. Si abrir Modo Clase escribiera
+ahí, la sesión de un estudiante movería la materia de sus compañeros. En la UI se dice **«clase»**.
+
+| Columna | Qué es |
+|---|---|
+| `course_enrollment_id` | **Obligatoria.** La clase es de una materia |
+| `class_schedule_block_id` | Opcional, `ON DELETE SET NULL`. **`NULL` es una clase iniciada a mano**, que es válida |
+| `scheduled_start`, `scheduled_end` | **Copia** del horario del bloque al entrar. El bloque se regenera (`simular-temarios`) y la clase no puede perder contra qué horario empezó |
+| `status` | `ACTIVE` → `ENDED`. **La única transición** |
+| `started_at`, `ended_at` | Los pone el servidor. La duración es `ended_at − started_at`: **dato derivado** |
+| `notes`, `notes_updated_at` | **Los apuntes.** Texto plano |
+
+⚠️ **Sin columna de unidad.** Asociar la clase a una unidad necesita un escritor —confirmarla al
+cerrar— que es P1; la columna llega con él, el precedente de `schedule_status` (ADR-083). Mientras
+tanto la pantalla muestra **la unidad de la última clase dada**, dicho así (ADR-094 §2), y nunca
+*"unidad actual"*.
+
+**2. Una sola clase activa por estudiante, y sin autocierre.** Un índice único parcial lo garantiza en
+la base. Iniciar otra devuelve la activa con `409`, y la pantalla ofrece volver a ella. **El paso del
+tiempo no cierra una clase** —AGENTS.md §2.3—: la termina el estudiante.
+
+**3. Las marcas son filas, no eventos: `class_marker`.** Cuatro tipos:
+
+| Dominio | UI |
+|---|---|
+| `QUESTION` | No entendí |
+| `IMPORTANT` | Importante |
+| `ASSESSMENT` | Posible evaluación |
+| `REVIEW` | Revisar |
+
+- **`ASSESSMENT`, no `EXAM`**: el vocabulario canónico es `Assessment`, y *"Parcial"* era falso
+  cuando lo que viene es un final o un TP.
+- **El tiempo lo calcula el servidor** (`elapsed_seconds` desde `started_at`). Un reloj del cliente
+  no escribe dominio.
+- **Idempotente por `clave`**, única por clase: el doble toque y el reintento devuelven la misma fila.
+- **Sólo se marca con la clase `ACTIVE`.** El texto de una marca **sí** se completa después.
+- **Los emojis son representación**, nunca valor.
+
+⛔ **Una marca no es `class_event_record`.** Aquél es el *"Pasó algo en clase"* del spec: cambia
+decisiones del sistema y su captura, corrección y versionado son `C01-004`, `OPEN`. Una marca es un
+**señalador privado**: no sube la prioridad de un tema, no toca el ritmo de cátedra y nunca se lee como
+voz de la cátedra (§2.6). **Convertir una marca en reporte de clase** es posterior al cierre de `C01-004`.
+
+⚠️ **Tampoco es un evento por marca.** El spec: *"evento nuevo para cada interacción: no está
+aprobado"*.
+
+**4. Los apuntes son texto plano, editables siempre, sin borrador local.** Son material propio del
+estudiante, no un reporte a la cátedra: no se versionan. Se guardan solos contra el servidor, y si
+falla se dice y se reintenta. ⚠️ **No van a `localStorage`**: ADR-088 §4 dejó un solo módulo con
+permiso, y ADR-097 lo amplió a dos con guard.
+
+⚠️ **Vocabulario: «apuntes», nunca «notas».** *Nota* es sinónimo prohibido de `Reflection`, y en la
+facultad además es la calificación.
+
+**5. Dos eventos, `TRANSICION`, no facturables y fuera de la Bitácora:** `ClassSessionStarted` y
+`ClassSessionEnded`. [ADR-041](#adr-041) permite agregar eventos no facturables sin tocar el contrato
+del CRM. **Que el estudiante abra una clase no es producir.**
+
+**6. La pantalla es un nodo sin wireframe: `CLASE`, en `/clase`.** El mismo patrón que `/materias` y
+`/formacion`: **no existe `UX10`** y `superficieIds` sigue devolviendo nueve. La misma ruta muestra la
+clase activa, y con `?clase=` una terminada, **de solo lectura** salvo apuntes y el texto de las marcas.
+
+**7. Dos CTAs nuevas.** `CTA-021` está **reservada** para Formación —autorizada por ADR-087 Enm. 1, fuera del registro hasta que exista su escritura (Enm. 2)— y **no se toma**.
+
+| CTA | Origen | Acción | Destino | Copy |
+|---|---|---|---|---|
+| `CTA-022` | `UX01`, `UX02` | Iniciar una clase de esa materia, o volver a la activa | `CLASE` | *Entrar a clase* · *Iniciar clase* (fuera de horario) · *Volver a la clase* |
+| `CTA-023` | `CLASE` | Terminar la clase activa | — (queda, muestra el cierre) | *Finalizar clase* |
+
+Las tres etiquetas de `CTA-022` son **copy**, como las tres de `CTA-001`: todas llegan a la misma clase.
+
+**8. Hoy: enmienda a ADR-094 §5.** En *Tu día*, **la fila de una clase en curso o que empieza en 15
+minutos o menos lleva `CTA-022` como acción secundaria.** Ninguna otra fila lleva botón, *Horarios*
+sigue sin botones y **el Hero no se toca**: la recomendación sigue siendo una (`DD9`, `I-06`).
+
+| Regla | Por qué |
+|---|---|
+| **15 minutos antes, hasta el fin del bloque** | `MINUTOS_ANTES_DE_CLASE = 15`, constante nombrada. Si cambia, cambia acá |
+| **Con una clase activa, esa fila dice *Volver a la clase*** y las demás no ofrecen entrar | Ofrecer entrar a otra terminaría en `409` (§2.2) |
+| **Una clase activa de una materia que no es de hoy igual se ve** | Arriba del bloque de clases, con *Volver a la clase*. Una clase abierta y escondida no se cierra nunca |
+| **Si el horario es estimado, se sigue diciendo** | La nota de ADR-094 §3 no se retira |
+
+**9. Materia: «Tus clases».** Una sección de `UX02` **distinta** del panel de clases dictadas, con
+fecha, duración y cantidad de marcas por tipo —**derivados**— y `CTA-022` como *Iniciar clase*. Abrir
+una clase terminada es **navegación, no CTA**: no solicita nada al dominio (el criterio de ADR-088).
+
+**10. Lo que Modo Clase NO produce.** Ni `Evidence`, ni progreso, ni cambios en el Gantt, ni
+`Action`s, ni entradas al ADE, ni al riesgo. **Abrir una clase no es evidencia de nada** (§2.1). Los
+datos quedan consultables para Modo Examen, sin mostrarse todavía.
+
+### ⛔ Lo que queda afuera, y quién lo destraba
+
+| Qué | Por qué no | Quién |
+|---|---|---|
+| **El checkpoint *"¿Cómo te quedó esta clase?"*** | Es la dimensión **Confianza**, un autorreporte con el vocabulario bloqueado ([`cursado-de-materia.md`](cursado-de-materia.md) §8). Los tres colores son la escala que [ADR-075](#adr-075) §C1 descarta, y *"Estoy perdido"* etiqueta a la persona ([ADR-037](#adr-037)). **No se crea columna** | La psicopedagoga — [`agenda-cierre-psicopedagoga.md`](agenda-cierre-psicopedagoga.md) §10 |
+| **La grabación de audio** | Un micrófono en un aula real **graba a terceros reales**: [ADR-006](#adr-006) es bloqueo absoluto. Además no hay borrado construido y el spec no aprueba interpretar audio | Owner + asesoría legal — [`legal-package.md`](legal-package.md) §5.1 |
+| **Transcripción, resumen, temas inferidos** | [ADR-080](#adr-080) es candidato; ningún proveedor está autorizado | Owner |
+| **La clase en la Bitácora** | La fuente única (`hechos_de_cursada`) se ata a una `Action`; extenderla es otra decisión | P1 |
+| **Barra de objetos e indicador global** | ADR-088 Enm. 7: la barra no se llena sola. En el MVP se vuelve a la clase desde Hoy y desde Materia | P1 |
+| **Confirmar la unidad al cerrar · fotos · señales en Modo Examen** | Cada una necesita su escritor o su espacio en una matriz de precedencia | P1 |
+
+**Cuando llegue el audio**, el diseño ya tiene tres condiciones escritas: **la grabación es un objeto
+aparte** (si falla, la clase sigue; se borra sin borrar apuntes ni marcas), vive en un **bucket
+privado con URL firmada** como la `Evidence`, y **ninguna transcripción sin ADR**.
+
+### Consecuencias
+
+- **Se tocan `components/screens/hoy-autogestion.tsx` y `materia-cursado.tsx`**, que la regla 6
+  protege: lo autoriza este ADR. La fila de clase gana un botón; `UX02` gana una sección.
+- **Doce rutas bajo `app/(student)`, nueve superficies.** `CLASE` es el tercer nodo con ruta y sin
+  wireframe.
+- **El registro pasa a 22 CTAs.**
+- **Dos tablas nuevas entran a `limpiar_mundo`** en el mismo commit que la migración.
+- ⚠️ **Hoy los horarios son simulados.** Modo Clase va a detectar clases que la facultad no publicó,
+  y la pantalla lo dice.
+- ⚠️ **La comisión y el docente casi siempre faltan** (ADR-062 sin construir): la línea se omite.
+
+### Cómo se verifica
+
+Por corte, en [`modo-clase.md`](modo-clase.md) §E. Lo que no se negocia: una transición prohibida por
+tabla con test; **un estudiante no lee ni escribe la clase de otro** (`404`, en la API y en
+`db-aislamiento.sh`); dos clases activas no entran a la base; finalizar dos veces y marcar dos veces
+con la misma clave no duplican; sin horarios no aparece nada en Hoy; y la clase funciona entera sin
+micrófono, porque no lo pide.
