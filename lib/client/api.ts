@@ -86,6 +86,23 @@ export async function identidadDeSesion(): Promise<string | null> {
 }
 
 /**
+ * El email de la sesión, para el avatar del topbar — ADR-097.
+ *
+ * ⚠️ **Sale de Auth, en el navegador, y no viaja por ninguna ruta.** El
+ * estudiante no tiene nombre en la base, y el email ya está en la sesión: pedirlo
+ * al backend sería mover un dato personal por la red para mostrarlo donde ya
+ * estaba. `null` ⇒ no hay sesión —el Track A— y el avatar no se dibuja.
+ */
+export async function emailDeSesion(): Promise<string | null> {
+  try {
+    const { data } = await clienteDeNavegador().auth.getSession();
+    return data.session?.user.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Cierra la sesión. La pantalla que llame decide a dónde ir después.
  *
  * ⚠️ **Y borra el espacio de trabajo de este navegador.** Es el único lugar

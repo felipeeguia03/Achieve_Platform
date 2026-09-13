@@ -70,12 +70,6 @@ function sembrar(
   );
 }
 
-/** `#b04a2f` → `rgb(176, 74, 47)`, que es como el DOM devuelve un color. */
-function comoRgb(hex: string): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
-}
-
 /** El nombre que la pantalla declara con `useMigaDelObjeto`, como lo pasa el Shell. */
 let nombreEnPantalla: string | null = null;
 
@@ -429,9 +423,12 @@ describe("los controles de la pantalla", () => {
 
     const cabecera = screen.getByRole("dialog").querySelector("header") as HTMLElement;
     expect(cabecera).not.toBeNull();
-    expect(cabecera.style.borderTopWidth).toBe("3px");
-    // jsdom serializa el color a `rgb()`, así que se compara ahí.
-    expect(cabecera.style.borderTopColor).toBe(comoRgb(colorDeMateria("ce-1")));
+    /*
+      Desde ADR-097 el color es un token por tema (`var(--materia-N)`), y es el
+      mismo token que devuelve la función del índice. jsdom no desarma un
+      shorthand con `var()` en sus partes, así que se lee el estilo escrito.
+    */
+    expect(cabecera.getAttribute("style")).toContain(`3px solid ${colorDeMateria("ce-1")}`);
   });
 
   /**

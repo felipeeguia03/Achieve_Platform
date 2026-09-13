@@ -3,8 +3,8 @@
 /**
  * Topbar del shell (Fase A2.1).
  *
- * Patrón de `docs/diseño/`: breadcrumb a la izquierda, buscador al centro,
- * contexto de cuenta a la derecha. Alto medido: **56 px**
+ * Patrón de `docs/diseño/`: breadcrumb a la izquierda; buscador, institución y
+ * avatar a la derecha (ADR-097). Alto medido: **56 px**
  * (`design-system-capturas.md` §12.3).
  *
  * **La topbar no lleva la CTA primaria de la pantalla.** Lleva navegación y
@@ -18,6 +18,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { t } from "@/lib/content/es-AR";
+import { CuentaDelTopbar } from "./cuenta";
 
 export interface Miga {
   etiqueta: string;
@@ -74,37 +75,45 @@ export function BarraSuperior({
       </nav>
 
       {/*
-        `I-04`: el atajo se muestra **dentro del control que dispara**, no en un
-        tooltip. Y `P-07`: el atajo no elimina su camino visible — el mismo
-        control se puede tocar.
+        La esquina derecha — ADR-097: el buscador, dónde estudiás y el avatar,
+        como en el software de las capturas. Van juntos y empujados a la
+        derecha: separados, la institución quedaría flotando en el medio.
       */}
-      <button
-        onClick={onAbrirPaleta}
-        aria-keyshortcuts="Meta+K Control+K"
-        className="ml-auto hidden lg:flex items-center gap-2"
-        style={{
-          background: "var(--muted)",
-          border: ".5px solid var(--border)",
-          borderRadius: "var(--radius-pildora)",
-          padding: "6px 14px",
-          minWidth: 260,
-          color: "var(--muted-foreground)",
-          fontSize: "var(--text-label)",
-        }}
-      >
-        <Search size={15} aria-hidden />
-        <span>{t("SHELL.BUSCAR")}</span>
-        <kbd
+      <div className="ml-auto flex items-center" style={{ gap: 12 }}>
+        {/*
+          `I-04`: el atajo se muestra **dentro del control que dispara**, no en un
+          tooltip. Y `P-07`: el atajo no elimina su camino visible — el mismo
+          control se puede tocar.
+        */}
+        <button
+          onClick={onAbrirPaleta}
+          aria-keyshortcuts="Meta+K Control+K"
+          className="hidden lg:flex items-center gap-2"
           style={{
-            marginLeft: "auto",
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--text-meta)",
+            background: "var(--muted)",
+            border: ".5px solid var(--border)",
+            borderRadius: "var(--radius-pildora)",
+            padding: "6px 14px",
+            minWidth: 260,
+            color: "var(--muted-foreground)",
+            fontSize: "var(--text-label)",
           }}
         >
-          ⌘K
-        </kbd>
-      </button>
+          <Search size={15} aria-hidden />
+          <span>{t("SHELL.BUSCAR")}</span>
+          <kbd
+            style={{
+              marginLeft: "auto",
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-meta)",
+            }}
+          >
+            ⌘K
+          </kbd>
+        </button>
 
+        <CuentaDelTopbar />
+      </div>
     </header>
   );
 }

@@ -13,9 +13,11 @@ import {
   EstadoGeneral,
   Eyebrow,
   Fila,
+  MarcaDeMateria,
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
 import type { ColumnaFuente, GanttProjection, MateriaProps } from "@/lib/domain/view-models";
@@ -47,7 +49,7 @@ const tarjeta = {
   padding: 16,
 } as const;
 
-function Gantt({ gantt }: { gantt: GanttProjection }) {
+function Gantt({ gantt, color }: { gantt: GanttProjection; color: string }) {
   return (
     <div data-gantt style={tarjeta}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -77,7 +79,7 @@ function Gantt({ gantt }: { gantt: GanttProjection }) {
             margin: "10px 0 4px",
           }}
         >
-          <div style={{ width: `${gantt.barra}%`, height: "100%", background: "var(--foreground)" }} />
+          <div style={{ width: `${gantt.barra}%`, height: "100%", background: color }} />
         </div>
       )}
 
@@ -107,7 +109,7 @@ function Gantt({ gantt }: { gantt: GanttProjection }) {
       </div>
 
       {gantt.unidades.map((u, i) => (
-        <FilaDeTema key={`${i}-${u.nombre}`} u={u} hoy={gantt.eje.hoy} />
+        <FilaDeTema key={`${i}-${u.nombre}`} u={u} hoy={gantt.eje.hoy} color={color} />
       ))}
 
       {/*
@@ -138,9 +140,12 @@ function Gantt({ gantt }: { gantt: GanttProjection }) {
  * días» porque es el séptimo de la lista sería inventar un plan de estudio.
  */
 function FilaDeTema({
+  color,
   u,
   hoy,
 }: {
+  /** El de la materia — ADR-097. Uno solo para todas las barras: identidad, no estado. */
+  color: string;
   u: GanttProjection["unidades"][number];
   hoy: number;
 }) {
@@ -188,8 +193,13 @@ function FilaDeTema({
                 estado de un color —verde «dominado», ámbar «leído»— y eso es
                 exactamente la escala de calificación que ADR-075 §C1 descarta.
                 El estado se lee en su columna, con palabras.
+
+                ADR-097 le pone **el color de la materia**, y la regla sigue en
+                pie: es el mismo para todas las barras de esta materia, llueva o
+                truene. Lo que distingue un tema de otro sigue siendo la opacidad
+                y la palabra, no el tono.
               */
-              background: "var(--foreground)",
+              background: color,
               opacity: u.estado === "sin_evidencia" ? 0.18 : 0.75,
             }}
           />
@@ -253,6 +263,7 @@ function Columna({ fuente }: { fuente: ColumnaFuente }) {
  */
 export function MateriaCursado({
   materia,
+  cursadaId,
   evaluacion,
   modoExamen,
   chip,
@@ -279,7 +290,14 @@ export function MateriaCursado({
   return (
     <div style={{ background: "var(--background)", padding: 16, borderRadius: "var(--radius)" }}>
       <TituloDePanel
-        eyebrow={materia}
+        eyebrow={
+          // La marca de la materia delante de su nombre — ADR-097, el mismo
+          // punto que tiene en el índice y en Hoy.
+          <span className="inline-flex items-center" style={{ gap: 8 }}>
+            <MarcaDeMateria cursadaId={cursadaId} />
+            {materia}
+          </span>
+        }
         titulo={t("MATERIA.TITULO")}
         subcopy={SUBCOPY.UX02}
         acciones={
@@ -327,7 +345,7 @@ export function MateriaCursado({
             de esa ausencia ya lo da el hero con `CONTEXTO_INCOMPLETO`; repetirlo
             con una tabla en blanco diría dos veces lo mismo.
           */}
-          {gantt && <Gantt gantt={gantt} />}
+          {gantt && <Gantt gantt={gantt} color={cursadaId ? colorDeMateria(cursadaId) : "var(--foreground)"} />}
 
           {/*
             `CLASES DE LA SEMANA` — el horario de cursado (ADR-063).

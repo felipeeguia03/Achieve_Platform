@@ -171,6 +171,8 @@ import type {
 import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 import { altaReal, type SeleccionDeRequisito } from "./repositorios/alta";
+import { cuentaReal } from "./repositorios/cuenta";
+import { cuenta as cuentaPura, type CuentaProps } from "./servicios/cuenta";
 import { catalogoReal, type InstitucionOfrecible, type RequisitoDelPlan } from "./repositorios/catalogo";
 import {
   confirmarMapaAcademico as confirmarMapaAcademicoPuro,
@@ -216,6 +218,11 @@ export function resolverSesion(token: string | null): Promise<ResultadoDeSesion>
     },
     token,
   );
+}
+
+/** De quién es la cuenta, para el topbar — ADR-097. Sólo nombres, sólo lectura. */
+export function cuentaDe(institutionId: string, carreraId: string | null): Promise<CuentaProps> {
+  return cuentaPura(cuentaReal, institutionId, carreraId);
 }
 
 // ── El alta académica · Etapa B6.14.4 (ADR-052) ──────────────────────────────

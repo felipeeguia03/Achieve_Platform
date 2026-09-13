@@ -34,7 +34,20 @@
  * de identidad que coincidiera con uno de ellos haría que *"la materia verde"* y
  * *"la materia que va bien"* fueran la misma frase.
  */
-const PALETA = ["#b04a2f", "#3d6b4a", "#b8862f", "#41508f", "#6b4a80", "#2f6b73"] as const;
+/*
+  ⚠️ **Son tokens, no hex — ADR-097.** Los valores viven en `app/globals.css`,
+  uno por tema: sobre grafito los tonos apagados del claro se pierden, y el modo
+  noche usa los mismos seis, más claros. La identidad no cambia —la materia 3
+  es la materia 3 en los dos temas—; cambia cuánta luz tiene.
+*/
+const PALETA = [
+  "var(--materia-1)",
+  "var(--materia-2)",
+  "var(--materia-3)",
+  "var(--materia-4)",
+  "var(--materia-5)",
+  "var(--materia-6)",
+] as const;
 
 /**
  * ⚠️ **Determinista, y por eso sirve como identidad.** La misma cursada da el

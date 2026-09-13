@@ -889,6 +889,15 @@ export const copy = {
   "PANEL.REDIMENSIONAR": "Cambiar el tamaño",
 
 
+  // ── Modo noche y cuenta (ADR-097) ────────────────────────────────────────
+  /** El botón dice a dónde lleva, no dónde estás. */
+  "TEMA.A_OSCURO": "Modo noche",
+  "TEMA.A_CLARO": "Modo claro",
+  "CUENTA.MENU": "Tu cuenta",
+  /** Dónde estudia: la institución, y la carrera si ya la declaró. */
+  "CUENTA.DONDE": "Dónde estudiás",
+  "CUENTA.CERRAR_SESION": "Cerrar sesión",
+
   // ── El mosaico (ADR-088, Enmienda 6) ─────────────────────────────────────
   /**
    * ⚠️ **Se dice «acomodar», no «dividir la pantalla».** Lo que se mueve es

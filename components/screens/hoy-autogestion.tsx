@@ -29,8 +29,10 @@ import {
   HeroCard,
   EstadoChip,
   CTAPrincipal,
+  MarcaDeMateria,
   TituloDePanel,
 } from "./design-system";
+import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara, ofreceCta } from "@/lib/content/hero";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
@@ -276,6 +278,10 @@ function CuadroHoy({ c, onAbrir }: { c: CuadroDeHoy; onAbrir?: AbrirMateria }) {
             <div key={`${cl.cursadaId}-${cl.hora}`} style={{ marginBottom: 4 }}>
               <p className="truncate" title={cl.materia} style={{ fontSize: "var(--text-label)", lineHeight: 1.5 }}>
                 <span style={{ ...MONO, color: "var(--muted-foreground)", marginRight: 6 }}>{cl.hora}</span>
+                {/* El color de la materia — ADR-097: identidad, no medida. */}
+                <span style={{ marginRight: 6 }}>
+                  <MarcaDeMateria cursadaId={cl.cursadaId} tamano={7} />
+                </span>
                 <span style={{ color: "var(--foreground)" }}>{cl.materia}</span>
               </p>
               {cl.detalle && (
@@ -299,19 +305,22 @@ function CuadroHoy({ c, onAbrir }: { c: CuadroDeHoy; onAbrir?: AbrirMateria }) {
               className="flex items-baseline justify-between"
               style={{ gap: 8, fontSize: "var(--text-label)", lineHeight: 1.6 }}
             >
-              {onAbrir ? (
-                <button
-                  className="truncate text-left"
-                  onClick={() => onAbrir({ cursadaId: a.cursadaId, nombre: a.materia })}
-                  style={{ color: "var(--foreground)" }}
-                >
-                  {a.materia}
-                </button>
-              ) : (
-                <span className="truncate" style={{ color: "var(--foreground)" }}>
-                  {a.materia}
-                </span>
-              )}
+              <span className="flex min-w-0 items-center" style={{ gap: 8 }}>
+                <MarcaDeMateria cursadaId={a.cursadaId} tamano={7} />
+                {onAbrir ? (
+                  <button
+                    className="truncate text-left"
+                    onClick={() => onAbrir({ cursadaId: a.cursadaId, nombre: a.materia })}
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    {a.materia}
+                  </button>
+                ) : (
+                  <span className="truncate" style={{ color: "var(--foreground)" }}>
+                    {a.materia}
+                  </span>
+                )}
+              </span>
               <span style={{ ...MONO, color: "var(--muted-foreground)", whiteSpace: "nowrap" }}>{a.unidades}</span>
             </div>
           ))
@@ -374,10 +383,11 @@ function Riesgos({ riesgos, onAbrir }: { riesgos: RiesgoProyectado[]; onAbrir?: 
     <section aria-label={t("HOY.RIESGOS")}>
       <div className="flex items-baseline gap-3">
         <Eyebrow>{t("HOY.RIESGOS")}</Eyebrow>
+        {/* Chip tintado — ADR-097: la misma urgencia, en la forma de las capturas. */}
         {riesgos.length > 0 && (
-          <span style={{ ...MONO, color: "var(--urgencia-texto)" }}>
+          <EstadoChip tone="urgencia">
             {riesgos.length} {riesgos.length === 1 ? t("HOY.RIESGOS.UNO") : t("HOY.RIESGOS.VARIOS")}
-          </span>
+          </EstadoChip>
         )}
       </div>
       {riesgos.length === 0 ? (
@@ -391,7 +401,19 @@ function Riesgos({ riesgos, onAbrir }: { riesgos: RiesgoProyectado[]; onAbrir?: 
                 key={`${r.regla}-${cursadaId ?? i}`}
                 data-regla={r.regla}
                 className="flex items-center"
-                style={{ gap: 12, padding: "12px 16px", borderTop: i > 0 ? "1px solid var(--border)" : undefined }}
+                style={{
+                  gap: 12,
+                  padding: "12px 16px 12px 13px",
+                  borderTop: i > 0 ? "1px solid var(--border)" : undefined,
+                  /*
+                    ⚠️ **Dos colores con dos trabajos, y no se pisan** — ADR-097.
+                    El punto es la urgencia: dice *esto es un riesgo*. El filo de
+                    la izquierda es la materia: dice *de cuál*. Un riesgo del plan
+                    entero no es de ninguna, y su filo va transparente para que
+                    las filas sigan alineadas.
+                  */
+                  borderLeft: `3px solid ${cursadaId ? colorDeMateria(cursadaId) : "transparent"}`,
+                }}
               >
                 <span
                   aria-hidden

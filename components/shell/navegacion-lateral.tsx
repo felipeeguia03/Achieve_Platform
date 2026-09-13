@@ -26,18 +26,26 @@
  */
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, GraduationCap, LogOut, PanelLeft, Sun } from "lucide-react";
-import { cerrarSesion } from "@/lib/client/api";
+import { CalendarDays, ClipboardList, Library, PanelLeft, PlayCircle, Sun } from "lucide-react";
+import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
 import type { NodoId } from "@/lib/navigation/surfaces";
 import { t } from "@/lib/content/es-AR";
 
-const ICONOS: Record<NodoId, typeof Sun> = {
+/*
+  ⚠️ **Un ícono por ítem del menú, y el mapa se escribe con los nodos del menú.**
+  Estaba escrito con `UX02` —que no está en el menú desde ADR-077— y sin
+  `FORMACION`, así que *Materias* y *Formación* caían al sol de *Hoy*: tres
+  ítems con el mismo dibujo. `Partial` y no un `as unknown as`, para que el
+  hueco se vea en el tipo y no en la pantalla.
+*/
+const ICONOS: Partial<Record<NodoId, typeof Sun>> = {
   UX01: Sun,
-  UX02: GraduationCap,
+  UX02_INDICE: Library,
   UX06: ClipboardList,
+  FORMACION: PlayCircle,
   UX07: CalendarDays,
-} as unknown as Record<NodoId, typeof Sun>;
+};
 
 export function Item({
   item,
@@ -152,21 +160,6 @@ export function NavegacionLateral({
   colapsada: boolean;
   onAlternar: () => void;
 }) {
-  /*
-    Navegación dura y no `router.replace`, a propósito: cerrar sesión tiene que
-    tirar **todo** el estado en memoria, no sólo el token. Un `replace` del
-    router conserva el árbol montado, y con él lo que cada pantalla tenga
-    cargado del estudiante que se está yendo.
-
-    De paso, el componente no depende del router y se puede seguir montando
-    solo en un test.
-  */
-  async function salir() {
-    await cerrarSesion();
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- recarga deliberada: ver arriba
-    window.location.assign("/login");
-  }
-
   return (
     <nav
       aria-label={t("SHELL.NAVEGACION")}
@@ -177,10 +170,24 @@ export function NavegacionLateral({
         flexShrink: 0,
         padding: colapsada ? "16px 12px" : "16px",
         gap: 4,
-        // La barra es apenas más oscura que la página; la separa el hairline.
-        background: "var(--muted)",
+        // El mismo fondo que la página; la separa el hairline. En oscuro es el
+        // negro de la página, como en las capturas (ADR-097).
+        background: "var(--background)",
         borderRight: ".5px solid var(--border)",
-        minHeight: "100vh",
+        /*
+          ⚠️ **Fijo: siempre se ve entero, y lo que scrollea es la derecha** — lo
+          pidió el owner. `sticky` con el alto de la ventana y no `fixed`: sigue
+          ocupando su lugar en la fila, así la columna de contenido no necesita un
+          `margin-left` que se desincronice al colapsar la barra (256 ↔ 80 px).
+          `alignSelf` evita que el flex lo estire al alto de la página, que es lo
+          que lo hacía scrollear con ella. Si alguna vez no entra —una ventana muy
+          baja—, scrollea él solo, sin arrastrar la página.
+        */
+        position: "sticky",
+        top: 0,
+        height: "100vh",
+        alignSelf: "flex-start",
+        overflowY: "auto",
       }}
     >
       <div
@@ -209,26 +216,12 @@ export function NavegacionLateral({
       </div>
 
       {/*
-        Salir, al pie y en secundario. Va acá y no en el menú porque **no es una
-        superficie**: no lleva a ninguna pantalla de producto, cierra la sesión.
-        Sigue sin ser una CTA — no compite con la acción primaria (`I-06`).
+        El tema, al pie — ADR-097. **Salir se mudó al menú del avatar**, arriba a
+        la derecha, que es donde lo busca quien usó el software de las capturas.
       */}
-      <button
-        onClick={salir}
-        aria-label={t("LOGIN.SALIR")}
-        className="flex items-center"
-        style={{
-          marginTop: "auto",
-          gap: 12,
-          padding: "8px 12px",
-          justifyContent: colapsada ? "center" : "flex-start",
-          color: "var(--muted-foreground)",
-          fontSize: "var(--text-body)",
-        }}
-      >
-        <LogOut size={18} aria-hidden />
-        {!colapsada && <span>{t("LOGIN.SALIR")}</span>}
-      </button>
+      <div className="hairline-t" style={{ marginTop: "auto", paddingTop: 12 }}>
+        <ConmutadorDeTema colapsada={colapsada} />
+      </div>
     </nav>
   );
 }

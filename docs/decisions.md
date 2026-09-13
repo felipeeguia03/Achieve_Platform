@@ -149,6 +149,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-094](#adr-094) | **El cuadro de hoy**: clases con `Un.` y aula, *Podés avanzar* y horarios; el bloque horario gana el aula (simulada) | ✅ `ACCEPTED` *(11 sep 2026 · pedido del owner)* | [ADR-093](#adr-093), [ADR-062](#adr-062), [ADR-083](#adr-083) |
 | [ADR-095](#adr-095) | **Materias**: la fila dice el horario con su aula, la cobertura se muestra corta y la modalidad se lee | ✅ `ACCEPTED` *(12 sep 2026 · con la captura delante)* | [ADR-077](#adr-077), [ADR-072](#adr-072), [ADR-094](#adr-094) |
 | [ADR-096](#adr-096) | **Las dos opciones de evaluaciones se descartan**: `UX01` queda en Hero + Tu día + Riesgos | ✅ `ACCEPTED` *(12 sep 2026 · el owner miró las dos)* | [ADR-093](#adr-093), [ADR-077](#adr-077) |
+| [ADR-097](#adr-097) | **Modo noche, la cuenta en el topbar y color que identifica** — revierte §12.4 | ✅ `ACCEPTED` *(12 sep 2026 · pedida por el owner · **la tabla de contrastes es un test**)* | [ADR-018](#adr-018), [ADR-088 · Enm. 5](#adr-088-enmienda-5) |
 
 ---
 
@@ -9186,3 +9187,135 @@ las evaluaciones juntas"*, esa es la forma que ya se probó, y el lugar es `/mat
 séptima"* se probaba en la cola `1 de N`; ADR-093 la pasó a las tarjetas; ahora el único camino de
 `UX01` a una materia es **el botón de un riesgo**, y ahí se prueba. La regla no cambió: `CTA-001`
 viaja con su cursada.
+
+---
+
+<a id="adr-097"></a>
+
+## ADR-097 — Modo noche, la cuenta en el topbar y color que identifica
+
+**Estado:** `ACCEPTED` · 12 sep 2026 · **pedida por el owner con capturas del software de referencia**
+**Revierte:** `design-system-capturas.md` [§12.4](design-system-capturas.md) (*«sin modo oscuro»*)
+**Construye sobre:** [ADR-018](#adr-018), [ADR-088 · Enm. 5](#adr-088-enmienda-5), [ADR-039](#adr-039)
+
+### Contexto
+
+El owner mandó capturas del software de referencia —el mismo del que salieron las capturas de
+`docs/diseño/`— en claro y en oscuro, y pidió: *"mirá cómo pasan a modo noche y algunas cosas que
+podríamos tener como el usuario y las opciones de cerrar sesión y la organización, tomá lo mejor para
+Achieve y copialo. Hagamos un modo noche con los mismos cambios de colores. Además su software tiene
+muchos colores, dónde podríamos agregar nosotros sin perder el profesionalismo."*
+
+Tres cosas del repositorio chocaban con copiarlo tal cual, y se le dijeron antes de construir:
+
+1. **§12.4 había decidido que no hay modo oscuro** *"mientras no exista una segunda tabla de
+   contrastes medida, no estimada"*.
+2. **Un estudiante no tiene organizaciones.** Pertenece a una institución, que decide el padrón del
+   CRM. Y **en la base no tiene nombre**: tiene email e institución.
+3. **La paleta figura cerrada**: tres semánticos, base acromática, color bajo el 2 % del área (§5).
+
+Con eso delante contestó: institución + avatar; modo noche que **sigue al sistema**; color **de
+materia** y **chips tintados**; y la campanita de notificaciones **se diseña aparte** antes de
+construirla.
+
+### Decisión
+
+**1. Hay modo noche, y la tabla de contrastes es un test.** `tests/tema.test.ts` lee los tokens de
+`app/globals.css` —no una copia— y calcula el contraste WCAG de cada par en los dos temas: texto a
+4.5:1, marcas de materia a 3:1. Es la «tabla medida» que §12.4 pedía, y rompe si alguien toca un valor
+y el par baja de su mínimo.
+
+| Regla | Por qué |
+|---|---|
+| **Un solo bloque `:root[data-tema="oscuro"]` que sólo redefine tokens** | El código ya usaba tokens casi en todos lados: el tema entra por el CSS y no por las pantallas |
+| **Sigue al sistema; el botón gana** | Sin elección guardada manda `prefers-color-scheme`, en vivo. Tocar luna o sol guarda la elección **en este navegador** (`lib/client/tema.ts`) |
+| **Se elige antes de pintar** | Un script en el `<head>` pone el atributo antes de que React hidrate. Sin él la página se ve clara un instante y salta (`P-12`) |
+| **Referencia visual: la del software** | Fondo casi negro `#0b0b0c`, tarjetas grafito `#1c1c1e`, **acción primaria invertida** (clara sobre oscuro) |
+| **Los semánticos y las materias tienen su versión oscura** | Medidos sobre grafito: los tonos del claro se pierden ahí |
+
+⚠️ **Es una preferencia del navegador, no del estudiante.** No viaja al backend. Por eso
+`lib/client/tema.ts` entra como **segunda excepción** a la regla de cero persistencia del Track A,
+junto a la de ADR-088, y el guard exige que sean exactamente dos.
+
+⚠️ **El botón vive al pie del menú lateral**, como en el software: **sólo el ícono, chico y a la
+derecha**. ⚠️ **El ícono dice en qué modo estás** —luna en noche, sol en día—, al revés que el
+software, que muestra a dónde vas: lo decidió el owner. Qué hace el botón lo dicen su `aria-label` y
+su `title`. A menos de 768 px el menú no está,
+así que el menú del avatar lo repite **sólo ahí**.
+
+**2. La cuenta arriba a la derecha: dónde estudiás y quién sos.**
+
+| Del software | En Achieve | Por qué |
+|---|---|---|
+| Selector de organización con «Crear organización» | **Institución · carrera, fijas** | Una sola institución, que decide el padrón. Un selector con una opción no controla nada |
+| Avatar con nombre y email | **Avatar con iniciales del email** | No hay nombre en la base, y no se inventa |
+| «Administrar cuenta» | **No está** | No hay cuenta que administrar desde acá ([ADR-039](#adr-039)) |
+| «Cerrar sesión» | **Sí** — y sale del pie del menú lateral | Es donde lo busca quien usó el software |
+| Campanita | **No está** | No existe nada que notificar. Se diseña aparte |
+
+`GET /api/cuenta` devuelve los dos nombres —institución y carrera declarada—, con la carrera en su
+nombre visible (*UCC Sistemas*, [ADR-086](#adr-086)). **No exige el alta completa**: el topbar se
+dibuja también durante el alta. El email **no viaja por ninguna ruta**: ya está en la sesión del
+navegador. **Sin sesión —el Track A— no se dibuja nada.**
+
+**3. El color que identifica, donde aparece una materia.** El color de la [Enmienda 5 de
+ADR-088](#adr-088-enmienda-5) —identidad, no medida— sale del índice y la barra: `MarcaDeMateria`
+lo pone delante del nombre en *Tu día* (clases y *Podés avanzar*), en el título de la página de la
+materia, en el filo izquierdo de cada riesgo y en las barras del Gantt.
+
+⚠️ **En los riesgos conviven dos colores con dos trabajos.** El punto es la urgencia —*esto es un
+riesgo*—; el filo es la materia —*de cuál*—. Un riesgo del plan entero no es de ninguna, y su filo va
+transparente.
+
+⚠️ **El Gantt sigue sin color por estado** ([ADR-075](#adr-075) §C1). Todas las barras de una materia
+tienen **el mismo** color; lo que distingue un tema de otro sigue siendo la opacidad y la palabra.
+
+⚠️ **Los seis tonos pasaron a ser tokens** (`--materia-1`…`6`), uno por tema. **`--materia-3` cambió
+en claro** de `#b8862f` a `#ad802c`: la tabla midió 2.97:1 sobre el fondo de la página.
+
+**4. Los chips de estado, tintados.** `EstadoChip` era un relleno sólido; pasa a ser **fondo suave del
+color semántico, texto de su tono y un punto adelante**, como los chips del software. **No agrega
+ningún color ni cambia qué estado lleva cuál** —el tono lo sigue decidiendo la proyección—: cambia la
+intensidad. Cada tono tiene su `-tinte` y su `-tinte-texto`, porque el verde de texto de siempre no
+llega a 4.5:1 encima de su propio tinte.
+
+**5. Un defecto que las capturas destaparon.** *Materias* y *Formación* mostraban **el sol de Hoy** en
+el menú lateral: el mapa de íconos seguía escrito con `UX02` —que salió del menú con ADR-077— y sin
+`FORMACION`. Ahora cada ítem tiene el suyo, y hay test.
+
+**6. El menú lateral es fijo.** Pedido el 13 de septiembre, con el modo noche andando: *"que el
+sidebar sea estático, siempre se ve completo; la pantalla de la derecha permite scroll, el sidebar
+no"*. Es `sticky` con el alto de la ventana y no `fixed`: sigue ocupando su lugar en la fila, así la
+columna de contenido no necesita un margen que se desincronice al colapsarlo. Si la ventana es tan
+baja que no entra, scrollea él solo. ⚠️ **El topbar sigue scrolleando con el contenido**, como antes.
+
+### Consecuencias
+
+- **Se tocan `app/globals.css` y `components/screens/*`**, que la regla 6 de `CLAUDE.md` protege: lo
+  autoriza este ADR, pedido por el owner. Las pantallas cambian **tokens y una primitiva**, no su
+  estructura ni su contenido.
+- `colorDeMateria` devuelve `var(--materia-N)` en vez de un hex. Los consumidores ya lo usaban dentro
+  de `color-mix`, que acepta variables.
+- **Sin cambios de base.** `/api/cuenta` lee dos tablas que ya existían.
+
+### ⛔ Lo que NO resuelve
+
+- **La campanita.** El owner pidió diseñar notificaciones; es una entidad nueva con reglas de producto
+  —qué se notifica, a quién, cuándo caduca— y se plantea aparte antes de tocar nada.
+- **Sombras en oscuro.** Algunas ventanas y menús conservan sombras con literal negro: sobre fondo
+  oscuro casi no se ven, y el borde de medio píxel es lo que los separa. No es un defecto de lectura.
+- **El color de materia sigue pendiente de la psicopedagoga**, igual que en la Enmienda 5: que sea
+  constante no garantiza que nadie lo lea como semáforo, y eso se prueba con personas.
+- **No se recorrió con la sesión real** en el navegador: la cuenta, las marcas de materia y el Gantt
+  necesitan una cursada, y el Track A no la tiene.
+
+### Cómo se verifica
+
+`tests/tema.test.ts` — la tabla de contrastes de los dos temas leída de `globals.css`, que el oscuro
+redefina superficies y semánticos, que la acción primaria se invierta, que el script del `<head>` siga
+al sistema y respete la elección, que cada ítem del menú tenga su ícono, que salir esté en el avatar,
+que la cuenta no dibuje «Crear organización» ni «Administrar cuenta» ni importe una campana, y que el
+chip use tinte. `tests/track-a-rules.test.ts` — las excepciones de persistencia son exactamente dos.
+**En el navegador**, `/hoy` y `/compromiso` con `?escenario=` en claro y en oscuro: el oscuro se
+activa solo con el sistema en oscuro, la acción primaria queda clara sobre grafito y el chip
+`CONFIRMED` se lee tintado en los dos.

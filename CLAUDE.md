@@ -98,6 +98,15 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
+🆕 **Hay modo noche** — [ADR-097](docs/decisions.md#adr-097), 12 de septiembre, que revierte
+`design-system-capturas` §12.4. Sigue al sistema; el botón al pie del menú lateral guarda la elección
+en el navegador.
+
+⚠️ **Antes de tocar un color:** no escribas hex en una pantalla. Usá un token, y si agregás o cambiás
+uno en `app/globals.css`, definilo **en los dos bloques** y sumá su par a `tests/tema.test.ts`: la
+tabla de contrastes es ese test. Los chips van con `EstadoChip` (tintado) y el color de una materia con
+`MarcaDeMateria` / `colorDeMateria`, que devuelve un token.
+
 🆕 **La barra de objetos no se llena sola** — [ADR-088 · Enmienda
 7](docs/decisions.md#adr-088-enmienda-7), 12 de septiembre. Entrar a una pantalla **no guarda su
 ficha**; minimizar o achicar sí. Las secciones del menú no llevan controles, la pantalla completa

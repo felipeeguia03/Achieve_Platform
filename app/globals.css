@@ -48,6 +48,31 @@
   --urgencia-texto: #9c3d68;  /* texto/ícono directo; pasa 4.5:1+ contra card, background y el propio fill */
   --humano: #0071e3;          /* Intervention abierta — pasa 4.5:1 como texto directo */
   --destructive: #9c3d68;     /* reusa --urgencia-texto: reconciliación/rescate es urgencia, no un 4to color */
+  --humano-texto: #0062c4;    /* --humano como texto sobre su tinte: 5.14:1 */
+
+  /* ── chips tintados — ADR-097. NO son colores nuevos: son los tres semánticos
+     en baja intensidad, con su texto medido ENCIMA del tinte (tests/tema.test.ts).
+     El -texto de éxito no alcanza sobre su tinte (3.97:1), por eso tiene el suyo. */
+  --exito-tinte: #eaf6ed;
+  --exito-tinte-texto: #1f7a36;   /* 4.85:1 */
+  --urgencia-tinte: #fbe9f2;
+  --urgencia-tinte-texto: #9c3d68; /* 5.50:1 */
+  --humano-tinte: #e6f0fb;
+  --humano-tinte-texto: #0062c4;  /* 5.14:1 */
+
+  /* ── identidad de materia — ADR-088 Enm. 5 y ADR-097. Constantes por cursada,
+     nunca por estado. Son marcas gráficas: se miden a 3:1, no a 4.5:1. */
+  --materia-1: #b04a2f;
+  --materia-2: #3d6b4a;
+  --materia-3: #ad802c;       /* era #b8862f: la tabla midió 2.97:1 sobre --background (ADR-097) */
+  --materia-4: #41508f;
+  --materia-5: #6b4a80;
+  --materia-6: #2f6b73;
+
+  /* ── cromo y sombras, para que el tema oscuro no dependa de literales ── */
+  --chrome: rgba(250, 250, 252, 0.82);
+  --sombra-flotante: 0 8px 28px rgba(0, 0, 0, 0.14);
+  --sombra-menu: 0 12px 32px rgba(0, 0, 0, 0.16);
 
   /* ── bordes: hairline de .5px, no gris de 1px (Mac feature #2) ── */
   --border: rgba(0, 0, 0, 0.09);
@@ -77,6 +102,88 @@
   --sidebar-accent-foreground: #1d1d1f;
   --sidebar-border: rgba(0, 0, 0, 0.09);
   --sidebar-ring: #1d1d1f;
+  color-scheme: light;
+}
+
+/*
+ * ── Modo noche — ADR-097 ─────────────────────────────────────────────────────
+ *
+ * ⚠️ **Revierte design-system-capturas §12.4**, que decía «no hay modo oscuro
+ * mientras no exista una tabla de contrastes medida». La tabla existe ahora y
+ * es un test: `tests/tema.test.ts` lee ESTE archivo y falla si un par baja de
+ * su mínimo. Si tocás un valor, el test te dice si sigue pasando.
+ *
+ * Un solo bloque, activado por `data-tema="oscuro"` en <html>. Quién pone el
+ * atributo —el sistema o la elección guardada— lo decide el script de
+ * `app/layout.tsx` antes de pintar, así no hay destello claro al cargar.
+ *
+ * Referencia visual: el mismo software de las capturas en oscuro. Fondo casi
+ * negro, tarjetas grafito, acción primaria invertida (blanca).
+ */
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+
+  --background: #0b0b0c;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --card-foreground: #f5f5f7;
+  --popover: #232325;
+  --popover-foreground: #f5f5f7;
+
+  --primary: #f5f5f7;
+  --primary-foreground: #1d1d1f;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #f5f5f7;
+  --muted: #2c2c2e;
+  --muted-foreground: #a1a1a6;
+  --accent: #2c2c2e;
+  --accent-foreground: #f5f5f7;
+
+  --exito-fill: #30d158;
+  --exito-texto: #4cc76e;
+  --urgencia-fill: #f472b6;
+  --urgencia-texto: #f19ac2;
+  --humano: #4d9dff;
+  --humano-texto: #6aaeff;
+  --destructive: #f19ac2;
+
+  --exito-tinte: #1b3323;
+  --exito-tinte-texto: #4cc76e;
+  --urgencia-tinte: #3b2230;
+  --urgencia-tinte-texto: #f19ac2;
+  --humano-tinte: #172b45;
+  --humano-tinte-texto: #6aaeff;
+
+  /* Los mismos seis tonos, más claros: sobre grafito los apagados se pierden. */
+  --materia-1: #e08a6f;
+  --materia-2: #7fb48d;
+  --materia-3: #d4aa5c;
+  --materia-4: #8f9ce0;
+  --materia-5: #b692cc;
+  --materia-6: #6fb2ba;
+
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #f5f5f7;
+
+  --chart-1: #30d158;
+  --chart-2: #f472b6;
+  --chart-3: #4d9dff;
+  --chart-4: #8e8e93;
+  --chart-5: #c7c7cc;
+
+  --chrome: rgba(11, 11, 12, 0.82);
+  --sombra-flotante: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --sombra-menu: 0 12px 32px rgba(0, 0, 0, 0.6);
+
+  --sidebar: #0b0b0c;
+  --sidebar-foreground: #f5f5f7;
+  --sidebar-primary: #f5f5f7;
+  --sidebar-primary-foreground: #1d1d1f;
+  --sidebar-accent: #1c1c1e;
+  --sidebar-accent-foreground: #f5f5f7;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-ring: #f5f5f7;
 }
 
 @theme inline {
@@ -186,7 +293,7 @@ h2 {
 
 /* chrome translúcido / contenido opaco — Mac feature #1, solo para barras fijas */
 .chrome-translucent {
-  background: rgba(250, 250, 252, 0.82);
+  background: var(--chrome);
   backdrop-filter: saturate(180%) blur(24px);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
 }

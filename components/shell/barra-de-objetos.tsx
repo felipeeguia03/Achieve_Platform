@@ -190,7 +190,7 @@ export function BarraDeObjetos({ onAbrirPaleta }: { onAbrirPaleta: () => void })
             background: "var(--card)",
             border: ".5px solid var(--border)",
             borderRadius: "var(--radius-pildora)",
-            boxShadow: "var(--sombra-flotante, 0 8px 28px rgba(0,0,0,0.14))",
+            boxShadow: "var(--sombra-flotante)",
             padding: 6,
           }}
         >
@@ -550,7 +550,7 @@ function Menu({ opciones, onCerrar }: { opciones: readonly OpcionDeMenu[]; onCer
         background: "var(--popover)",
         border: ".5px solid var(--border)",
         borderRadius: "var(--radius)",
-        boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+        boxShadow: "var(--sombra-menu)",
         padding: 4, zIndex: 40,
       }}
     >

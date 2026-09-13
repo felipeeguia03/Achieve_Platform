@@ -150,7 +150,15 @@ describe("Track A — reglas verificables estáticamente", () => {
    * ⚠️ **Si hace falta persistir otra cosa, la lista se amplía con su ADR**, no
    * se ensancha el regex. La excepción es angosta a propósito.
    */
-  const PERSISTENCIA_PERMITIDA = ["lib/client/espacio-de-trabajo/"];
+  const PERSISTENCIA_PERMITIDA = [
+    "lib/client/espacio-de-trabajo/",
+    /*
+      ADR-097 — el tema claro u oscuro. Es una preferencia **de este navegador**,
+      como el tamaño de la letra: no es un dato del estudiante y no viaja al
+      backend. Un archivo, no una carpeta.
+    */
+    "lib/client/tema.ts",
+  ];
 
   it("cero persistencia: sin localStorage, sessionStorage ni IndexedDB", () => {
     const culpables = offenders(/\b(localStorage|sessionStorage|indexedDB|IDBDatabase)\b/)
@@ -163,10 +171,11 @@ describe("Track A — reglas verificables estáticamente", () => {
     expect(culpables).toEqual([]);
   });
 
-  it("la excepción de ADR-088 es un módulo, no una carpeta abierta", () => {
-    // Que la lista tenga exactamente un elemento es parte de la regla: dos
-    // significa que alguien amplió la excepción sin pasar por un ADR.
-    expect(PERSISTENCIA_PERMITIDA).toHaveLength(1);
+  it("las excepciones son dos módulos con su ADR, no carpetas abiertas", () => {
+    // Que la lista tenga exactamente estos elementos es parte de la regla: uno
+    // más significa que alguien amplió la excepción sin pasar por un ADR.
+    // ADR-088 (el espacio de trabajo) y ADR-097 (el tema).
+    expect(PERSISTENCIA_PERMITIDA).toHaveLength(2);
   });
 
   it("el dominio del espacio de trabajo NO persiste: las reglas son puras", () => {

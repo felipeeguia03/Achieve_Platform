@@ -11,6 +11,7 @@
  * sólido + texto ink).
  */
 
+import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { DatoDeEvaluacion, TipoDeAusencia, Tono } from "@/lib/domain/view-models";
@@ -143,13 +144,73 @@ export function HeroCard({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * El chip de estado — **tintado**, [ADR-097](../../docs/decisions.md#adr-097).
+ *
+ * Era un relleno sólido del color semántico con tinta encima. Pasa a ser el
+ * tratamiento del software de las capturas: **fondo suave del mismo color y
+ * texto de ese tono**, con un punto adelante.
+ *
+ * ⚠️ **No agrega ningún color ni cambia qué estado lleva cuál.** El `tone` lo
+ * sigue decidiendo la proyección, con las mismas reglas (`D6`: tres semánticos);
+ * lo que cambia es la intensidad. Un chip sólido pesaba más que el título de la
+ * pantalla, y con tres por pantalla el presupuesto de §5.2 se iba entero en
+ * chips.
+ *
+ * ⚠️ **El texto se mide sobre el tinte, no sobre la tarjeta.** Por eso cada tono
+ * tiene su `-tinte-texto`: el verde de texto de siempre no alcanza 4.5:1 encima
+ * de su propio tinte. Lo verifica `tests/tema.test.ts` en los dos temas.
+ */
 export function EstadoChip({ tone, children }: { tone: "urgencia" | "exito" | "humano"; children: React.ReactNode }) {
-  const fill = tone === "urgencia" ? "var(--urgencia-fill)" : tone === "exito" ? "var(--exito-fill)" : "var(--humano)";
-  const text = tone === "humano" ? "#ffffff" : "var(--foreground)";
   return (
-    <span style={{ display: "inline-block", background: fill, color: text, fontSize: "var(--text-label)", fontWeight: 600, padding: "3px 10px", borderRadius: "var(--radius-pildora)" }}>
+    <span
+      data-tono={tone}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        background: `var(--${tone}-tinte)`,
+        color: `var(--${tone}-tinte-texto)`,
+        fontSize: "var(--text-label)",
+        fontWeight: 600,
+        padding: "3px 10px",
+        borderRadius: "var(--radius-pildora)",
+      }}
+    >
+      {/* Forma además de color (`P-06`): el punto no depende de distinguir tonos. */}
+      <span aria-hidden style={{ width: 6, height: 6, borderRadius: 999, background: "currentColor", flexShrink: 0 }} />
       {children}
     </span>
+  );
+}
+
+/**
+ * La marca de color de una materia — [ADR-097](../../docs/decisions.md#adr-097).
+ *
+ * El color de identidad de la Enmienda 5 de ADR-088, **llevado a donde aparezca
+ * una materia**: Hoy, la página de la materia, el Gantt. Es el mismo punto que
+ * ya tenía el índice.
+ *
+ * ⚠️ **Identidad, no medida.** Sale de la cursada y es constante: la misma
+ * materia tiene el mismo color con 0% o con 100% de cobertura, así que no puede
+ * leerse como un juicio (ADR-075 §C1). `null` ⇒ **no se dibuja**: en el Track A
+ * no hay cursada, y un color sin identidad detrás sería decoración.
+ */
+export function MarcaDeMateria({ cursadaId, tamano = 8 }: { cursadaId: string | null; tamano?: number }) {
+  if (cursadaId === null) return null;
+  return (
+    <span
+      aria-hidden
+      data-marca-de-materia
+      style={{
+        display: "inline-block",
+        width: tamano,
+        height: tamano,
+        borderRadius: 999,
+        background: colorDeMateria(cursadaId),
+        flexShrink: 0,
+      }}
+    />
   );
 }
 

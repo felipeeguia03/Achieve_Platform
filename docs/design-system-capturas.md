@@ -319,6 +319,10 @@ internos** y se lee como cinco bloques distintos, por espaciado puro.
 > La paleta **ya está cerrada** en [`design-system.md`](design-system.md) §2.1–§2.3: tres semánticos
 > (`exito`, `urgencia`, `humano`), base acromática, cuatro niveles de tinta. **No se agrega ningún
 > color.** Acá va solo la distribución observada.
+>
+> ⚠️ **[ADR-097](decisions.md#adr-097) no abre la paleta.** Los chips pasan a tintados —los mismos tres
+> semánticos en baja intensidad— y el color de identidad de materia llega a más lugares. Ningún
+> semántico nuevo.
 
 ### 5.1 Los cuatro planos de superficie
 
@@ -823,7 +827,13 @@ por inferencia**, y §4.1 pasa a canónica.
 > El hairline entre sidebar y página tiene una diferencia de luminancia de **~1,6 sobre 255**: son
 > casi el mismo gris. La separación la hace la línea, no el contraste de fondos.
 
-### 12.4 Modo oscuro — ✅ `DECIDIDO`: no hay, y el conmutador no se dibuja
+### 12.4 Modo oscuro — ⚠️ `REVERTIDO` por [ADR-097](decisions.md#adr-097) el 12 de septiembre de 2026
+
+> **Hay modo noche.** La condición de abajo —*una segunda tabla de contrastes medida*— se cumplió: es
+> `tests/tema.test.ts`, que lee los tokens de `app/globals.css` y mide cada par en los dos temas. Lo
+> que sigue es la decisión original, conservada como historia.
+
+#### Lo que se había decidido el 30 de agosto
 
 El checklist del manual incluye *"Modo oscuro: los colores semánticos siguen funcionando"*, y el
 software tiene toggle de tema. **`design-system.md` no define paleta oscura.**
@@ -1006,7 +1016,7 @@ Registro de reconciliación, para cuando se sincronicen los documentos.
 | §5.3 | **Confirma** los tres semánticos. Rechaza explícitamente el cuarto color del original |
 | §11.2 | **Ancla** los nueve anti-patrones a evidencia visual concreta |
 | §12.3 | ✅ **Confirmada por medición** el 30 ago 2026: 256 / 80 / 56 px, todos múltiplos de 8 |
-| §12.4 | ✅ **Decidido:** sin modo oscuro en el Track A, y sin dibujar el conmutador |
+| §12.4 | ⚠️ **Revertido por ADR-097:** hay modo noche, con la tabla de contrastes como test |
 | §12.6 | ✅ **Decidido:** `UX06` es lista de tarjetas, no tabla |
 | §12.1 | ✅ **Conflicto cerrado** por [ADR-014](decisions.md#adr-014): §6.1 se reencuadró como contrato de orden semántico y §6.2 pasó a primaria |
 | §12.7 | ✅ **Cerrado** por [ADR-015](decisions.md#adr-015) con los wireframes desktop de `VI.7` §24: CTA a ancho completo al final de la columna principal |
