@@ -4,7 +4,7 @@ import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ActivacionModoExamen } from "@/components/screens/activacion-modo-examen";
+import { ActivacionModoExamen, ActivacionModoExamenEsqueleto } from "@/components/screens/activacion-modo-examen";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
@@ -62,7 +62,7 @@ export function VistaDeActivacionDeExamen({ consulta }: PropsDeSuperficie) {
     );
   }
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <ActivacionModoExamenEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

@@ -3,7 +3,7 @@
 import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useRouter } from "next/navigation";
-import { ProgresoBitacora } from "@/components/screens/progreso-bitacora";
+import { ProgresoBitacora, ProgresoBitacoraEsqueleto } from "@/components/screens/progreso-bitacora";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
@@ -49,8 +49,8 @@ export function VistaDeProgreso({ consulta }: PropsDeSuperficie) {
     return <Pantalla props={props} router={router} params={params} />;
   }
 
-  // Mientras llega la respuesta no se dibuja nada (`P-12`: nada salta al cargar).
-  if (respuesta.estado === "CARGANDO") return null;
+  // Mientras llega la respuesta, el esqueleto (`P-12`: nada salta al cargar).
+  if (respuesta.estado === "CARGANDO") return <ProgresoBitacoraEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

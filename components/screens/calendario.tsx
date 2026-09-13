@@ -28,6 +28,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { TituloDePanel, ReglaDeNegocio } from "./design-system";
+import { Esqueleto, PildoraEsqueleto } from "./esqueleto";
 import { t } from "@/lib/content/es-AR";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import {
@@ -289,19 +290,15 @@ function Pildora({ fecha, dias }: { fecha: string; dias: number | null }) {
 
 // ── Esqueletos ───────────────────────────────────────────────────────────────
 
-/**
- * Lo que ocupa el lugar de un dato **mientras la respuesta no llegó** —
- * `design-system-capturas.md` §9.1. Sale del mismo layout que lo reemplaza:
- * la grilla, la barra y el pie se dibujan reales desde el primer frame, y sólo
- * los eventos y la píldora son bloques.
- *
- * ⚠️ **No es un evento.** No lleva texto, ni `data-evento`, ni color de materia,
- * y va `aria-hidden`: quien lee con lector oye `aria-busy` en la grilla, no
- * clases inventadas. Dónde caen los bloques es **fijo** y no dice nada del
- * horario del estudiante. Late sólo si el sistema no pide menos movimiento.
- */
-const ESQUELETO = "motion-safe:animate-pulse";
-const TINTA_DE_ESQUELETO = "var(--muted)";
+/*
+  Los bloques salen de la primitiva `Esqueleto` (`./esqueleto.tsx`, §9.1). Acá
+  la grilla, la barra y el pie se dibujan reales desde el primer frame, y sólo
+  los eventos y la píldora son bloques.
+
+  ⚠️ **No es un evento.** Sin texto, sin `data-evento`, sin color de materia:
+  quien lee con lector oye `aria-busy` en la grilla, no clases inventadas. Dónde
+  caen los bloques es **fijo** y no dice nada del horario del estudiante.
+*/
 
 /** Anchos de los chips del mes, en ciclo: iguales se leerían como datos. */
 const ANCHOS_DE_CHIP = ["72%", "56%", "88%", "64%", "80%"];
@@ -315,36 +312,8 @@ const BLOQUES_DE_COLUMNA: [number, number][][] = [
   [[11, 1.5], [18, 2]],
 ];
 
-function PildoraEsqueleto() {
-  // Mismo relleno, borde y cuerpo de letra que `Pildora`: el alto no cambia al llegar.
-  return (
-    <span
-      data-esqueleto
-      aria-hidden
-      className={`inline-flex items-center ${ESQUELETO}`}
-      style={{
-        border: "1px solid transparent",
-        borderRadius: 999,
-        padding: "6px 14px",
-        fontSize: "var(--text-label)",
-        background: TINTA_DE_ESQUELETO,
-        width: 220,
-      }}
-    >
-      &nbsp;
-    </span>
-  );
-}
-
 function ChipEsqueleto({ ancho }: { ancho: string }) {
-  return (
-    <span
-      data-esqueleto
-      aria-hidden
-      className={ESQUELETO}
-      style={{ display: "block", width: ancho, height: ALTO_DE_CHIP, flexShrink: 0, borderRadius: 5, background: TINTA_DE_ESQUELETO }}
-    />
-  );
+  return <Esqueleto ancho={ancho} alto={ALTO_DE_CHIP} radio={5} />;
 }
 
 function Alternador({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -872,20 +841,11 @@ function ColumnaDelDia({
       }}
     >
       {esqueleto.map(([hora, largo]) => (
-        <span
+        <Esqueleto
           key={hora}
-          data-esqueleto
-          aria-hidden
-          className={ESQUELETO}
-          style={{
-            position: "absolute",
-            top: (hora - primera) * horaPx + 1,
-            height: largo * horaPx - 2,
-            left: 3,
-            right: 3,
-            borderRadius: 6,
-            background: TINTA_DE_ESQUELETO,
-          }}
+          ancho="auto"
+          alto={largo * horaPx - 2}
+          style={{ position: "absolute", top: (hora - primera) * horaPx + 1, left: 3, right: 3 }}
         />
       ))}
       {eventos.map((e) => {

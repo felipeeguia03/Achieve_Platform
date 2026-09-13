@@ -4,7 +4,7 @@ import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
 import { useRouter } from "next/navigation";
-import { MateriaCursado } from "@/components/screens/materia-cursado";
+import { MateriaCursado, MateriaCursadoEsqueleto } from "@/components/screens/materia-cursado";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
@@ -46,8 +46,8 @@ export function VistaDeMateria({ consulta }: PropsDeSuperficie) {
     return <Pantalla props={props} router={router} params={params} />;
   }
 
-  // Mientras llega la respuesta no se dibuja nada (`P-12`: nada salta al cargar).
-  if (respuesta.estado === "CARGANDO") return null;
+  // Mientras llega la respuesta, el esqueleto (`P-12`: nada salta al cargar).
+  if (respuesta.estado === "CARGANDO") return <MateriaCursadoEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar
@@ -67,19 +67,28 @@ export function VistaDeMateria({ consulta }: PropsDeSuperficie) {
  * **sin la sección** en vez de no dibujarse: la cursada no depende de sus clases.
  * Bajo `?escenario=` no se pide nada: el Track A no tiene clases que listar.
  */
-function useTusClases(cursadaId: string | null, omitir: boolean): TusClases | null {
+function useTusClases(cursadaId: string | null, omitir: boolean): { tusClases: TusClases | null; cargando: boolean } {
   const sinCursada = omitir || cursadaId === null;
   const lista = useSuperficie<{ clases: ClaseEnLista[] }>(
     `/api/clase?cursada=${encodeURIComponent(cursadaId ?? "")}`,
     { omitir: sinCursada },
   );
   const activa = useSuperficie<{ activa: ClaseProps | null }>("/api/clase", { omitir: sinCursada });
-  if (sinCursada || lista.respuesta.estado !== "OK" || activa.respuesta.estado !== "OK") return null;
+  if (sinCursada) return { tusClases: null, cargando: false };
+  // Cargando mientras falte cualquiera de las dos y ninguna haya fallado: si una
+  // falla, la sección no está, como antes.
+  const estados = [lista.respuesta.estado, activa.respuesta.estado];
+  if (lista.respuesta.estado !== "OK" || activa.respuesta.estado !== "OK") {
+    return { tusClases: null, cargando: estados.every((e) => e === "OK" || e === "CARGANDO") };
+  }
 
   const abierta = activa.respuesta.datos.activa;
   return {
-    clases: lista.respuesta.datos.clases,
-    entrada: abierta === null ? "INICIAR" : abierta.cursadaId === cursadaId ? "VOLVER" : null,
+    tusClases: {
+      clases: lista.respuesta.datos.clases,
+      entrada: abierta === null ? "INICIAR" : abierta.cursadaId === cursadaId ? "VOLVER" : null,
+    },
+    cargando: false,
   };
 }
 
@@ -99,7 +108,7 @@ function Pantalla({
   // El recorrido de focus group manda sobre el destino genérico: en una
   // sesión, la CTA tiene que llevar a la estación siguiente.
   const destino = siguienteUrl("/materia", params.get("escenario")) ?? DESTINO;
-  const tusClases = useTusClases(props.cursadaId, !!params.get("escenario"));
+  const { tusClases, cargando: tusClasesCargando } = useTusClases(props.cursadaId, !!params.get("escenario"));
 
   /**
    * `CTA-022` desde la materia: **Iniciar clase** fuera de horario, sin bloque.
@@ -134,6 +143,7 @@ function Pantalla({
           : undefined
       }
       tusClases={tusClases}
+      tusClasesCargando={tusClasesCargando}
       onEntrarAClase={() => void entrarAClase()}
       onAbrirClase={(c) => {
         const base = rutaDe("CLASE");

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useConsulta, type PropsDeSuperficie } from "./consulta";
 import {
   ModoClase,
+  ModoClaseEsqueleto,
   tituloDeClase,
   type ApuntePendiente,
   type EstadoDeGrabadora,
@@ -61,7 +62,7 @@ export function VistaDeClase({ consulta }: PropsDeSuperficie) {
     clase && aLaMateria ? { etiqueta: nombreDeObjeto(clase.materia), href: aLaMateria } : null,
   );
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <ModoClaseEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

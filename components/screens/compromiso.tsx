@@ -19,8 +19,46 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import {
+  ChipEsqueleto,
+  CTAEsqueleto,
+  CTASecundariaEsqueleto,
+  FilaEsqueleto,
+  PantallaCargando,
+  Renglon,
+} from "./esqueleto";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { CompromisoProps } from "@/lib/domain/view-models";
+
+/**
+ * `UX04` mientras carga — `P-12`. Las dos tarjetas del acuerdo: fecha, hora y
+ * tiempo en la primera; qué se entrega, en qué queda y la CTA en la segunda.
+ */
+export function CompromisoEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-4" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={<Renglon cuerpo="title-lg" ancho={300} />}
+        meta={<Renglon cuerpo="body" ancho={220} />}
+        subcopy={SUBCOPY.UX04}
+      />
+      <HeroCard>
+        <FilaEsqueleto />
+        <FilaEsqueleto />
+        <FilaEsqueleto />
+      </HeroCard>
+      <HeroCard>
+        <Renglon cuerpo="label" ancho="85%" />
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Renglon cuerpo="label" ancho={90} />
+          <ChipEsqueleto ancho={100} />
+        </span>
+        <CTAEsqueleto />
+        <CTASecundariaEsqueleto />
+      </HeroCard>
+    </PantallaCargando>
+  );
+}
 
 export function Compromiso({
   contexto,

@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
-import { Formacion } from "@/components/screens/formacion";
+import { Formacion, FormacionEsqueleto } from "@/components/screens/formacion";
 import { useSuperficie } from "@/lib/client/superficie";
 import { PARAM_PIEZA } from "@/lib/navigation/objeto-en-pantalla";
 import { nodos } from "@/lib/navigation/surfaces";
@@ -61,7 +61,7 @@ export function VistaDeFormacion({ consulta }: PropsDeSuperficie = {}) {
     router.push(cola ? `${base}?${cola}` : base);
   }
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <FormacionEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

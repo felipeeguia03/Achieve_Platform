@@ -74,8 +74,15 @@ describe("B2.6 · las superficies conectadas no caen al fixture en silencio", ()
       expect(fixture).toBeGreaterThan(guarda);
     });
 
-    it(`${ux} no dibuja nada mientras carga (P-12)`, () => {
-      expect(RUTA(superficie)).toContain('respuesta.estado === "CARGANDO"');
+    /**
+     * `P-12`: mientras carga va **el esqueleto** de la pantalla, no un estado ni
+     * un fixture. Antes no se dibujaba nada y el contenido aparecía de golpe;
+     * el esqueleto tiene su forma y no afirma nada (`tests/esqueletos.test.tsx`).
+     */
+    it(`${ux} dibuja su esqueleto mientras carga (P-12)`, () => {
+      const src = RUTA(superficie);
+      expect(src).toMatch(/respuesta\.estado === "CARGANDO"\) return <\w+Esqueleto \/>/);
+      expect(src).not.toContain('"CARGANDO") return null');
     });
 
     /**

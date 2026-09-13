@@ -5,7 +5,7 @@ import type { PropsDeSuperficie } from "./consulta";
 import { useRouter } from "next/navigation";
 
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
-import { IndiceDeMaterias } from "@/components/screens/indice-de-materias";
+import { IndiceDeMaterias, IndiceDeMateriasEsqueleto } from "@/components/screens/indice-de-materias";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCtaCon } from "@/lib/navigation";
 import type { MateriasProps } from "@/lib/domain/view-models";
@@ -30,7 +30,7 @@ export function VistaDeMaterias(_props: PropsDeSuperficie = {}) {
   const router = useRouter();
   const { respuesta, reintentar } = useSuperficie<MateriasProps>("/api/materias");
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <IndiceDeMateriasEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

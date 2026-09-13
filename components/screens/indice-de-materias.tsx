@@ -28,6 +28,7 @@
 
 import { useState } from "react";
 import { ReglaDeNegocio, TituloDePanel } from "./design-system";
+import { Esqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import { t } from "@/lib/content/es-AR";
 import type { EjeDelPeriodo, MateriaEnIndice, MateriasProps } from "@/lib/domain/view-models";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
@@ -168,6 +169,67 @@ export function IndiceDeMaterias({
       */}
       {materias.some((m) => m.horarioEstimado) && <ReglaDeNegocio>{t("COMUN.HORARIO_ESTIMADO")}</ReglaDeNegocio>}
     </div>
+  );
+}
+
+/**
+ * El índice mientras sus datos no llegaron — `P-12`.
+ *
+ * Arranca en el Gantt, que es la vista por defecto: la misma tarjeta, la misma
+ * grilla de columnas y la leyenda real. El selector va en bloques y no en
+ * botones: apretarlo antes de que lleguen los datos no tendría qué mostrar.
+ */
+export function IndiceDeMateriasEsqueleto() {
+  return (
+    <PantallaCargando>
+      <TituloDePanel titulo="Materias" meta={<Renglon cuerpo="body" ancho={260} />} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "24px 0 18px" }}>
+        {[150, 70].map((ancho) => (
+          <Esqueleto key={ancho} ancho={ancho} alto="calc(var(--text-label) * 1.5 + 18px)" radio={8} />
+        ))}
+      </div>
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 14, padding: "6px 24px 14px" }}>
+        <div
+          aria-hidden
+          className={`hidden md:grid ${COLUMNAS_DEL_GANTT}`}
+          style={{ alignItems: "end", padding: "14px 0 10px", borderBottom: "1px solid var(--border)" }}
+        >
+          <Renglon cuerpo="meta" ancho={60} />
+          <Renglon cuerpo="meta" ancho="100%" />
+          <Renglon cuerpo="meta" ancho={50} style={{ justifyContent: "flex-end" }} />
+        </div>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <li
+              key={i}
+              aria-hidden
+              className={COLUMNAS_DEL_GANTT}
+              style={{ alignItems: "center", rowGap: 10, padding: "14px 0", borderBottom: "1px solid var(--border)" }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <Renglon cuerpo="body" ancho={["75%", "60%", "85%", "55%"][i]} />
+                {[0, 1, 2, 3].map((k) => (
+                  <Renglon key={k} cuerpo="label" ancho={["50%", "65%", "70%", "45%"][k]} style={{ margin: "1px 0 0", height: "calc(var(--text-label) * 1.35)" }} />
+                ))}
+              </div>
+              <div style={{ position: "relative", height: 40, minWidth: 0 }}>
+                <Esqueleto
+                  ancho={`${[55, 40, 70, 35][i]}%`}
+                  alto={16}
+                  radio={4}
+                  style={{ position: "absolute", top: 12, left: `${[10, 30, 5, 45][i]}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3 md:flex-col md:items-end md:justify-center md:gap-1">
+                <Esqueleto ancho={44} alto={26} radio={4} />
+                <Renglon cuerpo="meta" ancho={48} />
+              </div>
+            </li>
+          ))}
+        </ul>
+        <Leyenda conInicioDesconocido={false} />
+      </div>
+    </PantallaCargando>
   );
 }
 

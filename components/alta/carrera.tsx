@@ -33,7 +33,28 @@ import { t } from "@/lib/content/es-AR";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { CTAPrincipal, HeroCard, ReglaDeNegocio } from "@/components/screens/design-system";
+import { CTAEsqueleto, Esqueleto, PantallaCargando, Renglon } from "@/components/screens/esqueleto";
 import { ErrorDelAlta, MarcoDelAlta } from "./marco";
+
+/**
+ * `/alta/carrera` mientras el alta no respondió — `P-12`. El paso, el
+ * título y el rótulo del selector van reales; la institución y el selector, en
+ * bloques. No se ofrece un selector vacío: elegir sin carreras no lleva a nada.
+ */
+export function AltaCarreraEsqueleto() {
+  return (
+    <MarcoDelAlta paso={2} titulo={t("ALTA.CARRERA.TITULO")} ancho={560}>
+      <PantallaCargando style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <Renglon cuerpo="label" ancho={260} />
+        <div aria-hidden style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <span style={{ fontSize: "0.875rem", fontWeight: 500, lineHeight: 1 }}>{t("ALTA.CARRERA.CARRERA")}</span>
+          <Esqueleto ancho={320} alto={36} radio="var(--radius-control)" style={{ maxWidth: "100%" }} />
+        </div>
+        <CTAEsqueleto />
+      </PantallaCargando>
+    </MarcoDelAlta>
+  );
+}
 
 export interface InstitucionElegible {
   institucionId: string;

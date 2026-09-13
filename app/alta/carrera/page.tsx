@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { AltaCarrera, type InstitucionElegible, type PlanResuelto } from "@/components/alta/carrera";
+import { AltaCarrera, AltaCarreraEsqueleto, type InstitucionElegible, type PlanResuelto } from "@/components/alta/carrera";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { pedir, enviar } from "@/lib/client/api";
 import { periodoDeCursado } from "@/lib/domain/alta";
@@ -24,7 +24,7 @@ export default function AltaCarreraPage() {
   const router = useRouter();
   const { respuesta, reintentar } = useSuperficie<RespuestaDelAlta>("/api/alta");
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <AltaCarreraEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

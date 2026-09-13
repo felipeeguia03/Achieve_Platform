@@ -118,6 +118,8 @@ export const copy = {
   "COMUN.DESPUES": "Después:",
   "COMUN.CIERRE": "Cerrás cuando:",
   "COMUN.SIN_AVANCE": "Sin avance registrado",
+  // Sólo para lectores de pantalla, mientras se ve el esqueleto (`P-12`).
+  "COMUN.CARGANDO": "Cargando…",
 
   // ── Shell de aplicación (Fase A2) ─────────────────────────────────────────
   "SHELL.NAVEGACION": "Navegación principal",

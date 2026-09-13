@@ -19,8 +19,53 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import { CTAEsqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { EvidenciaProps } from "@/lib/domain/view-models";
+
+/**
+ * `UX05` mientras carga — `P-12`. Van reales el título de la sección y **la
+ * regla del flujo**, *enviar no es suficiencia*: §9.1 pide que se pueda leer la
+ * regla mientras carga. La zona de adjuntar conserva su borde punteado.
+ */
+export function EvidenciaEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-4" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={<Renglon cuerpo="title-lg" ancho={300} />}
+        meta={<Renglon cuerpo="body" ancho={260} />}
+        subcopy={SUBCOPY.UX05}
+      />
+      <HeroCard>
+        <EstadoGeneral>
+          <Renglon cuerpo="label" ancho={160} />
+        </EstadoGeneral>
+        <TituloDeSeccion>{t("EVIDENCIA.ESPERADA")}</TituloDeSeccion>
+        <Renglon cuerpo="label" ancho="75%" />
+        <div
+          aria-hidden
+          style={{
+            border: "1px dashed var(--border)",
+            borderRadius: "var(--radius-control)",
+            padding: 18,
+            marginTop: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <Renglon cuerpo="body" ancho={16} style={{ height: 30, marginBottom: 4 }} />
+          <Renglon cuerpo="label" ancho={160} />
+          <Renglon cuerpo="meta" ancho={200} />
+          <Renglon cuerpo="label" ancho={300} style={{ marginTop: 8, maxWidth: "100%" }} />
+        </div>
+        <ReglaDeNegocio>{t("EVIDENCIA.ENVIAR_IMPLICA")}</ReglaDeNegocio>
+        <CTAEsqueleto />
+      </HeroCard>
+    </PantallaCargando>
+  );
+}
 
 export function Evidencia({
   contexto,
