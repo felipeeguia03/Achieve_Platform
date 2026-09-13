@@ -48,13 +48,21 @@ npm run db:start        # Docker tiene que estar corriendo
 npm run db:reset        # 86 migraciones desde cero
 npm run db:catalogo     # el catálogo curricular — VA ANTES que db:demo
 npm run db:demo         # el mundo sintético, sobre ese catálogo
-npm run db:sesion       # las dos identidades sintéticas
+node scripts/importar-temarios.mjs /tmp/temas-txt --aplicar   # los 25 temarios reales de la UCC
+node scripts/simular-temarios.mjs --aplicar --padron          # ADR-086: las 51 materias con contenido,
+                                                              # y la fila de padrón de estudiante.ucc
 node scripts/simular-aulas.mjs --aplicar   # ADR-094: aulas simuladas, sólo sobre
                                            # bloques `inference`. Va DESPUÉS de
                                            # cualquier corrida de simular-temarios,
                                            # que regenera los bloques sin aula
+npm run db:sesion       # las tres identidades: va AL FINAL, cuando los tres `student` existen
 npm run dev
 ```
+
+⚠️ **`db:verify` vacía todo esto, incluida la cuenta de la UCC.** Después de correrlo hay que repetir
+la secuencia entera, no sólo `db:demo`: sin `simular-temarios --padron`, `db:sesion` saltea
+`estudiante.ucc@achieve.local` con *"su student no está sembrado"* y la cuenta queda sin padrón. **Lo
+que ese estudiante hubiera recorrido del alta no se recupera**: vuelve a empezar desde el primer paso.
 
 ⚠️ **Después de `db:reset`, el proveedor de auth tarda unos segundos en volver**, y mientras tanto
 contesta *"An invalid response was received from the upstream server"*. **`db:sesion` lo espera solo**
