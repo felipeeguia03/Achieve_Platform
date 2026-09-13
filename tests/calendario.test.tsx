@@ -391,4 +391,38 @@ describe("la pantalla", () => {
     expect(document.querySelectorAll("[data-evento]")).toHaveLength(0);
     expect(screen.queryByText(/para la próxima evaluación/)).toBeNull();
   });
+
+  describe("el esqueleto (design-system-capturas §9.1)", () => {
+    const esqueletos = () => Array.from(document.querySelectorAll("[data-esqueleto]"));
+
+    it.each(["mes", "semana", "dia"] as const)("en %s ocupa el lugar de los eventos y de la píldora, sin decir nada", (vista) => {
+      render(<Calendario {...base({ vista, fecha: "2026-09-15", datos: null })} />);
+      const grilla = screen.getByLabelText(vista === "mes" ? "Mes" : vista === "semana" ? "Semana" : "Día");
+      expect(grilla.closest("[aria-busy]")).toHaveAttribute("aria-busy", "true");
+      // Dos píldoras —la de escritorio y la del piso móvil— y bloques en la grilla.
+      expect(esqueletos().filter((n) => grilla.contains(n)).length).toBeGreaterThan(0);
+      expect(esqueletos().length).toBeGreaterThan(2);
+      for (const n of esqueletos()) {
+        expect(n).toHaveAttribute("aria-hidden");
+        expect(n.textContent?.trim()).toBe("");
+        // Late sólo si el sistema no pide menos movimiento.
+        expect(n.className).toContain("motion-safe:animate-pulse");
+        expect(n.className).not.toMatch(/(^|\s)animate-pulse/);
+      }
+    });
+
+    it("el mes no pone bloques en sábado, domingo ni días de otro mes", () => {
+      render(<Calendario {...base({ fecha: "2026-09-15", datos: null })} />);
+      // Septiembre 2026: 22 días hábiles.
+      expect(esqueletos().filter((n) => screen.getByLabelText("Mes").contains(n))).toHaveLength(22);
+    });
+
+    it.each(["mes", "semana", "dia"] as const)("en %s desaparece al llegar los datos, y la grilla no cambia de alto", (vista) => {
+      const { rerender } = render(<Calendario {...base({ vista, fecha: "2026-09-15", datos: null })} />);
+      const alto = screen.getByLabelText(vista === "mes" ? "Mes" : vista === "semana" ? "Semana" : "Día").style.height;
+      rerender(<Calendario {...base({ vista, fecha: "2026-09-15" })} />);
+      expect(esqueletos()).toHaveLength(0);
+      expect(screen.getByLabelText(vista === "mes" ? "Mes" : vista === "semana" ? "Semana" : "Día").style.height).toBe(alto);
+    });
+  });
 });
