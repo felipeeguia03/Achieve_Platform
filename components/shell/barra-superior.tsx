@@ -19,6 +19,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { t } from "@/lib/content/es-AR";
 import { CuentaDelTopbar } from "./cuenta";
+import { Campanita } from "./campanita";
 
 export interface Miga {
   etiqueta: string;
@@ -112,6 +113,8 @@ export function BarraSuperior({
           </kbd>
         </button>
 
+        {/* Sólo con `MODO_PRUEBA=1`, y con avisos simulados (ADR-097 Enm. 1). */}
+        <Campanita />
         <CuentaDelTopbar />
       </div>
     </header>

@@ -150,6 +150,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-095](#adr-095) | **Materias**: la fila dice el horario con su aula, la cobertura se muestra corta y la modalidad se lee | ✅ `ACCEPTED` *(12 sep 2026 · con la captura delante)* | [ADR-077](#adr-077), [ADR-072](#adr-072), [ADR-094](#adr-094) |
 | [ADR-096](#adr-096) | **Las dos opciones de evaluaciones se descartan**: `UX01` queda en Hero + Tu día + Riesgos | ✅ `ACCEPTED` *(12 sep 2026 · el owner miró las dos)* | [ADR-093](#adr-093), [ADR-077](#adr-077) |
 | [ADR-097](#adr-097) | **Modo noche, la cuenta en el topbar y color que identifica** — revierte §12.4 | ✅ `ACCEPTED` *(12 sep 2026 · pedida por el owner · **la tabla de contrastes es un test**)* | [ADR-018](#adr-018), [ADR-088 · Enm. 5](#adr-088-enmienda-5) |
+| [ADR-097 · Enm. 1](#adr-097-enmienda-1) | **La campanita, con avisos simulados** — sólo con `MODO_PRUEBA=1` | 🧪 `ACCEPTED · SIMULADO` *(13 sep 2026 · pedida por el owner · **nada de la lista ocurrió**)* | [ADR-087 · Enm. 3](#adr-087-enmienda-3) |
 
 ---
 
@@ -9319,3 +9320,54 @@ chip use tinte. `tests/track-a-rules.test.ts` — las excepciones de persistenci
 **En el navegador**, `/hoy` y `/compromiso` con `?escenario=` en claro y en oscuro: el oscuro se
 activa solo con el sistema en oscuro, la acción primaria queda clara sobre grafito y el chip
 `CONFIRMED` se lee tintado en los dos.
+
+---
+
+<a id="adr-097-enmienda-1"></a>
+
+### ADR-097 · Enmienda 1 — la campanita, con avisos simulados
+
+**Estado:** `ACCEPTED` · 13 sep 2026 · **pedida por el owner** · `SIMULADO — SÓLO MODO_PRUEBA`
+
+#### Contexto
+
+ADR-097 dejó la campanita afuera: Achieve no tiene entidad de notificaciones. Se le propusieron al
+owner seis avisos armados sobre cosas que el dominio ya registra, y contestó: *"por ahora poné avisos
+sintéticos en la campanita"*.
+
+#### Decisión
+
+**1. La campanita existe, y lo que muestra no ocurrió.** Seis avisos simulados —compromiso por vencer,
+reenvío pedido, riesgo nuevo, entrega validada, compromiso incumplido, acompañamiento abierto— con
+**las materias del estudiante** para que se lea como la suya. Es el mismo patrón que la Formación
+simulada ([ADR-087 · Enm. 3](#adr-087-enmienda-3)).
+
+| Regla | Por qué |
+|---|---|
+| **Sólo con `MODO_PRUEBA=1`** | `GET /api/avisos` responde `404` sin la variable, con el cerrojo antes que el token. Sin respuesta, la campanita **no se dibuja** |
+| **Rotulada *Simulado*, siempre a la vista** | Arriba de la lista, no en un tooltip: quien la abre tiene que saber que nada de eso pasó |
+| **Cada aviso nombra algo que el dominio registra** | Una simulación que enseñe avisos de cosas inexistentes fija expectativas falsas |
+| **Leído es estado de la visita** | Persistir la lectura de algo que no ocurrió sería guardar ficción. Recargar los repone |
+| **No promete contacto** | ADR-042: la Plataforma no observa si hay un operador ni si alguien va a escribir. El acompañamiento dice *se abrió*, y nada más |
+| **Sin *Ver todas*** | No hay pantalla a la que llevar |
+
+Tomado del software: el número sobre la campana, el punto en lo no leído, *Marcar todas como leídas*,
+y tocar un aviso lleva a su pantalla.
+
+⚠️ **La forma no es el modelo.** `lib/server/simulacion/avisos.ts` no se migra a una tabla: qué se
+notifica, a quién, por qué canal —dentro de Achieve o WhatsApp— y cuándo caduca se decide cuando se
+diseñen las notificaciones reales. **La ruta y el módulo se borran entonces.**
+
+⚠️ **El contador es un segundo badge numérico en pantalla.** [ADR-021](#adr-021) reservó el único
+badge **del menú lateral** al trabajo que caduca; éste está en el topbar y sólo existe en la demo. Si
+las notificaciones reales llevan contador, esa convivencia se decide con ellas.
+
+#### Cómo se verifica
+
+`tests/avisos.test.tsx` — la ruta da `404` sin `MODO_PRUEBA` y el cerrojo va antes que el token; va
+con sesión y nunca con secreto de servicio; los avisos se declaran simulados, nombran las materias y
+sin materias no inventan una, toda ruta es conocida y ninguno promete contacto; sin respuesta no hay
+campanita; el contador está en el nombre accesible; *Simulado* se ve al abrirla; marcar todas saca el
+contador; tocar un aviso navega.
+
+⚠️ **No se vio en el navegador**: la ruta exige una sesión real con `MODO_PRUEBA=1`.

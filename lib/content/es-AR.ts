@@ -897,6 +897,12 @@ export const copy = {
   /** Dónde estudia: la institución, y la carrera si ya la declaró. */
   "CUENTA.DONDE": "Dónde estudiás",
   "CUENTA.CERRAR_SESION": "Cerrar sesión",
+  // ── La campanita, simulada (ADR-097 Enmienda 1) ──────────────────────────
+  "AVISOS.TITULO": "Avisos",
+  "AVISOS.MARCAR_LEIDOS": "Marcar todas como leídas",
+  /** El rótulo que dice que nada de la lista ocurrió. Va siempre visible. */
+  "AVISOS.SIMULADO": "Simulado",
+  "AVISOS.SIN_LEER": "sin leer",
 
   // ── El mosaico (ADR-088, Enmienda 6) ─────────────────────────────────────
   /**

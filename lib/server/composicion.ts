@@ -172,6 +172,8 @@ import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servici
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 import { altaReal, type SeleccionDeRequisito } from "./repositorios/alta";
 import { cuentaReal } from "./repositorios/cuenta";
+import { avisosSimulados, type AvisosSimulados } from "./simulacion/avisos";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { cuenta as cuentaPura, type CuentaProps } from "./servicios/cuenta";
 import { catalogoReal, type InstitucionOfrecible, type RequisitoDelPlan } from "./repositorios/catalogo";
 import {
@@ -1194,6 +1196,27 @@ export async function formacionDe(
     return proyectarVistaSimulada(await formacionReal.vistaPrevia());
   }
   return proyectarFormacion(await formacionReal.biblioteca(institutionId, studentId));
+}
+
+/**
+ * Los avisos simulados de la campanita — ADR-097 Enmienda 1. **Sólo en la demo**:
+ * la ruta que lo llama responde `404` sin `MODO_PRUEBA=1`.
+ *
+ * Con el alta completa nombra las materias del estudiante; sin ella, ninguna.
+ */
+export async function avisosSimuladosDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  altaCompleta: boolean,
+): Promise<AvisosSimulados> {
+  const materias = altaCompleta
+    ? (await materiasDe(institutionId, studentId, zona)).materias.map((m) => ({
+        cursadaId: m.cursadaId,
+        nombre: nombreDeObjeto(m.nombre),
+      }))
+    : [];
+  return avisosSimulados(materias);
 }
 
 export async function materiasDe(

@@ -107,6 +107,10 @@ uno en `app/globals.css`, definilo **en los dos bloques** y sumá su par a `test
 tabla de contrastes es ese test. Los chips van con `EstadoChip` (tintado) y el color de una materia con
 `MarcaDeMateria` / `colorDeMateria`, que devuelve un token.
 
+🧪 **La campanita muestra avisos SIMULADOS** — [ADR-097 · Enm. 1](docs/decisions.md#adr-097-enmienda-1).
+Sólo con `MODO_PRUEBA=1`. **No hay notificaciones reales**: no conviertas
+`lib/server/simulacion/avisos.ts` en una tabla ni le agregues tipos; se borra cuando se diseñen.
+
 🆕 **La barra de objetos no se llena sola** — [ADR-088 · Enmienda
 7](docs/decisions.md#adr-088-enmienda-7), 12 de septiembre. Entrar a una pantalla **no guarda su
 ficha**; minimizar o achicar sí. Las secciones del menú no llevan controles, la pantalla completa

@@ -12,8 +12,8 @@
  * - **El avatar con su menú: email y cerrar sesión.** Sin «Administrar cuenta»:
  *   no hay nada que administrar —no se crea ni se edita una cuenta desde acá
  *   ([ADR-039](../../docs/decisions.md#adr-039))—.
- * - **Sin campanita.** No existe nada que notificar todavía; queda para cuando
- *   se decida qué se notifica.
+ * - **La campanita va aparte** (`campanita.tsx`): por ahora con avisos simulados
+ *   y sólo en la demo, porque no existe nada real que notificar.
  *
  * ⚠️ **Sin sesión no se dibuja nada.** El Track A corre con `?escenario=` y sin
  * backend: un avatar vacío o una institución inventada serían la demo mintiendo.

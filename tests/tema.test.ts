@@ -148,7 +148,8 @@ describe("el menú lateral y la cuenta", () => {
   /**
    * ⚠️ **Sin «Crear organización» ni «Administrar cuenta».** El estudiante tiene
    * una sola institución, que decide el padrón, y no hay cuenta que administrar
-   * desde acá (ADR-039). Tampoco hay campanita: no existe nada que notificar.
+   * desde acá (ADR-039). La campanita vive en su propio componente, con avisos
+   * simulados y sólo en la demo (ADR-097 Enm. 1, `tests/avisos.test.tsx`).
    */
   it("la cuenta no promete lo que Achieve no tiene", () => {
     const cuenta = LEER("components/shell/cuenta.tsx");
