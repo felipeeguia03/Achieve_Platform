@@ -55,6 +55,8 @@ const materiaBase: MateriaProps = {
   // Fixture anterior a la Fase B6.21: declara un mundo sin horario de cursado.
   // **`null` no es «no cursa»**: es que nadie lo cargó (ADR-063).
   clasesDeLaSemana: null,
+  // Fixture anterior a ADR-105: no declara comisión ni horario contestados.
+  situacionDeCursado: null,
   // La base no declara actividad: los escenarios que la necesitan la agregan.
   actividadReciente: null,
   // Y sin actividad **no hay puerta al historial**: `CTA-009` no se renderiza.

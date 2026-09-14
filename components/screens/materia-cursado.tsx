@@ -281,6 +281,7 @@ export function MateriaCursado({
   catedraYVos,
   gantt,
   clasesDeLaSemana,
+  situacionDeCursado,
   actividadReciente,
   verRegistro,
   dimensiones,
@@ -383,9 +384,17 @@ export function MateriaCursado({
 
             `null` ⇒ no se sabe el horario. No saberlo no es tener la semana libre.
           */}
-          {clasesDeLaSemana && (
+          {(clasesDeLaSemana || situacionDeCursado) && (
             <div data-horario style={tarjeta}>
               <TituloDeSeccion>{t("MATERIA.CLASES")}</TituloDeSeccion>
+              {/* ADR-105: la comisión y «no se sabe», dichos. Omitir si no hay nada. */}
+              {situacionDeCursado?.comision && (
+                <p data-comision style={{ ...meta, margin: "6px 0 0" }}>{situacionDeCursado.comision}</p>
+              )}
+              {situacionDeCursado?.horarioDesconocido && (
+                <p data-horario-desconocido style={{ ...meta, margin: "6px 0 0" }}>{t("MATERIA.HORARIO_DESCONOCIDO")}</p>
+              )}
+              {clasesDeLaSemana && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
                 {clasesDeLaSemana.map((b) => (
                   <span
@@ -405,6 +414,7 @@ export function MateriaCursado({
                   </span>
                 ))}
               </div>
+              )}
             </div>
           )}
 

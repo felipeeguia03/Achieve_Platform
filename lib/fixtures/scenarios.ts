@@ -134,6 +134,8 @@ export const FX_DAY_BASE: Escenario = {
       { cuando: "Mar 18:00–20:00", aula: null, procedencia: "Institución · sin verificar" },
       { cuando: "Jue 18:00–20:00", aula: null, procedencia: "Institución · sin verificar" },
     ],
+    // ADR-105: el escenario no declara comisión ni horario contestados.
+    situacionDeCursado: null,
     // Hay historial: `CTA-009` se ofrece. Ver `MateriaProps.verRegistro`.
     verRegistro: "Ver avance",
     // Fixture anterior a la Fase B6.15: declara un mundo sin Gantt.

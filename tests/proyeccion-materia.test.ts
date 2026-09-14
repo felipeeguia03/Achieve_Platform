@@ -196,6 +196,7 @@ describe("B2.6 · la forma es la que la pantalla espera", () => {
         "catedraYVos",
         "chip",
         "clasesDeLaSemana",
+        "situacionDeCursado",
         "cursadaId",
         "dimensiones",
         "estado",

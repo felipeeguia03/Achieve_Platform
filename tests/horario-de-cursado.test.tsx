@@ -247,3 +247,20 @@ describe("§5 · La pantalla muestra, y no agenda", () => {
     expect(panel!.querySelectorAll("button, a, input")).toHaveLength(0);
   });
 });
+
+describe("ADR-105 · la materia dice la comisión y «no se sabe», y omite lo que no aplica", () => {
+  it("comisión confirmada, escrita a mano o desconocida", () => {
+    expect(proyectarMateria({ ...base, comision: { estado: "CONFIRMED", nombre: "A", horario: "KNOWN" } }).situacionDeCursado)
+      .toEqual({ comision: "Comisión A", horarioDesconocido: false });
+    expect(proyectarMateria({ ...base, comision: { estado: "NOT_LISTED", nombre: "Tarde", horario: "KNOWN" } }).situacionDeCursado?.comision)
+      .toBe("Comisión Tarde · la escribiste vos");
+    expect(proyectarMateria({ ...base, comision: { estado: "UNKNOWN", nombre: null, horario: "UNKNOWN" } }).situacionDeCursado)
+      .toEqual({ comision: "Todavía no sabés tu comisión", horarioDesconocido: true });
+  });
+
+  it("sin comisiones o sin preguntar, no hay línea", () => {
+    expect(proyectarMateria({ ...base, comision: { estado: "NOT_APPLICABLE", nombre: null, horario: "KNOWN" } }).situacionDeCursado).toBeNull();
+    expect(proyectarMateria({ ...base, comision: null }).situacionDeCursado).toBeNull();
+    expect(proyectarMateria(base).situacionDeCursado).toBeNull();
+  });
+});
