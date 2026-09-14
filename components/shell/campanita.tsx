@@ -44,16 +44,32 @@ export function haceCuanto(fecha: string, ahora: Date = new Date()): string {
   return dias === 1 ? "ayer" : `hace ${dias} días`;
 }
 
+/*
+  ⚠️ **Los avisos de esta visita, en memoria del módulo.** Cada página monta su
+  propio `Shell`: sin esto la campanita arrancaba vacía en cada pantalla,
+  aparecía con la respuesta y hacía saltar la topbar. Y lo leído se perdía al
+  navegar, cuando es justamente estado *de esta visita*. No se persiste.
+*/
+let recuerdo: Aviso[] | null = null;
+
 export function Campanita() {
-  const [avisos, setAvisos] = useState<Aviso[] | null>(null);
+  const [avisos, setAvisosEnPantalla] = useState<Aviso[] | null>(recuerdo);
   const [abierta, setAbierta] = useState(false);
   const caja = useRef<HTMLDivElement>(null);
+
+  const setAvisos = (cambio: (lista: Aviso[] | null) => Aviso[] | null) =>
+    setAvisosEnPantalla((lista) => (recuerdo = cambio(lista)));
 
   useEffect(() => {
     let vigente = true;
     // `pedir` y no `useSuperficie`: el cromo nunca redirige al login.
     void pedir<{ avisos: Aviso[] }>("/api/avisos").then((r) => {
-      if (vigente && r.estado === "OK") setAvisos(r.datos.avisos);
+      if (!vigente || r.estado !== "OK") return;
+      // Lo que ya marcaste leído en otra pantalla sigue leído.
+      setAvisos((antes) => {
+        const leidos = new Set((antes ?? []).filter((a) => a.leido).map((a) => a.id));
+        return r.datos.avisos.map((a) => (leidos.has(a.id) ? { ...a, leido: true } : a));
+      });
     });
     return () => {
       vigente = false;
