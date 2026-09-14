@@ -22,7 +22,7 @@ import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
 import { useEspacioDeTrabajo } from "@/components/shell/espacio-de-trabajo";
 import { useSuperficie } from "@/lib/client/superficie";
 import { enviar, pedir, tokenDeSesion } from "@/lib/client/api";
-import { MotorDeAudio } from "@/lib/client/focus/audio";
+import { motorDeAudio } from "@/lib/client/focus/audio";
 import { guardarAnotadorAlIrse } from "@/lib/client/focus/al-irse";
 import { t } from "@/lib/content/es-AR";
 import { LATIDO_EN_SEGUNDOS, type ConfiguracionPomodoro, type PreferenciasDeFocus, type Sonido } from "@/lib/domain/sesion-de-focus";
@@ -84,10 +84,23 @@ function SinSesion({ vista, alEmpezar }: { vista: FocusVista; alEmpezar: () => v
   const router = useRouter();
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [prefs, setPrefs] = useState<PreferenciasDeFocus>(vista.preferencias);
   const iniciable = vista.iniciable;
+  const audio = useMemo(() => motorDeAudio(), []);
+
+  // ADR-104 §19: se elige y **se prueba antes de empezar**.
+  function cambiar(cambios: Partial<PreferenciasDeFocus>) {
+    const nuevas = { ...prefs, ...cambios };
+    setPrefs(nuevas);
+    void enviar("/api/focus/preferencias", nuevas);
+    if (cambios.volumen !== undefined) audio.cambiarVolumen(cambios.volumen);
+    if (cambios.sonido !== undefined) audio.parar();
+  }
 
   async function empezar() {
     if (!iniciable || ocupado) return;
+    // El clic en *Empezar* es el gesto que deja sonar a la concentración.
+    audio.despertar();
     setOcupado(true);
     setAviso(null);
     const r = await enviar<{ sesion: FocusProps }>("/api/focus", { compromiso: iniciable.compromisoId });
@@ -110,7 +123,22 @@ function SinSesion({ vista, alEmpezar }: { vista: FocusVista; alEmpezar: () => v
     setAviso(r.estado === "RECHAZADO" ? t("FOCUS.NO_INICIABLE") : t("FOCUS.ERROR"));
   }
 
-  return <FocusSinSesion iniciable={iniciable} aviso={aviso} ocupado={ocupado} onEmpezar={empezar} onTerminar={terminar} />;
+  return (
+    <FocusSinSesion
+      iniciable={iniciable}
+      aviso={aviso}
+      ocupado={ocupado}
+      onEmpezar={empezar}
+      onTerminar={terminar}
+      sonido={{
+        sonido: prefs.sonido,
+        volumen: prefs.volumen,
+        onSonido: (sonido) => cambiar({ sonido }),
+        onVolumen: (volumen) => cambiar({ volumen }),
+        onProbar: () => audio.probar(prefs.sonido, prefs.volumen),
+      }}
+    />
+  );
 }
 
 /**
@@ -142,7 +170,7 @@ function SesionViva({
   const [anotador, setAnotador] = useState(inicial.anotador);
   const [guardado, setGuardado] = useState<EstadoDeGuardado>(null);
 
-  const audio = useMemo(() => new MotorDeAudio(), []);
+  const audio = useMemo(() => motorDeAudio(), []);
   const token = useRef<string | null>(null);
   const pendienteDeGuardar = useRef<string | null>(null);
   const fase = sesion.fase;
@@ -168,7 +196,27 @@ function SesionViva({
     return () => window.clearInterval(id);
   }, []);
 
-  useEffect(() => () => audio.cerrar(), [audio]);
+  // Salir de la pantalla corta el sonido; el motor sigue para la próxima.
+  useEffect(() => () => audio.parar(), [audio]);
+
+  /*
+    Llegar desde Hoy a una concentración: el sonido elegido suena, pero el
+    navegador no deja arrancar audio sin un gesto **en esta página**. Se agenda y
+    se despierta con la primera tecla o el primer toque.
+  */
+  useEffect(() => {
+    if (inicial.fase !== "CONCENTRACION" || prefsIniciales.sonido === "NINGUNO") return;
+    audio.sonar(prefsIniciales.sonido, prefsIniciales.volumen);
+    const despertar = () => audio.despertar();
+    window.addEventListener("pointerdown", despertar, { once: true });
+    window.addEventListener("keydown", despertar, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", despertar);
+      window.removeEventListener("keydown", despertar);
+    };
+    // Sólo al montar: después, cada comando decide el sonido.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Comandos ───────────────────────────────────────────────────────────────
   const mandar = useCallback(

@@ -113,6 +113,17 @@ La demo se restauró después desde la copia previa (`db:verify` la vacía).
   el contexto `FOCUS`.
 - **«0 min» se lee como que no pasó nada**: *«menos de un minuto»*, como Modo Clase.
 
+## Sonidos — [ADR-104 · Enmienda 1](decisions.md#adr-104-enmienda-1)
+
+**No hay archivos de audio.** Los seis sonidos se calculan en `lib/client/focus/sonidos.ts`: lluvia
+(siseo y gotas), mar (ondulaciones de 8 y 12 s con espuma), viento (banda que se desplaza), chimenea
+(rumor y chasquidos), ruido marrón y rosa. Loop de 24 s, sin costura. Se eligen y **se prueban antes
+de empezar**; llegando desde Hoy, el sonido arranca con la primera tecla o toque.
+
+Medidos con semilla fija a 8 kHz: el factor de cresta de la lluvia es 7,7 y el de la chimenea 11,5,
+contra 4,3 del ruido marrón (los golpes sobresalen); la intensidad del mar varía 6× entre segundos y
+la del viento 4×; la de la lluvia, menos de 1,2×.
+
 ## F. Riesgos
 
 | Riesgo | Mitigación |

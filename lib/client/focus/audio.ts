@@ -3,9 +3,10 @@
  *
  * ## Sin archivos
  *
- * Los dos sonidos **se generan acá**, con Web Audio: ruido marrón y ruido rosa.
- * Sin archivos no hay licencias que revisar, nada que alojar y ningún streaming
- * externo. La alarma son dos tonos de un oscilador.
+ * Los sonidos **se calculan** en `sonidos.ts` —lluvia, mar, viento, chimenea,
+ * ruido marrón y rosa— y acá sólo se reproducen. Sin archivos no hay licencias
+ * que revisar, nada que alojar y ningún streaming externo. La alarma son dos
+ * tonos de un oscilador.
  *
  * ## ⚠️ La alarma se programa en el reloj de audio
  *
@@ -19,6 +20,7 @@
  */
 
 import type { Sonido } from "@/lib/domain/sesion-de-focus";
+import { muestrasDe } from "./sonidos";
 
 const FUNDIDO_EN_SEGUNDOS = 2;
 
@@ -30,33 +32,11 @@ function crearContexto(): ContextoDeAudio | null {
   return Ctor ? new Ctor() : null;
 }
 
-/** Diez segundos de ruido que se repiten. El oído no encuentra la costura. */
-function bufferDeRuido(ctx: ContextoDeAudio, sonido: Exclude<Sonido, "NINGUNO">): AudioBuffer {
-  const largo = ctx.sampleRate * 10;
-  const buffer = ctx.createBuffer(1, largo, ctx.sampleRate);
-  const datos = buffer.getChannelData(0);
-  if (sonido === "MARRON") {
-    let ultimo = 0;
-    for (let i = 0; i < largo; i++) {
-      const blanco = Math.random() * 2 - 1;
-      ultimo = (ultimo + 0.02 * blanco) / 1.02;
-      datos[i] = ultimo * 3.5;
-    }
-  } else {
-    // Filtro de Paul Kellet: ruido rosa a partir de blanco.
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-    for (let i = 0; i < largo; i++) {
-      const blanco = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + blanco * 0.0555179;
-      b1 = 0.99332 * b1 + blanco * 0.0750759;
-      b2 = 0.969 * b2 + blanco * 0.153852;
-      b3 = 0.8665 * b3 + blanco * 0.3104856;
-      b4 = 0.55 * b4 + blanco * 0.5329522;
-      b5 = -0.7616 * b5 - blanco * 0.016898;
-      datos[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + blanco * 0.5362) * 0.11;
-      b6 = blanco * 0.115926;
-    }
-  }
+/** El loop del sonido, calculado. Ver `sonidos.ts`: acá sólo se lo pasa a Web Audio. */
+function bufferDe(ctx: ContextoDeAudio, sonido: Exclude<Sonido, "NINGUNO">): AudioBuffer {
+  const muestras = muestrasDe(sonido, ctx.sampleRate)!;
+  const buffer = ctx.createBuffer(1, muestras.length, ctx.sampleRate);
+  buffer.getChannelData(0).set(muestras);
   return buffer;
 }
 
@@ -94,7 +74,7 @@ export class MotorDeAudio {
     ganancia.gain.linearRampToValueAtTime(this.objetivo(), ctx.currentTime + FUNDIDO_EN_SEGUNDOS);
     ganancia.connect(ctx.destination);
     const fuente = ctx.createBufferSource();
-    fuente.buffer = bufferDeRuido(ctx, sonido);
+    fuente.buffer = bufferDe(ctx, sonido);
     fuente.loop = true;
     fuente.connect(ganancia);
     fuente.start();
@@ -187,4 +167,16 @@ export class MotorDeAudio {
     void this.ctx?.close();
     this.ctx = null;
   }
+}
+
+let compartido: MotorDeAudio | null = null;
+
+/**
+ * **Un solo motor por pestaña.** *Probar* en la pantalla sin sesión y el sonido
+ * de la concentración son el mismo contexto: el gesto que lo despertó al probar
+ * sirve para sonar después, y dos contextos sonarían encimados.
+ */
+export function motorDeAudio(): MotorDeAudio {
+  compartido ??= new MotorDeAudio();
+  return compartido;
 }

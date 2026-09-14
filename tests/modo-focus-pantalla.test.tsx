@@ -195,6 +195,27 @@ describe("ADR-104 §4 · sin sesión", () => {
     expect(screen.getByText(t("FOCUS.ES_HORA"))).toBeInTheDocument();
     expect(screen.getByText(t("FOCUS.CONTINUAR"))).toBeInTheDocument();
   });
+
+  it("el sonido se elige y se prueba antes de empezar (§19 y Enm. 1)", () => {
+    const iniciable = { compromisoId: "c", cursadaId: "cur-1", materia: "Análisis III", accion: "Resolver", unidad: null, hora: "18:00", minutos: 40, esHora: true, yaEmpezado: false };
+    const onSonido = vi.fn();
+    const onProbar = vi.fn();
+    const { rerender } = render(
+      <FocusSinSesion iniciable={iniciable} aviso={null} ocupado={false} onEmpezar={nada} onTerminar={nada} sonido={{ sonido: "NINGUNO", volumen: 40, onSonido, onVolumen: nada, onProbar }} />,
+    );
+    // Apagado: no hay nada que probar.
+    expect(screen.queryByText(t("FOCUS.PROBAR"))).toBeNull();
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "LLUVIA" } });
+    expect(onSonido).toHaveBeenCalledWith("LLUVIA");
+    rerender(
+      <FocusSinSesion iniciable={iniciable} aviso={null} ocupado={false} onEmpezar={nada} onTerminar={nada} sonido={{ sonido: "LLUVIA", volumen: 40, onSonido, onVolumen: nada, onProbar }} />,
+    );
+    for (const s of ["Lluvia", "Mar", "Viento", "Chimenea"]) expect(screen.getByRole("option", { name: s })).toBeInTheDocument();
+    fireEvent.click(screen.getByText(t("FOCUS.PROBAR")));
+    expect(onProbar).toHaveBeenCalled();
+    // Antes de empezar no hay nada sonando que silenciar.
+    expect(screen.queryByRole("button", { name: t("FOCUS.SILENCIAR") })).toBeNull();
+  });
 });
 
 describe("ADR-104 §8 y §21 · la sesión cerrada", () => {

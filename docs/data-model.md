@@ -914,7 +914,8 @@ CREATE TABLE focus_segment (                        -- un tramo: foco, descanso 
 
 CREATE TABLE focus_preference (                     -- preferencia, no perfil
   student_id UUID PK, institution_id, last_mode, preset, custom_* (los cuatro o ninguno),
-  sound DEFAULT 'NINGUNO' CHECK (IN ('NINGUNO','MARRON','ROSA')), volume 0–100
+  sound DEFAULT 'NINGUNO' CHECK (IN ('NINGUNO','LLUVIA','MAR','VIENTO','CHIMENEA','MARRON','ROSA')),  -- Enm. 1
+  volume 0–100
 );
 ```
 

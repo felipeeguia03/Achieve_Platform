@@ -112,8 +112,11 @@ export const MAXIMO_DE_ANOTADOR = 20_000;
 /** *¿Qué avanzaste?* (ADR-104 §13). No es `Reflection`. */
 export const MAXIMO_DE_AVANCE = 2_000;
 
-/** Los sonidos se generan en el navegador (ADR-104 §19): sin archivos. */
-export const SONIDOS = ["NINGUNO", "MARRON", "ROSA"] as const;
+/**
+ * Los sonidos se **calculan** en el navegador (ADR-104 §19 y Enmienda 1): sin
+ * archivos, sin grabaciones y sin derechos de nadie. Ver `lib/client/focus/sonidos.ts`.
+ */
+export const SONIDOS = ["NINGUNO", "LLUVIA", "MAR", "VIENTO", "CHIMENEA", "MARRON", "ROSA"] as const;
 export type Sonido = (typeof SONIDOS)[number];
 
 export function esSonido(valor: unknown): valor is Sonido {

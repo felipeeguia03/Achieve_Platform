@@ -162,6 +162,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-102](#adr-102) | **Gimnasia cognitiva**: categoría Memoria con Cuadrícula fugaz, Cadena inversa y Recuerdo real; el resultado lo calcula el servidor, el progreso se deduce y **no toca Hoy ni el ADE** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner por escrito · `CTA-024` y `CTA-025` · 4 tablas)* | — |
 | [ADR-103](#adr-103) | **El asistente de reportes y mejoras, simulado**: botón abajo a la derecha, reportar o sugerir, pregunta aclaratoria, tarjeta que cita lo escrito y *Reporte enviado*. **Sin red ni persistencia, sólo con `MODO_PRUEBA=1`** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con capturas de otro software · `SIMULADO`)* | Conectarlo al backend con el CTO; qué se guarda de un reporte toca ADR-006 |
 | [ADR-104](#adr-104) | **Modo Focus**: la sesión de trabajo sobre una acción comprometida; Pomodoro es un modo, el tiempo lo sella el servidor, el anotador es privado y **no es evidencia ni cumplimiento** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «hacé todo lo recomendado» · `CTA-026` y `CTA-027` · **enmienda ADR-088 Enm. 8**)* | Cerrar el compromiso en *Terminé* cuando la entrega acepte un compromiso cerrado |
+| [ADR-104 · Enm. 1](#adr-104-enmienda-1) | **Lluvia, mar, viento y chimenea**, calculados en el navegador: sin archivos ni derechos de nadie. *Probar* antes de empezar | ✅ `ACCEPTED` *(13 sep 2026 · pedida por el owner)* | — |
 
 ---
 
@@ -10353,7 +10354,7 @@ un catálogo de sonidos.
 infiere dominio, duración ideal ni necesidad de intervención de una sesión, y la precedencia de `UX01`
 no cambia.
 
-**19. Audio.** Dos sonidos —*Ruido marrón* y *Ruido rosa*— **generados en el navegador con Web Audio**: sin
+**19. Audio.** *(La [Enmienda 1](#adr-104-enmienda-1) suma lluvia, mar, viento y chimenea.)* Dos sonidos —*Ruido marrón* y *Ruido rosa*— **generados en el navegador con Web Audio**: sin
 archivos, sin licencias y sin streaming. Apagado la primera vez; se prueba antes de empezar; volumen
 recordado; fundido de entrada de dos segundos y de salida al terminar el bloque; se corta al pausar; no
 suena en el descanso; silenciar no pausa. La alarma de fin de bloque y de fin de descanso es otra, de dos
@@ -10401,3 +10402,57 @@ Pomodoro, cerrar con avance y verlo en la Bitácora.
 0 ✗. En el navegador, los dos recorridos de [`modo-focus.md`](modo-focus.md) §E —incluida la
 recuperación, que mostró `02:00` sobre un tramo de 12 minutos con el último latido a los 2—, a 1440 y
 a 360 px, sin errores de consola.
+
+---
+
+<a id="adr-104-enmienda-1"></a>
+
+### ADR-104 · Enmienda 1 — lluvia y tres sonidos más, calculados
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedida por el owner**
+
+#### Contexto
+
+*"¿De dónde sacaste los sonidos? ¿Podés agregar lluvia que no tenga copyright? ¿Y tres sonidos
+más?"*. Los dos sonidos de §19 —ruido marrón y rosa— **no salen de ningún lado**: se calculan en el
+navegador con números al azar filtrados. No hay archivo, grabación ni autor.
+
+#### Decisión
+
+**1. Cuatro sonidos más, con la misma receta: calculados, sin archivos.** El orden en la pantalla:
+
+| Sonido | Cómo se calcula |
+|---|---|
+| **Lluvia** | Un siseo parejo sin graves y, encima, unas treinta gotas por segundo: ráfagas de ruido de 2 a 8 ms que se apagan solas, muchas chicas y pocas grandes. Debajo, un rumor grave |
+| **Mar** | Ruido grave que sube y baja con dos ondulaciones de 8 y 12 s; en la cresta se abre el agudo, la espuma |
+| **Viento** | Ruido que pasa por una banda cuya frecuencia se desplaza despacio, con ráfagas de 8, 12 y 24 s |
+| **Chimenea** | Un rumor grave parejo y chasquidos de 1 a 3 ms, unos diez por segundo, con algún estallido |
+| Ruido marrón · Ruido rosa | Los de §19 |
+
+**2. Un loop de 24 segundos, sin costura.** Toda modulación tiene un período que divide 24, así que el
+final empalma con el principio en la misma fase.
+
+**3. Puros y medidos.** Los generadores viven en `lib/client/focus/sonidos.ts`, sin Web Audio, con el
+azar inyectado. No se pueden escuchar desde un test: se miden. La lluvia y la chimenea tienen que
+tener **golpes que sobresalen** (factor de cresta mayor que el de un ruido parejo) y el mar y el viento
+**tienen que subir y bajar**.
+
+⚠️ **No imitan una grabación.** Se parecen a la lluvia como se parece un ruido filtrado, no como una
+toma de campo. La copy no promete *"sonido real"* ni que ayude a concentrarse (§19).
+
+**4. De paso, se cumple lo que §19 ya decía y no estaba:** *Probar* existía en el componente y
+**ninguna pantalla lo mostraba**. Ahora el sonido se elige y se prueba en `/focus` **antes de
+empezar**. Y llegar desde Hoy a una concentración ya no la deja muda: el navegador exige un gesto en la
+página, así que el sonido se agenda y arranca con la primera tecla o el primer toque. Un solo motor de
+audio por pestaña.
+
+**5. En la base**, `focus_preference.sound` acepta los siete valores
+(`20261023000000_sonidos_de_focus.sql`). Una migración aplicada no se edita.
+
+#### Cómo se verifica
+
+`tests/sonidos-de-focus.test.ts` — los siete valores y su copy; cada sonido es un loop de 24 s sin
+valores rotos y normalizado; la lluvia y la chimenea con golpes; el mar y el viento con variación; la
+costura del mar en fase; y **ningún archivo de audio en `public/` ni pedido por red en el motor**.
+`tests/modo-focus-pantalla.test.tsx` — *Probar* antes de empezar, y sin botón de silencio cuando no
+hay nada sonando.

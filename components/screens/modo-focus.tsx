@@ -129,6 +129,10 @@ export function Anotador({
 
 const COPY_DE_SONIDO: Record<Sonido, CopyId> = {
   NINGUNO: "FOCUS.SONIDO.NINGUNO",
+  LLUVIA: "FOCUS.SONIDO.LLUVIA",
+  MAR: "FOCUS.SONIDO.MAR",
+  VIENTO: "FOCUS.SONIDO.VIENTO",
+  CHIMENEA: "FOCUS.SONIDO.CHIMENEA",
   MARRON: "FOCUS.SONIDO.MARRON",
   ROSA: "FOCUS.SONIDO.ROSA",
 };
@@ -147,7 +151,8 @@ export function ControlDeSonido({
   silenciado: boolean;
   onSonido: (s: Sonido) => void;
   onVolumen: (v: number) => void;
-  onSilenciar: () => void;
+  /** Ausente ⇒ sin botón de silencio: antes de empezar no hay nada sonando que callar. */
+  onSilenciar?: () => void;
   onProbar?: () => void;
 }) {
   return (
@@ -172,7 +177,7 @@ export function ControlDeSonido({
             {t("FOCUS.VOLUMEN")}
             <input type="range" min={0} max={100} value={volumen} onChange={(e) => onVolumen(Number(e.target.value))} />
           </label>
-          <button
+          {onSilenciar && <button
             type="button"
             onClick={onSilenciar}
             aria-pressed={silenciado}
@@ -181,7 +186,7 @@ export function ControlDeSonido({
             style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 36, minHeight: 36, border: "1px solid var(--border)", background: "var(--card)", color: "var(--foreground)" }}
           >
             {silenciado ? <VolumeX size={16} aria-hidden /> : <Volume2 size={16} aria-hidden />}
-          </button>
+          </button>}
           {onProbar && (
             <button type="button" onClick={onProbar} style={{ ...meta, background: "transparent", border: "none", textDecoration: "underline" }}>
               {t("FOCUS.PROBAR")}
@@ -216,12 +221,21 @@ export function FocusSinSesion({
   ocupado,
   onEmpezar,
   onTerminar,
+  sonido,
 }: {
   iniciable: FocusIniciable | null;
   aviso: string | null;
   ocupado: boolean;
   onEmpezar: () => void;
   onTerminar: () => void;
+  /** El sonido se elige y se prueba antes de empezar (§19). Ausente ⇒ no se dibuja. */
+  sonido?: {
+    sonido: Sonido;
+    volumen: number;
+    onSonido: (s: Sonido) => void;
+    onVolumen: (v: number) => void;
+    onProbar: () => void;
+  };
 }) {
   return (
     <div data-focus-sin-sesion>
@@ -237,6 +251,16 @@ export function FocusSinSesion({
           <Contexto materia={iniciable.materia} cursadaId={iniciable.cursadaId} accion={iniciable.accion} unidad={iniciable.unidad} />
           <p style={{ ...meta, margin: 0 }}>{llenarCopy("FOCUS.TE_COMPROMETISTE", { hora: iniciable.hora, minutos: iniciable.minutos })}</p>
           <ReglaDeNegocio>{t("FOCUS.EMPIEZA_LIBRE")}</ReglaDeNegocio>
+          {sonido && (
+            <ControlDeSonido
+              sonido={sonido.sonido}
+              volumen={sonido.volumen}
+              silenciado={false}
+              onSonido={sonido.onSonido}
+              onVolumen={sonido.onVolumen}
+              onProbar={sonido.onProbar}
+            />
+          )}
           <CTAPrincipal onClick={onEmpezar} disabled={ocupado}>
             {iniciable.yaEmpezado ? t("FOCUS.CONTINUAR") : t("FOCUS.EMPEZAR")}
           </CTAPrincipal>

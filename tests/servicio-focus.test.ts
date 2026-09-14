@@ -372,7 +372,7 @@ describe("ADR-104 §18 y §19 · preferencias", () => {
   it("el sonido arranca apagado y se valida todo antes de guardar", async () => {
     expect(PREFERENCIAS_INICIALES.sonido).toBe("NINGUNO");
     expect(validarPreferencias({ ultimoModo: "FREE", preset: null, personalizado: null, sonido: "MARRON", volumen: 60 })).not.toBeNull();
-    expect(validarPreferencias({ ultimoModo: "FREE", preset: null, personalizado: null, sonido: "LLUVIA", volumen: 60 })).toBeNull();
+    expect(validarPreferencias({ ultimoModo: "FREE", preset: null, personalizado: null, sonido: "CAFETERIA", volumen: 60 })).toBeNull();
     expect(validarPreferencias({ ultimoModo: "FREE", preset: null, personalizado: null, sonido: "ROSA", volumen: 101 })).toBeNull();
     const m = mundo();
     expect((await guardarPreferencias(m.d, INST, { studentId: ANA, preferencias: { sonido: "ROSA" } })).estado).toBe("INVALIDAS");
