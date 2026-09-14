@@ -10768,3 +10768,11 @@ Detalladas, con opciones y recomendación, en
 
 Los prompts 2–10 en lo que dependa de D-01, D-02 o D-09. Mientras siga `PENDING`, sólo documentación y
 tests de reglas vigentes.
+
+### Para decidirlo mirando — el spike visual (14 sep 2026)
+
+A pedido del owner hay una demostración **descartable** en `/demo/plan-vivo-spike`, apagada sin
+`PLAN_VIVO_SPIKE=1`: fixture propio, ubicaciones escritas a mano, cero red, cero escritura, y nada del
+producto la importa. Está `READY FOR PRODUCT REVIEW` —
+[`experiments/plan-vivo/SPIKE.md`](experiments/plan-vivo/SPIKE.md)—. **No cierra este ADR ni ninguna de
+sus nueve decisiones.**

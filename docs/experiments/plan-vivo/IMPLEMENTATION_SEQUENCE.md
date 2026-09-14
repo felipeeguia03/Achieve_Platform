@@ -3,6 +3,9 @@
 **Qué es:** el mapa de los nueve pasos que siguen a este, con qué decisión necesita cada uno, qué
 reusa (**paths verificados**) y qué crearía (**paths propuestos, que hoy no existen**, marcados `✚`).
 
+🧪 **El 14 de septiembre el owner reemplazó, por ahora, el paso 2 por un spike visual descartable** —
+[`SPIKE.md`](SPIKE.md)—. Los pasos 2–10 de abajo **no avanzan** hasta que el spike se revise.
+
 ⚠️ **Los prompts 2–10 todavía no se leyeron.** Este orden es la propuesta que sale de la auditoría.
 Cuando llegue cada prompt, **manda el prompt**; si pide algo que este mapa pone después o que depende
 de una decisión abierta, se dice antes de ejecutar.

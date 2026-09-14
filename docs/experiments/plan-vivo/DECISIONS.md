@@ -187,3 +187,8 @@ distingue: **nunca las mueve**.
 - **Prompts 2 a 10** de la secuencia, en lo que implemente contra D-01, D-02 o D-09.
 - Se puede, sin esperar: **leer**, **proponer tipos en documentos** y **escribir tests de las reglas
   vigentes** que el plan va a respetar, siempre que no introduzcan comportamiento nuevo.
+- **Y un spike visual descartable, pedido por el owner el 14 de septiembre** —[`SPIKE.md`](SPIKE.md)—,
+  porque D-01 se decide mejor mirando que leyendo. Vive aislado en `app/demo/plan-vivo-spike/`, con
+  fixture propio, sin tocar `lib/`, `components/`, la base ni la navegación, y apagado sin
+  `PLAN_VIVO_SPIKE=1`. **Construirlo no implementa contra ADR-109**: no hay motor ni contrato, y sus
+  tipos no son del dominio.

@@ -6,6 +6,9 @@ no es `main`)
 **Abierto:** 14 de septiembre de 2026
 **Estado:** 🔴 **CONTRATO CONGELADO, IMPLEMENTACIÓN BLOQUEADA** hasta que el owner conteste
 [ADR-109](../../decisions.md#adr-109) (`PENDING`).
+**Spike visual:** 🟡 `READY FOR PRODUCT REVIEW` — [`SPIKE.md`](SPIKE.md). Una demostración aislada y
+descartable en `/demo/plan-vivo-spike`, detrás de `PLAN_VIVO_SPIKE=1`, con datos de demostración y
+ubicaciones preparadas a mano. **No es el producto y no cierra ADR-109.**
 
 > Esta carpeta **no es una segunda fuente de verdad**. Manda el orden de `AGENTS.md` §8: spec →
 > ADRs `ACCEPTED` → `product.md`/`data-model.md`/`architecture.md` → código. Lo que se decida acá
@@ -111,3 +114,4 @@ ahí**, sin copiarlas ni commitearlas (ADR-006, AGENTS.md §1.5). Si no se puede
 | [`SYSTEM_MAP.md`](SYSTEM_MAP.md) | Entradas, engines, salidas, eventos y fronteras |
 | [`DECISIONS.md`](DECISIONS.md) | Las 12 invariantes contra los ADRs vigentes, y las decisiones para el owner |
 | [`IMPLEMENTATION_SEQUENCE.md`](IMPLEMENTATION_SEQUENCE.md) | Los nueve prompts que siguen, y qué necesita cada uno |
+| [`SPIKE.md`](SPIKE.md) | 🆕 El spike visual: cómo abrirlo, qué es preparado, qué se hizo distinto del pedido y qué mirar |
