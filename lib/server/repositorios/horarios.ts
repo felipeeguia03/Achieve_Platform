@@ -41,56 +41,34 @@ async function delEstudiante(
  * misma materia tendría dos horarios.
  */
 async function deCursadas(institutionId: string, studentId: string): Promise<BloqueDeCursada[]> {
-  const db = clienteDeServicio();
-
-  const cursadas = await db
-    .from("course_enrollment")
-    .select("id, offering_id")
-    .eq("institution_id", institutionId)
-    .eq("student_id", studentId)
-    .eq("status", "active");
-  if (cursadas.error) throw new Error(`No se pudieron leer las cursadas: ${cursadas.error.message}`);
-  const filas = (cursadas.data ?? []) as Array<{ id: string; offering_id: string | null }>;
-  if (filas.length === 0) return [];
-
-  const ids = filas.map((f) => f.id);
-  const porOferta = new Map(
-    filas.filter((f) => f.offering_id !== null).map((f) => [f.offering_id as string, f.id]),
-  );
-  const ofertas = [...porOferta.keys()];
-
-  // Los dos dueños posibles del bloque (ADR-083): la cursada o su oferta.
-  const duenios = [
-    `course_enrollment_id.in.(${ids.join(",")})`,
-    ...(ofertas.length > 0 ? [`offering_id.in.(${ofertas.join(",")})`] : []),
-  ].join(",");
-  const bloques = await db
-    .from("class_schedule_block")
-    .select("id, day_of_week, start_time, end_time, offering_id, course_enrollment_id, room, source_type")
-    .eq("institution_id", institutionId)
-    .or(duenios)
-    .order("day_of_week", { ascending: true })
-    .order("start_time", { ascending: true });
-  if (bloques.error) throw new Error(`No se pudieron leer los horarios: ${bloques.error.message}`);
-
-  return ((bloques.data ?? []) as Array<Record<string, unknown>>).flatMap((b) => {
-    const cursadaId =
-      (b.course_enrollment_id as string | null) ?? porOferta.get(b.offering_id as string) ?? null;
-    return cursadaId
-      ? [
-          {
-            cursadaId,
-            bloqueId: b.id as string,
-            dia: b.day_of_week as number,
-            desde: b.start_time as string,
-            hasta: b.end_time as string,
-            aula: (b.room as string | null) ?? null,
-            // ADR-094: el aula hereda la procedencia del bloque.
-            estimada: b.source_type === "inference",
-          },
-        ]
-      : [];
+  // ⚠️ **La precedencia vive en la base** —`bloques_de_cursada()`, ADR-105 §5—:
+  // no sabe > declarados > comisión confirmada > (comisión desconocida: ninguno) >
+  // los de su offering. Antes esta función juntaba los dos dueños a mano, y eso
+  // mostraba el horario de la materia a quien dijo «no sé mi comisión».
+  const { data, error } = await clienteDeServicio().rpc("bloques_de_cursadas", {
+    p_institution_id: institutionId,
+    p_student_id: studentId,
   });
+  if (error) throw new Error(`No se pudieron leer los horarios: ${error.message}`);
+
+  return ((data ?? []) as Array<{
+    cursadaId: string;
+    bloqueId: string;
+    dia: number;
+    desde: string;
+    hasta: string;
+    aula: string | null;
+    fuente: string;
+  }>).map((b) => ({
+    cursadaId: b.cursadaId,
+    bloqueId: b.bloqueId,
+    dia: b.dia,
+    desde: b.desde,
+    hasta: b.hasta,
+    aula: b.aula ?? null,
+    // ADR-094: el aula hereda la procedencia del bloque.
+    estimada: b.fuente === "inference",
+  }));
 }
 
 export const horariosReal = { delEstudiante, deCursadas };

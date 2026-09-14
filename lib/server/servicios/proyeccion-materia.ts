@@ -7,7 +7,7 @@ import {
   type Cobertura,
   type EstadoDeUnidad,
 } from "@/lib/domain/cobertura";
-import { copy, nombreDeDia, t, type CopyId } from "@/lib/content/es-AR";
+import { copy, llenarCopy, nombreDeDia, t, type CopyId } from "@/lib/content/es-AR";
 import {
   provenanceVisible,
   type SourceType,
@@ -131,6 +131,8 @@ export interface EstadoDeMateria {
    * las primeras sería inferencia presentada como horario de la institución.
    */
   horario: readonly BloqueDeCursado[];
+  /** ADR-105: lo que contestó en el cuarto paso del alta. Ausente en lecturas viejas. */
+  comision?: { estado: string | null; nombre: string | null; horario: string | null } | null;
   materia: string;
   examen: {
     titulo: string;
@@ -286,6 +288,25 @@ function clasesDeLaSemanaDe(e: EstadoDeMateria): MateriaProps["clasesDeLaSemana"
   return bloques.length > 0 ? bloques : null;
 }
 
+/**
+ * Comisión y horario, como los contestó el estudiante (ADR-105). **Nunca
+ * `NOT_APPLICABLE` ni «no se preguntó» como una línea**: ahí no hay nada que decir.
+ */
+function situacionDeCursadoDe(e: EstadoDeMateria): MateriaProps["situacionDeCursado"] {
+  const c = e.comision;
+  if (!c) return null;
+  const comision =
+    c.estado === "CONFIRMED" && c.nombre
+      ? llenarCopy("MATERIA.COMISION", { nombre: c.nombre })
+      : c.estado === "NOT_LISTED" && c.nombre
+        ? llenarCopy("MATERIA.COMISION_DECLARADA", { nombre: c.nombre })
+        : c.estado === "UNKNOWN"
+          ? t("MATERIA.COMISION_DESCONOCIDA")
+          : null;
+  const horarioDesconocido = c.horario === "UNKNOWN";
+  return comision || horarioDesconocido ? { comision, horarioDesconocido } : null;
+}
+
 /** `18:00:00` → `18:00`. Postgres entrega `TIME` con segundos; nadie los lee. */
 function hhmm(hora: string): string {
   return hora.slice(0, 5);
@@ -381,6 +402,7 @@ export function proyectarMateria(e: EstadoDeMateria): MateriaProps {
     // distintas del mismo hecho.
     // El horario de cursado. **Solo mostrar** — ver `clasesDeLaSemanaDe`.
     clasesDeLaSemana: clasesDeLaSemanaDe(e),
+    situacionDeCursado: situacionDeCursadoDe(e),
     actividadReciente: actividad,
     // `CTA-009` aparece **si hay historial que abrir**. La preview y la Bitácora
     // salen del mismo `hechos_de_cursada()` y de la misma traducción: sin

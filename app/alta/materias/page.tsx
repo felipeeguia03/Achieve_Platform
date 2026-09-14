@@ -8,7 +8,7 @@ import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { enviar } from "@/lib/client/api";
 import { t } from "@/lib/content/es-AR";
 import { useSuperficie } from "@/lib/client/superficie";
-import { periodoDeCursado } from "@/lib/domain/alta";
+import { leerClaveDePeriodo } from "@/lib/domain/periodo";
 
 /**
  * `/alta/materias` — la confirmación del Mapa Académico Mínimo.
@@ -18,14 +18,22 @@ import { periodoDeCursado } from "@/lib/domain/alta";
  * institución del estudiante. Un query editado a mano no alcanza para
  * inscribirse en el plan de otra institución.
  */
-/** A dónde va el estudiante cuando el alta termina. */
-const DESTINO_AL_TERMINAR = "/hoy";
+/**
+ * A dónde va el estudiante después de confirmar: comisión y horarios
+ * ([ADR-105](../../../docs/decisions.md#adr-105) §1). Si ya los contestó, el
+ * gate lo lleva al paso que falte.
+ */
+const SIGUIENTE_PASO = "/alta/cursada";
 
 function Pantalla() {
   const router = useRouter();
   const params = useSearchParams();
   const plan = params.get("plan") ?? "";
   const anio = Number(params.get("anio") ?? "0");
+  // El período que el estudiante eligió en el paso anterior. Sin él no se
+  // agrupa ni se confirma: se vuelve a preguntarlo, **nunca se infiere del mes**.
+  const periodo = params.get("periodo") ?? "";
+  const periodoLeido = leerClaveDePeriodo(periodo);
 
   const { respuesta, reintentar } = useSuperficie<{ requisitos: RequisitoElegible[] }>(
     `/api/catalogo/plan?plan=${encodeURIComponent(plan)}`,
@@ -42,12 +50,12 @@ function Pantalla() {
     `Suspense`, y la pantalla se saltaba sola. React lo avisa: *"Cannot update a
     component (Router) while rendering a different component"*.
   */
-  const faltanDatos = !plan || !anio;
+  const faltanDatos = !plan || !anio || periodoLeido === null;
   useEffect(() => {
     if (faltanDatos) router.replace("/alta/carrera");
   }, [faltanDatos, router]);
   // Sin plan no hay esqueleto: la pantalla se va, y dibujar una que se va salta.
-  if (faltanDatos) return null;
+  if (faltanDatos || periodoLeido === null) return null;
 
   if (respuesta.estado === "CARGANDO") return <AltaMateriasEsqueleto />;
   if (respuesta.estado !== "OK") {
@@ -62,12 +70,13 @@ function Pantalla() {
   return (
     <AltaMaterias
       anioElegido={anio}
+      semestreElegido={periodoLeido.semestre}
       requisitos={respuesta.datos.requisitos}
       onConfirmar={async (selecciones) => {
         const r = await enviar<{ inscripcion: string }>("/api/alta/materias", {
           plan,
           anio,
-          periodo: periodoDeCursado(),
+          periodo,
           selecciones,
         });
         if (r.estado === "RECHAZADO") return { ok: false, motivo: r.motivo };
@@ -84,7 +93,7 @@ function Pantalla() {
           completa. Acá no hay ninguna pantalla montada que la haya resuelto
           antes.
         */
-        router.replace(DESTINO_AL_TERMINAR);
+        router.replace(SIGUIENTE_PASO);
         return { ok: true };
       }}
     />

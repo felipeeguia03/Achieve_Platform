@@ -236,8 +236,35 @@ import type {
 import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 import { altaReal, type SeleccionDeRequisito } from "./repositorios/alta";
+import { cursadaReal, CursadaRechazada } from "./repositorios/cursada";
+import { createHash } from "node:crypto";
+import { analiticoReal, AnaliticoRechazado } from "./repositorios/analitico";
+import { perfilReal } from "./repositorios/perfil";
+import {
+  hipotesisVigentes as hipotesisVigentesPuro,
+  perfilDelRecorrido as perfilDelRecorridoPuro,
+  rechazarHipotesis as rechazarHipotesisPuro,
+  responderPregunta as responderPreguntaPuro,
+} from "./servicios/perfil";
+import type { EstadoDeRespuesta } from "@/lib/domain/preguntas-de-recorrido";
+import { analiticoSintetico, extractorSintetico } from "./simulacion/analitico";
+import {
+  borrarAnalitico as borrarAnaliticoPuro,
+  confirmarAnalitico as confirmarAnaliticoPuro,
+  decidirConsentimiento as decidirConsentimientoPuro,
+  revisarResultado as revisarResultadoPuro,
+  subirAnalitico as subirAnaliticoPuro,
+} from "./servicios/analitico";
+import {
+  declararCursada as declararCursadaPuro,
+  opcionesDeCursada as opcionesDeCursadaPuro,
+  type ResultadoDeCursada,
+} from "./servicios/cursada";
+import type { RespuestaDeCursada } from "@/lib/domain/cursada";
 import { cuentaReal } from "./repositorios/cuenta";
 import { avisosSimulados, type AvisosSimulados } from "./simulacion/avisos";
+import { requisitosSimulados } from "./simulacion/requisitos";
+import type { RequisitosDeCursado } from "@/lib/domain/requisitos-de-cursado";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { cuenta as cuentaPura, type CuentaProps } from "./servicios/cuenta";
 import { catalogoReal, type InstitucionOfrecible, type RequisitoDelPlan } from "./repositorios/catalogo";
@@ -316,6 +343,118 @@ export function firmarSubidaDeFoto(authUserId: string) {
 
 export function fotoDePerfil(authUserId: string) {
   return cuentaDeAuthReal.firmarLecturaDeFoto(authUserId);
+}
+
+// ── El recorrido: el analítico · ADR-106 ────────────────────────────────────
+
+const depsDelAnalitico = () => ({
+  // Borrar el analítico se lleva las respuestas y las hipótesis (ADR-106 §9).
+  repo: { ...analiticoReal, borrarPerfil: perfilReal.borrar },
+  // ⚠️ El único extractor es sintético (ADR-106 §5): no hay OCR ni proveedor externo.
+  extractor: extractorSintetico,
+  eventos: eventosReal,
+  sha256: (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex"),
+});
+
+export { AnaliticoRechazado };
+
+export function recorridoDelEstudiante(institutionId: string, studentId: string) {
+  return analiticoReal.recorrido(institutionId, studentId);
+}
+
+export function decidirConsentimientoDelAnalitico(
+  institutionId: string,
+  studentId: string,
+  decision: "GRANTED" | "WITHDRAWN",
+) {
+  return decidirConsentimientoPuro(depsDelAnalitico(), institutionId, studentId, decision);
+}
+
+export function subirAnalitico(institutionId: string, studentId: string, bytes: Uint8Array) {
+  return subirAnaliticoPuro(depsDelAnalitico(), institutionId, studentId, bytes);
+}
+
+export function revisarResultadoDelAnalitico(
+  institutionId: string,
+  studentId: string,
+  entrada: { resultadoId: string; decision: string; requisitoId: string | null; estado: string | null },
+) {
+  return revisarResultadoPuro(depsDelAnalitico(), institutionId, studentId, entrada);
+}
+
+export function confirmarAnalitico(institutionId: string, studentId: string, documentoId: string) {
+  return confirmarAnaliticoPuro(depsDelAnalitico(), institutionId, studentId, documentoId);
+}
+
+export function borrarAnalitico(institutionId: string, studentId: string) {
+  return borrarAnaliticoPuro(depsDelAnalitico(), institutionId, studentId);
+}
+
+// ── El perfil del recorrido · ADR-107 ───────────────────────────────────────
+
+const depsDelPerfil = () => ({ recorrido: analiticoReal.recorrido, repo: perfilReal, eventos: eventosReal });
+
+export function perfilDelRecorrido(institutionId: string, studentId: string) {
+  return perfilDelRecorridoPuro(depsDelPerfil(), institutionId, studentId);
+}
+
+export function responderPreguntaDelRecorrido(
+  institutionId: string,
+  studentId: string,
+  entrada: { clave: string; estado: EstadoDeRespuesta; opciones: string[]; textoLibre: string | null },
+) {
+  return responderPreguntaPuro(depsDelPerfil(), institutionId, studentId, entrada);
+}
+
+export function rechazarHipotesisDelRecorrido(institutionId: string, studentId: string, hipotesisId: string) {
+  return rechazarHipotesisPuro(depsDelPerfil(), institutionId, studentId, hipotesisId);
+}
+
+/**
+ * ⚠️ **El seam del Personal Engine, sin llamadores** (ADR-107 §7). El ADE no lo
+ * lee: que lo haga es una decisión abierta.
+ */
+export function hipotesisVigentesDelEstudiante(institutionId: string, studentId: string) {
+  return hipotesisVigentesPuro(depsDelPerfil(), institutionId, studentId);
+}
+
+/**
+ * Un analítico sintético para el estudiante de la sesión — **sólo modo prueba**.
+ * La ruta que lo llama responde `404` sin `MODO_PRUEBA=1`.
+ */
+export async function analiticoSinteticoDePrueba(institutionId: string, studentId: string): Promise<Uint8Array | null> {
+  const alta = await altaReal.estado(institutionId, studentId);
+  const decl = alta.declaracion;
+  if (!decl) return null;
+  const plan = await catalogoReal.requisitos(decl.planId, studentId);
+  if (!plan) return null;
+  return analiticoSintetico(
+    studentId,
+    decl.anio,
+    plan.requisitos.map((r) => ({
+      codigo: r.codigo,
+      nombre: r.nombre,
+      anio: r.anio,
+      tipo: r.tipo,
+      seCursaAhora: r.declarado?.cursadaId != null,
+    })),
+  );
+}
+
+// ── El cuarto paso del alta: comisión y horarios · ADR-105 ──────────────────
+
+export function opcionesDeCursada(institutionId: string, studentId: string) {
+  return opcionesDeCursadaPuro(cursadaReal, institutionId, studentId);
+}
+
+export function declararCursada(
+  institutionId: string,
+  studentId: string,
+  respuestas: readonly RespuestaDeCursada[],
+): Promise<ResultadoDeCursada> {
+  return declararCursadaPuro(cursadaReal, institutionId, studentId, respuestas, (e) =>
+    e instanceof CursadaRechazada ? e.motivo : null,
+  );
 }
 
 // ── El alta académica · Etapa B6.14.4 (ADR-052) ──────────────────────────────
@@ -1308,6 +1447,29 @@ export async function avisosSimuladosDe(
       }))
     : [];
   return avisosSimulados(materias);
+}
+
+/**
+ * Los requisitos de cursado **simulados** de una cursada —
+ * [ADR-108](../../docs/decisions.md#adr-108).
+ *
+ * La cursada tiene que ser **de este estudiante**: se busca entre sus materias
+ * y, si no está, `null` (la ruta contesta `404`). De lo real sólo se toma cuántos
+ * bloques tiene su horario, para que la asistencia simulada tenga la forma de su
+ * semana; lo demás sale de `simulacion/requisitos.ts`.
+ */
+export async function requisitosSimuladosDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  cursadaId: string,
+): Promise<RequisitosDeCursado | null> {
+  const [{ materias }, bloques] = await Promise.all([
+    materiasDe(institutionId, studentId, zona),
+    horariosReal.deCursadas(institutionId, studentId),
+  ]);
+  if (!materias.some((m) => m.cursadaId === cursadaId)) return null;
+  return requisitosSimulados(cursadaId, bloques.filter((b) => b.cursadaId === cursadaId).length);
 }
 
 export async function materiasDe(

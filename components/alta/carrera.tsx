@@ -17,8 +17,11 @@
  * facultad. Se pregunta **sólo** si hay más de una vigente, porque ahí elegir
  * por el estudiante le cambiaría la carrera en silencio.
  *
- * ⚠️ **El semestre no se pregunta**, y queda declarado: el spec lo pide y este
- * tramo no lo cubre ([ADR-052](../../docs/decisions.md#adr-052)).
+ * ⚠️ **El año lectivo y el semestre se preguntan** desde
+ * [ADR-105](../../docs/decisions.md#adr-105) §2, que ejecuta ADR-061: *"no
+ * continuar [...] infiriendo el período según el mes actual"*. **Ninguno llega
+ * elegido**: preseleccionar el semestre por la fecha sería la misma inferencia
+ * con otro nombre.
  *
  * ## Y una que dice la verdad
  *
@@ -34,7 +37,9 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { CTAPrincipal, HeroCard, ReglaDeNegocio } from "@/components/screens/design-system";
 import { CTAEsqueleto, Esqueleto, PantallaCargando, Renglon } from "@/components/screens/esqueleto";
+import type { Semestre } from "@/lib/domain/periodo";
 import { ErrorDelAlta, MarcoDelAlta } from "./marco";
+import { Opciones } from "./opciones";
 
 /**
  * `/alta/carrera` mientras el alta no respondió — `P-12`. El paso, el
@@ -83,9 +88,16 @@ export interface CarreraProps {
   onResolverPlan: (carreraId: string) => Promise<PlanResuelto | null>;
   /** Los años que ese plan declara. `[]` ⇒ el plan no declara ninguno. */
   onAniosDelPlan: (planId: string) => Promise<number[]>;
+  /**
+   * Los años lectivos que se ofrecen. **Una lista para elegir, no un valor**:
+   * la página la arma alrededor del año calendario y ninguno llega marcado.
+   */
+  aniosLectivos: readonly number[];
   onContinuar: (datos: {
     planId: string;
     anio: number;
+    anioLectivo: number;
+    semestre: Semestre;
   }) => Promise<{ ok: true } | { ok: false; fallo: FalloAlContinuar }>;
 }
 
@@ -93,11 +105,14 @@ export function AltaCarrera({
   institucion,
   onResolverPlan,
   onAniosDelPlan,
+  aniosLectivos,
   onContinuar,
 }: CarreraProps) {
   const [carreraId, setCarreraId] = useState("");
   const [planElegido, setPlanElegido] = useState("");
   const [anio, setAnio] = useState("");
+  const [anioLectivo, setAnioLectivo] = useState("");
+  const [semestre, setSemestre] = useState<Semestre | null>(null);
   const [enCurso, setEnCurso] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,10 +176,15 @@ export function AltaCarrera({
   const anios = aniosCargados && aniosCargados.clave === planActivo ? aniosCargados.a : [];
 
   async function continuar() {
-    if (!planActivo || !anio || enCurso) return;
+    if (!planActivo || !anio || !anioLectivo || !semestre || enCurso) return;
     setEnCurso(true);
     setError(null);
-    const r = await onContinuar({ planId: planActivo, anio: Number(anio) });
+    const r = await onContinuar({
+      planId: planActivo,
+      anio: Number(anio),
+      anioLectivo: Number(anioLectivo),
+      semestre,
+    });
     if (!r.ok) {
       // Un `404` no se arregla insistiendo, y decirle que insista es peor que
       // no decirle nada.
@@ -262,9 +282,42 @@ export function AltaCarrera({
         </div>
       )}
 
+      {/*
+        ADR-061: *"Año lectivo. Semestre actual: primero o segundo."* La
+        anualidad **no es una opción acá**: es de la materia, no del alumno.
+      */}
+      {planActivo && anios.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <Label htmlFor="anio-lectivo">{t("ALTA.CARRERA.ANIO_LECTIVO")}</Label>
+          <NativeSelect id="anio-lectivo" value={anioLectivo} onChange={(e) => setAnioLectivo(e.target.value)}>
+            <option value="" />
+            {aniosLectivos.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+      )}
+
+      {planActivo && anios.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{t("ALTA.CARRERA.SEMESTRE")}</span>
+          <Opciones<Semestre>
+            etiqueta={t("ALTA.CARRERA.SEMESTRE")}
+            valor={semestre}
+            onCambiar={setSemestre}
+            opciones={[
+              { valor: "FIRST_SEMESTER", etiqueta: t("ALTA.CARRERA.SEMESTRE_PRIMERO") },
+              { valor: "SECOND_SEMESTER", etiqueta: t("ALTA.CARRERA.SEMESTRE_SEGUNDO") },
+            ]}
+          />
+        </div>
+      )}
+
       <ErrorDelAlta mensaje={error} />
 
-      <CTAPrincipal disabled={!planActivo || !anio || enCurso} onClick={continuar}>
+      <CTAPrincipal disabled={!planActivo || !anio || !anioLectivo || !semestre || enCurso} onClick={continuar}>
         {t("ALTA.CARRERA.CTA")}
       </CTAPrincipal>
     </MarcoDelAlta>

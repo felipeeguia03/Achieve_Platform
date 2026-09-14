@@ -33,11 +33,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Brain, CalendarRange, ChevronLeft, ChevronRight, Library, PlayCircle, Sun } from "lucide-react";
+import { Brain, CalendarRange, GraduationCap, ChevronLeft, ChevronRight, Library, PlayCircle, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { DURACION_DE_BARRA, TRANSICION_DE_BARRA } from "./movimiento";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
-import type { NodoId } from "@/lib/navigation/surfaces";
+import { nodos, type NodoId } from "@/lib/navigation/surfaces";
 import { t } from "@/lib/content/es-AR";
 
 /*
@@ -53,6 +53,7 @@ const ICONOS: Partial<Record<NodoId, typeof Sun>> = {
   CALENDARIO: CalendarRange,
   FORMACION: PlayCircle,
   GIMNASIA: Brain,
+  RECORRIDO: GraduationCap,
 };
 
 /**
@@ -259,9 +260,16 @@ export function NavegacionLateral({
         className={`relative shrink-0 ${transicion}`}
         style={{ height: colapsada ? 84 : 40 }}
       >
-        <span
+        {/*
+          El logo lleva a Hoy, como en cualquier software: es la portada. Navega y
+          nada más — igual que un ítem del menú, no guarda nada en la barra de
+          objetos (ADR-088, Enmienda 7).
+        */}
+        <Link
+          href={nodos.UX01.ruta ?? "/hoy"}
+          data-logo
           className={`flex items-center whitespace-nowrap ${transicion}`}
-          style={{ gap: 10, height: 40, paddingLeft: colapsada ? 10 : 6 }}
+          style={{ gap: 10, height: 40, paddingLeft: colapsada ? 10 : 6, width: "fit-content" }}
         >
           <Image src="/achieve-logo.png" alt="Achieve" width={36} height={36} priority />
           {conNombre && (
@@ -279,7 +287,7 @@ export function NavegacionLateral({
               Achieve
             </span>
           )}
-        </span>
+        </Link>
         <button
           onClick={() => {
             setAnimar(true);

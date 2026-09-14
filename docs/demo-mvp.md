@@ -64,7 +64,21 @@ npm run dev
 ⚠️ **`db:verify` vacía todo esto, incluida la cuenta de la UCC.** Después de correrlo hay que repetir
 la secuencia entera, no sólo `db:demo`: sin `simular-temarios --padron`, `db:sesion` saltea
 `estudiante.ucc@achieve.local` con *"su student no está sembrado"* y la cuenta queda sin padrón. **Lo
-que ese estudiante hubiera recorrido del alta no se recupera**: vuelve a empezar desde el primer paso.
+que ese estudiante hubiera recorrido del alta no se recupera** resembrando: vuelve a empezar desde el primer paso.
+
+✅ **Para no perderlo, copiá y restaurá** (probado el 13 y el 14 de septiembre de 2026, conteos idénticos y la
+cuenta UCC entra):
+
+```bash
+C=supabase_db_achieve-platform
+docker exec $C pg_dump -U supabase_admin -d postgres --data-only --schema=public --schema=auth -Fc -f /tmp/demo.dump
+npm run db:verify
+# vaciar public y auth como supabase_admin, con session_replication_role = replica, y después:
+docker exec $C pg_restore -U supabase_admin -d postgres --data-only --disable-triggers /tmp/demo.dump
+```
+
+Los avisos de *circular foreign-key constraints* de `pg_dump` son esperables: por eso `--disable-triggers`.
+Si entre la copia y la restauración entra una migración que cambia columnas, la copia puede no volver: resembrá.
 
 ⚠️ **Después de `db:reset`, el proveedor de auth tarda unos segundos en volver**, y mientras tanto
 contesta *"An invalid response was received from the upstream server"*. **`db:sesion` lo espera solo**

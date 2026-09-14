@@ -46,15 +46,17 @@ Cada etapa, sin excepción:
 
 ---
 
-## 0.1 Dónde estamos · 5 de septiembre de 2026
+## 0.1 Dónde estamos · 14 de septiembre de 2026
 
-**Track A: cerrado.** **Track B: B1–B6.14 completas en su alcance disponible**, con B2b en 2/3.
+**Track A: cerrado.** **Track B: B1–B6.33 completas en su alcance disponible**, con B2b en 2/3.
 
-`lint`, `typecheck` y `build` en verde · **1160 tests en 64 archivos** · **61 migraciones** · las
+`lint`, `typecheck` y `build` en verde · **2590 tests en 121 archivos** · **98 migraciones** · **16 rutas
+bajo `app/(student)`** · **26 CTAs** · las
 **nueve superficies** del estudiante leen de la base **y el camino principal escribe en ella**
 ([ADR-040](decisions.md#adr-040)), y desde la B6.14 **el estudiante declara él mismo qué cursa**.
 
-✅ **`npm run db:verify` corre entero** — **398 comprobaciones, cero fallos**. Estuvo roto
+✅ **`npm run db:verify` corre entero** — **545 comprobaciones, cero fallos** (14 sep, ya unidas
+`feat/paralelo` y `feat/fase-0-track-a`). Estuvo roto
 por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto de orden. Los dos, en
 [§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre).
 
@@ -62,6 +64,9 @@ por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto 
 
 | Frente | Estado |
 |---|---|
+| **Requisitos de cursado** | 🧪 **14 de septiembre de 2026** — [ADR-108](decisions.md#adr-108), `SIMULADO`. Desplegable *Requisitos* en `UX02`: promoción y regular, *Piden · Venís*, cuatro estados. **Sólo con `MODO_PRUEBA=1`**; la cuenta es del dominio y los insumos se inventan. Ver [Fase B6.33](#fase-b633--requisitos-de-cursado-simulados--completa) |
+| **Onboarding académico** | ✅ **13–14 de septiembre de 2026** — [ADR-105](decisions.md#adr-105)…[ADR-107](decisions.md#adr-107). Alta en cinco pasos con comisión y horario, y `/recorrido` después de HOY: analítico sintético, preguntas e hipótesis de perfil. Ver [Fase B6.32](#fase-b632--onboarding-académico---completa-sintético-ver-lo-que-sigue-abierto) |
+| **Modo Focus** | ✅ **13 de septiembre de 2026** — [ADR-104](decisions.md#adr-104) y su [Enmienda 1](decisions.md#adr-104-enmienda-1): la sesión sobre una acción comprometida, Pomodoro como modo, y seis sonidos calculados sin archivos. Ver [Fase B6.31](#fase-b631--modo-focus--completa) |
 | **El escritorio del objeto** | 🆕 **10 de septiembre de 2026** — Enmiendas [1](decisions.md#adr-088-enmienda-1), [2](decisions.md#adr-088-enmienda-2), [3](decisions.md#adr-088-enmienda-3), [4](decisions.md#adr-088-enmienda-4) y [5](decisions.md#adr-088-enmienda-5) de ADR-088. **Abrir una materia va a su superficie completa**; desde ahí un semáforo arriba la **minimiza a la barra**, la **reduce a ventana** o la **cierra**. Las ventanas se arrastran, se estiran, se expanden, **vuelven donde estaban** y **conviven todas**: se apilan y se traen al frente tocándolas. El escritorio entero vive en `?abierto=<a>,<b>` y **el orden es el apilamiento**. ⚠️ **Se llama «marco», no «ventana»**: `Ventana` ya son dos cosas del dominio (ADR-078 y `VentanaDeExamen`), y reusarla sería `A-04`. ⚠️ **El panel consulta; la superficie trabaja** — adentro toda CTA navega. ⚠️ **La Enmienda 3 retira la trampa de foco y el `aria-modal` de la Enmienda 1**: con varias ventanas no modales encerrarían al teclado en la última abierta. ⚠️ **La Enmienda 4 le pone movimiento**: la ventana **sale de su ficha** y vuelve a entrar, con los números de `design-system-capturas.md` §2.5 — y `prefers-reduced-motion` lo apaga entero. ⚠️ **La Enmienda 5 le pone nombre y color**: el nombre se escribe con mayúscula sólo en la primera —**presentación, no renombre**: el `label` del plan no se toca— y cada materia lleva **su color de la lista** en la ficha y en la ventana, con `colorDeMateria` compartido en `lib/domain/`. ⛔ **Deuda de tokens**: §2.5 define `--curva` y `--duracion` y `globals.css` no los tiene, así que los valores se citan en `components/shell/movimiento.ts`. ✅ **Y destapó que `20162` y `10207` se llamaban igual en pantalla** — corregido por [ADR-092](decisions.md#adr-092) con los programas oficiales: `ARQUITECTURA DE COMPUTADORAS I` y `II`. ⛔ **Quedan dos parejas sin nombre completo conocido**, y `ingerir_plan()` **no se puede reimportar** sobre un plan con altas hechas: la FK de `requirement_declaration` aborta el archivo entero |
 | **Gimnasia cognitiva** | ✅ **Construida el 13 de septiembre de 2026** — [ADR-102](decisions.md#adr-102). Categoría **Memoria** con *Cuadrícula fugaz*, *Cadena inversa* y *Recuerdo real*; rutina de 8 minutos; el resultado lo calcula el servidor y el progreso se deduce. **No toca Hoy, el ADE ni el loop.** Sin preguntas reales todavía: Recuerdo real queda en preparación fuera de la demo. Plan en [`gimnasia-cognitiva.md`](gimnasia-cognitiva.md) |
 | **El asistente de reportes y mejoras** | 🧪 **13 de septiembre de 2026** — [ADR-103](decisions.md#adr-103), pedido del owner con capturas de otro software. Botón abajo a la derecha, *Reportar un problema* / *Sugerir una mejora*, pregunta aclaratoria, tarjeta *Tu sugerencia* con *Confirmar y enviar* / *Corregir algo*, *Reporte enviado*, capturas pegadas y *Nueva conversación*. ⚠️ **Simulado**: guion fijo, **sin red ni persistencia**, sólo con `MODO_PRUEBA=1` y rotulado. El resumen **cita** lo escrito. Conectarlo es con el backend y el CTO, y lo que se guarde de un reporte toca ADR-006 |
@@ -4046,6 +4051,52 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+## Fase B6.33 — Requisitos de cursado, simulados · ✅ COMPLETA
+
+**14 de septiembre de 2026** · [ADR-108](decisions.md#adr-108). Pedido del owner con la captura de un
+desplegable de otro software. `SIMULADO — SÓLO MODO_PRUEBA`.
+
+| Qué | Estado |
+|---|---|
+| Dominio puro `lib/domain/requisitos-de-cursado.ts`: piden, venís, quedan, faltas disponibles, cuatro estados | ✅ |
+| Simulación determinística `lib/server/simulacion/requisitos.ts` sobre el horario real de la materia | ✅ |
+| `GET /api/requisitos`: `404` sin `MODO_PRUEBA`, JWT y sólo sobre una cursada propia | ✅ |
+| Desplegable en `UX02` rotulado *Simulado*, promoción y regular, `Escape` lo cierra | ✅ |
+
+⛔ **Lo que no se hizo, a propósito:** condiciones reales del programa (llegan con procedencia),
+asistencia y notas reales (ADR-006), y cualquier veredicto de la materia. Cuando existan los datos, la ruta
+y la simulación **se borran** y la cuenta del dominio se reusa.
+
+`lint` · `typecheck` · `build` · **2590 tests** · **`db:verify` 545 ✓, 0 ✗** — verificado ya unido.
+
+---
+
+## Fase B6.32 — Onboarding académico · ✅ COMPLETA *(sintético; ver lo que sigue abierto)*
+
+**13–14 de septiembre de 2026** · [ADR-105](decisions.md#adr-105), [ADR-106](decisions.md#adr-106),
+[ADR-107](decisions.md#adr-107) · [fuente literal](respuesta-po-onboarding-academico-source.md) ·
+[`onboarding-academico.md`](onboarding-academico.md). El owner, sobre el diagnóstico: *"2-a ·
+3-autorizo · 4-no se llevan, que no se impida nada · hace lo recomendado y segui"*.
+
+| Etapa | Qué | Commit |
+|---|---|---|
+| B6.32.0 | La respuesta del owner y las tres ADR | `docs(onboarding)` |
+| B6.32.1 | **El período se pregunta** (ADR-061, corte 2 del plan) | `feat(alta) — el período se pregunta` |
+| B6.32.2 | **`/alta/cursada`**: comisión y horario, cinco pasos, `bloques_de_cursada()` (cortes 3 y 4) | `feat(alta) — el cuarto paso` |
+| B6.32.3 | **`/recorrido`: el analítico** sintético, revisión y borrado | `feat(recorrido) — el analítico` |
+| B6.32.4 | **Preguntas del recorrido e hipótesis de perfil** (`RECORRIDO-v0.1`) | `feat(recorrido) — preguntas` |
+| B6.32.5 | `UX02` dice la comisión y *«todavía no sabés tu horario»* | `feat(materia)` |
+
+⚠️ **Tres correcciones al plan que quedaron escritas en ADR-105**: la cursada no se muda de offering;
+`commission_status` arranca `NULL` y no `NOT_APPLICABLE`; y con dos dueños de horario hace falta una
+sola precedencia.
+
+⛔ **Lo que no se hizo:** la electiva pendiente (corte 6), el temario en la materia (corte 7), cambiar
+comisión u horario después del alta (fila 19 y segunda salida de ADR-064), extracción real (ADR-006,
+ADR-080) y que el ADE lea el perfil (filas 21 y 22).
+
+---
+
 ## Fase B6.31 — Modo Focus · ✅ COMPLETA
 
 **13 de septiembre de 2026** · [ADR-104](decisions.md#adr-104). El owner: *"hacé todo lo recomendado y
@@ -4060,6 +4111,7 @@ empezá, no dejes nada pending"*. Informe, API y QA en [`modo-focus.md`](modo-fo
 | Concentración oscura, pausa, lista, descanso, recuperación, cierre con avance, sesión cerrada | ✅ |
 | Hoy, Materia y Compromiso llevan a Focus; la Bitácora muestra la sesión y el avance, nunca el anotador | ✅ |
 | Recorrido en navegador (Chromium), desktop y 360 px | ✅ |
+| **Enm. 1** · lluvia, mar, viento y chimenea calculados; *Probar* antes de empezar; `focus_preference.sound` con siete valores | ✅ |
 
 ✅ **Se cierra una costura que la Fase 0 dejó dicha:** `EJECUCION` ya tiene con qué vivirse y `UX05` se
 alcanza por clic, desde *Terminé · Subir evidencia*. El nodo del spec sigue sin ruta: la pantalla es

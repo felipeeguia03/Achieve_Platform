@@ -61,7 +61,11 @@ Tres hallazgos del informe, y el más importante apareció después:
 
 ---
 
-## Corte 2 · El período se pregunta, y `/alta/materias` agrupa por él
+## Corte 2 · El período se pregunta, y `/alta/materias` agrupa por él — ✅ HECHO
+
+> ✅ **13 de septiembre de 2026** — [ADR-105](decisions.md#adr-105) §2. `periodoDeCursado()` dejó de
+> existir, con guard. Las rutas validan la clave canónica. Sin migración de escritura: sólo las lecturas
+> devuelven período y anualidad.
 
 **Ejecuta:** [ADR-061](decisions.md#adr-061) §3.
 
@@ -76,7 +80,12 @@ Tres hallazgos del informe, y el más importante apareció después:
 
 ---
 
-## Corte 3 · La comisión: catálogo, cuatro estados y selección
+## Corte 3 · La comisión: catálogo, cuatro estados y selección — ✅ HECHO, con una corrección
+
+> ✅ **13 de septiembre de 2026** — [ADR-105](decisions.md#adr-105). ⚠️ **No se mueve `offering_id`**, como
+> proponía este corte: vaciaba la materia, porque el temario sigue en la offering (corte 7). La comisión
+> va en `commission_offering_id`. Y el default **no es `NOT_APPLICABLE`**: `NULL` es «no se preguntó».
+> El cuarto paso quedó en `/alta/cursada`, **quinto paso del alta** por la enmienda de ADR-061.
 
 **Ejecuta:** [ADR-062](decisions.md#adr-062).
 
@@ -91,7 +100,12 @@ Tres hallazgos del informe, y el más importante apareció después:
 
 ---
 
-## Corte 4 · Los bloques horarios, con sus dos propietarios
+## Corte 4 · Los bloques horarios, con sus dos propietarios — ✅ HECHO
+
+> ✅ **13 de septiembre de 2026** — [ADR-105](decisions.md#adr-105) §5. El escritor del estudiante y
+> `schedule_status` **llegaron juntos**, que es lo que ADR-083 exigía. Y apareció lo que este corte no
+> previó: con dos dueños hace falta **una precedencia**, `bloques_de_cursada()`, que ahora leen todas las
+> superficies.
 
 **Ejecuta:** [ADR-063](decisions.md#adr-063).
 

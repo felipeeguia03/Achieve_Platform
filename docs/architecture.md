@@ -142,7 +142,7 @@ Achieve_Platform/
 │   ├── utils.ts                 ← cn() · REUSADO
 │   ├── domain/                  ← tipos y máquinas de estado (puras, sin I/O)
 │   ├── content/                 ← el copy, con ID tipado (regla C-07)
-│   ├── navigation/              ← grafo del Golden Path + registro de las 20 CTAs
+│   ├── navigation/              ← grafo del Golden Path + registro de las 26 CTAs
 │   └── fixtures/                ← catálogo de escenarios sintéticos
 │
 └── hooks/
@@ -424,9 +424,9 @@ lib/
     │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar
     └── repositorios/     ← única capa que toca Postgres. No decide permisos ni transiciones
 
-supabase/migrations/      ← 61 migraciones. Una aplicada NO se edita: se reemplaza
+supabase/migrations/      ← 98 migraciones. Una aplicada NO se edita: se reemplaza
                              la función desde una nueva
-scripts/                  ← db:verify — 330 comprobaciones que npm test no puede hacer
+scripts/                  ← db:verify — 545 comprobaciones que npm test no puede hacer
 ```
 
 **Una lectura, una función de base.** Las nueve superficies tienen la suya —`estado_del_dia`,

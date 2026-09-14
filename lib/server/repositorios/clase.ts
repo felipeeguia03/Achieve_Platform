@@ -63,28 +63,17 @@ const escrituras: RepositorioDeClases = {
   },
 
   async horarioDeBloque(institutionId, cursadaId, bloqueId) {
-    const db = clienteDeServicio();
-    const cursada = await db
-      .from("course_enrollment")
-      .select("offering_id")
-      .eq("institution_id", institutionId)
-      .eq("id", cursadaId)
-      .maybeSingle();
-    if (cursada.error) throw new Error(`No se pudo leer la cursada: ${cursada.error.message}`);
-    const oferta = (cursada.data as { offering_id: string } | null)?.offering_id;
-
-    // Los dos dueños posibles del bloque (ADR-083): la cursada o su oferta.
-    const { data, error } = await db
-      .from("class_schedule_block")
-      .select("start_time, end_time, offering_id, course_enrollment_id")
-      .eq("institution_id", institutionId)
-      .eq("id", bloqueId)
-      .maybeSingle();
+    // El bloque tiene que estar entre **los efectivos** de la cursada
+    // (`bloques_de_cursada()`, ADR-105 §5), no sólo pertenecer a uno de sus
+    // dueños: un horario que la precedencia descartó no abre una clase.
+    const { data, error } = await clienteDeServicio().rpc("bloques_de_cursada", {
+      p_course_enrollment_id: cursadaId,
+    });
     if (error) throw new Error(`No se pudo leer el bloque: ${error.message}`);
-    const b = data as Record<string, string | null> | null;
-    if (!b) return null;
-    const esSuyo = b.course_enrollment_id === cursadaId || (oferta !== undefined && b.offering_id === oferta);
-    return esSuyo ? { desde: b.start_time as string, hasta: b.end_time as string } : null;
+    const b = ((data ?? []) as Array<{ id: string; institution_id: string; start_time: string; end_time: string }>).find(
+      (x) => x.id === bloqueId && x.institution_id === institutionId,
+    );
+    return b ? { desde: b.start_time, hasta: b.end_time } : null;
   },
 
   async activa(institutionId, studentId) {
@@ -233,13 +222,10 @@ async function contextoDe(institutionId: string, clase: ClaseFila, fecha: string
   };
   const oferta = uno(fila.oferta);
 
-  // Los bloques de la semana, de los dos dueños posibles (ADR-083). Dan el aula
+  // Los bloques de la semana de esta cursada. Dan el aula
   // y el orden que usa la simulación del tipo de clase (ADR-099 §7).
-  const bloques = await db
-    .from("class_schedule_block")
-    .select("id, day_of_week, start_time, room, source_type")
-    .eq("institution_id", institutionId)
-    .or(`offering_id.eq.${fila.offering_id},course_enrollment_id.eq.${clase.cursadaId}`);
+  // ADR-105 §5: los efectivos de la cursada, con la misma precedencia que todo.
+  const bloques = await db.rpc("bloques_de_cursada", { p_course_enrollment_id: clase.cursadaId });
   if (bloques.error) throw new Error(`No se pudieron leer los bloques: ${bloques.error.message}`);
   const semana = ((bloques.data ?? []) as Array<{
     id: string;

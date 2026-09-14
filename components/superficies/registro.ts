@@ -40,6 +40,7 @@ import { VistaDeClase } from "./clase";
 import { VistaDeCalendario } from "./calendario";
 import { VistaDeGimnasia } from "./gimnasia";
 import { VistaDeFocus } from "./focus";
+import { VistaDeRecorrido } from "./recorrido";
 import { VistaDeActivacionDeExamen } from "./examen-activacion";
 import { VistaDeOverviewDeExamen } from "./examen-overview";
 import { VistaDePasoDeProtocolo } from "./examen-paso";
@@ -60,6 +61,7 @@ const POR_NODO: ReadonlyArray<readonly [keyof typeof nodos, Superficie]> = [
   ["CALENDARIO", VistaDeCalendario],
   ["GIMNASIA", VistaDeGimnasia],
   ["FOCUS", VistaDeFocus],
+  ["RECORRIDO", VistaDeRecorrido],
   ["UX07", VistaDeActivacionDeExamen],
   ["UX08", VistaDeOverviewDeExamen],
   ["UX09", VistaDePasoDeProtocolo],

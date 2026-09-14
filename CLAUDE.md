@@ -87,6 +87,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Nombrar algo como lo nombra el oficio | [`docs/indice-psicopedagogico-source.md`](docs/indice-psicopedagogico-source.md) |
 | Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) — §2.1 la propuesta de contrato v2, §2.2 **lo que la Fase B6 necesita de él** |
 | Saber en qué quedó la integración con el CRM | [`docs/contrato-riesgo-candidato-v0.2.md`](docs/contrato-riesgo-candidato-v0.2.md) §11 (flujos A·B·C, **congelados**) y [`docs/respuesta-crm-flujos-d-e-v0.1.md`](docs/respuesta-crm-flujos-d-e-v0.1.md) (flujos **D · actividad** y **E · teléfono**, aceptados con cambios) |
+| **Onboarding académico**: período, comisión, horarios, analítico y perfil | [ADR-105](docs/decisions.md#adr-105)…[ADR-107](docs/decisions.md#adr-107) · [`onboarding-academico.md`](docs/onboarding-academico.md) |
 | Preparar la consulta legal | [`docs/legal-package.md`](docs/legal-package.md) |
 | Cerrar los residuos psicopedagógicos | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) |
 | Cerrar las tres decisiones del Product Owner | [`docs/agenda-decisiones-po-crm.md`](docs/agenda-decisiones-po-crm.md) — ADR-041, ADR-042 y ADR-043, con contexto y opciones |
@@ -96,6 +97,50 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 ---
 
 ## Estado actual
+
+✅ **`feat/paralelo` entró en `feat/fase-0-track-a`** — 14 de septiembre. Onboarding académico (ADR-105…107),
+requisitos simulados (ADR-108) y los sonidos de Focus (ADR-104 · Enm. 1) conviven. El único conflicto fue
+de texto en `decisions.md`: los dos lados agregaban. Verificado después de unir: `lint` · `typecheck` · `build` · **2590 tests en 121 archivos** · **`db:verify` 545 ✓, 0 ✗**.
+**Dieciséis rutas, 26 CTAs, 98 migraciones.**
+
+🧪 **Hay Requisitos de cursado, SIMULADOS** — [ADR-108](docs/decisions.md#adr-108), 14 de septiembre. En
+`UX02`, un desplegable *Requisitos* con promoción y regular: notas de parciales, TPs al día, asistencia al
+práctico y al teórico, cada fila con *Piden · Venís* y *Cumple · Ajustado · No alcanza · Sin datos*. **Sólo con
+`MODO_PRUEBA=1`**: sin la variable `GET /api/requisitos` es `404` y el botón no se dibuja.
+
+⚠️ **Antes de tocar Requisitos:** la cuenta vive en `lib/domain/requisitos-de-cursado.ts` y es pura; los
+insumos los inventa `lib/server/simulacion/requisitos.ts`. **No los migres a columnas**: las condiciones
+llegan del programa con procedencia y la asistencia y las notas tocan ADR-006. **Sin veredicto de la
+materia** (ni *«estás promocionando»* ni *«3 de 4»*) y un parcial sin rendir es `null`, no `0`.
+
+🆕 **Onboarding académico** — [ADR-105](docs/decisions.md#adr-105), [ADR-106](docs/decisions.md#adr-106) y
+[ADR-107](docs/decisions.md#adr-107), 13–14 de septiembre · [`onboarding-academico.md`](docs/onboarding-academico.md).
+**El alta tiene cinco pasos** (enmienda ADR-061): `/alta/carrera` pregunta año lectivo y semestre y
+`/alta/cursada` —antes de disponibilidad— pregunta comisión y horario por materia. Y hay **`/recorrido`**,
+opcional y después de HOY: analítico sintético, revisión de lo ambiguo, pocas preguntas y un perfil de
+hipótesis.
+
+⚠️ **Antes de tocar horarios:** los bloques de una cursada salen de **`bloques_de_cursada()`**, y de
+ningún otro lado. No sabe > declarados > comisión confirmada > (comisión desconocida: **ninguno**) > los
+de su offering. **No vuelvas a juntar los dos dueños a mano.**
+
+⚠️ **La cursada NO se muda de offering al elegir comisión** (ADR-105 §4): el contenido cuelga de la
+offering del alta hasta que ADR-060 pase el temario a la materia. La comisión va en
+`commission_offering_id`.
+
+⚠️ **El analítico es el pasado y nunca crea, preselecciona ni toca una cursada** (ADR-106 §2, con guard).
+El único extractor es **`SINTETICO-v1`**: cualquier otro archivo termina `EXTRACCION_NO_DISPONIBLE` y **no
+se guarda**. No agregues OCR ni proveedor: ADR-006 y ADR-080.
+
+⚠️ **La respuesta no es la hipótesis.** `profile_answer` es append-only y su texto libre no viaja a
+eventos ni se convierte en hipótesis; `profile_hypothesis` va aparte, `BAJA`/`MEDIA`, redactada como
+*«Nos contaste…»* o *«En tu analítico…»*. **El ADE, Hoy y el riesgo no leen el perfil** (guard):
+`hipotesisVigentesDelEstudiante` es un seam sin llamadores.
+
+⚠️ **Hay un segundo borrado de storage**: el analítico (objeto primero, fila después), que se lleva sus
+respuestas e hipótesis.
+
+⚠️ **Dieciséis rutas bajo `app/(student)`, nueve superficies**: `RECORRIDO` es nodo sin wireframe.
 
 🆕 **Hay Modo Focus** — [ADR-104](docs/decisions.md#adr-104), 13 de septiembre. `/focus`: la sesión de
 trabajo sobre una acción comprometida. Cronómetro libre por defecto, Pomodoro opcional (25/5/15 ·
@@ -110,6 +155,11 @@ viaja desde el cliente**. La fase no se persiste (sale del tramo abierto) y la r
 y **no cierra el compromiso** — la entrega exige uno vivo. ⛔ **El anotador (`scratchpad`) es
 privado**: no va a `product_event`, `hechos_de_cursada()` ni la Bitácora, y hay guards en las tres
 capas. *«Avance»*, nunca *«nota»*; *«tiempo registrado en Focus»*, nunca *«tiempo efectivo»*.
+
+🆕 **Y seis sonidos, todos calculados** — [ADR-104 · Enm. 1](docs/decisions.md#adr-104-enmienda-1): lluvia, mar,
+viento, chimenea, ruido marrón y rosa. **No hay archivos de audio**: se generan en
+`lib/client/focus/sonidos.ts` como loops de 24 s y se prueban antes de empezar. ⚠️ No agregues grabaciones
+ni pedidos por red (hay test), y la copy no promete *«sonido real»* ni que ayude a concentrarse.
 
 ⚠️ **Los números cambiaron otra vez:** **26 CTAs** (`CTA-026`, `CTA-027`; `CTA-006` y `CTA-009` ganan
 el origen `FOCUS`) y **quince rutas** bajo `app/(student)`, **nueve superficies**: `FOCUS` es nodo sin
@@ -279,7 +329,7 @@ semanas`: un examen fuera de cuadro es peor que un eje largo.
   ([ADR-078](docs/decisions.md#adr-078)).
 - **`+ Agregar materia o evaluación`** — el único elemento **sin destino definido**.
 
-✅ **`npm run db:verify` corre entero: 434 comprobaciones, cero fallos.** Estaba roto desde
+✅ **`npm run db:verify` corre entero: 545 comprobaciones, cero fallos** (14 sep 2026). Estuvo roto desde
 la B6.14 —a `limpiar_mundo` le faltaban cinco tablas y, como las 40 sentencias van en **una sola
 transacción**, una FK abortaba todo y no se borraba nada—. Arreglarlo destapó un segundo defecto que
 el primero tapaba: `db-aislamiento.sh` **vacía el catálogo que `db-catalogo.sh` necesita después**,
@@ -845,9 +895,10 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **434 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **545 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
-de negocio a propósito:** después hay que volver a sembrar con `npm run db:demo`.
+de negocio a propósito, incluida la cuenta de la UCC:** copiá los datos antes y restauralos después
+([`demo-mvp.md`](docs/demo-mvp.md) §Preparar). Resembrar sólo con `db:demo` deja la cuenta UCC sin padrón.
 
 **El Done de una fase se audita, no se declara.** `tests/invariantes.test.ts` verifica el criterio de
 cierre de la B2 —los 12 invariantes de `data-model.md` §11— contra el propio documento. **Los doce

@@ -774,6 +774,16 @@ export interface MateriaProps {
    * saberlo **no significa tener la semana libre**.
    */
   clasesDeLaSemana: readonly { cuando: string; aula: string | null; procedencia: string }[] | null;
+  /**
+   * Lo que el estudiante contestó sobre su comisión y su horario —
+   * [ADR-105](../../docs/decisions.md#adr-105), ADR-062 y ADR-063.
+   *
+   * `comision` es la línea que se lee (*Comisión A*, *Todavía no sabés tu
+   * comisión*), o `null` si no aplica o no se preguntó. `horarioDesconocido`
+   * dice **«no se sabe»** en vez de no dibujar nada: la ausencia no es una semana
+   * libre. `null` entero ⇒ no hay nada que decir.
+   */
+  situacionDeCursado: { comision: string | null; horarioDesconocido: boolean } | null;
   actividadReciente: readonly EntradaDeBitacora[] | null;
   /**
    * `CTA-009` — *ver progreso*, con la materia puesta. `null` ⇒ **no se

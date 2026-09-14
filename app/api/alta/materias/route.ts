@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { tokenDelHeader } from "@/lib/server/http";
+import { leerClaveDePeriodo } from "@/lib/domain/periodo";
 import { confirmarMapaAcademico, resolverSesion } from "@/lib/server/composicion";
 
 /**
@@ -39,7 +40,10 @@ export async function POST(request: Request) {
     selecciones?: { requisito?: string; materia?: string; nombreEscrito?: string }[];
   } | null;
 
-  if (!cuerpo?.plan || typeof cuerpo.anio !== "number" || !cuerpo.periodo) {
+  // ADR-061 · ADR-105 §2: el período **lo eligió el estudiante** —año lectivo y
+  // semestre— y llega como clave canónica. Una clave con otra forma no se
+  // completa ni se adivina: es un pedido mal armado.
+  if (!cuerpo?.plan || typeof cuerpo.anio !== "number" || !leerClaveDePeriodo(cuerpo.periodo)) {
     return NextResponse.json({ error: "Faltan plan, año o período" }, { status: 400 });
   }
 
@@ -54,7 +58,7 @@ export async function POST(request: Request) {
   const r = await confirmarMapaAcademico(sesion.estudiante.institutionId, sesion.estudiante.id, {
     curriculumPlanId: cuerpo.plan,
     curriculumYear: cuerpo.anio,
-    term: cuerpo.periodo,
+    term: cuerpo.periodo as string,
     selecciones,
   });
 

@@ -1941,7 +1941,10 @@ estudiante.
 | Tabla `Activity` / `TimelineItem` | La Bitácora es composición de lectura sobre objetos existentes. **Desde la B2.6 esa composición es concreta:** `estado_de_progreso()` la arma desde `product_event`, que es el único registro de hechos con instante propio, actor y causa —y append-only (`I12`)—. Reconstruirla desde las columnas de estado no alcanza: `evidence` no tiene `validated_at`, así que *"la validaron"* no tendría fecha |
 | Estados `RESCUE_REQUIRED` / `RESCUE_MATERIALIZED` | Son **condiciones derivadas**, no estados persistidos |
 | Enum de estado por `ProtocolStep` | El spec no lo congela: solo hay un hecho de completion |
-| Tabla `student_model` | `C01-043` sigue `OPEN`: mencionado, no especificado |
+| Tabla `student_model` | `C01-043` sigue `OPEN`: mencionado, no especificado. ⚠️ **`profile_hypothesis` no lo es** ([ADR-107](decisions.md#adr-107)): son hipótesis declaradas del recorrido, con procedencia, que nada consume |
+| Columna `course_enrollment.schedule_status` negativa en `class_schedule_block` | ✅ **El estado vive en la cursada** ([ADR-105](decisions.md#adr-105)): `UNKNOWN` no deja filas. Ver [`onboarding-academico.md`](onboarding-academico.md) §3 |
+| Entidad de **historia académica** separada de `course_enrollment` | ✅ **`academic_document` + `academic_record_entry`** ([ADR-106](decisions.md#adr-106)): el pasado no crea cursadas |
+| Entidad **excepción de clase** o cancelación | No existe: `class_session` es la clase dictada y el bloque es la regla semanal. Sin ADR |
 | ~~**Pauta o criterio de evaluación de la cátedra**~~ | ✅ **`assessment_criterion`, desde la Fase B5** ([ADR-029](decisions.md#adr-029)). Con Provenance completa: cargada por el estudiante entra `student`/`unverified` y **no se eleva** (`I9`). Sigue abierto `C01-037`: qué pasa cuando la pauta contradice las familias generales |
 | ~~**Repetición de un `ProtocolStep`**~~ | ✅ **Resuelta por [ADR-028](decisions.md#adr-028):** se cayó el `UNIQUE`, cada vuelta es una fila con su `occurrence` y su `topic_id`. La garantía vieja no se perdió, se volvió configurable: `protocol_step.is_reentrant` |
 | ~~**El contenido de los 20 pasos `PE-PSY`**~~ | ✅ **Cargado como `HUMAN-ROADMAP v1.0`** ([ADR-031](decisions.md#adr-031)), verbatim y con `source_text` atado al documento fuente por test. `EP-SPEC v0.1` quedó **apagado, no borrado** |

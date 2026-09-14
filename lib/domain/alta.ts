@@ -17,7 +17,7 @@
  * clasificar la fila. Colapsarlo con `COURSE` haría que el alta le preguntara
  * al estudiante si cursa algo que nadie sabe qué es.
  */
-import { claveDePeriodo } from "./periodo";
+import { seDictaEn, type Semestre } from "./periodo";
 
 export type TipoDeRequisito =
   | "COURSE"
@@ -63,17 +63,46 @@ export function tratoEnElAlta(tipo: TipoDeRequisito): TratoEnElAlta {
 }
 
 /**
- * Una materia del año elegido llega **marcada**; una de otro año, no.
+ * En qué grupo de `/alta/materias` aparece una materia —
+ * [ADR-061](../../docs/decisions.md#adr-061) y [ADR-105](../../docs/decisions.md#adr-105) §2.
+ *
+ * | Grupo | Qué junta |
+ * |---|---|
+ * | `DEL_SEMESTRE` | las del año elegido que se dictan en el semestre elegido — **o que no declaran período** |
+ * | `ANUALES` | las del año elegido que se dictan todo el año: **aparecen en los dos semestres** |
+ * | `OTROS` | otro año, u otro semestre del mismo año |
+ *
+ * ⚠️ **Sin período declarado va con las del semestre**, y no es un descuido:
+ * `term` en `NULL` es *"no sabemos en qué semestre se dicta"* —las 57 filas del
+ * Plan 2016—, y mandarla a `OTROS` afirmaría *"no se dicta ahora"*, que nadie
+ * dijo. Es `seDictaEn()`, la misma regla del corte 1.
+ */
+export type GrupoEnElAlta = "DEL_SEMESTRE" | "ANUALES" | "OTROS";
+
+export function grupoEnElAlta(
+  fila: { anio: number | null; periodo: Semestre | null; esAnual: boolean },
+  anioElegido: number,
+  semestre: Semestre,
+): GrupoEnElAlta {
+  if (fila.anio !== anioElegido) return "OTROS";
+  if (fila.esAnual) return "ANUALES";
+  return seDictaEn({ periodo: fila.periodo, esAnual: false }, semestre) ? "DEL_SEMESTRE" : "OTROS";
+}
+
+/**
+ * Una materia del semestre elegido —o anual de ese año— llega **marcada**; las
+ * demás, no.
  *
  * Es la precarga que el spec pide —*"Mostrar materias probables. Alumno
  * confirma/corrige"* (`UF-S02`)— y su motivo está escrito: *"Reduce fricción:
  * **el alumno corrige en vez de cargar todo desde cero**"* (§6.4).
  *
  * ⚠️ **Preseleccionar no es dar por confirmado.** Nada se persiste hasta que el
- * estudiante confirma, y todas se pueden desmarcar.
+ * estudiante confirma, y todas se pueden desmarcar. **Y nada del analítico
+ * preselecciona**: el pasado no dice qué cursás ahora (ADR-106 §2).
  */
-export function sePreselecciona(tipo: TipoDeRequisito, anioDelRequisito: number | null, anioElegido: number): boolean {
-  return tratoEnElAlta(tipo) === "MATERIA" && anioDelRequisito === anioElegido;
+export function sePreselecciona(tipo: TipoDeRequisito, grupo: GrupoEnElAlta): boolean {
+  return tratoEnElAlta(tipo) === "MATERIA" && grupo !== "OTROS";
 }
 
 /** Un plan publicado, con su vigencia. Lo que el Repository devuelve, ya filtrado. */
@@ -130,13 +159,17 @@ export function aniosDelPlan(requisitos: readonly { curriculumYear: number | nul
   return [...vistos].sort((a, b) => a - b);
 }
 
-/** Los tres pasos del alta, en el orden que aprobó ADR-042. */
-export type PasoDelAlta = "WHATSAPP" | "CARRERA" | "MATERIAS" | "DISPONIBILIDAD";
+/**
+ * Los cinco pasos del alta: el orden de ADR-042, con disponibilidad (ADR-073) y
+ * comisión y horarios **antes** de ella ([ADR-105](../../docs/decisions.md#adr-105) §1).
+ */
+export type PasoDelAlta = "WHATSAPP" | "CARRERA" | "MATERIAS" | "CURSADA" | "DISPONIBILIDAD";
 
 export const RUTA_DEL_PASO: Record<PasoDelAlta, string> = {
   WHATSAPP: "/alta/whatsapp",
   CARRERA: "/alta/carrera",
   MATERIAS: "/alta/materias",
+  CURSADA: "/alta/cursada",
   DISPONIBILIDAD: "/alta/disponibilidad",
 };
 
@@ -157,6 +190,12 @@ export function siguientePaso(estado: {
   /** `enrollment.confirmed_at IS NOT NULL`. */
   materiasConfirmadas: boolean;
   /**
+   * `enrollment.course_setup_declared_at IS NOT NULL` — contestó comisión y
+   * horario de todas sus materias, **aunque sea con «no sé»** (ADR-105 §6).
+   * Sin cursadas activas no hay nada que preguntar, y cuenta como contestado.
+   */
+  cursadaRespondida: boolean;
+  /**
    * `student.availability_declared_at IS NOT NULL` — **contestó la pregunta**,
    * haya declarado bloques o no ([ADR-073](../../docs/decisions.md#adr-073)).
    */
@@ -165,6 +204,9 @@ export function siguientePaso(estado: {
   if (!estado.consentimientoRespondido) return "WHATSAPP";
   if (!estado.carreraDeclarada) return "CARRERA";
   if (!estado.materiasConfirmadas) return "MATERIAS";
+  // ADR-105 §1: antes de disponibilidad. Saber cuándo cursás es lo que permite
+  // contestar cuándo podés estudiar — y las dos preguntas siguen separadas.
+  if (!estado.cursadaRespondida) return "CURSADA";
   // Va última porque necesita saber **cuántas materias** para que la pregunta
   // signifique algo. Antes de las materias, «¿cuántas horas tenés?» no tiene
   // contra qué compararse.
@@ -172,25 +214,12 @@ export function siguientePaso(estado: {
   return null;
 }
 
-/**
- * El período de cursado, derivado de la fecha.
+/*
+ * ⛔ **`periodoDeCursado()` ya no existe** — [ADR-105](../../docs/decisions.md#adr-105) §2.
  *
- * ⚠️ **Sigue siendo una convención de la demo, y sigue estando mal.** El
- * calendario de una institución no se infiere de un mes.
- * [ADR-061](../../docs/decisions.md#adr-061) decidió **preguntarlo**, y eso es el
- * corte 2 del [plan](../../docs/plan-periodo-comision-horarios.md): hasta
- * entonces esta función es la única fuente y se conserva para que el alta siga
- * funcionando.
- *
- * **Lo que sí cambió en el corte 1:** la clave la arma `claveDePeriodo()`, así
- * que la forma compuesta `'2026-2'` y el par (año lectivo, semestre) **no pueden
- * discrepar** — es el mismo código el que produce las dos.
- *
- * `ahora` entra por parámetro, como todo lo demás de este módulo.
+ * Derivaba el semestre del mes, y su propio comentario decía que *"es una
+ * convención de la demo, no una regla académica"*. ADR-061: *"no continuar
+ * [...] infiriendo el período según el mes actual"*. El año lectivo y el
+ * semestre **se preguntan** en `/alta/carrera`, y la clave compuesta la arma
+ * `claveDePeriodo()` con lo que el estudiante eligió.
  */
-export function periodoDeCursado(ahora: Date = new Date()): string {
-  return claveDePeriodo(
-    ahora.getFullYear(),
-    ahora.getMonth() < 6 ? "FIRST_SEMESTER" : "SECOND_SEMESTER",
-  );
-}

@@ -114,19 +114,19 @@ el catálogo de otra institución. **No borra el catálogo, ni la sesión, ni lo
 llega al HTML**. **No se declara en producción**, y la ruta se borra cuando
 [ADR-006](docs/decisions.md#adr-006) abra.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de **1160 tests en 64 archivos**
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de **2590 tests en 121 archivos**
 corre sin Docker, en cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack
 levantado.
 
-⚠️ **`db:verify` es dueño de la base local y la deja vacía de datos de negocio**, así que **no
-convive con `db:demo`**: después de verificar hay que volver a sembrar con
-`npm run db:catalogo && npm run db:demo && npm run db:sesion`. Desde la Fase B6.14 el quinto script
+⚠️ **`db:verify` es dueño de la base local y la deja vacía de datos de negocio**, incluida la cuenta
+de la UCC, así que **no convive con `db:demo`**: copiá los datos antes y restauralos después, o repetí la
+secuencia entera de [`docs/demo-mvp.md`](docs/demo-mvp.md) §Preparar. Desde la Fase B6.14 el quinto script
 —`db-catalogo.sh`— **necesita el catálogo importado** y corta si no está. Las comprobaciones limpian
 lo suyo también al empezar y por `trap EXIT`, para que una corrida que falla no arrastre a la
 siguiente.
 
 ✅ **Esa limpieza se rompió con la Fase B6.14 y ya está corregida**, con la corrida entera en verde:
-**330 comprobaciones, cero fallos**. Eran dos defectos encadenados —le faltaban las cinco tablas
+hoy **545 comprobaciones, cero fallos**. Eran dos defectos encadenados —le faltaban las cinco tablas
 nuevas a `limpiar_mundo`, y arreglarlo destapó que `db-aislamiento.sh` vacía el catálogo que
 `db-catalogo.sh` necesita después—. Ver [`docs/roadmap.md`](docs/roadmap.md) §0.2.
 
@@ -142,7 +142,7 @@ lib/server/      backend: http (borde) · servicios (dominio) · repositorios (S
 app/api/         Controller: valida JWT, llama a un Service, traduce a HTTP
 supabase/        migraciones y entorno local reproducible
 lib/content/     el copy, con ID tipado (regla C-07)
-lib/navigation/  grafo del Golden Path + registro canónico de las 19 CTAs
+lib/navigation/  grafo del Golden Path + registro canónico de las 26 CTAs
 lib/fixtures/    el catálogo de escenarios sintéticos
 app/(student)/   una URL por superficie; la ruta lee el escenario y lo proyecta
 components/screens/   las superficies, con props tipadas

@@ -150,7 +150,8 @@ describe("§2 · No se mezcla con la disponibilidad", () => {
     // presentada como horario de la institución. El bloque se declara.
     const fn = funcionesVigentes().get("public.estado_de_materia") ?? "";
     const horario = fn.slice(fn.indexOf("'horario'"), fn.indexOf("'clases'"));
-    expect(horario).toContain("class_schedule_block");
+    // ADR-105 §5: el bloque sale de la precedencia única, que lee `class_schedule_block`.
+    expect(horario).toContain("bloques_de_cursada");
     expect(horario).not.toContain("class_session");
   });
 });
@@ -244,5 +245,22 @@ describe("§5 · La pantalla muestra, y no agenda", () => {
     const panel = container.querySelector("[data-horario]");
     expect(panel).toBeTruthy();
     expect(panel!.querySelectorAll("button, a, input")).toHaveLength(0);
+  });
+});
+
+describe("ADR-105 · la materia dice la comisión y «no se sabe», y omite lo que no aplica", () => {
+  it("comisión confirmada, escrita a mano o desconocida", () => {
+    expect(proyectarMateria({ ...base, comision: { estado: "CONFIRMED", nombre: "A", horario: "KNOWN" } }).situacionDeCursado)
+      .toEqual({ comision: "Comisión A", horarioDesconocido: false });
+    expect(proyectarMateria({ ...base, comision: { estado: "NOT_LISTED", nombre: "Tarde", horario: "KNOWN" } }).situacionDeCursado?.comision)
+      .toBe("Comisión Tarde · la escribiste vos");
+    expect(proyectarMateria({ ...base, comision: { estado: "UNKNOWN", nombre: null, horario: "UNKNOWN" } }).situacionDeCursado)
+      .toEqual({ comision: "Todavía no sabés tu comisión", horarioDesconocido: true });
+  });
+
+  it("sin comisiones o sin preguntar, no hay línea", () => {
+    expect(proyectarMateria({ ...base, comision: { estado: "NOT_APPLICABLE", nombre: null, horario: "KNOWN" } }).situacionDeCursado).toBeNull();
+    expect(proyectarMateria({ ...base, comision: null }).situacionDeCursado).toBeNull();
+    expect(proyectarMateria(base).situacionDeCursado).toBeNull();
   });
 });

@@ -257,6 +257,16 @@ describe("Bloque 6 · Interacción", () => {
         sus tiempos y su anotador son **de este estudiante**.
       */
       "app/(student)/focus/page.tsx",
+      /*
+        **El cuarto paso del alta** — ADR-105. Como las otras pantallas del alta,
+        no es superficie: comisión y horarios son **de este estudiante**.
+      */
+      "app/alta/cursada/page.tsx",
+      /*
+        **Tu recorrido** — ADR-106. Nodo sin wireframe: el analítico y las
+        respuestas son **de este estudiante**, no hay escenario que proyectar.
+      */
+      "app/(student)/recorrido/page.tsx",
     ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))

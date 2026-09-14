@@ -119,6 +119,9 @@ export const aristasDeRetornoTransversales: readonly Arista[] = [
   { clase: "retornoSeguro", desde: "GIMNASIA", hasta: "UX01", cta: null, causa: "rutina terminada, ajena o sin contenido: volver a la próxima acción sin inventarla" },
   // ADR-104. Sin sesión ni compromiso sobre el que empezar, o una sesión ajena:
   // se vuelve a Hoy, que es donde el ADE dice qué sigue.
+  // ADR-106. Sin analítico, sin plan o con un recorrido ajeno: se vuelve a Hoy.
+  // El recorrido no inventa la próxima acción.
+  { clase: "retornoSeguro", desde: "RECORRIDO", hasta: "UX01", cta: null, causa: "sin analítico, sin plan o recorrido ajeno: volver a Hoy sin inventar una acción" },
   { clase: "retornoSeguro", desde: "FOCUS", hasta: "UX01", cta: null, causa: "sin sesión ni compromiso iniciable, o sesión ajena: volver a Hoy sin presumir inicio" },
 ] as const;
 

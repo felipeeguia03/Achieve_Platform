@@ -299,7 +299,8 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
   it("toda ruta del estudiante envuelve su superficie en `Shell`, con un nodo real", () => {
     const rutas = paginas("app/(student)");
 
-    // ⚠️ **Quince rutas, nueve superficies** — la decimoquinta es Modo Focus
+    // ⚠️ **Dieciséis rutas, nueve superficies** — la decimosexta es Tu recorrido
+    // ([ADR-106](../docs/decisions.md#adr-106)); la decimoquinta, Modo Focus
     // ([ADR-104](../docs/decisions.md#adr-104)). El índice de materias
     // ([ADR-077](../docs/decisions.md#adr-077)), la biblioteca de Formación
     // ([ADR-087](../docs/decisions.md#adr-087)), Modo Clase
@@ -308,7 +309,7 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
     // ([ADR-102](../docs/decisions.md#adr-102)) son nodos sin wireframe: tienen
     // ruta y no son superficies. Las dos cifras se verifican por separado,
     // abajo, justamente para que una no tape a la otra.
-    expect(rutas.length).toBe(15);
+    expect(rutas.length).toBe(16);
 
     const sinShell = rutas.filter((f) => {
       const src = readFileSync(resolve(RAIZ, f), "utf8");
@@ -345,7 +346,7 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
     // `Set` detecta que dos rutas declaren el mismo nodo —una copiaría el
     // breadcrumb y el resaltado de menú de la otra—; el `length`, que alguna
     // ruta no declare ninguno.
-    expect(new Set(declarados).size).toBe(15);
-    expect(declarados.length).toBe(15);
+    expect(new Set(declarados).size).toBe(16);
+    expect(declarados.length).toBe(16);
   });
 });

@@ -32,6 +32,8 @@ export type NodoId =
   | "GIMNASIA"
   /** La sesión de Focus. **No es una superficie**: ver `nodos.FOCUS`. */
   | "FOCUS"
+  /** Tu recorrido: el analítico y el perfil. **No es una superficie**: ver `nodos.RECORRIDO`. */
+  | "RECORRIDO"
   | "UX03"
   | "UX04"
   | "UX04_RENEGOCIACION"
@@ -184,6 +186,25 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     nombre: "Focus",
     pregunta: "¿En qué estoy trabajando ahora?",
     ruta: "/focus",
+    pendienteDeEtapa: null,
+  },
+
+  /**
+   * **Tu recorrido** — [ADR-106](../../docs/decisions.md#adr-106) y
+   * [ADR-107](../../docs/decisions.md#adr-107).
+   *
+   * ⚠️ **`wireframe: null`: NO es una décima superficie**, como `GIMNASIA` y
+   * `FOCUS`. `superficieIds` sigue devolviendo nueve.
+   *
+   * ⚠️ **Después de HOY y opcional.** No gatea nada, no crea cursadas y no entra
+   * al ADE: el analítico es el pasado, y la próxima acción la sigue diciendo Hoy.
+   */
+  RECORRIDO: {
+    id: "RECORRIDO",
+    wireframe: null,
+    nombre: "Tu recorrido",
+    pregunta: "¿De dónde vengo en la carrera?",
+    ruta: "/recorrido",
     pendienteDeEtapa: null,
   },
 

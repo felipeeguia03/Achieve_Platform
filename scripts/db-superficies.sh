@@ -26,6 +26,13 @@ igual() {
   else echo "   ✗ $desc — esperaba '$want', obtuvo '$got'"; fallos=$((fallos + 1)); fi
 }
 
+# rechaza <descripción> <sql>: la base tiene que negarse.
+rechaza() {
+  local desc="$1" sql="$2"
+  if echo "$(q "$sql")" | grep -qi "error"; then echo "   ✓ $desc"
+  else echo "   ✗ $desc — no falló"; fallos=$((fallos + 1)); fi
+}
+
 INS=b1111111-0000-0000-0000-000000000001
 OTRA=b1111111-0000-0000-0000-000000000002
 EST=b2222222-0000-0000-0000-000000000001
@@ -66,6 +73,13 @@ limpiar() {
      delete from assessment where offering_id in (select id from course_offering where course_id in (select id from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')))));
      delete from course_offering where course_id in (select id from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA'))));
      delete from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')));
+     delete from profile_hypothesis where institution_id in ('$INS','$OTRA');
+     delete from profile_answer where institution_id in ('$INS','$OTRA');
+     delete from academic_record_entry where institution_id in ('$INS','$OTRA');
+     delete from academic_document where institution_id in ('$INS','$OTRA');
+     delete from academic_record_consent where institution_id in ('$INS','$OTRA');
+     delete from enrollment where institution_id in ('$INS','$OTRA');
+     delete from curriculum_requirement where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')));
      delete from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA'));
      delete from academic_program where institution_id in ('$INS','$OTRA');
      delete from institution where id in ('$INS','$OTRA');" >/dev/null 2>&1
@@ -315,26 +329,23 @@ q "insert into course (id,curriculum_plan_id,code,name)
    insert into course_enrollment (id,institution_id,student_id,offering_id)
      values ('$CE_HOR','$INS','$EST','$O_HOR');" >/dev/null 2>&1
 
-# Dos dueños, dos filas, una sola cursada: el horario publicado de la comisión y
-# el que declaró el estudiante. Que lleguen juntas es lo que hace visible que
-# **no se fusionan** (`P-08`).
+# Dos dueños, una sola cursada. **Desde ADR-105 §5 no viajan juntos**: hay una
+# sola precedencia, y lo que declaró el estudiante reemplaza al publicado de su
+# cursada. Primero el publicado solo; después el declarado encima.
 q "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
-     values ('$INS','$O_HOR',2,'14:00','16:00','institution');
-   insert into class_schedule_block (institution_id,course_enrollment_id,day_of_week,start_time,end_time,source_type)
-     values ('$INS','$CE_HOR',4,'18:00','21:00','student');" >/dev/null 2>&1
-
-igual "los dos bloques llegan a la materia" \
-  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "2"
-# **En orden de día y hora, decidido por la base.** La pantalla no reordena.
-igual "y en el orden que la base dicta" \
-  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'dia';")" "2"
+     values ('$INS','$O_HOR',2,'14:00','16:00','institution');" >/dev/null 2>&1
+igual "el publicado llega a la materia" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "1"
 igual "el publicado viaja como de la cátedra" \
   "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'origen';")" "catedra"
+
+q "insert into class_schedule_block (institution_id,course_enrollment_id,day_of_week,start_time,end_time,source_type)
+     values ('$INS','$CE_HOR',4,'18:00','21:00','student');" >/dev/null 2>&1
+igual "ADR-105 §5 · lo declarado reemplaza al publicado: un bloque, no dos" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "1"
 igual "y el declarado viaja como tuyo, sin convertirse en voz de la cátedra" \
-  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->1->>'origen';")" "vos"
-# `I9`: usar un dato sin corroborar **no lo eleva**. Ninguna de las dos sale
-# verificada, y la de la institución tampoco — que la fuente tenga autoridad no
-# es lo mismo que que alguien haya verificado el dato.
+  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'origen';")" "vos"
+# `I9`: usar un dato sin corroborar **no lo eleva**.
 igual "ninguno se eleva por llegar a la pantalla" \
   "$(q "select bool_and(b->>'verificacion' = 'unverified')
           from jsonb_array_elements(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario') b;")" "t"
@@ -347,7 +358,7 @@ q "insert into class_session (offering_id,session_date,session_time,duration_min
             ('$O_HOR','2026-08-10','09:00',120,'institution'),
             ('$O_HOR','2026-08-17','09:00',120,'institution');" >/dev/null 2>&1
 igual "y no se deriva de las clases dictadas" \
-  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "2"
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "1"
 igual "ni aparece el lunes de las sesiones" \
   "$(q "select bool_and((b->>'dia')::int <> 1)
           from jsonb_array_elements(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario') b;")" "t"
@@ -374,15 +385,17 @@ igual "y NO toca el que declaró el estudiante" \
 echo "→ B6.22 · contra qué se valida el horario de un compromiso (ADR-064)"
 # Sigue con el mundo de horarios de arriba: la oferta tiene un bloque publicado
 # —el lunes de 09 a 11, que dejó la última ingesta— y la cursada uno declarado.
-igual "los dos dueños viajan juntos para validar" \
-  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "2"
+# ADR-105 §5: la validación lee la misma precedencia que la pantalla. El bloque
+# declarado reemplaza al publicado de esa cursada.
+igual "valida contra la precedencia: el declarado, no los dos" \
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "1"
 # ⚠️ **Todas las cursadas, no la de una materia.** Comprometerse a estudiar
 # Cálculo el martes a las 18:30 choca con la clase de Física igual que con la de
 # Cálculo: nadie puede estudiar mientras cursa otra cosa.
 q "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
      values ('$INS','b7000000-0000-0000-0000-000000000001',6,'08:00','10:00','institution');" >/dev/null 2>&1
 igual "y también los de otra materia del estudiante" \
-  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "3"
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "2"
 # El aislamiento alcanza también a esta lectura (I11).
 igual "no cruza institución" \
   "$(q "select jsonb_array_length(public.horarios_del_estudiante('$OTRA','$EST'));")" "0"
@@ -394,6 +407,61 @@ igual "una cursada dada de baja deja de ocupar la semana" \
   "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "1"
 q "update course_enrollment set status='active' where id='$CE_HOR';
    delete from class_schedule_block where institution_id='$INS';" >/dev/null 2>&1
+
+echo "→ ADR-105 · el cuarto paso del alta: comisión y horarios"
+O_COM="b5500000-0000-0000-0000-0000000000a1"
+O_AJENA="b5500000-0000-0000-0000-0000000000a2"
+q "insert into course_offering (id,course_id,term,commission) values ('$O_COM','$C_HOR','2026-2','A');
+   insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+     values ('$INS','$O_COM',3,'10:00','12:00','institution'),
+            ('$INS','$O_HOR',5,'08:00','10:00','institution');
+   insert into course_offering (id,course_id,term,commission)
+     select '$O_AJENA', o.course_id, '2026-2', 'Z' from course_offering o
+      where o.id='b7000000-0000-0000-0000-000000000001';" >/dev/null 2>&1
+
+igual "ofrece la comisión real de esa materia y ese período, y ninguna inventada" \
+  "$(q "select jsonb_array_length(c->'comisiones') from jsonb_array_elements(public.opciones_de_cursada('$INS','$EST')) c
+          where c->>'cursadaId'='$CE_HOR';")" "1"
+igual "sin contestar, la cursada conserva el horario de antes" \
+  "$(q "select count(*) from public.bloques_de_cursada('$CE_HOR');")" "1"
+
+corre_cursada() { q "select public.declarar_cursada('$INS','$EST','[$1]'::jsonb);"; }
+
+corre_cursada "{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"UNKNOWN\"}}" >/dev/null
+igual "«no sé mi comisión» + «no sé mi horario»: ningún bloque, tampoco el de la materia" \
+  "$(q "select count(*) from public.bloques_de_cursada('$CE_HOR');")" "0"
+igual "y no deja una fila horaria negativa" \
+  "$(q "select count(*) from class_schedule_block where course_enrollment_id='$CE_HOR';")" "0"
+igual "ni una class_session: el horario semanal no es una clase dictada" \
+  "$(q "select count(*) from class_session where offering_id='$O_HOR' and session_date > '2026-08-17';")" "0"
+
+corre_cursada "{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"KNOWN\",\"bloques\":[{\"dia\":2,\"desde\":\"18:00\",\"hasta\":\"20:00\"}]}}" >/dev/null
+igual "comisión desconocida con horario conocido: sólo lo declarado" \
+  "$(q "select string_agg(day_of_week||'/'||source_type||'/'||verification_status, ',') from public.bloques_de_cursada('$CE_HOR');")" "2/student/unverified"
+
+corre_cursada "{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"CONFIRMED\",\"ofertaId\":\"$O_COM\"},\"horario\":{\"estado\":\"KNOWN\"}}" >/dev/null
+igual "comisión confirmada: hereda el horario de su comisión y no el de la materia" \
+  "$(q "select string_agg(day_of_week::text, ',') from public.bloques_de_cursada('$CE_HOR');")" "3"
+igual "ADR-105 §4 · la cursada NO se muda de offering" \
+  "$(q "select (offering_id='$O_HOR' and commission_offering_id='$O_COM')::text from course_enrollment where id='$CE_HOR';")" "true"
+igual "y UX02 dice la comisión" \
+  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'comision'->>'nombre';")" "A"
+
+rechaza "una comisión de otra materia" \
+  "select public.declarar_cursada('$INS','$EST','[{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"CONFIRMED\",\"ofertaId\":\"$O_AJENA\"},\"horario\":{\"estado\":\"UNKNOWN\"}}]'::jsonb);"
+rechaza "«conozco mi horario» sin un solo bloque" \
+  "select public.declarar_cursada('$INS','$EST','[{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"KNOWN\"}}]'::jsonb);"
+rechaza "la cursada de otro estudiante" \
+  "select public.declarar_cursada('$INS','b2222222-0000-0000-0000-0000000000ff','[{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"UNKNOWN\"}}]'::jsonb);"
+rechaza "NOT_LISTED sin nombre, en la base" \
+  "update course_enrollment set commission_status='NOT_LISTED', commission_offering_id=null, commission_label=null where id='$CE_HOR';"
+rechaza "un estado de comisión fuera del vocabulario" \
+  "update course_enrollment set commission_status='A_CONFIRMAR' where id='$CE_HOR';"
+
+q "update course_enrollment set commission_status=null, commission_offering_id=null, commission_label=null, schedule_status=null
+    where id='$CE_HOR';
+   delete from class_schedule_block where institution_id='$INS';
+   delete from course_offering where id in ('$O_COM','$O_AJENA');" >/dev/null 2>&1
 
 echo "→ B6.20 · la Bitácora es de una materia, y de la que se pidió"
 # **Sin una segunda materia el defecto es invisible**: con una sola cursada, «la
@@ -547,6 +615,89 @@ for f in estado_de_materia estado_de_accion estado_de_compromiso estado_de_evide
   igual "$f no cruza institución" \
     "$(q "select coalesce(public.$f('$OTRA','$EST',now())::text,'NULO');")" "NULO"
 done
+
+echo "→ ADR-106 · el analítico: historia académica que no toca el presente"
+PLAN_S=b5000000-0000-0000-0000-000000000001
+REQ_S=bb000000-0000-0000-0000-0000000000a1
+SHA_A=$(printf 'a%.0s' $(seq 64))
+SHA_B=$(printf 'b%.0s' $(seq 64))
+q "insert into curriculum_requirement (id,curriculum_plan_id,ordinal,code,label,requirement_type,source_type,source_ref)
+     values ('$REQ_S','$PLAN_S',1,'AM1','ANALISIS I SYN','COURSE','institution','x');
+   insert into enrollment (student_id,program_id,term,institution_id,curriculum_plan_id,curriculum_year,confirmed_at)
+     values ('$EST','b4000000-0000-0000-0000-000000000001','2026-2','$INS','$PLAN_S',2,now());" >/dev/null 2>&1
+CURSADAS_ANTES=$(q "select count(*) from course_enrollment where student_id='$EST';")
+
+rechaza "sin consentimiento no se registra un analítico" \
+  "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_A\",\"tipo\":\"application/pdf\",\"bytes\":10,\"estado\":\"PROCESSED\",\"clave\":\"k-a\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,'[]'::jsonb);"
+q "insert into academic_record_consent (institution_id,student_id,decision,policy_version) values ('$INS','$EST','GRANTED','analitico-v1-sintetica');" >/dev/null 2>&1
+
+FILAS='[{"ordinal":1,"crudo":{"nombre":"Análisis I SYN","codigo":"AM1","estado":"Aprobado","nota":"8"},"estado":"APPROVED","nota":8,"requisitoId":"'$REQ_S'","regla":"CODE","confianza":1,"revision":"AUTO"},
+        {"ordinal":2,"crudo":{"nombre":"Materia de otro plan SYN","estado":"Aprob…","nota":"?"},"estado":"UNKNOWN","nota":"","requisitoId":"","regla":"NONE","revision":"NEEDS_REVIEW"}]'
+DOC=$(q "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_A\",\"tipo\":\"application/pdf\",\"bytes\":10,\"paginas\":1,\"estado\":\"PROCESSED\",\"clave\":\"k-a\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,'$FILAS'::jsonb)->>'documentoId';" | tr -d '[:space:]')
+igual "un analítico procesado queda con sus dos resultados" \
+  "$(q "select jsonb_array_length(public.recorrido_del_estudiante('$INS','$EST')->'documento'->'resultados');")" "2"
+igual "una nota ilegible queda NULL, no 0" \
+  "$(q "select (grade is null)::text from academic_record_entry where document_id='$DOC' and ordinal=2;")" "true"
+igual "el mismo archivo otra vez es el mismo documento" \
+  "$(q "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_A\",\"tipo\":\"application/pdf\",\"bytes\":10,\"estado\":\"PROCESSED\",\"clave\":\"k-a\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,'[]'::jsonb)->>'repetido';")" "true"
+igual "I9 · todo entra student / unverified" \
+  "$(q "select count(*) from academic_record_entry where document_id='$DOC' and (source_type<>'student' or verification_status<>'unverified');")" "0"
+rechaza "un resultado vinculado a un requisito de otro plan" \
+  "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_B\",\"tipo\":\"application/pdf\",\"bytes\":10,\"estado\":\"PROCESSED\",\"clave\":\"k-b\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,
+     '[{\"ordinal\":1,\"crudo\":{\"nombre\":\"X\"},\"estado\":\"APPROVED\",\"requisitoId\":\"$(q "select id from curriculum_requirement where curriculum_plan_id<>'$PLAN_S' limit 1;" | tr -d '[:space:]')\",\"regla\":\"CODE\",\"revision\":\"AUTO\"}]'::jsonb);"
+rechaza "un analítico que falló no guarda el archivo" \
+  "insert into academic_document (institution_id,student_id,consent_id,storage_key,content_sha256,mime_type,byte_size,status,failure_reason,extractor)
+   select '$INS','$EST',id,'k-fallido','$SHA_B','application/pdf',10,'FAILED','EXTRACCION_NO_DISPONIBLE','SINTETICO-v1'
+     from academic_record_consent where student_id='$EST' limit 1;"
+rechaza "un resultado que se eleva a corroborado" \
+  "update academic_record_entry set verification_status='corroborated' where document_id='$DOC';"
+
+E2=$(q "select id from academic_record_entry where document_id='$DOC' and ordinal=2;" | tr -d '[:space:]')
+q "select public.revisar_resultado('$INS','$EST','$E2','NOT_IN_PLAN',null,null);" >/dev/null 2>&1
+igual "«no es de mi plan» deja la fila sin vínculo y con fecha de revisión" \
+  "$(q "select review_state||'/'||match_rule||'/'||(curriculum_requirement_id is null)::text||'/'||(reviewed_at is not null)::text from academic_record_entry where id='$E2';")" "NOT_IN_PLAN/NONE/true/true"
+igual "y el crudo no se toca" \
+  "$(q "select raw_status from academic_record_entry where id='$E2';")" "Aprob…"
+rechaza "otro estudiante no revisa un resultado ajeno" \
+  "select public.revisar_resultado('$INS','b2222222-0000-0000-0000-0000000000ff','$E2','UNSURE',null,null);"
+
+igual "§2 · el analítico no creó ninguna cursada" \
+  "$(q "select count(*) from course_enrollment where student_id='$EST';")" "$(echo "$CURSADAS_ANTES" | tr -d '[:space:]')"
+igual "el consentimiento es append-only: el backend no tiene UPDATE" \
+  "$(q "select has_table_privilege('service_role','public.academic_record_consent','UPDATE')::text;")" "false"
+igual "el recorrido no cruza institución" \
+  "$(q "select coalesce(public.recorrido_del_estudiante('$OTRA','$EST')->>'documento','NULO');")" "NULO"
+
+echo "→ ADR-107 · la respuesta es una declaración, la hipótesis va aparte"
+RESP='{"clave":"RECUPERACION:x","disparador":"RECUPERACION","regla":"RECORRIDO-v0.1","texto":"¿Qué cambió?","requisitos":[],"estado":"ANSWERED","opciones":["BUSQUE_AYUDA"],"textoLibre":"privado"}'
+HIPO='[{"dimension":"ESTRATEGIA_QUE_FUNCIONO","enunciado":"Nos contaste que buscar ayuda te ayudó.","evidencia":"HISTORICO_Y_DECLARADO","confianza":"MEDIA","requisitos":[]}]'
+A1=$(q "select public.responder_pregunta('$INS','$EST','$RESP'::jsonb,'$HIPO'::jsonb);" | tr -d '[:space:]')
+igual "la respuesta y su hipótesis quedan en tablas separadas" \
+  "$(q "select (select count(*) from profile_answer where id='$A1')||'/'||(select count(*) from profile_hypothesis where answer_id='$A1');")" "1/1"
+rechaza "responder sin decir nada no es una respuesta" \
+  "select public.responder_pregunta('$INS','$EST','{\"clave\":\"x\",\"disparador\":\"RECUPERACION\",\"regla\":\"r\",\"texto\":\"t\",\"estado\":\"ANSWERED\",\"opciones\":[]}'::jsonb,'[]'::jsonb);"
+rechaza "una hipótesis de confianza alta" \
+  "select public.responder_pregunta('$INS','$EST','$RESP'::jsonb,'[{\"dimension\":\"CONTEXTO\",\"enunciado\":\"x\",\"evidencia\":\"DECLARADO\",\"confianza\":\"ALTA\"}]'::jsonb);"
+igual "las respuestas son append-only: el backend no tiene UPDATE" \
+  "$(q "select has_table_privilege('service_role','public.profile_answer','UPDATE')::text;")" "false"
+q "select public.responder_pregunta('$INS','$EST','{\"clave\":\"RECUPERACION:x\",\"disparador\":\"RECUPERACION\",\"regla\":\"RECORRIDO-v0.1\",\"texto\":\"¿Qué cambió?\",\"estado\":\"SKIPPED\"}'::jsonb,'[]'::jsonb);" >/dev/null 2>&1
+igual "contestar de nuevo agrega una fila y la vigente es la última" \
+  "$(q "select (select count(*) from profile_answer where student_id='$EST')||'/'||(public.perfil_del_estudiante('$INS','$EST')->'respuestas'->0->>'estado')||'/'||jsonb_array_length(public.perfil_del_estudiante('$INS','$EST')->'hipotesis');")" "2/SKIPPED/0"
+H1=$(q "select id from profile_hypothesis where answer_id='$A1';" | tr -d '[:space:]')
+# Dos consultas: dentro de una misma sentencia, el SELECT vería la fila de antes del UPDATE.
+igual "«Esto no me representa» se registra" \
+  "$(q "select public.rechazar_hipotesis('$INS','$EST','$H1')::text;")" "true"
+igual "y la deja rechazada con fecha, sin borrarla" \
+  "$(q "select status||'/'||(rejected_at is not null)::text from profile_hypothesis where id='$H1';")" "RECHAZADA/true"
+igual "otro estudiante no rechaza una hipótesis ajena" \
+  "$(q "select public.rechazar_hipotesis('$INS','b2222222-0000-0000-0000-0000000000ff','$H1')::text;")" "false"
+igual "el perfil no cruza institución" \
+  "$(q "select jsonb_array_length(public.perfil_del_estudiante('$OTRA','$EST')->'respuestas');")" "0"
+q "delete from profile_hypothesis where student_id='$EST'; delete from profile_answer where student_id='$EST';" >/dev/null 2>&1
+
+q "delete from academic_record_entry where student_id='$EST'; delete from academic_document where student_id='$EST';
+   delete from academic_record_consent where student_id='$EST'; delete from enrollment where student_id='$EST';
+   delete from curriculum_requirement where id='$REQ_S';" >/dev/null 2>&1
 
 if [ "$fallos" -gt 0 ]; then echo; echo "✗ $fallos comprobación(es) de superficie fallando"; exit 1; fi
 echo; echo "✓ las funciones de lectura devuelven lo que las superficies proyectan"

@@ -60,6 +60,7 @@ const ETIQUETAS: Partial<Record<NodoId, string>> = {
   FORMACION: "Formación",
   CALENDARIO: "Calendario",
   GIMNASIA: "Gimnasia",
+  RECORRIDO: "Recorrido",
   CLASE: "Clase",
   FOCUS: "Focus",
   UX02: "Materia",

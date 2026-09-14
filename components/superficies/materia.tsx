@@ -10,7 +10,9 @@ import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
 import { heroLlevaAFocus, irAFocus } from "./ir-a-focus";
-import { enviar } from "@/lib/client/api";
+import { enviar, pedir } from "@/lib/client/api";
+import { useEffect, useState } from "react";
+import type { RequisitosDeCursado } from "@/lib/domain/requisitos-de-cursado";
 import { rutaDe } from "@/lib/navigation";
 import type { ClaseEnLista, ClaseProps, MateriaProps, TusClases } from "@/lib/domain/view-models";
 
@@ -93,6 +95,29 @@ function useTusClases(cursadaId: string | null, omitir: boolean): { tusClases: T
   };
 }
 
+/**
+ * *Requisitos* — [ADR-108](../../docs/decisions.md#adr-108). **Simulados.**
+ *
+ * `pedir` y no `useSuperficie`, como la campanita: sin `MODO_PRUEBA=1` la ruta
+ * contesta `404` y eso no es un error de la materia, es que el botón no está.
+ * Bajo `?escenario=` no se pide nada.
+ */
+function useRequisitos(cursadaId: string | null, omitir: boolean): RequisitosDeCursado | null {
+  const [requisitos, setRequisitos] = useState<{ de: string; datos: RequisitosDeCursado } | null>(null);
+  useEffect(() => {
+    if (omitir || !cursadaId) return;
+    let vigente = true;
+    void pedir<RequisitosDeCursado>(`/api/requisitos?cursada=${encodeURIComponent(cursadaId)}`).then((r) => {
+      if (vigente && r.estado === "OK") setRequisitos({ de: cursadaId, datos: r.datos });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [cursadaId, omitir]);
+  // Los de otra materia no se muestran mientras llegan los de ésta.
+  return !omitir && requisitos && requisitos.de === cursadaId ? requisitos.datos : null;
+}
+
 function Pantalla({
   props,
   router,
@@ -110,6 +135,7 @@ function Pantalla({
   // sesión, la CTA tiene que llevar a la estación siguiente.
   const destino = siguienteUrl("/materia", params.get("escenario")) ?? DESTINO;
   const { tusClases, cargando: tusClasesCargando } = useTusClases(props.cursadaId, !!params.get("escenario"));
+  const requisitos = useRequisitos(props.cursadaId, !!params.get("escenario"));
 
   /**
    * `CTA-022` desde la materia: **Iniciar clase** fuera de horario, sin bloque.
@@ -151,6 +177,7 @@ function Pantalla({
           : undefined
       }
       tusClases={tusClases}
+      requisitos={requisitos}
       tusClasesCargando={tusClasesCargando}
       onEntrarAClase={() => void entrarAClase()}
       onAbrirClase={(c) => {

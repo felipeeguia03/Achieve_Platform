@@ -40,6 +40,9 @@ export interface RequisitoDelPlan {
   nombre: string;
   tipo: string;
   anio: number | null;
+  /** `FIRST_SEMESTER` · `SECOND_SEMESTER` · `null` (no declarado). */
+  periodo: "FIRST_SEMESTER" | "SECOND_SEMESTER" | null;
+  esAnual: boolean;
   nombreCortado: boolean;
   materiaId: string | null;
   opciones: { materiaId: string; nombre: string }[];

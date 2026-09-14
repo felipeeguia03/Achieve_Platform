@@ -315,6 +315,12 @@ alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el
 
 En el Track B, hoy:
 
+- 🆕 **Onboarding académico** ([ADR-105](docs/decisions.md#adr-105)…[ADR-107](docs/decisions.md#adr-107),
+  [`onboarding-academico.md`](docs/onboarding-academico.md)). **El alta tiene cinco pasos**:
+  año lectivo y semestre se preguntan en `/alta/carrera`, y `/alta/cursada` pregunta comisión y horario.
+  Los bloques de una cursada salen **sólo** de `bloques_de_cursada()`. `/recorrido` —opcional, después
+  de HOY— procesa un analítico **sintético** que **nunca crea una cursada**, y arma un perfil de
+  hipótesis **que el ADE no lee**.
 - **`UX01` es un tablero** ([ADR-093](docs/decisions.md#adr-093)) con el **cuadro de hoy**
   ([ADR-094](docs/decisions.md#adr-094)): Hero + *Tu día*, *Riesgos detectados*, y las evaluaciones
   en **dos opciones que conviven hasta que el owner elija una**. Salieron de Hoy la cola `1 de N`, el
@@ -368,7 +374,7 @@ Dónde vive cada cosa hoy:
 |---|---|
 | `lib/domain/` | Tipos, las 4 máquinas de estado, `selectHeroLevel`, los view models de `UX01`–`UX06`, y desde ADR-093·094 `riesgos-de-planificacion.ts` y `cuadro-de-hoy.ts`. **Puro:** sin React, sin I/O |
 | `lib/content/` | El copy con ID tipado (regla `C-07`) |
-| `lib/navigation/` | El grafo del Golden Path y el registro de las 20 CTAs. **No importa `lib/fixtures/`** |
+| `lib/navigation/` | El grafo del Golden Path y el registro de las 26 CTAs. **No importa `lib/fixtures/`** |
 | `lib/fixtures/` | El catálogo de escenarios sintéticos. **Ninguna pantalla importa de acá** |
 | `components/screens/` | Las 9 superficies, con props tipadas |
 | `app/(student)/` | Una URL por superficie; la ruta lee el escenario y lo proyecta |
