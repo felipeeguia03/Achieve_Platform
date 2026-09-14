@@ -9929,3 +9929,71 @@ superficie depende sólo del menú"* ya lo garantizaba.
   limpiando** (`SECCIONES_RETIRADAS`).
 - **Abierto:** colgar las dos migas de su materia (*Materias › Análisis › Progreso*). Necesita que cada
   pantalla declare su materia, como Modo Clase (ADR-099 §9).
+
+---
+
+<a id="adr-101"></a>
+
+## ADR-101 — El asistente de reportes y mejoras, simulado
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner**, con capturas de otro software delante ·
+`SIMULADO — SÓLO MODO_PRUEBA`
+**No levanta:** [ADR-006](#adr-006). **No es:** una superficie (siguen nueve), una CTA del registro, un
+`Operador` ni un canal de acompañamiento.
+
+### Contexto
+
+El owner pidió, textual:
+
+> *"necesito que agreguemos este chatbot de mejoras y reportes que funcione tal cual asi y se muestre en
+> el mismo lugar, por ahora simula las respuestas que da, despues con el backend conectamos todo junto
+> al cto"*
+
+Las capturas muestran un botón redondo abajo a la derecha que se vuelve cruz; un panel con saludo y dos
+opciones —*Reportar un problema*, *Sugerir una mejora*—; una pregunta aclaratoria; una tarjeta *Tu
+sugerencia* con *¿Es esto lo que querés mandar?*, *Confirmar y enviar* y *Corregir algo*; la píldora
+*Reporte enviado* y *¿Hay algo más que quieras reportar?*; adjuntar o pegar una captura, y *Nueva
+conversación*.
+
+### Decisión
+
+**1. El asistente existe con ese recorrido, y lo que contesta es un guion.** Botón en la esquina inferior
+derecha, panel encima. El componente es `components/shell/asistente.tsx`; el guion, puro y sin timers,
+es `lib/client/simulacion/asistente.ts`.
+
+| Regla | Por qué |
+|---|---|
+| **Sólo con `MODO_PRUEBA=1`** | Los layouts de `app/(student)` y `app/alta` lo montan detrás de la variable, como el dock: sin ella **no llega al HTML**. Un *"Reporte enviado"* que no envía nada no puede verlo un estudiante |
+| **Rotulado *Simulado*, siempre a la vista** | En el encabezado, como la campanita ([ADR-097 · Enm. 1](#adr-097-enmienda-1)) |
+| **Sin red y sin persistencia** | Nada sale del navegador; las capturas son `blob:` que se sueltan al empezar de nuevo. Recargar pierde la conversación: guardar reportes no enviados sería guardar ficción |
+| **El resumen cita, no parafrasea** | Sin backend no hay quién resuma. Una paráfrasis inventada pondría en boca del estudiante algo que no dijo. Las líneas son *Proponés:* / *Reportás:*, *Lo que agregaste:*, *Corrección:* |
+| **Una entrada que la fase no espera no hace nada** | Sólo la última tarjeta ofrece confirmar: un clic viejo no envía |
+| **No promete contacto ni plazos** | ADR-042 y `product.md` §13: la Plataforma no observa quién lee el reporte ni cuándo |
+| **Nombre propio: *Asistente de Achieve*** | De las capturas se toma el mecanismo, no el nombre de su producto (AGENTS.md §1.5) |
+
+**2. Botón redondo y controles en píldora, contra `V-04`.** `app/globals.css` fuerza el radio de control
+(7 px) en todo `button` e `input` y reserva la píldora a chips de estado y segmentados. El asistente usa
+la clase `.pill` en el botón flotante, las opciones, *Confirmar y enviar* / *Corregir algo*, el campo y
+los botones redondos, porque el pedido fue *"tal cual así"*. **La excepción es de este componente y no
+se extiende**; sacar la clase lo vuelve al sistema.
+
+**3. El dock de modo prueba sube** (`bottom: 84`): ocupaba la misma esquina. Los dos existen sólo con la
+variable.
+
+⚠️ **El guion no es el contrato del backend.** La pregunta aclaratoria y el resumen los va a escribir el
+backend, con el CTO; la máquina de fases **se reemplaza**, no se extiende. Qué se guarda de un reporte,
+a quién le llega, si lleva la pantalla y la sesión en la que ocurrió y cómo se tratan las capturas
+—que pueden mostrar datos de una persona— se decide entonces, y **esa parte sí toca ADR-006**.
+
+⚠️ **Sin capturas de `docs/diseño/`.** La carpeta no está en esta copia del repositorio; el lenguaje
+visual salió de las capturas que el owner adjuntó al pedirlo, traducido a los tokens de
+`app/globals.css` (sin hex, en los dos temas).
+
+### Cómo se verifica
+
+`tests/asistente.test.tsx` — los dos layouts lo montan detrás de `MODO_PRUEBA`; ni el componente ni el
+guion hablan por red ni guardan; el dock ya no ocupa la esquina; elegir → describir → aclarar llega a
+la tarjeta; el resumen cita; confirmar da *Reporte enviado* y vuelve a ofrecer las opciones; corregir
+rearma la tarjeta; una entrada fuera de fase no hace nada; escribir antes de elegir pregunta qué es; el
+guion no promete contacto; en pantalla: abrir muestra *Simulado*, la conversación entera llega a
+*Reporte enviado* sin dejar la tarjeta confirmable, y *Nueva conversación* vuelve al saludo.

@@ -11,6 +11,7 @@
  * devuelven `409 ALTA_INCOMPLETA` y lo traerían de vuelta acá.
  */
 import { PanelDePrueba } from "@/components/prueba/panel";
+import { Asistente } from "@/components/shell/asistente";
 
 export default function AltaLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +24,8 @@ export default function AltaLayout({ children }: { children: React.ReactNode }) 
         el componente no llega al HTML.
       */}
       {process.env.MODO_PRUEBA === "1" && <PanelDePrueba />}
+      {/* 🧪 El asistente simulado — ADR-101. Un problema en el alta también se reporta. */}
+      {process.env.MODO_PRUEBA === "1" && <Asistente />}
     </div>
   );
 }
