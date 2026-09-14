@@ -32,7 +32,7 @@ export default function StudentLayout({
       */}
       {process.env.MODO_PRUEBA === "1" && <PanelDePrueba />}
       {/*
-        🧪 **El asistente de reportes y mejoras, simulado** — ADR-101. Mismo
+        🧪 **El asistente de reportes y mejoras, simulado** — ADR-103. Mismo
         cerrojo que el dock: contesta con un guion y **no envía nada**, así que
         sin `MODO_PRUEBA=1` un *"Reporte enviado"* sería mentira.
       */}

@@ -43,6 +43,20 @@ export function BarraSuperior({
         padding: "0 24px",
         borderBottom: ".5px solid var(--border)",
         background: "var(--background)",
+        /*
+          ⚠️ **Fija arriba: lo que scrollea es el contenido de abajo** — lo pidió
+          el owner, igual que con la barra lateral. `sticky` y no `fixed`: sigue
+          ocupando su lugar en la columna, así `main` no necesita un `padding-top`
+          que la compense. El fondo opaco es lo que evita que el contenido se lea
+          a través al pasar por debajo.
+
+          `zIndex` 30: por encima del contenido (que llega a 3) y **por debajo de
+          las ventanas internas** (40), que se pueden llevar hasta arriba de la
+          pantalla y no pueden quedar con la barra de título tapada.
+        */
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
       }}
     >
       {/* Breadcrumb: el camino completo, con el objeto actual al final. */}

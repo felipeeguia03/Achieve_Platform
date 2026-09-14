@@ -19,15 +19,23 @@
  * (`design-system-capturas.md` §12.4). Un control de tema que no cambia nada
  * sería prometer lo que no se sostiene.
  *
- * **Colapsar no destruye información.** El manual marca `A-03` como defecto del
- * producto original: al colapsar, el contador se degrada a un punto y los
- * íconos quedan sin etiqueta. Acá el número **sigue siendo número** y la
- * etiqueta **sigue estando**, más chica. Se copia el mecanismo, no el defecto.
+ * **Colapsar no degrada el contador.** El manual marca `A-03` como defecto del
+ * producto original: al colapsar, el contador se degrada a un punto. Acá el
+ * número **sigue siendo número**.
+ *
+ * ⚠️ **Recogida, la etiqueta NO se ve** — [ADR-101](../../docs/decisions.md#adr-101),
+ * pedido del owner con el software de las capturas delante. Revierte la mitad
+ * de `A-03` que dejaba el nombre chico debajo del ícono: el nombre pasa al
+ * `aria-label` y al `title`, así lo lee un lector de pantalla y aparece al
+ * pasar el mouse.
  */
 
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { CalendarRange, Library, PanelLeft, PlayCircle, Sun } from "lucide-react";
+import { Brain, CalendarRange, ChevronLeft, ChevronRight, Library, PlayCircle, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
+import { DURACION_DE_BARRA, TRANSICION_DE_BARRA } from "./movimiento";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
 import { nodos, type NodoId } from "@/lib/navigation/surfaces";
 import { t } from "@/lib/content/es-AR";
@@ -44,18 +52,50 @@ const ICONOS: Partial<Record<NodoId, typeof Sun>> = {
   UX02_INDICE: Library,
   CALENDARIO: CalendarRange,
   FORMACION: PlayCircle,
+  GIMNASIA: Brain,
 };
+
+/**
+ * `true` mientras la barra **se está recogiendo**: el nombre sigue montado, con
+ * opacidad cero, hasta que el ancho termina de cerrarse.
+ *
+ * ⚠️ **Sólo si la recogió un clic.** Al hidratar, la barra nace expandida y se
+ * corrige a recogida (`useBarraRecogida`); eso no es un gesto y no se anima.
+ */
+function useRecogiendose(colapsada: boolean, animar: boolean): boolean {
+  const [previa, setPrevia] = useState(colapsada);
+  const [recogiendose, setRecogiendose] = useState(false);
+  // Ajuste durante el render, no en un efecto: el nombre no llega a desmontarse.
+  if (previa !== colapsada) {
+    setPrevia(colapsada);
+    setRecogiendose(colapsada && animar);
+  }
+  useEffect(() => {
+    if (!recogiendose) return;
+    const id = setTimeout(() => setRecogiendose(false), DURACION_DE_BARRA);
+    return () => clearTimeout(id);
+  }, [recogiendose]);
+  return recogiendose;
+}
 
 export function Item({
   item,
   activo,
   colapsada,
+  recogiendose = false,
+  animar = false,
 }: {
   item: ItemDeMenu;
   activo: boolean;
   colapsada: boolean;
+  /** La barra se está cerrando: el nombre se desvanece en vez de irse de golpe. */
+  recogiendose?: boolean;
+  /** Las medidas transicionan. Sólo después de que alguien tocó la flecha. */
+  animar?: boolean;
 }) {
   const Icono = ICONOS[item.nodo] ?? Sun;
+  const conNombre = !colapsada || recogiendose;
+  const transicion = animar ? TRANSICION_DE_BARRA : "";
   /*
     ⚠️ **Un ítem del menú navega, y nada más** — [ADR-088](../../docs/decisions.md#adr-088),
     Enmienda 7. La Enmienda 6 lo interceptaba para dejar la sección abierta en
@@ -68,15 +108,22 @@ export function Item({
       href={rutaDelItem(item)}
       data-item-menu={item.nodo}
       aria-current={activo ? "page" : undefined}
-      className={colapsada ? "flex flex-col items-center" : "flex items-center gap-3"}
+      // Recogida, el nombre sólo vive acá: lo lee el lector y aparece al pasar el mouse.
+      aria-label={colapsada ? item.etiqueta : undefined}
+      title={colapsada ? item.etiqueta : undefined}
+      className={`flex items-center gap-3 overflow-hidden whitespace-nowrap ${transicion}`}
       style={{
         // El ítem activo es una píldora de superficie clara con sombra suave,
         // no un fondo de color: el color semántico se guarda para la alarma.
         background: activo ? "var(--card)" : "transparent",
         boxShadow: activo ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
-        borderRadius: colapsada ? "var(--radius)" : "var(--radius-pildora)",
-        padding: colapsada ? "8px 4px" : "10px 14px",
-        gap: colapsada ? 4 : undefined,
+        borderRadius: "var(--radius-pildora)",
+        /*
+          ⚠️ **Recogida, el ícono se centra con padding y no con `justify-center`.**
+          Cambiar de alineación no se puede animar: el ícono saltaba al centro.
+          19 px = (56 de ancho útil − 18 del ícono) / 2.
+        */
+        padding: colapsada ? "10px 0 10px 19px" : "10px 14px",
         color: "var(--foreground)",
         fontSize: "var(--text-body)",
         fontWeight: activo ? 600 : 400,
@@ -115,25 +162,19 @@ export function Item({
         )}
       </span>
 
-      {/*
-        La etiqueta tampoco desaparece: `A-03` señala que "los íconos sin
-        etiqueta obligan a recordar en un producto que en todo lo demás evita
-        el recuerdo". Colapsada baja a 11 px debajo del ícono; no se va.
-      */}
-      <span
-        style={
-          colapsada
-            ? { fontSize: "var(--text-meta)", lineHeight: 1.2, textAlign: "center" }
-            : undefined
-        }
-      >
-        {item.etiqueta}
-      </span>
+      {/* ADR-101: recogida, sólo el ícono — como el software de las capturas. */}
+      {conNombre && (
+        <span className={transicion} style={{ opacity: colapsada ? 0 : 1 }}>
+          {item.etiqueta}
+        </span>
+      )}
 
-      {!colapsada && item.contador !== null && (
+      {conNombre && item.contador !== null && (
         <span
           data-contador
+          className={transicion}
           style={{
+            opacity: colapsada ? 0 : 1,
             marginLeft: "auto",
             background: "var(--primary)",
             color: "var(--primary-foreground)",
@@ -159,10 +200,20 @@ export function NavegacionLateral({
   colapsada: boolean;
   onAlternar: () => void;
 }) {
+  /*
+    Las medidas transicionan **recién después del primer clic en la flecha**.
+    Así la corrección de la hidratación y el `Shell` que monta al navegar dejan
+    la barra puesta, sin animarla.
+  */
+  const [animar, setAnimar] = useState(false);
+  const recogiendose = useRecogiendose(colapsada, animar);
+  const conNombre = !colapsada || recogiendose;
+  const transicion = animar ? TRANSICION_DE_BARRA : "";
+
   return (
     <nav
       aria-label={t("SHELL.NAVEGACION")}
-      className="hairline-r hidden md:flex md:flex-col"
+      className={`hairline-r hidden md:flex md:flex-col ${transicion}`}
       style={{
         // Medido sobre las capturas, no estimado.
         width: colapsada ? 80 : 256,
@@ -187,44 +238,89 @@ export function NavegacionLateral({
         height: "100vh",
         alignSelf: "flex-start",
         overflowY: "auto",
+        // Mientras se achica, lo que no entra se recorta: sin esto aparece una
+        // barra de scroll horizontal durante la transición.
+        overflowX: "hidden",
       }}
     >
+      {/*
+        ⚠️ **El logo es el mismo en día y en noche** — ADR-101, lo pidió el owner.
+        Es la suricata sobre su propio círculo negro: no depende del fondo, así
+        que no lleva variante por tema.
+
+        Expandida: logo y nombre a la izquierda, la flecha `‹` a la derecha.
+        Recogida: el logo arriba y la flecha `›` debajo, como en las capturas.
+
+        ⚠️ **La flecha va en `absolute` para poder viajar.** Pasar de fila a
+        columna no se anima; `top` y `right` sí. El logo no se mueve: 16 + 6 px
+        expandida y 12 + 10 recogida lo dejan en el mismo lugar.
+      */}
       <div
-        className="flex items-center"
-        style={{ justifyContent: colapsada ? "center" : "space-between", minHeight: 40 }}
+        className={`relative shrink-0 ${transicion}`}
+        style={{ height: colapsada ? 84 : 40 }}
       >
         {/*
           El logo lleva a Hoy, como en cualquier software: es la portada. Navega y
           nada más — igual que un ítem del menú, no guarda nada en la barra de
           objetos (ADR-088, Enmienda 7).
         */}
-        {!colapsada && (
-          <Link
-            href={nodos.UX01.ruta ?? "/hoy"}
-            data-logo
-            style={{
-              fontWeight: 600,
-              fontSize: "var(--text-body)",
-              letterSpacing: "-0.022em",
-              color: "var(--foreground)",
-            }}
-          >
-            Achieve
-          </Link>
-        )}
+        <Link
+          href={nodos.UX01.ruta ?? "/hoy"}
+          data-logo
+          className={`flex items-center whitespace-nowrap ${transicion}`}
+          style={{ gap: 10, height: 40, paddingLeft: colapsada ? 10 : 6, width: "fit-content" }}
+        >
+          <Image src="/achieve-logo.png" alt="Achieve" width={36} height={36} priority />
+          {conNombre && (
+            <span
+              aria-hidden
+              className={transicion}
+              style={{
+                fontWeight: 700,
+                fontSize: 20,
+                letterSpacing: "-0.03em",
+                color: "var(--foreground)",
+                opacity: colapsada ? 0 : 1,
+              }}
+            >
+              Achieve
+            </span>
+          )}
+        </Link>
         <button
-          onClick={onAlternar}
+          onClick={() => {
+            setAnimar(true);
+            onAlternar();
+          }}
           aria-label={colapsada ? t("SHELL.EXPANDIR") : t("SHELL.COLAPSAR")}
           aria-expanded={!colapsada}
-          style={{ color: "var(--muted-foreground)", padding: 4 }}
+          title={colapsada ? t("SHELL.EXPANDIR") : t("SHELL.COLAPSAR")}
+          className={`absolute flex items-center justify-center hover:bg-[var(--card)] ${transicion}`}
+          style={{
+            color: "var(--muted-foreground)",
+            width: 32,
+            height: 32,
+            borderRadius: 999,
+            // Expandida, centrada en la fila del logo; recogida, 12 px debajo y
+            // centrada en los 56 px útiles.
+            top: colapsada ? 50 : 4,
+            right: colapsada ? 12 : 0,
+          }}
         >
-          <PanelLeft size={18} aria-hidden />
+          {colapsada ? <ChevronRight size={18} aria-hidden /> : <ChevronLeft size={18} aria-hidden />}
         </button>
       </div>
 
       <div className="flex flex-col" style={{ gap: 4, marginTop: 12 }}>
         {menu.map((item) => (
-          <Item key={item.nodo} item={item} activo={item.nodo === nodoActivo} colapsada={colapsada} />
+          <Item
+            key={item.nodo}
+            item={item}
+            activo={item.nodo === nodoActivo}
+            colapsada={colapsada}
+            recogiendose={recogiendose}
+            animar={animar}
+          />
         ))}
       </div>
 
@@ -233,7 +329,7 @@ export function NavegacionLateral({
         la derecha, que es donde lo busca quien usó el software de las capturas.
       */}
       <div className="hairline-t" style={{ marginTop: "auto", paddingTop: 12 }}>
-        <ConmutadorDeTema colapsada={colapsada} />
+        <ConmutadorDeTema colapsada={colapsada} animar={animar} />
       </div>
     </nav>
   );

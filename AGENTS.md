@@ -348,7 +348,7 @@ En el Track B, hoy:
   resultado; no decide que hubo progreso:** `C01-018` sigue `OPEN`. Ninguna ruta de `Evidence`
   escribe progreso, con guard.
 - **El Product Event Model está declarado** en `lib/domain/product-events.ts`: 23 eventos P0 del
-  spec §16 más **36 extensiones** que el backend emite o conserva como legacy. **De los 23 se
+  spec §16 más **40 extensiones** que el backend emite o conserva como legacy. **De los 23 se
   emiten 9.** Antes de agregar un evento, declaralo ahí.
 - **B2b va 2/3** —ingesta asistida y corroboración completas—, y el ADE v1, su materialización y
   el reloj del lifecycle se construyeron por adelantado en B4.

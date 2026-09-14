@@ -9,6 +9,7 @@ import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
 import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
+import { heroLlevaAFocus, irAFocus } from "./ir-a-focus";
 import { enviar } from "@/lib/client/api";
 import { rutaDe } from "@/lib/navigation";
 import type { ClaseEnLista, ClaseProps, MateriaProps, TusClases } from "@/lib/domain/view-models";
@@ -125,7 +126,14 @@ function Pantalla({
   return (
     <MateriaCursado
       {...props}
-      onAvanzar={destino ? () => router.push(destino) : undefined}
+      onAvanzar={
+        // ADR-104 §4: la misma regla que Hoy, con **esta** cursada.
+        !params.get("escenario") && props.cursadaId && heroLlevaAFocus(props.hero.nivel, props.hero.variante)
+          ? () => void irAFocus(router, { cursada: props.cursadaId }, destino)
+          : destino
+            ? () => router.push(destino)
+            : undefined
+      }
       // `CTA-009` con la cursada puesta. Con `cursadaId` en `null` —el Track A—
       // `rutaDeCtaCon` devuelve la ruta pelada y el backend elige, que es
       // exactamente lo que ADR-054 previó: no se inventa un id para completar

@@ -15,7 +15,7 @@ import {
 
 /**
  * **El asistente de reportes y mejoras, simulado** —
- * [ADR-101](../docs/decisions.md#adr-101).
+ * [ADR-103](../docs/decisions.md#adr-103).
  *
  * Lo que se prueba es que funcione como el del software de las capturas y que
  * la ficción **no se escape**: sólo con `MODO_PRUEBA=1`, rotulado, sin red, y

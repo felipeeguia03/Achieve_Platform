@@ -821,6 +821,113 @@ CREATE TABLE class_recording_tag (            -- texto libre sobre un archivo; N
 ⚠️ **El único borrado de storage del repositorio** es el de estas dos tablas: el objeto primero, la fila
 después. `Evidence` sigue sin borrado (ADR-006 §3).
 
+### 8.2 Gimnasia cognitiva — [ADR-102](decisions.md#adr-102)
+
+Práctica breve de memoria. ⛔ **No toca `action`, `commitment`, `evidence` ni `topic_progress`**: jugar
+no es estudiar la materia, ni entregar, ni avanzar una unidad. **No hay tabla de progreso ni
+`cognitive_score`**: mejor marca, nivel, días con rutina y próximos repasos se deducen de los hechos.
+Migración: `20261021000000_gimnasia_cognitiva.sql`.
+
+```sql
+CREATE TABLE gym_session (                    -- la rutina o un juego suelto
+  id UUID PK, institution_id UUID NOT NULL, student_id UUID NOT NULL,
+  origin        TEXT CHECK (origin IN ('ROUTINE','SINGLE_GAME')),
+  planned_games TEXT[] NOT NULL,              -- fijados al empezar; 1–3 de los tres juegos
+  status TEXT DEFAULT 'IN_PROGRESS' CHECK (status IN ('IN_PROGRESS','COMPLETED','CANCELLED')),
+  started_at, ended_at,                       -- ended_at NOT NULL si y sólo si cerrada
+  idempotency_key TEXT NOT NULL, UNIQUE (student_id, idempotency_key)
+);
+-- Una abierta por estudiante: UNIQUE (student_id) WHERE status = 'IN_PROGRESS'
+
+CREATE TABLE gym_attempt (                    -- un juego dentro de la sesión
+  id UUID PK, institution_id, student_id, gym_session_id,  -- FK compuesta (sesión, estudiante)
+  game TEXT CHECK (game IN ('FLASH_GRID','REVERSE_CHAIN','REAL_RECALL')),
+  rules_version TEXT NOT NULL,                -- CF-1 · CI-1 · RR-1
+  status TEXT DEFAULT 'STARTED' CHECK (status IN ('STARTED','COMPLETED','ABANDONED')),
+  seed INTEGER, start_length SMALLINT,        -- los pone el servidor (cuadrícula y cadena)
+  plan UUID[],                                -- las preguntas (Recuerdo real)
+  answers JSONB,                              -- respuestas por ronda, para rehacer la corrección
+  rounds, correct_count, error_count, max_span, max_attempted_span,
+  score INTEGER,                              -- SÓLO cuadrícula (CHECK)
+  level_before, level_after SMALLINT,         -- SÓLO cadena (CHECK)
+  partial_count SMALLINT,                     -- SÓLO recuerdo (CHECK)
+  personal_best BOOLEAN
+);
+-- Un STARTED por sesión; un COMPLETED por (sesión, juego)
+
+CREATE TABLE recall_item (                    -- una pregunta; de la materia o general (course_id NULL)
+  id UUID PK, code TEXT UNIQUE, course_id UUID REFERENCES course, topic_id UUID REFERENCES topic,
+  prompt TEXT, answer_type TEXT CHECK (IN ('SHORT_ANSWER','MULTIPLE_CHOICE','TRUE_FALSE','SELF_ASSESSED')),
+  options JSONB,                              -- sólo opción múltiple; nunca marca la correcta
+  accepted_answers TEXT[],                    -- sólo cerradas; NUNCA sale al cliente
+  canonical_answer TEXT, explanation TEXT, version INTEGER,
+  publication_status TEXT DEFAULT 'DRAFT',    -- sólo lo PUBLISHED se muestra (sintéticas: MODO_PRUEBA)
+  source_type, source_ref, observed_at, verification_status DEFAULT 'unverified'  -- I9 intacto
+);
+
+CREATE TABLE recall_review (                  -- APPEND-ONLY (REVOKE UPDATE, DELETE a service_role)
+  id UUID PK, institution_id, student_id, recall_item_id, item_version,
+  gym_attempt_id UUID, position SMALLINT,     -- UNIQUE (gym_attempt_id, position)
+  outcome TEXT CHECK (IN ('NOT_RECALLED','PARTIAL','RECALLED','EASY')),
+  auto_graded BOOLEAN, answer TEXT,           -- answer sólo en cerradas: una abierta no guarda su texto
+  policy_version TEXT, next_review_on DATE, answered_at, idempotency_key
+);
+```
+
+⚠️ **Las cuatro entran a `limpiar_mundo`** (`db-aislamiento.sh`). Las preguntas sintéticas de la demo
+(`SYN-GIM-…`) caen con sus materias.
+
+### 8.3 Modo Focus — [ADR-104](decisions.md#adr-104)
+
+Una sesión de trabajo sobre un compromiso. ⛔ **No escribe `evidence`, `progress_entry` ni
+`topic_progress`**, y **no lleva el compromiso a `COMPLETED`**. Compromiso y acción se mueven por sus
+Services. Migración: `20261022000000_modo_focus.sql`. Informe: [`modo-focus.md`](modo-focus.md).
+
+```sql
+CREATE TABLE focus_session (
+  id UUID PK, institution_id, student_id,
+  course_enrollment_id, action_id, commitment_id,   -- FK compuestas: cursada del estudiante,
+                                                    -- acción de esa cursada, compromiso de esa acción
+  scheduled_start_at TIMESTAMPTZ, planned_minutes,  -- COPIA del acuerdo al empezar
+  status TEXT CHECK (IN ('OPEN','ENDED')),          -- la fase NO se persiste
+  mode   TEXT CHECK (IN ('FREE','POMODORO')),
+  pomodoro_focus_minutes 5–120, pomodoro_short_break_minutes 1–30,
+  pomodoro_long_break_minutes 5–60, pomodoro_blocks_before_long 2–8,  -- los cuatro o ninguno
+  started_at, last_heartbeat_at,                    -- los pone el servidor
+  ended_at, end_kind CHECK (IN ('SAVED','DONE')),
+  focus_seconds, break_seconds, paused_seconds, pauses,
+  complete_blocks, partial_blocks,                  -- CONGELADOS al cerrar; ENDED ⇔ los seis
+  advance_text ≤ 2000,                              -- «¿Qué avanzaste?» — va a la Bitácora. NO es reflection
+  scratchpad ≤ 20000, scratchpad_updated_at,        -- «Para después» — PRIVADO
+  version INTEGER                                   -- concurrencia optimista de los comandos
+);
+-- Una abierta por estudiante: UNIQUE (student_id) WHERE status = 'OPEN'
+
+CREATE TABLE focus_segment (                        -- un tramo: foco, descanso o pausa
+  id UUID PK, institution_id, focus_session_id,
+  kind TEXT CHECK (IN ('FOCUS','BREAK','PAUSE')),
+  mode (sólo FOCUS), block_number (sólo FOCUS POMODORO), break_kind (sólo BREAK),
+  started_at, planned_end_at (BREAK o POMODORO), ended_at,
+  end_reason CHECK (IN ('COMPLETED','PAUSED','RESUMED','SWITCHED','SKIPPED','SAVED','DONE','RECOVERED'))
+);
+-- Un tramo abierto por sesión: UNIQUE (focus_session_id) WHERE ended_at IS NULL
+
+CREATE TABLE focus_preference (                     -- preferencia, no perfil
+  student_id UUID PK, institution_id, last_mode, preset, custom_* (los cuatro o ninguno),
+  sound DEFAULT 'NINGUNO' CHECK (IN ('NINGUNO','MARRON','ROSA')), volume 0–100
+);
+```
+
+| Función | Qué hace |
+|---|---|
+| `empezar_sesion_de_focus()` | La sesión y su primer tramo (foco libre), juntos. `NULL` si ya hay una abierta |
+| `aplicar_comando_de_focus()` | La sesión con su versión, los tramos que se cierran y los que se abren: **todo o nada**. Rechaza cerrar con un tramo abierto |
+| `hechos_de_cursada()` | Gana `datos JSONB` y ata `focus_session` a su acción. ⛔ **Nunca el anotador** |
+| `estado_de_progreso()` | Pasa `datos` a cada entrada de la Bitácora |
+
+⚠️ **Las tres entran a `limpiar_mundo`.** `action` y `commitment` ganaron `UNIQUE (id, course_enrollment_id)`
+y `UNIQUE (id, action_id)` para las FK compuestas: no cambian nada, `id` ya era único.
+
 ---
 
 ## 9. Schema — capa de ejecución (el loop diario)

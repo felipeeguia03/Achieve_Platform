@@ -10,6 +10,7 @@ import { ActivacionModoExamenEsqueleto } from "@/components/screens/activacion-m
 import { CompromisoEsqueleto } from "@/components/screens/compromiso";
 import { EvidenciaEsqueleto } from "@/components/screens/evidencia";
 import { FormacionEsqueleto } from "@/components/screens/formacion";
+import { GimnasiaEsqueleto } from "@/components/screens/gimnasia";
 import { HoyAutogestion, HoyAutogestionEsqueleto } from "@/components/screens/hoy-autogestion";
 import { IndiceDeMateriasEsqueleto } from "@/components/screens/indice-de-materias";
 import { MateriaCursado, MateriaCursadoEsqueleto } from "@/components/screens/materia-cursado";
@@ -46,6 +47,8 @@ const ESQUELETOS = {
   PasoDeProtocolo: PasoDeProtocoloEsqueleto,
   Formacion: FormacionEsqueleto,
   ModoClase: ModoClaseEsqueleto,
+  // ADR-102: entró por la rama de Gimnasia, antes de que existiera P-12.
+  Gimnasia: GimnasiaEsqueleto,
   AltaCarrera: AltaCarreraEsqueleto,
   AltaMaterias: AltaMateriasEsqueleto,
 };
@@ -96,6 +99,13 @@ describe("lo fijo va real desde el primer frame (§9.1)", () => {
     expect(screen.getByRole("heading", { level: 1, name: t("HOY.TITULO") })).toBeInTheDocument();
     expect(screen.getByText(t("HOY.CUADRO"))).toBeInTheDocument();
     expect(screen.getByText(t("HOY.RIESGOS"))).toBeInTheDocument();
+  });
+
+  it("Gimnasia trae su título y el aviso responsable, sin ofrecer empezar nada", () => {
+    render(<GimnasiaEsqueleto />);
+    expect(screen.getByRole("heading", { level: 1, name: t("GIMNASIA.TITULO") })).toBeInTheDocument();
+    expect(screen.getByText(t("GIMNASIA.AVISO_RESPONSABLE"))).toBeInTheDocument();
+    expect(screen.queryByText(t("GIMNASIA.RUTINA.EMPEZAR"))).toBeNull();
   });
 
   it("Evidencia deja leer la regla del flujo: enviar no es suficiencia", () => {

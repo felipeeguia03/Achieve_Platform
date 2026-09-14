@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 import { t } from "@/lib/content/es-AR";
+import { TRANSICION_DE_BARRA } from "./movimiento";
 import {
   aplicarTema,
   elegirTema,
@@ -26,7 +27,14 @@ import {
   type Tema,
 } from "@/lib/client/tema";
 
-export function ConmutadorDeTema({ colapsada = false }: { colapsada?: boolean }) {
+export function ConmutadorDeTema({
+  colapsada = false,
+  animar = false,
+}: {
+  colapsada?: boolean;
+  /** La barra lateral transiciona: el botón viaja con ella. */
+  animar?: boolean;
+}) {
   /*
     ⚠️ **`null` hasta montar.** En el servidor no se sabe el tema, y dibujar la
     luna para después cambiarla al sol sería un ícono que salta. El botón ocupa
@@ -60,7 +68,14 @@ export function ConmutadorDeTema({ colapsada = false }: { colapsada?: boolean })
       software de referencia. El nombre no se pierde: va en el `aria-label` y en
       el `title`, así que lo lee un lector de pantalla y aparece al pasar el mouse.
     */
-    <div className="flex" style={{ justifyContent: colapsada ? "center" : "flex-end" }}>
+    /*
+      Recogida se centra con `padding-right` y no con `justify-content`, que no
+      se anima: 12 px = (56 de ancho útil − 32 del botón) / 2.
+    */
+    <div
+      className={`flex justify-end ${animar ? TRANSICION_DE_BARRA : ""}`}
+      style={{ paddingRight: colapsada ? 12 : 0 }}
+    >
       <button
         onClick={() => {
           elegirTema(siguiente);

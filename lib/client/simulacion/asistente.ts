@@ -1,6 +1,6 @@
 /**
  * El guion **simulado** del asistente de reportes y mejoras —
- * [ADR-101](../../../docs/decisions.md#adr-101).
+ * [ADR-103](../../../docs/decisions.md#adr-103).
  *
  * ⚠️ **Nada de esto se envía.** El owner pidió el asistente *"tal cual así"* y
  * *"por ahora simulá las respuestas, después con el backend conectamos todo"*.

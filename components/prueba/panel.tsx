@@ -150,7 +150,7 @@ export function PanelDePrueba() {
       style={{
         position: "fixed",
         right: 16,
-        // Arriba del botón del asistente (ADR-101), que ocupa la esquina: 16 de
+        // Arriba del botón del asistente (ADR-103), que ocupa la esquina: 16 de
         // margen + 56 del botón + 12 de aire. Los dos existen sólo en modo prueba.
         bottom: 84,
         zIndex: 50,

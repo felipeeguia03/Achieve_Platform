@@ -35,7 +35,14 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # cinco de la Fase B6.14 faltaban, y `curriculum_requirement` → `course` bastaba
 # para dejar el verificador sin correr (roadmap.md §0.2).
 limpiar_mundo() {
-  q "delete from class_recording_tag; \
+  q "delete from focus_segment; \
+   delete from focus_session; \
+   delete from focus_preference; \
+   delete from recall_review; \
+   delete from gym_attempt; \
+   delete from gym_session; \
+   delete from recall_item where code like 'AISL-%'; \
+   delete from class_recording_tag; \
    delete from class_recording; \
    delete from class_attachment; \
    delete from class_note_entry; \
@@ -1597,6 +1604,180 @@ corre "delete from class_recording where id='c9100000-0000-0000-0000-00000000000
   && ok "los dos buckets de la clase existen y son privados" || mal "falta un bucket de la clase o es público"
 
 corre "delete from class_recording_tag; delete from class_recording; delete from class_attachment; delete from class_note_entry; delete from class_marker; delete from student_class_session;"
+
+echo "→ ADR-102 · Gimnasia cognitiva: una sesión abierta, lo de otro no entra, el repaso no se reescribe"
+
+YO=a5000000-0000-0000-0000-000000000001
+corre "insert into gym_session (id,institution_id,student_id,origin,planned_games,idempotency_key) values ('d1000000-0000-0000-0000-000000000001','$A','$YO','ROUTINE','{FLASH_GRID,REVERSE_CHAIN}','g1');" \
+  && ok "una rutina entra" || mal "no entró la rutina"
+if corre "insert into gym_session (institution_id,student_id,origin,planned_games,idempotency_key) values ('$A','$YO','SINGLE_GAME','{FLASH_GRID}','g2');"; then
+  mal "entraron dos sesiones abiertas del mismo estudiante"
+else
+  ok "una segunda sesión abierta del mismo estudiante se rechaza en la base"
+fi
+if corre "insert into gym_session (institution_id,student_id,origin,planned_games,idempotency_key) values ('$A','$OTRO','SINGLE_GAME','{FLASH_GRID,REVERSE_CHAIN}','g3');"; then
+  mal "un juego suelto entró con dos juegos"
+else
+  ok "un juego suelto es un solo juego"
+fi
+if corre "insert into gym_session (institution_id,student_id,origin,planned_games,idempotency_key) values ('$A','$OTRO','ROUTINE','{MEMORY_SCORE}','g4');"; then
+  mal "entró un juego que no existe"
+else
+  ok "sólo los tres juegos de Memoria"
+fi
+if corre "update gym_session set status='COMPLETED' where id='d1000000-0000-0000-0000-000000000001';"; then
+  mal "una sesión se completó sin fecha de fin"
+else
+  ok "COMPLETED sin fecha de fin se rechaza"
+fi
+
+# El intento tiene que ser de una sesión **del mismo estudiante**.
+if corre "insert into gym_attempt (institution_id,student_id,gym_session_id,game,rules_version,seed,start_length,idempotency_key) values ('$A','$OTRO','d1000000-0000-0000-0000-000000000001','FLASH_GRID','CF-1',7,3,'i1');"; then
+  mal "otro estudiante jugó adentro de una sesión ajena"
+else
+  ok "un intento sobre la sesión de otro se rechaza"
+fi
+corre "insert into gym_attempt (id,institution_id,student_id,gym_session_id,game,rules_version,seed,start_length,idempotency_key) values ('d2000000-0000-0000-0000-000000000001','$A','$YO','d1000000-0000-0000-0000-000000000001','FLASH_GRID','CF-1',7,3,'i1');" \
+  && ok "un intento de la cuadrícula entra con semilla y largo" || mal "no entró el intento"
+if corre "update gym_attempt set status='COMPLETED', completed_at=now(), correct_count=1, error_count=2, max_span=3, rounds=3 where id='d2000000-0000-0000-0000-000000000001';"; then
+  mal "una cuadrícula se completó sin puntuación"
+else
+  ok "completar exige el resultado de ese juego"
+fi
+if corre "update gym_attempt set status='COMPLETED', completed_at=now(), correct_count=1, error_count=2, max_span=3, rounds=3, score=300, level_after=2 where id='d2000000-0000-0000-0000-000000000001';"; then
+  mal "una cuadrícula guardó un nivel: magnitudes mezcladas"
+else
+  ok "la cuadrícula no lleva nivel: no se mezclan magnitudes"
+fi
+
+# La pregunta y el repaso.
+corre "insert into recall_item (id,code,prompt,answer_type,accepted_answers,canonical_answer,source_type,source_ref) values ('d3000000-0000-0000-0000-000000000001','AISL-1','¿?','SHORT_ANSWER','{x}','x','inference','SYN');" \
+  && ok "una pregunta entra DRAFT" || mal "no entró la pregunta"
+[ "$(q "select publication_status || '-' || verification_status from recall_item where code='AISL-1';" | tr -d '[:space:]')" = "DRAFT-unverified" ] \
+  && ok "nace DRAFT y unverified" || mal "la pregunta nació publicada o verificada"
+if corre "insert into recall_item (code,prompt,answer_type,accepted_answers,canonical_answer,source_type,source_ref) values ('AISL-2','¿?','SELF_ASSESSED','{x}','x','inference','SYN');"; then
+  mal "una abierta entró con respuestas aceptadas: se podría corregir sola"
+else
+  ok "una abierta no lleva respuestas aceptadas"
+fi
+corre "insert into gym_attempt (id,institution_id,student_id,gym_session_id,game,rules_version,plan,idempotency_key) values ('d2000000-0000-0000-0000-000000000002','$A','$YO','d1000000-0000-0000-0000-000000000001','REAL_RECALL','RR-1','{d3000000-0000-0000-0000-000000000001}','i2');" 2>/dev/null
+corre "update gym_attempt set status='ABANDONED' where id='d2000000-0000-0000-0000-000000000001';"
+corre "insert into gym_attempt (id,institution_id,student_id,gym_session_id,game,rules_version,plan,idempotency_key) values ('d2000000-0000-0000-0000-000000000002','$A','$YO','d1000000-0000-0000-0000-000000000001','REAL_RECALL','RR-1','{d3000000-0000-0000-0000-000000000001}','i2');" \
+  && ok "con el anterior abandonado, entra el intento de Recuerdo real" || mal "no entró el intento de repaso"
+corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,answer,policy_version,next_review_on,idempotency_key) values ('$A','$YO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',0,'RECALLED',true,'x','RR-1',current_date+3,'r1');" \
+  && ok "un repaso entra" || mal "no entró el repaso"
+if corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,policy_version,next_review_on,idempotency_key) values ('$A','$YO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',0,'EASY',false,'RR-1',current_date+7,'r2');"; then
+  mal "el mismo lugar de la cola se respondió dos veces"
+else
+  ok "un lugar de la cola se responde una sola vez"
+fi
+if corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,answer,policy_version,next_review_on,idempotency_key) values ('$A','$YO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',1,'PARTIAL',false,'texto libre','RR-1',current_date+1,'r3');"; then
+  mal "una abierta guardó el texto del estudiante"
+else
+  ok "una abierta no guarda su texto"
+fi
+if corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,policy_version,next_review_on,idempotency_key) values ('$A','$OTRO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',1,'PARTIAL',false,'RR-1',current_date+1,'r4');"; then
+  mal "otro estudiante repasó adentro de un intento ajeno"
+else
+  ok "un repaso sobre el intento de otro se rechaza"
+fi
+# Append-only **para el backend**: se prueba con el rol con el que entra.
+if corre "set role service_role; update recall_review set outcome='EASY';"; then
+  mal "el backend pudo reescribir un repaso"
+else
+  ok "service_role no puede reescribir un repaso (append-only)"
+fi
+[ "$(q "select count(*) from gym_session where institution_id='$B';" | tr -d '[:space:]')" = "0" ] \
+  && ok "B no alcanza las sesiones de A" || mal "B vio sesiones de A"
+
+corre "delete from recall_review; delete from gym_attempt; delete from gym_session; delete from recall_item where code like 'AISL-%';"
+
+echo "→ ADR-104 · Modo Focus: una sesión abierta, un tramo abierto, y el anotador no sale"
+
+FA=f7000000-0000-0000-0000-000000000001   # acción de a5…01
+FC=f8000000-0000-0000-0000-000000000001   # su compromiso
+corre "insert into action (id,institution_id,course_enrollment_id,objective,verb,scope,status) values ('$FA','$A','a6000000-0000-0000-0000-000000000001','Resolver 4 al 8','resolver','u1','IN_PROGRESS');
+ insert into commitment (id,institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,started_at) values ('$FC','$A','$FA',now(),'America/Argentina/Cordoba',40,'STARTED',now());"
+
+FS=$(q "select empezar_sesion_de_focus('$A','$YO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now());" | tr -d '[:space:]')
+[ -n "$FS" ] && ok "una sesión empieza con su primer tramo" || mal "no empezó la sesión"
+[ "$(q "select count(*) from focus_segment where focus_session_id='$FS' and kind='FOCUS' and mode='FREE' and ended_at is null;" | tr -d '[:space:]')" = "1" ] \
+  && ok "el primer tramo es foco libre y está abierto" || mal "el primer tramo no es foco libre abierto"
+[ -z "$(q "select empezar_sesion_de_focus('$A','$YO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now());" | tr -d '[:space:]')" ] \
+  && ok "una segunda sesión abierta del mismo estudiante devuelve NULL" || mal "entraron dos sesiones abiertas"
+
+# Las FK compuestas: cursada del estudiante, acción de esa cursada, compromiso de esa acción.
+if corre "insert into focus_session (institution_id,student_id,course_enrollment_id,action_id,commitment_id,scheduled_start_at,planned_minutes,started_at,last_heartbeat_at) values ('$A','$OTRO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now(),now());"; then
+  mal "un estudiante abrió Focus sobre la cursada de otro"
+else
+  ok "la cursada de otro estudiante no admite su sesión"
+fi
+if corre "insert into focus_session (institution_id,student_id,course_enrollment_id,action_id,commitment_id,scheduled_start_at,planned_minutes,started_at,last_heartbeat_at) values ('$A','$OTRO','a6000000-0000-0000-0000-000000000098','$FA','$FC',now(),40,now(),now());"; then
+  mal "una sesión apuntó a una acción de otra cursada"
+else
+  ok "la acción tiene que ser de la cursada de la sesión"
+fi
+
+# Un solo tramo abierto por sesión.
+if corre "insert into focus_segment (institution_id,focus_session_id,kind,started_at) values ('$A','$FS','PAUSE',now());"; then
+  mal "una sesión tuvo dos tramos abiertos"
+else
+  ok "un segundo tramo abierto se rechaza en la base"
+fi
+if corre "insert into focus_segment (institution_id,focus_session_id,kind,mode,started_at,ended_at,end_reason) values ('$A','$FS','FOCUS','POMODORO',now(),now(),'SAVED');"; then
+  mal "un foco Pomodoro entró sin bloque ni fin planeado"
+else
+  ok "un foco Pomodoro sin bloque ni fin planeado se rechaza"
+fi
+
+TRAMO=$(q "select id from focus_segment where focus_session_id='$FS';" | tr -d '[:space:]')
+[ -z "$(q "select aplicar_comando_de_focus('$A','$FS',99,'{\"status\":\"OPEN\",\"mode\":\"FREE\",\"last_heartbeat_at\":\"2030-01-01T00:00:00Z\"}','[]','[]');" | tr -d '[:space:]')" ] \
+  && ok "un comando con otra versión no escribe" || mal "escribió con una versión vieja"
+V=$(q "select aplicar_comando_de_focus('$A','$FS',1,jsonb_build_object('status','OPEN','mode','FREE','last_heartbeat_at',now()),jsonb_build_array(jsonb_build_object('id','$TRAMO','ended_at',now(),'end_reason','PAUSED')),jsonb_build_array(jsonb_build_object('kind','PAUSE','started_at',now())));" | tr -d '[:space:]')
+[ "$V" = "2" ] && ok "pausar cierra el foco y abre la pausa, todo junto" || mal "el comando no escribió ($V)"
+[ "$(q "select string_agg(kind || ':' || coalesce(end_reason,'abierto'), ',' order by started_at, kind) from focus_segment where focus_session_id='$FS';" | tr -d '[:space:]')" = "FOCUS:PAUSED,PAUSE:abierto" ] \
+  && ok "quedaron el foco cerrado y la pausa abierta" || mal "los tramos no quedaron como el comando dijo"
+
+if corre "select aplicar_comando_de_focus('$A','$FS',2,jsonb_build_object('status','ENDED','mode','FREE','last_heartbeat_at',now(),'ended_at',now(),'end_kind','SAVED','focus_seconds',60,'break_seconds',0,'paused_seconds',0,'pauses',1,'complete_blocks',0,'partial_blocks',0),'[]','[]');"; then
+  mal "una sesión se cerró con un tramo abierto"
+else
+  ok "cerrar la sesión con un tramo abierto se rechaza, y no queda nada a medias"
+fi
+[ "$(q "select status from focus_session where id='$FS';" | tr -d '[:space:]')" = "OPEN" ] \
+  && ok "y la sesión sigue abierta: fue todo o nada" || mal "la sesión quedó cerrada a medias"
+if corre "update focus_session set status='ENDED', ended_at=now(), end_kind='SAVED' where id='$FS';"; then
+  mal "una sesión se cerró sin sus números"
+else
+  ok "ENDED sin los números congelados se rechaza"
+fi
+
+PAUSA=$(q "select id from focus_segment where focus_session_id='$FS' and ended_at is null;" | tr -d '[:space:]')
+corre "update focus_session set scratchpad='comprar pan, turno médico', advance_text='Resolví el 4 y el 5' where id='$FS';"
+V=$(q "select aplicar_comando_de_focus('$A','$FS',2,jsonb_build_object('status','ENDED','mode','FREE','last_heartbeat_at',now(),'ended_at',now(),'end_kind','SAVED','focus_seconds',3120,'break_seconds',600,'paused_seconds',600,'pauses',1,'complete_blocks',0,'partial_blocks',0,'advance_text','Resolví el 4 y el 5'),jsonb_build_array(jsonb_build_object('id','$PAUSA','ended_at',now(),'end_reason','SAVED')),'[]');" | tr -d '[:space:]')
+[ "$V" = "3" ] && ok "cerrar congela los números y deja la sesión terminada" || mal "no cerró ($V)"
+
+corre "insert into product_event (event_name,institution_id,actor_id,subject_type,subject_id) values ('FocusSessionEnded','$A','$YO','focus_session','$FS');"
+[ "$(q "select h.datos->>'foco' from hechos_de_cursada('$A','a6000000-0000-0000-0000-000000000001',null) h where h.event_name='FocusSessionEnded';" | tr -d '[:space:]')" = "3120" ] \
+  && ok "la Bitácora ata la sesión a su acción y trae sus números" || mal "la sesión no llegó a hechos_de_cursada"
+if q "select h.datos::text from hechos_de_cursada('$A','a6000000-0000-0000-0000-000000000001',null) h;" | grep -q "comprar pan"; then
+  mal "el anotador privado llegó a hechos_de_cursada"
+else
+  ok "el anotador NO llega a hechos_de_cursada (§12)"
+fi
+q "select estado_de_progreso('$A','$YO',now(),null,'a6000000-0000-0000-0000-000000000001')::text;" | grep -q "Resolví el 4 y el 5" \
+  && ok "estado_de_progreso pasa el avance a la Bitácora" || mal "el avance no llegó a estado_de_progreso"
+if q "select estado_de_progreso('$A','$YO',now(),null,'a6000000-0000-0000-0000-000000000001')::text;" | grep -q "comprar pan"; then
+  mal "el anotador privado llegó a estado_de_progreso"
+else
+  ok "y el anotador tampoco llega a estado_de_progreso"
+fi
+
+[ -n "$(q "select empezar_sesion_de_focus('$A','$YO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now());" | tr -d '[:space:]')" ] \
+  && ok "con la anterior cerrada, puede empezar otra" || mal "la unicidad cuenta sesiones cerradas"
+[ "$(q "select count(*) from focus_session where institution_id='$B';" | tr -d '[:space:]')" = "0" ] \
+  && ok "B no alcanza las sesiones de A" || mal "B vio sesiones de A"
+
+corre "delete from product_event where subject_type='focus_session'; delete from focus_segment; delete from focus_session; delete from commitment where id='$FC'; delete from action where id='$FA';"
 
 limpiar_mundo
 ok "limpiado"

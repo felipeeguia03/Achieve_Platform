@@ -466,6 +466,45 @@ export const EXTENSIONES: Readonly<
     nivel: "TRANSICION",
     enBitacora: false,
   },
+  // ADR-102 · Gimnasia cognitiva. **No facturables** (ADR-041) y **fuera de la
+  // Bitácora**: jugar no es producir para una materia, y `hechos_de_cursada` se
+  // ata a una `Action`. Cuatro hechos y ninguno más: *"evento nuevo para cada
+  // interacción: no está aprobado"* — cada respuesta de Recuerdo real es una
+  // fila de `recall_review`, no un evento.
+  GymSessionStarted: {
+    porQue: "El estudiante empezó una rutina o un juego de Gimnasia cognitiva (ADR-102). No es tiempo de estudio",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  GymSessionCompleted: {
+    porQue: "Se completaron todos los ejercicios previstos de la sesión (ADR-102). No es evidencia ni progreso",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  GymSessionCancelled: {
+    porQue: "El estudiante descartó la sesión (ADR-102). Lo terminado adentro queda guardado",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  GymAttemptCompleted: {
+    porQue: "Un juego terminó con resultado calculado por el servidor (ADR-102). Su marca es del ejercicio, no de la persona",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  // ADR-104 · Modo Focus. Las dos puntas de la sesión y nada más: pausar,
+  // continuar o un latido son tramos, no eventos. **No facturables** (ADR-041):
+  // registrar tiempo no es producir. El cierre **sí va a la Bitácora**, porque
+  // la sesión tiene `Action` y `hechos_de_cursada()` la ata a su ciclo.
+  FocusSessionStarted: {
+    porQue: "El estudiante empezó una sesión de Focus sobre su compromiso (ADR-104). Empezar no es cumplir",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  FocusSessionEnded: {
+    porQue: "Una sesión de Focus se cerró con sus tiempos congelados (ADR-104). No es evidencia, progreso ni cumplimiento",
+    nivel: "TRANSICION",
+    enBitacora: true,
+  },
 };
 
 /**

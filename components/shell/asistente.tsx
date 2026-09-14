@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * El asistente de reportes y mejoras — [ADR-101](../../docs/decisions.md#adr-101).
+ * El asistente de reportes y mejoras — [ADR-103](../../docs/decisions.md#adr-103).
  *
  * ⚠️ **Simulado, y lo dice.** El owner lo pidió *"tal cual así"*, con las
  * capturas de otro software delante, y *"por ahora simulá las respuestas"*. Lo
@@ -17,7 +17,7 @@
  *
  * ⚠️ **Botón redondo y controles en píldora, contra `V-04`.** El sistema fuerza
  * 7 px en todo `button` e `input`; acá se usa `.pill` porque el owner lo pidió
- * *"tal cual así"*. Queda dicho en ADR-101 y **no se extiende** a otras pantallas.
+ * *"tal cual así"*. Queda dicho en ADR-103 y **no se extiende** a otras pantallas.
  *
  * ⚠️ **La conversación es estado de la visita.** Cerrar el panel la conserva;
  * recargar la pierde. Guardar reportes que no se mandaron sería guardar ficción.

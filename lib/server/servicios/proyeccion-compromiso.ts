@@ -138,13 +138,15 @@ function ctaDe(estado: EstadoCompromiso): CompromisoProps["ctaPrimaria"] {
   if (estado === "CONFIRMED" || estado === "DUE") {
     return { texto: t("CTA.EMPEZAR"), habilitada: true };
   }
-  if (estado === "STARTED") return { texto: t("CTA.SUBIR_EVIDENCIA"), habilitada: true };
+  // ADR-104 §4: empezado, lo que sigue es volver a Focus. Entregar se hace desde ahí.
+  if (estado === "STARTED") return { texto: t("CTA.CONTINUAR"), habilitada: true };
   return null;
 }
 
 const CHIP: Partial<Record<EstadoCompromiso, { tono: "urgencia" | "exito" | "humano"; texto: string }>> = {
   CONFIRMED: { tono: "humano", texto: "Acordado" },
-  DUE: { tono: "urgencia", texto: "Vencido" },
+  // ADR-104 §2: `DUE` es que **llegó la hora**, no que venció.
+  DUE: { tono: "urgencia", texto: t("COMPROMISO.CHIP.ES_HORA") },
   STARTED: { tono: "humano", texto: "En curso" },
   COMPLETED: { tono: "exito", texto: "Cumplido" },
   MISSED: { tono: "urgencia", texto: "Incumplido" },
@@ -200,6 +202,7 @@ export function proyectarCompromiso(e: EstadoDeCompromiso): CompromisoProps {
 
   return {
     estado,
+    compromisoId: e.compromisoId,
     contexto: `Cursado · ${e.materia}`,
     titulo: e.objetivo,
     fecha: fecha(e.inicioEn, e.zonaDelAcuerdo),

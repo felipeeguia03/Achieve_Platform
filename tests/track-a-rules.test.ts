@@ -158,6 +158,11 @@ describe("Track A — reglas verificables estáticamente", () => {
       backend. Un archivo, no una carpeta.
     */
     "lib/client/tema.ts",
+    /*
+      ADR-101 — si la barra lateral está recogida. La misma clase de preferencia
+      que el tema; sin ella, cada `Shell` que monta al navegar la reabría.
+    */
+    "lib/client/barra-lateral.ts",
   ];
 
   it("cero persistencia: sin localStorage, sessionStorage ni IndexedDB", () => {
@@ -171,11 +176,11 @@ describe("Track A — reglas verificables estáticamente", () => {
     expect(culpables).toEqual([]);
   });
 
-  it("las excepciones son dos módulos con su ADR, no carpetas abiertas", () => {
+  it("las excepciones son tres módulos con su ADR, no carpetas abiertas", () => {
     // Que la lista tenga exactamente estos elementos es parte de la regla: uno
     // más significa que alguien amplió la excepción sin pasar por un ADR.
-    // ADR-088 (el espacio de trabajo) y ADR-097 (el tema).
-    expect(PERSISTENCIA_PERMITIDA).toHaveLength(2);
+    // ADR-088 (el espacio de trabajo), ADR-097 (el tema) y ADR-101 (la barra lateral).
+    expect(PERSISTENCIA_PERMITIDA).toHaveLength(3);
   });
 
   it("el dominio del espacio de trabajo NO persiste: las reglas son puras", () => {

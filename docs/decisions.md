@@ -158,6 +158,10 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-099](#adr-099) | **Modo Clase, segunda vuelta**: grabación de audio con etiquetas, apuntes que se guardan con Enter, material de la clase, unidades y *cómo venís*, y la miga de la clase | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «quiero que apruebes lo que haga falta» · **enmienda ADR-098** §1, §4 y la tabla de lo que queda afuera)* | Grabar en un aula real (ADR-006 + legal, `legal-package.md` §5.1) |
 | [ADR-100](#adr-100) | **El Calendario**: clases del horario semanal, evaluaciones y compromisos en día · semana · mes, con enlace a cada objeto. **No agenda** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con un mockup · `CTA-001` gana el origen `CALENDARIO`)* | Recortar el horario al período real (ADR-060…065, corte 2) |
 | [ADR-100 · Enm. 1](#adr-100-enmienda-1) | **Progreso y Modo Examen salen de la barra lateral**: se abren desde la materia (`CTA-009`, `CTA-019`) | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner)* | Colgar sus migas de la materia |
+| [ADR-101](#adr-101) | **La barra lateral recogida muestra sólo íconos**, lleva el logo de Achieve, abre y cierra con la misma flecha y **no se reabre al navegar** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con el software de las capturas · **revierte la mitad de `A-03`**: el contador sigue siendo número)* | — |
+| [ADR-102](#adr-102) | **Gimnasia cognitiva**: categoría Memoria con Cuadrícula fugaz, Cadena inversa y Recuerdo real; el resultado lo calcula el servidor, el progreso se deduce y **no toca Hoy ni el ADE** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner por escrito · `CTA-024` y `CTA-025` · 4 tablas)* | — |
+| [ADR-103](#adr-103) | **El asistente de reportes y mejoras, simulado**: botón abajo a la derecha, reportar o sugerir, pregunta aclaratoria, tarjeta que cita lo escrito y *Reporte enviado*. **Sin red ni persistencia, sólo con `MODO_PRUEBA=1`** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con capturas de otro software · `SIMULADO`)* | Conectarlo al backend con el CTO; qué se guarda de un reporte toca ADR-006 |
+| [ADR-104](#adr-104) | **Modo Focus**: la sesión de trabajo sobre una acción comprometida; Pomodoro es un modo, el tiempo lo sella el servidor, el anotador es privado y **no es evidencia ni cumplimiento** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «hacé todo lo recomendado» · `CTA-026` y `CTA-027` · **enmienda ADR-088 Enm. 8**)* | Cerrar el compromiso en *Terminé* cuando la entrega acepte un compromiso cerrado |
 
 ---
 
@@ -9934,10 +9938,186 @@ superficie depende sólo del menú"* ya lo garantizaba.
 
 <a id="adr-101"></a>
 
-## ADR-101 — El asistente de reportes y mejoras, simulado
+## ADR-101 — La barra lateral recogida: sólo íconos, el logo y una flecha que no se olvida
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner** con el software de las capturas delante:
+*"no dice el nombre de la pantalla cuando está recogido, además, hay veces que abrís otra pantalla y se
+vuelve a abrir, controlá eso, además quiero esa flecha tanto para cerrar y abrir y que pongas el logo de
+achieve como el de zop, pero es igual tanto en modo día como noche"*.
+
+**Decisión.**
+1. **Recogida, sólo el ícono.** El nombre del ítem sale de la pantalla y queda como `aria-label` y `title`
+   del link: lo lee un lector de pantalla y aparece al pasar el mouse. **Revierte la mitad de `A-03`** que
+   la A2.1 había agregado (la etiqueta chica debajo del ícono). **La otra mitad sigue:** el contador no se
+   degrada a un punto, y su test sigue.
+2. **La misma flecha abre y cierra.** `‹` a la derecha del logo expandida; recogida, el logo arriba y `›`
+   debajo. Reemplaza al ícono de panel.
+3. **El logo de Achieve** —la suricata sobre su círculo negro, `public/achieve-logo.png`— con el nombre
+   al lado expandida y solo recogida. **Es el mismo en día y en noche**: trae su propio fondo.
+4. **Recogerla se recuerda.** Cada ruta de `app/(student)` monta su propio `Shell`, y el `useState` que
+   guardaba la barra nacía expandido en cada navegación. Ahora vive en `lib/client/barra-lateral.ts`, en
+   `localStorage` (`achieve.barra-lateral`), la misma clase de preferencia del navegador que el tema
+   (ADR-097): no es dato del estudiante y no viaja al backend.
+
+**Consecuencias.**
+- `tests/shell.test.tsx` cambia el guard *"colapsada conserva el nombre visible"* por *"recogida no lo
+  dibuja y lo conserva como nombre accesible"*, y suma que un `Shell` que monta de nuevo lee la barra
+  recogida.
+- ⚠️ **Al recargar la página entera** la barra se pinta expandida un instante antes de recogerse: el
+  servidor no conoce la preferencia. Al navegar dentro de la app no pasa.
+
+
+---
+
+<a id="adr-102"></a>
+
+## ADR-102 — Gimnasia cognitiva: la categoría Memoria, con tres juegos que no compiten con el día
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner por escrito**, con alcance cerrado —
+fuente literal en [`gimnasia-cognitiva-source.md`](gimnasia-cognitiva-source.md)—. Las decisiones
+técnicas de abajo las tomó el agente dentro de ese alcance; **el owner puede revertir cualquiera**.
+**Construye sobre:** [ADR-087](#adr-087) (contenido `DRAFT` y vista simulada), [ADR-088](#adr-088)
+Enm. 7 y 8 (la barra no se llena sola), [ADR-098](#adr-098) (nodo sin wireframe, idempotencia por
+clave), [ADR-041](#adr-041) (eventos no facturables), [ADR-060](#adr-060) (el temario es de la materia).
+**No levanta:** [ADR-006](#adr-006), [ADR-080](#adr-080) (ninguna IA), `C01-021`.
+**Plan, API y QA:** [`gimnasia-cognitiva.md`](gimnasia-cognitiva.md).
+
+### Contexto
+
+El owner pidió **Gimnasia cognitiva**: práctica breve de memoria que *"no debe competir"* con el
+núcleo —*"el estudiante no juega para escapar del estudio"*— con una sola categoría, **Memoria**, y
+tres juegos: **Cuadrícula fugaz**, **Cadena inversa** y **Recuerdo real**.
+
+### Decisión
+
+**1. Un nodo nuevo, `GIMNASIA`, en `/gimnasia`, con `wireframe: null`.** El patrón de `FORMACION`,
+`CLASE` y `CALENDARIO`: tiene ruta y **no es una superficie** (`superficieIds` sigue en nueve). Entra
+a la barra lateral **al final, después de Formación**, como *Gimnasia* y sin contador: nada vence. Es
+raíz de su miga.
+
+**2. La pestaña *Gimnasia · Memoria* es la de la rutina abierta, no la de la sección.** Enmienda 7 de
+ADR-088 sigue valiendo: entrar a Gimnasia no guarda nada y la sección no lleva controles. La sesión
+abierta vive en `?sesion=`, `objetoEnPantalla` la reconoce (tipo `gimnasia`) y **minimizarla** la deja
+en la barra como *Gimnasia · Memoria* —o *Gimnasia · Cuadrícula fugaz* si es un juego suelto—. La
+miga es *Gimnasia › Memoria*. Es la única lectura del §4 compatible con la Enmienda 7.
+
+**3. Cuatro tablas, y el progreso se deduce.**
+
+| Tabla | Qué es |
+|---|---|
+| `gym_session` | La rutina (`ROUTINE`) o un juego suelto (`SINGLE_GAME`). `IN_PROGRESS → COMPLETED \| CANCELLED`. **Una abierta por estudiante** (índice único). Los ejercicios previstos se fijan al empezar |
+| `gym_attempt` | Un intento de un juego. `STARTED → COMPLETED \| ABANDONED`. Semilla, largo inicial o plan de preguntas **puestos por el servidor**; resultado en columnas tipadas por juego, con `CHECK` que impiden mezclar magnitudes |
+| `recall_item` | Una pregunta de Recuerdo real, **de la materia** (`course_id`) o general (`NULL`). `DRAFT` por defecto, procedencia completa, `verification_status` intacto (`I9`) |
+| `recall_review` | Un repaso confirmado. **Append-only** (`REVOKE UPDATE, DELETE` también a `service_role`). El próximo repaso es el del más reciente |
+
+⚠️ **No hay tabla de progreso, ni `cognitive_score`.** Mejor puntuación, nivel actual, mejor cadena,
+días con rutina y próximos repasos **se leen de los hechos**: una tabla de progreso sería una segunda
+fuente que tarde o temprano dice otra cosa. ⚠️ **Sin `CREATED`**: crear la sesión es empezarla.
+
+**4. El resultado lo calcula el servidor.** El cliente manda **respuestas**, nunca puntuaciones. Las
+reglas son funciones puras en `lib/domain/gimnasia/` que usan **la misma semilla** en los dos lados:
+el navegador las usa para saber qué ronda sigue; el servidor rehace la partida entera y guarda lo que
+calcula. Una partida sin terminar según las reglas no se confirma (`409`). En Recuerdo real, sólo se
+acepta la respuesta de **la pregunta que toca** en la cola, y la respuesta de referencia sale **después**
+de confirmar.
+
+**5. Las reglas son configuración versionada** (`CF-1`, `CI-1`, `RR-1`), y cada intento y cada repaso
+guarda con cuál se corrigió.
+
+| Juego | Reglas |
+|---|---|
+| **Cuadrícula fugaz** | 3×3 y 3 casillas al empezar; acierto +1 casilla, error mantiene; 2 errores o 10 rondas terminan; 4×4 desde 7 casillas, tope 16; **sin casillas repetidas** en una secuencia; `largo × 100` por ronda correcta + `25` por cada acierto seguido previo. La velocidad no entra |
+| **Cadena inversa** | Sólo dígitos, **sin dos iguales seguidos**; 5 pruebas; 2 aciertos en un largo pasan al siguiente (tope 12); 2 errores seguidos bajan uno **en la sesión**. Nivel = largo consolidado − 2 (3 dígitos = Nivel 1). **El nivel persistido no baja nunca** |
+| **Recuerdo real** | 5 preguntas; *No la recordé* y *Parcialmente* → 1 día, *La recordé* → 3, *Me resultó fácil* → 7; un *No la recordé* vuelve **una vez** al final de la sesión si no pasa de 7 presentaciones. Orden: vencidas · unidad activa · evaluación en ≤ 14 días · más fallos recientes · nuevas. Lo programado para después no entra |
+
+**6. La adaptación es determinística y sale de la historia real** (§11). Cuadrícula: la mejor
+secuencia de los **últimos tres** intentos menos dos, nunca menos de 3. Cadena: el largo del nivel
+actual. Sin historia, los valores por defecto. **No se crea otro Personal Engine**: el que existe
+([ADR-074](#adr-074)) calibra minutos de trabajo y no tiene nada que decir de un juego.
+
+**7. Una cerrada la corrige el servidor; una abierta, el estudiante.** Corta: igualdad normalizada
+(minúsculas, sin tildes, espacios de a uno, sin puntuación final) contra `accepted_answers`. Opción
+múltiple y verdadero/falso: igualdad exacta. Una cerrada correcta se programa como *La recordé*; una
+incorrecta, como *No la recordé*. Una abierta: escribe → confirma → ve la referencia (**no se guarda
+nada todavía**) → clasifica en cuatro → se guarda. **Su texto no se persiste.**
+
+**8. Contenido: sólo lo validado, y la demo rotulada.** Hoy no existe ninguna pregunta de cátedra,
+curada por Achieve ni creada por el estudiante. Sin `MODO_PRUEBA=1` sólo se muestra lo `PUBLISHED`
+—hoy nada—, y Recuerdo real queda **en preparación, sin botón**. Con `MODO_PRUEBA=1` se ven además
+las preguntas **sintéticas** (`code` `SYN-…`, `source_type = 'inference'`, `DRAFT`), rotuladas en
+pantalla, que carga `scripts/sembrar-gimnasia.mjs`. El mismo patrón que ADR-087 Enm. 3.
+
+**9. Dos CTAs nuevas, con su escritura.** `CTA-021` sigue reservada.
+
+| CTA | Origen | Acción | Aparece si |
+|---|---|---|---|
+| `CTA-024` | `GIMNASIA` | Empezar la rutina | No hay otra sesión abierta |
+| `CTA-025` | `GIMNASIA` | Jugar un ejercicio suelto (*Jugar · Volver a jugar · Empezar · Continuar · Practicar* son copy) | No hay otra sesión abierta y, en Recuerdo real, hay preguntas pendientes |
+
+⚠️ **No existe *Preparar*.** Sin nada que cree preguntas, una CTA así sería un contrato incumplido
+(ADR-087 Enm. 2). La tarjeta dice *Prepará tu primer set* y **por qué** no hay repasos. *Volver a mi
+próxima acción* es **navegación** a `/hoy`, donde el ADE dice la acción: Gimnasia no la inventa.
+
+**10. Cuatro eventos, `TRANSICION`, no facturables y fuera de la Bitácora:** `GymSessionStarted`,
+`GymSessionCompleted`, `GymSessionCancelled` y `GymAttemptCompleted` (con `juego`, `version` y
+`marcaPersonal`; sin respuestas). **Un repaso no es un evento**: *"evento nuevo para cada interacción:
+no está aprobado"*.
+
+**11. «Nivel» es del juego.** [ADR-075](#adr-075) §C1 prohíbe `nivel` y `rendimiento` en el rótulo de
+la barra de **actividad académica**, y un guard lo aplicaba a todo el copy. Acá *nivel* es la
+dificultad de un ejercicio y siempre va con su medida (*Nivel 3 · 5 dígitos*), y *rendimiento* está en
+el aviso que dice que la marca **no** mide a la persona. **La excepción es por clave** (`GIMNASIA.*`),
+enumerada y respaldada por la fuente; la prohibición sigue entera para lo académico. *«Adaptada a tu
+nivel»* **no** se usó: nombraba el nivel de la persona.
+
+### Lo que NO hace
+
+- **No toca Hoy, el ADE, `action`, `commitment`, `evidence` ni `topic_progress`.** No es una acción,
+  no cuenta como tiempo de estudio, no avanza unidades ni completa compromisos.
+- **No aparece en Hoy.** Hoy es un tablero de tres cuerpos con guards (ADR-093/096) y no tiene zona
+  secundaria donde entre sin tocar su contrato (§13 del pedido: *"sólo si existe una integración
+  natural"*).
+- **No entra a la Bitácora.** `hechos_de_cursada` se ata a una `Action`.
+- **Unidad activa: siempre `false`.** No hay una lectura única de *«la unidad activa de una cursada»*
+  que no sea la del ADE o la de la última clase dada; usar cualquiera sería decidir qué es «activa».
+- **No amplía la sesión de repasos a pedido** (§9, *"ampliar sólo si… el estudiante lo solicita"*):
+  queda para después.
+- **No diagnostica ni compara.** Sin rankings, sin percentiles, sin «edad cerebral».
+
+### Lo que queda abierto
+
+| Qué | Quién |
+|---|---|
+| **Quién escribe preguntas reales** (cátedra, Achieve, el estudiante) y quién las publica | Owner |
+| **Revisar vocabulario y política de repaso** —los cuatro rótulos, los intervalos 1·1·3·7, el aviso responsable— como se hizo con Formación | Psicopedagoga |
+| **Si una rutina completada entra a la Bitácora** o a Hoy como apoyo secundario | Owner |
+| **La unidad activa** como criterio de selección | Owner + ADE |
+
+### Consecuencias
+
+- **Catorce rutas bajo `app/(student)`, nueve superficies.** `tests/shell.test.tsx` lo verifica.
+- **El registro pasa a 24 CTAs.**
+- **Cuatro tablas nuevas entran a `limpiar_mundo`** en el mismo commit que la migración.
+- **Se toca `components/shell/navegacion-lateral.tsx` y `barra-de-objetos.tsx`** sólo para el ícono.
+  Ninguna pantalla existente de `components/screens/` se modifica.
+
+### Cómo se verifica
+
+`tests/gimnasia-dominio.test.ts` (semilla, puntuación, errores, 3×3→4×4, inversión, niveles, repaso,
+selección, cola, fechas), `tests/gimnasia-servicio.test.ts` (idempotencia, resultado en servidor, lo
+ajeno no existe, cancelar, retomar, sin contenido, eventos, la referencia no sale antes),
+`tests/gimnasia-pantalla.test.tsx` (tres tarjetas, ninguna categoría futura, una CTA principal, las
+partidas completas por teclado, abierta con autoevaluación, resumen y regreso a Hoy) y
+`db-aislamiento.sh` (una sesión abierta, lo de otro no entra, el repaso no se reescribe).
+
+---
+
+<a id="adr-103"></a>
+
+## ADR-103 — El asistente de reportes y mejoras, simulado
 
 **Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner**, con capturas de otro software delante ·
-`SIMULADO — SÓLO MODO_PRUEBA`
+`SIMULADO — SÓLO MODO_PRUEBA` · *nació como ADR-101 en `feat/paralelo`; se renumeró al integrarse, porque ese número ya era el de la barra lateral*
 **No levanta:** [ADR-006](#adr-006). **No es:** una superficie (siguen nueve), una CTA del registro, un
 `Operador` ni un canal de acompañamiento.
 
@@ -9997,3 +10177,227 @@ la tarjeta; el resumen cita; confirmar da *Reporte enviado* y vuelve a ofrecer l
 rearma la tarjeta; una entrada fuera de fase no hace nada; escribir antes de elegir pregunta qué es; el
 guion no promete contacto; en pantalla: abrir muestra *Simulado*, la conversación entera llega a
 *Reporte enviado* sin dejar la tarjeta confirmable, y *Nueva conversación* vuelve al saludo.
+
+---
+
+<a id="adr-104"></a>
+
+## ADR-104 — Modo Focus: la sesión de trabajo sobre una acción comprometida, con Pomodoro como modo
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **decidido por el owner**: *"hacé todo lo recomendado y empezá, no
+dejes nada pending"*
+**Enmienda:** [ADR-088 · Enmienda 8](#adr-088-enmienda-8) (minimizar la pantalla de Focus pausa primero) ·
+`product.md` §5.2 (quién escribe `STARTED`).
+**Construye sobre:** [ADR-098](#adr-098) (el patrón de sesión del estudiante), [ADR-041](#adr-041),
+[ADR-026](#adr-026), [ADR-088](#adr-088), [ADR-097](#adr-097).
+**No levanta:** [ADR-006](#adr-006), `C01-010`, `C01-030`.
+**Informe y plan:** [`modo-focus.md`](modo-focus.md).
+
+### Contexto
+
+El CFO propuso un Pomodoro integrado. El owner lo reencuadró como una **Sesión de Focus** —*Compromiso →
+Acción → Sesión de Focus → Bitácora → Evidencia opcional → Progreso*— con dieciséis decisiones
+recomendadas. La auditoría de solo lectura ([`modo-focus.md`](modo-focus.md) §A) encontró que encaja en
+un hueco que el grafo ya tenía —**`EJECUCION` es el único nodo del loop sin pantalla**, y `UX05` no se
+alcanzaba por clic— y **seis choques** con decisiones aceptadas. Se le presentaron con una recomendación
+cada uno y contestó que se hiciera todo lo recomendado sin dejar nada abierto.
+
+Dos hechos del código que la propuesta no conocía y que cambian una decisión:
+
+- **Nadie escribía `STARTED`.** *Empezar* navegaba a `/accion`; el compromiso recorría
+  `CONFIRMED → STARTED → COMPLETED` recién al validar (`completarAccion`, B6.8).
+- **La entrega de evidencia exige un compromiso vivo** (`CONFIRMED`, `DUE` o `STARTED`,
+  `repositorios/evidencia.ts`). Cerrar el compromiso al tocar *Terminé* dejaría al estudiante sin poder
+  entregar.
+
+### Decisión
+
+**1. La entidad es la sesión, no el reloj: `focus_session`, con sus tramos en `focus_segment`.** Pomodoro
+es uno de sus dos modos. Una sesión nace **siempre** atada a un compromiso real del estudiante —y por él a
+su `Action` y su cursada—: no hay Focus vacío. Copia el horario y los minutos acordados al empezar, como
+Modo Clase copia el bloque.
+
+**2. La sesión nunca empieza sola.** Que llegue la hora (`DUE`, que declara el reloj del lifecycle) sólo
+cambia lo que se lee: el chip de `UX04` dice *«Es hora de empezar»* —decía *«Vencido»*, que era falso—.
+**Se puede empezar antes de la hora** desde `UX04`, que ya lo ofrecía en `CONFIRMED`: bloquearlo
+castigaría la anticipación.
+
+**3. Empezar es una operación del servidor** (`POST /api/focus`), y hace tres cosas en este orden: lleva
+el compromiso a `STARTED` (`CommitmentStarted`) y la `Action` de `COMMITTED` a `IN_PROGRESS`
+(`ActionInProgress`) **por la máquina de estados**, y crea la sesión con un tramo de foco libre abierto
+(`FocusSessionStarted`). Una segunda sesión sobre un compromiso ya `STARTED` no reemite nada. Así
+`CommitmentStarted` deja de ser un evento que sólo emitía la validación. Si la operación se corta entre
+el compromiso y la sesión, repetirla crea la sesión: `STARTED` es donde ya tenía que estar.
+
+**4. Desde dónde se empieza: `CTA-026`**, con origen `UX01`, `UX02` y `UX04` y destino `FOCUS`. En Hoy y
+en Materia es la CTA principal cuando el nivel es `COMMITMENT_STARTABLE`, `RESCATE_STARTABLE` o
+`IN_PROGRESS` (*Empezar*, *Empezar rescate*, *Continuar*); en `UX04`, *Empezar* en `CONFIRMED`/`DUE` y
+*Continuar* en `STARTED`. Sin compromiso explícito, el servidor toma **el compromiso vivo del estudiante** —acotado a la
+cursada cuando Materia la manda—: primero el `STARTED`, después el `DUE`, después el `CONFIRMED`, y a
+igualdad el más reciente. ⚠️ No copia el desempate de `estado_del_dia()`: la cursada «con más
+acciones vivas» empata cuando el alta escribe el mismo `created_at` en todas, y dos desempates
+indeterministas eligieron materias distintas en la prueba en el navegador. La ficha de la barra devuelve la
+sesión abierta.
+
+**5. `FOCUS` es un nodo sin wireframe, en `/focus`**, como `CLASE` y `GIMNASIA`: `superficieIds` sigue
+devolviendo nueve y **no existe `UX10`**. Es la pantalla con la que se vive `EJECUCION`; el nodo del spec
+se conserva tal cual y sigue siendo el único sin retorno. `/focus` muestra la sesión abierta, y
+`/focus?sesion=<id>` una terminada, de solo lectura.
+
+**6. Dos modos.**
+
+| Modo | Regla |
+|---|---|
+| **Libre** — el de siempre | Arranca en `00:00`, cuenta hacia arriba, sin descanso automático. Puede pasar a Pomodoro |
+| **Pomodoro** — opcional | Tres presets y *Personalizado*. El descanso largo va **después de cada cuarto bloque completo** |
+
+| Preset | Foco | Descanso corto | Descanso largo |
+|---|---:|---:|---:|
+| Clásico | 25 min | 5 min | 15 min |
+| Intermedio | 40 min | 8 min | 20 min |
+| Profundo | 50 min | 10 min | 25 min |
+
+*Personalizado* acepta foco de 5 a 120 min, descanso corto de 1 a 30, largo de 5 a 60 y de 2 a 8 bloques
+antes del largo. ⚠️ **Son límites técnicos, no recomendaciones**: la copy no los presenta como ciencia, y
+ningún texto afirma que 25 minutos sea mejor que otra duración.
+
+**Pasar de libre a Pomodoro no reescribe nada:** cierra el tramo libre con sus minutos, y abre el bloque 1.
+La sesión conserva los dos. Volver de Pomodoro a libre no se ofrece.
+
+**7. Foco y descanso.** Terminado un bloque, **el descanso empieza solo** (fundido de dos segundos, alarma
+suave, pantalla clara, audio apagado). Terminado el descanso, **el foco espera**: *«Descanso terminado ·
+¿Listo para volver?»* y *Continuar estudiando*. El reloj de foco empieza con ese clic. El inicio
+automático del siguiente bloque **no existe** en este corte. *Volver antes* corta el descanso y abre el
+bloque siguiente.
+
+**8. Qué tiempo se registra.** Nunca un `timeElapsed` único:
+
+| Dato | Qué es |
+|---|---|
+| **Tiempo de Focus** | La suma de los tramos de foco. **Es el dato principal**, y se dice *«tiempo registrado en Focus»*, nunca *«tiempo efectivo de estudio»*: el reloj estuvo corriendo, no se sabe si se estudió cada segundo |
+| Descanso | La suma de los tramos de descanso |
+| Duración total | Del inicio al cierre |
+| Pausado | Duración total − foco − descanso |
+| Pausas | Cuántas veces se pausó |
+| Bloques completos / parciales | Bloques Pomodoro que llegaron a su fin / que se cerraron antes |
+
+Se calculan en `lib/domain/sesion-de-focus.ts` y **se congelan en la sesión al cerrarla**: la Bitácora
+los lee, no los recalcula. *Tiempo de ayuda* no existe: no hay SOS (§17).
+
+**9. El tiempo lo sella el servidor.** Cada transición la escribe el servidor con su reloj; el cliente sólo
+dibuja la cuenta a partir de esos instantes. El fin de un bloque es un **instante planeado** guardado al
+abrirlo, no un contador. Mientras corre el foco, la pantalla manda un latido cada 30 segundos.
+
+**10. Pausa y minimizar.** *Pausar* congela, corta el audio al instante y pasa a la pantalla clara con
+*Continuar*, *Minimizar*, *Salir y guardar* y *Terminé · Subir evidencia*.
+
+**Enmienda a ADR-088 · Enmienda 8:** la pantalla de Focus **lleva los controles de ventana** —es un objeto,
+y su ficha dice *Focus · Análisis III*—, pero **durante la concentración la pantalla ocupa todo y no los
+muestra**. Salir de la concentración por cualquier camino —`Escape`, navegar, minimizar la ventana que la
+contiene— **pausa primero**. Es la única pantalla de objeto donde un gesto de ventana tiene efecto de
+dominio, y es a propósito: **la ficha de la barra siempre guarda una sesión pausada**, y al desplegarla hay
+que tocar *Continuar*.
+
+**11. Una sola sesión abierta por estudiante**, garantizada por índice único parcial. Empezar otra
+contesta `409` con la abierta, y la pantalla ofrece *Volver a esa sesión*, *Terminarla y guardar* o
+*Cancelar*. **El paso del tiempo no cierra una sesión**, igual que no cierra una clase.
+
+**12. *Para después* —el anotador de distracciones— es privado.** Vive en la fila de la sesión, se guarda
+solo contra el servidor (con una demora de segundo y medio) y sobrevive a pausas, minimizar y recargas.
+⛔ **No va a `localStorage`** ([ADR-088](#adr-088) §4 dejó un solo módulo con permiso), **no va a
+`product_event`, ni a `hechos_de_cursada`, ni a la Bitácora**, no se le muestra a un operador, a la
+institución ni a nadie: se lee sólo en la pantalla de la sesión, con el JWT de su dueño. Puede contener
+cualquier cosa de la vida del estudiante.
+
+**13. *¿Qué avanzaste?* es otra cosa, y no es `Reflection`.** Texto opcional al cerrar, académico, que sí
+se muestra en la Bitácora. **No satisface ni reemplaza** el requisito de reflexión de [ADR-026](#adr-026):
+la reflexión sigue siendo la del flujo de evidencia. Vocabulario: **«avance»**, nunca «nota» (sinónimo
+prohibido de `Reflection` y, en la facultad, la calificación).
+
+**14. *Salir y guardar* —`CTA-027`—** cierra el tramo abierto, congela los números, guarda el avance y deja
+la sesión `ENDED`. La `Action` sigue `IN_PROGRESS` y el compromiso `STARTED`: salir no es terminar.
+
+**15. *Terminé · Subir evidencia* es `CTA-006`, que gana el origen `FOCUS`.** Cierra la sesión igual que
+*Salir y guardar*, lleva la `Action` a `EVIDENCE_PENDING` (`ActionEvidencePending`) y navega a `UX05`.
+Existe con la sesión en cualquier fase y también **sin sesión abierta**, para quien trabajó sin reloj.
+
+⚠️ **Desvío declarado del spec §8.4: el compromiso NO pasa a `COMPLETED` acá.** La entrega exige un
+compromiso vivo y el cierre lo hace hoy la validación (B6.8, `completarAccion`). Cerrarlo en *Terminé*
+rompería la entrega. El día que la entrega acepte un compromiso cerrado, esto se mueve.
+
+La evidencia **no se ata a la sesión con una columna nueva**: comparten `action_id`, que ya dice cuál
+trabajo es de cuál entrega. Una FK sin escritor ni lector sería la columna antes que su uso.
+
+**16. Recuperación.** Si el foco estaba corriendo y el último latido tiene más de **2 minutos**, la
+proyección dice `RECUPERACION` —**es derivada, no se persiste**— y la pantalla muestra *«Encontramos una
+sesión sin cerrar · iniciada a las 18:07 · último registro 18:42»* con tres salidas:
+
+| Salida | Qué hace |
+|---|---|
+| *Seguí estudiando · Reanudar* | Cierra el tramo en el último latido y abre uno nuevo ahora |
+| *Terminé cuando se cerró* | Cierra el tramo en el último latido y guarda la sesión |
+| *Revisar sesión* | Cierra el tramo en el último latido y la deja pausada |
+
+⚠️ **Nunca se cuenta más allá del último latido, ni más allá del fin planeado de un bloque.** Un bloque
+Pomodoro que llegó a su fin **con la pantalla viva** se completa en su instante planeado aunque el pedido
+llegue tarde; uno cuyo fin cae después del último latido, no. Nada se borra y nada se inventa.
+
+**17. Lo que queda afuera, decidido y no pendiente.** *SOS*/chat —no existe en el repositorio—;
+Picture-in-Picture; PWA; notificaciones del sistema; inicio automático del siguiente bloque;
+recomendación de duración; estadísticas comparativas; predicciones; intervenciones automáticas; métricas
+para universidades; sincronización entre dispositivos más allá de que la sesión vive en el servidor; y
+un catálogo de sonidos.
+
+**18. Personal Engine y Academic Engine no leen la sesión.** Lo único que se recuerda es **preferencia**:
+último modo, preset, configuración personalizada, sonido y volumen, en `focus_preference`. Ningún motor
+infiere dominio, duración ideal ni necesidad de intervención de una sesión, y la precedencia de `UX01`
+no cambia.
+
+**19. Audio.** Dos sonidos —*Ruido marrón* y *Ruido rosa*— **generados en el navegador con Web Audio**: sin
+archivos, sin licencias y sin streaming. Apagado la primera vez; se prueba antes de empezar; volumen
+recordado; fundido de entrada de dos segundos y de salida al terminar el bloque; se corta al pausar; no
+suena en el descanso; silenciar no pausa. La alarma de fin de bloque y de fin de descanso es otra, de dos
+tonos, y **se programa en el reloj de audio**, que el navegador no frena en una pestaña de fondo. La copy
+**no promete** que el sonido mejore nada.
+
+**20. Pantalla.** La concentración ocupa toda la ventana **en oscuro**, con los tokens del modo noche: se
+suma a `app/globals.css` el selector `[data-foco="oscuro"]` al bloque de ADR-097 —**sin colores nuevos**, y
+la tabla de contrastes sigue siendo la misma—. Muestra la materia chica, la acción, el reloj, *Cronómetro
+libre* o *Foco 2 de 4*, *Pausar*, *Terminé*, el anotador, el audio y nada más: sin navegación, otras
+materias, estadísticas ni avisos. El descanso, la pausa y el cierre son claros y viven dentro del shell.
+Sin minijuegos en el descanso.
+
+**21. Bitácora y eventos.** Dos eventos, `TRANSICION` y **no facturables** ([ADR-041](#adr-041)):
+
+| Evento | En la Bitácora | Copy |
+|---|---|---|
+| `FocusSessionStarted` | No | — |
+| `FocusSessionEnded` | **Sí** | *Sesión de Focus · 52 min de Focus* · *18:07–19:19 · 2 bloques completos · 1 parcial · descanso 10 min · pausado 10 min* · *Avance: «…»* |
+
+`hechos_de_cursada()` ata `focus_session` a su `Action` y devuelve los números congelados y el avance
+**—nunca el anotador—**. La Bitácora registra un hecho: **una sesión registrada durante tanto tiempo**. No
+dice que se entendió, que se terminó, que se cumplió ni que se estuvo concentrado.
+
+### Qué no cambia
+
+- **Una sesión no es `Evidence`, ni progreso, ni cumplimiento**, y el tiempo no completa un `Commitment`
+  (AGENTS.md §2.3). Ninguna ruta de Focus escribe `evidence`, `progress_entry` ni `topic_progress`.
+- **El reloj del lifecycle no toca `STARTED`** (sólo mueve `CONFIRMED` y `DUE`): empezar protege el
+  compromiso de un `MISSED` falso, y eso es correcto.
+- **Datos sintéticos.** El anotador y el avance son texto libre de una persona: guardarlos con datos
+  reales y cuánto se retienen espera a ADR-006 y la Fase B7.
+
+### Cómo se verifica
+
+`tests/sesion-de-focus.test.ts` (dominio: presets y límites, cuentas, bloques, descansos, avance del
+reloj, recuperación), `tests/servicio-focus.test.ts` (empezar coordina compromiso y acción, una sola
+abierta, comandos, cierre, *Terminé*), `tests/modo-focus-api.test.ts`, `tests/modo-focus-schema.test.ts`
+(la migración y sus guards: el anotador no llega a `hechos_de_cursada`), los guards de navegación con
+`CTA-026` y `CTA-027`, y `db-aislamiento.sh` contra Postgres. En el navegador, con
+`estudiante.ucc@achieve.local`: empezar desde Hoy, pausar, minimizar a la barra, volver, pasar a
+Pomodoro, cerrar con avance y verlo en la Bitácora.
+
+✅ **Verificado el 13 de septiembre:** `lint` · `typecheck` · `build` · 2444 tests · `db:verify` 512 ✓,
+0 ✗. En el navegador, los dos recorridos de [`modo-focus.md`](modo-focus.md) §E —incluida la
+recuperación, que mostró `02:00` sobre un tramo de 12 minutos con el último latido a los 2—, a 1440 y
+a 360 px, sin errores de consola.

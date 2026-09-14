@@ -44,6 +44,9 @@ export const FX_DAY_BASE: Escenario = {
     // terminarla. **No es parte del loop del día**: es el mismo estudiante
     // cursando, y el Hero no se entera.
     CLASE: contexto({ claseActiva: true }),
+    // ADR-102. Gimnasia sin sesión abierta: se puede empezar la rutina o un
+    // juego. **No es parte del loop del día** y el Hero no se entera.
+    GIMNASIA: contexto({ rutinaIniciable: true, juegoIniciable: true }),
     // La Action está recomendada y todavía no aceptada: se puede aceptar.
     UX03: contexto({ recomendacionPrimariaVigente: true, actionStatus: "RECOMMENDED" }),
     // Aceptada, con el draft del Commitment abierto. Aceptar NO creó el
@@ -434,17 +437,29 @@ export const FX_LOCAL_COMMITMENT_CONFIRMED: Escenario = {
       // Lo declara el owner. Abrir la pantalla o un timer local no inicia nada.
       commitmentIniciable: true,
       progresoDisponible: true,
+      // ADR-104: con el compromiso iniciable, *Empezar* lleva a Focus.
+      focusIniciable: true,
     }),
     UX04: contexto({
       actionStatus: "COMMITTED",
       commitmentState: "CONFIRMED",
       commitmentIniciable: true,
+      focusIniciable: true,
     }),
     // Cierre conductual permitido. Finalizar NO crea ni envía Evidence.
     EJECUCION: contexto({
       actionStatus: "IN_PROGRESS",
       commitmentState: "STARTED",
       cierreConductualPermitido: true,
+    }),
+    // ADR-104: la pantalla con la que se vive la ejecución. Con la sesión
+    // abierta se puede salir y guardar, terminar y ver la Bitácora.
+    FOCUS: contexto({
+      actionStatus: "IN_PROGRESS",
+      commitmentState: "STARTED",
+      cierreConductualPermitido: true,
+      focusAbierta: true,
+      progresoDisponible: true,
     }),
   },
 };

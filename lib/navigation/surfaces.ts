@@ -28,6 +28,10 @@ export type NodoId =
   | "CLASE"
   /** El calendario del estudiante. **No es una superficie**: ver `nodos.CALENDARIO`. */
   | "CALENDARIO"
+  /** Gimnasia cognitiva. **No es una superficie**: ver `nodos.GIMNASIA`. */
+  | "GIMNASIA"
+  /** La sesión de Focus. **No es una superficie**: ver `nodos.FOCUS`. */
+  | "FOCUS"
   | "UX03"
   | "UX04"
   | "UX04_RENEGOCIACION"
@@ -143,6 +147,43 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     nombre: "Calendario",
     pregunta: "¿Qué tengo y cuándo?",
     ruta: "/calendario",
+    pendienteDeEtapa: null,
+  },
+
+  /**
+   * **Gimnasia cognitiva** — [ADR-102](../../docs/decisions.md#adr-102).
+   *
+   * ⚠️ **`wireframe: null`: NO es una décima superficie.** El mismo patrón que
+   * `FORMACION`, `CLASE` y `CALENDARIO`. `superficieIds` sigue devolviendo nueve.
+   *
+   * ⚠️ **Y no compite con el día.** Es práctica breve y opcional: no es una
+   * `Action`, no entra al ADE y no cambia la precedencia de `UX01`.
+   */
+  GIMNASIA: {
+    id: "GIMNASIA",
+    wireframe: null,
+    nombre: "Gimnasia cognitiva",
+    pregunta: "¿Qué practico hoy para estudiar mejor?",
+    ruta: "/gimnasia",
+    pendienteDeEtapa: null,
+  },
+
+  /**
+   * **La sesión de Focus** — [ADR-104](../../docs/decisions.md#adr-104) §5.
+   *
+   * Es la pantalla con la que se vive `EJECUCION`, y **no lo reemplaza**: el nodo
+   * del spec sigue sin ruta y sigue siendo el único sin retorno. Sin wireframe,
+   * como `CLASE` y `GIMNASIA`: `superficieIds` sigue devolviendo nueve.
+   *
+   * ⚠️ **Una sesión no es evidencia ni cumplimiento.** Registra tiempo sobre una
+   * acción comprometida; entregar sigue siendo `UX05`.
+   */
+  FOCUS: {
+    id: "FOCUS",
+    wireframe: null,
+    nombre: "Focus",
+    pregunta: "¿En qué estoy trabajando ahora?",
+    ruta: "/focus",
     pendienteDeEtapa: null,
   },
 

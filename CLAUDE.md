@@ -76,6 +76,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
 | Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — veinte filas, **ocho abiertas**, por lo que destraban |
 | **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) y [ADR-099](docs/decisions.md#adr-099) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
+| **Modo Focus** | [ADR-104](docs/decisions.md#adr-104) · informe, API y QA en [`modo-focus.md`](docs/modo-focus.md) |
 | Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
 | Qué decidió el owner el 5 de septiembre | [`docs/respuesta-po-agenda-decisiones-source.md`](docs/respuesta-po-agenda-decisiones-source.md) — **fuente literal**, manda sobre cualquier paráfrasis |
@@ -96,10 +97,40 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
+🆕 **Hay Modo Focus** — [ADR-104](docs/decisions.md#adr-104), 13 de septiembre. `/focus`: la sesión de
+trabajo sobre una acción comprometida. Cronómetro libre por defecto, Pomodoro opcional (25/5/15 ·
+40/8/20 · 50/10/25 · personalizado), pausa, descanso, recuperación, *Para después* y cierre con
+*¿Qué avanzaste?*. Hoy, Materia y Compromiso llevan ahí con `CTA-026`. Informe en
+[`modo-focus.md`](docs/modo-focus.md).
+
+⚠️ **Antes de tocar Focus:** *Empezar* es lo que escribe `STARTED` (compromiso) e `IN_PROGRESS`
+(acción), **en el servidor y por sus máquinas**. Los instantes los sella el servidor: **ningún tiempo
+viaja desde el cliente**. La fase no se persiste (sale del tramo abierto) y la recuperación tampoco
+(sale del último latido: **nunca se cuenta más allá**). *Terminé* lleva la acción a `EVIDENCE_PENDING`
+y **no cierra el compromiso** — la entrega exige uno vivo. ⛔ **El anotador (`scratchpad`) es
+privado**: no va a `product_event`, `hechos_de_cursada()` ni la Bitácora, y hay guards en las tres
+capas. *«Avance»*, nunca *«nota»*; *«tiempo registrado en Focus»*, nunca *«tiempo efectivo»*.
+
+⚠️ **Los números cambiaron otra vez:** **26 CTAs** (`CTA-026`, `CTA-027`; `CTA-006` y `CTA-009` ganan
+el origen `FOCUS`) y **quince rutas** bajo `app/(student)`, **nueve superficies**: `FOCUS` es nodo sin
+wireframe, y `EJECUCION` sigue sin ruta.
+
+🆕 **Hay Gimnasia cognitiva** — [ADR-102](docs/decisions.md#adr-102), 13 de septiembre. `/gimnasia`, al
+final de la barra lateral: categoría **Memoria** con *Cuadrícula fugaz*, *Cadena inversa* y *Recuerdo
+real*, y una rutina de 8 minutos que al terminar vuelve a Hoy. Plan en
+[`gimnasia-cognitiva.md`](docs/gimnasia-cognitiva.md).
+
+⚠️ **Antes de tocar Gimnasia:** el resultado **lo calcula el servidor** rehaciendo la partida con su semilla
+—el cliente manda respuestas, nunca puntuaciones—; **no hay tabla de progreso** (se deduce de los
+intentos y los repasos); `recall_review` es **append-only**; y **no toca Hoy, el ADE, `action` ni la
+Bitácora**. Sin preguntas `PUBLISHED`, Recuerdo real queda en preparación **y sin botón**: las sintéticas
+(`SYN-GIM-…`) se ven sólo con `MODO_PRUEBA=1`. *Nivel* es del juego y va siempre con sus dígitos; la
+excepción al guard de ADR-075 §C1 es **por clave** (`GIMNASIA.*`).
+
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
-🧪 **Hay un asistente de reportes y mejoras, SIMULADO** — [ADR-101](docs/decisions.md#adr-101), 13 de
+🧪 **Hay un asistente de reportes y mejoras, SIMULADO** — [ADR-103](docs/decisions.md#adr-103), 13 de
 septiembre. Botón abajo a la derecha, sólo con `MODO_PRUEBA=1`. **Contesta con un guion y no envía
 nada**: no le agregues red ni persistencia, y el resumen **cita** lo que escribió el estudiante, no lo
 parafrasea. El guion (`lib/client/simulacion/asistente.ts`) **no es el contrato del backend**: se
@@ -124,7 +155,8 @@ ni un evento: son filas. Abrir una clase **no** produce `Evidence`, progreso ni 
 
 ⚠️ **Los números cambiaron:** **22 CTAs** (`CTA-022` y `CTA-023`; `CTA-021` sigue reservada para
 Formación) y **doce rutas** bajo `app/(student)`, **nueve superficies** — ⚠️ **trece desde
-[ADR-100](docs/decisions.md#adr-100)**, que suma `/calendario`. `CLASE` es nodo sin
+[ADR-100](docs/decisions.md#adr-100)**, que suma `/calendario`, y ⚠️ **catorce rutas y 24 CTAs desde
+[ADR-102](docs/decisions.md#adr-102)**, que suma `/gimnasia`, `CTA-024` y `CTA-025`. `CLASE` es nodo sin
 wireframe. Y ADR-094 §5 quedó enmendado: **sólo** la fila en curso o por empezar lleva botón.
 
 🆕 **Y el mismo día, la segunda vuelta** — [ADR-099](docs/decisions.md#adr-099): pantalla rediseñada,
@@ -733,7 +765,7 @@ se persiste.
 - **El resultado de progreso se escribe** con sus invariantes: `I10` en el Service y en la base, `I8`
   con el duplicado declarado, y todo en una transacción con `topic_progress`.
 - **El Product Event Model está declarado** en `lib/domain/product-events.ts`: los 23 eventos P0 del
-  spec §16 con su uso textual, más 36 extensiones que el backend emite o conserva como legacy. De los 23 se
+  spec §16 con su uso textual, más 40 extensiones que el backend emite o conserva como legacy. De los 23 se
   emiten 9. **Antes de agregar un evento nuevo, declaralo ahí:** hay guard en las dos direcciones.
 - **Una sola fuente histórica.** La Bitácora de `UX06` y la Actividad reciente de `UX02` salen de
   `hechos_de_cursada()` y comparten la traducción: `VI.6` §8.3 dice que no existe una segunda, y hay

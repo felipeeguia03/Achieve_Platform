@@ -161,9 +161,9 @@ describe("El modo prueba no se convierte en producto", () => {
   });
 
   it("no agrega CTAs al registro canónico", () => {
-    // Son 22 desde el 13 de septiembre de 2026 (ADR-098, Modo Clase). Lo que
+    // Son 24 desde el 13 de septiembre de 2026 (ADR-098 y ADR-102). Lo que
     // este guard vigila no es el número: es que **el modo prueba** no lo mueva.
-    expect(Object.keys(ctaRegistry)).toHaveLength(22);
+    expect(Object.keys(ctaRegistry)).toHaveLength(26); // 24 + `CTA-026` y `CTA-027` (ADR-104)
   });
 
   it("el panel no entra al grafo de navegación ni al registro de CTAs", () => {
@@ -353,7 +353,7 @@ describe("Los tres pasos del loop viven detrás del mismo cerrojo", () => {
 
   it("y el andamio sigue sin agregar superficies ni CTAs", () => {
     expect(superficieIds).toHaveLength(9);
-    expect(Object.keys(ctaRegistry)).toHaveLength(22);
+    expect(Object.keys(ctaRegistry)).toHaveLength(26); // 24 + `CTA-026` y `CTA-027` (ADR-104)
   });
 });
 

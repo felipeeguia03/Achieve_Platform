@@ -44,6 +44,28 @@ export type CommitmentState =
  */
 export type ClassSessionStatus = "ACTIVE" | "ENDED";
 
+/**
+ * Una sesión de Gimnasia cognitiva — [ADR-102](../../docs/decisions.md#adr-102).
+ *
+ * ⚠️ **Sin `CREATED`.** La sesión nace cuando el estudiante toca *Empezar
+ * rutina* o *Jugar*: crearla ya es empezarla, y un estado que nada alcanza es
+ * una promesa escrita en el enum (el mismo criterio que `ClassSessionStatus`).
+ */
+export type GymSessionStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+/**
+ * Una sesión de Focus — [ADR-104](../../docs/decisions.md#adr-104).
+ *
+ * **Dos estados, y la fase no es uno de ellos.** Concentración, descanso, pausa
+ * y *lista* se deducen del tramo abierto; recuperación, del último latido. Si
+ * fueran estados, minimizar o cerrar la notebook tendrían que escribir uno, y
+ * ninguno dice si el tiempo está corriendo.
+ */
+export type FocusSessionStatus = "OPEN" | "ENDED";
+
+/** Un intento de un juego dentro de una sesión. `ABANDONED` lo deja un intento reemplazado al recargar. */
+export type GymAttemptStatus = "STARTED" | "COMPLETED" | "ABANDONED";
+
 export type EvidenceState =
   | "EXPECTED"
   | "SUBMITTED"

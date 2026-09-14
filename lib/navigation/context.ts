@@ -72,6 +72,24 @@ export interface ContextoCTA {
   claseIniciable: boolean;
   /** La clase de esta pantalla está `ACTIVE`. */
   claseActiva: boolean;
+
+  // ── Gimnasia cognitiva · ADR-102 ──────────────────────────────────────────
+  /**
+   * Se puede empezar la rutina: no hay otra sesión abierta. Con una abierta, la
+   * pantalla ofrece **retomarla**, no empezar otra — terminaría en `409`.
+   */
+  rutinaIniciable: boolean;
+  /** Se puede empezar el juego de esa tarjeta: sin sesión abierta y, en Recuerdo real, con preguntas. */
+  juegoIniciable: boolean;
+
+  // ── Modo Focus · ADR-104 ──────────────────────────────────────────────────
+  /**
+   * Hay un compromiso sobre el que empezar —`CONFIRMED`, `DUE` o `STARTED`, con
+   * su acción en juego— **o una sesión abierta a la que volver**.
+   */
+  focusIniciable: boolean;
+  /** La sesión de esta pantalla está `OPEN` y no pide recuperación. */
+  focusAbierta: boolean;
 }
 
 /**
@@ -105,6 +123,10 @@ export const contextoVacio: ContextoCTA = {
   errorRecuperableConOperacionIdempotente: false,
   claseIniciable: false,
   claseActiva: false,
+  rutinaIniciable: false,
+  juegoIniciable: false,
+  focusIniciable: false,
+  focusAbierta: false,
 };
 
 /**

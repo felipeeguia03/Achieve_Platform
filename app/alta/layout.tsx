@@ -24,7 +24,7 @@ export default function AltaLayout({ children }: { children: React.ReactNode }) 
         el componente no llega al HTML.
       */}
       {process.env.MODO_PRUEBA === "1" && <PanelDePrueba />}
-      {/* 🧪 El asistente simulado — ADR-101. Un problema en el alta también se reporta. */}
+      {/* 🧪 El asistente simulado — ADR-103. Un problema en el alta también se reporta. */}
       {process.env.MODO_PRUEBA === "1" && <Asistente />}
     </div>
   );

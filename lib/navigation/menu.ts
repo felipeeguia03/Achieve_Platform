@@ -57,6 +57,13 @@ export const menu: readonly ItemDeMenu[] = [
   // sería una urgencia inventada sobre algo que el estudiante puede no abrir
   // nunca sin consecuencia.
   { nodo: "FORMACION", etiqueta: "Formación", contador: null },
+  // ADR-102. **Después de Formación**, al final: es práctica breve de
+  // autogestión, no el trabajo del día. El nombre corto es el del menú; adentro
+  // la pantalla dice *Gimnasia cognitiva*.
+  //
+  // ⚠️ **`contador: null`** por lo mismo que Formación: nada vence. Un número de
+  // repasos pendientes acá sería una urgencia inventada sobre algo opcional.
+  { nodo: "GIMNASIA", etiqueta: "Gimnasia", contador: null },
 ] as const;
 
 /**

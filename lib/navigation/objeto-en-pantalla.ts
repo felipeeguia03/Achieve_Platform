@@ -44,6 +44,12 @@ import {
  */
 export const PARAM_PIEZA = "pieza";
 
+/** La sesión de Gimnasia abierta — ADR-102. Con ella, la rutina sobrevive a una recarga y tiene ficha. */
+export const PARAM_SESION_DE_GIMNASIA = "sesion";
+
+/** Una sesión de Focus **cerrada** — ADR-104 §5. Sin él, `/focus` es la abierta. */
+export const PARAM_SESION_DE_FOCUS = "sesion";
+
 /**
  * Las pantallas que son **de un objeto**, y de dónde sale su identidad.
  *
@@ -62,6 +68,11 @@ const PANTALLAS_DE_OBJETO: Partial<
        * es el `NodoId`. Es `/clase` pelada: la clase activa, que hay una sola.
        */
       sinParametroEsElNodo?: true;
+      /**
+       * Lo que va antes del nombre en la ficha: *Gimnasia · Memoria*. La miga no
+       * lo lleva, porque ya empieza en la sección (*Gimnasia › Memoria*).
+       */
+      prefijo?: string;
     }
   >
 > = {
@@ -83,6 +94,17 @@ const PANTALLAS_DE_OBJETO: Partial<
   UX06: { tipo: "bitacora", parametro: ctaRegistry["CTA-009"].parametro?.nombre ?? null },
   UX07: { tipo: "modo-examen", parametro: ctaRegistry["CTA-019"].parametro?.nombre ?? null },
   CLASE: { tipo: "clase", parametro: "clase", sinParametroEsElNodo: true },
+  /*
+    ADR-102 — la rutina o el juego que se abrió **adentro** de Gimnasia. La
+    sección sigue sin controles (Enmienda 7); lo que se minimiza es la sesión, y
+    su ficha dice *Gimnasia · Memoria*, como pidió el owner.
+  */
+  GIMNASIA: { tipo: "gimnasia", parametro: PARAM_SESION_DE_GIMNASIA, prefijo: "Gimnasia" },
+  /*
+    ADR-104 §10 — la sesión de Focus. Sin parámetro es **la abierta**, que hay una
+    sola; con `?sesion=`, una cerrada. La ficha dice *Focus · Análisis III*.
+  */
+  FOCUS: { tipo: "focus", parametro: PARAM_SESION_DE_FOCUS, sinParametroEsElNodo: true, prefijo: "Focus" },
 };
 
 /** A dónde se vuelve cuando no hay una sección de la que se salió. */
@@ -125,7 +147,7 @@ export function objetoEnPantalla(
   return {
     tipo: regla.tipo,
     entidadId,
-    etiqueta,
+    etiqueta: regla.prefijo ? `${regla.prefijo} · ${etiqueta}` : etiqueta,
     /*
       ⚠️ **Sin contexto.** El de una materia empujaba su nombre a `ANALISI…`
       (Enmienda 5), y el de un video sería *Formación*, que ya dice la miga.

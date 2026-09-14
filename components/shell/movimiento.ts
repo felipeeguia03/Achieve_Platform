@@ -50,6 +50,22 @@ export function movimientoReducido(): boolean {
 }
 
 /**
+ * Cuánto tarda la barra lateral en abrirse o recogerse. El techo del rango de
+ * §2.5: son 176 px de ancho, no una ventana chica.
+ */
+export const DURACION_DE_BARRA = 220;
+
+/**
+ * La transición de la barra lateral, como clase para que
+ * `motion-reduce:transition-none` la apague entera.
+ *
+ * ⚠️ **Sin sobrepaso**, a diferencia de `CURVA`: una barra que se pasa de ancho
+ * y vuelve empuja el contenido dos veces. Es una desaceleración pura.
+ */
+export const TRANSICION_DE_BARRA =
+  "transition-[width,height,padding,top,right,opacity] duration-[220ms] ease-[cubic-bezier(.32,.72,0,1)] motion-reduce:transition-none";
+
+/**
  * Dónde está la ficha de un objeto, ahora.
  *
  * `null` ⇒ **no está a la vista**, y entonces no hay de dónde salir. Pasa de

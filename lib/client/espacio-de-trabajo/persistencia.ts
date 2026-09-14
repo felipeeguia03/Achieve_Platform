@@ -58,22 +58,34 @@ export function claveDeAlmacenamiento(studentId: string): string {
   return `${PREFIJO}.${studentId}`;
 }
 
-const TIPOS: readonly TipoDeObjeto[] = [
-  "materia",
-  "unidad",
-  "recurso",
-  "trabajo-practico",
-  "accion",
-  "compromiso",
-  "evidencia",
-  "evaluacion",
-  "modo-examen",
-  "formacion",
-  "bitacora",
-  "clase",
-  // ⚠️ `hoy` y `materias` salieron con la Enmienda 7: lo que quedó guardado con
-  // esos tipos se descarta al leer, que es exactamente lo que tiene que pasar.
-];
+/*
+  ⚠️ **Un `Record` y no una lista, y es el arreglo de un defecto.** `gimnasia`
+  entró a `TipoDeObjeto` con ADR-102 y no a la lista de acá: minimizar la sesión
+  la guardaba, pero minimizar lleva a Hoy, el `Shell` nuevo relee la memoria y
+  la ficha se descartaba por tipo desconocido. Con el `Record`, un tipo nuevo
+  que no se agregue acá **no compila**.
+
+  `hoy` y `materias` salieron con la Enmienda 7: lo que quedó guardado con esos
+  tipos se descarta al leer, que es exactamente lo que tiene que pasar.
+*/
+const TIPOS_GUARDABLES: Record<TipoDeObjeto, true> = {
+  materia: true,
+  unidad: true,
+  recurso: true,
+  "trabajo-practico": true,
+  accion: true,
+  compromiso: true,
+  evidencia: true,
+  evaluacion: true,
+  "modo-examen": true,
+  formacion: true,
+  bitacora: true,
+  clase: true,
+  gimnasia: true,
+  focus: true,
+};
+
+const TIPOS = Object.keys(TIPOS_GUARDABLES) as readonly TipoDeObjeto[];
 
 /**
  * Valida un objeto leído del navegador, campo por campo.

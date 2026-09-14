@@ -63,7 +63,8 @@ por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto 
 | Frente | Estado |
 |---|---|
 | **El escritorio del objeto** | 🆕 **10 de septiembre de 2026** — Enmiendas [1](decisions.md#adr-088-enmienda-1), [2](decisions.md#adr-088-enmienda-2), [3](decisions.md#adr-088-enmienda-3), [4](decisions.md#adr-088-enmienda-4) y [5](decisions.md#adr-088-enmienda-5) de ADR-088. **Abrir una materia va a su superficie completa**; desde ahí un semáforo arriba la **minimiza a la barra**, la **reduce a ventana** o la **cierra**. Las ventanas se arrastran, se estiran, se expanden, **vuelven donde estaban** y **conviven todas**: se apilan y se traen al frente tocándolas. El escritorio entero vive en `?abierto=<a>,<b>` y **el orden es el apilamiento**. ⚠️ **Se llama «marco», no «ventana»**: `Ventana` ya son dos cosas del dominio (ADR-078 y `VentanaDeExamen`), y reusarla sería `A-04`. ⚠️ **El panel consulta; la superficie trabaja** — adentro toda CTA navega. ⚠️ **La Enmienda 3 retira la trampa de foco y el `aria-modal` de la Enmienda 1**: con varias ventanas no modales encerrarían al teclado en la última abierta. ⚠️ **La Enmienda 4 le pone movimiento**: la ventana **sale de su ficha** y vuelve a entrar, con los números de `design-system-capturas.md` §2.5 — y `prefers-reduced-motion` lo apaga entero. ⚠️ **La Enmienda 5 le pone nombre y color**: el nombre se escribe con mayúscula sólo en la primera —**presentación, no renombre**: el `label` del plan no se toca— y cada materia lleva **su color de la lista** en la ficha y en la ventana, con `colorDeMateria` compartido en `lib/domain/`. ⛔ **Deuda de tokens**: §2.5 define `--curva` y `--duracion` y `globals.css` no los tiene, así que los valores se citan en `components/shell/movimiento.ts`. ✅ **Y destapó que `20162` y `10207` se llamaban igual en pantalla** — corregido por [ADR-092](decisions.md#adr-092) con los programas oficiales: `ARQUITECTURA DE COMPUTADORAS I` y `II`. ⛔ **Quedan dos parejas sin nombre completo conocido**, y `ingerir_plan()` **no se puede reimportar** sobre un plan con altas hechas: la FK de `requirement_declaration` aborta el archivo entero |
-| **El asistente de reportes y mejoras** | 🧪 **13 de septiembre de 2026** — [ADR-101](decisions.md#adr-101), pedido del owner con capturas de otro software. Botón abajo a la derecha, *Reportar un problema* / *Sugerir una mejora*, pregunta aclaratoria, tarjeta *Tu sugerencia* con *Confirmar y enviar* / *Corregir algo*, *Reporte enviado*, capturas pegadas y *Nueva conversación*. ⚠️ **Simulado**: guion fijo, **sin red ni persistencia**, sólo con `MODO_PRUEBA=1` y rotulado. El resumen **cita** lo escrito. Conectarlo es con el backend y el CTO, y lo que se guarde de un reporte toca ADR-006 |
+| **Gimnasia cognitiva** | ✅ **Construida el 13 de septiembre de 2026** — [ADR-102](decisions.md#adr-102). Categoría **Memoria** con *Cuadrícula fugaz*, *Cadena inversa* y *Recuerdo real*; rutina de 8 minutos; el resultado lo calcula el servidor y el progreso se deduce. **No toca Hoy, el ADE ni el loop.** Sin preguntas reales todavía: Recuerdo real queda en preparación fuera de la demo. Plan en [`gimnasia-cognitiva.md`](gimnasia-cognitiva.md) |
+| **El asistente de reportes y mejoras** | 🧪 **13 de septiembre de 2026** — [ADR-103](decisions.md#adr-103), pedido del owner con capturas de otro software. Botón abajo a la derecha, *Reportar un problema* / *Sugerir una mejora*, pregunta aclaratoria, tarjeta *Tu sugerencia* con *Confirmar y enviar* / *Corregir algo*, *Reporte enviado*, capturas pegadas y *Nueva conversación*. ⚠️ **Simulado**: guion fijo, **sin red ni persistencia**, sólo con `MODO_PRUEBA=1` y rotulado. El resumen **cita** lo escrito. Conectarlo es con el backend y el CTO, y lo que se guarde de un reporte toca ADR-006 |
 | **Modo Clase** | ✅ **Construido el 13 de septiembre de 2026, seis cortes** — [ADR-098](decisions.md#adr-098), las doce recomendaciones aceptadas por el owner. La clase que el estudiante abre es **`student_class_session`, no `class_session`**: apuntes, cuatro marcas y cierre, una sola activa. **Hoy ofrece *Entrar a clase* en la fila en curso** (enmienda ADR-094 §5) y **Materia muestra *Tus clases***. **Segunda vuelta el mismo día — [ADR-099](decisions.md#adr-099):** pantalla rediseñada, **grabación de audio con etiquetas**, apuntes que se guardan con Enter, material (archivos y links), comisión/aula/inscriptos simulados, unidades de la clase y *te faltan las unidades…*, miga de tres niveles. ⛔ Grabar en un aula real sigue esperando ADR-006 + legal; **sin checkpoint de comprensión** (psicopedagoga). Cortes y estado en [`modo-clase.md`](modo-clase.md) §E y §H |
 | **Modo noche, cuenta y color** | 🆕 **12 de septiembre de 2026** — [ADR-097](decisions.md#adr-097), con capturas del software de referencia. **Modo noche** que sigue al sistema, con luna/sol al pie del menú lateral y la tabla de contrastes **como test** (revierte `design-system-capturas` §12.4). **Arriba a la derecha**: institución · carrera y avatar con email y *Cerrar sesión*. **Color**: la marca de cada materia en *Tu día*, riesgos, título y Gantt; chips de estado **tintados**. ⚠️ Sin selector de organización ni *Administrar cuenta*: no hay nada detrás. 🧪 **La campanita existe con avisos simulados** ([Enm. 1](decisions.md#adr-097-enmienda-1)), sólo con `MODO_PRUEBA=1` y rotulada *Simulado*; las notificaciones reales siguen sin diseñar |
 | **La barra no se llena sola** | 🆕 **12 de septiembre de 2026** — [ADR-088 · Enmienda 7](decisions.md#adr-088-enmienda-7), que corrige el punto 1 de la Enmienda 6. **Entrar a una pantalla no guarda su ficha**: un objeto entra a la barra al **minimizar** (lleva a Hoy), al **achicar** (ventana sobre su sección) o desde el buscador. Las **secciones del menú no llevan controles**; sí lo que está adentro: una materia, un video de Formación (`?pieza=`), la acción, el paso del protocolo. **Sin cruz en la pantalla completa**, sin «Ver como página» —expandir hace eso—, y cerrar una ficha **no navega**. ⚠️ **La miga empieza en la sección**: *Materias › Análisis*, *Formación › nombre del video*. ⚠️ Las fichas de sección que ya estaban guardadas **se descartan al leer** |
@@ -4042,6 +4043,52 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
   que estudiarla; estimarle una fecha sería inventarla por la puerta de atrás.
 - **Una materia degradada entra sin pedir nada, y se dice.** `SIN_ESTIMACION` no es *"no necesita
   tiempo"*: es que no sabemos cuánto.
+
+---
+
+## Fase B6.31 — Modo Focus · ✅ COMPLETA
+
+**13 de septiembre de 2026** · [ADR-104](decisions.md#adr-104). El owner: *"hacé todo lo recomendado y
+empezá, no dejes nada pending"*. Informe, API y QA en [`modo-focus.md`](modo-focus.md).
+
+| Qué | Estado |
+|---|---|
+| Dominio puro: presets 25/5/15 · 40/8/20 · 50/10/25, personalizado, tramos, recuperación, resumen | ✅ |
+| Migración: `focus_session`, `focus_segment`, `focus_preference`; dos funciones atómicas; `hechos_de_cursada()` con `datos` | ✅ |
+| Service, Repository, cinco rutas `/api/focus/*`; `FocusSessionStarted` y `FocusSessionEnded` | ✅ |
+| Nodo `FOCUS`, `CTA-026` y `CTA-027`; `CTA-006` y `CTA-009` ganan el origen; ficha *Focus · materia* | ✅ |
+| Concentración oscura, pausa, lista, descanso, recuperación, cierre con avance, sesión cerrada | ✅ |
+| Hoy, Materia y Compromiso llevan a Focus; la Bitácora muestra la sesión y el avance, nunca el anotador | ✅ |
+| Recorrido en navegador (Chromium), desktop y 360 px | ✅ |
+
+✅ **Se cierra una costura que la Fase 0 dejó dicha:** `EJECUCION` ya tiene con qué vivirse y `UX05` se
+alcanza por clic, desde *Terminé · Subir evidencia*. El nodo del spec sigue sin ruta: la pantalla es
+`FOCUS`.
+
+⚠️ **Desvío declarado:** *Terminé* no lleva el compromiso a `COMPLETED`, porque la entrega exige un
+compromiso vivo. El día que la entrega acepte uno cerrado, se mueve (ADR-104 §15).
+
+`lint` · `typecheck` · `build` · **2444 tests** · **`db:verify` 512 ✓, 0 ✗, exit 0**.
+
+---
+
+## Fase B6.30 — Gimnasia cognitiva: Memoria · ✅ COMPLETA *(sin preguntas reales todavía)*
+
+**13 de septiembre de 2026** · [ADR-102](decisions.md#adr-102). Pedido del owner por escrito
+([fuente](gimnasia-cognitiva-source.md)). Plan, API y QA en [`gimnasia-cognitiva.md`](gimnasia-cognitiva.md).
+
+| Qué | Estado |
+|---|---|
+| Dominio puro versionado: `CF-1`, `CI-1`, `RR-1`, con semilla | ✅ |
+| Migración aditiva: `gym_session`, `gym_attempt`, `recall_item`, `recall_review` | ✅ |
+| Service, Repository y cinco rutas `/api/gimnasia/*`; cuatro eventos `TRANSICION` | ✅ |
+| Nodo `GIMNASIA`, ítem de menú, `CTA-024` y `CTA-025`, ficha *Gimnasia · Memoria* | ✅ |
+| Portada, los tres juegos, rutina con salida y cierre que vuelve a Hoy | ✅ |
+| Siembra sintética `npm run db:gimnasia` | ✅ |
+| Recorrido en navegador (Chromium) | ✅ |
+
+⛔ **Queda abierto:** quién escribe y publica preguntas reales, la revisión psicopedagógica del
+vocabulario y de los intervalos, y si una rutina entra a la Bitácora o a Hoy.
 
 ---
 

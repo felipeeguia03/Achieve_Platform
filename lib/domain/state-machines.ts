@@ -13,6 +13,9 @@
 import type {
   ActionStatus,
   ClassSessionStatus,
+  GymAttemptStatus,
+  GymSessionStatus,
+  FocusSessionStatus,
   CommitmentState,
   EvidenceState,
   ExamPreparationStatus,
@@ -227,6 +230,51 @@ export const classSessionTransitions: Readonly<
 > = {
   ACTIVE: ["ENDED"],
   ENDED: [],
+} as const;
+
+/**
+ * La sesión de Gimnasia cognitiva — [ADR-102](../../docs/decisions.md#adr-102).
+ *
+ * Las dos salidas son terminales: una rutina terminada no se reabre y una
+ * cancelada no se retoma. Volver a entrenar es **otra** sesión. Lo que se
+ * terminó adentro de una cancelada queda guardado: cancelar no borra intentos.
+ *
+ * ⚠️ **El paso del tiempo no cancela** (AGENTS.md §2.3): una rutina sin terminar
+ * sigue ahí hasta que el estudiante la retome o la descarte.
+ */
+export const gymSessionTransitions: Readonly<
+  Record<GymSessionStatus, readonly GymSessionStatus[]>
+> = {
+  IN_PROGRESS: ["COMPLETED", "CANCELLED"],
+  COMPLETED: [],
+  CANCELLED: [],
+} as const;
+
+/**
+ * La sesión de Focus — [ADR-104](../../docs/decisions.md#adr-104).
+ *
+ * `ENDED` es terminal: volver a trabajar sobre la misma acción es **otra**
+ * sesión. ⚠️ **El paso del tiempo no lleva a `ENDED`**: la cierra el
+ * estudiante, o la recuperación cuando él elige *Terminé cuando se cerró*.
+ */
+export const focusSessionTransitions: Readonly<
+  Record<FocusSessionStatus, readonly FocusSessionStatus[]>
+> = {
+  OPEN: ["ENDED"],
+  ENDED: [],
+} as const;
+
+/**
+ * El intento de un juego. `COMPLETED` exige un resultado que **calculó el
+ * servidor**; `ABANDONED` es el intento que quedó abierto cuando se empezó otro
+ * del mismo juego (una recarga), y no cuenta para nada.
+ */
+export const gymAttemptTransitions: Readonly<
+  Record<GymAttemptStatus, readonly GymAttemptStatus[]>
+> = {
+  STARTED: ["COMPLETED", "ABANDONED"],
+  COMPLETED: [],
+  ABANDONED: [],
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

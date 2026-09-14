@@ -19,6 +19,16 @@ import type { UnidadesDeClase } from "./unidades-de-clase";
 import type { HeroLevel, HeroVariante } from "./precedence";
 import type { NivelOverview, VarianteOverview } from "./overview-precedence";
 import type { NivelPaso, VariantePaso } from "./step-precedence";
+import type {
+  ConfiguracionPomodoro,
+  Fase,
+  ModoDeFoco,
+  PreferenciasDeFocus,
+  PresetOPersonalizado,
+  Resumen,
+  TipoDeDescanso,
+  TipoDeTramo,
+} from "./sesion-de-focus";
 
 export type Tono = "urgencia" | "exito" | "humano";
 
@@ -846,6 +856,11 @@ export type EstadoCompromiso =
 
 export interface CompromisoProps {
   estado: EstadoCompromiso;
+  /**
+   * Qué compromiso es, para empezar Focus sobre **éste** — ADR-104 §4.
+   * Ausente en el Track A: un escenario no tiene fila que nombrar.
+   */
+  compromisoId?: string | null;
   contexto: string;
   titulo: string;
   fecha: string | null;
@@ -938,6 +953,11 @@ export type EstadoProgreso =
 export interface EntradaDeBitacora {
   titulo: string;
   detalle: string;
+  /**
+   * Lo que el estudiante escribió, citado — ADR-104: el *avance* de una sesión
+   * de Focus. Ausente en todo otro hecho.
+   */
+  cita?: string;
   /** Provenance ya en copy. `null` ⇒ *"Fuente o estado no disponible"*. */
   provenance: string | null;
 }
@@ -1398,4 +1418,75 @@ export interface CalendarioProps {
   proximaEvaluacionEnDias: number | null;
   /** Si algún bloque del rango es estimado: la leyenda lo tiene que decir (ADR-094). */
   horarioEstimado: boolean;
+}
+
+// ── Modo Focus · ADR-104 ─────────────────────────────────────────────────────
+
+/** El tramo abierto, con lo que la pantalla necesita para dibujar su reloj. */
+export interface TramoDeFocusVisible {
+  tipo: TipoDeTramo;
+  inicio: string;
+  /** El instante en que termina un bloque o un descanso. `null` en libre y en pausa. */
+  finPlaneado: string | null;
+  bloque: number | null;
+  /** *«Foco 2 de 4»*: la posición en el ciclo y el largo del ciclo. */
+  posicion: number | null;
+  deBloques: number | null;
+  descanso: TipoDeDescanso | null;
+}
+
+/**
+ * Una sesión de Focus para su pantalla.
+ *
+ * ⚠️ **El reloj no viaja como número que el cliente suma.** Viajan instantes
+ * —el inicio del tramo, su fin planeado, el `servidorAhora`— y el foco
+ * registrado **antes** del tramo abierto. La pantalla calcula lo que dibuja.
+ */
+export interface FocusProps {
+  id: string;
+  fase: Fase;
+  cursadaId: string;
+  compromisoId: string;
+  /** Cada una `null` si no se sabe: la línea se omite. */
+  materia: string | null;
+  accion: string | null;
+  unidad: string | null;
+  /** *«Te comprometiste para hoy a las 18:00»*. */
+  acordado: { hora: string; minutos: number };
+  empezoA: string;
+  /** Minutos entre la hora acordada y el inicio real. `null` si empezó antes o a tiempo. */
+  demoraMinutos: number | null;
+  modo: ModoDeFoco;
+  pomodoro: ConfiguracionPomodoro | null;
+  preset: PresetOPersonalizado | null;
+  tramo: TramoDeFocusVisible | null;
+  focoPrevioSegundos: number;
+  servidorAhora: string;
+  ultimoLatidoHora: string;
+  resumen: Resumen;
+  /** *Para después*. Privado: sólo llega a esta pantalla. */
+  anotador: string;
+  avance: string | null;
+  cierre: "SAVED" | "DONE" | null;
+  terminadaA: string | null;
+}
+
+/** Sin sesión abierta: sobre qué compromiso se puede empezar, si hay uno. */
+export interface FocusIniciable {
+  compromisoId: string;
+  cursadaId: string;
+  materia: string | null;
+  accion: string | null;
+  unidad: string | null;
+  hora: string;
+  minutos: number;
+  /** `true` ⇒ llegó la hora (`DUE`) o ya había empezado: *«Es hora de empezar»*. */
+  esHora: boolean;
+  yaEmpezado: boolean;
+}
+
+export interface FocusVista {
+  sesion: FocusProps | null;
+  iniciable: FocusIniciable | null;
+  preferencias: PreferenciasDeFocus;
 }

@@ -13,6 +13,7 @@ import { rutaDeCta, siguienteUrl } from "@/lib/navigation";
 import { nodos } from "@/lib/navigation/surfaces";
 import { MOTIVO_DE_CAMBIO, t } from "@/lib/content/es-AR";
 import type { CompromisoProps } from "@/lib/domain/view-models";
+import { irAFocus } from "./ir-a-focus";
 
 /** Lo que el `GET` agrega cuando todavía no hay compromiso: qué confirmar. */
 type Propuesta = { accion: string; inicio: string; zona: string; minutos: number };
@@ -277,7 +278,14 @@ function Pantalla({
         // El rechazo del servidor pisa a lo que la pantalla había proyectado:
         // es el `409` de elegibilidad, y se muestra como estado de producto.
         cambioDeHorario={cambioRechazado ?? props.cambioDeHorario}
-        onAvanzar={destino ? () => router.push(destino) : undefined}
+        onAvanzar={
+          // ADR-104 §4: *Empezar* y *Continuar* van a Focus con **este** compromiso.
+          !escenario && props.compromisoId && (props.estado === "CONFIRMED" || props.estado === "DUE" || props.estado === "STARTED")
+            ? () => void irAFocus(router, { compromiso: props.compromisoId }, destino)
+            : destino
+              ? () => router.push(destino)
+              : undefined
+        }
         onCambiarHorario={cambiarHorario}
         cambioEnCurso={cambiando}
         confirmacionDeCambio={confirmacion}

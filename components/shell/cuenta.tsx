@@ -36,13 +36,37 @@ interface Cuenta {
 /** Dos letras del email: `felipe.eguia@…` ⇒ `FE`. Es el respaldo cuando no cargó su nombre. */
 export { iniciales } from "./administrar-cuenta";
 
+/*
+  ⚠️ **Lo último que se cargó, en memoria del módulo.** Cada página monta su
+  propio `Shell`, así que navegar desmonta y vuelve a montar la topbar. Sin esto
+  el avatar y la institución arrancaban en `null` en cada pantalla: desaparecían
+  un instante, volvían con la respuesta y empujaban al buscador — la topbar
+  entera saltaba mientras la barra lateral quedaba quieta. Con esto la pantalla
+  nueva la dibuja igual en el primer render y la refresca por detrás.
+
+  No se persiste: vive lo que vive la pestaña, y cerrar sesión recarga la página.
+*/
+const recuerdo: { perfil: PerfilDeSesion | null; cuenta: Cuenta | null; foto: string | null } = {
+  perfil: null,
+  cuenta: null,
+  foto: null,
+};
+
 export function CuentaDelTopbar() {
-  const [perfil, setPerfil] = useState<PerfilDeSesion | null>(null);
-  const [cuenta, setCuenta] = useState<Cuenta | null>(null);
-  const [foto, setFoto] = useState<string | null>(null);
+  const [perfil, setPerfil] = useState<PerfilDeSesion | null>(recuerdo.perfil);
+  const [cuenta, setCuenta] = useState<Cuenta | null>(recuerdo.cuenta);
+  const [foto, setFoto] = useState<string | null>(recuerdo.foto);
   const [abierto, setAbierto] = useState(false);
   const [administrando, setAdministrando] = useState(false);
   const caja = useRef<HTMLDivElement>(null);
+
+  // El estado arranca del recuerdo, así que copiarlo de vuelta nunca pisa nada
+  // con un `null` de carga; y un `null` real —borrar la foto— sí tiene que quedar.
+  useEffect(() => {
+    recuerdo.perfil = perfil;
+    recuerdo.cuenta = cuenta;
+    recuerdo.foto = foto;
+  }, [perfil, cuenta, foto]);
 
   function cargarFoto() {
     void pedir<{ url: string | null }>("/api/cuenta/foto").then((r) => {
@@ -63,7 +87,10 @@ export function CuentaDelTopbar() {
     });
     // Guardar el nombre en «Administrar cuenta» actualiza la sesión: el avatar lo sigue.
     const soltar = alCambiarElPerfil((p) => {
-      if (vigente && p !== null) setPerfil(p);
+      if (!vigente) return;
+      if (p !== null) setPerfil(p);
+      // Sin sesión, que la próxima pantalla no dibuje la cuenta que se fue.
+      else recuerdo.perfil = recuerdo.cuenta = recuerdo.foto = null;
     });
     return () => {
       vigente = false;
