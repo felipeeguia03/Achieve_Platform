@@ -345,3 +345,52 @@ export async function subirFotoDePerfil(url: string, archivo: File): Promise<boo
     return false;
   }
 }
+
+/**
+ * Sube el analítico — [ADR-106](../../docs/decisions.md#adr-106). Multipart al
+ * propio servidor, **no a una URL firmada**: el servidor tiene que leer los bytes
+ * para validar la firma del archivo y extraerlo, y recién después lo guarda.
+ *
+ * A diferencia de `enviar`, **un `400` trae su motivo**: *"el PDF tiene
+ * contraseña"* es algo que el estudiante puede resolver, no un error genérico.
+ */
+export async function subirAnaliticoArchivo(
+  archivo: Blob,
+): Promise<{ estado: "OK"; datos: { estado: string; motivo?: string } } | { estado: "RECHAZADO"; motivo: string } | { estado: "ERROR" }> {
+  let token: string | null;
+  try {
+    token = await tokenDeSesion();
+  } catch {
+    return { estado: "ERROR" };
+  }
+  if (!token) return { estado: "ERROR" };
+  try {
+    const form = new FormData();
+    form.append("archivo", archivo, "analitico");
+    const r = await fetch("/api/recorrido/analitico", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    if (r.status === 400 || r.status === 409 || r.status === 413) {
+      const cuerpo = (await r.json().catch(() => ({}))) as { error?: string };
+      return { estado: "RECHAZADO", motivo: cuerpo.error ?? "No pudimos procesar el archivo" };
+    }
+    if (!r.ok) return { estado: "ERROR" };
+    return { estado: "OK", datos: (await r.json()) as { estado: string; motivo?: string } };
+  } catch {
+    return { estado: "ERROR" };
+  }
+}
+
+/** El analítico sintético del modo prueba, como archivo. `null` ⇒ no disponible. */
+export async function analiticoSintetico(): Promise<Blob | null> {
+  try {
+    const token = await tokenDeSesion();
+    if (!token) return null;
+    const r = await fetch("/api/prueba/analitico", { headers: { Authorization: `Bearer ${token}` } });
+    return r.ok ? await r.blob() : null;
+  } catch {
+    return null;
+  }
+}

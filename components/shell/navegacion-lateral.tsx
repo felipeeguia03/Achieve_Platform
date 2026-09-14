@@ -33,7 +33,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Brain, CalendarRange, ChevronLeft, ChevronRight, Library, PlayCircle, Sun } from "lucide-react";
+import { Brain, CalendarRange, GraduationCap, ChevronLeft, ChevronRight, Library, PlayCircle, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { DURACION_DE_BARRA, TRANSICION_DE_BARRA } from "./movimiento";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
@@ -53,6 +53,7 @@ const ICONOS: Partial<Record<NodoId, typeof Sun>> = {
   CALENDARIO: CalendarRange,
   FORMACION: PlayCircle,
   GIMNASIA: Brain,
+  RECORRIDO: GraduationCap,
 };
 
 /**

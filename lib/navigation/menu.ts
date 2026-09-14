@@ -64,6 +64,10 @@ export const menu: readonly ItemDeMenu[] = [
   // ⚠️ **`contador: null`** por lo mismo que Formación: nada vence. Un número de
   // repasos pendientes acá sería una urgencia inventada sobre algo opcional.
   { nodo: "GIMNASIA", etiqueta: "Gimnasia", contador: null },
+  // ADR-106. **Al final**: es opcional y es el pasado, no el trabajo del día.
+  // ⚠️ **`contador: null`**: nada vence. Un «5 por revisar» acá sería una urgencia
+  // inventada sobre algo que el estudiante puede no abrir nunca.
+  { nodo: "RECORRIDO", etiqueta: "Recorrido", contador: null },
 ] as const;
 
 /**

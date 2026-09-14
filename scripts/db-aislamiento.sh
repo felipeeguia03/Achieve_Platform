@@ -35,7 +35,10 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # cinco de la Fase B6.14 faltaban, y `curriculum_requirement` → `course` bastaba
 # para dejar el verificador sin correr (roadmap.md §0.2).
 limpiar_mundo() {
-  q "delete from focus_segment; \
+  q "delete from academic_record_entry; \
+   delete from academic_document; \
+   delete from academic_record_consent; \
+   delete from focus_segment; \
    delete from focus_session; \
    delete from focus_preference; \
    delete from recall_review; \

@@ -237,6 +237,16 @@ import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servici
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 import { altaReal, type SeleccionDeRequisito } from "./repositorios/alta";
 import { cursadaReal, CursadaRechazada } from "./repositorios/cursada";
+import { createHash } from "node:crypto";
+import { analiticoReal, AnaliticoRechazado } from "./repositorios/analitico";
+import { analiticoSintetico, extractorSintetico } from "./simulacion/analitico";
+import {
+  borrarAnalitico as borrarAnaliticoPuro,
+  confirmarAnalitico as confirmarAnaliticoPuro,
+  decidirConsentimiento as decidirConsentimientoPuro,
+  revisarResultado as revisarResultadoPuro,
+  subirAnalitico as subirAnaliticoPuro,
+} from "./servicios/analitico";
 import {
   declararCursada as declararCursadaPuro,
   opcionesDeCursada as opcionesDeCursadaPuro,
@@ -323,6 +333,73 @@ export function firmarSubidaDeFoto(authUserId: string) {
 
 export function fotoDePerfil(authUserId: string) {
   return cuentaDeAuthReal.firmarLecturaDeFoto(authUserId);
+}
+
+// ── El recorrido: el analítico · ADR-106 ────────────────────────────────────
+
+const depsDelAnalitico = () => ({
+  repo: analiticoReal,
+  // ⚠️ El único extractor es sintético (ADR-106 §5): no hay OCR ni proveedor externo.
+  extractor: extractorSintetico,
+  eventos: eventosReal,
+  sha256: (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex"),
+});
+
+export { AnaliticoRechazado };
+
+export function recorridoDelEstudiante(institutionId: string, studentId: string) {
+  return analiticoReal.recorrido(institutionId, studentId);
+}
+
+export function decidirConsentimientoDelAnalitico(
+  institutionId: string,
+  studentId: string,
+  decision: "GRANTED" | "WITHDRAWN",
+) {
+  return decidirConsentimientoPuro(depsDelAnalitico(), institutionId, studentId, decision);
+}
+
+export function subirAnalitico(institutionId: string, studentId: string, bytes: Uint8Array) {
+  return subirAnaliticoPuro(depsDelAnalitico(), institutionId, studentId, bytes);
+}
+
+export function revisarResultadoDelAnalitico(
+  institutionId: string,
+  studentId: string,
+  entrada: { resultadoId: string; decision: string; requisitoId: string | null; estado: string | null },
+) {
+  return revisarResultadoPuro(depsDelAnalitico(), institutionId, studentId, entrada);
+}
+
+export function confirmarAnalitico(institutionId: string, studentId: string, documentoId: string) {
+  return confirmarAnaliticoPuro(depsDelAnalitico(), institutionId, studentId, documentoId);
+}
+
+export function borrarAnalitico(institutionId: string, studentId: string) {
+  return borrarAnaliticoPuro(depsDelAnalitico(), institutionId, studentId);
+}
+
+/**
+ * Un analítico sintético para el estudiante de la sesión — **sólo modo prueba**.
+ * La ruta que lo llama responde `404` sin `MODO_PRUEBA=1`.
+ */
+export async function analiticoSinteticoDePrueba(institutionId: string, studentId: string): Promise<Uint8Array | null> {
+  const alta = await altaReal.estado(institutionId, studentId);
+  const decl = alta.declaracion;
+  if (!decl) return null;
+  const plan = await catalogoReal.requisitos(decl.planId, studentId);
+  if (!plan) return null;
+  return analiticoSintetico(
+    studentId,
+    decl.anio,
+    plan.requisitos.map((r) => ({
+      codigo: r.codigo,
+      nombre: r.nombre,
+      anio: r.anio,
+      tipo: r.tipo,
+      seCursaAhora: r.declarado?.cursadaId != null,
+    })),
+  );
 }
 
 // ── El cuarto paso del alta: comisión y horarios · ADR-105 ──────────────────

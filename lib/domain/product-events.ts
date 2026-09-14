@@ -466,6 +466,25 @@ export const EXTENSIONES: Readonly<
     nivel: "TRANSICION",
     enBitacora: false,
   },
+  // ADR-106 · El analítico. `TRANSICION`, **no facturables** (ADR-041) y
+  // **fuera de la Bitácora**: subir la historia no es producir para una materia.
+  // ⚠️ **El payload lleva conteos, nunca contenido**: ni nombres de materias, ni
+  // notas, ni el archivo (ADR-106 §4).
+  AcademicRecordUploaded: {
+    porQue: "El estudiante subió su analítico y se procesó o falló (ADR-106). No crea ninguna cursada",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  AcademicRecordConfirmed: {
+    porQue: "El estudiante confirmó los resultados de su analítico (ADR-106). Confirmar no es verificar",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  AcademicRecordDeleted: {
+    porQue: "El estudiante borró su analítico y retiró el consentimiento (ADR-106 §9)",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
   // ADR-102 · Gimnasia cognitiva. **No facturables** (ADR-041) y **fuera de la
   // Bitácora**: jugar no es producir para una materia, y `hechos_de_cursada` se
   // ata a una `Action`. Cuatro hechos y ninguno más: *"evento nuevo para cada

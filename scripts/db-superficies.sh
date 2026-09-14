@@ -73,6 +73,11 @@ limpiar() {
      delete from assessment where offering_id in (select id from course_offering where course_id in (select id from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')))));
      delete from course_offering where course_id in (select id from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA'))));
      delete from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')));
+     delete from academic_record_entry where institution_id in ('$INS','$OTRA');
+     delete from academic_document where institution_id in ('$INS','$OTRA');
+     delete from academic_record_consent where institution_id in ('$INS','$OTRA');
+     delete from enrollment where institution_id in ('$INS','$OTRA');
+     delete from curriculum_requirement where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')));
      delete from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA'));
      delete from academic_program where institution_id in ('$INS','$OTRA');
      delete from institution where id in ('$INS','$OTRA');" >/dev/null 2>&1
@@ -608,6 +613,62 @@ for f in estado_de_materia estado_de_accion estado_de_compromiso estado_de_evide
   igual "$f no cruza institución" \
     "$(q "select coalesce(public.$f('$OTRA','$EST',now())::text,'NULO');")" "NULO"
 done
+
+echo "→ ADR-106 · el analítico: historia académica que no toca el presente"
+PLAN_S=b5000000-0000-0000-0000-000000000001
+REQ_S=bb000000-0000-0000-0000-0000000000a1
+SHA_A=$(printf 'a%.0s' $(seq 64))
+SHA_B=$(printf 'b%.0s' $(seq 64))
+q "insert into curriculum_requirement (id,curriculum_plan_id,ordinal,code,label,requirement_type,source_type,source_ref)
+     values ('$REQ_S','$PLAN_S',1,'AM1','ANALISIS I SYN','COURSE','institution','x');
+   insert into enrollment (student_id,program_id,term,institution_id,curriculum_plan_id,curriculum_year,confirmed_at)
+     values ('$EST','b4000000-0000-0000-0000-000000000001','2026-2','$INS','$PLAN_S',2,now());" >/dev/null 2>&1
+CURSADAS_ANTES=$(q "select count(*) from course_enrollment where student_id='$EST';")
+
+rechaza "sin consentimiento no se registra un analítico" \
+  "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_A\",\"tipo\":\"application/pdf\",\"bytes\":10,\"estado\":\"PROCESSED\",\"clave\":\"k-a\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,'[]'::jsonb);"
+q "insert into academic_record_consent (institution_id,student_id,decision,policy_version) values ('$INS','$EST','GRANTED','analitico-v1-sintetica');" >/dev/null 2>&1
+
+FILAS='[{"ordinal":1,"crudo":{"nombre":"Análisis I SYN","codigo":"AM1","estado":"Aprobado","nota":"8"},"estado":"APPROVED","nota":8,"requisitoId":"'$REQ_S'","regla":"CODE","confianza":1,"revision":"AUTO"},
+        {"ordinal":2,"crudo":{"nombre":"Materia de otro plan SYN","estado":"Aprob…","nota":"?"},"estado":"UNKNOWN","nota":"","requisitoId":"","regla":"NONE","revision":"NEEDS_REVIEW"}]'
+DOC=$(q "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_A\",\"tipo\":\"application/pdf\",\"bytes\":10,\"paginas\":1,\"estado\":\"PROCESSED\",\"clave\":\"k-a\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,'$FILAS'::jsonb)->>'documentoId';" | tr -d '[:space:]')
+igual "un analítico procesado queda con sus dos resultados" \
+  "$(q "select jsonb_array_length(public.recorrido_del_estudiante('$INS','$EST')->'documento'->'resultados');")" "2"
+igual "una nota ilegible queda NULL, no 0" \
+  "$(q "select (grade is null)::text from academic_record_entry where document_id='$DOC' and ordinal=2;")" "true"
+igual "el mismo archivo otra vez es el mismo documento" \
+  "$(q "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_A\",\"tipo\":\"application/pdf\",\"bytes\":10,\"estado\":\"PROCESSED\",\"clave\":\"k-a\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,'[]'::jsonb)->>'repetido';")" "true"
+igual "I9 · todo entra student / unverified" \
+  "$(q "select count(*) from academic_record_entry where document_id='$DOC' and (source_type<>'student' or verification_status<>'unverified');")" "0"
+rechaza "un resultado vinculado a un requisito de otro plan" \
+  "select public.registrar_analitico('$INS','$EST','{\"sha256\":\"$SHA_B\",\"tipo\":\"application/pdf\",\"bytes\":10,\"estado\":\"PROCESSED\",\"clave\":\"k-b\",\"extractor\":\"SINTETICO-v1\"}'::jsonb,
+     '[{\"ordinal\":1,\"crudo\":{\"nombre\":\"X\"},\"estado\":\"APPROVED\",\"requisitoId\":\"$(q "select id from curriculum_requirement where curriculum_plan_id<>'$PLAN_S' limit 1;" | tr -d '[:space:]')\",\"regla\":\"CODE\",\"revision\":\"AUTO\"}]'::jsonb);"
+rechaza "un analítico que falló no guarda el archivo" \
+  "insert into academic_document (institution_id,student_id,consent_id,storage_key,content_sha256,mime_type,byte_size,status,failure_reason,extractor)
+   select '$INS','$EST',id,'k-fallido','$SHA_B','application/pdf',10,'FAILED','EXTRACCION_NO_DISPONIBLE','SINTETICO-v1'
+     from academic_record_consent where student_id='$EST' limit 1;"
+rechaza "un resultado que se eleva a corroborado" \
+  "update academic_record_entry set verification_status='corroborated' where document_id='$DOC';"
+
+E2=$(q "select id from academic_record_entry where document_id='$DOC' and ordinal=2;" | tr -d '[:space:]')
+q "select public.revisar_resultado('$INS','$EST','$E2','NOT_IN_PLAN',null,null);" >/dev/null 2>&1
+igual "«no es de mi plan» deja la fila sin vínculo y con fecha de revisión" \
+  "$(q "select review_state||'/'||match_rule||'/'||(curriculum_requirement_id is null)::text||'/'||(reviewed_at is not null)::text from academic_record_entry where id='$E2';")" "NOT_IN_PLAN/NONE/true/true"
+igual "y el crudo no se toca" \
+  "$(q "select raw_status from academic_record_entry where id='$E2';")" "Aprob…"
+rechaza "otro estudiante no revisa un resultado ajeno" \
+  "select public.revisar_resultado('$INS','b2222222-0000-0000-0000-0000000000ff','$E2','UNSURE',null,null);"
+
+igual "§2 · el analítico no creó ninguna cursada" \
+  "$(q "select count(*) from course_enrollment where student_id='$EST';")" "$(echo "$CURSADAS_ANTES" | tr -d '[:space:]')"
+igual "el consentimiento es append-only: el backend no tiene UPDATE" \
+  "$(q "select has_table_privilege('service_role','public.academic_record_consent','UPDATE')::text;")" "false"
+igual "el recorrido no cruza institución" \
+  "$(q "select coalesce(public.recorrido_del_estudiante('$OTRA','$EST')->>'documento','NULO');")" "NULO"
+
+q "delete from academic_record_entry where student_id='$EST'; delete from academic_document where student_id='$EST';
+   delete from academic_record_consent where student_id='$EST'; delete from enrollment where student_id='$EST';
+   delete from curriculum_requirement where id='$REQ_S';" >/dev/null 2>&1
 
 if [ "$fallos" -gt 0 ]; then echo; echo "✗ $fallos comprobación(es) de superficie fallando"; exit 1; fi
 echo; echo "✓ las funciones de lectura devuelven lo que las superficies proyectan"
