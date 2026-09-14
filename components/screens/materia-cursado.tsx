@@ -31,6 +31,8 @@ import { SUBCOPY, t, textoDeDuracion, type CopyId } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
 import type { ClaseEnLista, ColumnaFuente, GanttProjection, MateriaProps, TusClases } from "@/lib/domain/view-models";
 import { TIPOS_DE_MARCA } from "@/lib/domain/sesion-de-clase";
+import type { RequisitosDeCursado } from "@/lib/domain/requisitos-de-cursado";
+import { RequisitosDeCursadoBoton } from "./materia/requisitos";
 
 /**
  * **El Gantt de preparación** — [ADR-072](../../docs/decisions.md#adr-072).
@@ -295,6 +297,7 @@ export function MateriaCursado({
   tusClasesCargando = false,
   onEntrarAClase,
   onAbrirClase,
+  requisitos,
 }: MateriaProps & {
   /** *Tus clases* todavía no llegó: va su esqueleto, no la sección vacía (`P-12`). */
   tusClasesCargando?: boolean;
@@ -312,6 +315,11 @@ export function MateriaCursado({
   onEntrarAClase?: () => void;
   /** Abrir una clase de la lista. **Navegación, no CTA**: no solicita nada al dominio. */
   onAbrirClase?: (clase: ClaseEnLista) => void;
+  /**
+   * *Requisitos* — [ADR-108](../../docs/decisions.md#adr-108). **Simulados**:
+   * llegan aparte, sólo con `MODO_PRUEBA=1`. `null` ⇒ el botón no se dibuja.
+   */
+  requisitos?: RequisitosDeCursado | null;
 }) {
   return (
     <div style={{ background: "var(--background)" }}>
@@ -332,7 +340,13 @@ export function MateriaCursado({
           // `CTA-009` — el historial completo de **esta** materia. Va arriba a
           // la derecha, como acción del objeto (§11.9.3) y como en `UX01`: es
           // navegación de lectura y no compite con la CTA primaria.
-          verRegistro ? <AccionDeObjeto onClick={onVerRegistro}>{verRegistro}</AccionDeObjeto> : undefined
+          // *Requisitos* (ADR-108) va a su izquierda: también es lectura.
+          requisitos || verRegistro ? (
+            <>
+              {requisitos && <RequisitosDeCursadoBoton requisitos={requisitos} />}
+              {verRegistro && <AccionDeObjeto onClick={onVerRegistro}>{verRegistro}</AccionDeObjeto>}
+            </>
+          ) : undefined
         }
       />
 

@@ -165,6 +165,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-105](#adr-105) | **El alta tiene cinco pasos**: comisión y horarios son el cuarto, antes de disponibilidad. **La cursada no se muda de offering** al elegir comisión, y los bloques de una cursada tienen una sola precedencia | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «2-a» · **enmienda ADR-061** §«Dónde se pregunta»)* | Cambiar de comisión después del alta (fila 19) |
 | [ADR-106](#adr-106) | **El analítico**: historia académica **después de HOY y opcional**, en `/recorrido`; se sube, se extrae con un puerto (adaptador **sintético**), se vincula **sólo** al plan del estudiante y se revisa lo ambiguo. **Nunca crea una cursada** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «3-autorizo» · **sólo datos sintéticos**: ADR-006 intacto)* | Extracción real (ADR-006 + legal + ADR-080) |
 | [ADR-107](#adr-107) | **Preguntas del recorrido e hipótesis de perfil**: pocas preguntas deterministas (`RECORRIDO-v0.1`), respuesta declarada separada de la hipótesis, y *«Esto no me representa»*. **Sin esperar a la psicopedagoga** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «4-no se llevan, que no se impida nada» · **enmienda ADR-052** §«no autoriza el diagnóstico personal mínimo» y **acota ADR-087 D1**)* | Que el ADE consuma hipótesis |
+| [ADR-108](#adr-108) | **Requisitos de cursado, simulados**: un desplegable *Requisitos* en la materia con lo que piden para promoción y para regular —notas de parciales, TPs al día, asistencia al práctico y al teórico— y *piden / venís / quedan*. **Sólo con `MODO_PRUEBA=1`** | ✅ `ACCEPTED` *(14 sep 2026 · pedido por el owner con una captura de otro software · `SIMULADO`)* | Condiciones reales del programa (con procedencia) · asistencia y notas reales (ADR-006) |
 
 ---
 
@@ -10641,3 +10642,75 @@ debilita**, y se dice: el seam es `hipotesisVigentes()`. Compromisos, Focus, evi
 - **No restringe acceso a nada**: por eso `D1` sigue intacto donde vive.
 - **No compara estudiantes** ni muestra un número sobre la persona.
 - **No viaja al CRM ni a la institución.** Respuestas, texto libre e hipótesis son privados.
+
+---
+
+<a id="adr-108"></a>
+
+## ADR-108 — Requisitos de cursado, simulados: qué piden para promocionar y regularizar, y cómo venís
+
+**Estado:** ✅ `ACCEPTED` · 14 sep 2026 · **pedido por el owner**, con la captura de un desplegable de otro
+software delante · `SIMULADO — SÓLO MODO_PRUEBA`
+**No levanta:** [ADR-006](#adr-006). **No es:** una superficie (siguen nueve), una CTA del registro, una
+ruta bajo `app/(student)` ni un veredicto sobre la condición del estudiante.
+
+### Contexto
+
+El owner pidió, textual:
+
+> *"agregues en el apartado de cada materia un modal tipo: requisitos […] tocas requisitos y se abre asi y
+> aparece: notas minimas en parciales para promocion, TPs al dia, X% asistencia al practico, X% asistencia
+> al teorico todo para promocion y luego para regular, y que aparezca como venis vos, tipo piden: X, venis
+> Y%, "quedan 6 clases", etc"*
+
+**Achieve no tiene ninguno de los tres insumos.** Las condiciones de promoción y regularidad de una
+cátedra no están en el schema; la asistencia no se registra (`class_session.stream` separa teórico y
+práctico, pero nadie registra quién fue); y los `Assessment` no tienen nota. Además el período **no
+tiene fechas** ([ADR-100](#adr-100)): *"quedan 6 clases"* no se puede contar con datos reales.
+
+### Decisión
+
+**1. Existe el desplegable, y sus datos son simulados.** Botón *Requisitos* en píldora con flecha, arriba
+a la derecha de `UX02`, a la izquierda de *Ver registro*; panel anclado debajo, como la campanita
+([ADR-097 · Enm. 1](#adr-097-enmienda-1)). Primero **Promoción**, después **Regular**, y en cada uno
+cuatro filas: *Notas de los parciales*, *Trabajos prácticos al día*, *Asistencia al práctico*,
+*Asistencia al teórico*. Cada fila dice **Piden**, **Venís**, un detalle (*Quedan 6 clases · podés
+faltar a 2 más*) y un estado: *Cumple* · *Ajustado* · *No alcanza* · *Sin datos*.
+
+| Regla | Por qué |
+|---|---|
+| **Sólo con `MODO_PRUEBA=1`** | `GET /api/requisitos` responde `404` sin la variable, y sin respuesta **el botón no se dibuja** |
+| **Rotulado *Simulado* y con aclaración, siempre a la vista** | *"Condiciones, notas y asistencia de ejemplo. Achieve todavía no recibe estos datos de la cátedra."* |
+| **La cuenta es del dominio, los insumos de la simulación** | `lib/domain/requisitos-de-cursado.ts` es pura y valdría con datos reales; `lib/server/simulacion/requisitos.ts` inventa condiciones y situación, **determinística por cursada** |
+| **Sin datos no es cero** | Un parcial sin rendir es `null`; sin clases dadas no hay porcentaje. Las dos son *Sin datos* |
+| **Sin veredicto de la materia** | Ni *«estás promocionando»* ni *«3 de 4»*: cada requisito se evalúa solo. La condición la da la cátedra |
+| **No supone recuperatorios** | Un parcial debajo del mínimo dice eso. Qué salida tiene es regla de la cátedra, y no la tenemos |
+| **Sobre una cursada del estudiante** | JWT del estudiante; una cursada ajena es `404` |
+| **Bajo `?escenario=` no se pide** | El Track A no tiene requisitos que mostrar |
+
+**2. Qué simula la simulación.** Un período de **16 semanas**; la semana actual entre la 6 y la 12;
+teóricas y prácticas por semana según los bloques del horario real de la materia (alternan, como la clase
+simulada de [ADR-099](#adr-099); sin horario, una de cada); 2 parciales; 4 a 6 TPs; faltas entre 0 y
+35 %. Condiciones: promoción 7 u 8 en cada parcial, 100 % de TPs, 75 % teórico, 80 % práctico; regular 4,
+75 %, 60 %, 75 %; **una de cada cinco materias no promociona**, y el panel lo dice.
+
+**3. Los estados.** *Ajustado* es *todavía se puede, sin margen*: por debajo del porcentaje pero
+alcanzable, o con una falta disponible o ninguna. *No alcanza* es *aunque vayas a todas no llegás* (o un
+parcial ya debajo del mínimo). *Cumple* y *No alcanza* van con el chip tintado; *Ajustado* y *Sin datos*
+sin tinte, porque ninguno de los dos es un estado malo.
+
+⚠️ **No es el modelo real, y no se migra a columnas.** Las condiciones son del programa de la materia y
+tienen que llegar **con su procedencia**; la asistencia y las notas son datos de una persona y tocan
+[ADR-006](#adr-006). Cuando existan, **la ruta y la simulación se borran** y la cuenta del dominio se
+reusa.
+
+⚠️ **Sin capturas de `docs/diseño/` que muestren esto.** El mecanismo sale de la captura que adjuntó el
+owner, traducido a los tokens de `app/globals.css` (sin hex, en los dos temas).
+
+### Cómo se verifica
+
+`tests/requisitos-de-cursado.test.tsx` — la cuenta de asistencia (piden, venís, quedan, faltas
+disponibles, los cuatro estados), parciales sin rendir que no son `0`, TPs al día y atrasados, los dos
+regímenes sobre la misma situación, sin promoción dicho, ningún campo que resuma las filas; la simulación
+determinística y coherente en 200 cursadas; la ruta apagada sin `MODO_PRUEBA`, con JWT y sólo sobre una
+cursada propia; el panel en palabras, cerrado sin nada y abierto con *Simulado*, y `Escape` que lo cierra.

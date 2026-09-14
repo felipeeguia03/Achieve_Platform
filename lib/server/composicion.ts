@@ -263,6 +263,8 @@ import {
 import type { RespuestaDeCursada } from "@/lib/domain/cursada";
 import { cuentaReal } from "./repositorios/cuenta";
 import { avisosSimulados, type AvisosSimulados } from "./simulacion/avisos";
+import { requisitosSimulados } from "./simulacion/requisitos";
+import type { RequisitosDeCursado } from "@/lib/domain/requisitos-de-cursado";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
 import { cuenta as cuentaPura, type CuentaProps } from "./servicios/cuenta";
 import { catalogoReal, type InstitucionOfrecible, type RequisitoDelPlan } from "./repositorios/catalogo";
@@ -1445,6 +1447,29 @@ export async function avisosSimuladosDe(
       }))
     : [];
   return avisosSimulados(materias);
+}
+
+/**
+ * Los requisitos de cursado **simulados** de una cursada —
+ * [ADR-108](../../docs/decisions.md#adr-108).
+ *
+ * La cursada tiene que ser **de este estudiante**: se busca entre sus materias
+ * y, si no está, `null` (la ruta contesta `404`). De lo real sólo se toma cuántos
+ * bloques tiene su horario, para que la asistencia simulada tenga la forma de su
+ * semana; lo demás sale de `simulacion/requisitos.ts`.
+ */
+export async function requisitosSimuladosDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  cursadaId: string,
+): Promise<RequisitosDeCursado | null> {
+  const [{ materias }, bloques] = await Promise.all([
+    materiasDe(institutionId, studentId, zona),
+    horariosReal.deCursadas(institutionId, studentId),
+  ]);
+  if (!materias.some((m) => m.cursadaId === cursadaId)) return null;
+  return requisitosSimulados(cursadaId, bloques.filter((b) => b.cursadaId === cursadaId).length);
 }
 
 export async function materiasDe(
