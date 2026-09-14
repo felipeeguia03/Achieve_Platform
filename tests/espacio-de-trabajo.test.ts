@@ -33,6 +33,7 @@ import {
   olvidar,
   olvidarTodo,
 } from "@/lib/client/espacio-de-trabajo/persistencia";
+import { objetoEnPantalla } from "@/lib/navigation/objeto-en-pantalla";
 
 /**
  * El espacio de trabajo — [ADR-088](../docs/decisions.md#adr-088).
@@ -390,6 +391,22 @@ describe("persistencia", () => {
     const restaurado = leer(ANA);
     expect(restaurado.objetos.map((o) => o.entidadId)).toEqual(["u1", "u2", "u3"]);
     expect(restaurado.activo).toBe(claveDe("unidad", "u2"));
+  });
+
+  /**
+   * ⚠️ **El defecto:** `gimnasia` entró a `TipoDeObjeto` con ADR-102 y no a la
+   * lista de tipos que se leen. Minimizar la sesión la guardaba, pero minimizar
+   * lleva a Hoy, el `Shell` nuevo relee la memoria y la ficha desaparecía.
+   */
+  it("una sesión de Gimnasia guardada sobrevive a releer la memoria", () => {
+    const sesion = objetoEnPantalla("GIMNASIA", "/gimnasia?sesion=s-1", "Memoria");
+    expect(sesion).not.toBeNull();
+    guardar(ANA, abrir(ESPACIO_VACIO, sesion!, T0).espacio);
+
+    const restaurado = leer(ANA);
+    expect(restaurado.objetos.map((o) => [o.clave, o.etiqueta])).toEqual([
+      ["gimnasia:s-1", "Gimnasia · Memoria"],
+    ]);
   });
 
   it("**aísla por estudiante**: lo de Ana no aparece en la sesión de Beto", () => {
