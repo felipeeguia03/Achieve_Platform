@@ -26,7 +26,7 @@
  */
 
 import Link from "next/link";
-import { CalendarRange, Library, PanelLeft, PlayCircle, Sun } from "lucide-react";
+import { Brain, CalendarRange, Library, PanelLeft, PlayCircle, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
 import type { NodoId } from "@/lib/navigation/surfaces";
@@ -44,6 +44,7 @@ const ICONOS: Partial<Record<NodoId, typeof Sun>> = {
   UX02_INDICE: Library,
   CALENDARIO: CalendarRange,
   FORMACION: PlayCircle,
+  GIMNASIA: Brain,
 };
 
 export function Item({

@@ -44,6 +44,9 @@ export const FX_DAY_BASE: Escenario = {
     // terminarla. **No es parte del loop del día**: es el mismo estudiante
     // cursando, y el Hero no se entera.
     CLASE: contexto({ claseActiva: true }),
+    // ADR-102. Gimnasia sin sesión abierta: se puede empezar la rutina o un
+    // juego. **No es parte del loop del día** y el Hero no se entera.
+    GIMNASIA: contexto({ rutinaIniciable: true, juegoIniciable: true }),
     // La Action está recomendada y todavía no aceptada: se puede aceptar.
     UX03: contexto({ recomendacionPrimariaVigente: true, actionStatus: "RECOMMENDED" }),
     // Aceptada, con el draft del Commitment abierto. Aceptar NO creó el

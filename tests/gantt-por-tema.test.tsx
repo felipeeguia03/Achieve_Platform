@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen } from "@testing-library/react";
 
 import { MateriaCursado } from "@/components/screens/materia-cursado";
@@ -74,9 +76,31 @@ describe("§1 · Las palabras que la captura usaba y están prohibidas", () => {
     // registrada`, no `dominio`, `nivel`, `rendimiento` ni `avance de
     // aprendizaje`"*. La captura decía *"el relleno de cada barra es el nivel
     // del tema"*.
+    //
+    // ⚠️ **Una sola excepción, por clave y con fuente: Gimnasia cognitiva**
+    // (ADR-102). Ahí *nivel* es la dificultad de un juego —*«Nivel 3 · 5
+    // dígitos»*— y *rendimiento* está en el aviso que dice que la marca **no**
+    // mide a la persona. El owner los escribió así; la prohibición sigue
+    // entera para todo lo académico.
+    const academicos = Object.entries(copy)
+      .filter(([id]) => !id.startsWith("GIMNASIA."))
+      .map(([, v]) => v);
     for (const prohibida of [/\bnivel\b/i, /\brendimiento\b/i, /avance de aprendizaje/i]) {
-      expect(textos.filter((t) => prohibida.test(t))).toEqual([]);
+      expect(academicos.filter((t) => typeof t === "string" && prohibida.test(t))).toEqual([]);
     }
+  });
+
+  it("y la excepción de Gimnasia está acotada a sus claves y respaldada por la fuente", () => {
+    const fuente = readFileSync(resolve(process.cwd(), "docs/gimnasia-cognitiva-source.md"), "utf8");
+    expect(fuente).toContain("Nivel 6 en Cadena inversa");
+    expect(fuente).toContain("Las marcas describen tu rendimiento en cada ejercicio");
+    const usan = Object.entries(copy)
+      .filter(([, v]) => typeof v === "string" && /\bnivel\b|\brendimiento\b/i.test(v))
+      .map(([id]) => id)
+      .sort();
+    expect(usan).toEqual(["GIMNASIA.AVISO_RESPONSABLE", "GIMNASIA.CADENA.NIVEL", "GIMNASIA.CADENA.NUEVO_NIVEL"]);
+    // Y nunca sobre la persona: ninguna dice «tu nivel».
+    expect(Object.values(copy).filter((v) => typeof v === "string" && /\btu nivel\b/i.test(v))).toEqual([]);
   });
 
   it("ni ninguna fila muestra una fracción tipo `3/3`", () => {

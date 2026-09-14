@@ -821,6 +821,62 @@ CREATE TABLE class_recording_tag (            -- texto libre sobre un archivo; N
 ⚠️ **El único borrado de storage del repositorio** es el de estas dos tablas: el objeto primero, la fila
 después. `Evidence` sigue sin borrado (ADR-006 §3).
 
+### 8.2 Gimnasia cognitiva — [ADR-102](decisions.md#adr-102)
+
+Práctica breve de memoria. ⛔ **No toca `action`, `commitment`, `evidence` ni `topic_progress`**: jugar
+no es estudiar la materia, ni entregar, ni avanzar una unidad. **No hay tabla de progreso ni
+`cognitive_score`**: mejor marca, nivel, días con rutina y próximos repasos se deducen de los hechos.
+Migración: `20261021000000_gimnasia_cognitiva.sql`.
+
+```sql
+CREATE TABLE gym_session (                    -- la rutina o un juego suelto
+  id UUID PK, institution_id UUID NOT NULL, student_id UUID NOT NULL,
+  origin        TEXT CHECK (origin IN ('ROUTINE','SINGLE_GAME')),
+  planned_games TEXT[] NOT NULL,              -- fijados al empezar; 1–3 de los tres juegos
+  status TEXT DEFAULT 'IN_PROGRESS' CHECK (status IN ('IN_PROGRESS','COMPLETED','CANCELLED')),
+  started_at, ended_at,                       -- ended_at NOT NULL si y sólo si cerrada
+  idempotency_key TEXT NOT NULL, UNIQUE (student_id, idempotency_key)
+);
+-- Una abierta por estudiante: UNIQUE (student_id) WHERE status = 'IN_PROGRESS'
+
+CREATE TABLE gym_attempt (                    -- un juego dentro de la sesión
+  id UUID PK, institution_id, student_id, gym_session_id,  -- FK compuesta (sesión, estudiante)
+  game TEXT CHECK (game IN ('FLASH_GRID','REVERSE_CHAIN','REAL_RECALL')),
+  rules_version TEXT NOT NULL,                -- CF-1 · CI-1 · RR-1
+  status TEXT DEFAULT 'STARTED' CHECK (status IN ('STARTED','COMPLETED','ABANDONED')),
+  seed INTEGER, start_length SMALLINT,        -- los pone el servidor (cuadrícula y cadena)
+  plan UUID[],                                -- las preguntas (Recuerdo real)
+  answers JSONB,                              -- respuestas por ronda, para rehacer la corrección
+  rounds, correct_count, error_count, max_span, max_attempted_span,
+  score INTEGER,                              -- SÓLO cuadrícula (CHECK)
+  level_before, level_after SMALLINT,         -- SÓLO cadena (CHECK)
+  partial_count SMALLINT,                     -- SÓLO recuerdo (CHECK)
+  personal_best BOOLEAN
+);
+-- Un STARTED por sesión; un COMPLETED por (sesión, juego)
+
+CREATE TABLE recall_item (                    -- una pregunta; de la materia o general (course_id NULL)
+  id UUID PK, code TEXT UNIQUE, course_id UUID REFERENCES course, topic_id UUID REFERENCES topic,
+  prompt TEXT, answer_type TEXT CHECK (IN ('SHORT_ANSWER','MULTIPLE_CHOICE','TRUE_FALSE','SELF_ASSESSED')),
+  options JSONB,                              -- sólo opción múltiple; nunca marca la correcta
+  accepted_answers TEXT[],                    -- sólo cerradas; NUNCA sale al cliente
+  canonical_answer TEXT, explanation TEXT, version INTEGER,
+  publication_status TEXT DEFAULT 'DRAFT',    -- sólo lo PUBLISHED se muestra (sintéticas: MODO_PRUEBA)
+  source_type, source_ref, observed_at, verification_status DEFAULT 'unverified'  -- I9 intacto
+);
+
+CREATE TABLE recall_review (                  -- APPEND-ONLY (REVOKE UPDATE, DELETE a service_role)
+  id UUID PK, institution_id, student_id, recall_item_id, item_version,
+  gym_attempt_id UUID, position SMALLINT,     -- UNIQUE (gym_attempt_id, position)
+  outcome TEXT CHECK (IN ('NOT_RECALLED','PARTIAL','RECALLED','EASY')),
+  auto_graded BOOLEAN, answer TEXT,           -- answer sólo en cerradas: una abierta no guarda su texto
+  policy_version TEXT, next_review_on DATE, answered_at, idempotency_key
+);
+```
+
+⚠️ **Las cuatro entran a `limpiar_mundo`** (`db-aislamiento.sh`). Las preguntas sintéticas de la demo
+(`SYN-GIM-…`) caen con sus materias.
+
 ---
 
 ## 9. Schema — capa de ejecución (el loop diario)

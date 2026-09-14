@@ -117,8 +117,9 @@ describe("Enmienda 2 · V1 es de solo lectura", () => {
   it("`CTA-021` NO está en el registro canónico", () => {
     expect(Object.keys(ctaRegistry)).not.toContain("CTA-021");
     // 22 desde ADR-098 (Modo Clase), que tomó `CTA-022` y `CTA-023` y dejó
-    // el hueco de `CTA-021` como reserva.
-    expect(Object.keys(ctaRegistry)).toHaveLength(22);
+    // el hueco de `CTA-021` como reserva. 24 desde ADR-102 (Gimnasia), que tomó
+    // `CTA-024` y `CTA-025` y **siguió sin tocar** la reserva.
+    expect(Object.keys(ctaRegistry)).toHaveLength(24);
   });
 
   /**

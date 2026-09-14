@@ -157,6 +157,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-098](#adr-098) | **Modo Clase**: la clase que el estudiante abre es suya, no la clase dictada; **sin audio y sin checkpoint** | ✅ `ACCEPTED` *(13 sep 2026 · el owner aceptó las doce recomendaciones · **enmienda ADR-094 §5**)* | El checkpoint (psicopedagoga), el audio (ADR-006 + legal) |
 | [ADR-099](#adr-099) | **Modo Clase, segunda vuelta**: grabación de audio con etiquetas, apuntes que se guardan con Enter, material de la clase, unidades y *cómo venís*, y la miga de la clase | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «quiero que apruebes lo que haga falta» · **enmienda ADR-098** §1, §4 y la tabla de lo que queda afuera)* | Grabar en un aula real (ADR-006 + legal, `legal-package.md` §5.1) |
 | [ADR-100](#adr-100) | **El Calendario**: clases del horario semanal, evaluaciones y compromisos en día · semana · mes, con enlace a cada objeto. **No agenda** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con un mockup · `CTA-001` gana el origen `CALENDARIO`)* | Recortar el horario al período real (ADR-060…065, corte 2) |
+| [ADR-102](#adr-102) | **Gimnasia cognitiva**: categoría Memoria con Cuadrícula fugaz, Cadena inversa y Recuerdo real; el resultado lo calcula el servidor, el progreso se deduce y **no toca Hoy ni el ADE** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner por escrito · `CTA-024` y `CTA-025` · 4 tablas)* | — |
 | [ADR-100 · Enm. 1](#adr-100-enmienda-1) | **Progreso y Modo Examen salen de la barra lateral**: se abren desde la materia (`CTA-009`, `CTA-019`) | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner)* | Colgar sus migas de la materia |
 
 ---
@@ -9929,3 +9930,146 @@ superficie depende sólo del menú"* ya lo garantizaba.
   limpiando** (`SECCIONES_RETIRADAS`).
 - **Abierto:** colgar las dos migas de su materia (*Materias › Análisis › Progreso*). Necesita que cada
   pantalla declare su materia, como Modo Clase (ADR-099 §9).
+
+---
+
+<a id="adr-102"></a>
+
+## ADR-102 — Gimnasia cognitiva: la categoría Memoria, con tres juegos que no compiten con el día
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner por escrito**, con alcance cerrado —
+fuente literal en [`gimnasia-cognitiva-source.md`](gimnasia-cognitiva-source.md)—. Las decisiones
+técnicas de abajo las tomó el agente dentro de ese alcance; **el owner puede revertir cualquiera**.
+**Construye sobre:** [ADR-087](#adr-087) (contenido `DRAFT` y vista simulada), [ADR-088](#adr-088)
+Enm. 7 y 8 (la barra no se llena sola), [ADR-098](#adr-098) (nodo sin wireframe, idempotencia por
+clave), [ADR-041](#adr-041) (eventos no facturables), [ADR-060](#adr-060) (el temario es de la materia).
+**No levanta:** [ADR-006](#adr-006), [ADR-080](#adr-080) (ninguna IA), `C01-021`.
+**Plan, API y QA:** [`gimnasia-cognitiva.md`](gimnasia-cognitiva.md).
+
+### Contexto
+
+El owner pidió **Gimnasia cognitiva**: práctica breve de memoria que *"no debe competir"* con el
+núcleo —*"el estudiante no juega para escapar del estudio"*— con una sola categoría, **Memoria**, y
+tres juegos: **Cuadrícula fugaz**, **Cadena inversa** y **Recuerdo real**.
+
+### Decisión
+
+**1. Un nodo nuevo, `GIMNASIA`, en `/gimnasia`, con `wireframe: null`.** El patrón de `FORMACION`,
+`CLASE` y `CALENDARIO`: tiene ruta y **no es una superficie** (`superficieIds` sigue en nueve). Entra
+a la barra lateral **al final, después de Formación**, como *Gimnasia* y sin contador: nada vence. Es
+raíz de su miga.
+
+**2. La pestaña *Gimnasia · Memoria* es la de la rutina abierta, no la de la sección.** Enmienda 7 de
+ADR-088 sigue valiendo: entrar a Gimnasia no guarda nada y la sección no lleva controles. La sesión
+abierta vive en `?sesion=`, `objetoEnPantalla` la reconoce (tipo `gimnasia`) y **minimizarla** la deja
+en la barra como *Gimnasia · Memoria* —o *Gimnasia · Cuadrícula fugaz* si es un juego suelto—. La
+miga es *Gimnasia › Memoria*. Es la única lectura del §4 compatible con la Enmienda 7.
+
+**3. Cuatro tablas, y el progreso se deduce.**
+
+| Tabla | Qué es |
+|---|---|
+| `gym_session` | La rutina (`ROUTINE`) o un juego suelto (`SINGLE_GAME`). `IN_PROGRESS → COMPLETED \| CANCELLED`. **Una abierta por estudiante** (índice único). Los ejercicios previstos se fijan al empezar |
+| `gym_attempt` | Un intento de un juego. `STARTED → COMPLETED \| ABANDONED`. Semilla, largo inicial o plan de preguntas **puestos por el servidor**; resultado en columnas tipadas por juego, con `CHECK` que impiden mezclar magnitudes |
+| `recall_item` | Una pregunta de Recuerdo real, **de la materia** (`course_id`) o general (`NULL`). `DRAFT` por defecto, procedencia completa, `verification_status` intacto (`I9`) |
+| `recall_review` | Un repaso confirmado. **Append-only** (`REVOKE UPDATE, DELETE` también a `service_role`). El próximo repaso es el del más reciente |
+
+⚠️ **No hay tabla de progreso, ni `cognitive_score`.** Mejor puntuación, nivel actual, mejor cadena,
+días con rutina y próximos repasos **se leen de los hechos**: una tabla de progreso sería una segunda
+fuente que tarde o temprano dice otra cosa. ⚠️ **Sin `CREATED`**: crear la sesión es empezarla.
+
+**4. El resultado lo calcula el servidor.** El cliente manda **respuestas**, nunca puntuaciones. Las
+reglas son funciones puras en `lib/domain/gimnasia/` que usan **la misma semilla** en los dos lados:
+el navegador las usa para saber qué ronda sigue; el servidor rehace la partida entera y guarda lo que
+calcula. Una partida sin terminar según las reglas no se confirma (`409`). En Recuerdo real, sólo se
+acepta la respuesta de **la pregunta que toca** en la cola, y la respuesta de referencia sale **después**
+de confirmar.
+
+**5. Las reglas son configuración versionada** (`CF-1`, `CI-1`, `RR-1`), y cada intento y cada repaso
+guarda con cuál se corrigió.
+
+| Juego | Reglas |
+|---|---|
+| **Cuadrícula fugaz** | 3×3 y 3 casillas al empezar; acierto +1 casilla, error mantiene; 2 errores o 10 rondas terminan; 4×4 desde 7 casillas, tope 16; **sin casillas repetidas** en una secuencia; `largo × 100` por ronda correcta + `25` por cada acierto seguido previo. La velocidad no entra |
+| **Cadena inversa** | Sólo dígitos, **sin dos iguales seguidos**; 5 pruebas; 2 aciertos en un largo pasan al siguiente (tope 12); 2 errores seguidos bajan uno **en la sesión**. Nivel = largo consolidado − 2 (3 dígitos = Nivel 1). **El nivel persistido no baja nunca** |
+| **Recuerdo real** | 5 preguntas; *No la recordé* y *Parcialmente* → 1 día, *La recordé* → 3, *Me resultó fácil* → 7; un *No la recordé* vuelve **una vez** al final de la sesión si no pasa de 7 presentaciones. Orden: vencidas · unidad activa · evaluación en ≤ 14 días · más fallos recientes · nuevas. Lo programado para después no entra |
+
+**6. La adaptación es determinística y sale de la historia real** (§11). Cuadrícula: la mejor
+secuencia de los **últimos tres** intentos menos dos, nunca menos de 3. Cadena: el largo del nivel
+actual. Sin historia, los valores por defecto. **No se crea otro Personal Engine**: el que existe
+([ADR-074](#adr-074)) calibra minutos de trabajo y no tiene nada que decir de un juego.
+
+**7. Una cerrada la corrige el servidor; una abierta, el estudiante.** Corta: igualdad normalizada
+(minúsculas, sin tildes, espacios de a uno, sin puntuación final) contra `accepted_answers`. Opción
+múltiple y verdadero/falso: igualdad exacta. Una cerrada correcta se programa como *La recordé*; una
+incorrecta, como *No la recordé*. Una abierta: escribe → confirma → ve la referencia (**no se guarda
+nada todavía**) → clasifica en cuatro → se guarda. **Su texto no se persiste.**
+
+**8. Contenido: sólo lo validado, y la demo rotulada.** Hoy no existe ninguna pregunta de cátedra,
+curada por Achieve ni creada por el estudiante. Sin `MODO_PRUEBA=1` sólo se muestra lo `PUBLISHED`
+—hoy nada—, y Recuerdo real queda **en preparación, sin botón**. Con `MODO_PRUEBA=1` se ven además
+las preguntas **sintéticas** (`code` `SYN-…`, `source_type = 'inference'`, `DRAFT`), rotuladas en
+pantalla, que carga `scripts/sembrar-gimnasia.mjs`. El mismo patrón que ADR-087 Enm. 3.
+
+**9. Dos CTAs nuevas, con su escritura.** `CTA-021` sigue reservada.
+
+| CTA | Origen | Acción | Aparece si |
+|---|---|---|---|
+| `CTA-024` | `GIMNASIA` | Empezar la rutina | No hay otra sesión abierta |
+| `CTA-025` | `GIMNASIA` | Jugar un ejercicio suelto (*Jugar · Volver a jugar · Empezar · Continuar · Practicar* son copy) | No hay otra sesión abierta y, en Recuerdo real, hay preguntas pendientes |
+
+⚠️ **No existe *Preparar*.** Sin nada que cree preguntas, una CTA así sería un contrato incumplido
+(ADR-087 Enm. 2). La tarjeta dice *Prepará tu primer set* y **por qué** no hay repasos. *Volver a mi
+próxima acción* es **navegación** a `/hoy`, donde el ADE dice la acción: Gimnasia no la inventa.
+
+**10. Cuatro eventos, `TRANSICION`, no facturables y fuera de la Bitácora:** `GymSessionStarted`,
+`GymSessionCompleted`, `GymSessionCancelled` y `GymAttemptCompleted` (con `juego`, `version` y
+`marcaPersonal`; sin respuestas). **Un repaso no es un evento**: *"evento nuevo para cada interacción:
+no está aprobado"*.
+
+**11. «Nivel» es del juego.** [ADR-075](#adr-075) §C1 prohíbe `nivel` y `rendimiento` en el rótulo de
+la barra de **actividad académica**, y un guard lo aplicaba a todo el copy. Acá *nivel* es la
+dificultad de un ejercicio y siempre va con su medida (*Nivel 3 · 5 dígitos*), y *rendimiento* está en
+el aviso que dice que la marca **no** mide a la persona. **La excepción es por clave** (`GIMNASIA.*`),
+enumerada y respaldada por la fuente; la prohibición sigue entera para lo académico. *«Adaptada a tu
+nivel»* **no** se usó: nombraba el nivel de la persona.
+
+### Lo que NO hace
+
+- **No toca Hoy, el ADE, `action`, `commitment`, `evidence` ni `topic_progress`.** No es una acción,
+  no cuenta como tiempo de estudio, no avanza unidades ni completa compromisos.
+- **No aparece en Hoy.** Hoy es un tablero de tres cuerpos con guards (ADR-093/096) y no tiene zona
+  secundaria donde entre sin tocar su contrato (§13 del pedido: *"sólo si existe una integración
+  natural"*).
+- **No entra a la Bitácora.** `hechos_de_cursada` se ata a una `Action`.
+- **Unidad activa: siempre `false`.** No hay una lectura única de *«la unidad activa de una cursada»*
+  que no sea la del ADE o la de la última clase dada; usar cualquiera sería decidir qué es «activa».
+- **No amplía la sesión de repasos a pedido** (§9, *"ampliar sólo si… el estudiante lo solicita"*):
+  queda para después.
+- **No diagnostica ni compara.** Sin rankings, sin percentiles, sin «edad cerebral».
+
+### Lo que queda abierto
+
+| Qué | Quién |
+|---|---|
+| **Quién escribe preguntas reales** (cátedra, Achieve, el estudiante) y quién las publica | Owner |
+| **Revisar vocabulario y política de repaso** —los cuatro rótulos, los intervalos 1·1·3·7, el aviso responsable— como se hizo con Formación | Psicopedagoga |
+| **Si una rutina completada entra a la Bitácora** o a Hoy como apoyo secundario | Owner |
+| **La unidad activa** como criterio de selección | Owner + ADE |
+
+### Consecuencias
+
+- **Catorce rutas bajo `app/(student)`, nueve superficies.** `tests/shell.test.tsx` lo verifica.
+- **El registro pasa a 24 CTAs.**
+- **Cuatro tablas nuevas entran a `limpiar_mundo`** en el mismo commit que la migración.
+- **Se toca `components/shell/navegacion-lateral.tsx` y `barra-de-objetos.tsx`** sólo para el ícono.
+  Ninguna pantalla existente de `components/screens/` se modifica.
+
+### Cómo se verifica
+
+`tests/gimnasia-dominio.test.ts` (semilla, puntuación, errores, 3×3→4×4, inversión, niveles, repaso,
+selección, cola, fechas), `tests/gimnasia-servicio.test.ts` (idempotencia, resultado en servidor, lo
+ajeno no existe, cancelar, retomar, sin contenido, eventos, la referencia no sale antes),
+`tests/gimnasia-pantalla.test.tsx` (tres tarjetas, ninguna categoría futura, una CTA principal, las
+partidas completas por teclado, abierta con autoevaluación, resumen y regreso a Hoy) y
+`db-aislamiento.sh` (una sesión abierta, lo de otro no entra, el repaso no se reescribe).

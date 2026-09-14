@@ -68,8 +68,11 @@ describe("Registro canónico de CTAs", () => {
     // `CTA-022` y `CTA-023` entraron el 13 de septiembre por ADR-098 (Modo
     // Clase), **con** su escritura: `POST /api/clase` y `POST /api/clase/fin`.
     // Son 22, y `CTA-021` sigue fuera: el hueco es la reserva.
-    expect(ctaIds).toHaveLength(22);
-    for (let n = 1; n <= 23; n++) {
+    //
+    // `CTA-024` y `CTA-025` entraron el 13 de septiembre por ADR-102 (Gimnasia
+    // cognitiva), **con** su escritura: `POST /api/gimnasia/sesion`. Son 24.
+    expect(ctaIds).toHaveLength(24);
+    for (let n = 1; n <= 25; n++) {
       const id = `CTA-${String(n).padStart(3, "0")}` as CtaId;
       if (n === 21) expect(ctaIds).not.toContain(id);
       else expect(ctaIds).toContain(id);
@@ -121,6 +124,9 @@ describe("Registro canónico de CTAs", () => {
     // ADR-098: Modo Clase. El spec nombra el momento y no tiene la CTA.
     "CTA-022": "ADR-098",
     "CTA-023": "ADR-098",
+    // ADR-102: Gimnasia cognitiva. El spec no la tiene.
+    "CTA-024": "ADR-102",
+    "CTA-025": "ADR-102",
   };
   const CORRECCIONES = Object.keys(CORRECCION_DE) as CtaId[];
 
@@ -244,8 +250,8 @@ function alcanzaAlgunEscenario(id: CtaId): boolean {
 describe("Alcance: toda CTA tiene un escenario que la alcanza", () => {
   const exigibles = ctaIds.filter((id) => !(id in bloqueadasPorEtapa));
 
-  it("las 22 CTAs son exigibles: ninguna superficie de origen falta ya", () => {
-    expect(exigibles).toHaveLength(22);
+  it("las 24 CTAs son exigibles: ninguna superficie de origen falta ya", () => {
+    expect(exigibles).toHaveLength(24);
     expect(Object.keys(bloqueadasPorEtapa)).toHaveLength(0);
   });
 

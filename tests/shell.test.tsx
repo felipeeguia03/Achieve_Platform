@@ -242,14 +242,15 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
   it("toda ruta del estudiante envuelve su superficie en `Shell`, con un nodo real", () => {
     const rutas = paginas("app/(student)");
 
-    // ⚠️ **Trece rutas, nueve superficies.** El índice de materias
+    // ⚠️ **Catorce rutas, nueve superficies.** El índice de materias
     // ([ADR-077](../docs/decisions.md#adr-077)), la biblioteca de Formación
     // ([ADR-087](../docs/decisions.md#adr-087)), Modo Clase
     // ([ADR-098](../docs/decisions.md#adr-098)) y el Calendario
-    // ([ADR-100](../docs/decisions.md#adr-100)) son nodos sin wireframe: tienen
+    // ([ADR-100](../docs/decisions.md#adr-100)) y Gimnasia cognitiva
+    // ([ADR-102](../docs/decisions.md#adr-102)) son nodos sin wireframe: tienen
     // ruta y no son superficies. Las dos cifras se verifican por separado,
     // abajo, justamente para que una no tape a la otra.
-    expect(rutas.length).toBe(13);
+    expect(rutas.length).toBe(14);
 
     const sinShell = rutas.filter((f) => {
       const src = readFileSync(resolve(RAIZ, f), "utf8");
@@ -278,14 +279,14 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
     const declarados = paginas("app/(student)")
       .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1])
       .filter(Boolean);
-    // Trece rutas, trece nodos distintos: nueve superficies, el índice de
-    // materias, la biblioteca de Formación, Modo Clase y el Calendario.
+    // Catorce rutas, catorce nodos distintos: nueve superficies, el índice de
+    // materias, la biblioteca de Formación, Modo Clase, el Calendario y Gimnasia.
     //
     // ⚠️ **Los dos números miden cosas distintas y por eso están los dos.** El
     // `Set` detecta que dos rutas declaren el mismo nodo —una copiaría el
     // breadcrumb y el resaltado de menú de la otra—; el `length`, que alguna
     // ruta no declare ninguno.
-    expect(new Set(declarados).size).toBe(13);
-    expect(declarados.length).toBe(13);
+    expect(new Set(declarados).size).toBe(14);
+    expect(declarados.length).toBe(14);
   });
 });

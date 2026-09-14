@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BookOpen,
+  Brain,
   CalendarClock,
   ClipboardList,
   FileText,
@@ -67,6 +68,7 @@ const ICONOS: Record<TipoDeObjeto, typeof BookOpen> = {
   formacion: PlayCircle,
   bitacora: NotebookPen,
   clase: Presentation,
+  gimnasia: Brain,
 };
 
 /**

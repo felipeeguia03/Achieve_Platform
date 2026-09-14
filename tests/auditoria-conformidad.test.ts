@@ -245,6 +245,12 @@ describe("Bloque 6 · Interacción", () => {
         es el horario, las evaluaciones y los compromisos **de este estudiante**.
       */
       "app/(student)/calendario/page.tsx",
+      /*
+        **Gimnasia cognitiva** — ADR-102. Nodo sin wireframe, no superficie. Su
+        estado compartible sí tiene URL (`?sesion=`); lo que no tiene es
+        escenario, porque sus partidas y repasos son **de este estudiante**.
+      */
+      "app/(student)/gimnasia/page.tsx",
     ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))

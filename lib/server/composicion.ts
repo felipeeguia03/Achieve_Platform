@@ -1,5 +1,20 @@
 import "server-only";
 
+import { randomInt } from "node:crypto";
+
+import { gimnasiaReal } from "./repositorios/gimnasia";
+import {
+  cancelarSesion as cancelarSesionDeGimnasiaPuro,
+  iniciarIntento as iniciarIntentoPuro,
+  iniciarSesion as iniciarSesionDeGimnasiaPuro,
+  preguntaActual as preguntaActualPuro,
+  proyectarGimnasia,
+  registrarResultado as registrarResultadoPuro,
+  responderRecuerdo as responderRecuerdoPuro,
+  type Dependencias as DependenciasDeGimnasia,
+} from "./servicios/gimnasia";
+import { SEMILLA_MAXIMA } from "@/lib/domain/gimnasia/azar";
+
 import { estudiantesReal } from "./repositorios/estudiante";
 import { identidadReal, identidadYSesionDeToken } from "./repositorios/identidad";
 import { cuentaDeAuthReal } from "./repositorios/cuenta-de-auth";
@@ -2058,3 +2073,32 @@ export const etiquetarGrabacion = (i: string, p: Pedido<typeof etiquetarPuro>) =
   etiquetarPuro(dependenciasDeMaterial(), i, p);
 export const borrarEtiquetaDeGrabacion = (i: string, p: Pedido<typeof borrarEtiquetaPuro>) =>
   borrarEtiquetaPuro(dependenciasDeMaterial(), i, p);
+
+// ── Gimnasia cognitiva · ADR-102 ─────────────────────────────────────────────
+
+const dependenciasDeGimnasia = (): DependenciasDeGimnasia => ({
+  repo: gimnasiaReal,
+  eventos: eventosReal,
+  ahora: () => new Date().toISOString(),
+  semilla: () => randomInt(0, SEMILLA_MAXIMA),
+  // Las preguntas sintéticas **sólo en la demo**, como la vista simulada de
+  // Formación (ADR-087 Enm. 3). Sin la variable, sólo lo `PUBLISHED`.
+  incluirSinteticos: process.env.MODO_PRUEBA === "1",
+});
+
+type PedidoDeGimnasia<F extends (d: DependenciasDeGimnasia, i: string, p: never) => unknown> = Parameters<F>[2];
+
+export const gimnasiaDe = (institutionId: string, estudiante: Parameters<typeof proyectarGimnasia>[2]) =>
+  proyectarGimnasia(dependenciasDeGimnasia(), institutionId, estudiante);
+export const iniciarSesionDeGimnasia = (i: string, p: PedidoDeGimnasia<typeof iniciarSesionDeGimnasiaPuro>) =>
+  iniciarSesionDeGimnasiaPuro(dependenciasDeGimnasia(), i, p);
+export const cancelarSesionDeGimnasia = (i: string, p: PedidoDeGimnasia<typeof cancelarSesionDeGimnasiaPuro>) =>
+  cancelarSesionDeGimnasiaPuro(dependenciasDeGimnasia(), i, p);
+export const iniciarIntentoDeGimnasia = (i: string, p: PedidoDeGimnasia<typeof iniciarIntentoPuro>) =>
+  iniciarIntentoPuro(dependenciasDeGimnasia(), i, p);
+export const registrarResultadoDeGimnasia = (i: string, p: PedidoDeGimnasia<typeof registrarResultadoPuro>) =>
+  registrarResultadoPuro(dependenciasDeGimnasia(), i, p);
+export const preguntaDeRecuerdo = (i: string, p: PedidoDeGimnasia<typeof preguntaActualPuro>) =>
+  preguntaActualPuro(dependenciasDeGimnasia(), i, p);
+export const responderRecuerdo = (i: string, p: PedidoDeGimnasia<typeof responderRecuerdoPuro>) =>
+  responderRecuerdoPuro(dependenciasDeGimnasia(), i, p);

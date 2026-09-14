@@ -55,6 +55,8 @@ node scripts/simular-aulas.mjs --aplicar   # ADR-094: aulas simuladas, sólo sob
                                            # bloques `inference`. Va DESPUÉS de
                                            # cualquier corrida de simular-temarios,
                                            # que regenera los bloques sin aula
+npm run db:gimnasia -- --aplicar --historial  # ADR-102: preguntas sintéticas de Recuerdo real
+                                              # y dos rutinas pasadas del estudiante sintético
 npm run db:sesion       # las tres identidades: va AL FINAL, cuando los tres `student` existen
 npm run dev
 ```

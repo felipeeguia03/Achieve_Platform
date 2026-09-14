@@ -59,6 +59,7 @@ const ETIQUETAS: Partial<Record<NodoId, string>> = {
   UX02_INDICE: "Materias",
   FORMACION: "Formación",
   CALENDARIO: "Calendario",
+  GIMNASIA: "Gimnasia",
   CLASE: "Clase",
   UX02: "Materia",
   UX03: "Próxima acción",

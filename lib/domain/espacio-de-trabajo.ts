@@ -55,7 +55,12 @@ export type TipoDeObjeto =
   | "formacion"
   | "bitacora"
   /** Una clase abierta en Modo Clase — ADR-088 · Enmienda 8. */
-  | "clase";
+  | "clase"
+  /**
+   * Una rutina o un juego abierto **adentro** de Gimnasia — ADR-102. No es la
+   * sección: entrar a Gimnasia no guarda nada (Enmienda 7).
+   */
+  | "gimnasia";
 
 import type { Marco } from "./marco-de-panel";
 

@@ -58,7 +58,11 @@ export type CtaId =
   /** Modo Clase: entrar o volver a la clase. Ver ADR-098. `CTA-021` está reservada. */
   | "CTA-022"
   /** Modo Clase: terminar la clase. Ver ADR-098. */
-  | "CTA-023";
+  | "CTA-023"
+  /** Gimnasia cognitiva: empezar la rutina. Ver ADR-102. */
+  | "CTA-024"
+  /** Gimnasia cognitiva: jugar un ejercicio suelto. Ver ADR-102. */
+  | "CTA-025";
 
 export interface Cta {
   id: CtaId;
@@ -553,6 +557,54 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     estadoError: "no se pudo terminar: reintentar es seguro, la operación es idempotente",
     escenarios: [],
     aparece: (c) => c.claseActiva,
+    habilitada: siempre,
+  },
+
+  /**
+   * **Empezar rutina** — [ADR-102](../../docs/decisions.md#adr-102).
+   *
+   * No navega a otro nodo: la rutina corre adentro de Gimnasia, con la sesión en
+   * la URL. **No es una `Action` ni compite con la del ADE**: la precedencia de
+   * `UX01` no cambia y al terminar se vuelve a Hoy.
+   */
+  "CTA-024": {
+    id: "CTA-024",
+    origen: ["GIMNASIA"],
+    condicion: "Sin otra sesión de Gimnasia abierta",
+    accionSolicitada: "empezar la rutina de memoria",
+    // No navega a otro nodo: la rutina corre en la misma pantalla, con la sesión en la URL.
+    destino: null,
+    resultadoAutoritativo: "GymSession `IN_PROGRESS` con los ejercicios previstos fijados por el servidor; `GymSessionStarted` si es nueva",
+    fallback: { nodo: "GIMNASIA", descripcion: "quedarse en la pantalla principal sin empezar nada" },
+    estadoError: "otra sesión abierta: ofrecer retomarla o descartarla; reintentar con la misma clave no duplica",
+    // Vacío a propósito, como `CTA-022`: el spec no tiene escenario para esto.
+    escenarios: [],
+    aparece: (c) => c.rutinaIniciable,
+    habilitada: siempre,
+  },
+
+  /**
+   * **Jugar** un ejercicio suelto — [ADR-102](../../docs/decisions.md#adr-102).
+   *
+   * Sus etiquetas —*Jugar*, *Volver a jugar*, *Empezar*, *Continuar*,
+   * *Practicar*— son **copy**, como las tres de `CTA-001`: todas empiezan una
+   * sesión de un solo juego.
+   *
+   * ⚠️ **No existe *Preparar*.** Sin preguntas no hay nada que crearlas: una CTA
+   * sin escritura sería un contrato incumplido (ADR-087 Enm. 2). La tarjeta dice
+   * por qué no hay repasos, y no ofrece botón.
+   */
+  "CTA-025": {
+    id: "CTA-025",
+    origen: ["GIMNASIA"],
+    condicion: "Sin otra sesión de Gimnasia abierta y, en Recuerdo real, con preguntas pendientes",
+    accionSolicitada: "jugar un ejercicio de memoria",
+    destino: null,
+    resultadoAutoritativo: "GymSession `IN_PROGRESS` de un solo juego; `GymSessionStarted` si es nueva",
+    fallback: { nodo: "GIMNASIA", descripcion: "quedarse en la pantalla principal sin empezar nada" },
+    estadoError: "otra sesión abierta: ofrecer retomarla; sin preguntas: decir por qué, sin botón",
+    escenarios: [],
+    aparece: (c) => c.juegoIniciable,
     habilitada: siempre,
   },
 } as const;

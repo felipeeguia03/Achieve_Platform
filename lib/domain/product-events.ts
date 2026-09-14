@@ -466,6 +466,31 @@ export const EXTENSIONES: Readonly<
     nivel: "TRANSICION",
     enBitacora: false,
   },
+  // ADR-102 · Gimnasia cognitiva. **No facturables** (ADR-041) y **fuera de la
+  // Bitácora**: jugar no es producir para una materia, y `hechos_de_cursada` se
+  // ata a una `Action`. Cuatro hechos y ninguno más: *"evento nuevo para cada
+  // interacción: no está aprobado"* — cada respuesta de Recuerdo real es una
+  // fila de `recall_review`, no un evento.
+  GymSessionStarted: {
+    porQue: "El estudiante empezó una rutina o un juego de Gimnasia cognitiva (ADR-102). No es tiempo de estudio",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  GymSessionCompleted: {
+    porQue: "Se completaron todos los ejercicios previstos de la sesión (ADR-102). No es evidencia ni progreso",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  GymSessionCancelled: {
+    porQue: "El estudiante descartó la sesión (ADR-102). Lo terminado adentro queda guardado",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  GymAttemptCompleted: {
+    porQue: "Un juego terminó con resultado calculado por el servidor (ADR-102). Su marca es del ejercicio, no de la persona",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
 };
 
 /**

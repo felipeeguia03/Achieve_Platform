@@ -72,6 +72,15 @@ export interface ContextoCTA {
   claseIniciable: boolean;
   /** La clase de esta pantalla está `ACTIVE`. */
   claseActiva: boolean;
+
+  // ── Gimnasia cognitiva · ADR-102 ──────────────────────────────────────────
+  /**
+   * Se puede empezar la rutina: no hay otra sesión abierta. Con una abierta, la
+   * pantalla ofrece **retomarla**, no empezar otra — terminaría en `409`.
+   */
+  rutinaIniciable: boolean;
+  /** Se puede empezar el juego de esa tarjeta: sin sesión abierta y, en Recuerdo real, con preguntas. */
+  juegoIniciable: boolean;
 }
 
 /**
@@ -105,6 +114,8 @@ export const contextoVacio: ContextoCTA = {
   errorRecuperableConOperacionIdempotente: false,
   claseIniciable: false,
   claseActiva: false,
+  rutinaIniciable: false,
+  juegoIniciable: false,
 };
 
 /**

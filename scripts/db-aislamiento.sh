@@ -35,7 +35,11 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # cinco de la Fase B6.14 faltaban, y `curriculum_requirement` → `course` bastaba
 # para dejar el verificador sin correr (roadmap.md §0.2).
 limpiar_mundo() {
-  q "delete from class_recording_tag; \
+  q "delete from recall_review; \
+   delete from gym_attempt; \
+   delete from gym_session; \
+   delete from recall_item where code like 'AISL-%'; \
+   delete from class_recording_tag; \
    delete from class_recording; \
    delete from class_attachment; \
    delete from class_note_entry; \
@@ -1597,6 +1601,93 @@ corre "delete from class_recording where id='c9100000-0000-0000-0000-00000000000
   && ok "los dos buckets de la clase existen y son privados" || mal "falta un bucket de la clase o es público"
 
 corre "delete from class_recording_tag; delete from class_recording; delete from class_attachment; delete from class_note_entry; delete from class_marker; delete from student_class_session;"
+
+echo "→ ADR-102 · Gimnasia cognitiva: una sesión abierta, lo de otro no entra, el repaso no se reescribe"
+
+YO=a5000000-0000-0000-0000-000000000001
+corre "insert into gym_session (id,institution_id,student_id,origin,planned_games,idempotency_key) values ('d1000000-0000-0000-0000-000000000001','$A','$YO','ROUTINE','{FLASH_GRID,REVERSE_CHAIN}','g1');" \
+  && ok "una rutina entra" || mal "no entró la rutina"
+if corre "insert into gym_session (institution_id,student_id,origin,planned_games,idempotency_key) values ('$A','$YO','SINGLE_GAME','{FLASH_GRID}','g2');"; then
+  mal "entraron dos sesiones abiertas del mismo estudiante"
+else
+  ok "una segunda sesión abierta del mismo estudiante se rechaza en la base"
+fi
+if corre "insert into gym_session (institution_id,student_id,origin,planned_games,idempotency_key) values ('$A','$OTRO','SINGLE_GAME','{FLASH_GRID,REVERSE_CHAIN}','g3');"; then
+  mal "un juego suelto entró con dos juegos"
+else
+  ok "un juego suelto es un solo juego"
+fi
+if corre "insert into gym_session (institution_id,student_id,origin,planned_games,idempotency_key) values ('$A','$OTRO','ROUTINE','{MEMORY_SCORE}','g4');"; then
+  mal "entró un juego que no existe"
+else
+  ok "sólo los tres juegos de Memoria"
+fi
+if corre "update gym_session set status='COMPLETED' where id='d1000000-0000-0000-0000-000000000001';"; then
+  mal "una sesión se completó sin fecha de fin"
+else
+  ok "COMPLETED sin fecha de fin se rechaza"
+fi
+
+# El intento tiene que ser de una sesión **del mismo estudiante**.
+if corre "insert into gym_attempt (institution_id,student_id,gym_session_id,game,rules_version,seed,start_length,idempotency_key) values ('$A','$OTRO','d1000000-0000-0000-0000-000000000001','FLASH_GRID','CF-1',7,3,'i1');"; then
+  mal "otro estudiante jugó adentro de una sesión ajena"
+else
+  ok "un intento sobre la sesión de otro se rechaza"
+fi
+corre "insert into gym_attempt (id,institution_id,student_id,gym_session_id,game,rules_version,seed,start_length,idempotency_key) values ('d2000000-0000-0000-0000-000000000001','$A','$YO','d1000000-0000-0000-0000-000000000001','FLASH_GRID','CF-1',7,3,'i1');" \
+  && ok "un intento de la cuadrícula entra con semilla y largo" || mal "no entró el intento"
+if corre "update gym_attempt set status='COMPLETED', completed_at=now(), correct_count=1, error_count=2, max_span=3, rounds=3 where id='d2000000-0000-0000-0000-000000000001';"; then
+  mal "una cuadrícula se completó sin puntuación"
+else
+  ok "completar exige el resultado de ese juego"
+fi
+if corre "update gym_attempt set status='COMPLETED', completed_at=now(), correct_count=1, error_count=2, max_span=3, rounds=3, score=300, level_after=2 where id='d2000000-0000-0000-0000-000000000001';"; then
+  mal "una cuadrícula guardó un nivel: magnitudes mezcladas"
+else
+  ok "la cuadrícula no lleva nivel: no se mezclan magnitudes"
+fi
+
+# La pregunta y el repaso.
+corre "insert into recall_item (id,code,prompt,answer_type,accepted_answers,canonical_answer,source_type,source_ref) values ('d3000000-0000-0000-0000-000000000001','AISL-1','¿?','SHORT_ANSWER','{x}','x','inference','SYN');" \
+  && ok "una pregunta entra DRAFT" || mal "no entró la pregunta"
+[ "$(q "select publication_status || '-' || verification_status from recall_item where code='AISL-1';" | tr -d '[:space:]')" = "DRAFT-unverified" ] \
+  && ok "nace DRAFT y unverified" || mal "la pregunta nació publicada o verificada"
+if corre "insert into recall_item (code,prompt,answer_type,accepted_answers,canonical_answer,source_type,source_ref) values ('AISL-2','¿?','SELF_ASSESSED','{x}','x','inference','SYN');"; then
+  mal "una abierta entró con respuestas aceptadas: se podría corregir sola"
+else
+  ok "una abierta no lleva respuestas aceptadas"
+fi
+corre "insert into gym_attempt (id,institution_id,student_id,gym_session_id,game,rules_version,plan,idempotency_key) values ('d2000000-0000-0000-0000-000000000002','$A','$YO','d1000000-0000-0000-0000-000000000001','REAL_RECALL','RR-1','{d3000000-0000-0000-0000-000000000001}','i2');" 2>/dev/null
+corre "update gym_attempt set status='ABANDONED' where id='d2000000-0000-0000-0000-000000000001';"
+corre "insert into gym_attempt (id,institution_id,student_id,gym_session_id,game,rules_version,plan,idempotency_key) values ('d2000000-0000-0000-0000-000000000002','$A','$YO','d1000000-0000-0000-0000-000000000001','REAL_RECALL','RR-1','{d3000000-0000-0000-0000-000000000001}','i2');" \
+  && ok "con el anterior abandonado, entra el intento de Recuerdo real" || mal "no entró el intento de repaso"
+corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,answer,policy_version,next_review_on,idempotency_key) values ('$A','$YO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',0,'RECALLED',true,'x','RR-1',current_date+3,'r1');" \
+  && ok "un repaso entra" || mal "no entró el repaso"
+if corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,policy_version,next_review_on,idempotency_key) values ('$A','$YO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',0,'EASY',false,'RR-1',current_date+7,'r2');"; then
+  mal "el mismo lugar de la cola se respondió dos veces"
+else
+  ok "un lugar de la cola se responde una sola vez"
+fi
+if corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,answer,policy_version,next_review_on,idempotency_key) values ('$A','$YO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',1,'PARTIAL',false,'texto libre','RR-1',current_date+1,'r3');"; then
+  mal "una abierta guardó el texto del estudiante"
+else
+  ok "una abierta no guarda su texto"
+fi
+if corre "insert into recall_review (institution_id,student_id,recall_item_id,item_version,gym_attempt_id,position,outcome,auto_graded,policy_version,next_review_on,idempotency_key) values ('$A','$OTRO','d3000000-0000-0000-0000-000000000001',1,'d2000000-0000-0000-0000-000000000002',1,'PARTIAL',false,'RR-1',current_date+1,'r4');"; then
+  mal "otro estudiante repasó adentro de un intento ajeno"
+else
+  ok "un repaso sobre el intento de otro se rechaza"
+fi
+# Append-only **para el backend**: se prueba con el rol con el que entra.
+if corre "set role service_role; update recall_review set outcome='EASY';"; then
+  mal "el backend pudo reescribir un repaso"
+else
+  ok "service_role no puede reescribir un repaso (append-only)"
+fi
+[ "$(q "select count(*) from gym_session where institution_id='$B';" | tr -d '[:space:]')" = "0" ] \
+  && ok "B no alcanza las sesiones de A" || mal "B vio sesiones de A"
+
+corre "delete from recall_review; delete from gym_attempt; delete from gym_session; delete from recall_item where code like 'AISL-%';"
 
 limpiar_mundo
 ok "limpiado"

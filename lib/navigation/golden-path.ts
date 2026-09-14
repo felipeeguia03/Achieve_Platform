@@ -114,6 +114,9 @@ export const aristasDeRetornoTransversales: readonly Arista[] = [
   { clase: "retornoSeguro", desde: "FORMACION", hasta: "UX01", cta: null, causa: "sin contenido publicado: empty honesto y retorno seguro" },
   // ADR-098. Una clase ajena o que no existe no se dibuja: se vuelve a Hoy.
   { clase: "retornoSeguro", desde: "CLASE", hasta: "UX01", cta: null, causa: "clase ajena o inexistente: no presumir apertura y retorno seguro" },
+  // ADR-102. Al terminar la rutina se vuelve a Hoy, que es donde el ADE dice la
+  // próxima acción: Gimnasia no la inventa. Sesión ajena o sin preguntas: igual.
+  { clase: "retornoSeguro", desde: "GIMNASIA", hasta: "UX01", cta: null, causa: "rutina terminada, ajena o sin contenido: volver a la próxima acción sin inventarla" },
 ] as const;
 
 export const aristas: readonly Arista[] = [
