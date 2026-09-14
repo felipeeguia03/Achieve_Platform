@@ -11,6 +11,7 @@
  * el color base.
  */
 import { PanelDePrueba } from "@/components/prueba/panel";
+import { Asistente } from "@/components/shell/asistente";
 
 export default function StudentLayout({
   children,
@@ -30,6 +31,12 @@ export default function StudentLayout({
         componente **no llega al HTML**. No es un `display: none`.
       */}
       {process.env.MODO_PRUEBA === "1" && <PanelDePrueba />}
+      {/*
+        🧪 **El asistente de reportes y mejoras, simulado** — ADR-103. Mismo
+        cerrojo que el dock: contesta con un guion y **no envía nada**, así que
+        sin `MODO_PRUEBA=1` un *"Reporte enviado"* sería mentira.
+      */}
+      {process.env.MODO_PRUEBA === "1" && <Asistente />}
     </div>
   );
 }

@@ -1107,6 +1107,30 @@ export const copy = {
   "AVISOS.SIMULADO": "Simulado",
   "AVISOS.SIN_LEER": "sin leer",
 
+  // ── El asistente de reportes y mejoras, simulado (ADR-103) ───────────────
+  // El marco. Lo que el asistente «contesta» es guion simulado y vive en
+  // `lib/client/simulacion/asistente.ts`: lo reemplaza el backend.
+  "ASISTENTE.TITULO": "Asistente de Achieve",
+  "ASISTENTE.SUBTITULO": "Reportá un problema o sugerí una mejora",
+  "ASISTENTE.ABRIR": "Abrir el asistente",
+  "ASISTENTE.CERRAR": "Cerrar el asistente",
+  /** Siempre visible: nada de lo que se «envía» sale de este navegador. */
+  "ASISTENTE.SIMULADO": "Simulado",
+  "ASISTENTE.NUEVA": "Nueva conversación",
+  "ASISTENTE.OPCION.PROBLEMA": "Reportar un problema",
+  "ASISTENTE.OPCION.MEJORA": "Sugerir una mejora",
+  "ASISTENTE.ESCRIBIR": "Contame qué pasó o pegá una captura…",
+  "ASISTENTE.ADJUNTAR": "Adjuntar una captura",
+  "ASISTENTE.QUITAR_CAPTURA": "Quitar la captura",
+  "ASISTENTE.ENVIAR": "Enviar",
+  "ASISTENTE.RESUMEN.MEJORA": "Tu sugerencia",
+  "ASISTENTE.RESUMEN.PROBLEMA": "Tu reporte",
+  "ASISTENTE.RESUMEN.PREGUNTA": "¿Es esto lo que querés mandar?",
+  "ASISTENTE.CONFIRMAR": "Confirmar y enviar",
+  "ASISTENTE.CORREGIR": "Corregir algo",
+  "ASISTENTE.ENVIADO": "Reporte enviado",
+  "ASISTENTE.ESCRIBIENDO": "El asistente está escribiendo",
+
   // ── El mosaico (ADR-088, Enmienda 6) ─────────────────────────────────────
   /**
    * ⚠️ **Se dice «acomodar», no «dividir la pantalla».** Lo que se mueve es

@@ -111,6 +111,13 @@ excepción al guard de ADR-075 §C1 es **por clave** (`GIMNASIA.*`).
 🔴 **El recorrido a mano del 5 de septiembre dejó dos hallazgos abiertos** —
 [`roadmap.md`](docs/roadmap.md) §0.2. Los dos importan antes de tocar nada:
 
+🧪 **Hay un asistente de reportes y mejoras, SIMULADO** — [ADR-103](docs/decisions.md#adr-103), 13 de
+septiembre. Botón abajo a la derecha, sólo con `MODO_PRUEBA=1`. **Contesta con un guion y no envía
+nada**: no le agregues red ni persistencia, y el resumen **cita** lo que escribió el estudiante, no lo
+parafrasea. El guion (`lib/client/simulacion/asistente.ts`) **no es el contrato del backend**: se
+reemplaza cuando se conecte con el CTO, y guardar reportes toca ADR-006. El dock de prueba subió a
+`bottom: 84` para dejarle la esquina.
+
 🆕 **Hay Calendario** — [ADR-100](docs/decisions.md#adr-100), 13 de septiembre. `/calendario`, en la barra
 lateral después de Materias: día · semana · mes con el horario semanal, las evaluaciones y los
 compromisos, y cada uno lleva a su objeto. **Sólo lee y no agenda**: nada de *"agendar un bloque"* ni
