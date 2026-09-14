@@ -644,6 +644,41 @@ export const copy = {
   // El nombre viene cortado de la fuente y **no se completa** (ADR-053).
   "ALTA.MATERIAS.NOMBRE_CORTADO": "Nombre incompleto en el plan que recibimos.",
   "ALTA.MATERIAS.SIN_SELECCION": "Marcá al menos una materia para poder empezar.",
+  // ── El cuarto paso: comisión y horarios · ADR-105, ADR-062, ADR-063 ─────────
+  "ALTA.CURSADA.TITULO": "Armemos tu semestre",
+  "ALTA.CURSADA.EXPLICACION":
+    "Por cada materia, contanos tu comisión y cuándo cursás. Si todavía no lo sabés, decilo: podés seguir igual.",
+  "ALTA.CURSADA.NO_SE_COMISIONES": "No sé mis comisiones todavía",
+  "ALTA.CURSADA.PREGUNTA_COMISION": "¿En qué comisión cursás?",
+  "ALTA.CURSADA.COMISION": "Comisión",
+  "ALTA.CURSADA.NO_SE_COMISION": "No sé mi comisión",
+  "ALTA.CURSADA.NO_APARECE": "Mi comisión no aparece",
+  "ALTA.CURSADA.NO_APARECE_NOMBRE": "¿Cómo se llama tu comisión?",
+  "ALTA.CURSADA.SIN_COMISIONES": "Esta materia no tiene comisiones",
+  "ALTA.CURSADA.NO_APARECE_REGLA": "Lo guardamos como lo escribiste. No cambia el catálogo de nadie.",
+  "ALTA.CURSADA.PREGUNTA_HORARIO": "¿Cuándo cursás?",
+  "ALTA.CURSADA.ES_ESTE_HORARIO": "Es este horario",
+  "ALTA.CURSADA.HORARIO_PROPIO": "Cargar mi horario",
+  "ALTA.CURSADA.HORARIO_OTRO": "Mi horario es otro",
+  "ALTA.CURSADA.NO_SE_HORARIO": "Todavía no sé mi horario",
+  "ALTA.CURSADA.NO_SE_HORARIO_REGLA":
+    "Podés seguir. Mientras no lo sepamos, no te avisamos cuándo tenés clase ni lo usamos para ubicar tus compromisos.",
+  "ALTA.CURSADA.DIA": "Día",
+  "ALTA.CURSADA.DESDE": "Desde",
+  "ALTA.CURSADA.HASTA": "Hasta",
+  "ALTA.CURSADA.AULA": "Aula (opcional)",
+  "ALTA.CURSADA.AGREGAR_DIA": "Agregar otro día",
+  "ALTA.CURSADA.QUITAR_DIA": "Quitar",
+  "ALTA.CURSADA.HORARIO_DECLARADO_REGLA":
+    "Lo usamos para vos, como lo cargaste. No lo publicamos como horario de la facultad.",
+  "ALTA.CURSADA.SUPERPOSICION": "Estas clases se pisan en la semana: {a} y {b}. Revisalo si no es así.",
+  "ALTA.CURSADA.RESUMEN": "Ya podemos organizar tu semana con {conHorario} de {materias} materias.",
+  "ALTA.CURSADA.RESUMEN_PENDIENTE": "De {sinHorario} todavía no sabemos el horario: lo podés completar cuando te lo confirmen.",
+  "ALTA.CURSADA.FALTA_CONTESTAR": "Contestá la comisión y el horario de todas tus materias para seguir.",
+  "ALTA.CURSADA.CTA": "Guardar y seguir",
+  "ALTA.CURSADA.GUARDANDO": "Guardando…",
+  "ALTA.CURSADA.ESTIMADO": "estimado por Achieve",
+  "ALTA.CURSADA.SIN_MATERIAS": "No tenés materias para completar acá.",
   "ALTA.DISPONIBILIDAD.TITULO": "¿Cuánto tiempo tenés por semana?",
   "ALTA.DISPONIBILIDAD.EXPLICACION":
     "Sirve para repartir las horas entre tus materias. Es una estimación tuya: después se ajusta " +

@@ -236,6 +236,13 @@ import type {
 import { correrReloj as correrRelojPuro, type ResumenDeCorrida } from "./servicios/reloj";
 import { resolverSesion as resolverSesionPuro, type ResultadoDeSesion } from "./servicios/sesion";
 import { altaReal, type SeleccionDeRequisito } from "./repositorios/alta";
+import { cursadaReal, CursadaRechazada } from "./repositorios/cursada";
+import {
+  declararCursada as declararCursadaPuro,
+  opcionesDeCursada as opcionesDeCursadaPuro,
+  type ResultadoDeCursada,
+} from "./servicios/cursada";
+import type { RespuestaDeCursada } from "@/lib/domain/cursada";
 import { cuentaReal } from "./repositorios/cuenta";
 import { avisosSimulados, type AvisosSimulados } from "./simulacion/avisos";
 import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
@@ -316,6 +323,22 @@ export function firmarSubidaDeFoto(authUserId: string) {
 
 export function fotoDePerfil(authUserId: string) {
   return cuentaDeAuthReal.firmarLecturaDeFoto(authUserId);
+}
+
+// ── El cuarto paso del alta: comisión y horarios · ADR-105 ──────────────────
+
+export function opcionesDeCursada(institutionId: string, studentId: string) {
+  return opcionesDeCursadaPuro(cursadaReal, institutionId, studentId);
+}
+
+export function declararCursada(
+  institutionId: string,
+  studentId: string,
+  respuestas: readonly RespuestaDeCursada[],
+): Promise<ResultadoDeCursada> {
+  return declararCursadaPuro(cursadaReal, institutionId, studentId, respuestas, (e) =>
+    e instanceof CursadaRechazada ? e.motivo : null,
+  );
 }
 
 // ── El alta académica · Etapa B6.14.4 (ADR-052) ──────────────────────────────

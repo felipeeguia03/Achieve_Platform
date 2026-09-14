@@ -434,6 +434,20 @@ done
 # lo que pasaba antes de este arreglo.
 echo "   cinco reflexiones de 75 min en cinco días, sobre 40-60 estimados → multiplicador 1,5×"
 
+echo "→ Comisión y horarios del estudiante del loop, contestados (ADR-105)"
+# ⚠️ **Se contesta con `declarar_cursada()`, no con un UPDATE a mano.** Sus
+# materias no tienen comisiones en el catálogo sintético, así que la respuesta
+# verdadera es «no tiene comisiones»; el horario es el de su materia si existe, y
+# «todavía no sé» si no. Sin esto el loop empezaría en el cuarto paso del alta.
+q "select declarar_cursada('$INST','$EST', coalesce((
+     select jsonb_agg(jsonb_build_object(
+              'cursadaId', ce.id,
+              'comision', jsonb_build_object('estado','NOT_APPLICABLE'),
+              'horario', jsonb_build_object('estado',
+                 case when exists (select 1 from class_schedule_block b where b.offering_id = ce.offering_id)
+                      then 'KNOWN' else 'UNKNOWN' end)))
+       from course_enrollment ce where ce.student_id='$EST' and ce.status='active'), '[]'::jsonb));" >/dev/null
+
 echo "→ El estudiante recién habilitado ($NUEVO) queda SIN alta:"
 q "select '   consentimiento: ' || (public.estado_del_alta('$INST','$NUEVO')->>'consentimientoRespondido') ||
           ' · carrera: ' || (public.estado_del_alta('$INST','$NUEVO')->>'carreraDeclarada') ||

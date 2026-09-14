@@ -61,7 +61,7 @@ export function AltaDisponibilidad({ onDeclarar, onListo }: DisponibilidadProps)
 
   return (
     <MarcoDelAlta
-      paso={4}
+      paso={5}
       titulo={t("ALTA.DISPONIBILIDAD.TITULO")}
       ayuda={t("ALTA.DISPONIBILIDAD.EXPLICACION")}
     >

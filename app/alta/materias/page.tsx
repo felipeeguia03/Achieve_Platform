@@ -18,8 +18,12 @@ import { leerClaveDePeriodo } from "@/lib/domain/periodo";
  * institución del estudiante. Un query editado a mano no alcanza para
  * inscribirse en el plan de otra institución.
  */
-/** A dónde va el estudiante cuando confirma. El gate lo lleva al paso que falte. */
-const SIGUIENTE_PASO = "/hoy";
+/**
+ * A dónde va el estudiante después de confirmar: comisión y horarios
+ * ([ADR-105](../../../docs/decisions.md#adr-105) §1). Si ya los contestó, el
+ * gate lo lleva al paso que falte.
+ */
+const SIGUIENTE_PASO = "/alta/cursada";
 
 function Pantalla() {
   const router = useRouter();

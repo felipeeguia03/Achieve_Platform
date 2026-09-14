@@ -26,6 +26,13 @@ igual() {
   else echo "   ✗ $desc — esperaba '$want', obtuvo '$got'"; fallos=$((fallos + 1)); fi
 }
 
+# rechaza <descripción> <sql>: la base tiene que negarse.
+rechaza() {
+  local desc="$1" sql="$2"
+  if echo "$(q "$sql")" | grep -qi "error"; then echo "   ✓ $desc"
+  else echo "   ✗ $desc — no falló"; fallos=$((fallos + 1)); fi
+}
+
 INS=b1111111-0000-0000-0000-000000000001
 OTRA=b1111111-0000-0000-0000-000000000002
 EST=b2222222-0000-0000-0000-000000000001
@@ -315,26 +322,23 @@ q "insert into course (id,curriculum_plan_id,code,name)
    insert into course_enrollment (id,institution_id,student_id,offering_id)
      values ('$CE_HOR','$INS','$EST','$O_HOR');" >/dev/null 2>&1
 
-# Dos dueños, dos filas, una sola cursada: el horario publicado de la comisión y
-# el que declaró el estudiante. Que lleguen juntas es lo que hace visible que
-# **no se fusionan** (`P-08`).
+# Dos dueños, una sola cursada. **Desde ADR-105 §5 no viajan juntos**: hay una
+# sola precedencia, y lo que declaró el estudiante reemplaza al publicado de su
+# cursada. Primero el publicado solo; después el declarado encima.
 q "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
-     values ('$INS','$O_HOR',2,'14:00','16:00','institution');
-   insert into class_schedule_block (institution_id,course_enrollment_id,day_of_week,start_time,end_time,source_type)
-     values ('$INS','$CE_HOR',4,'18:00','21:00','student');" >/dev/null 2>&1
-
-igual "los dos bloques llegan a la materia" \
-  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "2"
-# **En orden de día y hora, decidido por la base.** La pantalla no reordena.
-igual "y en el orden que la base dicta" \
-  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'dia';")" "2"
+     values ('$INS','$O_HOR',2,'14:00','16:00','institution');" >/dev/null 2>&1
+igual "el publicado llega a la materia" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "1"
 igual "el publicado viaja como de la cátedra" \
   "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'origen';")" "catedra"
+
+q "insert into class_schedule_block (institution_id,course_enrollment_id,day_of_week,start_time,end_time,source_type)
+     values ('$INS','$CE_HOR',4,'18:00','21:00','student');" >/dev/null 2>&1
+igual "ADR-105 §5 · lo declarado reemplaza al publicado: un bloque, no dos" \
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "1"
 igual "y el declarado viaja como tuyo, sin convertirse en voz de la cátedra" \
-  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->1->>'origen';")" "vos"
-# `I9`: usar un dato sin corroborar **no lo eleva**. Ninguna de las dos sale
-# verificada, y la de la institución tampoco — que la fuente tenga autoridad no
-# es lo mismo que que alguien haya verificado el dato.
+  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario'->0->>'origen';")" "vos"
+# `I9`: usar un dato sin corroborar **no lo eleva**.
 igual "ninguno se eleva por llegar a la pantalla" \
   "$(q "select bool_and(b->>'verificacion' = 'unverified')
           from jsonb_array_elements(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario') b;")" "t"
@@ -347,7 +351,7 @@ q "insert into class_session (offering_id,session_date,session_time,duration_min
             ('$O_HOR','2026-08-10','09:00',120,'institution'),
             ('$O_HOR','2026-08-17','09:00',120,'institution');" >/dev/null 2>&1
 igual "y no se deriva de las clases dictadas" \
-  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "2"
+  "$(q "select jsonb_array_length(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario');")" "1"
 igual "ni aparece el lunes de las sesiones" \
   "$(q "select bool_and((b->>'dia')::int <> 1)
           from jsonb_array_elements(public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'horario') b;")" "t"
@@ -374,15 +378,17 @@ igual "y NO toca el que declaró el estudiante" \
 echo "→ B6.22 · contra qué se valida el horario de un compromiso (ADR-064)"
 # Sigue con el mundo de horarios de arriba: la oferta tiene un bloque publicado
 # —el lunes de 09 a 11, que dejó la última ingesta— y la cursada uno declarado.
-igual "los dos dueños viajan juntos para validar" \
-  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "2"
+# ADR-105 §5: la validación lee la misma precedencia que la pantalla. El bloque
+# declarado reemplaza al publicado de esa cursada.
+igual "valida contra la precedencia: el declarado, no los dos" \
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "1"
 # ⚠️ **Todas las cursadas, no la de una materia.** Comprometerse a estudiar
 # Cálculo el martes a las 18:30 choca con la clase de Física igual que con la de
 # Cálculo: nadie puede estudiar mientras cursa otra cosa.
 q "insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
      values ('$INS','b7000000-0000-0000-0000-000000000001',6,'08:00','10:00','institution');" >/dev/null 2>&1
 igual "y también los de otra materia del estudiante" \
-  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "3"
+  "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "2"
 # El aislamiento alcanza también a esta lectura (I11).
 igual "no cruza institución" \
   "$(q "select jsonb_array_length(public.horarios_del_estudiante('$OTRA','$EST'));")" "0"
@@ -394,6 +400,61 @@ igual "una cursada dada de baja deja de ocupar la semana" \
   "$(q "select jsonb_array_length(public.horarios_del_estudiante('$INS','$EST'));")" "1"
 q "update course_enrollment set status='active' where id='$CE_HOR';
    delete from class_schedule_block where institution_id='$INS';" >/dev/null 2>&1
+
+echo "→ ADR-105 · el cuarto paso del alta: comisión y horarios"
+O_COM="b5500000-0000-0000-0000-0000000000a1"
+O_AJENA="b5500000-0000-0000-0000-0000000000a2"
+q "insert into course_offering (id,course_id,term,commission) values ('$O_COM','$C_HOR','2026-2','A');
+   insert into class_schedule_block (institution_id,offering_id,day_of_week,start_time,end_time,source_type)
+     values ('$INS','$O_COM',3,'10:00','12:00','institution'),
+            ('$INS','$O_HOR',5,'08:00','10:00','institution');
+   insert into course_offering (id,course_id,term,commission)
+     select '$O_AJENA', o.course_id, '2026-2', 'Z' from course_offering o
+      where o.id='b7000000-0000-0000-0000-000000000001';" >/dev/null 2>&1
+
+igual "ofrece la comisión real de esa materia y ese período, y ninguna inventada" \
+  "$(q "select jsonb_array_length(c->'comisiones') from jsonb_array_elements(public.opciones_de_cursada('$INS','$EST')) c
+          where c->>'cursadaId'='$CE_HOR';")" "1"
+igual "sin contestar, la cursada conserva el horario de antes" \
+  "$(q "select count(*) from public.bloques_de_cursada('$CE_HOR');")" "1"
+
+corre_cursada() { q "select public.declarar_cursada('$INS','$EST','[$1]'::jsonb);"; }
+
+corre_cursada "{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"UNKNOWN\"}}" >/dev/null
+igual "«no sé mi comisión» + «no sé mi horario»: ningún bloque, tampoco el de la materia" \
+  "$(q "select count(*) from public.bloques_de_cursada('$CE_HOR');")" "0"
+igual "y no deja una fila horaria negativa" \
+  "$(q "select count(*) from class_schedule_block where course_enrollment_id='$CE_HOR';")" "0"
+igual "ni una class_session: el horario semanal no es una clase dictada" \
+  "$(q "select count(*) from class_session where offering_id='$O_HOR' and session_date > '2026-08-17';")" "0"
+
+corre_cursada "{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"KNOWN\",\"bloques\":[{\"dia\":2,\"desde\":\"18:00\",\"hasta\":\"20:00\"}]}}" >/dev/null
+igual "comisión desconocida con horario conocido: sólo lo declarado" \
+  "$(q "select string_agg(day_of_week||'/'||source_type||'/'||verification_status, ',') from public.bloques_de_cursada('$CE_HOR');")" "2/student/unverified"
+
+corre_cursada "{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"CONFIRMED\",\"ofertaId\":\"$O_COM\"},\"horario\":{\"estado\":\"KNOWN\"}}" >/dev/null
+igual "comisión confirmada: hereda el horario de su comisión y no el de la materia" \
+  "$(q "select string_agg(day_of_week::text, ',') from public.bloques_de_cursada('$CE_HOR');")" "3"
+igual "ADR-105 §4 · la cursada NO se muda de offering" \
+  "$(q "select (offering_id='$O_HOR' and commission_offering_id='$O_COM')::text from course_enrollment where id='$CE_HOR';")" "true"
+igual "y UX02 dice la comisión" \
+  "$(q "select public.estado_de_materia('$INS','$EST',now(),'$CE_HOR')->'comision'->>'nombre';")" "A"
+
+rechaza "una comisión de otra materia" \
+  "select public.declarar_cursada('$INS','$EST','[{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"CONFIRMED\",\"ofertaId\":\"$O_AJENA\"},\"horario\":{\"estado\":\"UNKNOWN\"}}]'::jsonb);"
+rechaza "«conozco mi horario» sin un solo bloque" \
+  "select public.declarar_cursada('$INS','$EST','[{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"KNOWN\"}}]'::jsonb);"
+rechaza "la cursada de otro estudiante" \
+  "select public.declarar_cursada('$INS','b2222222-0000-0000-0000-0000000000ff','[{\"cursadaId\":\"$CE_HOR\",\"comision\":{\"estado\":\"UNKNOWN\"},\"horario\":{\"estado\":\"UNKNOWN\"}}]'::jsonb);"
+rechaza "NOT_LISTED sin nombre, en la base" \
+  "update course_enrollment set commission_status='NOT_LISTED', commission_offering_id=null, commission_label=null where id='$CE_HOR';"
+rechaza "un estado de comisión fuera del vocabulario" \
+  "update course_enrollment set commission_status='A_CONFIRMAR' where id='$CE_HOR';"
+
+q "update course_enrollment set commission_status=null, commission_offering_id=null, commission_label=null, schedule_status=null
+    where id='$CE_HOR';
+   delete from class_schedule_block where institution_id='$INS';
+   delete from course_offering where id in ('$O_COM','$O_AJENA');" >/dev/null 2>&1
 
 echo "→ B6.20 · la Bitácora es de una materia, y de la que se pidió"
 # **Sin una segunda materia el defecto es invisible**: con una sola cursada, «la

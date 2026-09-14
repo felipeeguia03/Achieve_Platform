@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { AltaCarreraEsqueleto } from "@/components/alta/carrera";
 import { AltaMateriasEsqueleto } from "@/components/alta/materias";
+import { AltaCursadaEsqueleto } from "@/components/alta/cursada";
 import { ActivacionModoExamenEsqueleto } from "@/components/screens/activacion-modo-examen";
 import { CompromisoEsqueleto } from "@/components/screens/compromiso";
 import { EvidenciaEsqueleto } from "@/components/screens/evidencia";
@@ -51,6 +52,8 @@ const ESQUELETOS = {
   Gimnasia: GimnasiaEsqueleto,
   AltaCarrera: AltaCarreraEsqueleto,
   AltaMaterias: AltaMateriasEsqueleto,
+  // ADR-105: el cuarto paso del alta.
+  AltaCursada: AltaCursadaEsqueleto,
 };
 
 describe("cada esqueleto", () => {

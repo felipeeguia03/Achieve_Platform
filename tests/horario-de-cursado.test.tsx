@@ -150,7 +150,8 @@ describe("§2 · No se mezcla con la disponibilidad", () => {
     // presentada como horario de la institución. El bloque se declara.
     const fn = funcionesVigentes().get("public.estado_de_materia") ?? "";
     const horario = fn.slice(fn.indexOf("'horario'"), fn.indexOf("'clases'"));
-    expect(horario).toContain("class_schedule_block");
+    // ADR-105 §5: el bloque sale de la precedencia única, que lee `class_schedule_block`.
+    expect(horario).toContain("bloques_de_cursada");
     expect(horario).not.toContain("class_session");
   });
 });

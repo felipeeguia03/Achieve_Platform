@@ -17,11 +17,11 @@
 import { t } from "@/lib/content/es-AR";
 
 /**
- * Cuántas pantallas tiene el alta. Cuatro desde
- * [ADR-073](../../docs/decisions.md#adr-073): WhatsApp, carrera, materias y
- * disponibilidad.
+ * Cuántas pantallas tiene el alta. Cinco desde
+ * [ADR-105](../../docs/decisions.md#adr-105): WhatsApp, carrera, materias,
+ * comisión y horarios, y disponibilidad.
  */
-export const PASOS_DEL_ALTA = 4;
+export const PASOS_DEL_ALTA = 5;
 
 export function MarcoDelAlta({
   paso,
@@ -30,7 +30,7 @@ export function MarcoDelAlta({
   children,
   ancho = 560,
 }: {
-  paso: 1 | 2 | 3 | 4;
+  paso: 1 | 2 | 3 | 4 | 5;
   titulo: string;
   /** La razón, pegada a la decisión (`P-01`). `null` ⇒ la línea desaparece. */
   ayuda?: string | null;
@@ -63,7 +63,7 @@ export function MarcoDelAlta({
             falso; acá el alta tiene un número exacto de pantallas y saber
             cuántas faltan es lo que hace que se sienta breve.
 
-            ⚠️ **Son cuatro desde ADR-073**, no tres. El número vive en una
+            ⚠️ **Son cinco desde ADR-105** (cuatro desde ADR-073). El número vive en una
             constante y no repetido en cada pantalla: agregar un paso y olvidarse
             de actualizar el denominador le mostraría al estudiante "4/3".
           */}

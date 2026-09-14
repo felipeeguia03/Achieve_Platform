@@ -167,7 +167,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: false,
         carreraDeclarada: false,
-        materiasConfirmadas: false, disponibilidadRespondida: false,
+        materiasConfirmadas: false, cursadaRespondida: false, disponibilidadRespondida: false,
       }),
     ).toBe("WHATSAPP");
   });
@@ -177,7 +177,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: false,
-        materiasConfirmadas: false, disponibilidadRespondida: false,
+        materiasConfirmadas: false, cursadaRespondida: false, disponibilidadRespondida: false,
       }),
     ).toBe("CARRERA");
   });
@@ -187,7 +187,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: true,
-        materiasConfirmadas: false, disponibilidadRespondida: false,
+        materiasConfirmadas: false, cursadaRespondida: false, disponibilidadRespondida: false,
       }),
     ).toBe("MATERIAS");
   });
@@ -201,9 +201,22 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
         consentimientoRespondido: true,
         carreraDeclarada: true,
         materiasConfirmadas: true,
+        cursadaRespondida: true,
         disponibilidadRespondida: false,
       }),
     ).toBe("DISPONIBILIDAD");
+  });
+
+  it("ADR-105 · confirmadas las materias, falta comisión y horarios, antes que disponibilidad", () => {
+    expect(
+      siguientePaso({
+        consentimientoRespondido: true,
+        carreraDeclarada: true,
+        materiasConfirmadas: true,
+        cursadaRespondida: false,
+        disponibilidadRespondida: false,
+      }),
+    ).toBe("CURSADA");
   });
 
   it("contestada la disponibilidad, el alta terminó", () => {
@@ -212,6 +225,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
         consentimientoRespondido: true,
         carreraDeclarada: true,
         materiasConfirmadas: true,
+        cursadaRespondida: true,
         disponibilidadRespondida: true,
       }),
     ).toBeNull();
@@ -226,6 +240,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
         consentimientoRespondido: true,
         carreraDeclarada: true,
         materiasConfirmadas: true,
+        cursadaRespondida: true,
         disponibilidadRespondida: true, // contestó; declaró cero bloques
       }),
     ).toBeNull();
@@ -250,6 +265,8 @@ function baseFalsa() {
         consentimientoRespondido: consentimientos.includes(studentId),
         carreraDeclarada: insc !== undefined,
         materiasConfirmadas: insc?.confirmadaEn !== null && insc?.confirmadaEn !== undefined,
+        // ADR-105: estos tests miden los pasos de ADR-052; el cuarto se da por contestado.
+        cursadaRespondida: true,
         // ADR-073: el paso existe y este doble no lo ejercita. `false` mantiene
         // la máquina en su último paso, que es lo que estos tests miden.
         disponibilidadRespondida: false,
