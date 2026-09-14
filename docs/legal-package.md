@@ -150,6 +150,26 @@ de Achieve.
 
 ---
 
+## 5.2 El analítico y las respuestas personales 🆕
+
+**Contexto:** [ADR-106](decisions.md#adr-106) y [ADR-107](decisions.md#adr-107), 13 de septiembre de 2026.
+El estudiante puede subir su **analítico** —que contiene nombre, documento, matrícula, materias y
+notas— y contestar **preguntas sobre su recorrido** con texto libre donde puede contar, por ejemplo,
+que trabajaba o que tuvo un problema de salud. Hoy corre **sólo sobre documentos sintéticos**
+generados por el propio repositorio: **no hay extractor real ni proveedor externo**.
+
+29. ¿Qué base legal permite **procesar un analítico** y conservar las notas estructuradas? ¿Alcanza el
+    consentimiento del estudiante, o hace falta un instrumento con la institución?
+30. **Retención:** ¿cuánto se puede conservar el archivo, y cuánto las filas extraídas? Hoy el archivo
+    se guarda sólo si se pudo procesar, y el estudiante lo borra cuando quiere.
+31. ¿Las **respuestas personales** (trabajo, salud, familia) son **dato sensible**? Cambia si pueden
+    guardarse en texto libre.
+32. Si la extracción se hiciera con un **proveedor externo de OCR o IA**, ¿qué instrumento hace falta, y
+    qué hay que decirle al estudiante antes?
+33. ¿Puede la institución ver **algo** de esto —aunque sea agregado—? Hoy no ve nada.
+
+---
+
 ## 6. Qué necesitamos de vuelta, en concreto
 
 1. **Confirmación o corrección** de cada decisión provisional de [ADR-006](decisions.md#adr-006).

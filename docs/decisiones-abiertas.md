@@ -99,6 +99,8 @@
 
 | 19 | ¿Un **cambio de comisión** es un hecho del dominio con evento propio? | Product Owner | Que mover una cursada de comisión deje rastro. Hoy sería un `UPDATE` mudo, y `product_event` es append-only con guard en las dos direcciones | 🟡 No bloquea el corte 1 del [plan](plan-periodo-comision-horarios.md) |
 | 20 | ¿El **semestre** entra en la clave de `enrollment`? | Product Owner | Hoy `UNIQUE (student_id, program_id, term)` hace que un año nuevo sea una inscripción nueva. Con año y semestre en columnas propias hay que decidirlo | 🟡 Ídem |
+| 21 | ¿El **ADE consume hipótesis** del perfil del recorrido, y cuáles? | Product Owner + psicopedagoga | Que la historia y lo declarado cambien qué se recomienda. Hoy el seam existe sin llamadores ([ADR-107](decisions.md#adr-107) §7) | 🟡 El recorrido funciona sin esto |
+| 22 | ¿Qué **comportamiento posterior** refuerza, debilita o contradice una hipótesis? | Product Owner + psicopedagoga | Que el perfil deje de ser sólo lo declarado en el onboarding | 🟡 Ídem |
 
 **Leyenda de urgencia.** 🔴 hay trabajo listo para empezar que no arranca sin esto · 🟠 bloquea el
 cierre de una fase · 🟡 el producto funciona, con un hueco declarado.

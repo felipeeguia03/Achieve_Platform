@@ -315,6 +315,12 @@ alcanzables y el test de comprensión de 10 segundos fue reportado `PASS` por el
 
 En el Track B, hoy:
 
+- 🆕 **Onboarding académico** ([ADR-105](docs/decisions.md#adr-105)…[ADR-107](docs/decisions.md#adr-107),
+  [`onboarding-academico.md`](docs/onboarding-academico.md)). **El alta tiene cinco pasos**:
+  año lectivo y semestre se preguntan en `/alta/carrera`, y `/alta/cursada` pregunta comisión y horario.
+  Los bloques de una cursada salen **sólo** de `bloques_de_cursada()`. `/recorrido` —opcional, después
+  de HOY— procesa un analítico **sintético** que **nunca crea una cursada**, y arma un perfil de
+  hipótesis **que el ADE no lee**.
 - **`UX01` es un tablero** ([ADR-093](docs/decisions.md#adr-093)) con el **cuadro de hoy**
   ([ADR-094](docs/decisions.md#adr-094)): Hero + *Tu día*, *Riesgos detectados*, y las evaluaciones
   en **dos opciones que conviven hasta que el owner elija una**. Salieron de Hoy la cola `1 de N`, el

@@ -4046,6 +4046,32 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+## Fase B6.32 — Onboarding académico · ✅ COMPLETA *(sintético; ver lo que sigue abierto)*
+
+**13–14 de septiembre de 2026** · [ADR-105](decisions.md#adr-105), [ADR-106](decisions.md#adr-106),
+[ADR-107](decisions.md#adr-107) · [fuente literal](respuesta-po-onboarding-academico-source.md) ·
+[`onboarding-academico.md`](onboarding-academico.md). El owner, sobre el diagnóstico: *"2-a ·
+3-autorizo · 4-no se llevan, que no se impida nada · hace lo recomendado y segui"*.
+
+| Etapa | Qué | Commit |
+|---|---|---|
+| B6.32.0 | La respuesta del owner y las tres ADR | `docs(onboarding)` |
+| B6.32.1 | **El período se pregunta** (ADR-061, corte 2 del plan) | `feat(alta) — el período se pregunta` |
+| B6.32.2 | **`/alta/cursada`**: comisión y horario, cinco pasos, `bloques_de_cursada()` (cortes 3 y 4) | `feat(alta) — el cuarto paso` |
+| B6.32.3 | **`/recorrido`: el analítico** sintético, revisión y borrado | `feat(recorrido) — el analítico` |
+| B6.32.4 | **Preguntas del recorrido e hipótesis de perfil** (`RECORRIDO-v0.1`) | `feat(recorrido) — preguntas` |
+| B6.32.5 | `UX02` dice la comisión y *«todavía no sabés tu horario»* | `feat(materia)` |
+
+⚠️ **Tres correcciones al plan que quedaron escritas en ADR-105**: la cursada no se muda de offering;
+`commission_status` arranca `NULL` y no `NOT_APPLICABLE`; y con dos dueños de horario hace falta una
+sola precedencia.
+
+⛔ **Lo que no se hizo:** la electiva pendiente (corte 6), el temario en la materia (corte 7), cambiar
+comisión u horario después del alta (fila 19 y segunda salida de ADR-064), extracción real (ADR-006,
+ADR-080) y que el ADE lea el perfil (filas 21 y 22).
+
+---
+
 ## Fase B6.31 — Modo Focus · ✅ COMPLETA
 
 **13 de septiembre de 2026** · [ADR-104](decisions.md#adr-104). El owner: *"hacé todo lo recomendado y

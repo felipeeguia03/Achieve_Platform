@@ -87,6 +87,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Nombrar algo como lo nombra el oficio | [`docs/indice-psicopedagogico-source.md`](docs/indice-psicopedagogico-source.md) |
 | Tocar registro, elegibilidad o integración CRM | [`docs/platform-integration-contract.md`](docs/platform-integration-contract.md) — §2.1 la propuesta de contrato v2, §2.2 **lo que la Fase B6 necesita de él** |
 | Saber en qué quedó la integración con el CRM | [`docs/contrato-riesgo-candidato-v0.2.md`](docs/contrato-riesgo-candidato-v0.2.md) §11 (flujos A·B·C, **congelados**) y [`docs/respuesta-crm-flujos-d-e-v0.1.md`](docs/respuesta-crm-flujos-d-e-v0.1.md) (flujos **D · actividad** y **E · teléfono**, aceptados con cambios) |
+| **Onboarding académico**: período, comisión, horarios, analítico y perfil | [ADR-105](docs/decisions.md#adr-105)…[ADR-107](docs/decisions.md#adr-107) · [`onboarding-academico.md`](docs/onboarding-academico.md) |
 | Preparar la consulta legal | [`docs/legal-package.md`](docs/legal-package.md) |
 | Cerrar los residuos psicopedagógicos | [`docs/agenda-cierre-psicopedagoga.md`](docs/agenda-cierre-psicopedagoga.md) |
 | Cerrar las tres decisiones del Product Owner | [`docs/agenda-decisiones-po-crm.md`](docs/agenda-decisiones-po-crm.md) — ADR-041, ADR-042 y ADR-043, con contexto y opciones |
@@ -96,6 +97,35 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 ---
 
 ## Estado actual
+
+🆕 **Onboarding académico** — [ADR-105](docs/decisions.md#adr-105), [ADR-106](docs/decisions.md#adr-106) y
+[ADR-107](docs/decisions.md#adr-107), 13–14 de septiembre · [`onboarding-academico.md`](docs/onboarding-academico.md).
+**El alta tiene cinco pasos** (enmienda ADR-061): `/alta/carrera` pregunta año lectivo y semestre y
+`/alta/cursada` —antes de disponibilidad— pregunta comisión y horario por materia. Y hay **`/recorrido`**,
+opcional y después de HOY: analítico sintético, revisión de lo ambiguo, pocas preguntas y un perfil de
+hipótesis.
+
+⚠️ **Antes de tocar horarios:** los bloques de una cursada salen de **`bloques_de_cursada()`**, y de
+ningún otro lado. No sabe > declarados > comisión confirmada > (comisión desconocida: **ninguno**) > los
+de su offering. **No vuelvas a juntar los dos dueños a mano.**
+
+⚠️ **La cursada NO se muda de offering al elegir comisión** (ADR-105 §4): el contenido cuelga de la
+offering del alta hasta que ADR-060 pase el temario a la materia. La comisión va en
+`commission_offering_id`.
+
+⚠️ **El analítico es el pasado y nunca crea, preselecciona ni toca una cursada** (ADR-106 §2, con guard).
+El único extractor es **`SINTETICO-v1`**: cualquier otro archivo termina `EXTRACCION_NO_DISPONIBLE` y **no
+se guarda**. No agregues OCR ni proveedor: ADR-006 y ADR-080.
+
+⚠️ **La respuesta no es la hipótesis.** `profile_answer` es append-only y su texto libre no viaja a
+eventos ni se convierte en hipótesis; `profile_hypothesis` va aparte, `BAJA`/`MEDIA`, redactada como
+*«Nos contaste…»* o *«En tu analítico…»*. **El ADE, Hoy y el riesgo no leen el perfil** (guard):
+`hipotesisVigentesDelEstudiante` es un seam sin llamadores.
+
+⚠️ **Hay un segundo borrado de storage**: el analítico (objeto primero, fila después), que se lleva sus
+respuestas e hipótesis.
+
+⚠️ **Dieciséis rutas bajo `app/(student)`, nueve superficies**: `RECORRIDO` es nodo sin wireframe.
 
 🆕 **Hay Modo Focus** — [ADR-104](docs/decisions.md#adr-104), 13 de septiembre. `/focus`: la sesión de
 trabajo sobre una acción comprometida. Cronómetro libre por defecto, Pomodoro opcional (25/5/15 ·
