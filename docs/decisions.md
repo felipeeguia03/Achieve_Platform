@@ -166,6 +166,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-106](#adr-106) | **El analítico**: historia académica **después de HOY y opcional**, en `/recorrido`; se sube, se extrae con un puerto (adaptador **sintético**), se vincula **sólo** al plan del estudiante y se revisa lo ambiguo. **Nunca crea una cursada** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «3-autorizo» · **sólo datos sintéticos**: ADR-006 intacto)* | Extracción real (ADR-006 + legal + ADR-080) |
 | [ADR-107](#adr-107) | **Preguntas del recorrido e hipótesis de perfil**: pocas preguntas deterministas (`RECORRIDO-v0.1`), respuesta declarada separada de la hipótesis, y *«Esto no me representa»*. **Sin esperar a la psicopedagoga** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «4-no se llevan, que no se impida nada» · **enmienda ADR-052** §«no autoriza el diagnóstico personal mínimo» y **acota ADR-087 D1**)* | Que el ADE consuma hipótesis |
 | [ADR-108](#adr-108) | **Requisitos de cursado, simulados**: un desplegable *Requisitos* en la materia con lo que piden para promoción y para regular —notas de parciales, TPs al día, asistencia al práctico y al teórico— y *piden / venís / quedan*. **Sólo con `MODO_PRUEBA=1`** | ✅ `ACCEPTED` *(14 sep 2026 · pedido por el owner con una captura de otro software · `SIMULADO`)* | Condiciones reales del programa (con procedencia) · asistencia y notas reales (ADR-006) |
+| [ADR-109](#adr-109) | **Experimento «Mi Plan vivo»**: una proyección de solo lectura que fija lo duro (clases, evaluaciones, compromisos), ubica propuestas no comprometidas y muestra qué cambia si se actúa o si pasa el tiempo. **Choca con ADR-064, 073, 085 y 100** | 🔴 `PENDING` *(14 sep 2026 · nueve decisiones del owner en [`experiments/plan-vivo/DECISIONS.md`](experiments/plan-vivo/DECISIONS.md))* | Los prompts 2–10 del experimento |
 
 ---
 
@@ -10714,3 +10715,56 @@ disponibles, los cuatro estados), parciales sin rendir que no son `0`, TPs al d�
 regímenes sobre la misma situación, sin promoción dicho, ningún campo que resuma las filas; la simulación
 determinística y coherente en 200 cursadas; la ruta apagada sin `MODO_PRUEBA`, con JWT y sólo sobre una
 cursada propia; el panel en palabras, cerrado sin nada y abierto con *Simulado*, y `Escape` que lo cierra.
+
+---
+
+<a id="adr-109"></a>
+## ADR-109 — Experimento «Mi Plan vivo»: ubicar lo que nadie comprometió, y mostrar qué cambia
+
+**Estado:** 🔴 `PENDING` · 14 sep 2026 · **abierto por un agente a pedido del owner; lo cierra el owner**
+**Choca con:** [ADR-064](#adr-064) (*el ADE nunca agenda*), [ADR-073](#adr-073) §3 (*el reparto no
+agenda*), [ADR-085](#adr-085) (*un tema sin puntas no se ubica*), [ADR-100](#adr-100) (sin *Plan de
+estudio* ni *agendar un bloque*) y `product.md` §12.3 (*calendario propio completo* fuera de alcance).
+**No levanta:** [ADR-006](#adr-006), [ADR-047](#adr-047), [ADR-058](#adr-058), [ADR-075](#adr-075).
+**Contrato, auditoría y secuencia:** [`experiments/plan-vivo/`](experiments/plan-vivo/README.md).
+
+### Contexto
+
+El owner abrió una secuencia de diez prompts para probar una hipótesis: *"convertir la realidad
+académica del alumno en un plan visible, explicar cuál es la mejor próxima acción y mostrar cómo cambia
+el futuro si el alumno actúa —o si deja pasar el tiempo"*. El primero pidió auditar y congelar el
+contrato sin construir nada.
+
+La auditoría encontró que **la mitad de la hipótesis ya existe** —restricciones duras, estimaciones con
+fuente, cobertura, ventana, riesgos de planificación, renegociación y reloj, todo puro en `lib/domain/`—
+y que **la otra mitad está prohibida hoy** por cuatro decisiones aceptadas: ubicar en el tiempo acciones
+no comprometidas, y tener más de una propuesta a la vez (el ADE da una por cursada y `NONE` con una
+acción viva).
+
+### Lo que se propone, y no está decidido
+
+Una **proyección de solo lectura**, detrás de `PLAN_VIVO=1`, en `/plan` (nodo `PLAN_VIVO`, `wireframe:
+null`, no `UX10`), sobre datos sintéticos, **sin migraciones, sin escrituras propias y sin eventos
+nuevos**. El hover elige contrafácticos que el Service ya calculó: no hace requests.
+
+### Las nueve decisiones
+
+Detalladas, con opciones y recomendación, en
+[`experiments/plan-vivo/DECISIONS.md`](experiments/plan-vivo/DECISIONS.md) §4:
+
+| | Pregunta | Recomendación del agente |
+|---|---|---|
+| D-01 | ¿Se ubican en el tiempo propuestas no comprometidas? | Sí, sólo en el laboratorio, dentro de la disponibilidad declarada y sin pisar lo duro |
+| D-02 | ¿Varias propuestas si el ADE da una? | Candidatos proyectados; sólo el primero se materializa como `Action`, igual que hoy |
+| D-03 | Rango `min/probable/max` y confianza | Derivado, sin migración: punto medio y escalón de fuente de ADR-075 §D |
+| D-04 | Qué se puede decir del futuro | Hechos y proyecciones rotuladas; nada de readiness, dominio ni predicción |
+| D-05 | Dejar pasar el tiempo | Horizontes fijos de 3 y 7 días, sin llamar a `/api/reloj` |
+| D-06 | Zona de lo visible | [ADR-049](#adr-049): `student.timezone` |
+| D-07 | Modo Examen en el plan | Recomienda, no activa; `ProtocolStep` como marca, sin segundo ponderador |
+| D-08 | *"Salvo la fuente institucional"* | *"Salvo corrección por su dueño"*: el estudiante también es dueño (ADR-063, 064, 067) |
+| D-09 | Ruta, flag y nombre | `/plan`, `PLAN_VIVO=1`; **el nombre visible lo elige el owner** |
+
+### Lo que bloquea
+
+Los prompts 2–10 en lo que dependa de D-01, D-02 o D-09. Mientras siga `PENDING`, sólo documentación y
+tests de reglas vigentes.
