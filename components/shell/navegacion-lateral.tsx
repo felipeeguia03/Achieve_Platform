@@ -29,7 +29,7 @@ import Link from "next/link";
 import { CalendarRange, Library, PanelLeft, PlayCircle, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
-import type { NodoId } from "@/lib/navigation/surfaces";
+import { nodos, type NodoId } from "@/lib/navigation/surfaces";
 import { t } from "@/lib/content/es-AR";
 
 /*
@@ -193,10 +193,24 @@ export function NavegacionLateral({
         className="flex items-center"
         style={{ justifyContent: colapsada ? "center" : "space-between", minHeight: 40 }}
       >
+        {/*
+          El logo lleva a Hoy, como en cualquier software: es la portada. Navega y
+          nada más — igual que un ítem del menú, no guarda nada en la barra de
+          objetos (ADR-088, Enmienda 7).
+        */}
         {!colapsada && (
-          <span style={{ fontWeight: 600, fontSize: "var(--text-body)", letterSpacing: "-0.022em" }}>
+          <Link
+            href={nodos.UX01.ruta ?? "/hoy"}
+            data-logo
+            style={{
+              fontWeight: 600,
+              fontSize: "var(--text-body)",
+              letterSpacing: "-0.022em",
+              color: "var(--foreground)",
+            }}
+          >
             Achieve
-          </span>
+          </Link>
         )}
         <button
           onClick={onAlternar}
