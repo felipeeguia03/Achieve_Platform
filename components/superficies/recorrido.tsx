@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
-import { Recorrido, RecorridoEsqueleto, type DatosDelRecorrido } from "@/components/screens/recorrido";
+import { PerfilDelRecorrido, Recorrido, RecorridoEsqueleto, type AccionesDelRecorrido, type DatosDelRecorrido } from "@/components/screens/recorrido";
 import { analiticoSintetico, enviar, subirAnaliticoArchivo } from "@/lib/client/api";
 import { useSuperficie } from "@/lib/client/superficie";
 import { t, type CopyId } from "@/lib/content/es-AR";
@@ -49,12 +49,7 @@ export function VistaDeRecorrido() {
     return null;
   }
 
-  return (
-    <Recorrido
-      datos={respuesta.datos}
-      ocupado={ocupado}
-      aviso={aviso}
-      acciones={{
+  const acciones: AccionesDelRecorrido = {
         onConsentir: () =>
           correr(async () => {
             const r = await enviar("/api/recorrido/consentimiento", { decision: "GRANTED" });
@@ -83,7 +78,25 @@ export function VistaDeRecorrido() {
             const r = await enviar("/api/recorrido/analitico", {}, "DELETE");
             return r.estado === "OK" ? null : t("ALTA.ERROR.RED");
           }),
-      }}
+        onResponder: (clave, estado, opciones, textoLibre) =>
+          correr(async () => {
+            const r = await enviar("/api/recorrido/respuesta", { clave, estado, opciones, textoLibre });
+            return r.estado === "OK" ? null : t("ALTA.ERROR.RED");
+          }),
+        onRechazarHipotesis: (hipotesis) =>
+          correr(async () => {
+            const r = await enviar("/api/recorrido/hipotesis", { hipotesis });
+            return r.estado === "OK" ? null : t("ALTA.ERROR.RED");
+          }),
+  };
+
+  return (
+    <Recorrido
+      datos={respuesta.datos}
+      ocupado={ocupado}
+      aviso={aviso}
+      acciones={acciones}
+      perfil={<PerfilDelRecorrido perfil={respuesta.datos.perfil} ocupado={ocupado} acciones={acciones} />}
     />
   );
 }

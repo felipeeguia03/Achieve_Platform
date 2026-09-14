@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { recorridoDelEstudiante } from "@/lib/server/composicion";
+import { perfilDelRecorrido, recorridoDelEstudiante } from "@/lib/server/composicion";
 import { estudianteDelRecorrido } from "@/lib/server/recorrido-http";
 
 /**
@@ -11,8 +11,11 @@ import { estudianteDelRecorrido } from "@/lib/server/recorrido-http";
 export async function GET(request: Request) {
   const r = await estudianteDelRecorrido(request);
   if ("error" in r) return r.error;
-  const recorrido = await recorridoDelEstudiante(r.estudiante.institutionId, r.estudiante.id);
+  const [recorrido, perfil] = await Promise.all([
+    recorridoDelEstudiante(r.estudiante.institutionId, r.estudiante.id),
+    perfilDelRecorrido(r.estudiante.institutionId, r.estudiante.id),
+  ]);
   // `pruebaDisponible` enciende *Usar un analítico sintético*. Sin `MODO_PRUEBA=1`
   // el botón no llega al HTML y la ruta que lo sirve responde `404`.
-  return NextResponse.json({ ...recorrido, pruebaDisponible: process.env.MODO_PRUEBA === "1" });
+  return NextResponse.json({ ...recorrido, perfil, pruebaDisponible: process.env.MODO_PRUEBA === "1" });
 }

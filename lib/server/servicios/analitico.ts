@@ -57,6 +57,8 @@ export interface RepositorioDelAnalitico {
   confirmar(i: string, s: string, documentoId: string): Promise<boolean>;
   clavesDeDocumentos(i: string, s: string): Promise<string[]>;
   borrarDocumentos(i: string, s: string): Promise<number>;
+  /** Las respuestas y las hipótesis que salieron del analítico (ADR-107). */
+  borrarPerfil(i: string, s: string): Promise<void>;
 }
 
 export interface DependenciasDelAnalitico {
@@ -237,6 +239,8 @@ export async function borrarAnalitico(
   const claves = await deps.repo.clavesDeDocumentos(institutionId, studentId);
   await deps.repo.borrarArchivos(claves);
   const documentos = await deps.repo.borrarDocumentos(institutionId, studentId);
+  // Lo que salió del analítico se va con él: preguntas, respuestas e hipótesis.
+  await deps.repo.borrarPerfil(institutionId, studentId);
   await deps.repo.registrarConsentimiento(institutionId, studentId, "WITHDRAWN", VERSION_DE_POLITICA_DEL_ANALITICO);
   if (documentos > 0) {
     await deps.eventos.publicar({

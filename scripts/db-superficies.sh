@@ -73,6 +73,8 @@ limpiar() {
      delete from assessment where offering_id in (select id from course_offering where course_id in (select id from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')))));
      delete from course_offering where course_id in (select id from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA'))));
      delete from course where curriculum_plan_id in (select id from curriculum_plan where program_id in (select id from academic_program where institution_id in ('$INS','$OTRA')));
+     delete from profile_hypothesis where institution_id in ('$INS','$OTRA');
+     delete from profile_answer where institution_id in ('$INS','$OTRA');
      delete from academic_record_entry where institution_id in ('$INS','$OTRA');
      delete from academic_document where institution_id in ('$INS','$OTRA');
      delete from academic_record_consent where institution_id in ('$INS','$OTRA');
@@ -665,6 +667,33 @@ igual "el consentimiento es append-only: el backend no tiene UPDATE" \
   "$(q "select has_table_privilege('service_role','public.academic_record_consent','UPDATE')::text;")" "false"
 igual "el recorrido no cruza institución" \
   "$(q "select coalesce(public.recorrido_del_estudiante('$OTRA','$EST')->>'documento','NULO');")" "NULO"
+
+echo "→ ADR-107 · la respuesta es una declaración, la hipótesis va aparte"
+RESP='{"clave":"RECUPERACION:x","disparador":"RECUPERACION","regla":"RECORRIDO-v0.1","texto":"¿Qué cambió?","requisitos":[],"estado":"ANSWERED","opciones":["BUSQUE_AYUDA"],"textoLibre":"privado"}'
+HIPO='[{"dimension":"ESTRATEGIA_QUE_FUNCIONO","enunciado":"Nos contaste que buscar ayuda te ayudó.","evidencia":"HISTORICO_Y_DECLARADO","confianza":"MEDIA","requisitos":[]}]'
+A1=$(q "select public.responder_pregunta('$INS','$EST','$RESP'::jsonb,'$HIPO'::jsonb);" | tr -d '[:space:]')
+igual "la respuesta y su hipótesis quedan en tablas separadas" \
+  "$(q "select (select count(*) from profile_answer where id='$A1')||'/'||(select count(*) from profile_hypothesis where answer_id='$A1');")" "1/1"
+rechaza "responder sin decir nada no es una respuesta" \
+  "select public.responder_pregunta('$INS','$EST','{\"clave\":\"x\",\"disparador\":\"RECUPERACION\",\"regla\":\"r\",\"texto\":\"t\",\"estado\":\"ANSWERED\",\"opciones\":[]}'::jsonb,'[]'::jsonb);"
+rechaza "una hipótesis de confianza alta" \
+  "select public.responder_pregunta('$INS','$EST','$RESP'::jsonb,'[{\"dimension\":\"CONTEXTO\",\"enunciado\":\"x\",\"evidencia\":\"DECLARADO\",\"confianza\":\"ALTA\"}]'::jsonb);"
+igual "las respuestas son append-only: el backend no tiene UPDATE" \
+  "$(q "select has_table_privilege('service_role','public.profile_answer','UPDATE')::text;")" "false"
+q "select public.responder_pregunta('$INS','$EST','{\"clave\":\"RECUPERACION:x\",\"disparador\":\"RECUPERACION\",\"regla\":\"RECORRIDO-v0.1\",\"texto\":\"¿Qué cambió?\",\"estado\":\"SKIPPED\"}'::jsonb,'[]'::jsonb);" >/dev/null 2>&1
+igual "contestar de nuevo agrega una fila y la vigente es la última" \
+  "$(q "select (select count(*) from profile_answer where student_id='$EST')||'/'||(public.perfil_del_estudiante('$INS','$EST')->'respuestas'->0->>'estado')||'/'||jsonb_array_length(public.perfil_del_estudiante('$INS','$EST')->'hipotesis');")" "2/SKIPPED/0"
+H1=$(q "select id from profile_hypothesis where answer_id='$A1';" | tr -d '[:space:]')
+# Dos consultas: dentro de una misma sentencia, el SELECT vería la fila de antes del UPDATE.
+igual "«Esto no me representa» se registra" \
+  "$(q "select public.rechazar_hipotesis('$INS','$EST','$H1')::text;")" "true"
+igual "y la deja rechazada con fecha, sin borrarla" \
+  "$(q "select status||'/'||(rejected_at is not null)::text from profile_hypothesis where id='$H1';")" "RECHAZADA/true"
+igual "otro estudiante no rechaza una hipótesis ajena" \
+  "$(q "select public.rechazar_hipotesis('$INS','b2222222-0000-0000-0000-0000000000ff','$H1')::text;")" "false"
+igual "el perfil no cruza institución" \
+  "$(q "select jsonb_array_length(public.perfil_del_estudiante('$OTRA','$EST')->'respuestas');")" "0"
+q "delete from profile_hypothesis where student_id='$EST'; delete from profile_answer where student_id='$EST';" >/dev/null 2>&1
 
 q "delete from academic_record_entry where student_id='$EST'; delete from academic_document where student_id='$EST';
    delete from academic_record_consent where student_id='$EST'; delete from enrollment where student_id='$EST';

@@ -30,13 +30,15 @@ import {
   type RecorridoLeido,
   type ResultadoLeido,
 } from "@/lib/domain/analitico";
+import type { EstadoDeRespuesta, PerfilVisible, PreguntaVisible } from "@/lib/domain/preguntas-de-recorrido";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { CTAPrincipal, CTASecundaria, ReglaDeNegocio, TituloDePanel } from "./design-system";
 import { PantallaCargando, Renglon, Esqueleto } from "./esqueleto";
 
-export type DatosDelRecorrido = RecorridoLeido & { pruebaDisponible: boolean };
+export type DatosDelRecorrido = RecorridoLeido & { pruebaDisponible: boolean; perfil: PerfilVisible };
 
 export interface AccionesDelRecorrido {
   onConsentir: () => void;
@@ -46,6 +48,8 @@ export interface AccionesDelRecorrido {
   onRevisar: (resultadoId: string, decision: "CONFIRMED" | "CORRECTED" | "UNSURE" | "NOT_IN_PLAN", requisitoId: string | null, estado: EstadoDeResultado | null) => void;
   onConfirmar: (documentoId: string) => void;
   onBorrar: () => void;
+  onResponder: (clave: string, estado: EstadoDeRespuesta, opciones: string[], textoLibre: string | null) => void;
+  onRechazarHipotesis: (id: string) => void;
 }
 
 const tarjeta: React.CSSProperties = {
@@ -397,5 +401,155 @@ function Gestion({ datos, ocupado, acciones }: { datos: DatosDelRecorrido; ocupa
         </span>
       )}
     </section>
+  );
+}
+
+// ── El perfil del recorrido · ADR-107 ────────────────────────────────────────
+
+/**
+ * Las preguntas y *«Esto es lo que entendimos hasta ahora»*.
+ *
+ * ⚠️ **Todas se pueden saltear**, y saltear no cambia nada de lo que el
+ * estudiante ve en Achieve. **Sin CTA primaria**: la del momento confirmado no
+ * existe (ADR-107 §2), así que cada pregunta guarda con su propio botón.
+ */
+export function PerfilDelRecorrido({
+  perfil,
+  ocupado,
+  acciones,
+}: {
+  perfil: PerfilVisible;
+  ocupado: boolean;
+  acciones: AccionesDelRecorrido;
+}) {
+  const hipotesis = perfil.hipotesis.filter((h) => h.estado !== "SIN_VIGENCIA");
+  return (
+    <>
+      <section style={tarjeta} aria-labelledby="perfil-preguntas" data-perfil-preguntas>
+        <h2 id="perfil-preguntas" className="titulo-de-seccion" style={{ margin: 0 }}>
+          {t("PERFIL.TITULO")}
+        </h2>
+        <ReglaDeNegocio>{t("PERFIL.SUBCOPY")}</ReglaDeNegocio>
+        {perfil.preguntas.length === 0 && <span style={meta}>{t("PERFIL.SIN_PREGUNTAS")}</span>}
+        {perfil.preguntas.map((p) => (
+          <PreguntaDelRecorrido key={p.clave} pregunta={p} ocupado={ocupado} acciones={acciones} />
+        ))}
+      </section>
+
+      {hipotesis.length > 0 && (
+        <section style={tarjeta} aria-labelledby="perfil-entendimos" data-perfil-hipotesis>
+          <h2 id="perfil-entendimos" className="titulo-de-seccion" style={{ margin: 0 }}>
+            {t("PERFIL.ENTENDIMOS")}
+          </h2>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+            {hipotesis.map((h) => (
+              <li key={h.id} data-hipotesis={h.id} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: "var(--text-body)", color: h.estado === "RECHAZADA" ? "var(--muted-foreground)" : "var(--foreground)", textDecoration: h.estado === "RECHAZADA" ? "line-through" : "none" }}>
+                  {h.enunciado}
+                </span>
+                {h.estado === "RECHAZADA" ? (
+                  <span style={meta}>{t("PERFIL.RECHAZADA")}</span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={ocupado}
+                    onClick={() => acciones.onRechazarHipotesis(h.id)}
+                    style={{ ...meta, textDecoration: "underline", alignSelf: "flex-start" }}
+                  >
+                    {t("PERFIL.NO_ME_REPRESENTA")}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <ReglaDeNegocio>{t("PERFIL.AJUSTE")}</ReglaDeNegocio>
+        </section>
+      )}
+    </>
+  );
+}
+
+function PreguntaDelRecorrido({
+  pregunta: p,
+  ocupado,
+  acciones,
+}: {
+  pregunta: PreguntaVisible;
+  ocupado: boolean;
+  acciones: AccionesDelRecorrido;
+}) {
+  const [editando, setEditando] = useState(p.respuesta === null);
+  const [elegidas, setElegidas] = useState<string[]>(p.respuesta?.opciones ?? []);
+  const [texto, setTexto] = useState(p.respuesta?.textoLibre ?? "");
+
+  const alternar = (valor: string) =>
+    setElegidas((e) => {
+      if (e.includes(valor)) return e.filter((x) => x !== valor);
+      // «Ninguna» no convive con otras.
+      if (valor === "NINGUNA") return ["NINGUNA"];
+      return [...e.filter((x) => x !== "NINGUNA"), valor];
+    });
+
+  const enviar = (estado: EstadoDeRespuesta) => {
+    if (ocupado) return;
+    setEditando(false);
+    acciones.onResponder(p.clave, estado, estado === "ANSWERED" ? elegidas : [], estado === "ANSWERED" && texto.trim() ? texto : null);
+  };
+
+  return (
+    <div data-pregunta={p.clave} style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 12, borderTop: "0.5px solid var(--border)" }}>
+      <span style={{ fontSize: "var(--text-body)", fontWeight: 500 }}>{p.texto}</span>
+
+      {!editando && p.respuesta ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <span style={meta}>{t(`PERFIL.CONTESTADA.${p.respuesta.estado}` as CopyId)}</span>
+          <button type="button" onClick={() => setEditando(true)} style={{ ...meta, textDecoration: "underline" }}>
+            {t("PERFIL.CAMBIAR")}
+          </button>
+        </div>
+      ) : (
+        <>
+          <div role="group" aria-label={p.texto} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {p.opciones.map((o) => {
+              const activa = elegidas.includes(o.valor);
+              return (
+                <button
+                  key={o.valor}
+                  type="button"
+                  aria-pressed={activa}
+                  data-opcion={o.valor}
+                  onClick={() => alternar(o.valor)}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "var(--radius-control)",
+                    border: activa ? "1px solid var(--foreground)" : "1px solid var(--border)",
+                    background: activa ? "var(--foreground)" : "var(--card)",
+                    color: activa ? "var(--background)" : "var(--foreground)",
+                    fontSize: "var(--text-label)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {o.etiqueta}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <Label htmlFor={`texto-${p.clave}`}>{t("PERFIL.TEXTO_LIBRE")}</Label>
+            <Textarea id={`texto-${p.clave}`} value={texto} maxLength={1000} onChange={(e) => setTexto(e.target.value)} rows={2} />
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            <CTASecundaria onClick={() => (elegidas.length > 0 || texto.trim()) && enviar("ANSWERED")}>
+              {t("PERFIL.RESPONDER")}
+            </CTASecundaria>
+            {(["UNSURE", "PREFER_NOT_TO_SAY", "SKIPPED"] as const).map((e) => (
+              <button key={e} type="button" disabled={ocupado} onClick={() => enviar(e)} style={{ ...meta, textDecoration: "underline" }}>
+                {t(e === "UNSURE" ? "PERFIL.NO_ESTOY_SEGURO" : e === "PREFER_NOT_TO_SAY" ? "PERFIL.PREFIERO_NO" : "PERFIL.SALTEAR")}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

@@ -179,6 +179,7 @@ describe("el Service del analítico", () => {
       async confirmar() { return true; },
       async clavesDeDocumentos() { llamadas.push("claves"); return ["k1", "k2"]; },
       async borrarDocumentos() { llamadas.push("borrarFilas"); return 2; },
+      async borrarPerfil() { llamadas.push("borrarPerfil"); },
     };
     const deps: DependenciasDelAnalitico = {
       repo,
@@ -232,7 +233,7 @@ describe("el Service del analítico", () => {
   it("borrar: objeto primero, filas después, y retira el consentimiento", async () => {
     const { deps, llamadas, eventos } = mundo();
     expect(await borrarAnalitico(deps, "i", "s")).toEqual({ documentos: 2 });
-    expect(llamadas).toEqual(["claves", "borrarArchivos:2", "borrarFilas", "consentimiento:WITHDRAWN"]);
+    expect(llamadas).toEqual(["claves", "borrarArchivos:2", "borrarFilas", "borrarPerfil", "consentimiento:WITHDRAWN"]);
     expect(eventos.map((e) => e.nombre)).toEqual(["AcademicRecordDeleted"]);
   });
 });

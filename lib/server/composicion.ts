@@ -239,6 +239,14 @@ import { altaReal, type SeleccionDeRequisito } from "./repositorios/alta";
 import { cursadaReal, CursadaRechazada } from "./repositorios/cursada";
 import { createHash } from "node:crypto";
 import { analiticoReal, AnaliticoRechazado } from "./repositorios/analitico";
+import { perfilReal } from "./repositorios/perfil";
+import {
+  hipotesisVigentes as hipotesisVigentesPuro,
+  perfilDelRecorrido as perfilDelRecorridoPuro,
+  rechazarHipotesis as rechazarHipotesisPuro,
+  responderPregunta as responderPreguntaPuro,
+} from "./servicios/perfil";
+import type { EstadoDeRespuesta } from "@/lib/domain/preguntas-de-recorrido";
 import { analiticoSintetico, extractorSintetico } from "./simulacion/analitico";
 import {
   borrarAnalitico as borrarAnaliticoPuro,
@@ -338,7 +346,8 @@ export function fotoDePerfil(authUserId: string) {
 // ── El recorrido: el analítico · ADR-106 ────────────────────────────────────
 
 const depsDelAnalitico = () => ({
-  repo: analiticoReal,
+  // Borrar el analítico se lleva las respuestas y las hipótesis (ADR-106 §9).
+  repo: { ...analiticoReal, borrarPerfil: perfilReal.borrar },
   // ⚠️ El único extractor es sintético (ADR-106 §5): no hay OCR ni proveedor externo.
   extractor: extractorSintetico,
   eventos: eventosReal,
@@ -377,6 +386,34 @@ export function confirmarAnalitico(institutionId: string, studentId: string, doc
 
 export function borrarAnalitico(institutionId: string, studentId: string) {
   return borrarAnaliticoPuro(depsDelAnalitico(), institutionId, studentId);
+}
+
+// ── El perfil del recorrido · ADR-107 ───────────────────────────────────────
+
+const depsDelPerfil = () => ({ recorrido: analiticoReal.recorrido, repo: perfilReal, eventos: eventosReal });
+
+export function perfilDelRecorrido(institutionId: string, studentId: string) {
+  return perfilDelRecorridoPuro(depsDelPerfil(), institutionId, studentId);
+}
+
+export function responderPreguntaDelRecorrido(
+  institutionId: string,
+  studentId: string,
+  entrada: { clave: string; estado: EstadoDeRespuesta; opciones: string[]; textoLibre: string | null },
+) {
+  return responderPreguntaPuro(depsDelPerfil(), institutionId, studentId, entrada);
+}
+
+export function rechazarHipotesisDelRecorrido(institutionId: string, studentId: string, hipotesisId: string) {
+  return rechazarHipotesisPuro(depsDelPerfil(), institutionId, studentId, hipotesisId);
+}
+
+/**
+ * ⚠️ **El seam del Personal Engine, sin llamadores** (ADR-107 §7). El ADE no lo
+ * lee: que lo haga es una decisión abierta.
+ */
+export function hipotesisVigentesDelEstudiante(institutionId: string, studentId: string) {
+  return hipotesisVigentesPuro(depsDelPerfil(), institutionId, studentId);
 }
 
 /**

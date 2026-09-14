@@ -485,6 +485,19 @@ export const EXTENSIONES: Readonly<
     nivel: "TRANSICION",
     enBitacora: false,
   },
+  // ADR-107 · El perfil del recorrido. `TRANSICION`, no facturables, fuera de la
+  // Bitácora. ⚠️ **Qué contestó no viaja**: ni opciones, ni texto libre, ni el
+  // enunciado de una hipótesis. Sólo que ocurrió.
+  ProfileQuestionAnswered: {
+    porQue: "El estudiante contestó, salteó o prefirió no responder una pregunta del recorrido (ADR-107)",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  ProfileHypothesisRejected: {
+    porQue: "El estudiante marcó una hipótesis de su perfil como «Esto no me representa» (ADR-107 §5)",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
   // ADR-102 · Gimnasia cognitiva. **No facturables** (ADR-041) y **fuera de la
   // Bitácora**: jugar no es producir para una materia, y `hechos_de_cursada` se
   // ata a una `Action`. Cuatro hechos y ninguno más: *"evento nuevo para cada
