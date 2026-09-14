@@ -26,11 +26,17 @@ import { ProveedorDeEspacioDeTrabajo } from "./espacio-de-trabajo";
 import { BarraDeObjetos } from "./barra-de-objetos";
 import { PanelDeObjeto } from "./panel-de-objeto";
 import { BarraDeSuperficie } from "./barra-de-superficie";
+import { useBarraRecogida } from "@/lib/client/barra-lateral";
 import type { NodoId } from "@/lib/navigation/surfaces";
 
 export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactNode }) {
-  // Estado de sesión, no de dominio: no se persiste (regla del Track A).
-  const [colapsada, setColapsada] = useState(false);
+  /*
+    ⚠️ **No es un `useState`** — ADR-101. Cada ruta monta su propio `Shell`, y
+    un estado local se reiniciaba en cada navegación: la barra recogida se
+    volvía a abrir al cambiar de pantalla. Es preferencia del navegador, como
+    el tema, no dato del estudiante.
+  */
+  const [colapsada, alternarBarra] = useBarraRecogida();
   const [paleta, setPaleta] = useState(false);
 
   // Con qué nombrar la última miga, si la pantalla abrió un objeto concreto.
@@ -71,7 +77,7 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
           <NavegacionLateral
             nodoActivo={nodo}
             colapsada={colapsada}
-            onAlternar={() => setColapsada((c) => !c)}
+            onAlternar={alternarBarra}
           />
 
           <div className="flex min-w-0 flex-1 flex-col">

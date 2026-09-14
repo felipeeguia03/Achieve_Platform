@@ -1067,7 +1067,7 @@ esconden las que fallan.
 | Ítem activo por **inversión de contraste**, no por color de marca | Píldora blanca sólida. Regla 3 de la captura 02 |
 | **Un solo badge numérico** en todo el menú | Regla 2 de la captura 02. Ver §14.2 · `D-06`: está en el ítem equivocado |
 | Máximo siete destinos de primer nivel | Achieve tiene cuatro |
-| Colapsar reduce tamaño, nunca información | `A-03` corregido en la A2.1, con test |
+| Colapsar reduce tamaño, nunca información | `A-03` corregido en la A2.1, con test. **Desde [ADR-101](decisions.md#adr-101) la etiqueta recogida se va** (queda en `aria-label`/`title`); el contador sigue siendo número |
 | `⌘K` impreso **dentro** del control que dispara | Regla 4 de la captura 01 |
 | Cola `N de M` con flechas | Lista de materias de `UX01` |
 | CTA primaria a ancho completo al final de la columna | [ADR-015](decisions.md#adr-015) |

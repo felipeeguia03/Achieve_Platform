@@ -157,8 +157,9 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-098](#adr-098) | **Modo Clase**: la clase que el estudiante abre es suya, no la clase dictada; **sin audio y sin checkpoint** | ✅ `ACCEPTED` *(13 sep 2026 · el owner aceptó las doce recomendaciones · **enmienda ADR-094 §5**)* | El checkpoint (psicopedagoga), el audio (ADR-006 + legal) |
 | [ADR-099](#adr-099) | **Modo Clase, segunda vuelta**: grabación de audio con etiquetas, apuntes que se guardan con Enter, material de la clase, unidades y *cómo venís*, y la miga de la clase | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «quiero que apruebes lo que haga falta» · **enmienda ADR-098** §1, §4 y la tabla de lo que queda afuera)* | Grabar en un aula real (ADR-006 + legal, `legal-package.md` §5.1) |
 | [ADR-100](#adr-100) | **El Calendario**: clases del horario semanal, evaluaciones y compromisos en día · semana · mes, con enlace a cada objeto. **No agenda** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con un mockup · `CTA-001` gana el origen `CALENDARIO`)* | Recortar el horario al período real (ADR-060…065, corte 2) |
-| [ADR-102](#adr-102) | **Gimnasia cognitiva**: categoría Memoria con Cuadrícula fugaz, Cadena inversa y Recuerdo real; el resultado lo calcula el servidor, el progreso se deduce y **no toca Hoy ni el ADE** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner por escrito · `CTA-024` y `CTA-025` · 4 tablas)* | — |
 | [ADR-100 · Enm. 1](#adr-100-enmienda-1) | **Progreso y Modo Examen salen de la barra lateral**: se abren desde la materia (`CTA-009`, `CTA-019`) | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner)* | Colgar sus migas de la materia |
+| [ADR-101](#adr-101) | **La barra lateral recogida muestra sólo íconos**, lleva el logo de Achieve, abre y cierra con la misma flecha y **no se reabre al navegar** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con el software de las capturas · **revierte la mitad de `A-03`**: el contador sigue siendo número)* | — |
+| [ADR-102](#adr-102) | **Gimnasia cognitiva**: categoría Memoria con Cuadrícula fugaz, Cadena inversa y Recuerdo real; el resultado lo calcula el servidor, el progreso se deduce y **no toca Hoy ni el ADE** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner por escrito · `CTA-024` y `CTA-025` · 4 tablas)* | — |
 
 ---
 
@@ -9930,6 +9931,37 @@ superficie depende sólo del menú"* ya lo garantizaba.
   limpiando** (`SECCIONES_RETIRADAS`).
 - **Abierto:** colgar las dos migas de su materia (*Materias › Análisis › Progreso*). Necesita que cada
   pantalla declare su materia, como Modo Clase (ADR-099 §9).
+
+---
+
+## ADR-101 — La barra lateral recogida: sólo íconos, el logo y una flecha que no se olvida
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **pedido por el owner** con el software de las capturas delante:
+*"no dice el nombre de la pantalla cuando está recogido, además, hay veces que abrís otra pantalla y se
+vuelve a abrir, controlá eso, además quiero esa flecha tanto para cerrar y abrir y que pongas el logo de
+achieve como el de zop, pero es igual tanto en modo día como noche"*.
+
+**Decisión.**
+1. **Recogida, sólo el ícono.** El nombre del ítem sale de la pantalla y queda como `aria-label` y `title`
+   del link: lo lee un lector de pantalla y aparece al pasar el mouse. **Revierte la mitad de `A-03`** que
+   la A2.1 había agregado (la etiqueta chica debajo del ícono). **La otra mitad sigue:** el contador no se
+   degrada a un punto, y su test sigue.
+2. **La misma flecha abre y cierra.** `‹` a la derecha del logo expandida; recogida, el logo arriba y `›`
+   debajo. Reemplaza al ícono de panel.
+3. **El logo de Achieve** —la suricata sobre su círculo negro, `public/achieve-logo.png`— con el nombre
+   al lado expandida y solo recogida. **Es el mismo en día y en noche**: trae su propio fondo.
+4. **Recogerla se recuerda.** Cada ruta de `app/(student)` monta su propio `Shell`, y el `useState` que
+   guardaba la barra nacía expandido en cada navegación. Ahora vive en `lib/client/barra-lateral.ts`, en
+   `localStorage` (`achieve.barra-lateral`), la misma clase de preferencia del navegador que el tema
+   (ADR-097): no es dato del estudiante y no viaja al backend.
+
+**Consecuencias.**
+- `tests/shell.test.tsx` cambia el guard *"colapsada conserva el nombre visible"* por *"recogida no lo
+  dibuja y lo conserva como nombre accesible"*, y suma que un `Shell` que monta de nuevo lee la barra
+  recogida.
+- ⚠️ **Al recargar la página entera** la barra se pinta expandida un instante antes de recogerse: el
+  servidor no conoce la preferencia. Al navegar dentro de la app no pasa.
+
 
 ---
 

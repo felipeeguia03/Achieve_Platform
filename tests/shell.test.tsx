@@ -1,8 +1,9 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Item, NavegacionLateral } from "@/components/shell/navegacion-lateral";
+import { recogerBarra, useBarraRecogida } from "@/lib/client/barra-lateral";
 import { BarraSuperior } from "@/components/shell/barra-superior";
 import { menu, rutaDelItem } from "@/lib/navigation/menu";
 import { migasDe, padreDeMiga } from "@/lib/navigation/migas";
@@ -116,16 +117,35 @@ describe("Navegación lateral", () => {
     expect(activo).toHaveTextContent("Hoy");
   });
 
-  it("colapsada conserva el nombre de cada ítem, visible", () => {
-    // `A-03`: "los íconos sin etiqueta obligan a recordar en un producto que
-    // en todo lo demás evita el recuerdo". La etiqueta baja de tamaño, no se va.
+  /**
+   * [ADR-101](../docs/decisions.md#adr-101): recogida, **sólo el ícono**, como el
+   * software de las capturas. Revierte la mitad de `A-03` que dejaba el nombre
+   * chico debajo; el nombre no se pierde para quien no ve: queda como nombre
+   * accesible del link y como `title` al pasar el mouse.
+   */
+  it("recogida no dibuja el nombre, y el link lo conserva como nombre accesible", () => {
     const { container } = render1(true);
     for (const item of menu) {
-      expect(screen.getByRole("link", { name: new RegExp(item.etiqueta) })).toBeInTheDocument();
-      // Visible de verdad: no escondida con sr-only.
-      expect(container.textContent, item.etiqueta).toContain(item.etiqueta);
+      const link = screen.getByRole("link", { name: item.etiqueta });
+      expect(link).toHaveAttribute("title", item.etiqueta);
+      expect(link.textContent, item.etiqueta).not.toContain(item.etiqueta);
     }
-    expect(container.querySelectorAll(".sr-only")).toHaveLength(0);
+    expect(container.querySelector("nav")!.textContent).not.toMatch(/Hoy|Materias|Calendario|Formación/);
+  });
+
+  it("expandida, el nombre de cada ítem se ve", () => {
+    const { container } = render1(false);
+    for (const item of menu) expect(container.textContent, item.etiqueta).toContain(item.etiqueta);
+  });
+
+  it("el logo de Achieve está en los dos estados, y el nombre sólo expandida", () => {
+    const { unmount, container } = render1(false);
+    expect(screen.getByAltText("Achieve")).toBeInTheDocument();
+    expect(container.textContent).toContain("Achieve");
+    unmount();
+    const recogida = render1(true);
+    expect(screen.getByAltText("Achieve")).toBeInTheDocument();
+    expect(recogida.container.textContent).not.toContain("Achieve");
   });
 
   /**
@@ -147,8 +167,6 @@ describe("Navegación lateral", () => {
       expect(contador, `colapsada=${colapsada}`).not.toBeNull();
       // Sigue siendo un número, no un punto: es la regla entera.
       expect(contador!.textContent, `colapsada=${colapsada}`).toBe("17");
-      // Y la etiqueta no desaparece para ganar ancho.
-      expect(container.textContent, `colapsada=${colapsada}`).toContain("Hoy");
       unmount();
     }
   });
@@ -170,6 +188,45 @@ describe("Navegación lateral", () => {
     unmount();
     render1(true);
     expect(screen.getByLabelText("Expandir la navegación")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("la misma flecha abre y cierra: ‹ expandida, › recogida", () => {
+    const { unmount } = render1(false);
+    expect(screen.getByLabelText("Colapsar la navegación").querySelector(".lucide-chevron-left")).not.toBeNull();
+    unmount();
+    render1(true);
+    expect(screen.getByLabelText("Expandir la navegación").querySelector(".lucide-chevron-right")).not.toBeNull();
+  });
+
+  /**
+   * ⚠️ **El defecto que reportó el owner:** recogía la barra, abría otra
+   * pantalla y se volvía a abrir. Cada ruta monta su propio `Shell`, así que el
+   * estado no puede vivir adentro: un `Shell` que monta de nuevo tiene que leer
+   * la barra recogida.
+   */
+  it("recogida sobrevive a que el Shell monte de nuevo (navegar no la reabre)", () => {
+    function Sonda() {
+      const [recogida, alternar] = useBarraRecogida();
+      return <button onClick={alternar}>{recogida ? "recogida" : "expandida"}</button>;
+    }
+    try {
+      const primera = render(<Sonda />);
+      expect(screen.getByRole("button")).toHaveTextContent("expandida");
+      fireEvent.click(screen.getByRole("button"));
+      expect(screen.getByRole("button")).toHaveTextContent("recogida");
+      primera.unmount();
+
+      render(<Sonda />);
+      expect(screen.getByRole("button")).toHaveTextContent("recogida");
+    } finally {
+      act(() => recogerBarra(false));
+    }
+  });
+
+  it("el Shell no guarda la barra en un useState propio", () => {
+    const shell = readFileSync(resolve(__dirname, "../components/shell/shell.tsx"), "utf8");
+    expect(shell).toContain("useBarraRecogida()");
+    expect(shell).not.toContain("setColapsada");
   });
 
   it("alterna al hacer clic", () => {
