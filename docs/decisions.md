@@ -162,6 +162,9 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-102](#adr-102) | **Gimnasia cognitiva**: categoría Memoria con Cuadrícula fugaz, Cadena inversa y Recuerdo real; el resultado lo calcula el servidor, el progreso se deduce y **no toca Hoy ni el ADE** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner por escrito · `CTA-024` y `CTA-025` · 4 tablas)* | — |
 | [ADR-103](#adr-103) | **El asistente de reportes y mejoras, simulado**: botón abajo a la derecha, reportar o sugerir, pregunta aclaratoria, tarjeta que cita lo escrito y *Reporte enviado*. **Sin red ni persistencia, sólo con `MODO_PRUEBA=1`** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con capturas de otro software · `SIMULADO`)* | Conectarlo al backend con el CTO; qué se guarda de un reporte toca ADR-006 |
 | [ADR-104](#adr-104) | **Modo Focus**: la sesión de trabajo sobre una acción comprometida; Pomodoro es un modo, el tiempo lo sella el servidor, el anotador es privado y **no es evidencia ni cumplimiento** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «hacé todo lo recomendado» · `CTA-026` y `CTA-027` · **enmienda ADR-088 Enm. 8**)* | Cerrar el compromiso en *Terminé* cuando la entrega acepte un compromiso cerrado |
+| [ADR-105](#adr-105) | **El alta tiene cinco pasos**: comisión y horarios son el cuarto, antes de disponibilidad. **La cursada no se muda de offering** al elegir comisión, y los bloques de una cursada tienen una sola precedencia | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «2-a» · **enmienda ADR-061** §«Dónde se pregunta»)* | Cambiar de comisión después del alta (fila 19) |
+| [ADR-106](#adr-106) | **El analítico**: historia académica **después de HOY y opcional**, en `/recorrido`; se sube, se extrae con un puerto (adaptador **sintético**), se vincula **sólo** al plan del estudiante y se revisa lo ambiguo. **Nunca crea una cursada** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «3-autorizo» · **sólo datos sintéticos**: ADR-006 intacto)* | Extracción real (ADR-006 + legal + ADR-080) |
+| [ADR-107](#adr-107) | **Preguntas del recorrido e hipótesis de perfil**: pocas preguntas deterministas (`RECORRIDO-v0.1`), respuesta declarada separada de la hipótesis, y *«Esto no me representa»*. **Sin esperar a la psicopedagoga** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «4-no se llevan, que no se impida nada» · **enmienda ADR-052** §«no autoriza el diagnóstico personal mínimo» y **acota ADR-087 D1**)* | Que el ADE consuma hipótesis |
 
 ---
 
@@ -10401,3 +10404,240 @@ Pomodoro, cerrar con avance y verlo en la Bitácora.
 0 ✗. En el navegador, los dos recorridos de [`modo-focus.md`](modo-focus.md) §E —incluida la
 recuperación, que mostró `02:00` sobre un tramo de 12 minutos con el último latido a los 2—, a 1440 y
 a 360 px, sin errores de consola.
+
+
+---
+
+<a id="adr-105"></a>
+
+## ADR-105 — El alta tiene cinco pasos, y la cursada no se muda de offering al elegir comisión
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **decidido por el owner**: *"2-a"* —
+[fuente literal](respuesta-po-onboarding-academico-source.md)
+**Enmienda:** [ADR-061](#adr-061) §«Dónde se pregunta» (*"no agregar un quinto paso"*).
+**Construye:** [ADR-062](#adr-062) y [ADR-063](#adr-063) —cortes 3 y 4 de
+[`plan-periodo-comision-horarios.md`](plan-periodo-comision-horarios.md)—, y la segunda mitad de
+[ADR-061](#adr-061) (corte 2).
+**No levanta:** [ADR-006](#adr-006), la fila 19 (cambio de comisión como hecho) ni la fila 20 (el
+semestre en la clave de `enrollment`).
+
+### El choque que resuelve
+
+[ADR-061](#adr-061), el 5 de septiembre: *"La pantalla de comisión y horarios sí permanece como el
+cuarto paso del alta"* y *"no agregar un quinto paso"*. [ADR-073](#adr-073), el 7: la disponibilidad
+entra *"como un paso más junto a carrera y materias"* — y ocupó el cuarto lugar. Las dos no podían
+cumplirse a la vez, y nadie lo había escrito.
+
+### Decisión
+
+**1 · Cinco pasos, en este orden:**
+
+```
+/alta/whatsapp → /alta/carrera → /alta/materias → /alta/cursada → /alta/disponibilidad → /hoy
+```
+
+`/alta/cursada` va **antes** de disponibilidad: saber cuándo cursás es lo que permite contestar
+cuándo podés estudiar, y las dos preguntas **siguen separadas** (ADR-063: *"uno expresa cuándo está
+cursando y el otro cuándo puede estudiar"*).
+
+**2 · El período se pregunta en `/alta/carrera`**, como mandó ADR-061: año lectivo y semestre, sin
+preselección. `periodoDeCursado()` deja de existir: **ningún código infiere el semestre del mes**.
+`/alta/materias` agrupa por período de dictado —las del semestre, las anuales aparte, y la salida a
+otros años y períodos—. Una materia **sin período declarado** (todo el Plan 2016, ADR-053) se trata
+como hasta hoy: por año.
+
+**3 · `/alta/cursada` pregunta, por materia, dos cosas independientes** (ADR-063 §«comisión y horario
+son independientes»):
+
+| Pregunta | Respuestas |
+|---|---|
+| **¿En qué comisión cursás?** | una comisión del catálogo · *No sé mi comisión* (`UNKNOWN`) · *Mi comisión no aparece* + nombre (`NOT_LISTED`) · *Esta materia no tiene comisiones* (`NOT_APPLICABLE`) |
+| **¿Cuándo cursás?** | el horario publicado de la comisión elegida · *Cargar mi horario* (bloques del estudiante) · *Todavía no sé mi horario* (`UNKNOWN`, sin filas) |
+
+Con la acción global **«No sé mis comisiones todavía»** (ADR-062). **Ninguna comisión se
+preselecciona.** Sin comisiones en el catálogo no se ofrece la lista: se ofrecen las otras tres.
+
+**4 · ⚠️ La cursada NO se muda de offering al elegir comisión.** El plan proponía mover
+`course_enrollment.offering_id`, y **hoy eso vacía la materia**: temas, clases, evaluaciones,
+recursos, pesos y horario cuelgan de la offering sin comisión que crea el alta, y el temario **todavía
+no** pasó a la materia (ADR-060 es el corte 7 y no está hecho). Mudarla dejaría al estudiante con
+`FALTA CONTEXTO`, sin Gantt y sin nada que el ADE pueda decidir, **por haber contestado una pregunta**.
+
+> **Decisión:** la comisión elegida se guarda **al lado**: `course_enrollment.commission_offering_id`,
+> FK real a una `course_offering` **de la misma materia y el mismo período, con comisión**. Es
+> explícito, trazable y reversible —el criterio del CTO—: cuando ADR-060 mueva el temario a la
+> materia, mudar la cursada es un `UPDATE` con esta columna como fuente.
+>
+> Y ADR-062 ya lo dejaba abierto: *"lo que la comisión habilita, no lo decide este ADR"*. Hasta que se
+> decida, la comisión aporta **su horario** y nada más.
+
+**5 · Los bloques de una cursada tienen una sola precedencia**, en una sola función de base
+(`bloques_de_cursadas()`), que leen **todas** las superficies:
+
+| Orden | Si… | Bloques |
+|---|---|---|
+| 1 | `schedule_status = 'UNKNOWN'` | **ninguno**: dijo que no sabe, y la ausencia no es disponibilidad |
+| 2 | hay bloques declarados por el estudiante | ésos (`student` / `unverified`) |
+| 3 | `commission_status = 'CONFIRMED'` | los publicados de su comisión |
+| 4 | `commission_status IN ('UNKNOWN','NOT_LISTED')` | **ninguno**: los de la materia sin comisión no son los suyos |
+| 5 | sin estado o `NOT_APPLICABLE` | los de la offering de la cursada — el comportamiento de antes |
+
+La fila 5 es la que hace que **nada de lo que ya funcionaba cambie** para una cursada que nunca pasó
+por el paso nuevo.
+
+**6 · El paso se contesta una vez**: `enrollment.course_setup_declared_at`, con el mismo patrón que
+`student.availability_declared_at` (ADR-073). Contestar *no sé* **cuenta como contestar**.
+
+### Qué no cambia
+
+- **`class_schedule_block` no se mezcla con `availability`** y el reparto sigue sin leerlo (guard).
+- **Un horario declarado no se eleva**: entra `student` / `unverified` y lo usa sólo quien lo declaró.
+- **Ninguna `class_session` se crea**: el horario semanal no es una clase dictada.
+- **Cambiar de comisión después del alta no existe todavía.** Es la fila 19, y sigue abierta.
+
+---
+
+<a id="adr-106"></a>
+
+## ADR-106 — El analítico: historia académica después de HOY, sintética, que nunca crea una cursada
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **decidido por el owner**: *"3-autorizo"* —
+[fuente literal](respuesta-po-onboarding-academico-source.md)
+**No levanta:** [ADR-006](#adr-006) — **bloqueo absoluto sobre datos reales**; [ADR-080](#adr-080) —
+**ninguna llamada a un proveedor externo**; `C01-017` (retención); `C01-042`.
+**Construye sobre:** [ADR-029](#adr-029) (lo que sube el estudiante entra `student`), [ADR-042](#adr-042)
+(consentimiento append-only y versionado), [ADR-051](#adr-051), [ADR-053](#adr-053), [ADR-099](#adr-099)
+(borrado de storage: objeto primero, fila después).
+
+### Decisión
+
+**1 · Vive después de HOY, y es opcional.** `/recorrido`, nodo `RECORRIDO` **sin wireframe** —el patrón
+de `/materias`, `/formacion` y `/gimnasia`—, al final de la barra lateral. **No es un paso del alta y
+no la gatea**: sin analítico el estudiante hace todo lo que hacía.
+
+**2 · Dos representaciones que no se mezclan.** El analítico describe **el pasado**; `course_enrollment`
+describe **el presente**. **Ningún resultado del analítico crea, preselecciona ni sugiere una
+cursada**, y hay guard.
+
+**3 · Consentimiento antes de subir**, append-only y versionado (`academic_record_consent`,
+`policy_version = 'analitico-v1-sintetica'`). Sin `GRANTED` vigente, `POST` responde `409`.
+**Retirarlo** es una fila nueva.
+
+**4 · Qué se acepta.** PDF, PNG y JPEG, **por firma de bytes, no por extensión**; hasta 10 MB y 20
+páginas. Vacío, corrupto, protegido con contraseña o de otro tipo: rechazo con motivo canónico.
+**El contenido nunca va a un log, a un evento ni a un mensaje de error.** Bucket privado
+`analiticos`. El mismo archivo dos veces (mismo SHA-256) devuelve el documento que ya existe.
+
+**5 · La extracción es un puerto.** `ExtractorDeAnalitico` recibe bytes y devuelve filas crudas.
+**El único adaptador es sintético** (`SINTETICO-v1`): lee analíticos generados por el propio repo
+(`ACHIEVE-SYN-ANALITICO`). Cualquier otro archivo termina `FAILED` con
+`EXTRACCION_NO_DISPONIBLE` —la verdad: **no hay extractor real, y no lo habrá sin dictamen**—.
+
+**6 · Qué se guarda de cada fila**, en `academic_record_entry`:
+
+| | |
+|---|---|
+| **Crudo, inmutable** | nombre, código, estado, nota, fecha y período **tal como vinieron** |
+| **Interpretado** | estado en vocabulario cerrado (`APPROVED` · `PROMOTED` · `REGULARIZED` · `FAILED` · `ABSENT` · `EQUIVALENCE` · `UNKNOWN`), nota (`NULL` ≠ `0`), fecha |
+| **Vínculo** | `curriculum_requirement_id`, regla (`CODE` · `NAME_EXACT` · `STUDENT_CHOICE` · `NONE`) y confianza |
+| **Revisión** | `AUTO` · `NEEDS_REVIEW` · `CONFIRMED` · `CORRECTED` · `UNSURE` · `NOT_IN_PLAN` |
+| **Procedencia** | `source_type = 'student'`, `verification_status = 'unverified'` — **aunque el documento lo emita la universidad**: lo trajo el estudiante (ADR-029), y nada lo eleva (`I9`) |
+
+**7 · El vínculo es sólo contra el plan del estudiante.** Código exacto, o nombre normalizado exacto y
+único. **Nunca contra otro plan ni otra carrera** —Ingeniería en Informática no es el Plan 2016
+(ADR-053)—. Un nombre del plan cortado en la fuente **no se completa**: queda para revisar.
+
+**8 · Se revisa sólo lo ambiguo.** *«Encontramos 42 resultados. 37 quedaron vinculados. Revisá 5.»*
+Cada uno se confirma, se corrige eligiendo del plan, se marca *No es de mi plan* o *No estoy seguro*.
+**Confirmar no exige resolver todo.**
+
+**9 · Se borra.** *Borrar mi analítico* elimina el objeto y después las filas (ADR-099), con sus
+preguntas derivadas. Una versión nueva **no pisa** la anterior: la vigente es la última procesada.
+
+### Qué no hace
+
+- **No procesa un analítico real.** ADR-006, sin excepción ni *"una prueba chica"*.
+- **No comparte nada con el CRM** (ADR-035) ni con la institución.
+- **No escribe `topic_progress`, `Evidence` ni progreso**: aprobar una materia hace años no es dominio
+  hoy.
+- **No entra al ADE.** ADR-080 §8 sigue: nada nuevo entra a la prioridad.
+
+---
+
+<a id="adr-107"></a>
+
+## ADR-107 — Las preguntas del recorrido y las hipótesis de perfil
+
+**Estado:** ✅ `ACCEPTED` · 13 sep 2026 · **decidido por el owner**: *"4-no se llevan, que no se impida
+nada"* — [fuente literal](respuesta-po-onboarding-academico-source.md)
+**Enmienda:** [ADR-052](#adr-052) §«Lo que este ADR no autoriza» — *"no autoriza el diagnóstico
+personal mínimo"* queda levantado **para el recorrido**.
+**Acota:** [ADR-087](#adr-087) `D1` — la prohibición de proxies **sigue** para clasificar autonomía y
+restringir acceso; **no** alcanza a preguntas del recorrido ni a hipótesis que no restringen nada.
+**No levanta:** [ADR-006](#adr-006), [ADR-074](#adr-074) (el multiplicador no entra al Hero ni al riesgo),
+`product.md` §13.
+**Deja registrado:** que la validación de la psicopedagoga **no se pidió**, por decisión del owner.
+
+### Contexto
+
+El diagnóstico marcó tres cosas que impedían construir esto: `C01-043` abierto, `D1` y la fuente de la
+psicopedagoga (sugerencia exploratoria desde **3** experiencias comparables, patrón visible desde
+**6**, nunca causalidad). El owner decidió que **no se lleven y que nada lo impida**.
+
+### Decisión
+
+**1 · Pocas preguntas, deterministas y versionadas** (`RECORRIDO-v0.1`,
+`lib/domain/preguntas-de-recorrido.ts`, puro). Se generan **sólo desde filas del analítico vigente**,
+nunca desde el aire:
+
+| Disparador | Cuándo | Tipo |
+|---|---|---|
+| `MATERIA_ACTUAL` | una cursada activa tiene un intento previo sin aprobar | dificultad |
+| `RECUPERACION` | un resultado sin aprobar y después una aprobación de la misma materia | dificultad |
+| `PERSISTENCIA` | tres o más intentos hasta aprobar | fortaleza |
+| `CAMBIO_DE_PERIODO` | un año con la mitad o menos de aprobaciones que la mediana de los demás (con 3 años o más) | contexto |
+| `FORTALEZA` | tres o más aprobaciones con nota ≥ 8 sobre 10 | fortaleza |
+| `CALIBRACION` | tres o más aprobaciones con nota | calibración |
+
+**Objetivo 3, máximo 5.** Una materia no se pregunta dos veces. Si hay alguna de fortaleza o
+calibración, **al menos una entra**: el set no puede ser sólo de dificultades. Los umbrales (`8`, `3`,
+la mitad de la mediana) son **provisionales del equipo** y cambiar uno **cambia la versión**.
+
+**2 · Toda pregunta se puede saltear.** *No estoy seguro* · *Prefiero no responder* · texto libre
+opcional. Saltearla **no bloquea nada y no genera ninguna valoración**.
+
+**3 · La respuesta es una declaración, y se conserva** (`profile_answer`, append-only): opciones de un
+vocabulario cerrado, el texto de la pregunta **congelado** y el texto libre. **Nunca reemplaza una nota
+oficial, y una nota nunca reemplaza la respuesta.**
+
+**4 · La hipótesis va aparte** (`profile_hypothesis`): dimensión, enunciado, evidencia de origen
+(la respuesta y las filas del analítico), tipo de evidencia (`HISTORICO` · `DECLARADO` ·
+`HISTORICO_Y_DECLARADO`), confianza (`BAJA` · `MEDIA` — **nunca alta desde el onboarding**), vigencia
+y estado (`VIGENTE` · `RECHAZADA` · `SIN_VIGENCIA`).
+
+**5 · Se redacta como lo que es.** Lo que no impide nada y sí dice la verdad:
+
+| Se escribe | No se escribe |
+|---|---|
+| *«Nos contaste que en Análisis II cambiar tu forma de estudiar te ayudó a aprobar.»* | *«La práctica te funciona.»* |
+| *«En Programación tuviste tus mejores notas.»* | *«Sos bueno en programación.»* |
+| *«Nos dijiste que en Física la nota no representa lo que sabías.»* | *«Tenés un problema con los exámenes.»* |
+
+Y cierra siempre con *«Lo vamos a ir ajustando con lo que hagas en Achieve.»* **«Esto no me
+representa»** marca la hipótesis `RECHAZADA` con su fecha; no la borra.
+
+**6 · Corregir el analítico recalcula.** Una pregunta se identifica por su disparador y sus filas: si
+una corrección hace que ya no se genere, sus respuestas y las hipótesis que salieron de ellas quedan
+`SIN_VIGENCIA` — no se borran.
+
+**7 · El comportamiento posterior la ajusta, cuando exista el escritor.** Hoy **nada la refuerza ni la
+debilita**, y se dice: el seam es `hipotesisVigentes()`. Compromisos, Focus, evidencias y rescates
+**no escriben en el perfil** en este corte.
+
+### Qué no hace
+
+- **No elige la próxima acción.** El ADE no lee hipótesis (ADR-080 §8, ADR-074).
+- **No entra al Hero, al riesgo ni a la intensidad del seguimiento.**
+- **No restringe acceso a nada**: por eso `D1` sigue intacto donde vive.
+- **No compara estudiantes** ni muestra un número sobre la persona.
+- **No viaja al CRM ni a la institución.** Respuestas, texto libre e hipótesis son privados.
