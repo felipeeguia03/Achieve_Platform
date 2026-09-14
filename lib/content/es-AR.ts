@@ -606,6 +606,10 @@ export const copy = {
   "ALTA.CARRERA.INSTITUCION": "¿Dónde estudiás?",
   "ALTA.CARRERA.CARRERA": "¿Qué carrera estudiás?",
   "ALTA.CARRERA.ANIO": "¿Qué año estás cursando?",
+  "ALTA.CARRERA.ANIO_LECTIVO": "¿De qué año lectivo es este cursado?",
+  "ALTA.CARRERA.SEMESTRE": "¿En qué semestre estás?",
+  "ALTA.CARRERA.SEMESTRE_PRIMERO": "Primer semestre",
+  "ALTA.CARRERA.SEMESTRE_SEGUNDO": "Segundo semestre",
   "ALTA.CARRERA.FACULTAD": "Facultad:",
   // Se muestra para confirmar, no para preguntar: si hay una sola versión
   // vigente el sistema no agrega un paso que puede contestar solo.
@@ -622,8 +626,11 @@ export const copy = {
   // Materias.
   "ALTA.MATERIAS.TITULO": "Estas son las materias de ese año. Marcá cuáles cursás.",
   "ALTA.MATERIAS.REGLA": "Podés desmarcar las que no estés cursando y sumar de otros años.",
-  "ALTA.MATERIAS.OTROS_ANIOS": "Agregar materias de otros años",
-  "ALTA.MATERIAS.OCULTAR_OTROS": "Ocultar las de otros años",
+  "ALTA.MATERIAS.OTROS_ANIOS": "Agregar materias de otros años o del otro semestre",
+  "ALTA.MATERIAS.OCULTAR_OTROS": "Ocultar las de otros años y semestres",
+  "ALTA.MATERIAS.ANUALES": "Materias anuales",
+  "ALTA.MATERIAS.ANUALES_AYUDA": "Se dictan durante el año entero: las ves en los dos semestres.",
+  "ALTA.MATERIAS.SEMESTRE": "Semestre",
   "ALTA.MATERIAS.ANIO": "Año",
   "ALTA.MATERIAS.ELECTIVAS": "¿Estás cursando alguna electiva?",
   "ALTA.MATERIAS.ELECTIVA_AYUDA":

@@ -286,6 +286,19 @@ DER=$(q "select coalesce(academic_year::text,'—')||'/'||coalesce(semester,'—
            from enrollment where student_id='$EST' limit 1;")
 igual "'2026-2' quedó como 2026 + SECOND_SEMESTER" "$DER" "2026/SECOND_SEMESTER"
 
+echo "→ ADR-105 §2 · las pantallas leen el período que el estudiante eligió"
+DECL=$(q "select (public.estado_del_alta(s.institution_id, s.id)->'declaracion'->>'anioLectivo')
+               ||'/'||(public.estado_del_alta(s.institution_id, s.id)->'declaracion'->>'semestre')
+            from student s where s.id='$EST';")
+igual "estado_del_alta devuelve año lectivo y semestre de sus columnas" "$DECL" "2026/SECOND_SEMESTER"
+ANUAL_LEIDA=$(q "select count(*) from curriculum_requirement cr
+                  join curriculum_plan cp on cp.id = cr.curriculum_plan_id
+                  cross join lateral jsonb_array_elements(public.requisitos_del_plan(cp.id, gen_random_uuid())->'requisitos') r
+                 where cp.publication_status='PUBLISHED' and coalesce(cr.is_annual,false)
+                   and r->>'requisitoId' = cr.id::text
+                   and (r->>'esAnual')::boolean and r->>'periodo' is null;")
+igual "requisitos_del_plan marca las anuales sin inventarles semestre" "$([ "${ANUAL_LEIDA:-0}" -gt 0 ] && echo sí || echo no)" "sí"
+
 q "delete from requirement_declaration where student_id in ('$EST','$OTRO');
    delete from course_enrollment where student_id in ('$EST','$OTRO');
    delete from enrollment where student_id in ('$EST','$OTRO');

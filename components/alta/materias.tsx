@@ -28,7 +28,8 @@
 import { useMemo, useState } from "react";
 
 import { t } from "@/lib/content/es-AR";
-import { tratoEnElAlta, sePreselecciona, type TipoDeRequisito } from "@/lib/domain/alta";
+import { grupoEnElAlta, tratoEnElAlta, sePreselecciona, type TipoDeRequisito } from "@/lib/domain/alta";
+import type { Semestre } from "@/lib/domain/periodo";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,6 +77,10 @@ export interface RequisitoElegible {
   nombre: string;
   tipo: TipoDeRequisito;
   anio: number | null;
+  /** Período de dictado. `null` ⇒ el plan no lo declara (ADR-053), no «ninguno». */
+  periodo: Semestre | null;
+  /** Se dicta todo el año: aparece en los dos semestres (ADR-061). */
+  esAnual: boolean;
   nombreCortado: boolean;
   materiaId: string | null;
   opciones: { materiaId: string; nombre: string }[];
@@ -89,27 +94,35 @@ export interface SeleccionEnviada {
 
 export interface MateriasProps {
   anioElegido: number;
+  /** El semestre que el estudiante eligió en `/alta/carrera`. Nunca del mes. */
+  semestreElegido: Semestre;
   requisitos: RequisitoElegible[];
   onConfirmar: (selecciones: SeleccionEnviada[]) => Promise<{ ok: boolean; motivo?: string }>;
 }
 
-export function AltaMaterias({ anioElegido, requisitos, onConfirmar }: MateriasProps) {
-  const { delAnio, deOtrosAnios, cupos } = useMemo(() => {
+export function AltaMaterias({ anioElegido, semestreElegido, requisitos, onConfirmar }: MateriasProps) {
+  const grupo = (r: RequisitoElegible) => grupoEnElAlta(r, anioElegido, semestreElegido);
+  const { delAnio, anuales, deOtrosAnios, cupos } = useMemo(() => {
     const materias = requisitos.filter((r) => tratoEnElAlta(r.tipo) === "MATERIA");
+    const de = (r: RequisitoElegible) => grupoEnElAlta(r, anioElegido, semestreElegido);
     return {
-      delAnio: materias.filter((r) => r.anio === anioElegido),
-      deOtrosAnios: materias.filter((r) => r.anio !== anioElegido),
+      // ADR-061: *"Mostrar primero las materias del semestre seleccionado. Mostrar
+      // las materias anuales en un grupo separado. Permitir agregar materias de
+      // otros años o períodos."*
+      delAnio: materias.filter((r) => de(r) === "DEL_SEMESTRE"),
+      anuales: materias.filter((r) => de(r) === "ANUALES"),
+      deOtrosAnios: materias.filter((r) => de(r) === "OTROS"),
       // Los cupos del año elegido. Preguntar por los de quinto a alguien de
       // segundo sería ruido.
       cupos: requisitos.filter(
         (r) => tratoEnElAlta(r.tipo) === "CUPO" && (r.anio === null || r.anio === anioElegido),
       ),
     };
-  }, [requisitos, anioElegido]);
+  }, [requisitos, anioElegido, semestreElegido]);
 
   /** Arranca con las obligatorias del año marcadas. Todas se pueden desmarcar. */
   const [marcadas, setMarcadas] = useState<Set<string>>(
-    () => new Set(requisitos.filter((r) => sePreselecciona(r.tipo, r.anio, anioElegido)).map((r) => r.requisitoId)),
+    () => new Set(requisitos.filter((r) => sePreselecciona(r.tipo, grupo(r))).map((r) => r.requisitoId)),
   );
   const [verOtros, setVerOtros] = useState(false);
   /** Por cupo: la opción del plan elegida, o el nombre escrito a mano. */
@@ -164,7 +177,7 @@ export function AltaMaterias({ anioElegido, requisitos, onConfirmar }: MateriasP
       ayuda={t("ALTA.MATERIAS.REGLA")}
       ancho={720}
     >
-      <section style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <section style={{ display: "flex", flexDirection: "column", gap: "8px" }} data-grupo="del-semestre">
         {delAnio.map((r) => (
           <FilaDeMateria
             key={r.requisitoId}
@@ -174,6 +187,23 @@ export function AltaMaterias({ anioElegido, requisitos, onConfirmar }: MateriasP
           />
         ))}
       </section>
+
+      {anuales.length > 0 && (
+        <section style={{ display: "flex", flexDirection: "column", gap: "8px" }} data-grupo="anuales">
+          <h2 style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: 0 }}>
+            {t("ALTA.MATERIAS.ANUALES")}
+          </h2>
+          <ReglaDeNegocio>{t("ALTA.MATERIAS.ANUALES_AYUDA")}</ReglaDeNegocio>
+          {anuales.map((r) => (
+            <FilaDeMateria
+              key={r.requisitoId}
+              requisito={r}
+              marcada={marcadas.has(r.requisitoId)}
+              onAlternar={() => alternar(r.requisitoId)}
+            />
+          ))}
+        </section>
+      )}
 
       {/*
         `CTA-017` del alta: la salida a otros años. Es secundaria porque el caso
@@ -266,6 +296,9 @@ function FilaDeMateria({
         {mostrarAnio && requisito.anio !== null && (
           <span style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
             {t("ALTA.MATERIAS.ANIO")} {requisito.anio}
+            {/* Sin período declarado, la línea no lo inventa. */}
+            {requisito.periodo !== null &&
+              ` · ${t("ALTA.MATERIAS.SEMESTRE")} ${requisito.periodo === "FIRST_SEMESTER" ? 1 : 2}`}
           </span>
         )}
         {/*

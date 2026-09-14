@@ -10,7 +10,6 @@ import {
   SEMESTRES,
   type Semestre,
 } from "@/lib/domain/periodo";
-import { periodoDeCursado } from "@/lib/domain/alta";
 
 /**
  * **El período académico** — [ADR-061](../docs/decisions.md#adr-061), decidido
@@ -73,16 +72,21 @@ describe("La clave calendario y el par (año, semestre) no pueden discrepar", ()
     }
   });
 
-  it("`periodoDeCursado` se arma con la misma función", () => {
-    // Si alguien vuelve a escribir la clave a mano, esto rompe.
-    expect(leerClaveDePeriodo(periodoDeCursado(new Date("2026-03-15T12:00:00Z")))).toEqual({
-      anio: 2026,
-      semestre: "FIRST_SEMESTER",
-    });
-    expect(leerClaveDePeriodo(periodoDeCursado(new Date("2026-09-05T12:00:00Z")))).toEqual({
-      anio: 2026,
-      semestre: "SECOND_SEMESTER",
-    });
+  it("ADR-105 §2 · ningún código de la app infiere el semestre del mes", () => {
+    // `periodoDeCursado()` derivaba el semestre de `getMonth()`. ADR-061: *"no
+    // continuar [...] infiriendo el período según el mes actual"*. Si alguien lo
+    // vuelve a escribir, esto rompe.
+    for (const archivo of [
+      "lib/domain/alta.ts",
+      "app/alta/carrera/page.tsx",
+      "app/alta/materias/page.tsx",
+      "app/api/alta/carrera/route.ts",
+      "app/api/alta/materias/route.ts",
+    ]) {
+      const fuente = readFileSync(resolve(process.cwd(), archivo), "utf8").replace(/^\s*(\*|\/\/).*$/gm, "");
+      expect(fuente, archivo).not.toMatch(/periodoDeCursado\s*\(/);
+      expect(fuente, archivo).not.toMatch(/getMonth\s*\(/);
+    }
   });
 
   it("una clave con otra forma no se completa", () => {

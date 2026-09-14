@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   aniosDelPlan,
+  grupoEnElAlta,
   resolverVersionDePlan,
   sePreselecciona,
   siguientePaso,
@@ -92,26 +93,58 @@ describe("B6.14 · no toda fila del plan es una materia (ADR-051)", () => {
     expect(tratoEnElAlta(tipo)).toBe(trato);
   });
 
-  it("una obligatoria del año elegido llega preseleccionada", () => {
-    expect(sePreselecciona("COURSE", 2, 2)).toBe(true);
+  it("una obligatoria del semestre elegido llega preseleccionada", () => {
+    expect(sePreselecciona("COURSE", "DEL_SEMESTRE")).toBe(true);
   });
 
-  it("una obligatoria de otro año no se preselecciona", () => {
-    expect(sePreselecciona("COURSE", 3, 2)).toBe(false);
+  it("una anual del año elegido también llega preseleccionada", () => {
+    expect(sePreselecciona("COURSE", "ANUALES")).toBe(true);
+  });
+
+  it("una obligatoria de otro año o del otro semestre no se preselecciona", () => {
+    expect(sePreselecciona("COURSE", "OTROS")).toBe(false);
   });
 
   it("una electiva NUNCA se preselecciona, ni siquiera en su año", () => {
-    expect(sePreselecciona("ELECTIVE_SLOT", 3, 3)).toBe(false);
+    expect(sePreselecciona("ELECTIVE_SLOT", "DEL_SEMESTRE")).toBe(false);
   });
 
   it("Acreditación de Inglés y Trabajo Final no se preseleccionan por ser del año", () => {
-    expect(sePreselecciona("LANGUAGE_REQUIREMENT", 5, 5)).toBe(false);
-    expect(sePreselecciona("CAPSTONE", 5, 5)).toBe(false);
-    expect(sePreselecciona("PROFESSIONAL_PRACTICE", 5, 5)).toBe(false);
+    expect(sePreselecciona("LANGUAGE_REQUIREMENT", "DEL_SEMESTRE")).toBe(false);
+    expect(sePreselecciona("CAPSTONE", "DEL_SEMESTRE")).toBe(false);
+    expect(sePreselecciona("PROFESSIONAL_PRACTICE", "ANUALES")).toBe(false);
   });
 
-  it("un requisito sin año declarado no se preselecciona nunca", () => {
-    expect(sePreselecciona("COURSE", null, 1)).toBe(false);
+  it("un requisito sin año declarado cae en «otros» y no se preselecciona", () => {
+    const g = grupoEnElAlta({ anio: null, periodo: null, esAnual: false }, 1, "FIRST_SEMESTER");
+    expect(g).toBe("OTROS");
+    expect(sePreselecciona("COURSE", g)).toBe(false);
+  });
+});
+
+describe("ADR-105 §2 · /alta/materias agrupa por el período elegido", () => {
+  const primero = { anio: 2, periodo: "FIRST_SEMESTER" as const, esAnual: false };
+  const segundo = { anio: 2, periodo: "SECOND_SEMESTER" as const, esAnual: false };
+  const anual = { anio: 2, periodo: null, esAnual: true };
+  const sinPeriodo = { anio: 2, periodo: null, esAnual: false };
+
+  it("una anual aparece en el primer semestre y en el segundo", () => {
+    expect(grupoEnElAlta(anual, 2, "FIRST_SEMESTER")).toBe("ANUALES");
+    expect(grupoEnElAlta(anual, 2, "SECOND_SEMESTER")).toBe("ANUALES");
+  });
+
+  it("una de segundo no aparece entre las de primero: va a «otros»", () => {
+    expect(grupoEnElAlta(segundo, 2, "FIRST_SEMESTER")).toBe("OTROS");
+    expect(grupoEnElAlta(primero, 2, "FIRST_SEMESTER")).toBe("DEL_SEMESTRE");
+  });
+
+  it("sin período declarado se muestra con las del semestre: la ausencia no es una negación", () => {
+    expect(grupoEnElAlta(sinPeriodo, 2, "FIRST_SEMESTER")).toBe("DEL_SEMESTRE");
+    expect(grupoEnElAlta(sinPeriodo, 2, "SECOND_SEMESTER")).toBe("DEL_SEMESTRE");
+  });
+
+  it("otro año va a «otros» aunque sea anual", () => {
+    expect(grupoEnElAlta(anual, 3, "FIRST_SEMESTER")).toBe("OTROS");
   });
 });
 
