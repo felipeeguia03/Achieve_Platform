@@ -4,7 +4,7 @@ import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Evidencia } from "@/components/screens/evidencia";
+import { Evidencia, EvidenciaEsqueleto } from "@/components/screens/evidencia";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
@@ -47,8 +47,8 @@ export function VistaDeEvidencia({ consulta }: PropsDeSuperficie) {
     return <Pantalla props={props} router={router} params={params} />;
   }
 
-  // Mientras llega la respuesta no se dibuja nada (`P-12`: nada salta al cargar).
-  if (respuesta.estado === "CARGANDO") return null;
+  // Mientras llega la respuesta, el esqueleto (`P-12`: nada salta al cargar).
+  if (respuesta.estado === "CARGANDO") return <EvidenciaEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

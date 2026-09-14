@@ -24,8 +24,59 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import { ChipEsqueleto, CTAEsqueleto, CTASecundariaEsqueleto, FilaEsqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { ProgresoProps } from "@/lib/domain/view-models";
+
+/**
+ * `UX06` mientras carga — `P-12`. Estado de la evidencia, las filas de lo que
+ * cambió, dos ciclos de bitácora y *qué sigue*.
+ *
+ * ⚠️ **Las filas de dimensión van sin tratamiento.** Ni itálica de ausencia ni
+ * cifra: *"no evaluado"* y `0` se ven distinto (AGENTS.md §2.5), y un esqueleto
+ * que se pareciera a uno de los dos afirmaría cuál es.
+ */
+export function ProgresoBitacoraEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-4" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={t("PROGRESO.TITULO")}
+        meta={<Renglon cuerpo="body" ancho={240} />}
+        subcopy={SUBCOPY.UX06}
+      />
+      <div>
+        <ChipEsqueleto />
+        <Renglon cuerpo="label" ancho="70%" />
+      </div>
+      <div>
+        <Renglon cuerpo="body" ancho={180} style={{ marginBottom: "0.35rem" }} />
+        <FilaEsqueleto />
+        <FilaEsqueleto />
+      </div>
+      <div>
+        <TituloDeSeccion>{t("PROGRESO.BITACORA")}</TituloDeSeccion>
+        {[0, 1].map((g) => (
+          <div key={g} className="hairline-t pt-2">
+            <Renglon cuerpo="label" ancho={140} />
+            {[0, 1].map((e) => (
+              <div key={e} style={{ padding: "4px 0" }}>
+                <Renglon cuerpo="body" ancho={["60%", "45%"][e]} />
+                <Renglon cuerpo="label" ancho="75%" />
+                <Renglon cuerpo="meta" ancho="40%" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <HeroCard>
+        <TituloDeSeccion>{t("PROGRESO.QUE_SIGUE")}</TituloDeSeccion>
+        <Renglon cuerpo="label" ancho="70%" />
+        <CTAEsqueleto />
+      </HeroCard>
+      <CTASecundariaEsqueleto />
+    </PantallaCargando>
+  );
+}
 
 export function ProgresoBitacora({
   contexto,

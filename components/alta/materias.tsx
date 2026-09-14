@@ -38,7 +38,37 @@ import {
   CTASecundaria,
   ReglaDeNegocio,
 } from "@/components/screens/design-system";
+import { CTAEsqueleto, Esqueleto, PantallaCargando, Renglon } from "@/components/screens/esqueleto";
 import { ErrorDelAlta, MarcoDelAlta } from "./marco";
+
+/**
+ * `/alta/materias` mientras el plan no llegó — `P-12`. El paso, el título y la
+ * regla van reales; las materias, en filas con la casilla y el nombre en bloque.
+ *
+ * ⚠️ **Ninguna casilla aparece marcada.** Qué se preselecciona lo decide
+ * `sePreselecciona` sobre el plan real; un tilde de ejemplo sugeriría una
+ * inscripción que nadie eligió.
+ */
+export function AltaMateriasEsqueleto() {
+  return (
+    <MarcoDelAlta paso={3} titulo={t("ALTA.MATERIAS.TITULO")} ayuda={t("ALTA.MATERIAS.REGLA")} ancho={720}>
+      <PantallaCargando style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <section aria-hidden style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid var(--border)" }}
+            >
+              <Esqueleto ancho={16} alto={16} radio={4} style={{ marginTop: 3 }} />
+              <Renglon cuerpo="body" ancho={[220, 180, 260, 150, 240, 200][i]} style={{ maxWidth: "80%" }} />
+            </div>
+          ))}
+        </section>
+        <CTAEsqueleto />
+      </PantallaCargando>
+    </MarcoDelAlta>
+  );
+}
 
 export interface RequisitoElegible {
   requisitoId: string;

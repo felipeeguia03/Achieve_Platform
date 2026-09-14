@@ -3,7 +3,7 @@
 import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useRouter } from "next/navigation";
-import { OverviewModoExamen } from "@/components/screens/overview-modo-examen";
+import { OverviewModoExamen, OverviewModoExamenEsqueleto } from "@/components/screens/overview-modo-examen";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { getEscenario, escenarioUX08Desde } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
@@ -49,7 +49,7 @@ export function VistaDeOverviewDeExamen({ consulta }: PropsDeSuperficie) {
     );
   }
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <OverviewModoExamenEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

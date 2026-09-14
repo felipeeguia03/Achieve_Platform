@@ -3,7 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { AltaMaterias, type RequisitoElegible } from "@/components/alta/materias";
+import { AltaMaterias, AltaMateriasEsqueleto, type RequisitoElegible } from "@/components/alta/materias";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { enviar } from "@/lib/client/api";
 import { t } from "@/lib/content/es-AR";
@@ -46,9 +46,10 @@ function Pantalla() {
   useEffect(() => {
     if (faltanDatos) router.replace("/alta/carrera");
   }, [faltanDatos, router]);
+  // Sin plan no hay esqueleto: la pantalla se va, y dibujar una que se va salta.
   if (faltanDatos) return null;
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <AltaMateriasEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

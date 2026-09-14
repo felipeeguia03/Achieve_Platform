@@ -17,8 +17,36 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import { CTAEsqueleto, CTASecundariaEsqueleto, FilaEsqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { ProximaAccionProps } from "@/lib/domain/view-models";
+
+/**
+ * `UX03` mientras carga — `P-12`. El título es la unidad, que es dato: va en
+ * bloque. La subcopy va real. Las tres filas de la acción, en su lugar.
+ */
+export function ProximaAccionEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-4" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={<Renglon cuerpo="title-lg" ancho={280} />}
+        meta={<Renglon cuerpo="body" ancho={220} />}
+        subcopy={SUBCOPY.UX03}
+      />
+      <HeroCard>
+        <Renglon cuerpo="title-sm" ancho="65%" />
+        <Renglon cuerpo="label" ancho="80%" />
+        <FilaEsqueleto />
+        <FilaEsqueleto />
+        <FilaEsqueleto />
+        <Renglon cuerpo="label" ancho="55%" />
+        <CTAEsqueleto />
+        <CTASecundariaEsqueleto />
+      </HeroCard>
+      <CTASecundariaEsqueleto />
+    </PantallaCargando>
+  );
+}
 
 export function ProximaAccion({
   contexto,

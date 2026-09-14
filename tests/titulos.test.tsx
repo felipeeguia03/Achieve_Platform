@@ -15,7 +15,8 @@ const RAIZ = process.cwd();
 function pantallas(): string[] {
   const dir = "components/screens";
   return readdirSync(resolve(RAIZ, dir))
-    .filter((f) => f.endsWith(".tsx") && f !== "design-system.tsx")
+    // Los dos archivos de primitivas no son pantallas: no tienen cabecera propia.
+    .filter((f) => f.endsWith(".tsx") && f !== "design-system.tsx" && f !== "esqueleto.tsx")
     .map((f) => join(dir, f));
 }
 

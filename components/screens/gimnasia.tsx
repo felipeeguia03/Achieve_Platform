@@ -26,6 +26,7 @@ import type { Juego } from "@/lib/domain/gimnasia/rutina";
 import { contexto } from "@/lib/navigation/context";
 import { ctaRegistry } from "@/lib/navigation/cta-registry";
 import { CTAPrincipal, TituloDePanel } from "./design-system";
+import { CTAEsqueleto, Esqueleto, PantallaCargando, Parrafo, Renglon } from "./esqueleto";
 import { BotonSecundario, Cifra, estiloPanel } from "./gimnasia/comun";
 
 export interface GimnasiaScreenProps extends GimnasiaProps {
@@ -47,6 +48,67 @@ const NOMBRE: Record<Juego, string> = {
 
 export function nombreDeJuego(juego: Juego): string {
   return NOMBRE[juego];
+}
+
+/**
+ * Mientras carga — `P-12`. **Lo fijo va real** (eyebrow, título, subtítulo, títulos
+ * de sección, la descripción de Memoria y el aviso); **los datos son bloques
+ * mudos**: ni cifras, ni materias, ni botones antes de saber si hay sesión abierta.
+ */
+export function GimnasiaEsqueleto() {
+  return (
+    <PantallaCargando>
+      <p style={{ margin: "0 0 6px", fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{t("GIMNASIA.EYEBROW")}</p>
+      <TituloDePanel titulo={t("GIMNASIA.TITULO")} subcopy={t("GIMNASIA.SUBCOPY")} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <section aria-hidden style={{ ...estiloPanel, display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: "1 1 320px" }}>
+            <Renglon cuerpo="label" ancho={120} />
+            <Renglon cuerpo="title-sm" ancho="45%" />
+            <Parrafo renglones={2} cuerpo="body" />
+          </div>
+          <div style={{ flex: "0 1 220px", minWidth: 180 }}>
+            <CTAEsqueleto />
+          </div>
+        </section>
+
+        <section>
+          <h2 style={{ margin: "0 0 10px", fontSize: "var(--text-title-sm)", fontWeight: 600 }}>{t("GIMNASIA.PROGRESO.TITULO")}</h2>
+          <div aria-hidden style={{ ...estiloPanel, display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))" }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Renglon cuerpo="label" ancho="80%" />
+                <Renglon cuerpo="title-sm" ancho={48} />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 style={{ margin: 0, fontSize: "var(--text-title-sm)", fontWeight: 600 }}>{t("GIMNASIA.CATEGORIA.TITULO")}</h2>
+          <p className="subcopy" style={{ margin: "2px 0 12px" }}>{t("GIMNASIA.CATEGORIA.DESCRIPCION")}</p>
+          <ul aria-hidden style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
+            {[0, 1, 2].map((i) => (
+              <li key={i} style={{ ...estiloPanel, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <Esqueleto ancho={44} alto={44} radio={12} />
+                  <div style={{ flex: 1 }}>
+                    <Renglon cuerpo="body" ancho="60%" />
+                    <Renglon cuerpo="label" ancho="45%" />
+                  </div>
+                </div>
+                <Parrafo renglones={3} cuerpo="body" />
+                <Renglon cuerpo="label" ancho="55%" />
+                <Esqueleto ancho={120} alto={40} radio="var(--radius-control)" />
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <p style={{ margin: 0, fontSize: "var(--text-label)", color: "var(--muted-foreground)", lineHeight: 1.5 }}>{t("GIMNASIA.AVISO_RESPONSABLE")}</p>
+      </div>
+    </PantallaCargando>
+  );
 }
 
 export function Gimnasia(props: GimnasiaScreenProps) {

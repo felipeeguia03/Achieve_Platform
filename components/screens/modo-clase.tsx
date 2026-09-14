@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 
 import { CTAPrincipal, MarcaDeMateria, ReglaDeNegocio, TituloDePanel } from "./design-system";
+import { CTAEsqueleto, Esqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import {
   CabeceraDePanel,
   meta,
@@ -199,6 +200,84 @@ export function ModoClase(p: ModoClaseProps) {
       <FranjaDeLaClase clase={clase} />
       </div>
     </div>
+  );
+}
+
+// ── Mientras carga ───────────────────────────────────────────────────────────
+
+/** Un panel mientras carga: su título es fijo y va real; el contenido, en bloques. */
+function PanelEsqueleto({ titulo, children }: { titulo: CopyId; children: React.ReactNode }) {
+  return (
+    <section aria-hidden style={tarjeta}>
+      <p className="titulo-de-seccion" style={{ margin: 0 }}>
+        {t(titulo)}
+      </p>
+      <div className="mt-3 flex flex-col gap-2">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * Modo Clase mientras la clase no llegó — `P-12`.
+ *
+ * Se dibuja **la clase en curso**, que es a lo que se entra casi siempre: marcas
+ * arriba a la derecha, apuntes, grabaciones y material a la izquierda, momentos
+ * y la CTA de finalizar debajo. Los cuatro botones de marca van en bloques y no
+ * en botones: tocar *No entendí* antes de que exista la clase no tendría dónde
+ * guardarse.
+ */
+export function ModoClaseEsqueleto() {
+  return (
+    <PantallaCargando>
+      <TituloDePanel
+        titulo={<Renglon cuerpo="title-lg" ancho={320} />}
+        meta={<Renglon cuerpo="body" ancho={280} />}
+        acciones={<Esqueleto ancho={110} alto={30} radio="var(--radius-pildora)" />}
+      />
+      <div className="flex flex-col gap-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(300px,1fr)] lg:grid-rows-[auto_1fr]">
+          <div className="lg:col-start-2 lg:row-start-1">
+            <PanelEsqueleto titulo="CLASE.MARCAR">
+              <div className="grid grid-cols-2 gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <Esqueleto key={i} alto={64} radio="var(--radius-control)" />
+                ))}
+              </div>
+              <Renglon cuerpo="label" ancho="80%" />
+            </PanelEsqueleto>
+          </div>
+          <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+            <PanelEsqueleto titulo="CLASE.APUNTES">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="hairline-b flex gap-3 py-2.5">
+                  <Renglon cuerpo="meta" ancho={48} style={{ width: 64, flexShrink: 0 }} />
+                  <Renglon cuerpo="body" ancho={["85%", "60%", "72%"][i]} style={{ flex: 1 }} />
+                </div>
+              ))}
+              <Esqueleto alto={64} radio="var(--radius-control)" />
+            </PanelEsqueleto>
+            <PanelEsqueleto titulo="CLASE.GRABACIONES">
+              <Renglon cuerpo="label" ancho="75%" />
+              <Esqueleto ancho={140} alto={36} radio="var(--radius-control)" />
+            </PanelEsqueleto>
+            <PanelEsqueleto titulo="CLASE.MATERIAL">
+              <Renglon cuerpo="label" ancho="60%" />
+              <Esqueleto ancho={140} alto={36} radio="var(--radius-control)" />
+            </PanelEsqueleto>
+          </div>
+          <div className="flex min-w-0 flex-col gap-4 lg:col-start-2 lg:row-start-2">
+            <PanelEsqueleto titulo="CLASE.UNIDADES">
+              <Renglon cuerpo="label" ancho="85%" />
+              <Renglon cuerpo="label" ancho="55%" />
+            </PanelEsqueleto>
+            <PanelEsqueleto titulo="CLASE.MOMENTOS">
+              <Renglon cuerpo="meta" ancho="70%" />
+            </PanelEsqueleto>
+            <CTAEsqueleto />
+          </div>
+        </div>
+      </div>
+    </PantallaCargando>
   );
 }
 

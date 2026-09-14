@@ -31,6 +31,53 @@ import { useEffect, useRef, useState } from "react";
 import { t } from "@/lib/content/es-AR";
 import type { FormacionProps, GrupoDeFormacion, PiezaDeFormacion } from "@/lib/domain/view-models";
 import { ReglaDeNegocio, TituloDePanel } from "./design-system";
+import { PantallaCargando, Renglon } from "./esqueleto";
+
+/**
+ * La biblioteca mientras sus datos no llegaron — `P-12`.
+ *
+ * Título y subcopy reales, y la grilla con cuatro tarjetas **sin portada**: la
+ * portada existe sólo en la simulación, y dibujarla en el esqueleto prometería un
+ * video que el camino real no tiene. Ni *Borrador* ni *Simulado*: la
+ * procedencia es de cada pieza y todavía no se sabe.
+ */
+export function FormacionEsqueleto() {
+  return (
+    <PantallaCargando>
+      <TituloDePanel titulo={t("FORMACION.TITULO")} subcopy={t("FORMACION.SUBCOPY")} />
+      <ul
+        aria-hidden
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          display: "grid",
+          gap: 14,
+          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 440px), 1fr))",
+        }}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <li
+            key={i}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              padding: "14px 16px",
+              background: "var(--card)",
+              border: "0.5px solid var(--border)",
+              borderRadius: 14,
+            }}
+          >
+            <Renglon cuerpo="body" ancho={["70%", "55%", "80%", "60%"][i]} />
+            <Renglon cuerpo="label" ancho="100%" style={{ height: "calc(var(--text-label) * 1.45)" }} />
+            <Renglon cuerpo="label" ancho="65%" style={{ height: "calc(var(--text-label) * 1.45)" }} />
+          </li>
+        ))}
+      </ul>
+    </PantallaCargando>
+  );
+}
 
 export interface FormacionScreenProps extends FormacionProps {
   /**

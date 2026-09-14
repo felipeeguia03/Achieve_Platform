@@ -17,6 +17,15 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import {
+  AccionDeObjetoEsqueleto,
+  ChipEsqueleto,
+  CTAEsqueleto,
+  Esqueleto,
+  FilaEsqueleto,
+  PantallaCargando,
+  Renglon,
+} from "./esqueleto";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { SUBCOPY, t, textoDeDuracion, type CopyId } from "@/lib/content/es-AR";
 import { ctaPara } from "@/lib/content/hero";
@@ -282,9 +291,12 @@ export function MateriaCursado({
   onVerRegistro,
   onModoExamen,
   tusClases,
+  tusClasesCargando = false,
   onEntrarAClase,
   onAbrirClase,
 }: MateriaProps & {
+  /** *Tus clases* todavía no llegó: va su esqueleto, no la sección vacía (`P-12`). */
+  tusClasesCargando?: boolean;
   onAvanzar?: () => void;
   onCapturar?: () => void;
   onVerRegistro?: () => void;
@@ -399,6 +411,7 @@ export function MateriaCursado({
           {tusClases && (
             <SeccionTusClases t={tusClases} onEntrar={onEntrarAClase} onAbrir={onAbrirClase} />
           )}
+          {!tusClases && tusClasesCargando && <TusClasesEsqueleto />}
 
           <div
             style={{
@@ -541,6 +554,147 @@ export function MateriaCursado({
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Mientras carga ───────────────────────────────────────────────────────────
+
+/** *Tus clases* mientras la lista no llegó: el título y la regla, reales. */
+function TusClasesEsqueleto() {
+  return (
+    <section aria-hidden style={tarjeta}>
+      <p className="titulo-de-seccion" style={{ margin: 0 }}>
+        {t("MATERIA.TUS_CLASES")}
+      </p>
+      <ReglaDeNegocio>{t("MATERIA.TUS_CLASES.REGLA")}</ReglaDeNegocio>
+      <ul style={{ marginTop: 8 }}>
+        {[0, 1].map((i) => (
+          <li key={i} className="hairline-b" style={{ padding: "8px 0" }}>
+            <Renglon cuerpo="label" ancho={120} />
+            <Renglon cuerpo="meta" ancho={200} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * `UX02` mientras sus datos no llegaron — `P-12`.
+ *
+ * La misma grilla de dos columnas, con el Gantt, las clases, el próximo paso y
+ * la actividad a la izquierda, y evaluación, registro y dimensiones a la
+ * derecha. Los títulos de sección van reales: no dependen de la materia.
+ */
+export function MateriaCursadoEsqueleto() {
+  return (
+    <PantallaCargando style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={t("MATERIA.TITULO")}
+        meta={<Renglon cuerpo="body" ancho={220} />}
+        subcopy={SUBCOPY.UX02}
+        acciones={<AccionDeObjetoEsqueleto />}
+      />
+      <EstadoGeneral>
+        <ChipEsqueleto />
+      </EstadoGeneral>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 16,
+          alignItems: "start",
+          marginTop: 12,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, gridColumn: "span 2", minWidth: 0 }}>
+          <div style={tarjeta}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+              <TituloDeSeccion>{t("MATERIA.TEMAS")}</TituloDeSeccion>
+              <Renglon cuerpo="meta" ancho={160} />
+            </div>
+            <Esqueleto alto={6} radio={3} style={{ margin: "10px 0 4px" }} />
+            <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0 4px" }}>
+              <span style={{ ...celdaDeTema, ...meta }}>{t("MATERIA.EJE_TEMA")}</span>
+              <div style={{ flex: 1, height: 14 }} />
+              <span style={{ ...celdaDeEstado, ...meta, textAlign: "right" }}>{t("MATERIA.EJE_ESTADO")}</span>
+            </div>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                style={{ display: "flex", gap: 12, alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--border)" }}
+              >
+                <span style={celdaDeTema}>
+                  <Renglon cuerpo="body" ancho={[150, 120, 180, 100, 140][i]} />
+                </span>
+                <div style={{ position: "relative", flex: 1, height: 18 }}>
+                  <Esqueleto
+                    ancho={`${[30, 22, 36, 18, 26][i]}%`}
+                    alto={10}
+                    radio={5}
+                    style={{ position: "absolute", top: 4, left: `${[4, 20, 34, 50, 62][i]}%` }}
+                  />
+                </div>
+                <span style={{ ...celdaDeEstado, display: "flex", justifyContent: "flex-end" }}>
+                  <Renglon cuerpo="meta" ancho={80} />
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div style={tarjeta}>
+            <TituloDeSeccion>{t("MATERIA.CLASES")}</TituloDeSeccion>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+              {[180, 160].map((ancho) => (
+                <AccionDeObjetoEsqueleto key={ancho} ancho={ancho} />
+              ))}
+            </div>
+          </div>
+
+          <TusClasesEsqueleto />
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+            <div style={tarjeta}>
+              <TituloDeSeccion>{t("MATERIA.PROXIMO_PASO")}</TituloDeSeccion>
+              <Renglon cuerpo="label" ancho="60%" />
+              <Renglon cuerpo="body" ancho="80%" style={{ margin: "6px 0" }} />
+              <Renglon cuerpo="label" ancho="90%" />
+              <div style={{ marginTop: 8 }}>
+                <CTAEsqueleto />
+              </div>
+            </div>
+            <div style={tarjeta}>
+              <TituloDeSeccion>{t("MATERIA.ACTIVIDAD")}</TituloDeSeccion>
+              <Renglon cuerpo="title-sm" ancho="55%" style={{ margin: "6px 0" }} />
+              <Renglon cuerpo="label" ancho="75%" />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          <div style={tarjeta}>
+            <TituloDeSeccion>{t("MATERIA.EVALUACION")}</TituloDeSeccion>
+            <Renglon cuerpo="title-sm" ancho="65%" style={{ margin: "6px 0" }} />
+            <Renglon cuerpo="label" ancho="85%" />
+          </div>
+          <div style={tarjeta}>
+            <TituloDeSeccion>{t("MATERIA.REGISTRO")}</TituloDeSeccion>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ padding: "8px 0", borderTop: i === 0 ? undefined : "1px solid var(--border)" }}>
+                <Renglon cuerpo="body" ancho={["80%", "65%", "72%"][i]} />
+                <Renglon cuerpo="meta" ancho="50%" />
+              </div>
+            ))}
+          </div>
+          <div style={tarjeta}>
+            <TituloDeSeccion>{t("MATERIA.DIMENSIONES")}</TituloDeSeccion>
+            {[0, 1, 2, 3].map((i) => (
+              <FilaEsqueleto key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </PantallaCargando>
   );
 }
 

@@ -37,8 +37,60 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import { CTAEsqueleto, CTASecundariaEsqueleto, FilaEsqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import { SUBCOPY, t, type CopyId } from "@/lib/content/es-AR";
 import type { OverviewExamenProps } from "@/lib/domain/view-models";
+
+/**
+ * `UX08` mientras carga — `P-12`.
+ *
+ * ⚠️ **El recorrido va en renglones sin marca.** Ni `✓` ni `→`: un paso
+ * confirmado de ejemplo afirmaría un avance, y tampoco se dibujan doce — no se
+ * listan 12 pasos.
+ */
+export function OverviewModoExamenEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-4" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={t("OVERVIEW.TITULO")}
+        meta={<Renglon cuerpo="body" ancho={300} />}
+        subcopy={SUBCOPY.UX08}
+      />
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
+        <div className="md:basis-2/3 space-y-4">
+          <HeroCard>
+            <Renglon cuerpo="body" ancho="70%" />
+            <EstadoGeneral>
+              <Renglon cuerpo="label" ancho={200} />
+            </EstadoGeneral>
+            <Renglon cuerpo="title-sm" ancho="55%" />
+            <Renglon cuerpo="label" ancho="80%" />
+            <CTAEsqueleto />
+            <Renglon cuerpo="label" ancho="60%" />
+          </HeroCard>
+        </div>
+        <div className="md:basis-1/3 space-y-4">
+          <div>
+            <Renglon cuerpo="body" ancho={140} style={{ marginBottom: "0.35rem" }} />
+            {[0, 1, 2].map((i) => (
+              <Renglon key={i} cuerpo="label" ancho={["80%", "65%", "72%"][i]} />
+            ))}
+          </div>
+          <div>
+            <Renglon cuerpo="body" ancho={120} style={{ marginBottom: "0.35rem" }} />
+            <FilaEsqueleto />
+            <FilaEsqueleto />
+          </div>
+        </div>
+      </div>
+      <div className="hairline-t pt-3">
+        <TituloDeSeccion>{t("OVERVIEW.CURSADO")}</TituloDeSeccion>
+        <Renglon cuerpo="label" ancho="70%" />
+        <CTASecundariaEsqueleto />
+      </div>
+    </PantallaCargando>
+  );
+}
 
 /**
  * El status recibido **en palabras**, no el enum crudo. Se mostraba `RECOMMENDED`

@@ -28,6 +28,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { TituloDePanel, ReglaDeNegocio } from "./design-system";
+import { Esqueleto, PildoraEsqueleto } from "./esqueleto";
 import { t } from "@/lib/content/es-AR";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import {
@@ -123,19 +124,15 @@ export function Calendario(p: CalendarioPantallaProps) {
       <TituloDePanel
         titulo="Calendario"
         acciones={
-          p.datos && (
-            <span className="hidden md:inline-flex">
-              <Pildora fecha={p.datos.fechaDeHoy} dias={p.datos.proximaEvaluacionEnDias} />
-            </span>
-          )
+          <span className="hidden md:inline-flex">
+            {p.datos ? <Pildora fecha={p.datos.fechaDeHoy} dias={p.datos.proximaEvaluacionEnDias} /> : <PildoraEsqueleto />}
+          </span>
         }
       />
       {/* En el piso móvil la píldora baja: arriba a la derecha pisaba el título. */}
-      {p.datos && (
-        <div className="md:hidden" style={{ marginTop: -20 }}>
-          <Pildora fecha={p.datos.fechaDeHoy} dias={p.datos.proximaEvaluacionEnDias} />
-        </div>
-      )}
+      <div className="md:hidden" style={{ marginTop: -20 }}>
+        {p.datos ? <Pildora fecha={p.datos.fechaDeHoy} dias={p.datos.proximaEvaluacionEnDias} /> : <PildoraEsqueleto />}
+      </div>
 
       {/* ── La barra de controles ─────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center" style={{ gap: 12, margin: "24px 0 16px" }}>
@@ -194,12 +191,13 @@ export function Calendario(p: CalendarioPantallaProps) {
       */}
       <div aria-busy={p.datos === null} style={{ overflowX: "auto", position: "relative" }}>
         {p.vista === "mes" ? (
-          <Mes fecha={p.fecha} hoy={hoy} eventos={eventos} onDia={(f) => { p.onFecha(f); p.onVista("dia"); }} onAbrir={p.onAbrir} />
+          <Mes fecha={p.fecha} hoy={hoy} eventos={eventos} cargando={p.datos === null} onDia={(f) => { p.onFecha(f); p.onVista("dia"); }} onAbrir={p.onAbrir} />
         ) : (
           <Horas
             fechas={fechasEntre(rango.desde, rango.hasta)}
             hoy={hoy}
             eventos={enRango}
+            cargando={p.datos === null}
             detallada={p.vista === "dia"}
             onDia={(f) => { p.onFecha(f); p.onVista("dia"); }}
             onAbrir={p.onAbrir}
@@ -288,6 +286,34 @@ function Pildora({ fecha, dias }: { fecha: string; dias: number | null }) {
       )}
     </span>
   );
+}
+
+// ── Esqueletos ───────────────────────────────────────────────────────────────
+
+/*
+  Los bloques salen de la primitiva `Esqueleto` (`./esqueleto.tsx`, §9.1). Acá
+  la grilla, la barra y el pie se dibujan reales desde el primer frame, y sólo
+  los eventos y la píldora son bloques.
+
+  ⚠️ **No es un evento.** Sin texto, sin `data-evento`, sin color de materia:
+  quien lee con lector oye `aria-busy` en la grilla, no clases inventadas. Dónde
+  caen los bloques es **fijo** y no dice nada del horario del estudiante.
+*/
+
+/** Anchos de los chips del mes, en ciclo: iguales se leerían como datos. */
+const ANCHOS_DE_CHIP = ["72%", "56%", "88%", "64%", "80%"];
+
+/**
+ * Los bloques de una columna de semana o día: `[hora de inicio, horas]`. Dos
+ * patrones alternados por columna, dentro de la franja por defecto de 8 a 22.
+ */
+const BLOQUES_DE_COLUMNA: [number, number][][] = [
+  [[9, 2], [15, 1.5]],
+  [[11, 1.5], [18, 2]],
+];
+
+function ChipEsqueleto({ ancho }: { ancho: string }) {
+  return <Esqueleto ancho={ancho} alto={ALTO_DE_CHIP} radio={5} />;
 }
 
 function Alternador({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -452,12 +478,14 @@ function Mes({
   fecha,
   hoy,
   eventos,
+  cargando,
   onDia,
   onAbrir,
 }: {
   fecha: string;
   hoy: string;
   eventos: EventoDeCalendario[];
+  cargando: boolean;
   onDia: (f: string) => void;
   onAbrir: (e: EventoDeCalendario) => void;
 }) {
@@ -557,6 +585,10 @@ function Mes({
                     </span>
                   </button>
                 </div>
+                {/* Un chip por día hábil del mes, nunca más de lo que entra en la celda. */}
+                {cargando && !fuera && col < 5 && (
+                  <ChipEsqueleto ancho={ANCHOS_DE_CHIP[(fila * 2 + col) % ANCHOS_DE_CHIP.length]} />
+                )}
                 {delDia.slice(0, visibles).map((e) => (
                   <Chip key={e.id} e={e} onAbrir={onAbrir} />
                 ))}
@@ -639,6 +671,7 @@ function Horas({
   fechas,
   hoy,
   eventos,
+  cargando,
   detallada,
   onDia,
   onAbrir,
@@ -646,6 +679,7 @@ function Horas({
   fechas: string[];
   hoy: string;
   eventos: EventoDeCalendario[];
+  cargando: boolean;
   detallada: boolean;
   onDia: (f: string) => void;
   onAbrir: (e: EventoDeCalendario) => void;
@@ -754,10 +788,12 @@ function Horas({
             </div>
           ))}
         </div>
-        {fechas.map((f) => (
+        {fechas.map((f, i) => (
           <ColumnaDelDia
             key={f}
             eventos={conHora.filter((e) => e.fecha === f)}
+            // Sábado y domingo sin bloques: una semana llena de punta a punta se leería como horario.
+            esqueleto={cargando && (detallada || i < 5) ? BLOQUES_DE_COLUMNA[i % BLOQUES_DE_COLUMNA.length] : []}
             primera={primera}
             horas={horas.length}
             horaPx={horaPx}
@@ -773,6 +809,7 @@ function Horas({
 
 function ColumnaDelDia({
   eventos,
+  esqueleto,
   primera,
   horas,
   horaPx,
@@ -781,6 +818,8 @@ function ColumnaDelDia({
   onAbrir,
 }: {
   eventos: EventoDeCalendario[];
+  /** Bloques `[hora, horas]` mientras carga; vacío cuando ya llegó. */
+  esqueleto: [number, number][];
   primera: number;
   horas: number;
   horaPx: number;
@@ -801,6 +840,14 @@ function ColumnaDelDia({
         backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${horaPx - 1}px, var(--border) ${horaPx - 1}px, var(--border) ${horaPx}px)`,
       }}
     >
+      {esqueleto.map(([hora, largo]) => (
+        <Esqueleto
+          key={hora}
+          ancho="auto"
+          alto={largo * horaPx - 2}
+          style={{ position: "absolute", top: (hora - primera) * horaPx + 1, left: 3, right: 3 }}
+        />
+      ))}
       {eventos.map((e) => {
         const desde = minutosDelDia(e.desde) as number;
         const hasta = minutosDelDia(e.hasta);

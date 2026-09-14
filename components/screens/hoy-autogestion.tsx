@@ -32,6 +32,14 @@ import {
   MarcaDeMateria,
   TituloDePanel,
 } from "./design-system";
+import {
+  AccionDeObjetoEsqueleto,
+  ChipEsqueleto,
+  CTAEsqueleto,
+  PantallaCargando,
+  PildoraEsqueleto,
+  Renglon,
+} from "./esqueleto";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import { ctaPara, ofreceCta } from "@/lib/content/hero";
@@ -478,6 +486,92 @@ function Riesgos({ riesgos, onAbrir }: { riesgos: RiesgoProyectado[]; onAbrir?: 
   );
 }
 
+// ── Mientras carga ───────────────────────────────────────────────────────────
+
+/**
+ * El cuadro de hoy mientras el tablero no llegó: los tres subtítulos reales y
+ * dos renglones debajo de cada uno. Ni una materia de ejemplo.
+ */
+function CuadroHoyEsqueleto() {
+  return (
+    <section aria-hidden className="space-y-3" style={{ ...TARJETA, padding: "14px 16px" }}>
+      <TituloDeSeccion>{t("HOY.CUADRO")}</TituloDeSeccion>
+      {(["HOY.CUADRO.CLASES", "HOY.CUADRO.AVANZAR", "HOY.CUADRO.HORARIOS"] as const).map((id) => (
+        <div key={id}>
+          <Subtitulo>{t(id)}</Subtitulo>
+          <Renglon cuerpo="label" ancho="85%" />
+          <Renglon cuerpo="label" ancho="60%" />
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** Los riesgos mientras cargan: el título y la ayuda reales, dos filas de la lista. */
+function RiesgosEsqueleto() {
+  return (
+    <section aria-hidden>
+      <TituloDeSeccion>{t("HOY.RIESGOS")}</TituloDeSeccion>
+      <ul style={{ ...TARJETA, marginTop: 6 }}>
+        {[0, 1].map((i) => (
+          <li
+            key={i}
+            className="flex items-center"
+            style={{ gap: 12, padding: "12px 16px 12px 16px", borderTop: i > 0 ? "1px solid var(--border)" : undefined }}
+          >
+            <div className="min-w-0 flex-1">
+              <Renglon cuerpo="body" ancho={i === 0 ? "55%" : "40%"} />
+              <Renglon cuerpo="label" ancho={i === 0 ? "75%" : "65%"} />
+            </div>
+            <AccionDeObjetoEsqueleto ancho={70} />
+          </li>
+        ))}
+      </ul>
+      <ReglaDeNegocio>{t("HOY.RIESGOS.AYUDA")}</ReglaDeNegocio>
+    </section>
+  );
+}
+
+/**
+ * `UX01` mientras sus datos no llegaron — `P-12`, `design-system-capturas` §9.1.
+ *
+ * El título y la subcopy van reales; el Hero, el cuadro y los riesgos, en
+ * bloques. Se dibuja **con tablero**, que es el caso de todos los días: si al
+ * llegar el Hero se repliega, la pantalla se acorta en vez de empujar el Hero.
+ */
+export function HoyAutogestionEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-5" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={t("HOY.TITULO")}
+        subcopy={SUBCOPY.UX01}
+        acciones={
+          <div className="flex flex-wrap items-center justify-end" style={{ gap: 8 }}>
+            <PildoraEsqueleto />
+          </div>
+        }
+      />
+      <EstadoGeneral>
+        <Renglon cuerpo="label" ancho={180} />
+      </EstadoGeneral>
+      <div className="grid items-start gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <HeroCard>
+            <ChipEsqueleto />
+            <Renglon cuerpo="label" ancho="35%" />
+            <Renglon cuerpo="title-sm" ancho="70%" style={{ fontSize: 24, height: 28.8 }} />
+            <Renglon cuerpo="label" ancho="80%" />
+            <Renglon cuerpo="label" ancho="50%" />
+            <CTAEsqueleto />
+          </HeroCard>
+        </div>
+        <CuadroHoyEsqueleto />
+      </div>
+      <RiesgosEsqueleto />
+    </PantallaCargando>
+  );
+}
+
 // ── La pantalla ───────────────────────────────────────────────────────────────
 
 export function HoyAutogestion({
@@ -492,7 +586,17 @@ export function HoyAutogestion({
   onVerProgreso,
   onAbrirMateria,
   onEntrarAClase,
+  tableroCargando = false,
 }: HoyProps & {
+  /**
+   * El tablero se pide aparte y puede llegar después que el Hero. Mientras
+   * tanto va su esqueleto: sin él, el Hero arrancaba a ancho completo y se
+   * achicaba a dos tercios cuando el tablero llegaba (`P-12`).
+   *
+   * ⚠️ **No es un tablero vacío.** Un error sigue dibujándose sin tablero, igual
+   * que antes: esto es sólo *todavía no llegó*.
+   */
+  tableroCargando?: boolean;
   onAvanzar?: () => void;
   /**
    * Navegar a una materia por `CTA-001`, **con su cursada**
@@ -516,6 +620,7 @@ export function HoyAutogestion({
 }) {
   const replegado = seRepliega(hero.nivel);
   const conTablero = tablero !== null && !replegado;
+  const esperandoTablero = tablero === null && tableroCargando && !replegado;
   // Una sola forma de abrir: el objeto si hay espacio de trabajo, la ruta si no.
   // Sin ninguna de las dos, **no se ofrece la acción** (AGENTS.md §2.2).
   const abrir: AbrirMateria | undefined =
@@ -553,12 +658,14 @@ export function HoyAutogestion({
         *continuidad*. Por debajo de `lg` se apilan y el Hero queda primero — el
         contrato de orden semántico de `design-system.md` §6.1 rige en todo ancho.
       */}
-      <div className={conTablero ? "grid items-start gap-4 lg:grid-cols-3" : undefined}>
-        <div className={conTablero ? "lg:col-span-2" : undefined}>
+      <div className={conTablero || esperandoTablero ? "grid items-start gap-4 lg:grid-cols-3" : undefined}>
+        <div className={conTablero || esperandoTablero ? "lg:col-span-2" : undefined}>
           <HeroContent hero={hero} onAvanzar={onAvanzar} />
         </div>
         {conTablero && <CuadroHoy c={tablero.hoy} onAbrir={abrir} onEntrar={onEntrarAClase} />}
+        {esperandoTablero && <CuadroHoyEsqueleto />}
       </div>
+      {esperandoTablero && <RiesgosEsqueleto />}
 
       {/*
         ⚠️ **Todo lo de abajo va después del Hero, nunca antes.** La precedencia

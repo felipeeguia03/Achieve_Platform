@@ -4,7 +4,7 @@ import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Compromiso } from "@/components/screens/compromiso";
+import { Compromiso, CompromisoEsqueleto } from "@/components/screens/compromiso";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
@@ -81,8 +81,8 @@ export function VistaDeCompromiso({ consulta }: PropsDeSuperficie) {
     return <Pantalla props={props} router={router} params={params} confirmacion={confirmacion} setConfirmacion={setConfirmacion} />;
   }
 
-  // Mientras llega la respuesta no se dibuja nada (`P-12`: nada salta al cargar).
-  if (respuesta.estado === "CARGANDO") return null;
+  // Mientras llega la respuesta, el esqueleto (`P-12`: nada salta al cargar).
+  if (respuesta.estado === "CARGANDO") return <CompromisoEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar

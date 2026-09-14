@@ -35,8 +35,62 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import { CTAEsqueleto, CTASecundariaEsqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { ActivacionExamenProps, OpcionDeEvaluacion } from "@/lib/domain/view-models";
+
+/** Un `Dato` mientras carga: label y valor en su renglón, provenance debajo. */
+function DatoEsqueleto() {
+  return (
+    <div aria-hidden style={{ padding: "6px 0" }}>
+      <Renglon cuerpo="body" ancho="55%" />
+      <Renglon cuerpo="meta" ancho="35%" />
+    </div>
+  );
+}
+
+/**
+ * `UX07` mientras carga — `P-12`. Las dos columnas de §21.1: la evaluación y la
+ * decisión a la izquierda; qué cambia, qué no y la salida a la derecha, con sus
+ * títulos y la aclaración de que esto no es un selector, reales.
+ */
+export function ActivacionModoExamenEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-4" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={t("EXAMEN.TITULO_PANTALLA")}
+        meta={<Renglon cuerpo="body" ancho={240} />}
+        subcopy={SUBCOPY.UX07}
+      />
+      <EstadoGeneral>
+        <Renglon cuerpo="label" ancho={200} />
+      </EstadoGeneral>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
+        <div className="md:basis-2/3 space-y-4">
+          <HeroCard>
+            <Renglon cuerpo="title-sm" ancho="50%" />
+            <DatoEsqueleto />
+            <DatoEsqueleto />
+            <DatoEsqueleto />
+            <Renglon cuerpo="label" ancho="80%" />
+            <CTAEsqueleto />
+          </HeroCard>
+        </div>
+        <div className="md:basis-1/3 space-y-4">
+          {(["EXAMEN.QUE_CAMBIA", "EXAMEN.QUE_NO_CAMBIA"] as const).map((id) => (
+            <div key={id}>
+              <TituloDeSeccion>{t(id)}</TituloDeSeccion>
+              <Renglon cuerpo="label" ancho="90%" />
+              <Renglon cuerpo="label" ancho="70%" />
+            </div>
+          ))}
+          <ReglaDeNegocio>{t("EXAMEN.NO_ES_SELECTOR")}</ReglaDeNegocio>
+          <CTASecundariaEsqueleto />
+        </div>
+      </div>
+    </PantallaCargando>
+  );
+}
 
 
 /** Lista de evaluaciones del mismo CourseEnrollment. Sin ranking local. */

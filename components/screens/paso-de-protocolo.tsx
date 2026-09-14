@@ -36,8 +36,68 @@ import {
   ReglaDeNegocio,
   TituloDePanel,
 } from "./design-system";
+import { CTAEsqueleto, CTASecundariaEsqueleto, PantallaCargando, Renglon } from "./esqueleto";
 import { SUBCOPY, t } from "@/lib/content/es-AR";
 import type { BloqueDePaso, PasoProtocoloProps } from "@/lib/domain/view-models";
+
+/** Un `Bloque` del paso mientras carga: su título es dato, así que va en bloque. */
+function BloqueEsqueleto({ renglones = 2 }: { renglones?: number }) {
+  return (
+    <div aria-hidden>
+      <Renglon cuerpo="body" ancho={130} style={{ marginBottom: "0.35rem" }} />
+      {Array.from({ length: renglones }, (_, i) => (
+        <Renglon key={i} cuerpo="body" ancho={i === renglones - 1 ? "60%" : "100%"} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * `UX09` mientras carga — `P-12`. Van reales el rótulo del paso actual y la
+ * aclaración de que **el objetivo del paso no es una Action**: es la regla del
+ * flujo, y se puede leer antes de que llegue el contenido.
+ *
+ * Sin número de posición, igual que la pantalla: *"paso 5 de 12"* no existe.
+ */
+export function PasoDeProtocoloEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-4" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={t("PASO.TITULO")}
+        meta={<Renglon cuerpo="body" ancho={320} />}
+        subcopy={SUBCOPY.UX09}
+      />
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
+        <div className="md:basis-2/3 space-y-4">
+          <HeroCard>
+            <TituloDeSeccion>{t("PASO.ACTUAL")}</TituloDeSeccion>
+            <BloqueEsqueleto />
+            <ReglaDeNegocio>{t("PASO.SEPARACION")}</ReglaDeNegocio>
+            <BloqueEsqueleto />
+            <BloqueEsqueleto renglones={1} />
+            <EstadoGeneral>
+              <Renglon cuerpo="label" ancho={200} />
+            </EstadoGeneral>
+            <CTAEsqueleto />
+          </HeroCard>
+        </div>
+        <div className="md:basis-1/3 space-y-4">
+          <BloqueEsqueleto renglones={3} />
+          <div>
+            <TituloDeSeccion>{t("PASO.RECURSO")}</TituloDeSeccion>
+            <Renglon cuerpo="body" ancho="70%" />
+            <Renglon cuerpo="label" ancho="50%" />
+          </div>
+          <div>
+            <TituloDeSeccion>{t("PASO.CONFIGURACION")}</TituloDeSeccion>
+            <Renglon cuerpo="label" ancho="80%" />
+          </div>
+          <CTASecundariaEsqueleto />
+        </div>
+      </div>
+    </PantallaCargando>
+  );
+}
 
 /**
  * Un bloque de contenido configurado.

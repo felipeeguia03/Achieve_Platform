@@ -4,7 +4,7 @@ import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { HoyAutogestion } from "@/components/screens/hoy-autogestion";
+import { HoyAutogestion, HoyAutogestionEsqueleto } from "@/components/screens/hoy-autogestion";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { escenarioDesde, getEscenario, proyectarHoy } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
@@ -60,10 +60,11 @@ export function VistaDeHoy({ consulta }: PropsDeSuperficie) {
     return <Pantalla props={props} router={router} params={params} />;
   }
 
-  // Mientras llega la respuesta no se dibuja nada: mostrar un estado que no es
-  // el del estudiante y reemplazarlo un segundo después es peor que esperar
+  // Mientras llega la respuesta va el esqueleto, **no un estado**: mostrar uno
+  // que no es el del estudiante y reemplazarlo un segundo después es peor que
+  // esperar. El esqueleto no afirma nada y tiene la forma de lo que viene
   // (`P-12`: nada salta al cargar).
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <HoyAutogestionEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar
@@ -83,6 +84,7 @@ export function VistaDeHoy({ consulta }: PropsDeSuperficie) {
         // tablero vacío**: eso afirmaría que no hay evaluaciones ni riesgos.
         tablero: tablero.respuesta.estado === "OK" ? tablero.respuesta.datos : null,
       }}
+      tableroCargando={tablero.respuesta.estado === "CARGANDO"}
       router={router}
       params={params}
     />
@@ -93,10 +95,12 @@ function Pantalla({
   props,
   router,
   params,
+  tableroCargando = false,
 }: {
   props: HoyProps;
   router: ReturnType<typeof useRouter>;
   params: URLSearchParams;
+  tableroCargando?: boolean;
 }) {
   const destino = siguienteUrl("/hoy", params.get("escenario")) ?? A_ACCION;
 
@@ -134,6 +138,7 @@ function Pantalla({
   return (
     <HoyAutogestion
       {...props}
+      tableroCargando={tableroCargando}
       onAbrirMateria={abrirMateria}
       onAvanzar={destino ? () => router.push(destino) : undefined}
       /*

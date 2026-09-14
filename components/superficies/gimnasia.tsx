@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useConsulta, type PropsDeSuperficie } from "./consulta";
 import { useMigaDelObjeto } from "@/components/shell/miga-del-objeto";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
-import { Gimnasia, nombreDeJuego } from "@/components/screens/gimnasia";
+import { Gimnasia, GimnasiaEsqueleto, nombreDeJuego } from "@/components/screens/gimnasia";
 import { claveNueva } from "@/components/screens/gimnasia/comun";
 import { SesionDeGimnasia, type AccionesDeGimnasia } from "@/components/screens/gimnasia/sesion";
 import { enviar } from "@/lib/client/api";
@@ -126,7 +126,7 @@ export function VistaDeGimnasia({ consulta }: PropsDeSuperficie = {}) {
     [],
   );
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <GimnasiaEsqueleto />;
   if (respuesta.estado !== "OK" || !datos) {
     return (
       <NoSePudoCargar

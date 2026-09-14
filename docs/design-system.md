@@ -271,7 +271,7 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 |---|---|---|
 | `Provenance` | Label de fuente + `verification_status` junto al dato | `P-08` |
 | ~~`Ausencia`~~ | ✅ **Extraída** en la Etapa A2.3. Dos tratamientos dibujados; *no hay dato* omite la fila y *no cargado* no ocurre bajo cero red. Ver [ADR-019](decisions.md#adr-019) | `P-09` |
-| `Esqueleto` | Estados de carga con la geometría real del contenido | `P-12` |
+| ~~`Esqueleto`~~ | ✅ **Construida** el 13 de septiembre de 2026 en `components/screens/esqueleto.tsx`. Cada pantalla que carga tiene el suyo, **en su mismo archivo y con sus mismas primitivas**; lo fijo va real, los datos en bloques mudos (`aria-hidden`, sin color de materia, `motion-safe`). Ver `tests/esqueletos.test.tsx` | `P-12` |
 | `SeleccionExplicita` | Elegir entre varios Assessment sin ranking local | `UX07` |
 
 ---
@@ -297,7 +297,7 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 | `P-05` | Ordená por costo de no actuar | ✅ **Resuelto por `DD2`:** Commitment por vencer primero, proximidad del examen después |
 | `P-07` | Ningún atajo elimina su camino visible | Aplica poco: la interfaz del estudiante tiene pocos atajos |
 | `P-10` | Una decisión por vez, con el reloj a la vista | ✅ **Resuelto por `DD7`:** cola paginable en la lista de materias, sin tocar el Hero. Ver §1.4 |
-| `P-12` | Los estados de carga tienen la forma del contenido real | Pendiente: falta la primitiva `Esqueleto` |
+| `P-12` | Los estados de carga tienen la forma del contenido real | ✅ **Aplicado** en las superficies del estudiante, el Calendario y el alta. Se dibuja **el caso completo**: si al llegar falta una sección opcional la pantalla se acorta, pero lo que está no se corre (§9.1 obliga a elegir). Lo que llega aparte —el tablero de `UX01`, *Tus clases* de `UX02`— tiene su esqueleto en su lugar. Queda fuera la ventana de la barra de objetos (`components/shell/panel-de-objeto.tsx`) |
 | `P-13` | Canal de feedback de alcance angosto | `N/A` en el Track A |
 
 ### 4.4 `C-04` elevado — el vacío argumenta
@@ -516,7 +516,7 @@ en una línea`. **No se esconden los que fallan.**
 
 ### Bloque 6 — Interacción
 - [ ] `P-07` Cada atajo tiene su camino visible en la misma pantalla
-- [ ] `P-12` Los esqueletos tienen la forma real y nada salta al cargar
+- [x] `P-12` Los esqueletos tienen la forma real y nada salta al cargar
 - [ ] `I-01` Todo estado compartible tiene URL
 - [ ] `I-05` El bloqueante está arriba de todo
 - [ ] Recorrido completo con `Tab`

@@ -4,7 +4,7 @@ import { useConsulta, type PropsDeSuperficie } from "./consulta";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PasoDeProtocolo } from "@/components/screens/paso-de-protocolo";
+import { PasoDeProtocolo, PasoDeProtocoloEsqueleto } from "@/components/screens/paso-de-protocolo";
 import { NoSePudoCargar } from "@/components/shell/no-se-pudo-cargar";
 import { getEscenario, escenarioUX09Desde } from "@/lib/fixtures";
 import { useSuperficie } from "@/lib/client/superficie";
@@ -53,7 +53,7 @@ export function VistaDePasoDeProtocolo({ consulta }: PropsDeSuperficie) {
     );
   }
 
-  if (respuesta.estado === "CARGANDO") return null;
+  if (respuesta.estado === "CARGANDO") return <PasoDeProtocoloEsqueleto />;
   if (respuesta.estado !== "OK") {
     return (
       <NoSePudoCargar
