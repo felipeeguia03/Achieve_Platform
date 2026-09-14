@@ -491,6 +491,20 @@ export const EXTENSIONES: Readonly<
     nivel: "TRANSICION",
     enBitacora: false,
   },
+  // ADR-104 · Modo Focus. Las dos puntas de la sesión y nada más: pausar,
+  // continuar o un latido son tramos, no eventos. **No facturables** (ADR-041):
+  // registrar tiempo no es producir. El cierre **sí va a la Bitácora**, porque
+  // la sesión tiene `Action` y `hechos_de_cursada()` la ata a su ciclo.
+  FocusSessionStarted: {
+    porQue: "El estudiante empezó una sesión de Focus sobre su compromiso (ADR-104). Empezar no es cumplir",
+    nivel: "TRANSICION",
+    enBitacora: false,
+  },
+  FocusSessionEnded: {
+    porQue: "Una sesión de Focus se cerró con sus tiempos congelados (ADR-104). No es evidencia, progreso ni cumplimiento",
+    nivel: "TRANSICION",
+    enBitacora: true,
+  },
 };
 
 /**

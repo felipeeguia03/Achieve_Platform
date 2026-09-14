@@ -15,6 +15,7 @@ import type {
   ClassSessionStatus,
   GymAttemptStatus,
   GymSessionStatus,
+  FocusSessionStatus,
   CommitmentState,
   EvidenceState,
   ExamPreparationStatus,
@@ -247,6 +248,20 @@ export const gymSessionTransitions: Readonly<
   IN_PROGRESS: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
+} as const;
+
+/**
+ * La sesión de Focus — [ADR-104](../../docs/decisions.md#adr-104).
+ *
+ * `ENDED` es terminal: volver a trabajar sobre la misma acción es **otra**
+ * sesión. ⚠️ **El paso del tiempo no lleva a `ENDED`**: la cierra el
+ * estudiante, o la recuperación cuando él elige *Terminé cuando se cerró*.
+ */
+export const focusSessionTransitions: Readonly<
+  Record<FocusSessionStatus, readonly FocusSessionStatus[]>
+> = {
+  OPEN: ["ENDED"],
+  ENDED: [],
 } as const;
 
 /**

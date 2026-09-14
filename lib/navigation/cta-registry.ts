@@ -62,7 +62,11 @@ export type CtaId =
   /** Gimnasia cognitiva: empezar la rutina. Ver ADR-102. */
   | "CTA-024"
   /** Gimnasia cognitiva: jugar un ejercicio suelto. Ver ADR-102. */
-  | "CTA-025";
+  | "CTA-025"
+  /** Modo Focus: empezar o volver a la sesión. Ver ADR-104. */
+  | "CTA-026"
+  /** Modo Focus: salir y guardar. Ver ADR-104. */
+  | "CTA-027";
 
 export interface Cta {
   id: CtaId;
@@ -209,7 +213,8 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
 
   "CTA-006": {
     id: "CTA-006",
-    origen: ["EJECUCION"],
+    // ADR-104 §15: gana el origen `FOCUS` — *Terminé · Subir evidencia*.
+    origen: ["EJECUCION", "FOCUS"],
     condicion: "cierre conductual permitido",
     accionSolicitada: "finalizar ejecución",
     destino: "UX05",
@@ -255,7 +260,8 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
 
   "CTA-009": {
     id: "CTA-009",
-    origen: ["UX01", "UX02", "UX05", "UX08", "UX09"],
+    // ADR-104: gana `FOCUS` — *Ver en la Bitácora* al cerrar una sesión.
+    origen: ["UX01", "UX02", "UX05", "UX08", "UX09", "FOCUS"],
     condicion: "Progress/Bitácora disponible",
     accionSolicitada: "ver progreso",
     destino: "UX06",
@@ -605,6 +611,51 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     estadoError: "otra sesión abierta: ofrecer retomarla; sin preguntas: decir por qué, sin botón",
     escenarios: [],
     aparece: (c) => c.juegoIniciable,
+    habilitada: siempre,
+  },
+
+  /**
+   * **Empezar** una sesión de Focus, **o volver a la abierta** —
+   * [ADR-104](../../docs/decisions.md#adr-104) §3 y §4.
+   *
+   * Sus etiquetas —*Empezar*, *Empezar rescate*, *Continuar*— son **copy**: todas
+   * llevan a la misma sesión. El inicio lo confirma el servidor: el compromiso a
+   * `STARTED` y la acción a `IN_PROGRESS` **por sus máquinas**. Abrir la pantalla
+   * o un reloj local no inicia nada.
+   */
+  "CTA-026": {
+    id: "CTA-026",
+    origen: ["UX01", "UX02", "UX04"],
+    condicion: "Compromiso CONFIRMED, DUE o STARTED con su acción en juego, o una sesión de Focus abierta",
+    accionSolicitada: "empezar o volver a la sesión de Focus",
+    destino: "FOCUS",
+    resultadoAutoritativo: "FocusSession `OPEN` —la que ya existía, si la había—; CommitmentStarted y ActionInProgress si corresponden; `FocusSessionStarted` si es nueva",
+    fallback: { nodo: null, descripcion: "conservar la pantalla sin empezar nada" },
+    estadoError: "otra sesión abierta: ofrecer volver a ella o terminarla; compromiso no iniciable: no presumir inicio",
+    // Vacío a propósito, como `CTA-022`: el spec nombra la ejecución y no tiene
+    // escenario para su pantalla.
+    escenarios: [],
+    aparece: (c) => c.focusIniciable,
+    habilitada: siempre,
+  },
+
+  /**
+   * **Salir y guardar** — [ADR-104](../../docs/decisions.md#adr-104) §14.
+   *
+   * No navega: la pantalla muestra el cierre. **Salir no es terminar**: la acción
+   * sigue `IN_PROGRESS` y el compromiso `STARTED`.
+   */
+  "CTA-027": {
+    id: "CTA-027",
+    origen: ["FOCUS"],
+    condicion: "Sesión de Focus OPEN del estudiante, fuera de recuperación",
+    accionSolicitada: "salir y guardar la sesión",
+    destino: null,
+    resultadoAutoritativo: "FocusSession `ENDED` con sus tiempos congelados por el servidor; `FocusSessionEnded` una sola vez",
+    fallback: { nodo: "FOCUS", descripcion: "la sesión sigue abierta; lo registrado ya está guardado" },
+    estadoError: "no se pudo cerrar: reintentar es seguro, la operación es idempotente",
+    escenarios: [],
+    aparece: (c) => c.focusAbierta,
     habilitada: siempre,
   },
 } as const;

@@ -38,6 +38,7 @@ import {
   PlayCircle,
   Plus,
   Target,
+  Timer,
   Upload,
   X,
   Presentation,
@@ -69,6 +70,7 @@ const ICONOS: Record<TipoDeObjeto, typeof BookOpen> = {
   bitacora: NotebookPen,
   clase: Presentation,
   gimnasia: Brain,
+  focus: Timer,
 };
 
 /**

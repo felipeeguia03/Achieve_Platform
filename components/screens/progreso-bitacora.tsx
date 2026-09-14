@@ -180,6 +180,8 @@ export function ProgresoBitacora({
                 <div key={`${i}-${e.titulo}`} style={{ padding: "4px 0" }}>
                   <span style={{ fontSize: "var(--text-body)" }}>{e.titulo}</span>
                   <ReglaDeNegocio>{e.detalle}</ReglaDeNegocio>
+                  {/* ADR-104: el avance de una sesión de Focus, citado. */}
+                  {e.cita && <ReglaDeNegocio>{e.cita}</ReglaDeNegocio>}
                   <p style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
                     {e.provenance ?? "Fuente o estado no disponible"}
                   </p>

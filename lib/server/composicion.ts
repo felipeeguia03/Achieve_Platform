@@ -45,6 +45,19 @@ import {
 } from "./servicios/evidencia";
 import { t } from "@/lib/content/es-AR";
 import { transicionar as transicionarAccion } from "./servicios/accion";
+import { contextoDeFocus, focusReal } from "./repositorios/focus";
+import {
+  cerrar as cerrarFocusPuro,
+  comando as comandoDeFocusPuro,
+  empezar as empezarFocusPuro,
+  guardarAnotador as guardarAnotadorPuro,
+  guardarPreferencias as guardarPreferenciasPuro,
+  PREFERENCIAS_INICIALES,
+  terminarSinSesion as terminarSinSesionPuro,
+  type Dependencias as DependenciasDeFocus,
+} from "./servicios/focus";
+import { proyectarFocus, proyectarIniciable } from "./servicios/proyeccion-focus";
+import type { FocusVista } from "@/lib/domain/view-models";
 import {
   chequearParaEnviar,
   cuelgaDeAlgo,
@@ -2102,3 +2115,72 @@ export const preguntaDeRecuerdo = (i: string, p: PedidoDeGimnasia<typeof pregunt
   preguntaActualPuro(dependenciasDeGimnasia(), i, p);
 export const responderRecuerdo = (i: string, p: PedidoDeGimnasia<typeof responderRecuerdoPuro>) =>
   responderRecuerdoPuro(dependenciasDeGimnasia(), i, p);
+
+// ── Modo Focus · ADR-104 ─────────────────────────────────────────────────────
+
+/**
+ * ⚠️ **Las transiciones de `Commitment` y `Action` son las de sus Services**,
+ * con su compare-and-swap y su evento. El resultado no se mira acá: un
+ * `TRANSICION_PROHIBIDA` es que ya estaba donde iba —un reintento—, y lo que
+ * vale lo relee el Service de Focus.
+ */
+const dependenciasDeFocus = (): DependenciasDeFocus => ({
+  repo: focusReal,
+  eventos: eventosReal,
+  ahora: () => new Date().toISOString(),
+  async iniciarCompromiso(institutionId, compromisoId, actorId) {
+    await transicionarCompromiso({ repo: compromisosReal, eventos: eventosReal }, institutionId, compromisoId, "STARTED", actorId);
+  },
+  async llevarAccion(institutionId, accionId, hacia, actorId) {
+    await transicionarAccion({ repo: accionesReal, eventos: eventosReal }, institutionId, accionId, hacia, {}, actorId);
+  },
+});
+
+type PedidoDeFocus<F extends (d: DependenciasDeFocus, i: string, p: never) => unknown> = Parameters<F>[2];
+
+/**
+ * `/focus`: la sesión abierta —o `?sesion=`— y, sin ninguna, sobre qué se podría
+ * empezar. `null` ⇒ se pidió una sesión que no es del estudiante.
+ */
+export async function focusDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  sesionId: string | null,
+): Promise<FocusVista | null> {
+  const ahora = new Date().toISOString();
+  const preferencias = (await focusReal.preferencias(institutionId, studentId)) ?? PREFERENCIAS_INICIALES;
+  const fila = sesionId
+    ? await focusReal.delEstudiante(institutionId, studentId, sesionId)
+    : await focusReal.abierta(institutionId, studentId);
+  if (sesionId && !fila) return null;
+  if (fila) {
+    const contexto = await contextoDeFocus(institutionId, fila.accionId);
+    return { sesion: proyectarFocus(fila, contexto, zona, ahora), iniciable: null, preferencias };
+  }
+  const vigente = await focusReal.compromisoVigente(institutionId, studentId, null);
+  const iniciable =
+    vigente && ["CONFIRMED", "DUE", "STARTED"].includes(vigente.estado)
+      ? proyectarIniciable(vigente, await contextoDeFocus(institutionId, vigente.accionId), zona)
+      : null;
+  return { sesion: null, iniciable, preferencias };
+}
+
+/** La sesión de una respuesta de comando, proyectada igual que el `GET`. */
+export async function proyectarSesionDeFocus(
+  institutionId: string,
+  fila: Parameters<typeof proyectarFocus>[0],
+  zona: string,
+) {
+  return proyectarFocus(fila, await contextoDeFocus(institutionId, fila.accionId), zona, new Date().toISOString());
+}
+
+export const empezarFocus = (i: string, p: PedidoDeFocus<typeof empezarFocusPuro>) => empezarFocusPuro(dependenciasDeFocus(), i, p);
+export const comandoDeFocus = (i: string, p: PedidoDeFocus<typeof comandoDeFocusPuro>) => comandoDeFocusPuro(dependenciasDeFocus(), i, p);
+export const cerrarFocus = (i: string, p: PedidoDeFocus<typeof cerrarFocusPuro>) => cerrarFocusPuro(dependenciasDeFocus(), i, p);
+export const terminarSinSesionDeFocus = (i: string, p: PedidoDeFocus<typeof terminarSinSesionPuro>) =>
+  terminarSinSesionPuro(dependenciasDeFocus(), i, p);
+export const guardarAnotadorDeFocus = (i: string, p: PedidoDeFocus<typeof guardarAnotadorPuro>) =>
+  guardarAnotadorPuro(dependenciasDeFocus(), i, p);
+export const guardarPreferenciasDeFocus = (i: string, p: PedidoDeFocus<typeof guardarPreferenciasPuro>) =>
+  guardarPreferenciasPuro(dependenciasDeFocus(), i, p);

@@ -47,6 +47,9 @@ export const PARAM_PIEZA = "pieza";
 /** La sesión de Gimnasia abierta — ADR-102. Con ella, la rutina sobrevive a una recarga y tiene ficha. */
 export const PARAM_SESION_DE_GIMNASIA = "sesion";
 
+/** Una sesión de Focus **cerrada** — ADR-104 §5. Sin él, `/focus` es la abierta. */
+export const PARAM_SESION_DE_FOCUS = "sesion";
+
 /**
  * Las pantallas que son **de un objeto**, y de dónde sale su identidad.
  *
@@ -97,6 +100,11 @@ const PANTALLAS_DE_OBJETO: Partial<
     su ficha dice *Gimnasia · Memoria*, como pidió el owner.
   */
   GIMNASIA: { tipo: "gimnasia", parametro: PARAM_SESION_DE_GIMNASIA, prefijo: "Gimnasia" },
+  /*
+    ADR-104 §10 — la sesión de Focus. Sin parámetro es **la abierta**, que hay una
+    sola; con `?sesion=`, una cerrada. La ficha dice *Focus · Análisis III*.
+  */
+  FOCUS: { tipo: "focus", parametro: PARAM_SESION_DE_FOCUS, sinParametroEsElNodo: true, prefijo: "Focus" },
 };
 
 /** A dónde se vuelve cuando no hay una sección de la que se salió. */

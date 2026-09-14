@@ -11,6 +11,7 @@ import { useSuperficie } from "@/lib/client/superficie";
 import { enviar } from "@/lib/client/api";
 import { rutaDeCta, rutaDeCtaCon, siguienteUrl } from "@/lib/navigation";
 import type { HoyProps, TableroProps } from "@/lib/domain/view-models";
+import { heroLlevaAFocus, irAFocus } from "./ir-a-focus";
 
 // Los tres destinos salen del registro canónico, no de un recorrido escrito a
 // mano: CTA-002 a la próxima acción, CTA-001 a la materia, CTA-009 al progreso.
@@ -140,7 +141,18 @@ function Pantalla({
       {...props}
       tableroCargando={tableroCargando}
       onAbrirMateria={abrirMateria}
-      onAvanzar={destino ? () => router.push(destino) : undefined}
+      onAvanzar={
+        /*
+          ADR-104 §4: con un compromiso iniciable o la acción en curso, la CTA
+          principal es `CTA-026` y lleva a Focus. Bajo `?escenario=` manda el
+          guion, que no tiene backend que empiece nada.
+        */
+        !params.get("escenario") && heroLlevaAFocus(props.hero.nivel, props.hero.variante)
+          ? () => void irAFocus(router, {}, destino)
+          : destino
+            ? () => router.push(destino)
+            : undefined
+      }
       /*
         ADR-054, opción `B`: se abre **la cursada de la fila que se tocó**, no la
         que el backend elija. El nombre del parámetro sale del registro canónico

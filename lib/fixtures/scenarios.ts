@@ -437,17 +437,29 @@ export const FX_LOCAL_COMMITMENT_CONFIRMED: Escenario = {
       // Lo declara el owner. Abrir la pantalla o un timer local no inicia nada.
       commitmentIniciable: true,
       progresoDisponible: true,
+      // ADR-104: con el compromiso iniciable, *Empezar* lleva a Focus.
+      focusIniciable: true,
     }),
     UX04: contexto({
       actionStatus: "COMMITTED",
       commitmentState: "CONFIRMED",
       commitmentIniciable: true,
+      focusIniciable: true,
     }),
     // Cierre conductual permitido. Finalizar NO crea ni envía Evidence.
     EJECUCION: contexto({
       actionStatus: "IN_PROGRESS",
       commitmentState: "STARTED",
       cierreConductualPermitido: true,
+    }),
+    // ADR-104: la pantalla con la que se vive la ejecución. Con la sesión
+    // abierta se puede salir y guardar, terminar y ver la Bitácora.
+    FOCUS: contexto({
+      actionStatus: "IN_PROGRESS",
+      commitmentState: "STARTED",
+      cierreConductualPermitido: true,
+      focusAbierta: true,
+      progresoDisponible: true,
     }),
   },
 };

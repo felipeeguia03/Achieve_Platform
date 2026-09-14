@@ -62,6 +62,13 @@ const EVENTOS: Record<string, string> = {
    */
   ProgressUpdated: "Tu progreso cambió",
   ProgressNoChangeConfirmed: "Revisaron tu progreso y no cambió",
+
+  /**
+   * ADR-104 §21. **Dice que hubo una sesión registrada, y nada más**: no que se
+   * entendió, se terminó ni se estuvo concentrado. Los minutos y el avance los
+   * agrega `aEntradaVisible` desde `datos`.
+   */
+  FocusSessionEnded: "Sesión de Focus",
 };
 
 /** `null` ⇒ el hecho no tiene copy aprobada y **la entrada no se renderiza**. */

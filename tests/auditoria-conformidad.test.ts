@@ -251,6 +251,12 @@ describe("Bloque 6 · Interacción", () => {
         escenario, porque sus partidas y repasos son **de este estudiante**.
       */
       "app/(student)/gimnasia/page.tsx",
+      /*
+        **Modo Focus** — ADR-104. Nodo sin wireframe, no superficie. Su estado
+        compartible tiene URL (`?sesion=`); no tiene escenario porque la sesión,
+        sus tiempos y su anotador son **de este estudiante**.
+      */
+      "app/(student)/focus/page.tsx",
     ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))

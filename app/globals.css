@@ -120,6 +120,13 @@
  * Referencia visual: el mismo software de las capturas en oscuro. Fondo casi
  * negro, tarjetas grafito, acción primaria invertida (blanca).
  */
+/*
+ * ADR-104 §20: **la concentración de Modo Focus usa este mismo bloque**, en
+ * cualquier tema. `[data-foco="oscuro"]` va primero y separado por coma: el
+ * selector del modo noche sigue escrito igual —`tests/tema.test.ts` lo busca
+ * así— y no hay ningún color nuevo que medir.
+ */
+[data-foco="oscuro"],
 :root[data-tema="oscuro"] {
   color-scheme: dark;
 

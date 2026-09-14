@@ -4046,6 +4046,32 @@ no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión 
 
 ---
 
+## Fase B6.31 — Modo Focus · ✅ COMPLETA
+
+**13 de septiembre de 2026** · [ADR-104](decisions.md#adr-104). El owner: *"hacé todo lo recomendado y
+empezá, no dejes nada pending"*. Informe, API y QA en [`modo-focus.md`](modo-focus.md).
+
+| Qué | Estado |
+|---|---|
+| Dominio puro: presets 25/5/15 · 40/8/20 · 50/10/25, personalizado, tramos, recuperación, resumen | ✅ |
+| Migración: `focus_session`, `focus_segment`, `focus_preference`; dos funciones atómicas; `hechos_de_cursada()` con `datos` | ✅ |
+| Service, Repository, cinco rutas `/api/focus/*`; `FocusSessionStarted` y `FocusSessionEnded` | ✅ |
+| Nodo `FOCUS`, `CTA-026` y `CTA-027`; `CTA-006` y `CTA-009` ganan el origen; ficha *Focus · materia* | ✅ |
+| Concentración oscura, pausa, lista, descanso, recuperación, cierre con avance, sesión cerrada | ✅ |
+| Hoy, Materia y Compromiso llevan a Focus; la Bitácora muestra la sesión y el avance, nunca el anotador | ✅ |
+| Recorrido en navegador (Chromium), desktop y 360 px | ✅ |
+
+✅ **Se cierra una costura que la Fase 0 dejó dicha:** `EJECUCION` ya tiene con qué vivirse y `UX05` se
+alcanza por clic, desde *Terminé · Subir evidencia*. El nodo del spec sigue sin ruta: la pantalla es
+`FOCUS`.
+
+⚠️ **Desvío declarado:** *Terminé* no lleva el compromiso a `COMPLETED`, porque la entrega exige un
+compromiso vivo. El día que la entrega acepte uno cerrado, se mueve (ADR-104 §15).
+
+`lint` · `typecheck` · `build` · **2444 tests** · **`db:verify` 512 ✓, 0 ✗, exit 0**.
+
+---
+
 ## Fase B6.30 — Gimnasia cognitiva: Memoria · ✅ COMPLETA *(sin preguntas reales todavía)*
 
 **13 de septiembre de 2026** · [ADR-102](decisions.md#adr-102). Pedido del owner por escrito

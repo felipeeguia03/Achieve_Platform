@@ -6,7 +6,7 @@ import type {
   ProgresoProps,
   Tono,
 } from "@/lib/domain/view-models";
-import { aEntradaVisible } from "./hechos";
+import { aEntradaVisible, type HechoPersistido } from "./hechos";
 import { fechaLarga, haceCuanto, horaCorta } from "./tiempo";
 
 /**
@@ -91,7 +91,7 @@ export interface CicloPersistido {
   accionId: string;
   objetivo: string;
   desde: string;
-  entradas: Array<{ evento: string; en: string; porElEstudiante: boolean | null }>;
+  entradas: Array<{ evento: string; en: string; porElEstudiante: boolean | null; datos?: HechoPersistido["datos"] }>;
 }
 
 export interface EstadoDeProgreso {

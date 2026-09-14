@@ -82,6 +82,7 @@ const TIPOS_GUARDABLES: Record<TipoDeObjeto, true> = {
   bitacora: true,
   clase: true,
   gimnasia: true,
+  focus: true,
 };
 
 const TIPOS = Object.keys(TIPOS_GUARDABLES) as readonly TipoDeObjeto[];

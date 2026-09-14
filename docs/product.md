@@ -247,6 +247,11 @@ DRAFT → CONFIRMED → DUE → STARTED → COMPLETED
   Action. No sobrescribe.
 - `DRAFT` es **no autoritativo**: no aparece en Hoy, Materia ni CRM, y no cambia la Action.
 - La UI **no** declara `MISSED` ni `DUE` por el paso del tiempo. Lo hace el owner del lifecycle.
+- **`STARTED` lo escribe *Empezar*, en el servidor** ([ADR-104](decisions.md#adr-104) §3): la primera
+  sesión de Focus lleva el compromiso a `STARTED` y la acción a `IN_PROGRESS` por sus máquinas. Un
+  reloj local no inicia nada, y **una sesión no completa el compromiso**: el tiempo registrado no es
+  cumplimiento, y *Terminé* tampoco lo cierra (la entrega exige un compromiso vivo; lo cierra la
+  validación).
 - `RESCUE_REQUIRED` y `RESCUE_MATERIALIZED` son **condiciones derivadas de la proyección**, no
   estados persistidos: la primera indica que no existe rescate concreto, la segunda que sí existe una
   Action o Commitment de rescate vinculada.

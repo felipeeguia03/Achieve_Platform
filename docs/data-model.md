@@ -877,6 +877,57 @@ CREATE TABLE recall_review (                  -- APPEND-ONLY (REVOKE UPDATE, DEL
 ⚠️ **Las cuatro entran a `limpiar_mundo`** (`db-aislamiento.sh`). Las preguntas sintéticas de la demo
 (`SYN-GIM-…`) caen con sus materias.
 
+### 8.3 Modo Focus — [ADR-104](decisions.md#adr-104)
+
+Una sesión de trabajo sobre un compromiso. ⛔ **No escribe `evidence`, `progress_entry` ni
+`topic_progress`**, y **no lleva el compromiso a `COMPLETED`**. Compromiso y acción se mueven por sus
+Services. Migración: `20261022000000_modo_focus.sql`. Informe: [`modo-focus.md`](modo-focus.md).
+
+```sql
+CREATE TABLE focus_session (
+  id UUID PK, institution_id, student_id,
+  course_enrollment_id, action_id, commitment_id,   -- FK compuestas: cursada del estudiante,
+                                                    -- acción de esa cursada, compromiso de esa acción
+  scheduled_start_at TIMESTAMPTZ, planned_minutes,  -- COPIA del acuerdo al empezar
+  status TEXT CHECK (IN ('OPEN','ENDED')),          -- la fase NO se persiste
+  mode   TEXT CHECK (IN ('FREE','POMODORO')),
+  pomodoro_focus_minutes 5–120, pomodoro_short_break_minutes 1–30,
+  pomodoro_long_break_minutes 5–60, pomodoro_blocks_before_long 2–8,  -- los cuatro o ninguno
+  started_at, last_heartbeat_at,                    -- los pone el servidor
+  ended_at, end_kind CHECK (IN ('SAVED','DONE')),
+  focus_seconds, break_seconds, paused_seconds, pauses,
+  complete_blocks, partial_blocks,                  -- CONGELADOS al cerrar; ENDED ⇔ los seis
+  advance_text ≤ 2000,                              -- «¿Qué avanzaste?» — va a la Bitácora. NO es reflection
+  scratchpad ≤ 20000, scratchpad_updated_at,        -- «Para después» — PRIVADO
+  version INTEGER                                   -- concurrencia optimista de los comandos
+);
+-- Una abierta por estudiante: UNIQUE (student_id) WHERE status = 'OPEN'
+
+CREATE TABLE focus_segment (                        -- un tramo: foco, descanso o pausa
+  id UUID PK, institution_id, focus_session_id,
+  kind TEXT CHECK (IN ('FOCUS','BREAK','PAUSE')),
+  mode (sólo FOCUS), block_number (sólo FOCUS POMODORO), break_kind (sólo BREAK),
+  started_at, planned_end_at (BREAK o POMODORO), ended_at,
+  end_reason CHECK (IN ('COMPLETED','PAUSED','RESUMED','SWITCHED','SKIPPED','SAVED','DONE','RECOVERED'))
+);
+-- Un tramo abierto por sesión: UNIQUE (focus_session_id) WHERE ended_at IS NULL
+
+CREATE TABLE focus_preference (                     -- preferencia, no perfil
+  student_id UUID PK, institution_id, last_mode, preset, custom_* (los cuatro o ninguno),
+  sound DEFAULT 'NINGUNO' CHECK (IN ('NINGUNO','MARRON','ROSA')), volume 0–100
+);
+```
+
+| Función | Qué hace |
+|---|---|
+| `empezar_sesion_de_focus()` | La sesión y su primer tramo (foco libre), juntos. `NULL` si ya hay una abierta |
+| `aplicar_comando_de_focus()` | La sesión con su versión, los tramos que se cierran y los que se abren: **todo o nada**. Rechaza cerrar con un tramo abierto |
+| `hechos_de_cursada()` | Gana `datos JSONB` y ata `focus_session` a su acción. ⛔ **Nunca el anotador** |
+| `estado_de_progreso()` | Pasa `datos` a cada entrada de la Bitácora |
+
+⚠️ **Las tres entran a `limpiar_mundo`.** `action` y `commitment` ganaron `UNIQUE (id, course_enrollment_id)`
+y `UNIQUE (id, action_id)` para las FK compuestas: no cambian nada, `id` ya era único.
+
 ---
 
 ## 9. Schema — capa de ejecución (el loop diario)

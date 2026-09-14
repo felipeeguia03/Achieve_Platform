@@ -60,7 +60,12 @@ export type TipoDeObjeto =
    * Una rutina o un juego abierto **adentro** de Gimnasia — ADR-102. No es la
    * sección: entrar a Gimnasia no guarda nada (Enmienda 7).
    */
-  | "gimnasia";
+  | "gimnasia"
+  /**
+   * Una sesión de Focus — ADR-104 §10. **Su ficha siempre guarda una sesión
+   * pausada**: salir de la concentración pausa primero.
+   */
+  | "focus";
 
 import type { Marco } from "./marco-de-panel";
 

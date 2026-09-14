@@ -35,7 +35,10 @@ B=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb   # institución B
 # cinco de la Fase B6.14 faltaban, y `curriculum_requirement` → `course` bastaba
 # para dejar el verificador sin correr (roadmap.md §0.2).
 limpiar_mundo() {
-  q "delete from recall_review; \
+  q "delete from focus_segment; \
+   delete from focus_session; \
+   delete from focus_preference; \
+   delete from recall_review; \
    delete from gym_attempt; \
    delete from gym_session; \
    delete from recall_item where code like 'AISL-%'; \
@@ -1688,6 +1691,93 @@ fi
   && ok "B no alcanza las sesiones de A" || mal "B vio sesiones de A"
 
 corre "delete from recall_review; delete from gym_attempt; delete from gym_session; delete from recall_item where code like 'AISL-%';"
+
+echo "→ ADR-104 · Modo Focus: una sesión abierta, un tramo abierto, y el anotador no sale"
+
+FA=f7000000-0000-0000-0000-000000000001   # acción de a5…01
+FC=f8000000-0000-0000-0000-000000000001   # su compromiso
+corre "insert into action (id,institution_id,course_enrollment_id,objective,verb,scope,status) values ('$FA','$A','a6000000-0000-0000-0000-000000000001','Resolver 4 al 8','resolver','u1','IN_PROGRESS');
+ insert into commitment (id,institution_id,action_id,start_at,timezone_at_commit,planned_minutes,state,started_at) values ('$FC','$A','$FA',now(),'America/Argentina/Cordoba',40,'STARTED',now());"
+
+FS=$(q "select empezar_sesion_de_focus('$A','$YO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now());" | tr -d '[:space:]')
+[ -n "$FS" ] && ok "una sesión empieza con su primer tramo" || mal "no empezó la sesión"
+[ "$(q "select count(*) from focus_segment where focus_session_id='$FS' and kind='FOCUS' and mode='FREE' and ended_at is null;" | tr -d '[:space:]')" = "1" ] \
+  && ok "el primer tramo es foco libre y está abierto" || mal "el primer tramo no es foco libre abierto"
+[ -z "$(q "select empezar_sesion_de_focus('$A','$YO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now());" | tr -d '[:space:]')" ] \
+  && ok "una segunda sesión abierta del mismo estudiante devuelve NULL" || mal "entraron dos sesiones abiertas"
+
+# Las FK compuestas: cursada del estudiante, acción de esa cursada, compromiso de esa acción.
+if corre "insert into focus_session (institution_id,student_id,course_enrollment_id,action_id,commitment_id,scheduled_start_at,planned_minutes,started_at,last_heartbeat_at) values ('$A','$OTRO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now(),now());"; then
+  mal "un estudiante abrió Focus sobre la cursada de otro"
+else
+  ok "la cursada de otro estudiante no admite su sesión"
+fi
+if corre "insert into focus_session (institution_id,student_id,course_enrollment_id,action_id,commitment_id,scheduled_start_at,planned_minutes,started_at,last_heartbeat_at) values ('$A','$OTRO','a6000000-0000-0000-0000-000000000098','$FA','$FC',now(),40,now(),now());"; then
+  mal "una sesión apuntó a una acción de otra cursada"
+else
+  ok "la acción tiene que ser de la cursada de la sesión"
+fi
+
+# Un solo tramo abierto por sesión.
+if corre "insert into focus_segment (institution_id,focus_session_id,kind,started_at) values ('$A','$FS','PAUSE',now());"; then
+  mal "una sesión tuvo dos tramos abiertos"
+else
+  ok "un segundo tramo abierto se rechaza en la base"
+fi
+if corre "insert into focus_segment (institution_id,focus_session_id,kind,mode,started_at,ended_at,end_reason) values ('$A','$FS','FOCUS','POMODORO',now(),now(),'SAVED');"; then
+  mal "un foco Pomodoro entró sin bloque ni fin planeado"
+else
+  ok "un foco Pomodoro sin bloque ni fin planeado se rechaza"
+fi
+
+TRAMO=$(q "select id from focus_segment where focus_session_id='$FS';" | tr -d '[:space:]')
+[ -z "$(q "select aplicar_comando_de_focus('$A','$FS',99,'{\"status\":\"OPEN\",\"mode\":\"FREE\",\"last_heartbeat_at\":\"2030-01-01T00:00:00Z\"}','[]','[]');" | tr -d '[:space:]')" ] \
+  && ok "un comando con otra versión no escribe" || mal "escribió con una versión vieja"
+V=$(q "select aplicar_comando_de_focus('$A','$FS',1,jsonb_build_object('status','OPEN','mode','FREE','last_heartbeat_at',now()),jsonb_build_array(jsonb_build_object('id','$TRAMO','ended_at',now(),'end_reason','PAUSED')),jsonb_build_array(jsonb_build_object('kind','PAUSE','started_at',now())));" | tr -d '[:space:]')
+[ "$V" = "2" ] && ok "pausar cierra el foco y abre la pausa, todo junto" || mal "el comando no escribió ($V)"
+[ "$(q "select string_agg(kind || ':' || coalesce(end_reason,'abierto'), ',' order by started_at, kind) from focus_segment where focus_session_id='$FS';" | tr -d '[:space:]')" = "FOCUS:PAUSED,PAUSE:abierto" ] \
+  && ok "quedaron el foco cerrado y la pausa abierta" || mal "los tramos no quedaron como el comando dijo"
+
+if corre "select aplicar_comando_de_focus('$A','$FS',2,jsonb_build_object('status','ENDED','mode','FREE','last_heartbeat_at',now(),'ended_at',now(),'end_kind','SAVED','focus_seconds',60,'break_seconds',0,'paused_seconds',0,'pauses',1,'complete_blocks',0,'partial_blocks',0),'[]','[]');"; then
+  mal "una sesión se cerró con un tramo abierto"
+else
+  ok "cerrar la sesión con un tramo abierto se rechaza, y no queda nada a medias"
+fi
+[ "$(q "select status from focus_session where id='$FS';" | tr -d '[:space:]')" = "OPEN" ] \
+  && ok "y la sesión sigue abierta: fue todo o nada" || mal "la sesión quedó cerrada a medias"
+if corre "update focus_session set status='ENDED', ended_at=now(), end_kind='SAVED' where id='$FS';"; then
+  mal "una sesión se cerró sin sus números"
+else
+  ok "ENDED sin los números congelados se rechaza"
+fi
+
+PAUSA=$(q "select id from focus_segment where focus_session_id='$FS' and ended_at is null;" | tr -d '[:space:]')
+corre "update focus_session set scratchpad='comprar pan, turno médico', advance_text='Resolví el 4 y el 5' where id='$FS';"
+V=$(q "select aplicar_comando_de_focus('$A','$FS',2,jsonb_build_object('status','ENDED','mode','FREE','last_heartbeat_at',now(),'ended_at',now(),'end_kind','SAVED','focus_seconds',3120,'break_seconds',600,'paused_seconds',600,'pauses',1,'complete_blocks',0,'partial_blocks',0,'advance_text','Resolví el 4 y el 5'),jsonb_build_array(jsonb_build_object('id','$PAUSA','ended_at',now(),'end_reason','SAVED')),'[]');" | tr -d '[:space:]')
+[ "$V" = "3" ] && ok "cerrar congela los números y deja la sesión terminada" || mal "no cerró ($V)"
+
+corre "insert into product_event (event_name,institution_id,actor_id,subject_type,subject_id) values ('FocusSessionEnded','$A','$YO','focus_session','$FS');"
+[ "$(q "select h.datos->>'foco' from hechos_de_cursada('$A','a6000000-0000-0000-0000-000000000001',null) h where h.event_name='FocusSessionEnded';" | tr -d '[:space:]')" = "3120" ] \
+  && ok "la Bitácora ata la sesión a su acción y trae sus números" || mal "la sesión no llegó a hechos_de_cursada"
+if q "select h.datos::text from hechos_de_cursada('$A','a6000000-0000-0000-0000-000000000001',null) h;" | grep -q "comprar pan"; then
+  mal "el anotador privado llegó a hechos_de_cursada"
+else
+  ok "el anotador NO llega a hechos_de_cursada (§12)"
+fi
+q "select estado_de_progreso('$A','$YO',now(),null,'a6000000-0000-0000-0000-000000000001')::text;" | grep -q "Resolví el 4 y el 5" \
+  && ok "estado_de_progreso pasa el avance a la Bitácora" || mal "el avance no llegó a estado_de_progreso"
+if q "select estado_de_progreso('$A','$YO',now(),null,'a6000000-0000-0000-0000-000000000001')::text;" | grep -q "comprar pan"; then
+  mal "el anotador privado llegó a estado_de_progreso"
+else
+  ok "y el anotador tampoco llega a estado_de_progreso"
+fi
+
+[ -n "$(q "select empezar_sesion_de_focus('$A','$YO','a6000000-0000-0000-0000-000000000001','$FA','$FC',now(),40,now());" | tr -d '[:space:]')" ] \
+  && ok "con la anterior cerrada, puede empezar otra" || mal "la unicidad cuenta sesiones cerradas"
+[ "$(q "select count(*) from focus_session where institution_id='$B';" | tr -d '[:space:]')" = "0" ] \
+  && ok "B no alcanza las sesiones de A" || mal "B vio sesiones de A"
+
+corre "delete from product_event where subject_type='focus_session'; delete from focus_segment; delete from focus_session; delete from commitment where id='$FC'; delete from action where id='$FA';"
 
 limpiar_mundo
 ok "limpiado"
