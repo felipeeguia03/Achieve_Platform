@@ -7,14 +7,16 @@
  * `localStorage`, sin escritura. `?escenario=` sólo elige el estado demostrativo
  * de arranque; la URL no se actualiza al interactuar.
  *
- * ## Tres acciones que no se mezclan
+ * ## Dos acciones que no se mezclan
  *
- * - **Hover o foco** sobre *Simular este workitem* (o una estación del camino):
- *   vista previa sobre el escenario actual. No toca la pila.
  * - **Clic o Enter** sobre cualquier elemento: lo selecciona y abre el inspector.
  *   No simula.
  * - **El botón *Simular este workitem***: agrega el paso, avisando antes si hay
  *   trabajo más prioritario o falta un prerequisito.
+ *
+ * **Pasar el mouse no hace nada** (pedido del owner, 15 sep): la simulación es
+ * siempre un clic deliberado. Lo único que se previsualiza es el lugar elegido en
+ * *Reubicar* o *Cambiar horario*, y también es por clic.
  */
 
 import { CalendarDays, ChevronDown, FlaskConical, ListTree, X } from "lucide-react";
@@ -95,8 +97,7 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
   const proyeccionDelEscenario = useMemo(() => proyectar(escenario), [escenario]);
   const escenarioPrevio = useMemo(() => {
     if (!vistaPrevia) return null;
-    const accion: Accion = vistaPrevia.tipo === "PASO" ? { tipo: "SIMULAR", id: vistaPrevia.id, override: true } : vistaPrevia.accion;
-    const e = aplicar(escenario, accion);
+    const e = aplicar(escenario, vistaPrevia.accion);
     return e === escenario ? null : e;
   }, [vistaPrevia, escenario]);
   const proyeccionPrevia = useMemo(() => (escenarioPrevio ? proyectar(escenarioPrevio) : null), [escenarioPrevio]);
@@ -169,19 +170,9 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
     [escenario, proyeccionDelEscenario, confirmarSimulacion],
   );
 
-  const previsualizarPaso = useCallback(
-    (id: string | null) => {
-      // En el plan real sólo se previsualiza si el escenario todavía es igual a él: si no, la vista saltaría.
-      if (id && plano === "REAL" && !esVacio(escenario)) return;
-      setInteractuo(true);
-      setVistaPrevia((actual) => (id ? { tipo: "PASO", id } : actual?.tipo === "PASO" ? null : actual));
-    },
-    [plano, escenario],
-  );
-
   const previsualizarAccion = useCallback((accion: Accion | null) => {
     setInteractuo(true);
-    setVistaPrevia(accion ? { tipo: "ACCION", accion } : null);
+    setVistaPrevia(accion ? { accion } : null);
   }, []);
 
   const pedirQuitarVentana = useCallback(
@@ -222,7 +213,6 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
     movimientoReducido: menosMovimiento,
     animar: interactuo && !menosMovimiento,
     seleccionar,
-    previsualizarPaso,
     previsualizarAccion,
     pedirSimular,
     despachar,

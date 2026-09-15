@@ -101,7 +101,7 @@ export function lecturaDelGantt(id: string | null, p: Proyeccion): { temas: stri
 export function Gantt() {
   const lab = useLab();
   const p = lab.mostrada;
-  const mirado = lab.vistaPrevia?.tipo === "PASO" ? lab.vistaPrevia.id : lab.seleccion;
+  const mirado = lab.seleccion;
   const { temas: resaltados, nota } = lecturaDelGantt(mirado, p);
 
   return (

@@ -15,8 +15,8 @@ Cómo abrirlo y qué incluye: [`V2_SCOPE.md`](V2_SCOPE.md) §2.
 2. **Tocá cualquier bloque**: una clase, el parcial, el compromiso, la franja del miércoles, la guía de
    elasticidad en *Por ubicar*, la Práctica 1 de Arquitectura. Mirá el inspector.
 3. **Límites → Teoría de Derivadas → Práctica de Derivadas.** Seleccioná cada uno y tocá *Simular este
-   workitem*. Antes, pasá el mouse por el botón para ver la vista previa. Mirá la pila, el camino y el
-   Gantt.
+   workitem*. Antes de tocarlo, el inspector ya dice *Si lo simulás* qué cambiaría. Mirá la pila, el
+   camino y el Gantt.
 4. **Elegí *Leer Unidad 3 de Economía* antes de tiempo.** Leé la advertencia y probá las dos salidas.
 5. **Deshacer último**, y después **Volver al plan real**.
 6. **Restablecé y simulá *Práctica de Derivadas* sola.** Mirá qué pasa con el Gantt y con la acción

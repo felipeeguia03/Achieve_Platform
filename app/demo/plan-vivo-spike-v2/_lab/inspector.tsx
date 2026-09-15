@@ -125,12 +125,7 @@ export const Inspector = forwardRef<HTMLHeadingElement>(function Inspector(_, ti
 export function BotonSimular({ id, compacto = false }: { id: string; compacto?: boolean }) {
   const lab = useLab();
   const motivo = porQueNoSeSimula(lab.escenario, lab.proyeccionDelEscenario, id);
-  const previa = {
-    onPointerEnter: (ev: React.PointerEvent) => ev.pointerType !== "touch" && ev.pointerType !== "pen" && !motivo && lab.previsualizarPaso(id),
-    onPointerLeave: () => lab.previsualizarPaso(null),
-    onFocus: () => !motivo && lab.previsualizarPaso(id),
-    onBlur: () => lab.previsualizarPaso(null),
-  };
+  // Sólo el clic simula: pasar el mouse o enfocar el botón no cambia nada.
   return (
     <>
       <button
@@ -140,7 +135,6 @@ export function BotonSimular({ id, compacto = false }: { id: string; compacto?: 
         aria-describedby={motivo ? `no-simulable-${id}` : undefined}
         data-simular={id}
         onClick={() => lab.pedirSimular(id)}
-        {...previa}
       >
         <FlaskConical size={14} aria-hidden />
         {t("ACCION.SIMULAR")}

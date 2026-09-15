@@ -73,19 +73,21 @@ acciones que la pantalla**, desde el mismo fixture. Se combinan con `&vista=cale
 
 ## 4. Modelo de interacción
 
-Tres acciones que no se mezclan:
+Dos acciones que no se mezclan:
 
 | Gesto | Qué hace | Qué **no** hace |
 |---|---|---|
-| **Hover o foco** sobre *Simular este workitem* o sobre una estación del camino | Vista previa de agregar ese paso **sobre el escenario actual**: plan, indicadores y Gantt la muestran, rotulada *Vista previa · Todavía no se agregó al escenario* | No toca la pila. Un toque no la dispara |
-| **Clic, Enter o Espacio** sobre cualquier bloque, franja o estación | Selecciona y abre el inspector | No simula |
+| **Clic, Enter o Espacio** sobre cualquier bloque, franja o estación | Selecciona y abre el inspector, que ya dice *Si lo simulás* qué cambiaría | No simula |
 | **Botón *Simular este workitem*** | Agrega el paso a la pila. Antes avisa si falta un prerequisito o hay trabajo más prioritario | No confirma nada ni cuenta como avance |
 
-Escape cierra la vista previa, el selector de lugar, el menú y los avisos.
+🆕 **Pasar el mouse no hace nada** (owner, 15 sep 2026). La primera entrega de V2 tenía vista previa por
+hover o foco sobre el botón y las estaciones; se retiró para que simular sea siempre un clic deliberado.
+Hay test que lo verifica.
 
-⚠️ **Lo que dispara la vista previa no cambia de alto con ella.** Inspector, camino y franja de acción
-leen la proyección *sin* vista previa, y los indicadores tienen alto fijo. Se corrigió después de verlo en
-el navegador: el botón se corría de debajo del cursor y la vista previa parpadeaba.
+Lo único que se previsualiza es **el lugar elegido** en *Reubicar* o *Cambiar horario*, también por clic, y
+va rotulado *Vista previa · Todavía no se agregó al escenario*. Escape cierra esa vista previa, el
+selector de lugar, el menú y los avisos. Mientras tanto, inspector, camino y franja de acción leen la
+proyección *sin* vista previa, y los indicadores tienen alto fijo.
 
 ### Supuesto de cumplimiento
 
@@ -197,8 +199,6 @@ se acortan bloques.*
 
 - *Empezar ahora*, *Abrir Modo Clase*, *Abrir registro de clase* y el vínculo con Modo Examen son avisos o
   bloques locales: no navegan.
-- La vista previa desde el camino puede cambiar el alto del plan, que está arriba. En Chromium y Firefox
-  el anclaje de scroll lo compensa; **en Safari no se probó**.
 - **A 1024 px** el inspector mide 320 px y apila sus datos, y el Calendario desplaza el domingo dentro de
   su grilla.
 - **Tablet (768 px)**: se verificó sólo que la página no se desplace horizontalmente.

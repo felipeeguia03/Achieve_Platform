@@ -10,7 +10,7 @@ import { LabPlanVivo } from "@/app/demo/plan-vivo-spike-v2/_lab/lab-plan-vivo";
  * 🧪 **Laboratorio descartable «Mi Plan vivo» V2** — la pantalla.
  *
  * Se prueba lo que el pedido declaró innegociable de la interacción: un solo
- * «Ahora», clic que selecciona sin simular, hover que previsualiza sin agregar,
+ * «Ahora», clic que selecciona sin simular, hover que no hace nada,
  * una pila de hasta cinco que se deshace, avisos que no bloquean, lo inmóvil sin
  * controles, el plan real intacto y ningún pedido a la red.
  */
@@ -177,27 +177,36 @@ describe("Inspector universal", () => {
   });
 });
 
-describe("Selección, hover y simulación", () => {
-  it("el hover previsualiza sin agregar, y al salir vuelve", () => {
+describe("Selección y simulación", () => {
+  it("pasar el mouse o enfocar no simula ni previsualiza: ni en el camino, ni en el plan, ni en los botones", () => {
     const { container } = abrir();
-    const estacion = $(container, `[data-estacion="${ID.LIMITES}"]`)!;
-    puntero(estacion, "pointerover", "mouse");
-    expect(plano(container)).toBe("VISTA_PREVIA");
-    expect(indicador(container, "pendiente")).toBe("7 h 35");
-    expect(pasos(container)).toBe(0);
-    puntero(estacion, "pointerout", "mouse");
-    expect(plano(container)).toBe("REAL");
-    expect(indicador(container, "pendiente")).toBe("9 h 20");
+    fireEvent.click(bloque(container, ID.LIMITES));
+    const objetivos = [
+      $(container, `[data-estacion="${ID.LIMITES}"]`)!,
+      $(container, `[data-estacion="${ID.LIMITES}"] button`)!,
+      bloque(container, ID.LIMITES),
+      $(container, `[data-proxima] [data-simular="${ID.LIMITES}"]`)!,
+      $(inspector(container), `[data-simular="${ID.LIMITES}"]`)!,
+    ];
+    for (const el of objetivos) {
+      puntero(el, "pointerover", "mouse");
+      act(() => el.focus());
+      expect(plano(container), el.outerHTML.slice(0, 60)).toBe("REAL");
+      expect(indicador(container, "pendiente")).toBe("9 h 20");
+      expect(pasos(container)).toBe(0);
+      puntero(el, "pointerout", "mouse");
+    }
   });
 
-  it("un toque no previsualiza, y Escape cierra la vista previa del foco", () => {
+  it("Escape cierra la vista previa de un lugar elegido para reubicar", () => {
     const { container } = abrir();
-    puntero($(container, `[data-estacion="${ID.LIMITES}"]`)!, "pointerover", "touch");
-    expect(plano(container)).toBe("REAL");
-    act(() => $(inspectorOProxima(container), `[data-simular="${ID.LIMITES}"]`)!.focus());
+    fireEvent.click(bloque(container, ID.ECONOMIA_U3));
+    fireEvent.click(within(inspector(container)).getByRole("button", { name: "Reubicar en el escenario" }));
+    fireEvent.click($(container, '[data-hueco="2026-09-19 10:00"]')!);
     expect(plano(container)).toBe("VISTA_PREVIA");
     fireEvent.keyDown(window, { key: "Escape" });
     expect(plano(container)).toBe("REAL");
+    expect(celdaDe(container, ID.ECONOMIA_U3)).toBe("TRABAJO|2026-09-18");
   });
 
   it("el clic selecciona y abre el inspector, pero no simula", () => {
@@ -262,8 +271,6 @@ describe("Selección, hover y simulación", () => {
   });
 });
 
-/** La franja de acción recomendada o el inspector: los dos tienen el botón. */
-const inspectorOProxima = (c: HTMLElement) => $(c, "[data-proxima]") ?? inspector(c);
 
 describe("Prioridad blanda", () => {
   it("igual prioridad sin dependencia: se simula sin advertencia", () => {

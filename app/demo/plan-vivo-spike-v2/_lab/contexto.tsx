@@ -12,11 +12,13 @@ import { createContext, useContext } from "react";
 import type { Accion, EstadoDelLab, Modo, Plano, Vista } from "./escenario";
 import type { Escenario, Proyeccion } from "./tipos";
 
-export type VistaPrevia =
-  /** Hover o foco sobre un workitem: *¿cómo quedaría si lo agrego?* */
-  | { tipo: "PASO"; id: string }
-  /** Un lugar elegido en *Reubicar* o *Cambiar horario*, antes de confirmar. */
-  | { tipo: "ACCION"; accion: Accion };
+/**
+ * Un lugar elegido en *Reubicar* o *Cambiar horario*, antes de confirmar. Es lo
+ * único que se previsualiza: **pasar el mouse no simula ni previsualiza nada**.
+ */
+export interface VistaPrevia {
+  accion: Accion;
+}
 
 export interface LabContexto {
   estado: EstadoDelLab;
@@ -29,8 +31,8 @@ export interface LabContexto {
   mostrada: Proyeccion;
   /**
    * Lo mismo **sin la vista previa**. Lo leen el inspector, el camino y la franja
-   * de acción: son los que disparan la vista previa, y si cambiaran de alto con
-   * ella, el botón se correría de debajo del cursor y la vista previa parpadearía.
+   * de acción, para que elegir un lugar en *Reubicar* no los reacomode mientras
+   * se elige.
    */
   estable: Proyeccion;
   /** Contra qué se dibujan las huellas. `null` = sin huellas. */
@@ -44,7 +46,6 @@ export interface LabContexto {
   /** Si ya hubo interacción: al cargar nada se mueve. */
   animar: boolean;
   seleccionar: (id: string | null) => void;
-  previsualizarPaso: (id: string | null) => void;
   previsualizarAccion: (accion: Accion | null) => void;
   pedirSimular: (id: string) => void;
   despachar: (accion: Accion) => void;

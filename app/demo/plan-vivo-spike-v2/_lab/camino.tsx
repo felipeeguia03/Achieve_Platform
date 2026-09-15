@@ -75,7 +75,7 @@ const SVG = "http://www.w3.org/2000/svg";
 
 export function Camino() {
   const lab = useLab();
-  // El camino dispara la vista previa: lee lo estable para no cambiar de alto debajo del cursor.
+  // Lee lo estable: una vista previa de reubicación no cambia el camino mientras se elige el lugar.
   const p = lab.estable;
   const lienzo = useRef<HTMLDivElement>(null);
   const svg = useRef<SVGSVGElement>(null);
@@ -153,7 +153,6 @@ function Estacion({ id, p }: { id: string; p: Proyeccion }) {
   const simulable = porQueNoSeSimula(lab.escenario, lab.proyeccionDelEscenario, id) === null;
   const duracion = e.kind === "WORKITEM" ? `${e.duracion.probable} min probables` : null;
   const c = colocadoDe(p, id);
-  const puedePrevisualizar = simulable && (e.kind === "WORKITEM" || e.kind === "COMPROMISO");
   const seleccionada = lab.seleccion === id;
 
   return (
@@ -162,17 +161,8 @@ function Estacion({ id, p }: { id: string; p: Proyeccion }) {
       style={{ ["--lab-materia" as string]: MATERIAS[e.materia].color }}
       data-estacion={id}
       data-estado-estacion={estado.texto}
-      onPointerEnter={(ev) => puedePrevisualizar && ev.pointerType !== "touch" && ev.pointerType !== "pen" && lab.previsualizarPaso(id)}
-      onPointerLeave={() => puedePrevisualizar && lab.previsualizarPaso(null)}
     >
-      <button
-        type="button"
-        className={s.estacionBoton}
-        aria-pressed={seleccionada}
-        onClick={() => lab.seleccionar(id)}
-        onFocus={() => puedePrevisualizar && lab.previsualizarPaso(id)}
-        onBlur={() => puedePrevisualizar && lab.previsualizarPaso(null)}
-      >
+      <button type="button" className={s.estacionBoton} aria-pressed={seleccionada} onClick={() => lab.seleccionar(id)}>
         <span className={s.estacionEstado}>
           <estado.Icono size={12} aria-hidden />
           {estado.texto}

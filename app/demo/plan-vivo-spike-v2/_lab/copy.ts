@@ -128,7 +128,6 @@ export const COPY = {
   "SIM.YA_NO_HACE_FALTA": "En este escenario ya no hace falta.",
   "SIM.SIN_LUGAR": "No hay un hueco libre donde simularlo sin acortarlo.",
   "SIM.NO_ES_TRABAJO": "Esto no se simula: no es trabajo por hacer.",
-  "SIM.HOVER": "Pasá el mouse o enfocá para previsualizar. El botón lo agrega al escenario.",
 
   "PILA.TITULO": "Pila de simulación",
   "PILA.VACIA": "Todavía no simulaste nada. Elegí un workitem y tocá «Simular este workitem».",
