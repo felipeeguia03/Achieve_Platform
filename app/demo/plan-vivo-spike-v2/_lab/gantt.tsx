@@ -218,7 +218,7 @@ export function Gantt() {
           </div>
         );
       })}
-      <p className={s.textoSuave}>{t("GANTT.SIN_READINESS")}</p>
+      <p className={s.textoSuave}>{t("GANTT.SIN_PREDICCIONES")}</p>
     </section>
   );
 }

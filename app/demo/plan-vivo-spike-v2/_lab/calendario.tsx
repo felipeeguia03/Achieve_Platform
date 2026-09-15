@@ -82,12 +82,24 @@ export function Calendario() {
                   const top = ((aMinutos(fr.desde) - DESDE * 60) / 60) * ALTO_HORA;
                   const alto = Math.max(18, (duracionDe(fr) / 60) * ALTO_HORA);
                   const etiqueta = etiquetaDe(c, p);
+                  // La promesa original comparte horario con lo que ahora ocupa su lugar: van a medias, sin pisarse.
+                  const esPromesa = c.estado === "PROMESA_ANTERIOR";
+                  const pisaPromesa =
+                    !esPromesa &&
+                    eventos.some(
+                      (o) =>
+                        o.estado === "PROMESA_ANTERIOR" &&
+                        o.franja!.dia === dia &&
+                        aMinutos(o.franja!.desde) < aMinutos(fr.hasta) &&
+                        aMinutos(fr.desde) < aMinutos(o.franja!.hasta),
+                    );
+                  const lados = esPromesa ? { left: "52%" } : pisaPromesa ? { right: "50%" } : {};
                   return (
                     <button
                       key={c.clave}
                       type="button"
                       className={[s.calEvento, CLASE_POR_ESTADO[c.estado], lab.seleccion === c.id ? s.bloqueSeleccionado : ""].join(" ")}
-                      style={{ top, height: alto, ["--lab-materia" as string]: colorDe(c.id) }}
+                      style={{ top, height: alto, ...lados, ["--lab-materia" as string]: colorDe(c.id) }}
                       data-cal-clave={c.clave}
                       data-cal-id={c.id}
                       data-estado={c.estado}

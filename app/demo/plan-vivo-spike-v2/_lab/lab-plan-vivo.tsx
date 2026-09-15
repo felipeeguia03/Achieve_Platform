@@ -105,7 +105,8 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
     [estado.historial],
   );
 
-  const mostrada: Proyeccion = proyeccionPrevia ?? (plano === "ESCENARIO" ? proyeccionDelEscenario : PLAN_REAL);
+  const estable: Proyeccion = plano === "ESCENARIO" ? proyeccionDelEscenario : PLAN_REAL;
+  const mostrada: Proyeccion = proyeccionPrevia ?? estable;
   const escenarioMostrado = escenarioPrevio ?? (plano === "ESCENARIO" ? escenario : VACIO);
   const referencia = proyeccionPrevia ? proyeccionDelEscenario : plano === "ESCENARIO" ? anterior : null;
 
@@ -211,6 +212,7 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
     real: PLAN_REAL,
     proyeccionDelEscenario,
     mostrada,
+    estable,
     referencia,
     plano,
     modo,
@@ -241,7 +243,7 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
     pedirQuitarVentana,
   };
 
-  const recomendada = mostrada.recomendada ? workitem(mostrada.recomendada) : null;
+  const recomendada = estable.recomendada ? workitem(estable.recomendada) : null;
 
   return (
     <Contexto.Provider value={contexto}>
@@ -281,13 +283,13 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
               <span className={s.textoSuave}>
                 {MATERIAS[recomendada.materia].corto} · {recomendada.duracion.min}–{recomendada.duracion.max} min
                 {(() => {
-                  const c = mostrada.colocados.find((x) => x.clave === recomendada.id);
+                  const c = estable.colocados.find((x) => x.clave === recomendada.id);
                   return c?.franja ? ` · ${franjaCorta(c.franja)}` : "";
                 })()}
               </span>
             </div>
             <div className={s.acciones}>
-              <BotonSimular id={recomendada.id} compacto />
+              <BotonSimular id={recomendada.id} />
               <button type="button" className={s.boton} onClick={() => seleccionar(recomendada.id)}>
                 {t("PROXIMA.VER")}
               </button>
@@ -498,12 +500,12 @@ function Segmentado({
 function Indicadores({ p, real, mostrarReal }: { p: Proyeccion; real: Proyeccion; mostrarReal: boolean }) {
   const t0 = p.totales;
   const libres = t0.declarada - t0.usadaPorSimulado;
-  const antes = (actual: number, delReal: number) =>
-    mostrarReal && actual !== delReal ? (
-      <span className={s.indicadorAntes}>
-        {t("INDICADOR.PLAN_REAL")} {enHoras(delReal)} →{" "}
-      </span>
-    ) : null;
+  // La línea de «plan real» está siempre, vacía si no hay diferencia: así el alto no cambia con la vista previa.
+  const antes = (actual: number, delReal: number) => (
+    <span className={s.indicadorAntes} data-plan-real={mostrarReal && actual !== delReal ? enHoras(delReal) : undefined}>
+      {mostrarReal && actual !== delReal ? `${t("INDICADOR.PLAN_REAL")}: ${enHoras(delReal)}` : "\u00a0"}
+    </span>
+  );
   const queEs = (def: string, extra?: string) => (
     <details className={s.queEs}>
       <summary>{t("INDICADOR.QUE_ES")}</summary>
@@ -516,10 +518,8 @@ function Indicadores({ p, real, mostrarReal }: { p: Proyeccion; real: Proyeccion
       <dl className={s.indicadores} data-indicadores>
         <div className={s.indicador} data-indicador="pendiente">
           <dt>{t("INDICADOR.PENDIENTE")}</dt>
-          <dd>
-            {antes(t0.pendiente, real.totales.pendiente)}
-            {enHoras(t0.pendiente)}
-          </dd>
+          {antes(t0.pendiente, real.totales.pendiente)}
+          <dd>{enHoras(t0.pendiente)}</dd>
           <span className={s.indicadorDetalle}>
             entre {enHoras(t0.pendienteMin)} y {enHoras(t0.pendienteMax)} · {t("INDICADOR.HORIZONTE")}
           </span>
@@ -527,51 +527,29 @@ function Indicadores({ p, real, mostrarReal }: { p: Proyeccion; real: Proyeccion
         </div>
         <div className={s.indicador} data-indicador="disponible">
           <dt>{t("INDICADOR.DISPONIBLE")}</dt>
-          <dd>
-            {antes(t0.declarada, real.totales.declarada)}
-            {enHoras(t0.declarada)}
-          </dd>
-          {t0.usadaPorSimulado > 0 && (
-            <span className={s.indicadorDetalle}>
-              {enHoras(libres)} para lo pendiente · {enHoras(t0.usadaPorSimulado)} usadas por lo simulado
-            </span>
-          )}
+          {antes(t0.declarada, real.totales.declarada)}
+          <dd>{enHoras(t0.declarada)}</dd>
+          {/* Siempre presente: si apareciera sólo al simular, movería lo que está debajo. */}
+          <span className={s.indicadorDetalle}>
+            {enHoras(libres)} para lo pendiente · {enHoras(t0.usadaPorSimulado)} usadas por lo simulado
+          </span>
           {queEs(t("INDICADOR.DISPONIBLE.DEF"))}
         </div>
         <div className={s.indicador} data-indicador="sin-ubicar">
           <dt>{t("INDICADOR.SIN_UBICAR")}</dt>
-          <dd>
-            {antes(t0.sinUbicar, real.totales.sinUbicar)}
-            {enHoras(t0.sinUbicar)}
-          </dd>
+          {antes(t0.sinUbicar, real.totales.sinUbicar)}
+          <dd>{enHoras(t0.sinUbicar)}</dd>
           {queEs(t("INDICADOR.SIN_UBICAR.DEF"))}
         </div>
         <div className={s.indicador} data-indicador="margen">
           <dt>{t("INDICADOR.MARGEN")}</dt>
-          <dd>
-            {antes(t0.margen, real.totales.margen)}
-            {enHoras(t0.margen)}
-          </dd>
+          {antes(t0.margen, real.totales.margen)}
+          <dd>{enHoras(t0.margen)}</dd>
           {queEs(t("INDICADOR.MARGEN.DEF"))}
         </div>
       </dl>
-      {t0.margen > 0 && t0.sinUbicar > 0 && (
-        <p className={s.indicadorNota} data-coexistencia>
-          {porQueConviven(p)}
-        </p>
-      )}
     </div>
   );
-}
-
-/** La razón explícita de que haya margen y trabajo sin ubicar a la vez. */
-export function porQueConviven(p: Proyeccion): string {
-  const mayorHueco = Math.max(0, ...p.margenes.map((m) => m.minutos));
-  const sinLugar = p.colocados.filter((c) => c.estado === "PROPUESTA" && c.franja === null);
-  const menor = Math.min(...sinLugar.map((c) => workitem(c.id)?.duracion.probable ?? Infinity));
-  if (mayorHueco < menor)
-    return `Hay margen y trabajo sin ubicar a la vez porque el margen está en huecos de hasta ${enHoras(mayorHueco)}, y lo que falta ubicar necesita al menos ${enHoras(menor)} seguidos. No se parten ni se acortan bloques.`;
-  return "Hay margen y trabajo sin ubicar a la vez porque lo que falta ubicar no puede ir en esos huecos: depende de algo que todavía no tiene lugar o tendría que ir antes del parcial.";
 }
 
 function ResumenLimpio() {

@@ -75,7 +75,8 @@ const SVG = "http://www.w3.org/2000/svg";
 
 export function Camino() {
   const lab = useLab();
-  const p = lab.mostrada;
+  // El camino dispara la vista previa: lee lo estable para no cambiar de alto debajo del cursor.
+  const p = lab.estable;
   const lienzo = useRef<HTMLDivElement>(null);
   const svg = useRef<SVGSVGElement>(null);
   const firma = `${p.completados.join()}|${p.retirados.join()}|${p.pasos.length}|${lab.seleccion}`;

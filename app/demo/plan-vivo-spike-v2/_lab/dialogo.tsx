@@ -56,7 +56,9 @@ export function Dialogo({
     document.addEventListener("keydown", alTeclear, true);
     return () => {
       document.removeEventListener("keydown", alTeclear, true);
+      // Si lo que lo abrió ya no existe (p. ej., el botón de un workitem que quedó simulado), el foco va al inspector.
       if (disparador && document.contains(disparador)) disparador.focus();
+      else document.getElementById("lab-inspector-titulo")?.focus();
     };
   }, []);
 

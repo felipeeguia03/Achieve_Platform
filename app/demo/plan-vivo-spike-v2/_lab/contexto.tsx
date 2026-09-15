@@ -27,6 +27,12 @@ export interface LabContexto {
   proyeccionDelEscenario: Proyeccion;
   /** Lo que se dibuja ahora mismo: real, escenario o vista previa. */
   mostrada: Proyeccion;
+  /**
+   * Lo mismo **sin la vista previa**. Lo leen el inspector, el camino y la franja
+   * de acción: son los que disparan la vista previa, y si cambiaran de alto con
+   * ella, el botón se correría de debajo del cursor y la vista previa parpadearía.
+   */
+  estable: Proyeccion;
   /** Contra qué se dibujan las huellas. `null` = sin huellas. */
   referencia: Proyeccion | null;
   plano: Plano;

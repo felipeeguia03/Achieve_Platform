@@ -17,7 +17,7 @@
 
 import { diaMedio, enHoras, franjaCorta } from "./formato";
 import { MATERIAS } from "./fixture";
-import { nombreCorto, tituloDe } from "./proyeccion";
+import { nombreCorto, tituloDe, workitem } from "./proyeccion";
 import type { Confianza, EstadoEnPlan, PlanDiff, Prioridad, Proyeccion } from "./tipos";
 
 export const COPY = {
@@ -124,6 +124,7 @@ export const COPY = {
   "SIM.NO_MUEVE": "No mueve el progreso académico por sí solo",
   "SIM.MAXIMO": "Llegaste a 5 workitems. El límite existe para que el escenario siga siendo comprensible: deshacé o restablecé para probar otro.",
   "SIM.YA_EN_ESCENARIO": "Ya está simulado en este escenario.",
+  "SIM.INTENTO_REPETIDO": "Ya hay un intento sin su prerequisito en el escenario. Simulá primero lo que le falta para volver a probarlo.",
   "SIM.YA_NO_HACE_FALTA": "En este escenario ya no hace falta.",
   "SIM.SIN_LUGAR": "No hay un hueco libre donde simularlo sin acortarlo.",
   "SIM.NO_ES_TRABAJO": "Esto no se simula: no es trabajo por hacer.",
@@ -185,7 +186,7 @@ export const COPY = {
   "GANTT.CATEDRA": "Cátedra",
   "GANTT.VOS": "Vos hoy",
   "GANTT.ESCENARIO": "Si cumplís este escenario",
-  "GANTT.SIN_READINESS": "Sin porcentajes de preparación ni predicciones: sólo qué temas tienen clase dada, progreso registrado o progreso simulado.",
+  "GANTT.SIN_PREDICCIONES": "Sin porcentajes de preparación ni predicciones: sólo qué temas tienen clase dada, progreso registrado o progreso simulado.",
 
   "CAL.TITULO": "Calendario",
   "CAL.SOLO_LECTURA": "Sólo lectura · los mismos objetos que el plan",
@@ -269,6 +270,17 @@ export function frasesTemporales(antes: Proyeccion, despues: Proyeccion, d: Plan
   else frases.push("Ningún otro bloque cambia de lugar.");
   if (d.minutos.margen !== 0) frases.push(`Margen: ${enHoras(antes.totales.margen)} → ${enHoras(despues.totales.margen)}.`);
   return frases;
+}
+
+/** La razón explícita de que haya margen y trabajo sin ubicar a la vez. `null` = no conviven. */
+export function porQueConviven(p: Proyeccion): string | null {
+  if (p.totales.margen === 0 || p.totales.sinUbicar === 0) return null;
+  const mayorHueco = Math.max(0, ...p.margenes.map((m) => m.minutos));
+  const sinLugar = p.colocados.filter((c) => c.estado === "PROPUESTA" && c.franja === null);
+  const menor = Math.min(...sinLugar.map((c) => workitem(c.id)?.duracion.probable ?? Infinity));
+  if (mayorHueco < menor)
+    return `Hay margen y trabajo sin ubicar a la vez porque el margen está en huecos de hasta ${enHoras(mayorHueco)}, y lo que falta ubicar necesita al menos ${enHoras(menor)} seguidos. No se parten ni se acortan bloques.`;
+  return "Hay margen y trabajo sin ubicar a la vez porque lo que falta ubicar no puede ir en esos huecos: depende de algo que todavía no tiene lugar o tendría que ir antes del parcial.";
 }
 
 export function textoDeRecomendada(id: string | null): string {

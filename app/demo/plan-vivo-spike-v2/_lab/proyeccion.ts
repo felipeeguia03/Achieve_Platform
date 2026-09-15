@@ -520,7 +520,7 @@ export function colocadoDe(p: Proyeccion, id: string): Colocado | null {
   );
 }
 
-export type NoSimulable = "MAXIMO" | "YA_EN_ESCENARIO" | "YA_NO_HACE_FALTA" | "NO_ES_TRABAJO" | "SIN_LUGAR";
+export type NoSimulable = "MAXIMO" | "YA_EN_ESCENARIO" | "INTENTO_SIN_PREREQUISITO" | "YA_NO_HACE_FALTA" | "NO_ES_TRABAJO" | "SIN_LUGAR";
 
 /** ¿Se puede agregar al escenario? `null` = sí. */
 export function porQueNoSeSimula(esc: Escenario, p: Proyeccion, id: string): NoSimulable | null {
@@ -529,7 +529,7 @@ export function porQueNoSeSimula(esc: Escenario, p: Proyeccion, id: string): NoS
   if (p.completados.includes(id)) return "YA_EN_ESCENARIO";
   // Un intento sin prerequisito se puede repetir, pero sólo cuando el prerequisito ya está.
   if (p.pasos.some((x) => x.id === id && x.incompleto && !x.sinLugar) && advertenciasAlSimular(p, id).faltan.length > 0)
-    return "YA_EN_ESCENARIO";
+    return "INTENTO_SIN_PREREQUISITO";
   if (p.retirados.includes(id)) return "YA_NO_HACE_FALTA";
   if (esc.pasos.length >= MAXIMO_DE_PASOS) return "MAXIMO";
   const probado = proyectar({ ...esc, pasos: [...esc.pasos, { id, override: false }] });

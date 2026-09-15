@@ -23,7 +23,7 @@ import { useLayoutEffect, useRef } from "react";
 
 import { BloqueMargen, BloqueVentana, Bloque, Huella, yaPaso, type MotivoDeHuella } from "./bloque";
 import { useLab } from "./contexto";
-import { MOTIVO_SIN_UBICAR, t, type ClaveDeCopy } from "./copy";
+import { MOTIVO_SIN_UBICAR, porQueConviven, t, type ClaveDeCopy } from "./copy";
 import { AHORA, SEMANA, VENTANAS, EXCEPCIONES } from "./fixture";
 import { aMinutos, diaCorto, diaMedio } from "./formato";
 import { diferencia } from "./proyeccion";
@@ -90,7 +90,9 @@ export function PlanSemanal({ encabezado }: { encabezado: React.ReactNode }) {
       if (c.franja) agregar(c.carril, c.franja.dia, e);
       else porUbicar.push(e);
     };
-    for (const m of d.movidos) huella(m.clave, "MOVIDO", m.despues);
+    // Un compromiso con horario cambiado ya deja su promesa original dibujada: no hace falta otra huella.
+    const conPromesa = new Set(p.colocados.filter((c) => c.estado === "PROMESA_ANTERIOR").map((c) => c.id));
+    for (const m of d.movidos) if (!conPromesa.has(m.clave)) huella(m.clave, "MOVIDO", m.despues);
     for (const id of d.desubicados) huella(id, "DESUBICADO", null);
     for (const id of d.ubicados) huella(id, "UBICADO", null);
     for (const id of d.retirados) huella(id, "RETIRADO", null);
@@ -187,6 +189,11 @@ export function PlanSemanal({ encabezado }: { encabezado: React.ReactNode }) {
           {ribete.texto}
         </span>
         <span className={s.desplazar}>{t("PLAN.DESPLAZAR")}</span>
+        {porQueConviven(p) && (
+          <p className={s.indicadorNota} data-coexistencia>
+            {porQueConviven(p)}
+          </p>
+        )}
         {encabezado}
       </header>
 

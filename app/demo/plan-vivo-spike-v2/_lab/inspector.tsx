@@ -49,6 +49,7 @@ const temaNombre = (id: string) => {
 export const TEXTO_NO_SIMULABLE: Readonly<Record<NoSimulable, string>> = {
   MAXIMO: t("SIM.MAXIMO"),
   YA_EN_ESCENARIO: t("SIM.YA_EN_ESCENARIO"),
+  INTENTO_SIN_PREREQUISITO: t("SIM.INTENTO_REPETIDO"),
   YA_NO_HACE_FALTA: t("SIM.YA_NO_HACE_FALTA"),
   NO_ES_TRABAJO: t("SIM.NO_ES_TRABAJO"),
   SIN_LUGAR: t("SIM.SIN_LUGAR"),
@@ -113,7 +114,7 @@ export const Inspector = forwardRef<HTMLHeadingElement>(function Inspector(_, ti
       {e?.kind === "HECHO" && <InspectorHecho h={e} />}
       {e?.kind === "CLASE" && <InspectorClase c={e} />}
       {e?.kind === "EVALUACION" && <InspectorEvaluacion ev={e} />}
-      {e?.kind === "COMPROMISO" && <InspectorCompromiso c={lab.mostrada.compromisos[e.id] ?? e} />}
+      {e?.kind === "COMPROMISO" && <InspectorCompromiso c={lab.estable.compromisos[e.id] ?? e} />}
       {e?.kind === "DISPONIBILIDAD" && <InspectorVentana v={e} />}
     </aside>
   );
@@ -172,7 +173,7 @@ function SupuestoDeSimulacion() {
 
 function InspectorWorkitem({ w }: { w: WorkItem }) {
   const lab = useLab();
-  const p = lab.mostrada;
+  const p = lab.estable;
   const c = colocadoDe(p, w.id);
   const intento = p.colocados.find((x) => x.clave === `${w.id}#intento`);
   const retirado = p.retirados.includes(w.id);
@@ -490,8 +491,8 @@ function InspectorEvaluacion({ ev }: { ev: Evaluacion }) {
 
 function InspectorCompromiso({ c }: { c: Compromiso }) {
   const lab = useLab();
-  const colocado = colocadoDe(lab.mostrada, c.id);
-  const simulado = lab.mostrada.completados.includes(c.id);
+  const colocado = colocadoDe(lab.estable, c.id);
+  const simulado = lab.estable.completados.includes(c.id);
   return (
     <div className={s.inspectorCuerpo}>
       <div className={s.chips}>
@@ -563,8 +564,8 @@ function InspectorCompromiso({ c }: { c: Compromiso }) {
 function InspectorVentana({ v }: { v: VentanaDeDisponibilidad }) {
   const lab = useLab();
   const quitada = lab.escenarioMostrado.quitadas.includes(v.id);
-  const presente = lab.mostrada.ventanas.some((x) => x.ventana.id === v.id);
-  const o = ocupacionDeVentana(lab.mostrada, v.id);
+  const presente = lab.estable.ventanas.some((x) => x.ventana.id === v.id);
+  const o = ocupacionDeVentana(lab.estable, v.id);
   return (
     <div className={s.inspectorCuerpo}>
       <div className={s.chips}>

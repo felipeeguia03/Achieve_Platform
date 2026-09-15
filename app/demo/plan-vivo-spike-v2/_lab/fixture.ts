@@ -469,7 +469,7 @@ export const WORKITEMS: readonly WorkItem[] = [
     duracion: { min: 50, probable: 60, max: 70 },
     confianza: { nivel: "alta", fuente: "5 lecturas de Economía registradas" },
     evidencia: "tres preguntas de la unidad respondidas por escrito",
-    impacto: { temas: ["TEM-ECO-3"], produceProgreso: false, explicacion: "Es una lectura: no mueve el progreso académico por sí sola." },
+    impacto: { temas: ["TEM-ECO-3"], produceProgreso: false, explicacion: "Es una lectura: prepara la guía de elasticidad, que es la que puede registrar progreso." },
     noAntesDe: null,
     antesDe: null,
     seRetiraSi: null,
