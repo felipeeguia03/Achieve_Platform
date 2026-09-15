@@ -10776,3 +10776,10 @@ A pedido del owner hay una demostración **descartable** en `/demo/plan-vivo-spi
 producto la importa. Está `READY FOR PRODUCT REVIEW` —
 [`experiments/plan-vivo/SPIKE.md`](experiments/plan-vivo/SPIKE.md)—. **No cierra este ADR ni ninguna de
 sus nueve decisiones.**
+
+**V2 READY FOR PRODUCT REVIEW** (15 sep 2026, rama `feat/plan-vivo-lab-v2`). Segundo laboratorio en
+`/demo/plan-vivo-spike-v2`, con flag propio `PLAN_VIVO_SPIKE_V2=1` y V1 intacta: inspector universal,
+simulación acumulativa de hasta cinco pasos, prioridad frente a dependencia, reubicación, cambio de
+horario local, camino y Gantt académico —[`experiments/plan-vivo/V2_SCOPE.md`](experiments/plan-vivo/V2_SCOPE.md)—.
+⚠️ **Agrega un acomodador local del laboratorio**, que **no es** una propuesta de motor ni resuelve
+[D-01](experiments/plan-vivo/DECISIONS.md#d-01). Este ADR sigue `PENDING`.
