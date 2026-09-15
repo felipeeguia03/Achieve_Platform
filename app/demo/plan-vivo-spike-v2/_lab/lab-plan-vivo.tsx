@@ -37,6 +37,7 @@ import {
 import { AHORA, EXCEPCIONES, MATERIAS } from "./fixture";
 import { diaLargo, enHoras, franjaCorta, ZONA_DEL_LAB } from "./formato";
 import { Inspector, BotonSimular } from "./inspector";
+import { Pila } from "./pila";
 import { PlanSemanal } from "./plan-semanal";
 import {
   advertenciasAlSimular,
@@ -375,7 +376,7 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
           </div>
         )}
 
-        {/* PILA */}
+        {(plano === "ESCENARIO" || !esVacio(escenario)) && <Pila />}
 
         <div className={s.cuerpo}>
           <PlanSemanal encabezado={<ResumenLimpio />} />
