@@ -10783,3 +10783,11 @@ simulación acumulativa de hasta cinco pasos, prioridad frente a dependencia, re
 horario local, camino y Gantt académico —[`experiments/plan-vivo/V2_SCOPE.md`](experiments/plan-vivo/V2_SCOPE.md)—.
 ⚠️ **Agrega un acomodador local del laboratorio**, que **no es** una propuesta de motor ni resuelve
 [D-01](experiments/plan-vivo/DECISIONS.md#d-01). Este ADR sigue `PENDING`.
+
+**V3 READY FOR PRODUCT REVIEW** (15 sep 2026, rama `experiment/plan-vivo-spike-v3-calendar-first`). Tercer
+laboratorio en `/demo/plan-vivo-spike-v3`, con flag propio `PLAN_VIVO_SPIKE_V3=1` y V1 y V2 intactas: **el
+calendario como única representación temporal del plan**, sin vista *Plan* separada. Bandeja *Acciones por
+ubicar* con arrastre, conflictos duros frente a advertencias blandas, compromisos locales con renegociación
+explícita, simulación acumulativa de hasta cinco pasos y *Impacto académico* como réplica del Gantt de
+`UX02` —[`experiments/plan-vivo-v3/README.md`](experiments/plan-vivo-v3/README.md)—. ⚠️ **Su motor también
+es del laboratorio** y no resuelve D-01 ni D-02. Este ADR sigue `PENDING`.
