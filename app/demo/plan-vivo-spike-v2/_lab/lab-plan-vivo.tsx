@@ -20,9 +20,12 @@
 import { CalendarDays, ChevronDown, FlaskConical, ListTree, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 
+import { Calendario } from "./calendario";
+import { Camino } from "./camino";
 import { Contexto, useLab, type LabContexto, type VistaPrevia } from "./contexto";
 import { frasePostergados, frasesDeCambio, t, textoDeRecomendada } from "./copy";
 import { Dialogo } from "./dialogo";
+import { Gantt } from "./gantt";
 import {
   aplicar,
   escenarioActual,
@@ -379,11 +382,14 @@ export function LabPlanVivo({ escenario: param, vista: vistaParam, modo: modoPar
         {(plano === "ESCENARIO" || !esVacio(escenario)) && <Pila />}
 
         <div className={s.cuerpo}>
-          <PlanSemanal encabezado={<ResumenLimpio />} />
+          {vista === "PLAN" ? <PlanSemanal encabezado={<ResumenLimpio />} /> : <Calendario />}
           <Inspector ref={tituloDelInspector} />
         </div>
 
-        {/* CAMINO Y GANTT */}
+        <div className={s.inferior}>
+          <Camino />
+          <Gantt />
+        </div>
 
         {dialogo?.tipo === "PRIORIDAD" && (
           <Dialogo titulo={t("PRIORIDAD.TITULO")} onCerrar={() => setDialogo(null)}>
