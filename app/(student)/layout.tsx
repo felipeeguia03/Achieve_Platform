@@ -23,8 +23,10 @@ export default function StudentLayout({
     // el color base, para que el fondo no lo pinte el navegador.
     <div style={{ background: "var(--background)", color: "var(--foreground)" }}>
       {/*
-        🧪 **Plan vivo en el Calendario** — ADR-110. El flag se lee acá, en el
-        servidor, y baja por contexto: sin la variable, el Calendario es ADR-100.
+        🧪 **Plan vivo en el Calendario** — ADR-110. El flag baja por contexto
+        para el Calendario abierto **en una ventana**. Como el resto del layout,
+        se fija al compilar (igual que `MODO_PRUEBA`); la página `/calendario` lo
+        vuelve a leer en cada pedido.
       */}
       <ProveedorDePlanVivo activo={planVivoEnCalendario()}>{children}</ProveedorDePlanVivo>
       {/*

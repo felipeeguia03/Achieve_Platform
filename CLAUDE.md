@@ -76,6 +76,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
 | Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — veinte filas, **ocho abiertas**, por lo que destraban |
 | **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) y [ADR-099](docs/decisions.md#adr-099) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
+| **Plan vivo en el Calendario** (bajo flag) | [ADR-110](docs/decisions.md#adr-110) · informe en [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md) · diferido: [ADR-111](docs/decisions.md#adr-111) |
 | **Modo Focus** | [ADR-104](docs/decisions.md#adr-104) · informe, API y QA en [`modo-focus.md`](docs/modo-focus.md) |
 | Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
@@ -97,6 +98,18 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 ---
 
 ## Estado actual
+
+🧪 **Plan vivo en el Calendario, detrás de `PLAN_VIVO_CALENDAR_INTEGRATION=1`** —
+[ADR-110](docs/decisions.md#adr-110), 16 de septiembre · [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md).
+El owner cerró ADR-109 D-01/D-02 (opción A) y D-09: con el flag, `/calendario` propone dónde entra el
+trabajo, y el estudiante lo mueve, fija, vacía o simula. **Sin el flag, ADR-100 intacto** y
+`GET /api/plan-vivo` da `404`.
+
+⚠️ **Antes de tocar el Plan vivo:** sólo la `Action` viva de cada cursada es fila; el resto son
+**candidatos** de `candidatosDelAde` y **no se comprometen**. **Sin prioridad visible** (`P-03`). Propuestas,
+fijados y simulación **no persisten**; sólo escriben `POST /api/compromiso` y
+`POST /api/alta/disponibilidad`. Ubicar, fijar, comprometerse o simular capacidad **no bajan el pendiente**.
+*No fui a clase* y *Se canceló la clase* esperan a [ADR-111](docs/decisions.md#adr-111), `PENDING`.
 
 🆕 **Onboarding académico** — [ADR-105](docs/decisions.md#adr-105), [ADR-106](docs/decisions.md#adr-106) y
 [ADR-107](docs/decisions.md#adr-107), 13–14 de septiembre · [`onboarding-academico.md`](docs/onboarding-academico.md).

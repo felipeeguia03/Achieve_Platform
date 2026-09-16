@@ -6,6 +6,10 @@
 **No cierra** [ADR-109](../../decisions.md#adr-109), que sigue `PENDING`, ni ninguna de las decisiones de
 [`plan-vivo/DECISIONS.md`](../plan-vivo/DECISIONS.md).
 
+> 🆕 **16 sep 2026 — integrado detrás de flag** en el producto: [ADR-110](../../decisions.md#adr-110) y
+> [`plan-vivo-calendario.md`](../../plan-vivo-calendario.md). Este laboratorio **sigue igual** y se conserva
+> como referencia.
+
 > Esta carpeta no es una segunda fuente de verdad. Es el informe de un laboratorio descartable: lo que se
 > decida después entra a `docs/decisions.md` como ADR.
 

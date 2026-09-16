@@ -10861,6 +10861,18 @@ compromiso).
   `POST /api/alta/disponibilidad` son los únicos escritores que la pantalla usa.
 - `GET /api/plan-vivo` responde `404` sin el flag.
 - Recargar la página **pierde** fijados, propuestas movidas y la simulación. La pantalla lo dice.
+- **`/calendario` pasa a ser dinámica** (`connection()`) para leer el flag en cada pedido. Dentro de una
+  ventana del espacio de trabajo el flag es el del build, igual que `MODO_PRUEBA`.
+- **Dos supuestos de la integración:** una evaluación con hora bloquea **60 minutos** (el schema no guarda
+  duración; sin hora no bloquea) y las clases se ubican en la zona del estudiante, como en ADR-100.
+- **`Gantt` se exporta** de `materia-cursado.tsx` para reutilizarlo sin copiarlo; su código no cambia.
+
+### Cómo se verifica
+
+`tests/plan-vivo-planificador.test.ts` (planificador, sesión, simulación, impacto y `candidatosDelAde`
+contra `recomendar`) y `tests/plan-vivo-integracion.test.tsx` (la base del servidor, la pantalla, el `404`
+sin flag, que sólo escribe por los dos contratos y que no lee el anotador de Focus). Informe:
+[`plan-vivo-calendario.md`](plan-vivo-calendario.md).
 
 ---
 

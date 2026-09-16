@@ -343,6 +343,25 @@ botón.
 
 ---
 
+## Plan vivo en el Calendario — detrás de flag · 🟡 IMPLEMENTADO, NO PROMOVIDO
+
+[ADR-110](decisions.md#adr-110) · 16 de septiembre de 2026 · informe en
+[`plan-vivo-calendario.md`](plan-vivo-calendario.md). Seis cortes en la rama
+`feature/plan-vivo-calendar-integration`:
+
+| Corte | Estado |
+|---|---|
+| 1 · Auditoría, ADR-110/111, tipos, flag | ✅ |
+| 2 · Planificador puro, sesión, impacto | ✅ |
+| 3 · Lectura, calendario, columna, disponibilidad, arrastre, fijar, vaciar | ✅ |
+| 4 · Simulación y Gantt | ✅ (mismo commit que el 3) |
+| 5 · Compromiso · Materia | ✅ · **clase cancelada y ausencia ⛔ [ADR-111](decisions.md#adr-111)** |
+| 6 · QA y documentación | ✅ salvo `db:verify` (no hay schema nuevo; vacía la base compartida) |
+
+**No se promueve** sin ADR-006, revisión del copy por la psicopedagoga y la decisión sobre persistencia.
+
+---
+
 ## 1. Diagrama de dependencias
 
 ```

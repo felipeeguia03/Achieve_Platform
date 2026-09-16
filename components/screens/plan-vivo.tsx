@@ -245,6 +245,7 @@ function PlanCargado(p: Props) {
   const colocadoPorId = useMemo(() => new Map(proyeccion.placedItems.map((x) => [x.itemId, x])), [proyeccion]);
   const seleccionado = p.seleccion ? (itemPorId.get(p.seleccion) ?? null) : null;
   const manual = estado.strategy === "MANUAL";
+  const [colaAbierta, setColaAbierta] = useState(false);
 
   return (
     <div
@@ -264,13 +265,7 @@ function PlanCargado(p: Props) {
       <TituloDePanel
         titulo={t("PLAN_VIVO.TITULO")}
         subcopy={t("PLAN_VIVO.SUBCOPY")}
-        acciones={
-          p.simulando ? (
-            <Boton onClick={p.onDescartarSimulacion}>{t("PLAN_VIVO.DESCARTAR")}</Boton>
-          ) : (
-            <Boton onClick={p.onSimular}>{t("PLAN_VIVO.SIMULAR")}</Boton>
-          )
-        }
+        acciones={p.simulando ? null : <Boton onClick={p.onSimular}>{t("PLAN_VIVO.SIMULAR")}</Boton>}
       />
 
       {p.simulando && (
@@ -282,7 +277,13 @@ function PlanCargado(p: Props) {
         >
           <strong>{t("PLAN_VIVO.SIMULANDO")}</strong>
           <span>{t("PLAN_VIVO.SIMULANDO_AYUDA")}</span>
-          <span style={{ marginLeft: "auto" }}>
+          <span className="inline-flex" style={{ marginLeft: "auto", gap: 6 }}>
+            <Boton etiqueta={t("PLAN_VIVO.DESHACER")} onClick={p.onDeshacer} disabled={!p.puedeDeshacer}>
+              <Undo2 size={16} aria-hidden />
+            </Boton>
+            <Boton etiqueta={t("PLAN_VIVO.REHACER")} onClick={p.onRehacer} disabled={!p.puedeRehacer}>
+              <Redo2 size={16} aria-hidden />
+            </Boton>
             <Boton onClick={p.onDescartarSimulacion}>{t("PLAN_VIVO.DESCARTAR")}</Boton>
           </span>
         </div>
@@ -325,12 +326,16 @@ function PlanCargado(p: Props) {
           <Boton activo={p.editandoDisponibilidad} onClick={() => p.onEditarDisponibilidad(!p.editandoDisponibilidad)}>
             {p.editandoDisponibilidad ? t("PLAN_VIVO.TERMINAR_DISPONIBILIDAD") : t("PLAN_VIVO.AGREGAR_DISPONIBILIDAD")}
           </Boton>
-          <Boton etiqueta={t("PLAN_VIVO.DESHACER")} onClick={p.onDeshacer} disabled={!p.puedeDeshacer}>
-            <Undo2 size={16} aria-hidden />
-          </Boton>
-          <Boton etiqueta={t("PLAN_VIVO.REHACER")} onClick={p.onRehacer} disabled={!p.puedeRehacer}>
-            <Redo2 size={16} aria-hidden />
-          </Boton>
+          {!p.simulando && (
+            <>
+              <Boton etiqueta={t("PLAN_VIVO.DESHACER")} onClick={p.onDeshacer} disabled={!p.puedeDeshacer}>
+                <Undo2 size={16} aria-hidden />
+              </Boton>
+              <Boton etiqueta={t("PLAN_VIVO.REHACER")} onClick={p.onRehacer} disabled={!p.puedeRehacer}>
+                <Redo2 size={16} aria-hidden />
+              </Boton>
+            </>
+          )}
           {(manual || estado.ubicaciones.length > 0) && <Boton onClick={p.onReconstruir}>{t("PLAN_VIVO.RECONSTRUIR")}</Boton>}
           {proyeccion.placedItems.length > 0 && <Boton onClick={p.onVaciar}>{t("PLAN_VIVO.VACIAR")}</Boton>}
         </span>
@@ -350,7 +355,9 @@ function PlanCargado(p: Props) {
           </span>
         </div>
       )}
-      <ReglaDeNegocio>{t("PLAN_VIVO.EFIMERO")}</ReglaDeNegocio>
+      <div style={{ marginTop: 8 }}>
+        <ReglaDeNegocio>{t("PLAN_VIVO.EFIMERO")}</ReglaDeNegocio>
+      </div>
       {base.disponibilidadSemanal.length === 0 && estado.agregada.length === 0 && (
         <ReglaDeNegocio>{t("PLAN_VIVO.SIN_DISPONIBILIDAD_DECLARADA")}</ReglaDeNegocio>
       )}
@@ -358,9 +365,21 @@ function PlanCargado(p: Props) {
       {/* ── Calendario + columna ──────────────────────────────────────────── */}
       <div className="grid items-start lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)]" style={{ gap: 16, marginTop: 12 }}>
         <Semana p={p} itemPorId={itemPorId} />
-        <aside aria-label={t("PLAN_VIVO.COLA")} className="flex flex-col" style={{ gap: 12 }}>
+        <aside
+          aria-label={t("PLAN_VIVO.COLA")}
+          className="flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
+          style={{ gap: 12, overscrollBehavior: "contain" }}
+        >
           {seleccionado && <Inspector p={p} item={seleccionado} colocado={colocadoPorId.get(seleccionado.id) ?? null} />}
-          <Cola p={p} itemPorId={itemPorId} />
+          {/* Debajo de `lg` la cola se pliega: el calendario queda primero. */}
+          <div className="lg:hidden">
+            <Boton activo={colaAbierta} onClick={() => setColaAbierta(!colaAbierta)}>
+              {t("PLAN_VIVO.COLA")} · {proyeccion.unplacedItems.length}
+            </Boton>
+          </div>
+          <div className={colaAbierta ? "flex flex-col" : "hidden lg:flex lg:flex-col"} style={{ gap: 12 }}>
+            <Cola p={p} itemPorId={itemPorId} />
+          </div>
         </aside>
       </div>
 
@@ -1351,7 +1370,7 @@ function Dialogos({ p, itemPorId }: { p: Props; itemPorId: Map<string, PlanningW
   return (
     <Dialog open={d !== null} onOpenChange={(abierto) => !abierto && p.onCerrarDialogo()}>
       {d && (
-        <DialogContent>
+        <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>{titulo}</DialogTitle>
             {d.tipo === "COMPROMETERME" && <DialogDescription>{t("PLAN_VIVO.COMPROMISO.TEXTO")}</DialogDescription>}
@@ -1387,9 +1406,14 @@ function Explicacion({ p, itemPorId }: { p: Props; itemPorId: Map<string, Planni
 
   return (
     <Sheet open={item !== null} onOpenChange={(abierto) => !abierto && p.onPorQue(null)}>
-      <SheetContent side="right">
+      <SheetContent side="right" showCloseButton={false}>
         {mostrado && (
           <div style={{ padding: 16, overflowY: "auto" }}>
+            <div style={{ float: "right" }}>
+              <Boton etiqueta="Cerrar" onClick={() => p.onPorQue(null)}>
+                <X size={14} aria-hidden />
+              </Boton>
+            </div>
             <SheetHeader style={{ padding: 0 }}>
               <SheetTitle>{mostrado.title}</SheetTitle>
               <SheetDescription>{mostrado.materia}</SheetDescription>
