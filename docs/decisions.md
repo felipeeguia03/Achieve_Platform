@@ -10721,7 +10721,9 @@ cursada propia; el panel en palabras, cerrado sin nada y abierto con *Simulado*,
 <a id="adr-109"></a>
 ## ADR-109 — Experimento «Mi Plan vivo»: ubicar lo que nadie comprometió, y mostrar qué cambia
 
-**Estado:** 🔴 `PENDING` · 14 sep 2026 · **abierto por un agente a pedido del owner; lo cierra el owner**
+**Estado:** 🟡 `PARTIALLY ACCEPTED` · 16 sep 2026 · **D-01 y D-02 (opción A) y D-09 cerradas por el owner** en
+[ADR-110](#adr-110). D-03…D-08 siguen como recomendación del agente, sin decisión.
+**Estado original:** 🔴 `PENDING` · 14 sep 2026 · **abierto por un agente a pedido del owner; lo cierra el owner**
 **Choca con:** [ADR-064](#adr-064) (*el ADE nunca agenda*), [ADR-073](#adr-073) §3 (*el reparto no
 agenda*), [ADR-085](#adr-085) (*un tema sin puntas no se ubica*), [ADR-100](#adr-100) (sin *Plan de
 estudio* ni *agendar un bloque*) y `product.md` §12.3 (*calendario propio completo* fuera de alcance).
@@ -10791,3 +10793,104 @@ ubicar* con arrastre, conflictos duros frente a advertencias blandas, compromiso
 explícita, simulación acumulativa de hasta cinco pasos y *Impacto académico* como réplica del Gantt de
 `UX02` —[`experiments/plan-vivo-v3/README.md`](experiments/plan-vivo-v3/README.md)—. ⚠️ **Su motor también
 es del laboratorio** y no resuelve D-01 ni D-02. Este ADR sigue `PENDING`.
+
+---
+
+<a id="adr-110"></a>
+
+## ADR-110 — Plan vivo en el Calendario: el sistema propone, el estudiante reorganiza, detrás de un flag
+
+**Estado:** ✅ `ACCEPTED` · 16 sep 2026 · **decidido por el owner** en la sesión del pedido *«Integrar Plan
+vivo V3 en Achieve»*, respondiendo a las cuatro preguntas de la auditoría
+([`experiments/plan-vivo-v3/INTEGRATION_AUDIT.md`](experiments/plan-vivo-v3/INTEGRATION_AUDIT.md) §7).
+**Cierra:** [ADR-109](#adr-109) D-01 (opción **A**), D-02 (opción **A**) y D-09.
+**Enmienda, sólo con `PLAN_VIVO_CALENDAR_INTEGRATION=1`:** [ADR-064](#adr-064) y [ADR-073](#adr-073) §3
+(el sistema **propone** horarios; no los compromete), [ADR-100](#adr-100) (el Calendario deja de ser sólo
+lectura) y `product.md` §12.3. **Sin el flag, los cuatro rigen igual que antes.**
+**No levanta:** [ADR-006](#adr-006), [ADR-085](#adr-085), `P-03`, ADR-046/050 (cambio de horario de un
+compromiso).
+
+### La decisión central, textual del pedido
+
+> *«El calendario será la representación visual del plan, pero el sistema debe proponer inicialmente cómo
+> organizarlo. El alumno puede aceptar, modificar, fijar, vaciar o reconstruir esa propuesta.»*
+
+### Las cuatro respuestas del owner
+
+| Pregunta | Respuesta |
+|---|---|
+| ¿El pedido cierra D-01, D-02 y D-09? | **Sí, opción A en D-01 y D-02.** Se ubican **propuestas** sólo con el flag, dentro de la disponibilidad declarada; las propuestas que no son la `Action` vigente de su cursada son **candidatos proyectados** desde el orden del ADE, **no `Action`** |
+| ¿Se muestra *«Prioridad muy alta»*? | **No. Sólo la razón y el orden.** `P-03` sigue entero: la cola muestra *«Entra en el Primer parcial»* y *¿Por qué?* |
+| ¿Dónde se guardan propuestas, fijados y overrides? | **En ningún lado: efímero, sin migración.** El plan se recalcula en cada carga y lo que el estudiante mueve vive en la sesión del navegador. La disponibilidad que se agrega en el plan real se guarda **semanal**, por la función del alta |
+| ¿Clase cancelada y ausencia? | **Se difieren** con ADR `PENDING` — [ADR-111](#adr-111) |
+
+### Qué significa en el código
+
+1. **D-09 — ruta y nodo.** No hay `/plan`. La experiencia vive en **`/calendario`** cuando el flag está
+   prendido; sin él, `/calendario` es exactamente ADR-100. No hay nodo, ruta ni superficie nueva: **la cuenta de rutas y
+   de superficies no cambia**.
+2. **Los candidatos no son `Action`.** No tienen `actionId`, no se comprometen y la UI no los llama
+   *acción*: son *trabajo por ubicar*. **Sólo la `Action` viva de cada cursada** ofrece *Comprometerme*, y
+   lo hace por `POST /api/compromiso`, el mismo contrato de `UX04`, que sigue validando pertenencia,
+   estado y superposición con clases (ADR-064).
+3. **El orden sale del ADE** — `costoDeNoActuar`, expuesto como función pura (`candidatosDelAde`). No se
+   agrega un segundo ponderador. Entre materias se compara el mismo costo; el empate lo rompe la fecha de
+   la evaluación y después el nombre.
+4. **Las dependencias duras son `topic_prerequisite`**, explícitas. Nunca se derivan del orden. **No hay
+   dependencias blandas**: su criterio es de la psicopedagoga (*«cómo se define una tarea comparable»*).
+5. **Duración:** la `Action` usa `estimated_minutes_min/max`; el candidato, el mismo bloque que le daría el
+   ADE. *Probable* es el **punto medio** — la opción A de D-03, aplicada **provisionalmente** porque el
+   pedido lo exige y es la única sin migración. Sin mínimo ni máximo, **no se ubica**.
+6. **Prohibido, con o sin flag:** mover clases, evaluaciones, compromisos o un Focus en curso; que ubicar,
+   fijar, comprometerse o simular cambien el progreso; que la simulación escriba algo.
+
+### Lo que el pedido pedía y no se construye
+
+| Qué | Por qué |
+|---|---|
+| Nivel de prioridad visible | `P-03` (respuesta del owner) |
+| Dependencias blandas y su aviso | Sin criterio profesional |
+| Margen mínimo antes de una evaluación | Número inventado en el laboratorio (pregunta 14 de V3) |
+| Registrar un override en la Bitácora | La Bitácora es `hechos_de_cursada()`; un override efímero no es un hecho |
+| *No fui a clase* · *Se canceló la clase* | [ADR-111](#adr-111) |
+| Disponibilidad por fecha, *repetir* | `availability` es semanal; lo agregado se guarda para todas las semanas |
+
+### Consecuencias
+
+- **Ninguna migración, ninguna tabla, ningún evento nuevo.** `POST /api/compromiso` y
+  `POST /api/alta/disponibilidad` son los únicos escritores que la pantalla usa.
+- `GET /api/plan-vivo` responde `404` sin el flag.
+- Recargar la página **pierde** fijados, propuestas movidas y la simulación. La pantalla lo dice.
+
+---
+
+<a id="adr-111"></a>
+
+## ADR-111 — *No fui a clase* y *Se canceló la clase*: dos hechos sin contrato
+
+**Estado:** 🔴 `PENDING` · 16 sep 2026 · **abierto por un agente a pedido del owner**, que eligió diferirlo
+([ADR-110](#adr-110)). **Lo cierra el owner.**
+
+### Contexto
+
+El pedido de integración distingue dos hechos: el estudiante **no fue** a una clase que pudo haberse
+dictado, y la clase **no ocurrió**. Ninguno tiene contrato:
+
+- **Ausencia:** no existe entidad de asistencia. `student_class_session` (ADR-098) es la clase que el
+  estudiante **abrió**, no su asistencia, y su ausencia no significa que faltó.
+- **Cancelación:** `class_session.status = 'cancelled'` existe desde la B1 **sin escritor**. Pero
+  `class_session` es la clase **dictada**, de la oferta: la ve cada estudiante de la comisión y mueve el
+  Gantt de todos. Que un estudiante la marque es un reporte `student`/`unverified` (ADR-029, I9) que
+  ninguna capa puede elevar.
+
+### Preguntas para el owner
+
+1. ¿La ausencia es una fila nueva por estudiante y fecha, o una marca de `student_class_session`?
+2. ¿Quién puede cancelar una clase? ¿El reporte de un estudiante cancela la vista **de ese estudiante**
+   solamente, o la de toda la comisión?
+3. ¿Una cancelación futura libera el bloque para ubicar trabajo **sin** crear disponibilidad (como pide el
+   pedido)? Hoy el bloque de clase no es disponibilidad, así que liberar no agrega capacidad.
+4. ¿La ausencia se muestra en Materia y en la Bitácora? La Bitácora sale de `hechos_de_cursada()`.
+
+**Mientras siga `PENDING`, no se construye ninguna de las dos, ni con adaptador local.**
+
