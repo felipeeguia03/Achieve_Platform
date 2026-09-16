@@ -268,4 +268,6 @@ export interface PlanVivoBase {
   fijos: readonly BloqueFijo[];
   items: readonly PlanningWorkItem[];
   materias: ReadonlyArray<{ cursadaId: string; nombre: string }>;
+  /** Evaluaciones sin hora: marca del día, **no bloquean** (no se inventa una hora). */
+  evaluacionesDelDia: ReadonlyArray<{ id: string; fecha: string; titulo: string; cursadaId: string | null }>;
 }

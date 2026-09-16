@@ -11,13 +11,13 @@
 import { Suspense } from "react";
 
 import { Shell } from "@/components/shell/shell";
-import { VistaDeCalendario } from "@/components/superficies/calendario";
+import { VistaDelCalendario } from "@/components/superficies/calendario-o-plan";
 
 export default function CalendarioPage() {
   return (
     <Shell nodo="CALENDARIO">
       <Suspense>
-        <VistaDeCalendario />
+        <VistaDelCalendario />
       </Suspense>
     </Shell>
   );

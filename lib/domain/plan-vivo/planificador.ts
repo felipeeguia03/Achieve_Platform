@@ -114,7 +114,9 @@ const esMovible = (c: Contexto, i: PlanningWorkItem) => !c.hechos.has(i.id) && !
  * `-∞` ⇒ ya está satisfecho y no condiciona la hora.
  */
 function finDelPrerrequisito(c: Contexto, itemId: string | null, ubicadas: ReadonlyMap<string, PlacedPlanningItem>): number | null {
-  if (itemId === null || !c.items.has(itemId) || c.hechos.has(itemId)) return Number.NEGATIVE_INFINITY;
+  if (itemId === null || c.hechos.has(itemId)) return Number.NEGATIVE_INFINITY;
+  // Un prerrequisito que no es trabajo planificable (p. ej. espera evidencia) **no** está satisfecho.
+  if (!c.items.has(itemId)) return null;
   const bloque = c.bloqueDe.get(itemId);
   if (bloque) return bloque.fin;
   return ubicadas.get(itemId)?.fin ?? null;

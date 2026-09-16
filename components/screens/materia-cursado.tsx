@@ -61,7 +61,7 @@ const tarjeta = {
   padding: 16,
 } as const;
 
-function Gantt({ gantt, color }: { gantt: GanttProjection; color: string }) {
+export function Gantt({ gantt, color }: { gantt: GanttProjection; color: string }) {
   return (
     <div data-gantt style={tarjeta}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>

@@ -84,6 +84,7 @@ function base(p: Partial<PlanVivoBase> = {}): PlanVivoBase {
     fijos: [clase],
     items: [item("a", { costo: 300 }), item("b", { costo: 200 }), item("c", { costo: 100 })],
     materias: [{ cursadaId: "ce-a", nombre: "Análisis" }],
+    evaluacionesDelDia: [],
     ...p,
   };
 }
