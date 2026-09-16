@@ -98,6 +98,8 @@ export interface PlanningWorkItem {
   cursadaId: string;
   materia: string;
   topicId: string | null;
+  /** Nombre del tema, para encontrarlo en el Gantt de la materia. */
+  tema: string | null;
   title: string;
   /** `null` ⇒ sin estimación: **no se ubica** y la línea se omite. */
   durationRange: RangoDeDuracion | null;
@@ -162,6 +164,8 @@ export interface PlanningInput {
   strategy: PlacementStrategy;
   /** Trabajo que la simulación supone hecho. Vacío en el plan real. */
   hechos: readonly string[];
+  /** Trabajo que el estudiante devolvió a la cola: el automático no lo ubica. */
+  retenidas: readonly string[];
 }
 
 export type CausaDeNoEntrar =
@@ -186,6 +190,9 @@ export type MotivoDeConflicto =
   | "HISTORIA"
   | "PASADO"
   | "FUERA_DEL_HORIZONTE"
+  | "FUERA_DE_DISPONIBILIDAD"
+  | "PROPUESTA"
+  | "FIJADA"
   | "FECHA_LIMITE"
   | "DEPENDENCIA"
   | "SIN_DURACION";
@@ -213,8 +220,11 @@ export interface PlanningMetrics {
 
 export interface PlacementExplanation {
   itemId: string;
-  /** Por qué quedó donde quedó, o por qué no entró. */
-  texto: string;
+  /**
+   * Por qué quedó donde quedó, o por qué no entró. **Una clave, no un texto**:
+   * la copy vive en `lib/content/es-AR.ts` (`C-07`).
+   */
+  causa: "FIJADA" | "ELEGIDA" | "PRIMER_HUECO" | "ANTES_DEL_PLAZO" | "COMPROMETIDA" | CausaDeNoEntrar;
 }
 
 export interface PlanningProjection {
@@ -227,6 +237,16 @@ export interface PlanningProjection {
   conflicts: readonly PlanningConflict[];
   metrics: PlanningMetrics;
   explanations: readonly PlacementExplanation[];
+}
+
+/** Una fila de `availability`, como la escribe el alta. */
+export interface FranjaSemanal {
+  /** `0`–`6`, domingo a sábado. */
+  dia: number;
+  /** `HH:MM`. `null` ⇒ *«90 minutos los martes»*, sin hora: no se dibuja ni se ubica nada ahí. */
+  desde: string | null;
+  hasta: string | null;
+  minutos: number;
 }
 
 // ── Lo que manda el servidor ────────────────────────────────────────────────────
@@ -244,7 +264,7 @@ export interface PlanVivoBase {
   /** Las franjas declaradas, ya expandidas sobre la semana. */
   disponibilidad: readonly Intervalo[];
   /** Las mismas, como se guardan: semanales, en la zona del estudiante. */
-  disponibilidadSemanal: ReadonlyArray<{ dia: number; desde: string; hasta: string }>;
+  disponibilidadSemanal: readonly FranjaSemanal[];
   fijos: readonly BloqueFijo[];
   items: readonly PlanningWorkItem[];
   materias: ReadonlyArray<{ cursadaId: string; nombre: string }>;

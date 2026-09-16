@@ -261,3 +261,73 @@ function razonDe(u: UnidadCandidata, ctx: ContextoDelAde): string {
   if (!u.recenciaEn) return "Es la unidad que hace más tiempo no trabajás.";
   return "Consolida lo que venís trabajando.";
 }
+
+/**
+ * **El orden completo del ADE**, para el Plan vivo — [ADR-110](../../docs/decisions.md#adr-110)
+ * (ADR-109 D-02 · A).
+ *
+ * `recomendar` materializa **sólo la primera** unidad elegible; esta función
+ * expone el resto del orden **sin materializar nada**. Las que no son la
+ * `Action` viva son *candidatos*: no son filas, no se comprometen y la UI no
+ * las llama *acción*.
+ *
+ * ⚠️ **Mismo costo, misma razón, mismo bloque.** No hay un segundo ponderador:
+ * si esta función y `recomendar` discreparan sobre qué va primero, el plan
+ * contradiría a Hoy.
+ *
+ * Incluye las unidades **bloqueadas por prerrequisito** (con `habilitada:
+ * false`) para que el plan pueda decir qué falta primero, y deja afuera las que
+ * ya tienen práctica registrada: el plan ubica trabajo **sin progreso**.
+ */
+export interface CandidatoDelAde {
+  topicId: string;
+  nombre: string;
+  /** Ordena, **nunca se muestra** (`P-03`). */
+  costo: number;
+  habilitada: boolean;
+  requiere: readonly string[];
+  /** La razón principal, la misma que `recomendar` escribiría. */
+  razon: string;
+  /** Las señales que sumaron, en el orden en que pesan. */
+  senales: ReadonlyArray<"EVALUACION" | "SIN_PRACTICA" | "RECENCIA" | "PESO">;
+  entraEnEvaluacion: boolean;
+  minutosMin: number;
+  minutosMax: number;
+  tieneRecurso: boolean;
+}
+
+export function candidatosDelAde(ctx: ContextoDelAde): CandidatoDelAde[] {
+  if (ctx.unidades.length === 0) return [];
+  const trabajadas = new Set(
+    ctx.unidades.filter((u) => u.practicaEstado === "value").map((u) => u.topicId),
+  );
+  const pesoRelativo = pesosRelativos(ctx.unidades);
+  const bloque = ctx.minutosDisponibles
+    ? { min: Math.min(30, ctx.minutosDisponibles), max: ctx.minutosDisponibles }
+    : BLOQUE_POR_DEFECTO;
+
+  return ctx.unidades
+    .filter((u) => u.practicaEstado !== "value")
+    .map((u) => {
+      const entra = !!ctx.proximaEvaluacion?.temas.includes(u.topicId);
+      const senales: CandidatoDelAde["senales"][number][] = [];
+      if (entra) senales.push("EVALUACION");
+      senales.push("SIN_PRACTICA");
+      if (!u.recenciaEn) senales.push("RECENCIA");
+      if ((pesoRelativo.get(u.topicId) ?? 0) > 0) senales.push("PESO");
+      return {
+        topicId: u.topicId,
+        nombre: u.nombre,
+        costo: costoDeNoActuar(u, ctx, pesoRelativo),
+        habilitada: habilitada(u, trabajadas),
+        requiere: u.requiere.filter((r) => !trabajadas.has(r)),
+        razon: razonDe(u, ctx),
+        senales,
+        entraEnEvaluacion: entra,
+        minutosMin: bloque.min,
+        minutosMax: bloque.max,
+        tieneRecurso: u.recursos.length > 0,
+      };
+    })
+    .sort((a, b) => b.costo - a.costo);
+}
