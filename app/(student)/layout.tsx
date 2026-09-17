@@ -13,7 +13,7 @@
 import { PanelDePrueba } from "@/components/prueba/panel";
 import { Asistente } from "@/components/shell/asistente";
 import { ProveedorDePlanVivo } from "@/lib/client/plan-vivo-flag";
-import { planVivoEnCalendario } from "@/lib/server/plan-vivo-flag";
+import { planVivoActivo } from "@/lib/server/plan-vivo-flag";
 
 export default function StudentLayout({
   children,
@@ -28,7 +28,7 @@ export default function StudentLayout({
         se fija al compilar (igual que `MODO_PRUEBA`); la página `/calendario` lo
         vuelve a leer en cada pedido.
       */}
-      <ProveedorDePlanVivo activo={planVivoEnCalendario()}>{children}</ProveedorDePlanVivo>
+      <ProveedorDePlanVivo activo={planVivoActivo()}>{children}</ProveedorDePlanVivo>
       {/*
         ⚠️ **MODO PRUEBA.** El dock para reiniciar el alta. Se monta acá —en el
         layout, que es Server Component— y no en el `Shell`, por dos razones:

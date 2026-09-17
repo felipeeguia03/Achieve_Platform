@@ -167,7 +167,10 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-106](#adr-106) | **El analítico**: historia académica **después de HOY y opcional**, en `/recorrido`; se sube, se extrae con un puerto (adaptador **sintético**), se vincula **sólo** al plan del estudiante y se revisa lo ambiguo. **Nunca crea una cursada** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «3-autorizo» · **sólo datos sintéticos**: ADR-006 intacto)* | Extracción real (ADR-006 + legal + ADR-080) |
 | [ADR-107](#adr-107) | **Preguntas del recorrido e hipótesis de perfil**: pocas preguntas deterministas (`RECORRIDO-v0.1`), respuesta declarada separada de la hipótesis, y *«Esto no me representa»*. **Sin esperar a la psicopedagoga** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «4-no se llevan, que no se impida nada» · **enmienda ADR-052** §«no autoriza el diagnóstico personal mínimo» y **acota ADR-087 D1**)* | Que el ADE consuma hipótesis |
 | [ADR-108](#adr-108) | **Requisitos de cursado, simulados**: un desplegable *Requisitos* en la materia con lo que piden para promoción y para regular —notas de parciales, TPs al día, asistencia al práctico y al teórico— y *piden / venís / quedan*. **Sólo con `MODO_PRUEBA=1`** | ✅ `ACCEPTED` *(14 sep 2026 · pedido por el owner con una captura de otro software · `SIMULADO`)* | Condiciones reales del programa (con procedencia) · asistencia y notas reales (ADR-006) |
-| [ADR-109](#adr-109) | **Experimento «Mi Plan vivo»**: una proyección de solo lectura que fija lo duro (clases, evaluaciones, compromisos), ubica propuestas no comprometidas y muestra qué cambia si se actúa o si pasa el tiempo. **Choca con ADR-064, 073, 085 y 100** | 🔴 `PENDING` *(14 sep 2026 · nueve decisiones del owner en [`experiments/plan-vivo/DECISIONS.md`](experiments/plan-vivo/DECISIONS.md))* | Los prompts 2–10 del experimento |
+| [ADR-109](#adr-109) | **Experimento «Mi Plan vivo»**: una proyección de solo lectura que fija lo duro (clases, evaluaciones, compromisos), ubica propuestas no comprometidas y muestra qué cambia si se actúa o si pasa el tiempo. **Choca con ADR-064, 073, 085 y 100** | 🔴 `PENDING` *(14 sep 2026 · D-01, D-02 y D-09 cerrados por [ADR-110](#adr-110); D-03…D-08 siguen abiertas en [`experiments/plan-vivo/DECISIONS.md`](experiments/plan-vivo/DECISIONS.md))* | Los prompts 2–10 del experimento |
+| [ADR-110](#adr-110) | **Plan vivo: el sistema propone, el estudiante reorganiza**, detrás de un flag. Cierra D-01, D-02 y D-09 de ADR-109. Enmienda ADR-064, ADR-073 §3 y ADR-100 **sólo bajo el flag** | ✅ `ACCEPTED` *(16 sep 2026 · decidido por el owner)* | Persistir propuestas y fijados (hoy son efímeros) · clase cancelada y ausencia ([ADR-111](#adr-111)) |
+| [ADR-110 · Enm. 1](#adr-110-enmienda-1) | **«Mi plan» sale del Calendario**: `/calendario` vuelve a ser exactamente ADR-100 y el plan pasa a `/plan`, con ítem propio en la barra lateral, segundo después de Hoy. El flag pasa a llamarse `PLAN_VIVO` | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner mirando el resultado)* | Rediseñar la pantalla del plan, si hiciera falta (va con las capturas delante) |
+| [ADR-111](#adr-111) | ***No fui a clase*** y ***Se canceló la clase***: dos hechos que hoy no tienen contrato, diferidos por ADR-110 | 🔴 `PENDING` *(16 sep 2026 · lo cierra el owner)* | Que el plan reaccione a una clase que no ocurrió |
 
 ---
 
@@ -10931,6 +10934,76 @@ compromiso).
 contra `recomendar`) y `tests/plan-vivo-integracion.test.tsx` (la base del servidor, la pantalla, el `404`
 sin flag, que sólo escribe por los dos contratos y que no lee el anotador de Focus). Informe:
 [`plan-vivo-calendario.md`](plan-vivo-calendario.md).
+
+---
+
+<a id="adr-110-enmienda-1"></a>
+
+### ADR-110 · Enmienda 1 — «Mi plan» sale del Calendario y pasa a ser su propio lugar
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner**, mirando el resultado
+**Revierte:** el **D-09** de [ADR-110](#adr-110) §1 (*«No hay `/plan`… no hay nodo, ruta ni superficie
+nueva»*). **Devuelve:** [ADR-100](#adr-100) entero, sin condición ni flag.
+**No toca:** D-01 ni D-02, que siguen cerrados como los cerró ADR-110; ni [ADR-006](#adr-006),
+[ADR-085](#adr-085) o `P-03`.
+
+#### Contexto
+
+El owner miró la integración construida y dijo, textual: *"no me gustó nada como quedó, volvé el
+calendario como estaba, y crea un sidebar llamado «Mi plan» que te lleve al plan"*.
+
+**Lo que falló no fue el plan: fue dónde vivía.** ADR-110 puso las dos cosas en la misma ruta, y ahí se
+tapaban. El Calendario responde *qué tengo y cuándo* sobre lo que **ya está comprometido** —horario,
+evaluaciones, compromisos—; el plan propone **dónde entra lo que todavía no**. Son dos preguntas, y
+prendiendo el flag el estudiante perdía la primera para ganar la segunda.
+
+#### Decisión
+
+**1. `/calendario` vuelve a ser exactamente ADR-100.** El envoltorio que elegía vista
+(`calendario-o-plan.tsx`) **se borró**, la página volvió a su versión anterior y **no menciona el Plan
+vivo por ningún lado**. Con flag o sin flag, el Calendario es uno solo. Volvió además a ser estática
+(`○` en el build), como era antes de ADR-110.
+
+**2. «Mi plan» es un nodo con ruta propia.** `PLAN_VIVO` → `/plan`, **`wireframe: null`**.
+
+| Regla | Por qué |
+|---|---|
+| **No es una décima superficie** | Mismo patrón que `/materias`, `/formacion`, `/calendario` y `/gimnasia`. `superficieIds` **sigue devolviendo nueve**, y *"No existe `UX10`"* sigue siendo cierto |
+| **Diecisiete rutas** bajo `app/(student)` | Eran dieciséis. Las dos cifras se siguen verificando por separado en `tests/shell.test.tsx` |
+| **El registro sigue en 26 CTAs** | La navegación lateral no es una CTA. `CTA-001` **gana el origen `PLAN_VIVO`** —igual que ganó `CALENDARIO` con ADR-100—, porque `enlaceDe` resuelve la materia con `rutaDeCtaCon("CTA-001")`: es la misma navegación desde otro lugar |
+| **Sin controles de ventana** | [ADR-088 · Enm. 8](#adr-088-enmienda-8): las secciones del menú no llevan minimizar ni achicar |
+| **`contador: null`** | En el plan no vence nada. Lo que caduca es el `Commitment`, y eso se cuenta en Hoy ([ADR-021](#adr-021)) |
+
+**3. Va segundo en la barra, pegado a Hoy.** `Hoy · Mi plan · Materias · Calendario · Formación ·
+Gimnasia · Recorrido`. Los dos primeros responden *qué hago* —Hoy da la acción de ahora, Mi plan dice
+dónde entra el resto—; el Calendario responde *qué tengo y cuándo*. **Ponerlo al lado del Calendario
+reponía la vecindad que esta enmienda vino a deshacer**, y por eso no va ahí.
+
+**4. El flag se llama `PLAN_VIVO`.** Era `PLAN_VIVO_CALENDAR_INTEGRATION`, y el nombre dejó de ser
+cierto: ya no integra nada al Calendario. `PLAN_VIVO` es el nombre que [ADR-109](#adr-109) D-09 había
+propuesto. **Sin la variable no hay Plan vivo en ningún lado**: `/plan` responde `404`,
+`GET /api/plan-vivo` responde `404` y **el ítem del menú no se dibuja** —no se esconde con CSS: no está—.
+
+⚠️ **El menú no lee `process.env`.** `lib/navigation/menu.ts` es puro; el ítem declara
+`detrasDeFlag: "PLAN_VIVO"` y **quien decide es el servidor**, que baja el valor por contexto desde el
+layout de `(student)`. La barra filtra con `menuVisible`. Un `process.env` ahí rompería los tests, que
+importan el menú sin Next.
+
+⚠️ **`/plan` cuenta como ruta aunque el flag esté apagado.** El archivo existe y declara su `Shell`; lo
+que el flag apaga es la respuesta, no la ruta. Contar sólo lo prendido haría que el guard dependiera del
+entorno.
+
+⚠️ **La pantalla no se rehízo.** `components/screens/plan-vivo.tsx` y `components/superficies/plan-vivo.tsx`
+**se remontaron tal cual**: lo que cambió es dónde viven, no qué muestran. Si más adelante hay que
+rediseñarlas, es otra decisión y va con las capturas de `docs/diseño/` delante.
+
+#### Cómo se verifica
+
+`tests/plan-vivo-integracion.test.tsx` — que el Calendario **no tenga rastro** del Plan vivo y que el
+envoltorio esté borrado; que `/plan` haga `notFound()` sin el flag y lea la variable en cada pedido; que
+sin el flag el ítem no esté en `menuVisible` y con el flag vaya segundo; que `PLAN_VIVO` no esté en
+`superficieIds` y que sigan siendo nueve. `tests/shell.test.tsx` — diecisiete rutas, diecisiete nodos
+distintos, y la barra sin *Mi plan* con el flag apagado.
 
 ---
 

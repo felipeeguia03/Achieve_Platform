@@ -23,6 +23,15 @@ export interface ItemDeMenu {
    * qué hace el estudiante es ruido.
    */
   contador: number | null;
+  /**
+   * El ítem sólo se dibuja si su flag está prendido. `false` ⇒ siempre visible.
+   *
+   * ⚠️ **Es declarativo a propósito.** Este módulo es puro y **no lee
+   * `process.env`**: quién decide es el servidor —el layout de `(student)`, que
+   * baja el valor por contexto—, y la barra lateral filtra con `menuVisible`.
+   * Un `process.env` acá rompería los tests, que importan el menú sin Next.
+   */
+  detrasDeFlag?: "PLAN_VIVO";
 }
 
 /**
@@ -35,6 +44,21 @@ export interface ItemDeMenu {
  */
 export const menu: readonly ItemDeMenu[] = [
   { nodo: "UX01", etiqueta: "Hoy", contador: null },
+  /*
+    ADR-110 · Enmienda 1. **Segundo, pegado a Hoy**, y no junto al Calendario:
+    los dos primeros ítems son los que responden *qué hago* —Hoy da la acción de
+    ahora, Mi plan dice dónde entra el resto—, mientras que el Calendario
+    responde *qué tengo y cuándo* sobre lo ya comprometido. Ponerlo al lado del
+    Calendario reponía justamente la vecindad que la enmienda vino a deshacer.
+
+    ⚠️ **`detrasDeFlag`, y sin él no se dibuja.** Sin `PLAN_VIVO=1` la ruta
+    `/plan` responde `404`, y un ítem que lleva a un `404` contradice la regla de
+    abajo: *un menú no lleva a un lugar que no existe*.
+
+    ⚠️ **`contador: null`** por lo mismo que Formación y Gimnasia: en el plan no
+    vence nada. Lo que caduca es el `Commitment`, y eso se cuenta en Hoy.
+  */
+  { nodo: "PLAN_VIVO", etiqueta: "Mi plan", contador: null, detrasDeFlag: "PLAN_VIVO" },
   // ADR-077. El plural deja de ser una promesa incumplida: apunta al índice,
   // no al cursado de una sola materia. Cierra la opción `A` de ADR-054.
   { nodo: "UX02_INDICE", etiqueta: "Materias", contador: null },
@@ -100,6 +124,16 @@ export const menu: readonly ItemDeMenu[] = [
  * el anti-patrón `A-03` sobre un ítem sintético para no depender de que el
  * menú de producción tenga un número.
  */
+
+/**
+ * Los ítems que se dibujan, dado el estado de los flags — ADR-110 · Enmienda 1.
+ *
+ * **La barra lateral llama a esto, nunca a `menu` directamente.** Un ítem detrás
+ * de un flag apagado no se esconde con CSS: no está.
+ */
+export function menuVisible(flags: { planVivo: boolean }): readonly ItemDeMenu[] {
+  return menu.filter((item) => item.detrasDeFlag !== "PLAN_VIVO" || flags.planVivo);
+}
 
 /** Todo ítem apunta a un nodo con ruta: un menú no lleva a un lugar que no existe. */
 export function rutaDelItem(item: ItemDeMenu): string {

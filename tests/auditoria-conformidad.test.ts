@@ -267,6 +267,13 @@ describe("Bloque 6 · Interacción", () => {
         respuestas son **de este estudiante**, no hay escenario que proyectar.
       */
       "app/(student)/recorrido/page.tsx",
+      /*
+        **Mi plan** — ADR-110 · Enm. 1. Nodo sin wireframe, no superficie. Su
+        contenido son las cursadas, la disponibilidad y los compromisos **de este
+        estudiante**: no hay escenario que proyectar. Y además está detrás de
+        `PLAN_VIVO=1`, así que sin el flag la ruta ni siquiera responde.
+      */
+      "app/(student)/plan/page.tsx",
     ];
     const rutas = archivos("app")
       .filter((p) => p.endsWith("page.tsx"))

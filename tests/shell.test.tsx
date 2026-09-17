@@ -6,6 +6,7 @@ import { Item, NavegacionLateral } from "@/components/shell/navegacion-lateral";
 import { recogerBarra, useBarraRecogida } from "@/lib/client/barra-lateral";
 import { BarraSuperior } from "@/components/shell/barra-superior";
 import { menu, rutaDelItem } from "@/lib/navigation/menu";
+import { ProveedorDePlanVivo } from "@/lib/client/plan-vivo-flag";
 import { migasDe, padreDeMiga } from "@/lib/navigation/migas";
 import { nodoIds, nodos, superficieIds, type NodoId } from "@/lib/navigation/surfaces";
 import { ctaIds, ctaRegistry } from "@/lib/navigation/cta-registry";
@@ -108,8 +109,29 @@ describe("Breadcrumb", () => {
 });
 
 describe("Navegación lateral", () => {
-  const render1 = (colapsada: boolean, activo: NodoId | null = "UX01") =>
-    render(<NavegacionLateral nodoActivo={activo} colapsada={colapsada} onAlternar={() => {}} />);
+  /*
+    ⚠️ **Con el Plan vivo prendido por defecto** — ADR-110 · Enm. 1. Así los
+    recorridos de abajo siguen cubriendo **todos** los ítems del menú, *Mi plan*
+    incluido. Que el flag apagado lo esconda se verifica aparte, justo debajo.
+  */
+  const render1 = (colapsada: boolean, activo: NodoId | null = "UX01", planVivo = true) =>
+    render(
+      <ProveedorDePlanVivo activo={planVivo}>
+        <NavegacionLateral nodoActivo={activo} colapsada={colapsada} onAlternar={() => {}} />
+      </ProveedorDePlanVivo>,
+    );
+
+  it("sin PLAN_VIVO no hay ítem «Mi plan», y con el flag va segundo", () => {
+    const { container, unmount } = render1(false, "UX01", false);
+    expect(container.textContent).not.toContain("Mi plan");
+    expect(container.querySelectorAll("[data-item-menu]")).toHaveLength(menu.length - 1);
+    unmount();
+    const con = render1(false, "UX01", true);
+    const etiquetas = [...con.container.querySelectorAll("[data-item-menu]")].map((e) =>
+      e.getAttribute("data-item-menu"),
+    );
+    expect(etiquetas.slice(0, 2)).toEqual(["UX01", "PLAN_VIVO"]);
+  });
 
   it("marca el ítem activo con aria-current, no sólo con color", () => {
     render1(false);
@@ -299,17 +321,22 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
   it("toda ruta del estudiante envuelve su superficie en `Shell`, con un nodo real", () => {
     const rutas = paginas("app/(student)");
 
-    // ⚠️ **Dieciséis rutas, nueve superficies** — la decimosexta es Tu recorrido
-    // ([ADR-106](../docs/decisions.md#adr-106)); la decimoquinta, Modo Focus
-    // ([ADR-104](../docs/decisions.md#adr-104)). El índice de materias
-    // ([ADR-077](../docs/decisions.md#adr-077)), la biblioteca de Formación
-    // ([ADR-087](../docs/decisions.md#adr-087)), Modo Clase
-    // ([ADR-098](../docs/decisions.md#adr-098)) y el Calendario
-    // ([ADR-100](../docs/decisions.md#adr-100)) y Gimnasia cognitiva
-    // ([ADR-102](../docs/decisions.md#adr-102)) son nodos sin wireframe: tienen
-    // ruta y no son superficies. Las dos cifras se verifican por separado,
-    // abajo, justamente para que una no tape a la otra.
-    expect(rutas.length).toBe(16);
+    // ⚠️ **Diecisiete rutas, nueve superficies** — la decimoséptima es Mi plan
+    // ([ADR-110 · Enm. 1](../docs/decisions.md#adr-110-enmienda-1)); la
+    // decimosexta, Tu recorrido ([ADR-106](../docs/decisions.md#adr-106)); la
+    // decimoquinta, Modo Focus ([ADR-104](../docs/decisions.md#adr-104)). El
+    // índice de materias ([ADR-077](../docs/decisions.md#adr-077)), la
+    // biblioteca de Formación ([ADR-087](../docs/decisions.md#adr-087)), Modo
+    // Clase ([ADR-098](../docs/decisions.md#adr-098)), el Calendario
+    // ([ADR-100](../docs/decisions.md#adr-100)), Gimnasia cognitiva
+    // ([ADR-102](../docs/decisions.md#adr-102)) y Mi plan son nodos sin
+    // wireframe: tienen ruta y no son superficies. Las dos cifras se verifican
+    // por separado, abajo, justamente para que una no tape a la otra.
+    //
+    // ⚠️ **`/plan` cuenta acá aunque esté detrás de `PLAN_VIVO=1`.** El archivo
+    // existe y declara su `Shell`; lo que el flag apaga es la respuesta, no la
+    // ruta. Contar sólo lo prendido haría que este guard dependiera del entorno.
+    expect(rutas.length).toBe(17);
 
     const sinShell = rutas.filter((f) => {
       const src = readFileSync(resolve(RAIZ, f), "utf8");
@@ -338,15 +365,17 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
     const declarados = paginas("app/(student)")
       .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1])
       .filter(Boolean);
-    // Quince rutas, quince nodos distintos: nueve superficies, el índice de
-    // materias, la biblioteca de Formación, Modo Clase, el Calendario, Gimnasia
-    // y Modo Focus (ADR-104).
+    // Diecisiete rutas, diecisiete nodos distintos: nueve superficies, el índice
+    // de materias, la biblioteca de Formación, Modo Clase, el Calendario,
+    // Gimnasia, Modo Focus (ADR-104), Tu recorrido (ADR-106) y Mi plan
+    // (ADR-110 · Enm. 1).
     //
     // ⚠️ **Los dos números miden cosas distintas y por eso están los dos.** El
     // `Set` detecta que dos rutas declaren el mismo nodo —una copiaría el
     // breadcrumb y el resaltado de menú de la otra—; el `length`, que alguna
-    // ruta no declare ninguno.
-    expect(new Set(declarados).size).toBe(16);
-    expect(declarados.length).toBe(16);
+    // ruta no declare ninguno. **Los dos se mueven juntos**: si sólo se toca uno,
+    // el test deja de decir lo que dice su nombre.
+    expect(new Set(declarados).size).toBe(17);
+    expect(declarados.length).toBe(17);
   });
 });

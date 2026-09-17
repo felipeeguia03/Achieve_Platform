@@ -135,7 +135,10 @@ export const ctaRegistry: Readonly<Record<CtaId, Cta>> = {
     // crece**: es la misma navegación desde otro lugar.
     // ADR-100: el calendario también abre la materia de una clase o una
     // evaluación, con la misma cursada. Mismo contrato, otro origen.
-    origen: ["UX01", "UX02_INDICE", "CALENDARIO"],
+    // ADR-110 · Enm. 1: y Mi plan, por lo mismo — `enlaceDe` en
+    // `proyeccion-plan-vivo.ts` resuelve la materia con `rutaDeCtaCon("CTA-001")`.
+    // **El registro sigue en 26**: es la misma navegación desde otro lugar.
+    origen: ["UX01", "UX02_INDICE", "CALENDARIO", "PLAN_VIVO"],
     condicion: "Course visible",
     accionSolicitada: "abrir materia",
     destino: "UX02",

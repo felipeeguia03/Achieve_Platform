@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,11 +10,14 @@ import { planificar } from "@/lib/domain/plan-vivo/planificador";
 import { ESTADO_INICIAL, entradaDe, type EstadoEditable } from "@/lib/domain/plan-vivo/sesion";
 import type { PlanVivoBase } from "@/lib/domain/plan-vivo/tipos";
 import { instanteEnZona } from "@/lib/domain/zona";
+import { menuVisible } from "@/lib/navigation/menu";
+import { nodos, superficieIds } from "@/lib/navigation/surfaces";
 import { armarBaseDelPlan, type InsumosDelPlan } from "@/lib/server/servicios/proyeccion-plan-vivo";
 
 /**
- * Plan vivo en el Calendario — [ADR-110](../docs/decisions.md#adr-110): la base
- * que arma el servidor, la pantalla y el flag.
+ * **Mi plan** — [ADR-110](../docs/decisions.md#adr-110) y su
+ * [Enmienda 1](../docs/decisions.md#adr-110-enmienda-1): la base que arma el
+ * servidor, la pantalla, la ruta propia `/plan` y el flag.
  */
 
 const ZONA = "America/Argentina/Cordoba";
@@ -320,29 +323,53 @@ describe("la pantalla", () => {
 const leer = (ruta: string) => readFileSync(resolve(__dirname, "..", ruta), "utf8");
 
 describe("el flag", () => {
-  it("la ruta responde 404 sin PLAN_VIVO_CALENDAR_INTEGRATION=1, antes de mirar la sesión", async () => {
+  it("la ruta responde 404 sin PLAN_VIVO=1, antes de mirar la sesión", async () => {
     vi.resetModules();
     const resolverSesion = vi.fn();
     vi.doMock("@/lib/server/composicion", () => ({ resolverSesion, planVivoDe: vi.fn() }));
-    const anterior = process.env.PLAN_VIVO_CALENDAR_INTEGRATION;
-    delete process.env.PLAN_VIVO_CALENDAR_INTEGRATION;
+    const anterior = process.env.PLAN_VIVO;
+    delete process.env.PLAN_VIVO;
     try {
       const { GET } = await import("@/app/api/plan-vivo/route");
       const r = await GET(new Request("http://x/api/plan-vivo"));
       expect(r.status).toBe(404);
       expect(resolverSesion).not.toHaveBeenCalled();
     } finally {
-      if (anterior !== undefined) process.env.PLAN_VIVO_CALENDAR_INTEGRATION = anterior;
+      if (anterior !== undefined) process.env.PLAN_VIVO = anterior;
       vi.doUnmock("@/lib/server/composicion");
     }
   });
 
-  it("sin el flag, el Calendario es el de ADR-100", () => {
-    const envoltorio = leer("components/superficies/calendario-o-plan.tsx");
-    expect(envoltorio).toMatch(/usePlanVivoActivo\(\) \? <VistaDePlanVivo/);
+  /*
+    ADR-110 · Enmienda 1. Antes esto verificaba que el Calendario *eligiera* su
+    vista. Ahora verifica algo más fuerte: que **no haya nada que elegir**. La
+    ruta del Calendario no menciona el Plan vivo por ningún lado.
+  */
+  it("el Calendario volvió a ADR-100 y no tiene rastro del Plan vivo", () => {
+    const pagina = leer("app/(student)/calendario/page.tsx");
+    expect(pagina).toMatch(/VistaDeCalendario/);
+    expect(pagina).not.toMatch(/PlanVivo|plan-vivo|PLAN_VIVO/);
+    expect(existsSync(resolve(__dirname, "..", "components/superficies/calendario-o-plan.tsx"))).toBe(false);
+  });
+
+  it("Mi plan es su propia ruta, apagada sin el flag", () => {
+    const pagina = leer("app/(student)/plan/page.tsx");
+    expect(pagina).toMatch(/if \(!planVivoActivo\(\)\) notFound\(\)/);
+    expect(pagina).toMatch(/await connection\(\)/);
+    expect(leer("lib/server/plan-vivo-flag.ts")).toMatch(/process\.env\.PLAN_VIVO === "1"/);
     expect(leer("lib/client/plan-vivo-flag.tsx")).toMatch(/createContext\(false\)/);
-    expect(leer("app/(student)/layout.tsx")).toMatch(/activo=\{planVivoEnCalendario\(\)\}/);
-    expect(leer("lib/server/plan-vivo-flag.ts")).toMatch(/PLAN_VIVO_CALENDAR_INTEGRATION === "1"/);
+    expect(leer("app/(student)/layout.tsx")).toMatch(/activo=\{planVivoActivo\(\)\}/);
+  });
+
+  it("sin el flag el ítem del menú no se dibuja, y con el flag va segundo", () => {
+    expect(menuVisible({ planVivo: false }).some((i) => i.nodo === "PLAN_VIVO")).toBe(false);
+    const conFlag = menuVisible({ planVivo: true });
+    expect(conFlag.map((i) => i.etiqueta).slice(0, 2)).toEqual(["Hoy", "Mi plan"]);
+    // El nodo existe y tiene ruta: un ítem de menú nunca lleva a un lugar que no existe.
+    expect(nodos.PLAN_VIVO.ruta).toBe("/plan");
+    // ⚠️ Y **no** es una décima superficie.
+    expect(superficieIds).not.toContain("PLAN_VIVO");
+    expect(superficieIds.length).toBe(9);
   });
 
   it("el Plan vivo sólo escribe por los contratos que ya existen", () => {

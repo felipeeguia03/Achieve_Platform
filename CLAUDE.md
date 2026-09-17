@@ -76,7 +76,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
 | Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — veinte filas, **ocho abiertas**, por lo que destraban |
 | **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) y [ADR-099](docs/decisions.md#adr-099) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
-| **Plan vivo en el Calendario** (bajo flag) | [ADR-110](docs/decisions.md#adr-110) · informe en [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md) · diferido: [ADR-111](docs/decisions.md#adr-111) |
+| **Mi plan** (`/plan`, bajo flag) | [ADR-110](docs/decisions.md#adr-110) · informe en [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md) · diferido: [ADR-111](docs/decisions.md#adr-111) |
 | **Modo Focus** | [ADR-104](docs/decisions.md#adr-104) · informe, API y QA en [`modo-focus.md`](docs/modo-focus.md) |
 | Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
@@ -99,11 +99,24 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-🧪 **Plan vivo en el Calendario, detrás de `PLAN_VIVO_CALENDAR_INTEGRATION=1`** —
-[ADR-110](docs/decisions.md#adr-110), 16 de septiembre · [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md).
-El owner cerró ADR-109 D-01/D-02 (opción A) y D-09: con el flag, `/calendario` propone dónde entra el
-trabajo, y el estudiante lo mueve, fija, vacía o simula. **Sin el flag, ADR-100 intacto** y
-`GET /api/plan-vivo` da `404`.
+🆕 **Hay «Mi plan», en `/plan`, detrás de `PLAN_VIVO=1`** —
+[ADR-110](docs/decisions.md#adr-110) y su [Enmienda 1](docs/decisions.md#adr-110-enmienda-1), 16–17 de
+septiembre · [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md). El owner cerró ADR-109 D-01/D-02
+(opción A) y D-09: el sistema propone dónde entra el trabajo y el estudiante lo mueve, fija, vacía o
+simula. **Segundo en la barra lateral**, pegado a Hoy.
+
+⚠️ **El plan NO vive en el Calendario, y estuvo un día ahí.** ADR-110 lo puso dentro de `/calendario`
+y la **Enmienda 1 lo sacó**: el Calendario responde *qué tengo y cuándo* sobre lo **ya comprometido**,
+el plan propone **dónde entra lo que todavía no**. Se tapaban. `/calendario` volvió a ser **exactamente
+ADR-100**, sin flag y sin rastro del plan —hay test—. **No los vuelvas a juntar.**
+
+⚠️ **Sin `PLAN_VIVO=1` no hay Plan vivo en ningún lado:** `/plan` da `404`, `GET /api/plan-vivo` da `404`
+y **el ítem del menú no se dibuja** (no se esconde con CSS: no está). El flag **se llamaba**
+`PLAN_VIVO_CALENDAR_INTEGRATION`, y el nombre dejó de ser cierto con la enmienda.
+
+⚠️ **El menú no lee `process.env`.** `menu.ts` es puro: el ítem declara `detrasDeFlag: "PLAN_VIVO"`, el
+layout de `(student)` baja el valor por contexto y la barra filtra con `menuVisible`. Un `process.env`
+ahí rompe los tests, que importan el menú sin Next.
 
 ⚠️ **Antes de tocar el Plan vivo:** sólo la `Action` viva de cada cursada es fila; el resto son
 **candidatos** de `candidatosDelAde` y **no se comprometen**. **Sin prioridad visible** (`P-03`). Propuestas,
@@ -111,13 +124,18 @@ fijados y simulación **no persisten**; sólo escriben `POST /api/compromiso` y
 `POST /api/alta/disponibilidad`. Ubicar, fijar, comprometerse o simular capacidad **no bajan el pendiente**.
 *No fui a clase* y *Se canceló la clase* esperan a [ADR-111](docs/decisions.md#adr-111), `PENDING`.
 
+⚠️ **Los números cambiaron:** **diecisiete rutas** bajo `app/(student)` (`/plan` es la decimoséptima) y
+**siguen nueve superficies** —`PLAN_VIVO` es nodo con `wireframe: null`, como `/materias` y
+`/calendario`—. **El registro sigue en 26 CTAs**: `CTA-001` ganó el origen `PLAN_VIVO`, que es la misma
+navegación desde otro lugar. Y **sin controles de ventana**, por ser sección del menú (ADR-088 · Enm. 8).
+
 ✅ **Tres ramas unidas en `feat/fase-0-track-a`:** `feat/paralelo` el 14 de septiembre (onboarding
 académico ADR-105…107, requisitos simulados ADR-108, sonidos de Focus ADR-104 · Enm. 1), el **spike
 descartable** de «Mi Plan vivo» (ADR-109, `PENDING`) el 16, y **su integración en el Calendario**
 (ADR-110) el 17. Los tres conflictos fueron de texto —los dos lados agregaban— en `decisions.md` y
 `CLAUDE.md`. Verificado después de unir: `lint` · `typecheck` · `build` · **3652 tests en 129
 archivos**.
-**Dieciséis rutas, 26 CTAs, 98 migraciones** — ADR-110 §1 no cambia ninguna de las tres.
+**Diecisiete rutas, 26 CTAs, 98 migraciones** — la decimoséptima es `/plan` (ADR-110 · Enm. 1).
 
 ⚠️ **`db:verify` no se corre desde el 14 de septiembre** (545 ✓, 0 ✗ esa vez). Ninguno de los dos
 merges posteriores trae migraciones ni tablas nuevas, así que no hay nada que agregar a

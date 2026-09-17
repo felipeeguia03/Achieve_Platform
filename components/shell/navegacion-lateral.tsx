@@ -33,10 +33,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Brain, CalendarRange, GraduationCap, ChevronLeft, ChevronRight, Library, PlayCircle, Sun } from "lucide-react";
+import { Brain, CalendarRange, GraduationCap, ChevronLeft, ChevronRight, Library, PlayCircle, Route, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { DURACION_DE_BARRA, TRANSICION_DE_BARRA } from "./movimiento";
-import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
+import { menuVisible, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
+import { usePlanVivoActivo } from "@/lib/client/plan-vivo-flag";
 import { nodos, type NodoId } from "@/lib/navigation/surfaces";
 import { t } from "@/lib/content/es-AR";
 
@@ -49,6 +50,9 @@ import { t } from "@/lib/content/es-AR";
 */
 const ICONOS: Partial<Record<NodoId, typeof Sun>> = {
   UX01: Sun,
+  // ADR-110 · Enm. 1. **Un camino, no un calendario**: el ícono tenía que
+  // distinguirse de `CALENDARIO`, porque separarlos es justamente la enmienda.
+  PLAN_VIVO: Route,
   UX02_INDICE: Library,
   CALENDARIO: CalendarRange,
   FORMACION: PlayCircle,
@@ -207,6 +211,12 @@ export function NavegacionLateral({
     la barra puesta, sin animarla.
   */
   const [animar, setAnimar] = useState(false);
+  /*
+    ADR-110 · Enmienda 1. Lo decide el servidor —el layout de `(student)` lee
+    `PLAN_VIVO` y lo baja por contexto—; acá sólo se consume. Sin provider es
+    `false`, así que un render suelto de la barra **no** dibuja *Mi plan*.
+  */
+  const planVivoDelContexto = usePlanVivoActivo();
   const recogiendose = useRecogiendose(colapsada, animar);
   const conNombre = !colapsada || recogiendose;
   const transicion = animar ? TRANSICION_DE_BARRA : "";
@@ -313,7 +323,7 @@ export function NavegacionLateral({
       </div>
 
       <div className="flex flex-col" style={{ gap: 4, marginTop: 12 }}>
-        {menu.map((item) => (
+        {menuVisible({ planVivo: planVivoDelContexto }).map((item) => (
           <Item
             key={item.nodo}
             item={item}

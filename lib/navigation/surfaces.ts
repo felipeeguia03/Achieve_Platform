@@ -28,6 +28,8 @@ export type NodoId =
   | "CLASE"
   /** El calendario del estudiante. **No es una superficie**: ver `nodos.CALENDARIO`. */
   | "CALENDARIO"
+  /** Mi plan, detrás de `PLAN_VIVO=1`. **No es una superficie**: ver `nodos.PLAN_VIVO`. */
+  | "PLAN_VIVO"
   /** Gimnasia cognitiva. **No es una superficie**: ver `nodos.GIMNASIA`. */
   | "GIMNASIA"
   /** La sesión de Focus. **No es una superficie**: ver `nodos.FOCUS`. */
@@ -149,6 +151,30 @@ export const nodos: Readonly<Record<NodoId, Nodo>> = {
     nombre: "Calendario",
     pregunta: "¿Qué tengo y cuándo?",
     ruta: "/calendario",
+    pendienteDeEtapa: null,
+  },
+
+  /**
+   * **Mi plan** — [ADR-110 · Enmienda 1](../../docs/decisions.md#adr-110-enmienda-1).
+   *
+   * ⚠️ **`wireframe: null`: NO es una décima superficie.** El mismo patrón que
+   * `CALENDARIO`, `FORMACION` y `CLASE`. `superficieIds` sigue devolviendo nueve.
+   *
+   * ⚠️ **Y no es el Calendario.** La Enmienda 1 revirtió el D-09 de ADR-110: el
+   * plan dejó de vivir dentro de `/calendario`, que volvió a ser exactamente
+   * [ADR-100](../../docs/decisions.md#adr-100). El Calendario responde *qué tengo
+   * y cuándo* sobre lo que **ya está comprometido**; el plan propone **dónde
+   * entra lo que todavía no**. Que se pisaran fue el motivo de la enmienda.
+   *
+   * ⚠️ **Sólo con `PLAN_VIVO=1`.** Sin la variable no hay ruta ni ítem de menú:
+   * la página responde `404` y la barra lateral no lo dibuja.
+   */
+  PLAN_VIVO: {
+    id: "PLAN_VIVO",
+    wireframe: null,
+    nombre: "Mi plan",
+    pregunta: "¿Dónde entra el trabajo que todavía no ubiqué?",
+    ruta: "/plan",
     pendienteDeEtapa: null,
   },
 
