@@ -1,0 +1,138 @@
+"use client";
+
+/**
+ * Topbar del shell (Fase A2.1).
+ *
+ * Patrón de `docs/diseño/`: breadcrumb a la izquierda; buscador, institución y
+ * avatar a la derecha (ADR-097). Alto medido: **56 px**
+ * (`design-system-capturas.md` §12.3).
+ *
+ * **La topbar no lleva la CTA primaria de la pantalla.** Lleva navegación y
+ * contexto. La acción principal vive a ancho completo al final de la columna
+ * principal ([ADR-015](../../docs/decisions.md)).
+ *
+ * El buscador **dispara la paleta de comandos** y muestra su atajo adentro
+ * (`I-04`). No es un campo de texto: es el control que abre la paleta.
+ */
+
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { t } from "@/lib/content/es-AR";
+import { CuentaDelTopbar } from "./cuenta";
+import { Campanita } from "./campanita";
+
+export interface Miga {
+  etiqueta: string;
+  /** `null` ⇒ es el elemento actual y no se enlaza. */
+  href: string | null;
+}
+
+export function BarraSuperior({
+  migas,
+  onAbrirPaleta,
+}: {
+  migas: readonly Miga[];
+  onAbrirPaleta: () => void;
+}) {
+  return (
+    <header
+      className="hairline-b flex items-center gap-4"
+      style={{
+        height: 56,
+        flexShrink: 0,
+        padding: "0 24px",
+        borderBottom: ".5px solid var(--border)",
+        background: "var(--background)",
+        /*
+          ⚠️ **Fija arriba: lo que scrollea es el contenido de abajo** — lo pidió
+          el owner, igual que con la barra lateral. `sticky` y no `fixed`: sigue
+          ocupando su lugar en la columna, así `main` no necesita un `padding-top`
+          que la compense. El fondo opaco es lo que evita que el contenido se lea
+          a través al pasar por debajo.
+
+          `zIndex` 30: por encima del contenido (que llega a 3) y **por debajo de
+          las ventanas internas** (40), que se pueden llevar hasta arriba de la
+          pantalla y no pueden quedar con la barra de título tapada.
+        */
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
+      }}
+    >
+      {/* Breadcrumb: el camino completo, con el objeto actual al final. */}
+      <nav aria-label="Ruta" className="flex items-center gap-2 min-w-0">
+        {migas.map((miga, i) => (
+          <span key={miga.etiqueta} className="flex items-center gap-2 min-w-0">
+            {i > 0 && (
+              <span aria-hidden style={{ color: "var(--muted-foreground)", fontSize: "var(--text-label)" }}>
+                ›
+              </span>
+            )}
+            {miga.href === null ? (
+              <span
+                aria-current="page"
+                className="truncate"
+                style={{ fontSize: "var(--text-label)", color: "var(--foreground)" }}
+              >
+                {miga.etiqueta}
+              </span>
+            ) : (
+              <Link
+                href={miga.href}
+                className="truncate"
+                style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}
+              >
+                {miga.etiqueta}
+              </Link>
+            )}
+          </span>
+        ))}
+      </nav>
+
+      {/*
+        La esquina derecha — ADR-097: el buscador, dónde estudiás y el avatar,
+        como en el software de las capturas. Van juntos y empujados a la
+        derecha: separados, la institución quedaría flotando en el medio.
+      */}
+      {/* No se encoge: con una miga larga se recorta la miga, no la institución. */}
+      <div className="ml-auto flex items-center" style={{ gap: 12, flexShrink: 0 }}>
+        {/*
+          `I-04`: el atajo se muestra **dentro del control que dispara**, no en un
+          tooltip. Y `P-07`: el atajo no elimina su camino visible — el mismo
+          control se puede tocar.
+        */}
+        <button
+          onClick={onAbrirPaleta}
+          aria-keyshortcuts="Meta+K Control+K"
+          className="hidden lg:flex items-center gap-2"
+          style={{
+            flexShrink: 0,
+            background: "var(--muted)",
+            border: ".5px solid var(--border)",
+            borderRadius: "var(--radius-pildora)",
+            padding: "6px 14px",
+            minWidth: 260,
+            color: "var(--muted-foreground)",
+            fontSize: "var(--text-label)",
+          }}
+        >
+          <Search size={15} aria-hidden />
+          <span>{t("SHELL.BUSCAR")}</span>
+          <kbd
+            style={{
+              marginLeft: "auto",
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--text-meta)",
+            }}
+          >
+            ⌘K
+          </kbd>
+        </button>
+
+        {/* Sólo con `MODO_PRUEBA=1`, y con avisos simulados (ADR-097 Enm. 1). */}
+        <Campanita />
+        <CuentaDelTopbar />
+      </div>
+    </header>
+  );
+}

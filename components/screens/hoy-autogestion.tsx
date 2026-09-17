@@ -1,0 +1,681 @@
+"use client";
+
+/**
+ * ACHIEVE — Hoy / Autogestión (VI.1)
+ *
+ * La pantalla **proyecta, no decide** (AGENTS.md §2.2). El nivel del Hero llega
+ * ya resuelto por `selectHeroLevel` (`lib/domain/precedence.ts`); acá no se
+ * rankea, no se prioriza y no se elige entre recomendaciones.
+ *
+ * Desde [ADR-093](../../docs/decisions.md#adr-093) es además un **tablero**, y
+ * desde [ADR-096](../../docs/decisions.md#adr-096) tiene exactamente tres
+ * cuerpos: **el Hero**, **el cuadro de hoy** al lado
+ * ([ADR-094](../../docs/decisions.md#adr-094)) y **los riesgos de
+ * planificación**. Los dos últimos **llegan redactados** en `TableroProps`: esta
+ * pantalla no evalúa ninguna regla.
+ *
+ * Lo que salió de acá, por decisión del owner: la cola de materias `1 de N`, el
+ * mapa de catorce días y el reparto (ADR-093), y **las dos opciones de
+ * evaluaciones —tarjetas y carril—, que se descartaron juntas** (ADR-096). Los
+ * datos que siguen llegando en `HoyProps` **no se dibujan**: lo que se retiró es
+ * su dibujo, no el contrato.
+ */
+
+import {
+  AccionDeObjeto,
+  TituloDeSeccion,
+  EstadoGeneral,
+  ReglaDeNegocio,
+  HeroCard,
+  EstadoChip,
+  CTAPrincipal,
+  MarcaDeMateria,
+  TituloDePanel,
+} from "./design-system";
+import {
+  AccionDeObjetoEsqueleto,
+  ChipEsqueleto,
+  CTAEsqueleto,
+  PantallaCargando,
+  PildoraEsqueleto,
+  Renglon,
+} from "./esqueleto";
+import { colorDeMateria } from "@/lib/domain/color-de-materia";
+import { SUBCOPY, t } from "@/lib/content/es-AR";
+import { ctaPara, ofreceCta } from "@/lib/content/hero";
+import { nombreDeObjeto } from "@/lib/domain/nombre-de-objeto";
+import type {
+  CuadroDeHoy,
+  HeroProjection,
+  HoyProps,
+  RecuperacionProjection,
+  RiesgoProyectado,
+  TableroProps,
+} from "@/lib/domain/view-models";
+import type { HeroLevel } from "@/lib/domain/precedence";
+
+/** Lo mínimo para abrir una materia: su cursada y cómo se llama. */
+type AbrirMateria = (m: { cursadaId: string; nombre: string }) => void;
+
+const MONO = { fontFamily: "var(--font-mono)", fontSize: "var(--text-meta)" } as const;
+const TARJETA = {
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
+  background: "var(--card)",
+} as const;
+
+/**
+ * Línea operativa: tiempo (o estado) · evidencia esperada.
+ *
+ * Si faltan las dos, **la línea desaparece**. Nunca se rellena con un
+ * placeholder que parezca un dato (AGENTS.md §2.7).
+ */
+function lineaOperativa(hero: HeroProjection): string | null {
+  const partes = [
+    hero.tiempoOEstado,
+    hero.evidenciaEsperada ? `${t("COMUN.ENTREGA")} ${hero.evidenciaEsperada}` : null,
+  ].filter((p): p is string => p !== null);
+  return partes.length > 0 ? partes.join(" · ") : null;
+}
+
+/**
+ * El contexto del Hero **sin repetir el título** — ADR-088 Enmienda 5, *"la
+ * segunda vez que aparece el nombre borralo"*. Si el contexto termina en el
+ * mismo tema que el título, esa última parte se va. Es presentación: el dato no
+ * se toca.
+ */
+function contextoSinEco(contexto: string, titulo: string | null): string {
+  const partes = contexto.split(" · ");
+  const ultima = partes.at(-1);
+  if (titulo && partes.length > 1 && ultima && ultima.toLowerCase() === titulo.toLowerCase()) {
+    return partes.slice(0, -1).join(" · ");
+  }
+  return contexto;
+}
+
+function HeroContent({ hero, onAvanzar }: { hero: HeroProjection; onAvanzar?: () => void }) {
+  const operativa = lineaOperativa(hero);
+
+  // Ausencia confirmada: el ADE dijo que no hay recomendación. No es un error
+  // ni una carga pendiente — es un empty honesto, con su propia salida.
+  if (hero.titulo === null) {
+    return (
+      <HeroCard>
+        <ReglaDeNegocio>{t("HOY.VACIO")}</ReglaDeNegocio>
+        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
+      </HeroCard>
+    );
+  }
+
+  // Mayúscula sólo en la primera letra (ADR-088 E5): el catálogo trae los temas
+  // TODO EN MAYÚSCULAS y así pesaban más que la acción. Lo bien escrito no se toca.
+  const titulo = nombreDeObjeto(hero.titulo);
+  const contexto = hero.contexto ? contextoSinEco(nombreDeObjeto(hero.contexto), titulo) : null;
+
+  return (
+    <HeroCard>
+      {hero.chip && <EstadoChip tone={hero.chip.tono}>{hero.chip.texto}</EstadoChip>}
+      {contexto && <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{contexto}</p>}
+      <p style={{ fontSize: 24, lineHeight: 1.2, letterSpacing: "-0.015em", fontWeight: 600, color: "var(--foreground)" }}>
+        {titulo}
+      </p>
+      {hero.razon && (
+        <ReglaDeNegocio>
+          {t("COMUN.PORQUE")} {hero.razon}
+        </ReglaDeNegocio>
+      )}
+      {operativa && <ReglaDeNegocio>{operativa}</ReglaDeNegocio>}
+      {hero.queSigue && (
+        <ReglaDeNegocio>
+          {hero.queSigue.conPrefijo ? `${t("COMUN.DESPUES")} ` : ""}
+          {hero.queSigue.texto}
+        </ReglaDeNegocio>
+      )}
+      {/*
+        Hay un estado sin CTA — B6.14, ADR-042: "Estamos preparando tu
+        información académica" no ofrece nada que apretar porque no hay nada que
+        el estudiante pueda hacer. **No deshabilitada, no en gris: no está**
+        (AGENTS.md §2.2).
+      */}
+      {ofreceCta(hero.nivel, hero.variante) && (
+        <CTAPrincipal onClick={onAvanzar}>{ctaPara(hero.nivel, hero.variante)}</CTAPrincipal>
+      )}
+    </HeroCard>
+  );
+}
+
+/**
+ * La explicación de la propia señal — Etapa B6.6.2.
+ *
+ * Va **debajo del estado general y encima del Hero**, y en ese orden a
+ * propósito: el estado dice *qué pasa*, esto dice *por qué*, y el Hero dice
+ * *qué hacer*.
+ *
+ * **No lleva CTA**, y no es un olvido. `VI.1` §3.3: el riesgo *"no gana
+ * automáticamente el Hero"*.
+ *
+ * ⚠️ **No confundir con los riesgos de planificación** de más abajo: esto es
+ * `RiskSignal`, el patrón de error; aquello mira el calendario (ADR-093).
+ *
+ * `null` ⇒ **no se dibuja nada**. Una sección vacía diciendo "todo bien"
+ * afirmaría una lectura que nadie hizo.
+ */
+function Recuperacion({ r }: { r: RecuperacionProjection | null }) {
+  if (!r) return null;
+  return (
+    <section
+      aria-label={r.titulo}
+      style={{
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius)",
+        padding: "12px 14px",
+        background: "var(--muted)",
+      }}
+    >
+      <TituloDeSeccion>{r.titulo}</TituloDeSeccion>
+      <ReglaDeNegocio>{r.explicacion}</ReglaDeNegocio>
+      <ReglaDeNegocio>{r.detalle}</ReglaDeNegocio>
+      {r.queSigue ? <ReglaDeNegocio>{r.queSigue}</ReglaDeNegocio> : null}
+    </section>
+  );
+}
+
+/**
+ * ¿La pantalla se repliega? — [ADR-089](../../docs/decisions.md#adr-089) §4,
+ * que ADR-093 conserva.
+ *
+ * ⚠️ **Esto NO decide nada.** El nivel llega resuelto por `selectHeroLevel`;
+ * acá sólo se proyecta ese mismo nivel **en el eje de la densidad**. Al que está
+ * atrasado se le muestra menos, no más: un tablero entero encima de un
+ * compromiso incumplido es una razón más para cerrar la pantalla.
+ */
+function seRepliega(nivel: HeroLevel): boolean {
+  return nivel === "RESCUE_REQUIRED" || nivel === "COMMITMENT_MISSED";
+}
+
+// ── Encabezado ────────────────────────────────────────────────────────────────
+
+/**
+ * La píldora de la referencia: la fecha y **el único número que ordena el día**.
+ * Sin tablero, o sin ninguna fecha cargada, queda la fecha sola: no se dice
+ * «0 días» ni «sin evaluaciones».
+ */
+function Pildora({ fecha, proxima }: { fecha: string; proxima: TableroProps["proximaEvaluacion"] }) {
+  const cerca = proxima !== null && proxima.dias <= 7;
+  return (
+    <span
+      className="inline-flex items-center gap-2"
+      style={{
+        ...TARJETA,
+        borderRadius: 999,
+        padding: "6px 14px",
+        fontSize: "var(--text-label)",
+        color: "var(--muted-foreground)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 7,
+          height: 7,
+          borderRadius: 999,
+          background: cerca ? "var(--urgencia-texto)" : "var(--muted-foreground)",
+        }}
+      />
+      <span>{fecha}</span>
+      {proxima !== null && (
+        <>
+          <span aria-hidden>·</span>
+          {proxima.dias === 0 ? (
+            <strong style={{ color: "var(--foreground)" }}>{t("HOY.PILDORA.HOY")}</strong>
+          ) : (
+            <span>
+              <strong style={{ color: "var(--foreground)" }}>
+                {proxima.dias === 1 ? "1 día" : `${proxima.dias} días`}
+              </strong>{" "}
+              {t("HOY.PILDORA.DIAS")}
+            </span>
+          )}
+        </>
+      )}
+    </span>
+  );
+}
+
+// ── Tu día ───────────────────────────────────────────────────────────────────
+
+function Subtitulo({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontSize: "var(--text-label)", fontWeight: 500, color: "var(--muted-foreground)", marginBottom: 2 }}>
+      {children}
+    </p>
+  );
+}
+
+function Vacio({ children }: { children: React.ReactNode }) {
+  return <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{children}</p>;
+}
+
+/**
+ * **El cuadro de hoy** — [ADR-094](../../docs/decisions.md#adr-094), en la
+ * columna que [ADR-015](../../docs/decisions.md#adr-015) reserva para la
+ * *continuidad*. Tres bloques y poca información: las clases de hoy con su
+ * unidad y su aula, lo que podés avanzar, y los horarios.
+ *
+ * ⚠️ **No es una agenda**: las clases y los horarios no tienen un solo botón. Lo
+ * único que se toca es el nombre de una materia en *Podés avanzar*, y abre esa
+ * materia (`CTA-001`) — navegación, no una acción nueva.
+ */
+/** Entrar a una clase desde Hoy, o volver a la abierta. `bloqueId` `null` ⇒ sin horario que copiar. */
+export type EntrarAClase = (clase: { cursadaId: string; bloqueId: string | null }) => void;
+
+function CuadroHoy({ c, onAbrir, onEntrar }: { c: CuadroDeHoy; onAbrir?: AbrirMateria; onEntrar?: EntrarAClase }) {
+  return (
+    <section aria-label={t("HOY.CUADRO")} className="space-y-3" style={{ ...TARJETA, padding: "14px 16px" }}>
+      <TituloDeSeccion>{t("HOY.CUADRO")}</TituloDeSeccion>
+
+      <div data-bloque="clases">
+        <Subtitulo>{t("HOY.CUADRO.CLASES")}</Subtitulo>
+        {/*
+          ADR-098: una clase abierta que no es ninguna fila de hoy **igual se ve**.
+          Una clase abierta y escondida no se cierra nunca.
+        */}
+        {c.claseAbierta && onEntrar && (
+          <div data-clase-abierta className="flex items-center justify-between gap-2" style={{ marginBottom: 6 }}>
+            <p className="truncate" style={{ fontSize: "var(--text-label)" }}>
+              <span style={{ marginRight: 6 }}>
+                <MarcaDeMateria cursadaId={c.claseAbierta.cursadaId} tamano={7} />
+              </span>
+              {t("HOY.CUADRO.CLASE.ABIERTA")}
+              {c.claseAbierta.materia ? ` · ${c.claseAbierta.materia}` : ""}
+            </p>
+            <AccionDeObjeto onClick={() => onEntrar({ cursadaId: c.claseAbierta!.cursadaId, bloqueId: null })}>
+              {t("HOY.CUADRO.CLASE.VOLVER")}
+            </AccionDeObjeto>
+          </div>
+        )}
+        {c.clases.length === 0 ? (
+          <Vacio>{t("HOY.CUADRO.CLASES.VACIO")}</Vacio>
+        ) : (
+          /*
+            Dos renglones, y no uno: en una sola línea el aula se cortaba
+            —`Aula 3…`— y un dato que no se puede leer es lo mismo que no
+            tenerlo (`A-03`: el modo compacto reduce tamaño, nunca información).
+          */
+          c.clases.map((cl) => (
+            <div key={`${cl.cursadaId}-${cl.hora}`} style={{ marginBottom: 4 }}>
+              <p className="truncate" title={cl.materia} style={{ fontSize: "var(--text-label)", lineHeight: 1.5 }}>
+                <span style={{ ...MONO, color: "var(--muted-foreground)", marginRight: 6 }}>{cl.hora}</span>
+                {/* El color de la materia — ADR-097: identidad, no medida. */}
+                <span style={{ marginRight: 6 }}>
+                  <MarcaDeMateria cursadaId={cl.cursadaId} tamano={7} />
+                </span>
+                <span style={{ color: "var(--foreground)" }}>{cl.materia}</span>
+              </p>
+              {(cl.detalle || cl.cuando) && (
+                <p style={{ ...MONO, color: "var(--muted-foreground)", paddingLeft: 78, lineHeight: 1.4 }}>
+                  {[cl.cuando, cl.detalle].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              {/*
+                `CTA-022`, **sólo en la fila en curso o por empezar** — ADR-098 §8,
+                que enmienda el *"sin botones"* de ADR-094 §5. Secundaria: el Hero
+                sigue siendo la única recomendación.
+              */}
+              {cl.entrada && onEntrar && (
+                <div style={{ paddingLeft: 78, marginTop: 4 }}>
+                  <AccionDeObjeto onClick={() => onEntrar({ cursadaId: cl.cursadaId, bloqueId: cl.entrada!.bloqueId })}>
+                    {t(cl.entrada.tipo === "ENTRAR" ? "HOY.CUADRO.CLASE.ENTRAR" : "HOY.CUADRO.CLASE.VOLVER")}
+                  </AccionDeObjeto>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div data-bloque="avanzar">
+        <Subtitulo>{t("HOY.CUADRO.AVANZAR")}</Subtitulo>
+        {c.avanzar.length === 0 ? (
+          <Vacio>{c.vacioDeAvance}</Vacio>
+        ) : (
+          c.avanzar.map((a) => (
+            <div
+              key={a.cursadaId}
+              className="flex items-baseline justify-between"
+              style={{ gap: 8, fontSize: "var(--text-label)", lineHeight: 1.6 }}
+            >
+              <span className="flex min-w-0 items-center" style={{ gap: 8 }}>
+                <MarcaDeMateria cursadaId={a.cursadaId} tamano={7} />
+                {onAbrir ? (
+                  <button
+                    className="truncate text-left"
+                    onClick={() => onAbrir({ cursadaId: a.cursadaId, nombre: a.materia })}
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    {a.materia}
+                  </button>
+                ) : (
+                  <span className="truncate" style={{ color: "var(--foreground)" }}>
+                    {a.materia}
+                  </span>
+                )}
+              </span>
+              <span style={{ ...MONO, color: "var(--muted-foreground)", whiteSpace: "nowrap" }}>{a.unidades}</span>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div data-bloque="horarios">
+        <Subtitulo>{t("HOY.CUADRO.HORARIOS")}</Subtitulo>
+        {c.horarios.length === 0 ? (
+          <Vacio>{t("HOY.CUADRO.HORARIOS.VACIO")}</Vacio>
+        ) : (
+          c.horarios.map((h, k) => (
+            <p
+              key={k}
+              data-tipo={h.tipo}
+              style={{
+                fontSize: "var(--text-label)",
+                lineHeight: 1.6,
+                fontWeight: h.tipo === "EVALUACION" ? 600 : 400,
+                color: h.tipo === "DISPONIBLE" ? "var(--muted-foreground)" : "var(--foreground)",
+              }}
+            >
+              {h.tipo === "EVALUACION" && (
+                <span aria-hidden style={{ color: "var(--urgencia-texto)", marginRight: 6 }}>
+                  ◆
+                </span>
+              )}
+              {h.hora && <span style={{ ...MONO, color: "var(--muted-foreground)", marginRight: 6 }}>{h.hora}</span>}
+              {h.texto}
+            </p>
+          ))
+        )}
+      </div>
+
+      {c.notas.length > 0 && (
+        <div>
+          {c.notas.map((n) => (
+            <p key={n} style={{ fontSize: "var(--text-meta)", color: "var(--muted-foreground)" }}>
+              {n}
+            </p>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── Riesgos detectados ────────────────────────────────────────────────────────
+
+/**
+ * Los riesgos de planificación — ADR-093.
+ *
+ * ⚠️ **Llegan redactados y ordenados por fecha** desde el servidor; acá no se
+ * evalúa ninguna regla ni se reordena por gravedad. La única acción es **abrir
+ * la materia**, que es navegación (`CTA-001`): ofrecer una salida propia por
+ * riesgo sería el playbook que `C01-044` dejó sin valores.
+ */
+function Riesgos({ riesgos, onAbrir }: { riesgos: RiesgoProyectado[]; onAbrir?: AbrirMateria }) {
+  return (
+    <section aria-label={t("HOY.RIESGOS")}>
+      <div className="flex items-baseline gap-3">
+        <TituloDeSeccion>{t("HOY.RIESGOS")}</TituloDeSeccion>
+        {/* Chip tintado — ADR-097: la misma urgencia, en la forma de las capturas. */}
+        {riesgos.length > 0 && (
+          <EstadoChip tone="urgencia">
+            {riesgos.length} {riesgos.length === 1 ? t("HOY.RIESGOS.UNO") : t("HOY.RIESGOS.VARIOS")}
+          </EstadoChip>
+        )}
+      </div>
+      {riesgos.length === 0 ? (
+        <ReglaDeNegocio>{t("HOY.RIESGOS.VACIO")}</ReglaDeNegocio>
+      ) : (
+        <ul style={{ ...TARJETA, marginTop: 6 }}>
+          {riesgos.map((r, i) => {
+            const cursadaId = r.cursadaId;
+            return (
+              <li
+                key={`${r.regla}-${cursadaId ?? i}`}
+                data-regla={r.regla}
+                className="flex items-center"
+                style={{
+                  gap: 12,
+                  padding: "12px 16px 12px 13px",
+                  borderTop: i > 0 ? "1px solid var(--border)" : undefined,
+                  /*
+                    ⚠️ **Dos colores con dos trabajos, y no se pisan** — ADR-097.
+                    El punto es la urgencia: dice *esto es un riesgo*. El filo de
+                    la izquierda es la materia: dice *de cuál*. Un riesgo del plan
+                    entero no es de ninguna, y su filo va transparente para que
+                    las filas sigan alineadas.
+                  */
+                  borderLeft: `3px solid ${cursadaId ? colorDeMateria(cursadaId) : "transparent"}`,
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{ width: 8, height: 8, borderRadius: 999, background: "var(--urgencia-texto)", flexShrink: 0 }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p style={{ fontSize: "var(--text-body)", fontWeight: 500, color: "var(--foreground)" }}>{r.titulo}</p>
+                  {r.detalle && (
+                    <p style={{ fontSize: "var(--text-label)", color: "var(--muted-foreground)" }}>{r.detalle}</p>
+                  )}
+                </div>
+                {/*
+                  ⚠️ **El nombre viaja en el riesgo** (ADR-096). Antes salía de las
+                  tarjetas de evaluación: al retirarlas, la sección habría quedado
+                  dependiendo de otra que ya no existe.
+                */}
+                {cursadaId && onAbrir && (
+                  <AccionDeObjeto onClick={() => onAbrir({ cursadaId, nombre: r.materia ?? "" })}>
+                    {t("HOY.RIESGOS.ABRIR")}
+                  </AccionDeObjeto>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <ReglaDeNegocio>{t("HOY.RIESGOS.AYUDA")}</ReglaDeNegocio>
+    </section>
+  );
+}
+
+// ── Mientras carga ───────────────────────────────────────────────────────────
+
+/**
+ * El cuadro de hoy mientras el tablero no llegó: los tres subtítulos reales y
+ * dos renglones debajo de cada uno. Ni una materia de ejemplo.
+ */
+function CuadroHoyEsqueleto() {
+  return (
+    <section aria-hidden className="space-y-3" style={{ ...TARJETA, padding: "14px 16px" }}>
+      <TituloDeSeccion>{t("HOY.CUADRO")}</TituloDeSeccion>
+      {(["HOY.CUADRO.CLASES", "HOY.CUADRO.AVANZAR", "HOY.CUADRO.HORARIOS"] as const).map((id) => (
+        <div key={id}>
+          <Subtitulo>{t(id)}</Subtitulo>
+          <Renglon cuerpo="label" ancho="85%" />
+          <Renglon cuerpo="label" ancho="60%" />
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** Los riesgos mientras cargan: el título y la ayuda reales, dos filas de la lista. */
+function RiesgosEsqueleto() {
+  return (
+    <section aria-hidden>
+      <TituloDeSeccion>{t("HOY.RIESGOS")}</TituloDeSeccion>
+      <ul style={{ ...TARJETA, marginTop: 6 }}>
+        {[0, 1].map((i) => (
+          <li
+            key={i}
+            className="flex items-center"
+            style={{ gap: 12, padding: "12px 16px 12px 16px", borderTop: i > 0 ? "1px solid var(--border)" : undefined }}
+          >
+            <div className="min-w-0 flex-1">
+              <Renglon cuerpo="body" ancho={i === 0 ? "55%" : "40%"} />
+              <Renglon cuerpo="label" ancho={i === 0 ? "75%" : "65%"} />
+            </div>
+            <AccionDeObjetoEsqueleto ancho={70} />
+          </li>
+        ))}
+      </ul>
+      <ReglaDeNegocio>{t("HOY.RIESGOS.AYUDA")}</ReglaDeNegocio>
+    </section>
+  );
+}
+
+/**
+ * `UX01` mientras sus datos no llegaron — `P-12`, `design-system-capturas` §9.1.
+ *
+ * El título y la subcopy van reales; el Hero, el cuadro y los riesgos, en
+ * bloques. Se dibuja **con tablero**, que es el caso de todos los días: si al
+ * llegar el Hero se repliega, la pantalla se acorta en vez de empujar el Hero.
+ */
+export function HoyAutogestionEsqueleto() {
+  return (
+    <PantallaCargando className="space-y-5" style={{ background: "var(--background)" }}>
+      <TituloDePanel
+        titulo={t("HOY.TITULO")}
+        subcopy={SUBCOPY.UX01}
+        acciones={
+          <div className="flex flex-wrap items-center justify-end" style={{ gap: 8 }}>
+            <PildoraEsqueleto />
+          </div>
+        }
+      />
+      <EstadoGeneral>
+        <Renglon cuerpo="label" ancho={180} />
+      </EstadoGeneral>
+      <div className="grid items-start gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <HeroCard>
+            <ChipEsqueleto />
+            <Renglon cuerpo="label" ancho="35%" />
+            <Renglon cuerpo="title-sm" ancho="70%" style={{ fontSize: 24, height: 28.8 }} />
+            <Renglon cuerpo="label" ancho="80%" />
+            <Renglon cuerpo="label" ancho="50%" />
+            <CTAEsqueleto />
+          </HeroCard>
+        </div>
+        <CuadroHoyEsqueleto />
+      </div>
+      <RiesgosEsqueleto />
+    </PantallaCargando>
+  );
+}
+
+// ── La pantalla ───────────────────────────────────────────────────────────────
+
+export function HoyAutogestion({
+  fecha,
+  estadoGeneral,
+  hero,
+  recuperacion,
+  verProgreso,
+  tablero,
+  onAvanzar,
+  onVerMateria,
+  onVerProgreso,
+  onAbrirMateria,
+  onEntrarAClase,
+  tableroCargando = false,
+}: HoyProps & {
+  /**
+   * El tablero se pide aparte y puede llegar después que el Hero. Mientras
+   * tanto va su esqueleto: sin él, el Hero arrancaba a ancho completo y se
+   * achicaba a dos tercios cuando el tablero llegaba (`P-12`).
+   *
+   * ⚠️ **No es un tablero vacío.** Un error sigue dibujándose sin tablero, igual
+   * que antes: esto es sólo *todavía no llegó*.
+   */
+  tableroCargando?: boolean;
+  onAvanzar?: () => void;
+  /**
+   * Navegar a una materia por `CTA-001`, **con su cursada**
+   * ([ADR-054](../../docs/decisions.md#adr-054)). Es el camino cuando no hay
+   * espacio de trabajo montado.
+   */
+  onVerMateria?: (cursadaId: string | null) => void;
+  onVerProgreso?: () => void;
+  /**
+   * Abre una materia **como objeto del espacio de trabajo** —
+   * [ADR-088](../../docs/decisions.md#adr-088) §10.6. Es la misma navegación de
+   * `CTA-001`; lo que agrega es que el objeto quede abierto para volver.
+   */
+  onAbrirMateria?: AbrirMateria;
+  /**
+   * `CTA-022` — entrar a la clase de esa fila, o volver a la abierta
+   * ([ADR-098](../../docs/decisions.md#adr-098)). Sin quién la atienda, **la
+   * fila no lleva botón** (AGENTS.md §2.2).
+   */
+  onEntrarAClase?: EntrarAClase;
+}) {
+  const replegado = seRepliega(hero.nivel);
+  const conTablero = tablero !== null && !replegado;
+  const esperandoTablero = tablero === null && tableroCargando && !replegado;
+  // Una sola forma de abrir: el objeto si hay espacio de trabajo, la ruta si no.
+  // Sin ninguna de las dos, **no se ofrece la acción** (AGENTS.md §2.2).
+  const abrir: AbrirMateria | undefined =
+    onAbrirMateria ?? (onVerMateria ? (m) => onVerMateria(m.cursadaId) : undefined);
+
+  return (
+    <div
+      className="space-y-5"
+      style={{ background: "var(--background)" }}
+    >
+      {/*
+        La cabecera es la primitiva (`D-01`: un `h1` por superficie, y es el de
+        `TituloDePanel`). El propósito de la pantalla va de eyebrow; la fecha,
+        dentro de la píldora con el único número que ordena el día.
+      */}
+      <TituloDePanel
+        titulo={t("HOY.TITULO")}
+        subcopy={SUBCOPY.UX01}
+        acciones={
+          <div className="flex flex-wrap items-center justify-end" style={{ gap: 8 }}>
+            <Pildora fecha={fecha} proxima={tablero?.proximaEvaluacion ?? null} />
+            {/* `CTA-009` es navegación de lectura: arriba a la derecha (§11.9.3). */}
+            {verProgreso ? <AccionDeObjeto onClick={onVerProgreso}>{verProgreso}</AccionDeObjeto> : null}
+          </div>
+        }
+      />
+
+      <EstadoGeneral>{estadoGeneral}</EstadoGeneral>
+
+      <Recuperacion r={recuperacion} />
+
+      {/*
+        **Primera fila: la acción y el día.** El Hero manda y ocupa dos
+        tercios; el cuadro de hoy acompaña en el tercero, que ADR-015 reserva para la
+        *continuidad*. Por debajo de `lg` se apilan y el Hero queda primero — el
+        contrato de orden semántico de `design-system.md` §6.1 rige en todo ancho.
+      */}
+      <div className={conTablero || esperandoTablero ? "grid items-start gap-4 lg:grid-cols-3" : undefined}>
+        <div className={conTablero || esperandoTablero ? "lg:col-span-2" : undefined}>
+          <HeroContent hero={hero} onAvanzar={onAvanzar} />
+        </div>
+        {conTablero && <CuadroHoy c={tablero.hoy} onAbrir={abrir} onEntrar={onEntrarAClase} />}
+        {esperandoTablero && <CuadroHoyEsqueleto />}
+      </div>
+      {esperandoTablero && <RiesgosEsqueleto />}
+
+      {/*
+        ⚠️ **Todo lo de abajo va después del Hero, nunca antes.** La precedencia
+        de `UX01` es conducta primero y contexto después (`product.md` §10.2).
+      */}
+      {conTablero && (
+        <>
+          <Riesgos riesgos={tablero.riesgos} onAbrir={abrir} />
+        </>
+      )}
+    </div>
+  );
+}

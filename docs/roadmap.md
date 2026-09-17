@@ -2,7 +2,7 @@
 
 **Documento:** `docs/roadmap.md`
 **Rol:** owner canónico del plan por fases y del estado de avance.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 4 de septiembre de 2026
 
 ---
 
@@ -30,14 +30,340 @@ Cada etapa, sin excepción:
    etapa no empieza.
 2. **Decisiones de diseño explícitas y aprobadas.** Se escriben antes de codear y se hacen aprobar.
 3. **Implementación.**
-4. **Verificación real.** `lint` y `build` en verde, tests pasando, y verificación funcional de lo
-   que la etapa prometió.
+4. **Verificación real.** `lint`, **`typecheck`** y `build` en verde, tests pasando, y verificación
+   funcional de lo que la etapa prometió.
+
+   > ⚠️ **`typecheck` es un gate propio, y hay que correrlo.** Medido el 2 de septiembre de 2026:
+   > `npm run build` estuvo en verde mientras `npx tsc --noEmit` tenía **6 errores** en archivos de
+   > test. `vitest` borra los tipos con esbuild y no los mira; el build de Next tampoco los alcanza.
+   > Un mock al que le falta un campo que el dominio agregó **no lo ve ninguno de los dos**.
 5. **Un commit o PR por etapa**, completo.
 6. **Documentación sincronizada.** Se marca la etapa acá y se actualizan los docs que el trabajo tocó.
 
 ### Estados
 
 `⬜ NO INICIADA` · `🔵 EN CURSO` · `✅ COMPLETA` · `🔒 BLOQUEADA` · `⏸️ DIFERIDA`
+
+---
+
+## 0.1 Dónde estamos · 14 de septiembre de 2026
+
+**Track A: cerrado.** **Track B: B1–B6.33 completas en su alcance disponible**, con B2b en 2/3.
+
+`lint`, `typecheck` y `build` en verde · **2590 tests en 121 archivos** · **98 migraciones** · **16 rutas
+bajo `app/(student)`** · **26 CTAs** · las
+**nueve superficies** del estudiante leen de la base **y el camino principal escribe en ella**
+([ADR-040](decisions.md#adr-040)), y desde la B6.14 **el estudiante declara él mismo qué cursa**.
+
+✅ **`npm run db:verify` corre entero** — **545 comprobaciones, cero fallos** (14 sep, ya unidas
+`feat/paralelo` y `feat/fase-0-track-a`). Estuvo roto
+por su propia limpieza desde la B6.14, y arreglarlo destapó un segundo defecto de orden. Los dos, en
+[§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre).
+
+### Estado inmediato
+
+| Frente | Estado |
+|---|---|
+| **Requisitos de cursado** | 🧪 **14 de septiembre de 2026** — [ADR-108](decisions.md#adr-108), `SIMULADO`. Desplegable *Requisitos* en `UX02`: promoción y regular, *Piden · Venís*, cuatro estados. **Sólo con `MODO_PRUEBA=1`**; la cuenta es del dominio y los insumos se inventan. Ver [Fase B6.33](#fase-b633--requisitos-de-cursado-simulados--completa) |
+| **Onboarding académico** | ✅ **13–14 de septiembre de 2026** — [ADR-105](decisions.md#adr-105)…[ADR-107](decisions.md#adr-107). Alta en cinco pasos con comisión y horario, y `/recorrido` después de HOY: analítico sintético, preguntas e hipótesis de perfil. Ver [Fase B6.32](#fase-b632--onboarding-académico---completa-sintético-ver-lo-que-sigue-abierto) |
+| **Modo Focus** | ✅ **13 de septiembre de 2026** — [ADR-104](decisions.md#adr-104) y su [Enmienda 1](decisions.md#adr-104-enmienda-1): la sesión sobre una acción comprometida, Pomodoro como modo, y seis sonidos calculados sin archivos. Ver [Fase B6.31](#fase-b631--modo-focus--completa) |
+| **El escritorio del objeto** | 🆕 **10 de septiembre de 2026** — Enmiendas [1](decisions.md#adr-088-enmienda-1), [2](decisions.md#adr-088-enmienda-2), [3](decisions.md#adr-088-enmienda-3), [4](decisions.md#adr-088-enmienda-4) y [5](decisions.md#adr-088-enmienda-5) de ADR-088. **Abrir una materia va a su superficie completa**; desde ahí un semáforo arriba la **minimiza a la barra**, la **reduce a ventana** o la **cierra**. Las ventanas se arrastran, se estiran, se expanden, **vuelven donde estaban** y **conviven todas**: se apilan y se traen al frente tocándolas. El escritorio entero vive en `?abierto=<a>,<b>` y **el orden es el apilamiento**. ⚠️ **Se llama «marco», no «ventana»**: `Ventana` ya son dos cosas del dominio (ADR-078 y `VentanaDeExamen`), y reusarla sería `A-04`. ⚠️ **El panel consulta; la superficie trabaja** — adentro toda CTA navega. ⚠️ **La Enmienda 3 retira la trampa de foco y el `aria-modal` de la Enmienda 1**: con varias ventanas no modales encerrarían al teclado en la última abierta. ⚠️ **La Enmienda 4 le pone movimiento**: la ventana **sale de su ficha** y vuelve a entrar, con los números de `design-system-capturas.md` §2.5 — y `prefers-reduced-motion` lo apaga entero. ⚠️ **La Enmienda 5 le pone nombre y color**: el nombre se escribe con mayúscula sólo en la primera —**presentación, no renombre**: el `label` del plan no se toca— y cada materia lleva **su color de la lista** en la ficha y en la ventana, con `colorDeMateria` compartido en `lib/domain/`. ⛔ **Deuda de tokens**: §2.5 define `--curva` y `--duracion` y `globals.css` no los tiene, así que los valores se citan en `components/shell/movimiento.ts`. ✅ **Y destapó que `20162` y `10207` se llamaban igual en pantalla** — corregido por [ADR-092](decisions.md#adr-092) con los programas oficiales: `ARQUITECTURA DE COMPUTADORAS I` y `II`. ⛔ **Quedan dos parejas sin nombre completo conocido**, y `ingerir_plan()` **no se puede reimportar** sobre un plan con altas hechas: la FK de `requirement_declaration` aborta el archivo entero |
+| **Gimnasia cognitiva** | ✅ **Construida el 13 de septiembre de 2026** — [ADR-102](decisions.md#adr-102). Categoría **Memoria** con *Cuadrícula fugaz*, *Cadena inversa* y *Recuerdo real*; rutina de 8 minutos; el resultado lo calcula el servidor y el progreso se deduce. **No toca Hoy, el ADE ni el loop.** Sin preguntas reales todavía: Recuerdo real queda en preparación fuera de la demo. Plan en [`gimnasia-cognitiva.md`](gimnasia-cognitiva.md) |
+| **El asistente de reportes y mejoras** | 🧪 **13 de septiembre de 2026** — [ADR-103](decisions.md#adr-103), pedido del owner con capturas de otro software. Botón abajo a la derecha, *Reportar un problema* / *Sugerir una mejora*, pregunta aclaratoria, tarjeta *Tu sugerencia* con *Confirmar y enviar* / *Corregir algo*, *Reporte enviado*, capturas pegadas y *Nueva conversación*. ⚠️ **Simulado**: guion fijo, **sin red ni persistencia**, sólo con `MODO_PRUEBA=1` y rotulado. El resumen **cita** lo escrito. Conectarlo es con el backend y el CTO, y lo que se guarde de un reporte toca ADR-006 |
+| **Modo Clase** | ✅ **Construido el 13 de septiembre de 2026, seis cortes** — [ADR-098](decisions.md#adr-098), las doce recomendaciones aceptadas por el owner. La clase que el estudiante abre es **`student_class_session`, no `class_session`**: apuntes, cuatro marcas y cierre, una sola activa. **Hoy ofrece *Entrar a clase* en la fila en curso** (enmienda ADR-094 §5) y **Materia muestra *Tus clases***. **Segunda vuelta el mismo día — [ADR-099](decisions.md#adr-099):** pantalla rediseñada, **grabación de audio con etiquetas**, apuntes que se guardan con Enter, material (archivos y links), comisión/aula/inscriptos simulados, unidades de la clase y *te faltan las unidades…*, miga de tres niveles. ⛔ Grabar en un aula real sigue esperando ADR-006 + legal; **sin checkpoint de comprensión** (psicopedagoga). Cortes y estado en [`modo-clase.md`](modo-clase.md) §E y §H |
+| **Modo noche, cuenta y color** | 🆕 **12 de septiembre de 2026** — [ADR-097](decisions.md#adr-097), con capturas del software de referencia. **Modo noche** que sigue al sistema, con luna/sol al pie del menú lateral y la tabla de contrastes **como test** (revierte `design-system-capturas` §12.4). **Arriba a la derecha**: institución · carrera y avatar con email y *Cerrar sesión*. **Color**: la marca de cada materia en *Tu día*, riesgos, título y Gantt; chips de estado **tintados**. ⚠️ Sin selector de organización ni *Administrar cuenta*: no hay nada detrás. 🧪 **La campanita existe con avisos simulados** ([Enm. 1](decisions.md#adr-097-enmienda-1)), sólo con `MODO_PRUEBA=1` y rotulada *Simulado*; las notificaciones reales siguen sin diseñar |
+| **La barra no se llena sola** | 🆕 **12 de septiembre de 2026** — [ADR-088 · Enmienda 7](decisions.md#adr-088-enmienda-7), que corrige el punto 1 de la Enmienda 6. **Entrar a una pantalla no guarda su ficha**: un objeto entra a la barra al **minimizar** (lleva a Hoy), al **achicar** (ventana sobre su sección) o desde el buscador. Las **secciones del menú no llevan controles**; sí lo que está adentro: una materia, un video de Formación (`?pieza=`), la acción, el paso del protocolo. **Sin cruz en la pantalla completa**, sin «Ver como página» —expandir hace eso—, y cerrar una ficha **no navega**. ⚠️ **La miga empieza en la sección**: *Materias › Análisis*, *Formación › nombre del video*. ⚠️ Las fichas de sección que ya estaban guardadas **se descartan al leer** |
+| **El espacio de trabajo · los objetos abiertos** | 🆕 **Construido el 10 de septiembre de 2026** — [ADR-088](decisions.md#adr-088), que deja [ADR-019](decisions.md#adr-019) `SUPERSEDED` **en su punto 1**. El estudiante retoma lo que tenía abierto sin volver al índice. ⚠️ **Los seis requisitos innegociables del multiventana se cumplen los seis**, incluido el límite duro (12) que ADR-019 citó para descartar el dock. **No es navegación**: no entra a `surfaces.ts` ni a `cta-registry.ts`, y **el breadcrumb no se reemplaza** |
+| **`UX01` · la capa «anticipar»** | 🆕 **Construida el 10 de septiembre de 2026** — [ADR-089](decisions.md#adr-089). *Próxima evaluación* con cuenta regresiva y **mapa de 14 días** por materia. ⚠️ **Sin contrato nuevo, sin migración y sin tocar `estado_del_dia()`**: sale de `GET /api/materias`, la misma lectura del Gantt del período, pedida aparte como `reparto` · ⚠️ **Enmendada el 11 sep por ADR-093**: el mapa salió de Hoy |
+| **`UX01` · el tablero** | 🆕 **11 de septiembre de 2026** — [ADR-093](decisions.md#adr-093), pedido del owner con una pantalla de referencia. Hoy pasa a ser tablero: **Hero + próximos 7 días**, **riesgos de planificación** (`PLAN-v0.1`, cinco reglas, Academic + Personal Engine) y las **evaluaciones en dos opciones** —tarjetas y carril— **para que el owner elija una; la otra se borra**. Salen de Hoy la cola `1 de N`, el mapa de 14 días y el reparto. ⚠️ **Los riesgos no son `RiskSignal`**: no persisten, no emiten eventos y `C01-021` sigue abierto. ⚠️ **Pendientes del owner**: qué opción queda, y si el estado general puede decir *BAJO CONTROL* con riesgos detectados abajo |
+| **`UX01` · el cuadro de hoy** | 🆕 **11 de septiembre de 2026** — [ADR-094](decisions.md#adr-094). Los próximos 7 días pasan a ser *Tu día*: **clases de hoy** con `Un.` y aula, **Podés avanzar** (unidades dadas sin evidencia) y **horarios**. El bloque horario gana `room`. ⚠️ **`Un.` es la unidad de la última clase dada**, no la de hoy: no hay cronograma futuro. ⚠️ **Toda aula es simulada** y sólo sobre bloques `inference`. ⛔ **`db:verify` pendiente**: la migración se aplicó con `psql` para no vaciar la demo |
+| **`UX02_INDICE` · Materias con el mockup delante** | 🆕 **12 de septiembre de 2026** — [ADR-095](decisions.md#adr-095). Cada fila dice **«Cursás Lun 10:00–12:00 · Aula 3.02»**, la cobertura se muestra corta —*«cobertura 52% · 3 de 9 temas»*, con el literal de ADR-072 en el `aria-label`— y la **modalidad se traduce** en el índice y en `UX02`. ⚠️ **El horario no llega por `insumos_de_reparto`**, que tiene prohibido mirar los bloques: va por `horariosReal.deCursadas()`, **la misma lectura que el tablero**. ⛔ **No se copió `3/9 dominados`** ([ADR-072](decisions.md#adr-072)) ni el botón `+ Agregar materia o evaluación`, que sigue sin destino |
+| **`UX01` · las evaluaciones salen** | 🆕 **12 de septiembre de 2026** — [ADR-096](decisions.md#adr-096). El owner miró las dos opciones que ADR-093 puso a comparar —tarjetas y carril— y **descartó las dos**. `UX01` queda en **tres cuerpos**: Hero, Tu día y Riesgos detectados; de las evaluaciones queda **la píldora**, y el listado es `/materias`. ⚠️ **El contrato se achicó con el dibujo**: `TableroProps` perdió `tarjetas`, `aclaracionDeCobertura` y `horizonteEnDias` |
+| **El radar académico de `UX01`** | 🟡 [ADR-090](decisions.md#adr-090) `PROPOSED` — **no se construye**. Bloqueado por `C01-021` (qué severidad se muestra), `C01-036` (qué motor la produce) y `C01-044` (qué playbook ofrece). Hoy el riesgo **sólo cambia el estado general**, que es lo único que `VI.1` §3.3 autoriza |
+| **Fase B6.14 · el catálogo curricular y el tramo de alta** | ✅ **Completa, 6 / 6** — 5 de septiembre de 2026 ([ADR-051](decisions.md#adr-051), [ADR-052](decisions.md#adr-052), [ADR-053](decisions.md#adr-053)). Cierra el hueco que ADR-039 había dejado escrito: entre el `authorized: true` del CRM y la primera acción **ya hay pantallas**. ⚠️ **Y le movió el mundo debajo a una decisión de la B2.6**: ver [ADR-054](decisions.md#adr-054) |
+| **Período, comisión y horarios de cursada** | 🆕 **Decidido el 5 de septiembre de 2026, sin implementar** — [ADR-060](decisions.md#adr-060) … [ADR-065](decisions.md#adr-065). El temario pasa a ser **de la materia** (el progreso sobrevive a un cambio de comisión), la comisión gana **cuatro estados en la cursada**, el período se pregunta en `/alta/carrera` con vocabulario cerrado, y la superposición con clase se valida **en el `Commitment`, no en el ADE**. Plan por **siete cortes** en [`plan-periodo-comision-horarios.md`](plan-periodo-comision-horarios.md) |
+| **Corte 1 · el período deja de ser texto libre** | ✅ **Hecho** — 5 de septiembre de 2026. Vocabulario cerrado en dominio, base e importador; año lectivo y semestre en columnas propias de `enrollment`, derivados sin cambiar ningún contrato; y los CSV sintéticos con materias de los dos semestres y anuales, **en tres dialectos distintos** para que el normalizador se pruebe con datos y no en laboratorio. `db:verify` **330 ✓** |
+| **El recorrido a mano · 5 de septiembre** | 🔴 **Dos hallazgos abiertos**, ninguno de los dos en el camino que la B6.14 verificó: el apartado «Materias» y `db:verify`. Los dos en [§0.2](#02-el-recorrido-a-mano-del-5-de-septiembre) |
+| **Fase B6.13 · «Cambiar horario»** | ✅ **Completa** — 4 de septiembre de 2026 ([ADR-050](decisions.md#adr-050)). La renegociación es alcanzable **desde `UX04`**, como acción secundaria, y **«Renegociar» sale de la interfaz**. Verificada con los cuatro recorridos que pidió el owner |
+| **Fases B6.11 y B6.12 · las dos decisiones del 4 de septiembre, implementadas** | ✅ **Completas** — la **renegociación** es alcanzable ([ADR-046](decisions.md#adr-046)) y el **disparador de Modo Examen** existe ([ADR-048](decisions.md#adr-048)). En el medio apareció una contradicción con el schema y se resolvió con [ADR-049](decisions.md#adr-049): la institución **tiene zona horaria propia**. Y la decisión de diseño que dejaron abierta se cerró el mismo día: ver B6.13 |
+| **Fase B6.10 · la reflexión existe y se exige** | ✅ **Completa, con su superficie** — 4 de septiembre de 2026. El requisito de [ADR-026](decisions.md#adr-026) **lo hace cumplir el servidor**, y desde [ADR-045](decisions.md#adr-045) el estudiante la escribe **dentro de `UX05`**: la reflexión y la entrega son la misma intención |
+| **Fase B6.9 · la salida del camino que no salió bien** | ✅ **Completa, 2 / 2** — 4 de septiembre de 2026. El **rescate** y el **reenvío** son alcanzables; con el primero, `RescueSucceeded`, que era uno de los cuatro eventos facturables de [ADR-041](decisions.md#adr-041) y **ningún camino podía producir**. ~~La renegociación queda fuera hasta `C01-010`~~ → **cerrada en la B6.11** |
+| **Las tres decisiones del Product Owner** | ✅ **Ratificadas el 4 de septiembre de 2026** — [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y [ADR-043](decisions.md#adr-043), con su [fuente literal](respuesta-po-flujos-crm-source.md). ⚠️ **Autorizan cerrarlas y ponerlas en backlog, no construirlas ahora** |
+| **Fase B6.8 · el camino de ejecución escribe en Postgres** | ✅ **Completa, 5 / 5** el 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el `Commitment` nace de una confirmación explícita, la entrega crea una `Evidence` real, la validación registra el progreso y **`C01-009` quedó cerrada**. Sin migraciones |
+| **La puerta · `/login`** | ✅ **Hecha** el 3 de septiembre de 2026 ([ADR-039](decisions.md#adr-039), decidido por el Product Owner). **No es `UX10`** y no levanta el gate de [ADR-006](decisions.md#adr-006). Deja abierto el onboarding del spec §19 |
+| **Fase B6.6 · el recorrido del MVP, visible** | ✅ **Completa** el 2 de septiembre de 2026. El recorrido entero se reproduce desde cero: [`demo-mvp.md`](demo-mvp.md) |
+| **Etapa B6.5 · el MVP observable** | ✅ **Hecha** el 2 de septiembre de 2026 ([ADR-036](decisions.md#adr-036)): el error es un hecho registrado y el circuito produce una señal que pide una persona **sin que nadie la haya mirado**. B6.7 sustituyó la regla provisional por criterio profesional |
+| **Fase B6.7 · la validación profesional, aplicada** | ✅ **4 / 4**, [ADR-037](decisions.md#adr-037). Vocabulario, denominador, aceleración válida, episodios vinculados y reentrada mínima explicada quedaron implementados el 2 de septiembre de 2026 |
+| **Etapa B2b.2 · corroboración** | ✅ **Completa** el 2 de septiembre de 2026. La operación explícita que `I9` exigía y no existía: append-only, con fuente concreta y auditoría. **`official` queda inalcanzable** hasta `C01-030` |
+| Seguridad de dependencias de [ADR-008](decisions.md#adr-008) | ✅ **Cerrada y firmada** el 3 de septiembre de 2026 ([Enmienda 1](decisions.md#adr-008-enmienda-1)). `npm audit`: **0 vulnerabilidades**; `next` y `eslint-config-next` en `16.3.4`; `agentRules: false` |
+
+### Lo que espera a una persona
+
+> 📋 **El índice completo, ordenado por qué destraba:**
+> [`decisiones-abiertas.md`](decisiones-abiertas.md) — **veinte filas, ocho abiertas**, con quién
+> decide cada una y qué pasa si no se decide.
+
+> ✅ **El Product Owner respondió seis el 5 de septiembre de 2026.** El planteo fue
+> [`agenda-decisiones-abiertas-po.md`](agenda-decisiones-abiertas-po.md); la respuesta literal,
+> [`respuesta-po-agenda-decisiones-source.md`](respuesta-po-agenda-decisiones-source.md); su lectura,
+> [ADR-054](decisions.md#adr-054) … [ADR-059](decisions.md#adr-059).
+>
+> **Las seis que quedaban del lado del owner ya no esperan a nadie.** Las que siguen abiertas
+> —`ADR-006`, las dos frases de la psicopedagoga, `C01-042`/`C01-052` y las dos del CTO con el CRM—
+> **no se deciden: se piden**. Y quedó **una nueva**: el área «Materias» y el nombre del ítem del
+> menú, que son las opciones `A` y `C` que ADR-054 dejó fuera a propósito.
+
+> ✅ **Las tres del Product Owner quedaron ratificadas el 4 de septiembre de 2026.** El brief
+> [`agenda-decisiones-po-crm.md`](agenda-decisiones-po-crm.md) las planteó; la respuesta literal está
+> en [`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md). **Ya no esperan a
+> nadie.**
+
+| Qué | Quién | Qué destraba |
+|---|---|---|
+| El **área «Materias»** y el nombre del ítem del menú — opciones `A` y `C` de [ADR-054](decisions.md#adr-054) | **Product Owner + Diseño** | 🟡 Que el estudiante llegue a **todas** sus materias. Con la opción `B` implementada el producto ya no contesta con la materia equivocada; **sigue sin haber lista**. La Parte II §10 del spec **nombra el área** y nunca la especifica |
+| **`C01-036`** · cuántas repeticiones hacen a un error *"reiterativo"* | **Psicopedagoga** | ✅ **Respondida** el 2 de septiembre de 2026: 6 `CAMBIAR` + 1 `APROBAR` ([ADR-037](decisions.md#adr-037)). Los umbrales quedaron; **cambió qué cuenta como repetición**. Sigue `OPEN` para datos reales: condicionada a piloto |
+| ~~**`C01-021`**~~ · qué regla produce qué señal | Risk owner | ✅ **Respondida** el 5 de septiembre de 2026 ([ADR-055](decisions.md#adr-055)): las otras dos quedan en **modo humano hasta el piloto**, y sus umbrales salen de datos observados ahí |
+| ~~**`C01-044`**~~ · playbooks y SLA | Product Operations | ✅ **Respondida** el 5 de septiembre de 2026 ([ADR-056](decisions.md#adr-056)): playbook y SLA **provisionales**. ⬜ Sigue abierto **de qué sistema es** el playbook, y no hay tabla de ventana operativa |
+| **[ADR-006](decisions.md#adr-006)** · dictamen legal | Legal | B7, y B7 destraba B8 |
+| Las dos confirmaciones del Roadmap de examen | **Psicopedagoga** | La vigencia de `HUMAN-ROADMAP v1.0-sin-confirmar` y qué pasos son reentrantes |
+| ~~**[ADR-042](decisions.md#adr-042)**~~ · dónde da el estudiante su WhatsApp | Product Owner | ✅ **Respondida** el 4 de septiembre de 2026, y con más alcance del que se preguntó: **definió el alta entera**, la superficie de revocación y el estado del estudiante sin materias |
+| ~~**[ADR-041](decisions.md#adr-041)**~~ · qué cuenta como *"actividad"* a efectos de facturar | Product Owner | ✅ **Respondida** el 4 de septiembre de 2026: los cuatro eventos, **como cláusula del contrato** |
+| ~~**[ADR-043](decisions.md#adr-043)**~~ · el orden de los cinco flujos y el smoke test | Product Owner | ✅ **Respondida** el 4 de septiembre de 2026: **E/E′ primero**, D inmediatamente después, smoke test **al empezar la integración, no ahora** |
+
+### Lo aprobado, y por qué todavía no se construye — 4 de septiembre de 2026
+
+El Product Owner ratificó [ADR-041](decisions.md#adr-041), [ADR-042](decisions.md#adr-042) y
+[ADR-043](decisions.md#adr-043) ([fuente](respuesta-po-flujos-crm-source.md)), **y delimitó la
+autorización con la misma firmeza con la que decidió**:
+
+> *"Esta respuesta autoriza: cerrar ADR-041, ADR-042 y ADR-043; actualizar su trazabilidad y el
+> roadmap; incorporar las decisiones al backlog correspondiente. **No autoriza adelantar ahora la
+> integración CRM, provisionar secretos productivos, transmitir datos reales ni alterar la prioridad
+> vigente del Track B.** ADR-035 y ADR-006 permanecen plenamente vigentes."*
+
+**Y fijó qué va primero, textual:**
+
+> ⬅️ *"**Primero se termina y verifica el loop actual del MVP de Plataforma.** Después se ejecutará
+> este trabajo en el orden aprobado."*
+
+⚠️ **Eso convierte a *"qué falta para terminar el loop"* en la próxima pregunta del roadmap**, y no la
+contesta un agente: hay que acordar qué entra —el circuito corre de punta a punta desde la
+[Fase B6.8](#fase-b68--el-camino-de-ejecución-escribe-en-postgres-·--completa), y lo que sigue
+incompleto está listado en su fase y en el mapa de bloqueos.
+
+**Lo que queda en backlog, con su orden ya decidido:**
+
+| # | Trabajo | Gate |
+|---|---|---|
+| 1 | El tramo de alta: WhatsApp + consentimiento, orientación mínima, y el estado *"Estamos preparando tu información académica"* | ADR-042 ✅ · **espera a que termine el loop** |
+| 2 | La superficie **«WhatsApp y privacidad»** — consultar, reemplazar, revocar y pedir la desvinculación | Ídem. **La revocación se registra local aunque la integración no exista** |
+| 3 | La marca *"cuenta como actividad del estudiante"* en el catálogo, con su guard | ADR-041 ✅ |
+| 4 | Emisores de **E/E′ primero, D inmediatamente después** | ⏸️ [ADR-035](decisions.md#adr-035) |
+| 5 | Outbox durable + rotación de secretos + smoke test cross-sistema | ⏸️ ADR-035 · **el smoke test corre al empezar la integración, no antes** |
+
+---
+
+### Lo diferido por decisión, no por bloqueo
+
+**La integración con el CRM** — [ADR-035](decisions.md#adr-035). El diseño del contrato está
+**aceptado por los dos lados sin objeciones**; faltan tres definiciones de forma y construcción,
+casi toda del lado del CRM. Se retoma al final del Track B, y cómo hacerlo está escrito en §11 de
+[`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md).
+
+**Y el 3 de septiembre el CRM propuso dos flujos más** — **D · actividad** y **E · vinculación de
+teléfono**—, con las mismas convenciones del v0.2 y sin transporte ni secreto nuevos. La Plataforma
+respondió **`ACEPTA EL DISEÑO CON CAMBIOS REQUERIDOS`**:
+[`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md). Dos hallazgos que conviene
+tener a mano cuando se descongele:
+
+- ⚠️ **`422 UNRESOLVABLE_STUDENT` significaba dos cosas distintas** — terminal en el Flujo A (§10.4 del
+  contrato) y reintentable en el D—, y los dos comparten despachador. ✅ **Resuelto en la v0.2 del
+  CRM**, y mejor que nuestra propuesta: **código propio por flujo + reintento acotado + dead-letter**,
+  nunca infinito ni descarte silencioso.
+- ⚠️ **El Flujo E no espera un webhook: espera una pantalla.** La Plataforma no tiene el número
+  ([ADR-042](decisions.md#adr-042)).
+
+**La segunda ronda cerró el diseño de D, E y el nuevo E′** —desvinculación—, en
+[`respuesta-crm-flujos-d-e-v0.2.md`](respuesta-crm-flujos-d-e-v0.2.md). Dejó **un hallazgo nuevo de la
+misma clase que el `422`**, y es el único punto donde el contrato congelado dice algo falso:
+
+✅ **Y el 4 de septiembre el Product Owner cerró las tres decisiones que la ronda dejó abiertas**, con
+un desempate que el CRM no había propuesto: si hay que secuenciar, **E/E′ va primero** —habilita la
+operación— y **D inmediatamente después** —habilita la medición facturable—.
+
+⚠️ **La firma HMAC está especificada de dos maneras.** El contrato v0.2 §2 dice *"firma sobre
+timestamp + body original"*; la v0.2 del CRM dice `${timestamp}.${rawBody}`, **con punto**, y advierte
+que *"no es concatenación directa"*. **Es un solo middleware y un solo secreto para A, D, E y E′**, y
+el modo de falla es un `401` mudo que no dice cuál de las tres cosas falló. **Gana el punto**, y hay
+que corregir el §2 en la próxima versión del contrato.
+
+---
+
+## 0.2 El recorrido a mano del 5 de septiembre
+
+**Qué es esto.** Terminada la B6.14, el owner recorrió el producto a mano —no un test, no un script—
+para ver qué hay hecho. **Apareció lo mismo que apareció al conectar el alta:** los defectos que
+ningún camino automatizado toca son los del uso normal. Tres se corrigieron el mismo día; **dos
+quedan abiertos y están acá.**
+
+| # | Corregido ese día | Dónde |
+|---|---|---|
+| 1 | El mapa mínimo se alcanza **una sola vez**, y su evento también | [ADR-052](decisions.md#adr-052) · migración `20260915060000` |
+| 2 | **La institución no se pregunta**: la fija el padrón. Y un `404` deja de decirse como error de red | [ADR-052](decisions.md#adr-052) · migración `20260915070000` |
+| 3 | `db:demo` conserva la identidad y deja de acumular recursos; `db:sesion` espera al proveedor de auth | [`demo-mvp.md`](demo-mvp.md) |
+
+### 🔴 Hallazgo 1 · El apartado «Materias» muestra una sola materia
+
+**Es la fila 17 de [`decisiones-abiertas.md`](decisiones-abiertas.md) y su decisión es
+[ADR-054](decisions.md#adr-054), `PENDING`.** Acá va sólo lo verificado; el análisis y las opciones
+están en el ADR.
+
+Con un estudiante sintético de **nueve cursadas activas**, contra Postgres:
+
+| Qué se preguntó | Qué devolvió |
+|---|---|
+| `estado_del_dia(…)->'materias'` | **9** |
+| `estado_de_materia(…, p_course_enrollment_id => NULL)` | **1** · `Álgebra Sintética` |
+
+**El alta escribe bien: las nueve `course_enrollment` están.** Lo que falta es por dónde verlas —el
+ítem «Materias» del menú lleva a `UX02`, que es el cursado de **una**— y, sobre todo, que abrir la
+séptima materia de la cola de `HOY` **abre la primera**: `onVerMateria` navega a `/materia` sin
+`?cursada=` y la proyección descarta el `cursadaId` que la base sí devuelve.
+
+✅ **Cerrado el mismo día, con la opción `B`** ([ADR-054](decisions.md#adr-054), Product Owner) e
+**implementado**: `CTA-001` transporta el `CourseEnrollment` seleccionado y `/materia` abre
+exactamente ése.
+
+**Lo que cambió, y por qué es poco:** el `cursadaId` que la base ya devolvía dejó de descartarse en la
+proyección, `MateriaResumen` lo lleva, la fila de la cola lo pasa al tocarla, y el **registro canónico
+de CTAs gana un campo `parametro`** —el segundo que no transcribe la tabla del spec, después de
+`CTA-019`— para que el nombre de la query string viva ahí y no en la página.
+
+⚠️ **Lo que quedó afuera es deliberado.** El owner fue explícito: *"esto no autoriza construir todavía
+una nueva superficie de listado «Materias» ni cambiar el nombre del ítem del menú"*. El ítem sigue en
+plural sobre una superficie de una sola, y el área que la Parte II §10 nombra sigue sin construirse:
+son las opciones `A` y `C`, **fila 18 de [`decisiones-abiertas.md`](decisiones-abiertas.md)**.
+
+⚠️ **Un guard tuvo que cambiar, y se cambió declarándolo.** `proyeccion-hoy.test.ts` exigía que
+**ningún** identificador llegara a la pantalla. Ahora exige que **`accion.id` no llegue y que
+`cursadaId` sí**: la pantalla sigue sin renderizarlo — lo transporta la CTA.
+
+**El spec se leyó el mismo día, a pedido del owner, y cambió el peso del hallazgo.** Está entero en
+[ADR-054](decisions.md#adr-054); lo que hay que saber acá:
+
+- **La Parte II §10 define dos áreas, y las colapsamos en una:** *«Materias · espacios persistentes
+  de cursado y evaluaciones»* y *«Materia > Cursado · ritmo, unidades, progreso, recursos, acciones y
+  Bitácora»*. El ítem del menú se llama como la primera y lleva a la segunda.
+- **`VI.2` §5.2 es literal:** *"Al entrar desde Hoy **se abre el `CourseEnrollment` seleccionado**"*.
+  Con `LIMIT 1` eso **no se cumple**: deja de ser un hueco y pasa a ser un incumplimiento del spec.
+- **La cola de `HOY` tampoco es la que `DD7` resolvió**: se pedía que la lista *"se vuelva
+  paginable"* y se construyó **una materia por vez**.
+- **El vacío, en cambio, está bien.** `VI.2` §12.3 fija qué mostrar cuando falta cada fuente y la
+  proyección lo cumple. Lo que se ve vacío es un problema de datos: **una materia recién declarada en
+  el alta no tiene un solo `topic` cargado**, porque el mundo demo ingiere una sola por el ADL.
+
+### 🔴 Hallazgo 2 · `npm run db:verify` no corre, y es un gate
+
+**No es un defecto del producto: es del verificador.** `scripts/db-aislamiento.sh` es *"dueño de la
+base local"* y arranca vaciándola. Su función `limpiar_mundo` borra 40 tablas en **un solo `psql -c`**
+—es decir, **una sola transacción implícita**—, y desde la Fase B6.14
+le faltan las tablas nuevas de la **Fase B6.14**:
+
+```
+delete from course           →  ✗  curriculum_requirement_course_id_fkey
+delete from institution      →  ✗  academic_unit_institution_id_fkey
+```
+
+**Una sola de esas FK aborta la transacción entera, así que no se borra nada.** Después el script
+siembra su mundo con UUID que comparte con el seed de la demo —`a5000000-…`, y está escrito en el
+propio script— y choca por clave duplicada:
+
+```
+→ Dos instituciones con datos propios
+   ✗ no se pudieron cargar
+```
+
+**El síntoma engaña dos veces.** El error dice *"no se pudieron cargar"*, que suena a permisos o a
+stack caído, y no menciona la limpieza que falló en silencio doce líneas antes. Y **no falla siempre**:
+sólo cuando hay datos de demo puestos, que es exactamente después de recorrer el producto a mano.
+
+**Faltan cinco `delete`**, verificados uno por uno dentro de una transacción con `rollback` —la base
+de la demo no se tocó—:
+
+| Tabla | De dónde salió | Dónde va en el orden |
+|---|---|---|
+| `requirement_declaration` | B6.14.4 | arriba de todo |
+| `whatsapp_consent` | B6.14.4 | ídem |
+| `elective_option` | B6.14.2 | antes de `curriculum_requirement` |
+| `curriculum_requirement` | B6.14.2 | **antes de `course`** |
+| `academic_unit` | B6.14.2 | **entre `academic_program` e `institution`** |
+
+✅ **Corregido y verificado el 5 de septiembre de 2026: 330 comprobaciones, cero fallos.**
+
+⚠️ **Y arreglarlo destapó un segundo defecto, que el primero tapaba.** Con la limpieza funcionando,
+`db-aislamiento.sh` —tercero de los cinco— **vacía el catálogo que `db-catalogo.sh` necesita para
+correr quinto**, y el suite moría en *"El catálogo está vacío"*. Antes no se notaba porque la
+limpieza no borraba nada. **`db:verify` ahora importa el catálogo entre los dos**, y por eso son
+cinco scripts y seis pasos.
+
+⚠️ **Correr `db:verify` sigue vaciando la base de negocio, y eso es de diseño** — el script lo dice
+de frente. Después hay que volver a sembrar con `npm run db:demo`.
+
+### 🛠️ Lo que el recorrido dejó construido · el dock de **modo prueba**
+
+**Recorrer el alta una vez no alcanza para verla**, y volver a empezar costaba bajar a la terminal a
+correr `npm run db:demo`, que vuelve a sembrar el mundo entero. Con **`MODO_PRUEBA=1`** hay un dock al
+pie de las nueve superficies y del alta que deja al estudiante como antes de empezar y lo manda al
+primer paso. El recorrido está en [`demo-mvp.md`](demo-mvp.md).
+
+**No es una fase ni una etapa: es andamio**, y se documenta acá para que se sepa que existe y cuándo
+se saca.
+
+| Pieza | Qué hace |
+|---|---|
+| `reiniciar_alta_de_prueba()` | Una transacción. Borra lo que el alta escribió y lo que el ADE materializó encima —por `ON DELETE CASCADE` desde `course_enrollment`, no por una lista a mano— |
+| `instituciones_de_prueba()` | Las instituciones **con plan publicado**. La UCC no aparece, y no por una lista negra: su Plan 2016 está `DRAFT` ([ADR-053](decisions.md#adr-053)) |
+| `POST /api/prueba/alta` | Tres cerrojos: `404` sin la variable, **JWT del estudiante** —nunca secreto de servicio: sólo puede sobre sí mismo— y sin gate de alta, porque el caso que más se repite es reiniciar **a mitad del alta** |
+| `components/prueba/panel.tsx` | El dock. **No entra al grafo**: las superficies siguen siendo nueve, las CTAs diecinueve, y su texto **no entra al copy del producto** |
+
+**Lo que no toca, y hay guard de cada cosa:** el catálogo · `student` y su `auth_user_id` —perderlo
+devolvía un `403 SIN_PADRON` que no tenía que ver con el padrón— · **`product_event` y `audit_log`**,
+append-only por `I12`.
+
+⚠️ **Reiniciar no emite ningún evento de producto.** No es un hecho del dominio: es deshacer una
+corrida de prueba. Declararlo en `lib/domain/product-events.ts` metería una herramienta de
+laboratorio en el modelo de eventos, que tiene guard en las dos direcciones.
+
+⚠️ **Consecuencia declarada:** `enrollment.confirmed_at` vuelve a `NULL`, así que la próxima
+confirmación emite **otro** `AcademicMapMinimumReached`. Es correcto —esa alta volvió a ocurrir— y a
+la vez significa que **en una base con reinicios el conteo de activaciones no mide nada**.
+
+⚠️ **El selector de institución simula el padrón, no reabre [ADR-052](decisions.md#adr-052).** El
+alta sigue ofreciendo **sólo** la institución del padrón; el dock mueve la ficha, como haría un
+backoffice, y sólo a una con plan publicado.
+
+⚠️ **Se borra cuando [ADR-006](decisions.md#adr-006) abra.** Con personas reales, *«borrarle a
+alguien lo que declaró»* es una operación de privacidad con su propio contrato (`C01-017`), no un
+botón.
+
+---
+
+## Plan vivo en el Calendario — detrás de flag · 🟡 IMPLEMENTADO, NO PROMOVIDO
+
+[ADR-110](decisions.md#adr-110) · 16 de septiembre de 2026 · informe en
+[`plan-vivo-calendario.md`](plan-vivo-calendario.md). Seis cortes en la rama
+`feature/plan-vivo-calendar-integration`:
+
+| Corte | Estado |
+|---|---|
+| 1 · Auditoría, ADR-110/111, tipos, flag | ✅ |
+| 2 · Planificador puro, sesión, impacto | ✅ |
+| 3 · Lectura, calendario, columna, disponibilidad, arrastre, fijar, vaciar | ✅ |
+| 4 · Simulación y Gantt | ✅ (mismo commit que el 3) |
+| 5 · Compromiso · Materia | ✅ · **clase cancelada y ausencia ⛔ [ADR-111](decisions.md#adr-111)** |
+| 6 · QA y documentación | ✅ salvo `db:verify` (no hay schema nuevo; vacía la base compartida) |
+
+**No se promueve** sin ADR-006, revisión del copy por la psicopedagoga y la decisión sobre persistencia.
 
 ---
 
@@ -67,21 +393,21 @@ TRACK A ─── no depende de ninguna decisión abierta ───────�
                                                                               │
 TRACK B ─── cada fase tiene su gate ──────────────────────────────────────────┘
 
-  Fase B0 · Cerrar decisiones          → resuelve ADR-005, ADR-006, ADR-004, ADR-003
+  Fase B0 · Cerrar decisiones          🟡 4/5 · pendiente confirmación legal de ADR-006
        ↓
-  Fase B1 · Fundación                  🔒 ADR-005 · ADR-006 (si hay usuario real)
+  Fase B1 · Fundación                  ✅ 6/6 · datos sintéticos
        ↓
-  Fase B2 · Dominio de ejecución       🔒 B1
+  Fase B2 · Dominio de ejecución       ✅ 6/6
        ↓
-  Fase B3 · Progreso + eventos         🔒 B2
+  Fase B3 · Progreso + eventos         ✅ 3/3
        ↓
   ┌────┴─────────────────────────┐
   ↓                              ↓
-  Fase B4 · ADE v1               Fase B5 · Modo Examen real
-  🔒 ADR-004                     🔒 ADR-007 (contenido) · ADR-011 (readiness)
+  Fase B4 · ADE v1 ✅            Fase B5 · Modo Examen real ✅
+  validador + reloj corriendo     las 9 superficies leen de Postgres
   └────┬─────────────────────────┘
        ↓
-  Fase B6 · Risk + Intervención + Operador   🔒 ADR-003
+  Fase B6 · Risk + Intervención + Operador   🟡 dominio ✅ · operador 🔒 v2
   (absorbe las 5 vistas que iban en la Fase A1)
        ↓
   Fase B7 · Privacidad y golden dataset      🔒 ADR-006  ← BLOQUEO ABSOLUTO
@@ -95,6 +421,15 @@ TRACK B ─── cada fase tiene su gate ────────────�
 
 ## Fase 0 — Cerrar el Track A
 
+> ✅ **Test de comprensión de 10 segundos: corrido, con resultado PASS.** Reportado por el owner el
+> 30 de agosto de 2026. Con esto **la Fase 0 queda cerrada**: era el último criterio de Done y el
+> único que un agente no podía ejecutar.
+>
+> ⚠️ **Las observaciones por pantalla no están registradas acá.** Este documento sólo asienta el
+> resultado que reportó el owner; nadie más lo presenció. El guion de
+> [`guion-focus-group.md`](guion-focus-group.md) tiene una fila por pantalla — si esas respuestas se
+> quieren conservar como evidencia, hay que volcarlas antes de que se pierdan.
+
 **Objetivo.** Las nueve superficies `UX01`–`UX09` existen como componentes reales con el sistema
 visual final, recorribles por el Golden Path, con todos los estados críticos de sus specs
 representados como escenarios sintéticos. Apto para focus groups.
@@ -104,42 +439,78 @@ que se puede hacer hoy sin esperar una respuesta de nadie.
 
 **Dependencias.** ✅ **Ninguna abierta.** [ADR-008](decisions.md#adr-008) (stack),
 [ADR-010](decisions.md#adr-010) (traducción al dominio) y [ADR-012](decisions.md#adr-012) (alcance)
-quedaron `ACCEPTED` el 28 de agosto de 2026. **La fase está lista para arrancar.**
+quedaron `ACCEPTED` el 28 de agosto de 2026; [ADR-014](decisions.md#adr-014) (desktop-first y contrato
+del primer viewport) el 29 de agosto de 2026. **La fase está en curso.**
+
+> **Único `PENDING` dentro de la Fase 0:** dónde vive la CTA principal en desktop
+> ([`design-system-capturas.md`](design-system-capturas.md) §12.7). ADR-014 lo desbloqueó. **No afecta
+> a las etapas 0.1–0.3**; se cierra antes de la 0.4.
 
 ### Pre-flight checklist
 
 - [x] [ADR-008](decisions.md#adr-008) **aprobado** — Next.js 16 estándar
 - [x] [ADR-010](decisions.md#adr-010) **aprobado** — las respuestas `DD1`–`DD10` están escritas
 - [x] [ADR-012](decisions.md#adr-012) **aprobado** — Operador e Institución se difieren al Track B
-- [ ] Documentación SDD aprobada
-- [ ] Confirmado que la carpeta del prototipo sigue accesible como origen de la migración
-- [ ] Node ≥ 22.13 disponible (local: v24.10.0 ✓)
-- [ ] Confirmado que las 3 pantallas nuevas se construyen **desde las specs `VI.7`–`VI.9`**, no desde
+- [x] [ADR-014](decisions.md#adr-014) **aprobado** — desktop-first; 360 px es el piso móvil
+- [x] Documentación SDD aprobada — 29 ago 2026
+- [x] Confirmado que la carpeta del prototipo sigue accesible como origen de la migración —
+      `~/Desktop/ACHIEVE_LOW_FI_REVERSIBLE_PROTOTYPE_BUILD_v0.2 3/`, verificado el 29 ago 2026
+- [x] Node ≥ 22.13 disponible (local: v24.10.0 ✓, npm 11.6.0)
+- [x] Confirmado que las 3 pantallas nuevas se construyen **desde las specs `VI.7`–`VI.9`**, no desde
       el arnés QA
 
 ### Etapas
 
 | # | Etapa | Entregable | Estado |
 |---|---|---|---|
-| 0.1 | **Scaffold + migración de UI** | Repo que compila con `globals.css`, `components/ui/` (80), `components/screens/` (8), `lib/utils.ts`, `hooks/`. `lint` y `build` en verde | ⬜ |
-| 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ⬜ |
-| 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ⬜ |
-| 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ⬜ |
-| 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ⬜ |
-| 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ⬜ |
-| 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ⬜ |
-| 0.8 | **Modo focus group** | Recorrido limpio sin panel de debug + guion del test de 10 segundos | ⬜ |
+| 0.1 | **Scaffold + migración de UI** | Repo que compila con `globals.css`, `components/ui/` (61), `components/screens/` (7), `lib/utils.ts`, `hooks/`. `lint` y `build` en verde | ✅ |
+| 0.2 | **Capa de dominio + fixtures + parametrización** | `lib/domain/` con tipos y máquinas de estado puras; `lib/fixtures/` con el catálogo de escenarios; `UX01`–`UX06` recibiendo props tipadas | ✅ |
+| 0.3 | **Golden Path + registro de CTAs** | `lib/navigation/` con el grafo de transiciones y `CTA-001`…`CTA-018` con su condición de aparición y destino | ✅ |
+| 0.4 | **`UX07` — Activación de Modo Examen** | Componente real con sus estados críticos | ✅ |
+| 0.5 | **`UX08` — Modo Examen / Overview** | Componente real con la matriz de precedencia de 10 niveles | ✅ |
+| 0.6 | **`UX09` — Paso de Protocolo** | Componente real con contenido configurable | ✅ |
+| 0.7 | **Estados críticos de `UX01`–`UX06`** | Los 9 niveles de precedencia, los 7 estados de Evidence, renegociación, rescate, idempotencia y provenance, todos alcanzables | ✅ |
+| 0.8 | **Modo focus group** | Recorrido limpio sin panel de debug + guion del test de 10 segundos | ✅ |
 
 ---
 
 ### Etapa 0.1 — Scaffold + migración de UI
 
-**Decisiones de diseño a aprobar antes de codear:**
-1. ¿Se conservan los 80 componentes de `components/ui/` o solo los que se usan? *Recomendación:
-   conservarlos todos — es un registro vendorizado y podar ahora crea trabajo cuando aparezca una
-   pantalla nueva.*
-2. Estructura de rutas del App Router.
-3. Configuración de ESLint: mantener la excepción para `components/ui/**` (código vendorizado).
+**Decisiones de diseño — ✅ aprobadas el 29 de agosto de 2026:**
+
+1. **Se conservan los 61 componentes de `components/ui/`**, verbatim. Es un registro vendorizado;
+   podar ahora crea trabajo cuando aparezca una pantalla nueva en 0.4–0.6, y el bundler descarta lo
+   no usado.
+   *Corrección de dato: el prototipo tiene **61** archivos en `components/ui/`, no 80. El número
+   anterior estaba mal en `architecture.md` §2.2 y §2.5; se corrigió por medición.*
+2. **Rutas del App Router: route group `(student)` con rutas en el vocabulario de la UI**, tal como
+   [`architecture.md`](architecture.md) §2.3 ya declaraba. El identificador `UXnn` vive en el registro
+   de navegación (Etapa 0.3), **no en la URL** — el estudiante del focus group no ve identificadores
+   internos. Cumple `I-01`: una URL propia por superficie.
+
+   ```
+   app/
+   ├── layout.tsx
+   ├── globals.css
+   └── (student)/
+       ├── hoy/                 UX01
+       ├── materia/[id]/        UX02
+       ├── accion/[id]/         UX03
+       ├── compromiso/[id]/     UX04
+       ├── evidencia/[id]/      UX05
+       ├── progreso/            UX06
+       └── examen/
+           ├── activar/         UX07
+           ├── [id]/            UX08
+           └── [id]/paso/[n]/   UX09
+   ```
+
+   El route group deja lugar a `(operador)` en la Fase B6 sin refactorizar layouts.
+3. **ESLint mantiene la excepción para `components/ui/**`** (código vendorizado, no se edita).
+4. **`--chart-2` se reconcilia a `#f472b6`** (`--urgencia-fill`), no se elimina la familia. Es lo que
+   la regla ya escrita implica: `chart-1` es `exito-fill`, `chart-3` es `humano`, `chart-4`/`chart-5`
+   son grises ink; la ranura 2 es la de urgencia. No se inventa un color: se usa el que `DD6` ya
+   eligió. Ver [`design-system.md`](design-system.md) §1.5.
 
 **Trabajo:** copiar los archivos listados en [`architecture.md`](architecture.md) §2.5, adaptar
 `package.json` al stack de ADR-008, `layout.tsx` mínimo, `tsconfig.json` con `@/*`.
@@ -157,27 +528,106 @@ charts heredan solo de los tres semánticos. Ver
 
 ---
 
+#### ✅ Etapa 0.1 — COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` | ✅ verde, sin warnings |
+| `npm run build` | ✅ verde · Next.js 16.2.6 · 7 rutas estáticas prerenderizadas |
+| `npm test` | ✅ 9 tests en 2 archivos |
+| La app renderiza con tokens correctos | ✅ verificado en desktop 1440×900 y a 360 px, sin errores de consola ni pérdida de información |
+| `--chart-2` reconciliado | ✅ `#ff9500` → `#f472b6` (`--urgencia-fill`), verificado en el CSS servido y en los tokens computados del navegador |
+| Commit único | ✅ |
+
+**Migrado desde el prototipo:** `app/globals.css`, `vendor/` (2), `components/ui/` (61),
+`components/screens/` (7), `lib/utils.ts`, `hooks/use-mobile.ts`, `public/favicon.svg`.
+
+**Rutas creadas:** `/hoy` `/materia` `/accion` `/compromiso` `/evidencia` `/progreso` bajo el route
+group `(student)`, más `/` que redirige a `/hoy`.
+
+**Tests agregados:** `tests/design-tokens.test.ts` (los 3 semánticos, la herencia de los charts, la
+corrección de contraste de `--muted-foreground`) y `tests/track-a-rules.test.ts` (guard estático de
+cero red, cero persistencia y cero datos reales). El segundo es un criterio de Done de la **Fase 0**,
+no de esta etapa: se agregó desde el primer commit para que no haya que retrofitearlo en la 0.8.
+
+**Correcciones de dato aplicadas a los docs** (medidas, no decididas):
+
+- `components/ui/` tiene **61** archivos, no 80. `architecture.md` §2.2 y §2.5 decían 80.
+- El entregable de esta etapa decía `components/screens/` **(8)**, contando
+  `recorrido-diseno-visual.tsx`. [`architecture.md`](architecture.md) §2.5 —que este mismo párrafo
+  cita como la lista a copiar— lo marca **Reemplazado**: es un pager lineal de 6 pasos, no el grafo
+  del Golden Path, y su reemplazo es la Etapa 0.3. **No se migró.** Migran **7**.
+
+**Desviaciones y deuda declarada:**
+
+1. **Los segmentos dinámicos `[id]` no se crearon todavía.** La forma de rutas aprobada los incluye
+   (`materia/[id]`, `accion/[id]`, `compromiso/[id]`, `evidencia/[id]`), pero en esta etapa no existe
+   identidad sobre la cual rutear: el catálogo de fixtures es el entregable de la **Etapa 0.2**.
+   Crear el segmento ahora obligaba a inventar un identificador sintético sin catálogo que lo
+   respalde. **Los `[id]` se agregan en la 0.2, junto con los fixtures que les dan significado.**
+2. **El conmutador de demo interno de `HoyAutogestion`** (los chips `A · Al día`, `B · En curso`,
+   `C · Evidencia`, `D1 · Rescate`) **sigue visible.** La migración es verbatim por diseño; quitarlo
+   es trabajo explícito de la **Etapa 0.2**.
+3. **Las CTAs no navegan.** Las pantallas reciben `onAvanzar`/`onVerMateria` opcionales y nadie se
+   los pasa. El grafo de transiciones es la **Etapa 0.3**.
+4. **`(student)/layout.tsx` solo centra el contenido.** No implementa la proporción 2/3 + 1/3 de
+   `design-system.md` §6.2 ni ubica la CTA principal en desktop: eso depende de
+   [`design-system-capturas.md`](design-system-capturas.md) §12.7, que sigue `PENDING`.
+   **Resuelto después** por [ADR-015](decisions.md#adr-015); §6.2 quedó implementado en `UX07`,
+   `UX08` y `UX09`, y la CTA principal va a ancho completo al final de la columna.
+5. **`npm audit` reporta 3 vulnerabilidades `high`** en el árbol de dependencias heredado del
+   prototipo. No se tocaron: cambiar versiones del stack es una decisión de ADR-008, no de esta
+   etapa. **Queda registrado como deuda a evaluar antes de la Fase 0 Done.**
+
+   > ⚠️ **Ese gate no se cumplió, y hay que decirlo.** La Fase 0 se cerró 8/8 sin evaluar esta
+   > deuda. Re-verificado el 30 de agosto de 2026: **siguen siendo 3 `high`** — `next`, el `postcss`
+   > que arrastra, y `sharp` por CVEs heredadas de `libvips`. Ver §3.1.
+
+---
+
 ### Etapa 0.2 — Capa de dominio, fixtures y parametrización
 
 **La etapa más importante de la Fase 0.** Define la frontera que hace barato el Track B.
 
-**Decisiones de diseño a aprobar:**
-1. Forma del catálogo de fixtures: ¿escenarios completos (un objeto por escenario) o composición de
-   fragmentos? *Recomendación: escenarios completos y explícitos — el arnés original demostró que la
-   composición implícita produce reglas de negocio escondidas en comparaciones de string.*
-2. Nomenclatura de los escenarios. *Recomendación: conservar los IDs del spec (`FX-DAY-BASE`,
-   `SC-EV-01`…) para preservar trazabilidad con `product-spec-source.md`.*
-3. Dónde vive el copy: ¿en el componente o en un archivo de contenido con ID? *Recomendación:
-   archivo de contenido, cumpliendo `C-07`.*
-4. El orden por defecto de las listas ya está definido por `DD2`: **Commitment más próximo a vencer
-   primero, proximidad del examen en segundo lugar**, nunca fusionados en un solo número
-   ([`domain-translation-dd1-dd10.md`](domain-translation-dd1-dd10.md)).
+**Decisiones de diseño — ✅ aprobadas el 29 de agosto de 2026:**
+
+1. **Escenarios completos y explícitos.** Un objeto por escenario, con su estado escrito literal.
+   Nada hereda de nada y no hay merges. Es verboso a propósito: el arnés original demostró que la
+   composición implícita produce reglas de negocio escondidas en comparaciones de string.
+2. **Se conservan los IDs del spec.** `FX-DAY-BASE`, `FX-MISSED`, `FX-EVD-BASE`, `FX-ADE-NONE` salen
+   del registro canónico de `product-spec-source.md` §7, y cada escenario declara qué `C01` y qué
+   `SC-*` cubre. **Un test verifica que un ID marcado como del spec realmente esté en el spec.**
+
+   *Consecuencia no prevista por el roadmap:* el registro del spec **no nombra todos** los
+   escenarios que el Track A necesita — no hay `FX` para "Action ya iniciada" ni para progreso.
+   Inventar un `FX-` con forma canónica haría que alguien lo buscara en el spec y no lo encontrara.
+   Los que el spec no nombra llevan prefijo **`FX-LOCAL-`**, y un test verifica que esos **no**
+   estén en el spec. Hoy son dos: `FX-LOCAL-DAY-IN-PROGRESS` y `FX-LOCAL-PROG-VALIDATED`.
+3. **El copy vive en `lib/content/es-AR.ts` con ID tipado**, cumpliendo `C-07`. Los datos del
+   dominio viven en el fixture. Un test estático verifica que los prefijos de dominio
+   (`Porque:`, `Entregá:`, `Después:`, `Cerrás cuando:`) no vuelvan al JSX.
+4. **Alcance:** frontera + escenarios base. Esta etapa entrega la capa de dominio completa y los
+   escenarios que hacen que las 6 pantallas rendericen lo que ya rendían. **La cobertura completa de
+   estados críticos sigue siendo la Etapa 0.7**, y no se adelanta acá: escribir escenarios para
+   estados que las pantallas todavía no saben dibujar produce fixtures sin verificación visual.
+5. El orden por defecto de las listas ya estaba definido por `DD2`: **Commitment más próximo a
+   vencer primero, proximidad del examen en segundo lugar**, nunca fusionados en un solo número
+   ([`domain-translation-dd1-dd10.md`](domain-translation-dd1-dd10.md)). Implementado como
+   `compareByDefaultOrder`, con un test que verifica que un examen inminente **no** adelanta a un
+   Commitment que vence antes — que es exactamente lo que pasaría si los dos relojes se fusionaran
+   en un score.
 
 **Trabajo:**
 - `lib/domain/types.ts` — los tipos de [`data-model.md`](data-model.md) §13.
 - `lib/domain/state-machines.ts` — las cuatro máquinas como tablas de transición puras.
-- `lib/domain/precedence.ts` — `selectHeroLevel` extraída de `hoy-autogestion.tsx` y **ampliada de
-  4 a los 9 niveles** de `product.md` §10.2.
+- `lib/domain/precedence.ts` — `selectHeroLevel` extraída de `hoy-autogestion.tsx`.
+
+  > **Corrección de dato.** El roadmap decía "ampliada de 4 a los 9 niveles". La función **ya tenía
+  > los 9**; lo que estaba limitado a 4 era el **renderizado** en `UX01`. La extracción no amplió
+  > nada: agregó el test por nivel que faltaba. Dibujar los niveles restantes sigue siendo trabajo
+  > de la Etapa 0.7, tal como esa etapa ya lo declara.
 - `lib/fixtures/` — el catálogo.
 - `lib/content/` — las frases de regla de negocio con ID.
 - Parametrizar `UX01`–`UX06`: **preservando el JSX y el copy**, reemplazando los datos hardcodeados
@@ -193,12 +643,95 @@ charts heredan solo de los tres semánticos. Ver
 
 ---
 
+#### ✅ Etapa 0.2 — COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Ninguna pantalla importa un fixture | ✅ test estático en `tests/track-a-rules.test.ts`, junto con "`lib/domain/` no importa React ni fixtures" |
+| Transiciones prohibidas con test | ✅ 18 tests. `MISSED → COMPLETED` falla, `MISSED` solo sale a `CLOSED`, `STARTED` no admite `RENEGOTIATED`, `SUBMITTED` no salta a `VALIDATED` |
+| `selectHeroLevel` con test por nivel | ✅ los 9, más un test que verifica que **cada nivel gana sobre todos los posteriores** |
+| Las 6 pantallas renderizan igual | ✅ ver abajo |
+| `npm run lint` · `npm run build` · `npm test` | ✅ verde · verde · **76 tests en 6 archivos** |
+
+**Verificación visual, en dos capas.**
+
+1. **Diff píxel a píxel** contra las capturas de la Etapa 0.1, en desktop 1440×900 y a 360 px.
+   `UX05` salió **idéntica byte a byte**. `UX02`, `UX03`, `UX04` y `UX06` difieren en **97–459
+   píxeles (≤ 0,07 % de la imagen)**, con los deltas confinados a los bordes de glifo de las líneas
+   donde el prefijo de copy y el dato ahora son dos nodos de texto en vez de uno. Sin corrimiento de
+   layout y sin cambio de contenido. `UX01` difiere mucho, como corresponde: **se le quitó el
+   conmutador de demo interno**, que es trabajo pedido por esta etapa.
+2. **Comparación de texto renderizado** contra el árbol de la Etapa 0.1 (commit `2c2ac8b`): los 84
+   fragmentos de texto del código anterior siguen presentes. 67 visibles hoy en una URL, 11 en el
+   catálogo esperando que la 0.3 los cablee, y 6 que ahora se **componen** en tiempo de render.
+   Esos 6 quedaron cubiertos por `tests/screens-render.test.tsx`, que afirma las frases exactas de
+   la 0.1 —*"En curso · Entregá: 7 ejercicios"*, *"Porque: la acción se cierra con evidencia
+   verificable."*…— en los cinco niveles que `UX01` dibuja. La verificación manual quedó convertida
+   en guard permanente.
+
+**Entregado:**
+
+- `lib/domain/` — `types.ts` (entidades, provenance, las 4 formas de ausencia tipada),
+  `state-machines.ts` (las 4 tablas de transición), `precedence.ts` (`selectHeroLevel` + el orden
+  por defecto de `DD2`), `view-models.ts` (la frontera: las props de cada pantalla).
+- `lib/content/` — `es-AR.ts` (copy con ID tipado) y `hero.ts` (nivel → copy).
+- `lib/fixtures/` — 6 escenarios: `FX-DAY-BASE`, `FX-EVD-BASE`, `FX-MISSED`, `FX-ADE-NONE`,
+  `FX-LOCAL-DAY-IN-PROGRESS`, `FX-LOCAL-PROG-VALIDATED`.
+- Las 6 pantallas con props tipadas; las rutas leen el escenario y lo proyectan.
+
+**Deuda declarada:**
+
+1. **Los segmentos `[id]` siguen sin crearse.** El catálogo ya da identidad, pero elegir escenario
+   por URL es parte del grafo de navegación, que es la **Etapa 0.3**. Cada ruta usa hoy un escenario
+   fijo, y por eso 11 fragmentos de copy están en el catálogo sin URL que los alcance.
+2. **`lib/content/hero.ts` cubre 5 de los 9 niveles**, a propósito. Los otros cuatro entran en la
+   0.7 y dos de ellos **necesitan una decisión previa**: `product.md` §10.2 le da a
+   `COMMITMENT_NEXT` dos verbos (*"Ver compromiso"* / *"Empezar"*) y a `EVIDENCE_INFO` otros dos
+   (*"Ver evidencia"* / *"Ver avance"*) sin decir cuál aplica cuándo. **No se eligió**: elegir sería
+   inventar una regla de negocio.
+3. **`ExamPreparation` no tiene tabla de transiciones.** `data-model.md` §3.4 declara los nueve
+   estados pero no sus transiciones, y tres de ellos colisionan con
+   [ADR-011](decisions.md#adr-011). Se exportan los estados y **no se aproxima una tabla**. Se cierra
+   en la Fase B5.
+4. **`UX02` dice "Entrega:" donde `UX01` dice "Entregá:".** Viene del copy original de las dos specs
+   y **se preservó tal cual**, con los dos IDs separados en `lib/content/`. Si es una grieta de tono
+   (anti-patrón `A-05`) o dos usos legítimos —imperativo voseado vs. sustantivo— lo resuelve la
+   auditoría de la Etapa 0.7. No se normalizó en silencio.
+5. **`DimensionValue` y `TopicProgressDimensions` están tipados pero `UX06` todavía no se apoya en
+   ellos**: sus filas siguen siendo texto con marca de ausencia, como en la 0.1. Atar las cinco
+   dimensiones al tipo es trabajo de la 0.7 y de la Fase B3.
+
+---
+
 ### Etapa 0.3 — Golden Path y registro de CTAs
 
-**Decisiones de diseño a aprobar:**
-1. ¿Cada superficie tiene URL propia (`I-01`)? *Recomendación: sí — es requisito del manual y hace el
-   focus group mucho más manejable.*
-2. Cómo se representa una transición no canónica (los fallbacks de retorno seguro).
+**Decisiones de diseño — ✅ aprobadas el 29 de agosto de 2026:**
+
+1. **Cada superficie tiene URL propia** (`I-01`). Ya quedó resuelto en la Etapa 0.1 con el route
+   group `(student)`; acá solo se confirma. Un test verifica que cada superficie **o** tiene ruta
+   **o** declara qué etapa la construye, nunca las dos ni ninguna.
+2. **Los fallbacks son aristas del grafo, no texto.** El grafo tiene dos clases de arista:
+   `canonica` y `retornoSeguro`, y las dos apuntan a nodos reales. Eso permite verificar por test
+   que todo destino de retorno existe y que ningún nodo queda encerrado — que es literalmente lo que
+   promete "retorno seguro".
+3. **Aparición y habilitación son cosas distintas.** El Done de esta etapa decía que *"una CTA cuya
+   condición no se cumple no se renderiza, en vez de renderizarse deshabilitada"*, y eso chocaba con
+   `UX05`, que muestra *Enviar evidencia* deshabilitada hasta que hay adjunto. Se resolvió
+   separando:
+
+   | | Pregunta | Si no se cumple |
+   |---|---|---|
+   | `aparece` | ¿Existe el contrato y el objeto está en el estado que la CTA supone? | **No se renderiza.** No en gris: desaparece |
+   | `habilitada` | ¿Falta algo que el estudiante puede completar en esta misma pantalla? | Se renderiza **deshabilitada**, con tratamiento propio (`A-08`) |
+
+   El spec respalda la distinción: el estado de error de `CTA-017` dice literalmente *"ocultar **o**
+   no habilitar"*. `UX05` no cambió.
+4. **Alcance:** se declaran las 18 y el test de alcance se exige sobre las CTAs cuya superficie de
+   origen ya existe. `CTA-011`, `CTA-012` y `CTA-013` quedan bloqueadas por etapa, **y un test
+   afirma que lo están porque su superficie es la que falta**: en cuanto la 0.4 le dé ruta a `UX07`,
+   ese test rompe hasta que se cablee `CTA-011`. La brecha no puede quedarse callada.
 
 **Trabajo:** `lib/navigation/golden-path.ts` con el grafo, y `lib/navigation/cta-registry.ts` con las
 18 CTAs, cada una con condición de aparición, acción solicitada, destino, resultado autoritativo,
@@ -211,6 +744,75 @@ fallback y estado de error, según `product-spec-source.md` Parte III §5.
 
 ---
 
+#### ✅ Etapa 0.3 — COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Las 18 CTAs declaradas con sus 9 campos | ✅ `lib/navigation/cta-registry.ts`, transcripción de `product-spec-source.md` Parte III §5 |
+| Alcanzables desde algún escenario | ✅ **15 de 15 exigibles.** Las 3 restantes bloqueadas por etapa, con guard que rompe cuando su superficie exista |
+| Una CTA sin condición no se renderiza | ✅ `ctasVisibles` no la devuelve. Con el contexto vacío **ninguna** CTA aparece en **ningún** nodo: deny-by-default |
+| Test estático de alcance | ✅ un test por CTA, más dos que impiden que la lista de bloqueadas crezca o se quede vieja |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **122 tests en 7 archivos** |
+
+**El grafo camina de verdad.** Las rutas ya no usan escenario fijo: el destino de cada CTA sale del
+registro. Verificado por clic en el navegador, sin errores de consola:
+
+```
+/hoy  --[Comprometerme]-->      /accion      (CTA-002)
+/accion --[Me comprometo]-->    /compromiso  (CTA-003)
+/compromiso --[Confirmar]-->    /hoy         (CTA-004)
+/hoy  --[Programación]-->       /materia     (CTA-001)
+/materia --[Comprometerme]-->   /accion      (CTA-002)
+/progreso --[Ver siguiente]-->  /hoy         (CTA-010)
+```
+
+**Dos correcciones que el propio test encontró:**
+
+1. **`CTA-015` apuntaba a `UX04`, saliendo de `UX04`** — un bucle. El spec dice `UX04/rescate`, que
+   es un flujo propio. Se modeló `UX04_RESCATE` como nodo separado, por la misma razón que
+   `UX04_RENEGOCIACION` y por una de fondo: **el rescate es otro objeto, no una edición del
+   original**. Colapsarlo en `UX04` haría parecer que `CTA-015` vuelve sobre el Commitment
+   incumplido.
+2. **Quedarse quieto no es una arista.** El *"conservar Hoy"* de `CTA-001` desde `UX01` no es una
+   transición. Se decide por arista y no por fila, porque una CTA con varios orígenes puede ser las
+   dos cosas: el *"mantener Commitment vigente"* de `CTA-017` es un movimiento real desde `UX01` y
+   ninguno desde `UX04`.
+
+**Tres huecos encontrados, que esta etapa no cierra:**
+
+1. **`UX05` no es alcanzable por clic.** El spec rutea `UX04 → ejecución → UX05`, y `ejecución` es
+   un nodo **sin pantalla**. Hoy sólo se llega a `/evidencia` escribiendo la URL. No se inventó una
+   transición: el grafo dice lo que el spec dice. **Lo tiene que resolver la Etapa 0.8**, que es la
+   que promete un recorrido limpio para focus group.
+2. **`UX06` tampoco es alcanzable por clic.** `CTA-009` (*ver progreso*) está declarada y es
+   alcanzable en contexto desde `UX01`, `UX02` y `UX05`, pero **ninguna pantalla la renderiza
+   todavía**. Es trabajo de la **Etapa 0.7**, que es la que lleva cada pantalla a la cobertura de
+   CTAs de su spec.
+3. **`UX06` promete una transición que el registro no autoriza.** Su CTA principal dice *"Ver
+   siguiente acción"*, pero desde `UX06` la única CTA del registro es `CTA-010`, cuya acción es
+   *"volver a Hoy"*. Se cableó `CTA-010` —lo que el spec autoriza— y **no se tocó el copy**. Si el
+   copy está mal o si falta una CTA en el registro es una pregunta para la auditoría de la **0.7**.
+
+> ⚠️ **Consecuencia para el Done de la Fase 0.** El criterio *"el Golden Path es recorrible extremo a
+> extremo"* **todavía no se cumple**: el loop `UX01 → UX03 → UX04 → UX01` y la rama de lectura sí,
+> pero `UX05` y `UX06` no tienen entrada por clic. Queda anotado acá para que no se dé por hecho al
+> llegar a la 0.8.
+
+**Deuda declarada:**
+
+- **`EJECUCION` no tiene retorno seguro**, y es correcto: su único fallback declarado es *"mantener
+  ejecución"*. El spec no define una salida de la ejecución que no sea terminarla, y agregar una
+  sería inventar una transición. Un test fija la lista de nodos sin retorno en exactamente
+  `["EJECUCION"]`, para que aparezca un segundo y nadie lo note.
+- Los escenarios de navegación nuevos —`FX-REN-ELIGIBLE`, `FX-REN-INELIGIBLE`, `FX-REFL-OPT`,
+  `FX-ERROR-IDEM`, `FX-LOCAL-COMMITMENT-CONFIRMED`, `FX-LOCAL-EVD-RESUBMISSION`— **declaran contexto
+  sin vista**. Dicen en qué estado está el mundo para que las CTAs sean alcanzables; dibujar esos
+  estados es la Etapa 0.7.
+
+---
+
 ### Etapas 0.4–0.6 — Las tres pantallas de Modo Examen
 
 Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
@@ -218,14 +820,29 @@ Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
 **Fuente:** `product-spec-source.md` §VI.7 (líneas 10131–11556), §VI.8 (11557–12714), §VI.9
 (12715–14607). **No** el arnés QA.
 
-**Decisiones de diseño transversales a las tres, a aprobar:**
-1. `UX07`: el baseline es `RECOMMENDED → CTA del estudiante → ACTIVE`. **No existe variante
-   auto-activa.** Confirmar que se respeta.
-2. `UX07`: el alta de un `Assessment` no registrado **no se implementa** (`SCP-09`/`SCP-10` abiertos).
-   Se muestra el estado no implementable con retorno seguro.
-3. `UX08`: la matriz de precedencia tiene 10 niveles. Confirmar el orden.
-4. `UX08`: **sin card de readiness** ([ADR-011](decisions.md#adr-011)).
-5. `UX09`: **no se muestra "Paso 5 de 12"** ni porcentaje. Los 12 pasos son provisionales.
+**Decisiones de diseño transversales a las tres:**
+1. ✅ **Confirmado en la 0.4.** `UX07`: el baseline es `RECOMMENDED → CTA del estudiante → ACTIVE`.
+   **No existe variante auto-activa.** Hay un test que lo verifica: ningún escenario habilita
+   `CTA-011` sin confirmación explícita del estudiante.
+2. ✅ **Confirmado en la 0.4.** El alta de un `Assessment` no registrado **no se implementa**
+   (`SCP-09`/`SCP-10` abiertos). `FX-LOCAL-EXAM-SIN-ASSESSMENT` muestra el estado no implementable
+   con retorno seguro, sin formulario y sin CTA primaria.
+3. ✅ **Confirmado en la 0.5.** `UX08`: la matriz de precedencia tiene **10 niveles ordenados, en
+   14 filas** — el spec abre el nivel 3 en tres variantes (`CONFIRMED` futuro / `DUE` / `STARTED`),
+   el 4 en dos (rescate requerido / rescate materializado) y el 9 en `9a`/`9b`. Se conservó la
+   numeración del spec en vez de aplanarla a catorce, porque aplanarla rompía la trazabilidad contra
+   §13. Implementada como `selectOverviewLevel`, función pura, con los **nueve conflictos que §13
+   declara** testeados uno por uno.
+4. ✅ **Confirmado y precisado en la 0.5.** `UX08` **no crea card de readiness**
+   ([ADR-011](decisions.md#adr-011)). Pero eso no es lo mismo que ocultar un status recibido:
+   `VI.8` §18 autoriza mostrar `READY_BY_PROTOCOL` con una frase literal cuando el owner lo manda.
+   **Son cosas distintas** — calcular y presentar readiness *versus* releer un valor que
+   `ExamPreparation` ya trae. La pantalla no calcula, no deriva, no muestra score ni porcentaje, y
+   el descargo *"Esto no predice ni garantiza el resultado"* viaja siempre pegado al valor.
+5. ✅ **Confirmado en la 0.6.** `UX09`: **no se muestra "Paso 5 de 12"** ni porcentaje. `VI.9` §13.2
+   lo funda: instancia, orden, `current`/`next` y deduplicación siguen `SOURCE CONTRACT PENDING`. La
+   versión del protocolo sí se muestra, tal como llega y **sin declararla vigente**. Hay un test que
+   verifica las tres cosas sobre los 35 escenarios.
 
 **Estados críticos mínimos por pantalla:**
 
@@ -245,10 +862,154 @@ Son **secuenciales**: `UX08` recibe el handoff de `UX07`, y `UX09` el de `UX08`.
 
 **Done cuando (cada una):**
 - Todos los estados críticos de su spec son alcanzables desde el catálogo de fixtures.
-- El primer viewport a 360 px cumple el contrato de su spec.
+- El primer viewport cumple el contrato de orden semántico de su spec **en desktop**, y no lo pierde
+  a 360 px ([ADR-014](decisions.md#adr-014)).
 - Una sola CTA primaria por estado.
 - Los fallbacks **omiten**, no inventan.
 - Lint, build y tests en verde.
+
+---
+
+#### ✅ Etapa 0.4 — `UX07` COMPLETA · 29 de agosto de 2026
+
+**Readiness.** La etapa arrancó con `design-system-capturas.md` §12.7 en `PENDING`, que era su único
+bloqueo. Se cerró antes de codear con [ADR-015](decisions.md#adr-015) — y **no hizo falta decidir
+nada nuevo**: la pregunta estaba mal planteada. §12.7 razonaba desde las capturas anonimizadas, que
+son de **otro producto**; la spec `VI.7` tiene wireframes desktop propios (§21.2 y §24) y ya
+contestaba. `AGENTS.md` §8 pone `product-spec-source.md` por encima de las capturas.
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Estados críticos alcanzables | ✅ **23 escenarios**: los 22 de la matriz de `VI.7` §16 más `VERIFICANDO`, que §15 lista y §16 no numera |
+| Los 16 estados funcionales de §15 | ✅ todos cubiertos, verificado por test |
+| Una sola CTA primaria por estado | ✅ test por escenario: se renderiza exactamente una, o ninguna |
+| Fallbacks que omiten, no inventan | ✅ sin alta de `Assessment`, sin countdown con fecha desconocida, sin selector de modalidad, sin elegir entre fuentes disputadas |
+| Contrato de orden en desktop y a 360 px | ✅ los 23 estados renderizados en ambos anchos, sin scroll horizontal ni errores de consola |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **149 tests en 8 archivos** |
+
+**Layout, según ADR-015 y `VI.7` §21.2.** Dos columnas: principal con identidad, datos, razón y
+decisión; secundaria con efecto real, continuidad y salida. La CTA primaria va **a ancho completo al
+final de la columna principal** —medido: ocupa el 92 % del ancho de su columna y es su último
+elemento— y el retorno seguro vive en la secundaria, sin estilizarse como primaria. A 360 px las
+columnas se apilan conservando el orden obligatorio de §21.1.
+
+**Cómo se alcanza cada estado.** `/examen/activar?escenario=<ID>` abre cualquiera de los 23 sin panel
+de debug en pantalla. Es un parámetro de **lectura**: no persiste nada, sigue siendo cero red y cero
+storage. La 0.8 decide cuáles entran en el recorrido limpio.
+
+**Invariantes que la pantalla hace visibles:**
+
+- **§21.3 — cuando ya existe `ACTIVE`, el estado reemplaza el CTA de activación.** No queda un botón
+  *Activar* deshabilitado que sugiera una segunda operación. Es el caso donde la regla de la 0.3
+  cae del lado de *ocultar*, no de *deshabilitar*.
+- **Ninguna capa eleva la verificación.** La provenance se verifica **por dato**, no por pantalla:
+  una misma vista mezcla una fecha reportada por el estudiante con una modalidad oficial, y la
+  primera no hereda la verificación de la segunda. Los datos son direccionables (`data-dato`)
+  justamente para poder testearlo así.
+- **Los enums técnicos nunca son copy visible** — test sobre los 23 escenarios.
+- **Sin porcentajes ni readiness numérica** (`DD5`) — test sobre los 23.
+
+**`CTA-011` quedó cableada.** El guard que la 0.3 dejó puesto hizo exactamente lo que prometía: al
+darle ruta a `UX07`, el test rompió hasta sacarla de la lista de bloqueadas y hacerla alcanzable.
+Quedan 2 bloqueadas: `CTA-012` (0.5) y `CTA-013` (0.5).
+
+> ✅ **Cerrado el 1 de septiembre de 2026** por [ADR-016](decisions.md#adr-016), opción A: se agregó
+> `CTA-019` (`UX02 → UX07`) y el registro pasó a 19. Lo que sigue es cómo estaba en la Etapa 0.4.
+
+**Hallazgo registrado como [ADR-016](decisions.md#adr-016) `PENDING`:** **ninguna de las 18 CTAs del
+registro canónico lleva a `UX07`**, pero `VI.7` §9 describe en detalle una entrada manual *"desde
+Materia/Cursado"*. O falta una CTA en el registro, o la entrada manual es una affordance sin
+contrato. **No se inventó `CTA-019`.** `UX07` queda alcanzable por URL y por catálogo, no por clic
+desde `UX02` — el mismo tipo de hueco que la 0.3 registró para `UX05` y `UX06`, y se resuelve junto
+con ellos antes de la 0.8.
+
+**Diferencias con el wireframe, anotadas para la auditoría de la 0.7:**
+
+1. `VI.7` §24.2 dibuja la lista de selección y el panel de revisión en **columnas contiguas**. Acá
+   van una debajo de otra dentro de la columna principal, porque la secundaria ya lleva el efecto
+   real que §21.2 le asigna. La lista va **antes** del panel: primero se elige y el panel *"sólo
+   aparece para la seleccionada"*.
+2. `CTA-011` apunta a `UX08`, que no existe hasta la 0.5. Hasta entonces la CTA **no navega**; no se
+   inventó un destino.
+
+---
+
+#### ✅ Etapa 0.5 — `UX08` COMPLETA · 29 de agosto de 2026
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| Estados críticos alcanzables | ✅ **35 escenarios** cubriendo los 28 estados obligatorios de `VI.8` §16 y sus variantes |
+| Los 10 niveles de precedencia | ✅ todos alcanzables desde el catálogo, y las 7 variantes también |
+| Los 9 conflictos que §13 declara | ✅ un test por conflicto, más el de que cada nivel gana sobre todos los posteriores |
+| Una sola CTA primaria por estado | ✅ test por escenario |
+| Sin readiness calculada | ✅ ningún escenario muestra porcentaje, score ni *"Listo para rendir"*; sólo uno trae status recibido, y con su descargo |
+| Contrato de orden en desktop y a 360 px | ✅ los 35 renderizados en ambos anchos, sin scroll horizontal ni errores de consola |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **203 tests en 10 archivos** |
+
+**La matriz de precedencia es distinta de la de `UX01`.** Aquélla ordena el día; ésta ordena una
+preparación concreta y **no compara materias**. Vive en `lib/domain/overview-precedence.ts`, separada
+de `precedence.ts`, y sigue el mismo patrón: la función decide, el fixture declara la condición.
+
+**Dos huecos que encontraron los propios tests:**
+
+1. **Faltaba el nivel 5** — `Evidence RESUBMISSION_REQUESTED` → *PREPARAR NUEVA EVIDENCIA*. §16 no lo
+   numera como estado obligatorio, pero §13 y §14 lo declaran. El test de cobertura de niveles lo
+   cazó y se agregó `FX-LOCAL-OV-RESUBMISSION`.
+2. **Faltaba la variante de rescate materializado** del nivel 4, que tiene su propio lifecycle y
+   convive con el `MISSED` original preservado. Se agregó `FX-LOCAL-OV-RESCATE-REAL`.
+
+**El guard de CTAs se afinó, porque estaba midiendo lo que no era.** Al darle ruta a `UX08` rompió
+por `CTA-012` — pero `CTA-012` **nace** en `UX08`, así que su origen ya existe; lo que le falta es el
+**destino** (`UX09`, Etapa 0.6). Son dos huecos distintos y ahora se testean por separado:
+
+- la lista de CTAs con **superficie de origen pendiente** quedó **vacía**: las 18 son exigibles y
+  alcanzables;
+- una lista nueva fija las CTAs con **destino sin ruta**, hoy exactamente `["CTA-012"]`, que se
+  vacía cuando la 0.6 construya `UX09`.
+
+**Diferencia con el wireframe, anotada para la 0.7:** `VI.8` §25 muestra el estado de la preparación
+como el enum `ExamPreparation ACTIVE`. Acá se usa el microcopy que §23 define —*"PREPARACIÓN
+ACTIVA"*— porque §19 prohíbe que los enums técnicos sean copy principal, y §24 declara que los
+wireframes son funcionales y no high-fi.
+
+---
+
+#### ✅ Etapa 0.6 — `UX09` COMPLETA · 29 de agosto de 2026
+
+**Con esto existen las nueve superficies.**
+
+| Criterio | Resultado |
+|---|---|
+| Estados críticos alcanzables | ✅ **35 escenarios** cubriendo los 31 estados obligatorios de `VI.9` §22 |
+| Los 11 niveles de precedencia de §19 | ✅ todos alcanzables, más un test de que cada nivel gana sobre los posteriores |
+| Los 9 conflictos que §19.1 declara | ✅ uno por uno |
+| Nunca `Paso N de M` ni porcentaje | ✅ test sobre los 35, en código y en navegador |
+| Una sola CTA primaria por estado | ✅ test por escenario |
+| Retorno seguro en todos los estados | ✅ los 35 conservan salida al Overview |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **249 tests en 11 archivos** |
+
+**Tres matrices de precedencia, tres funciones puras separadas.** `UX09` §19 se parece mucho a
+`UX08` §13, pero no es la misma: el nivel 7 abre el **recurso** en vez del paso, hay un nivel 10
+propio (paso completado → abrir el nuevo current) y el fallback vuelve al Overview, no al Cursado.
+Se mantuvieron separadas porque son dos documentos normativos distintos: unificarlas haría que un
+cambio en §13 alterara `UX09` en silencio.
+
+**Se extrajo la primitiva `Dato`** a `components/screens/design-system.tsx` —la primitiva
+`Provenance` que §3.2 del sistema de diseño declaraba faltante—. `UX07`, `UX08` y `UX09` ya tenían
+tres copias de la misma regla, y la regla de provenance es justamente la que menos conviene dejar
+divergir. Los 53 tests de `UX07` y `UX08` siguen en verde tras el cambio.
+
+**El guard de destinos se vació.** Al darle ruta a `UX09`, `CTA-012` dejó de tener destino pendiente:
+**las 18 CTAs son alcanzables y todos sus destinos tienen pantalla.**
+
+**Deuda declarada:** en el Track A no hay un `Resource` real que abrir, así que *ABRIR RECURSO*
+no navega. Es coherente con §19.3 —abrir el recurso es navegación, no transición, y no muta nada—
+pero significa que ese CTA no hace nada visible. La **Etapa 0.8** decide si el recorrido de focus
+group lo incluye y con qué destino sintético.
 
 ---
 
@@ -273,6 +1034,65 @@ imprimir en blanco y negro no pierde información.
 
 ---
 
+#### ✅ Etapa 0.7 — COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Los 9 niveles de precedencia de `UX01` | ✅ los nueve, más sus **cinco variantes de CTA** |
+| Los 8 estados del lifecycle de `Commitment` | ✅ los ocho, verificados contra la tabla de transiciones |
+| Los 7 estados de `Evidence` | ✅ los siete, más upload en curso, upload fallido, artefacto formal, entrega tardía y Reflection requerida |
+| Renegociación, rescate y provenance | ✅ elegible y no elegible, con el original visible y no editable |
+| Las 4 variantes de resultado de progreso | ✅ y los tres estados de no-cambio, distinguibles entre sí |
+| Imprimir en blanco y negro | ✅ verificado en el navegador: el texto es idéntico con `grayscale(1)` |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **304 tests en 13 archivos** |
+
+**37 escenarios nuevos** para `UX02`–`UX06` más **7** para los niveles que le faltaban a `UX01`.
+Las seis rutas aceptan `?escenario=`, así que **todo estado crítico tiene URL** (`I-01`).
+
+**[ADR-017](decisions.md#adr-017) cerró la deuda que venía desde la Etapa 0.2.** Los dos verbos que
+`product.md` §10.2 dejaba ambiguos no eran una decisión abierta: era **un resumen que había perdido
+el discriminador**. `VI.1` §3.2 lo dice completo —el nivel 3 se decide por **tiempo acordado**, el 8
+por **lifecycle de la Evidence**— y `VI.2` lo repite en su tabla de CTA por lifecycle. Mismo patrón
+que ADR-015: la respuesta estaba en la fuente de mayor precedencia.
+
+**Un defecto real que el ADR destapó.** `selectHeroLevel` trataba `RESCUE_MATERIALIZED` como un nivel
+3 automático. `VI.1` §3.2 dice lo contrario: *"no describe por sí solo qué necesita hacer el alumno
+ahora, por eso participa en la precedencia según su lifecycle real"*. Con el código anterior, un
+rescate materializado **desplazaba a una recomendación vigente sin tener objeto que abrir**. Ahora
+participa por su lifecycle y hay un test que fija la conducta.
+
+**`UX06` pasó a ser alcanzable por clic.** `CTA-009` (*ver progreso*) estaba declarada desde la
+Etapa 0.3 y ninguna pantalla la renderizaba. Ahora aparece en `UX01` **sólo si el contexto declara la
+Bitácora disponible** —es su condición de aparición— y el recorrido `Hoy → Progreso → Hoy` funciona.
+
+**Auditoría de conformidad de [`design-system.md`](design-system.md) §9.** Corrida, con los fallos
+reportados:
+
+| Bloque | Resultado |
+|---|---|
+| 2 · Contenido | ✅ `C-01`, `C-02`, `C-03`, `C-06`, `C-07` automatizados y en verde |
+| 4 · Datos | ✅ `P-03` sin magnitudes crudas; `P-09` las cuatro ausencias con copy propio |
+| 5 · Visual | ✅ `A-08` deshabilitado con tratamiento propio; `P-06` ningún estado sólo por color; `V-02` mono sólo donde corresponde |
+| 6 · Interacción | ✅ `I-01` todo estado con URL; `I-05` el bloqueante arriba de la CTA; **recorrido completo con `Tab` en las 9 superficies, con anillo de foco visible en todas las paradas** |
+| **No corrido** | ⚠️ **Lector de pantalla** sobre la pantalla más compleja, y **`A-01` con datos sucios reales**. Los dos exigen una persona y datos que el Track A no tiene. Quedan para la **0.8** y para el Track B respectivamente |
+
+**Se cerró la grieta de tono que la 0.2 había dejado anotada.** `UX02` decía *"Entrega:"* donde
+`UX01` dice *"Entregá:"*, para el mismo campo. No era un error —las dos formas son español
+correcto—: era **la excepción que el propio checklist pide buscar** (*"`C-01` Una sola persona
+gramatical. Buscá la excepción: siempre hay una"*). Se unificó a la forma de `UX01` por `C-01` y
+`C-02`. **Es un cambio de copy respecto del prototipo** y queda anotado.
+
+**Cambio menor de infraestructura:** la CTA primaria lleva `data-cta-primaria`. Contar por `w-full`
+daba falsos positivos —el área de adjuntar de `UX05` también la usa— y el test de *una sola CTA
+primaria* estaba midiendo mal.
+
+**Lo que sigue abierto para la 0.8:** `UX05` **todavía no es alcanzable por clic**. El spec la rutea
+`UX04 → ejecución → UX05`, y `ejecución` es un nodo sin pantalla. Junto con
+[ADR-016](decisions.md#adr-016) (ninguna CTA lleva a `UX07`), son los dos huecos que quedan del
+recorrido.
+
+---
+
 ### Etapa 0.8 — Modo focus group
 
 **Trabajo:** un recorrido limpio sin panel de debug, con reset determinista, y el guion del test de
@@ -281,39 +1101,425 @@ imprimir en blanco y negro no pierde información.
 **Done cuando:** una persona ajena al proyecto puede recorrer el Golden Path completo en un teléfono
 sin instrucciones, y el facilitador tiene el guion con los criterios de PASS.
 
+---
+
+#### ✅ Etapa 0.8 — COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Recorrido completo por clic, a 360 px | ✅ **10 de 10 estaciones**, sin errores de consola |
+| Sin panel de debug | ✅ ninguna pantalla muestra IDs de fixture ni andamiaje interno |
+| Reset determinista | ✅ recargar `/hoy`. Verificado: tras paginar la lista y adjuntar evidencia, la recarga devuelve el DOM inicial |
+| Guion del facilitador | ✅ [`guion-focus-group.md`](guion-focus-group.md), con las preguntas y respuestas de cada spec `VI.*` y su criterio de PASS |
+| `npm run lint` · `build` · `test` | ✅ verde · verde · **337 tests en 14 archivos** |
+
+**El recorrido es una cadena coherente**, no nueve pantallas sueltas: el mismo estudiante avanzando
+por el loop, y la CTA principal de cada estación lleva a la siguiente. Vive en
+`lib/navigation/focus-group.ts`, **aparte del registro canónico**, porque es el guion de una sesión y
+no un contrato de producto.
+
+**Las dos costuras se atraviesan sin taparlas:**
+
+1. **`UX05`** — el spec la rutea `UX04 → ejecución → UX05` y `ejecución` **no tiene pantalla**. El
+   recorrido recorre los dos contratos de una vez (`CTA-005` sale, `CTA-006` llega) y la estación lo
+   **declara**. No se inventó una transición.
+2. **`UX07`** — ninguna CTA lleva ahí ([ADR-016](decisions.md#adr-016), `PENDING` **cuando se
+   escribió esto; cerrado el 1 sep 2026 con `CTA-019`**). Esa estación se
+   alcanza por **navegación del facilitador**, marcada como tal. **No se agregó `CTA-019`.**
+
+**Tres defectos que encontró el propio recorrido:**
+
+1. **El marcador `facilitador` era decorativo.** `siguienteUrl` encadenaba igual, así que el botón de
+   `UX02` **llevaba a `UX07`** — creando en los hechos la `CTA-019` que este mismo trabajo se había
+   negado a inventar. Corregido: la cadena se corta antes de una estación del facilitador, con test.
+2. **`UX08` decía una cosa y llevaba a otra.** El escenario por defecto de la ruta es una preparación
+   recién activada, cuya CTA es *"VOLVER A CURSADO"*; encadenada al paso, el botón decía *volver* y
+   avanzaba. La estación pasó a usar el escenario con handoff disponible, cuya CTA sí es *ABRIR PASO
+   ACTUAL*, y hay un guard que prohíbe que una estación avance con un verbo de retorno.
+3. **El guard de cero-persistencia se disparaba con su propia documentación.** Escaneaba prosa además
+   de código. Ahora quita comentarios antes de escanear, y **siete tests nuevos prueban que la
+   relajación no abrió un agujero**: sigue cazando `localStorage.setItem`, `fetch(` y código pegado a
+   un comentario.
+
+**Un hallazgo de producto, no un defecto:** `Enviar evidencia` está **visible pero deshabilitada**
+hasta que el participante adjunta algo. Es la **única interacción obligatoria** del recorrido y es la
+regla de aparición/habilitación de la Etapa 0.3 funcionando: el botón dice qué va a pasar antes de
+que se pueda hacer. Quedó anotado en el guion como momento de observación.
+
+**Lo que el guion declara que NO cubre:** el lector de pantalla y `A-01` con datos sucios reales. Los
+dos exigen una persona y datos que el Track A no tiene.
+
 ### Fase 0 — Done cuando…
 
-- [ ] Las 9 superficies existen como componentes reales con el sistema visual final
-- [ ] Todos los estados críticos de las 9 specs son alcanzables
-- [ ] El Golden Path es recorrible extremo a extremo
-- [ ] Cero red, cero persistencia, cero datos reales — **verificado por test estático**
-- [ ] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 corrida, con los
-      fallos reportados y no escondidos
-- [ ] Lint, build y tests en verde
-- [ ] El test de comprensión de 10 segundos ejecutado **con personas reales**
+- [x] Las 9 superficies existen como componentes reales con el sistema visual final — **29 ago 2026**
+- [x] Todos los estados críticos de las 9 specs son alcanzables — **30 ago 2026**
+- [x] El Golden Path es recorrible extremo a extremo — **30 ago 2026.** 10 de 10 estaciones por clic a 360 px, con una navegación del facilitador declarada ([ADR-016](decisions.md#adr-016))
+- [x] Cero red, cero persistencia, cero datos reales — **verificado por test estático**
+- [x] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 corrida, con los
+      fallos reportados y no escondidos — **30 ago 2026.** Dos ítems **no corridos**: lector de
+      pantalla y `A-01` con datos sucios reales
+- [x] Lint, build y tests en verde — **337 tests**
+- [x] El test de comprensión de 10 segundos ejecutado **con personas reales, en desktop**
+      ([ADR-014](decisions.md#adr-014)), sin pérdida de información a 360 px — **PASS reportado por
+      el owner el 30 ago 2026.** Las observaciones por estación no quedaron registradas; sólo consta
+      el resultado agregado.
 
 ---
 
-## Fase A1 — Operador e Institución · ⏸️ DIFERIDA al Track B
+## Fase A2 — Shell de aplicación · ✅ COMPLETA
 
-**Estado:** ⏸️ **DIFERIDA** por [ADR-012](decisions.md#adr-012), aprobado el 28 de agosto de 2026.
+**Estado:** ✅ **5 / 5 etapas.** Eran 6: [ADR-019](decisions.md#adr-019) descartó el dock.
 
-Las cinco superficies —`WF-O01` cola priorizada, `WF-O02` contexto de estudiante, `WF-O03` registrar
-intervención, `WF-O04` revisión de evidencia, `WF-I01` dashboard institucional— **salen del Track A**
-y su contenido se absorbe en la **Fase B6**, que ya está gateada por
-[ADR-003](decisions.md#adr-003).
+De las **siete diferencias** contra las capturas (§14.2), **seis cerradas**. Queda **`D-03`**
+—segmentados—, bloqueada porque las listas de opciones no existen en los view models y fabricarlas
+sería inventar dominio. **`D-05` se volvió a medir** después de la subcopy y cambió de signo: ver
+§14.5.
+**Abierta por:** [ADR-018](decisions.md#adr-018), 30 de agosto de 2026.
 
-**Razones:** los focus groups son con estudiantes, y construirlas ahora significaría bautizar el
-vocabulario del rol Operador antes de reconciliarlo con Dashboard_Achieve.
+**Objetivo.** Que Achieve **se parezca al software de `docs/diseño/`**. Las nueve superficies ya
+existen, con sus estados críticos y su Golden Path; lo que falta es el **marco que las contiene**.
 
-**Pendiente de evaluar en B6:** si `WF-O04` (revisión de evidencia) merece una versión mínima
-anticipada. Es la contraparte del estado `UNDER_REVIEW` que el estudiante **sí** ve en el Track A.
+**Por qué es una fase nueva y no una etapa más de la Fase 0.** La Fase 0 se cerró con un criterio de
+Done que **nunca incluyó parecerse a las capturas**. Pedírselo ahora sería mover el arco después del
+gol. Esto es trabajo nuevo, con su propio objetivo.
+
+### La brecha, en concreto
+
+Lo que muestran las capturas y Achieve hoy no tiene:
+
+| Patrón en las capturas | Achieve hoy |
+|---|---|
+| **Navegación lateral** persistente, colapsable, con el ítem activo en píldora y contadores | No hay navegación: se llega por URL o por CTA |
+| **Topbar** con breadcrumb, buscador `⌘K`, notificaciones y selector de cuenta | No hay topbar |
+| ~~**Dock inferior** con lo que quedó abierto~~ | **Descartado.** La fuente misma lo desaconseja para flujos lineales ([ADR-019](decisions.md#adr-019)) |
+| **Controles segmentados** en píldora para alternar vistas | No existen |
+| **Densidad de panel**: tarjeta con título, subcopy explicativa y contenido tabular | Tarjetas de una sola columna, centradas |
+| **Vacíos que explican** qué va a aparecer y por qué importa | Los vacíos dicen que no hay dato, sin explicar |
+
+### Etapas
+
+| # | Etapa | Entregable |
+|---|---|---|
+| A2.1 | **Navegación lateral + topbar** ✅ | El shell: sidebar colapsable con ítem activo y contadores, topbar con breadcrumb y selector |
+| A2.2 | **Buscador `⌘K`** ✅ | Paleta de comandos con navegación por teclado. **Cero red:** busca sobre el catálogo de escenarios |
+| A2.3 | **Ausencia tipada** ✅ | La primitiva que `design-system.md` §3.2 declaraba faltante. **Reemplaza al dock**, descartado por [ADR-019](decisions.md#adr-019) |
+| A2.4 | **Cabecera de panel** ✅ | `TituloDePanel` y `AccionDeObjeto`. Cierra `D-01` y `D-07`; deja `D-02` con el hueco listo y `D-03`/`D-05` bloqueadas por contenido (§14.5) |
+| A2.5 | **Las nueve dentro del shell + comparación** ✅ | Verificado con guard estático, y la **comparación lado a lado** con las capturas: 7 diferencias reportadas (§14.2) |
+| A2.6 | **Subcopy de panel y vacíos** ✅ | Las nueve frases, escritas por el owner desde el JTBD de cada spec. Cierra `D-02` y, con [ADR-022](decisions.md#adr-022), `D-04` |
+
+### Lo que esta fase NO toca
+
+Dominio, fixtures, registro de CTAs, las tres matrices de precedencia, los estados críticos y el
+guion del focus group. **Todo eso ya está y no depende del shell.** Si una etapa de A2 necesita
+cambiar una regla de dominio, es señal de que se pasó de alcance.
+
+### Antes de empezar — ✅ resuelto el 30 de agosto de 2026
+
+1. ✅ **Capturas abiertas.** Regla de `AGENTS.md` §1.5.
+2. ✅ **§12.3 cerrada por medición, no por inferencia.** Se detectaron los hairlines por gradiente de
+   luminancia sobre las capturas: sidebar **255,5 px → 256**, colapsada **79,5 → 80**, topbar
+   **55,5 → 56**. Los tres múltiplos de 8, así que **la escala base 4/8 queda confirmada**.
+3. ✅ **§12.4 — sin modo oscuro**, y **el conmutador no se dibuja**. Un control de tema que no cambia
+   nada sería prometer lo que no se sostiene. El ítem del checklist §9 se marca `N/A` con
+   justificación escrita.
+4. ✅ **§12.6 — `UX06` es lista de tarjetas, no tabla.** La tabla de las capturas es densidad de
+   trabajo diario; la Bitácora se mira ocasionalmente y ya viene agrupada por ciclo.
+
+---
+
+#### ✅ Etapa A2.1 — COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Medidas fieles a las capturas | ✅ sidebar **256 px**, colapsada **80**, topbar **56** — medido en el build, idéntico a la captura |
+| Ítem activo y breadcrumb | ✅ `aria-current`, no sólo color. `UX09` da `Hoy › Materia › Modo Examen › Preparación › Paso` |
+| A 360 px | ✅ la barra se oculta y **no aparece scroll horizontal** |
+| Las nueve superficies dentro del shell | ✅ sin tocar su contenido |
+| `lint` · `build` · `test` | ✅ verde · verde · **354 tests en 15 archivos** |
+
+**El menú no duplica el registro de CTAs.** La navegación lateral es orientación, no acción de
+dominio: no lleva ninguna CTA primaria y hay un test que lo verifica. `UX03`–`UX05` **no están en el
+menú** — son pasos de un flujo que se abren desde su origen, y ofrecerlos sería dejar entrar a una
+evidencia sin la acción que la pide.
+
+**Efecto lateral bueno:** el menú alcanza `UX07`, que es justo la superficie que ninguna CTA alcanza
+([ADR-016](decisions.md#adr-016)). **No la convierte en una `CTA-019`**: sigue siendo navegación, y
+el recorrido de focus group sigue marcándola como paso del facilitador.
+
+**El buscador se dibujó deshabilitado** hasta A2.2, con tratamiento propio distinto de secundario
+(`A-08`). No se ofrece un campo que no busca nada.
+
+---
+
+#### ✅ Etapa A2.2 — Paleta de comandos · COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| `I-03` entrada polimórfica que desambigua sola | ✅ *"evidencia"* trae la pantalla **y** los escenarios; las superficies primero, porque son destinos |
+| `I-03` vía de escape para formatos que colisionan | ✅ `>` fuerza pantallas, `#` fuerza escenarios, **y se muestran en la propia paleta** |
+| `I-04` el atajo dentro del control que dispara | ✅ el `⌘K` vive en el buscador, no en un tooltip |
+| `P-07` el atajo no elimina su camino visible | ✅ el mismo control se puede tocar |
+| Navegación por teclado y `Escape` con jerarquía | ✅ flechas, `Enter`, y `Escape` cierra **sin navegar** |
+| Cero red | ✅ índice estático en memoria sobre el catálogo |
+| `lint` · `build` · `test` | ✅ verde · verde · **370 tests en 16 archivos** |
+
+**Los prefijos no son un adorno.** Los dos tipos colisionan de verdad: el propósito de un escenario
+nombra su superficie, así que *"evidencia"* trae `UX05` y los escenarios de `Evidence` a la vez. `I-03`
+pide exactamente una vía de escape para ese caso, y **se muestra en pantalla**: una vía de escape que
+hay que adivinar no es una vía de escape.
+
+**Dos defectos propios, corregidos en la misma etapa:**
+
+1. **`lib/navigation/paleta.ts` importaba `lib/fixtures/`**, rompiendo la dirección de dependencias
+   que la Etapa 0.3 fijó y que un test verifica. **El test lo cazó.** Se separó: la búsqueda queda en
+   `navigation`, **pura y sin datos**, y el índice lo arma `lib/fixtures/indice-paleta.ts`, que es
+   quien tiene el catálogo. La misma función busca sobre cualquier índice, y hay un test que lo
+   prueba.
+2. **`setState` dentro de un efecto**, que encadena renders. Se resolvió remontando el diálogo en
+   cada apertura en vez de resetear estado desde un efecto.
+
+#### ✅ Etapa A2.3 — `Ausencia` tipada · COMPLETA · 30 de agosto de 2026
+
+**Esta etapa era el dock. La fuente dijo que no.**
+
+Al abrir las capturas para especificarlo —regla de [`AGENTS.md`](../AGENTS.md) §1.5— la captura 07
+cierra con dos bloques literales: *"**Dónde no:** productos de tarea única, **flujos lineales**… ahí
+el dock es puro costo"*, y una lista de **seis requisitos innegociables** del multiventana que
+termina en *"si no podés cumplirlo, no lo hagas"*. Achieve es exactamente el caso excluido: nueve
+superficies encadenadas, una decisión por pantalla.
+
+`design-system-capturas.md` ya lo descartaba en **§7.4, §10.1 y §11.3**, y `A-07` —uno de los nueve
+anti-patrones catalogados— **es un defecto del dock**. La tabla de brecha de esta fase lo listó
+igual, por ser visible. **Es la misma falla que produjo `A-03` en la A2.1: tomar la superficie de
+una captura en vez de su razonamiento.** Registrado en [ADR-019](decisions.md#adr-019).
+
+**La etapa se reasignó** a la primitiva que sí faltaba y que las capturas sí especifican.
+
+| Criterio | Resultado |
+|---|---|
+| Primitiva `Ausencia` | ✅ `design-system.md` §3.2 la declaraba faltante desde el primer día |
+| `P-09` verificable | ✅ los tratamientos se distinguen **sin color** — test que compara forma, no gris |
+| El dock no vuelve | ✅ guard estático sobre `app/`, `components/` y `lib/` |
+| `lint` · `build` · `test` | ✅ verde · verde · **379 tests en 17 archivos** |
+
+**Lo que se encontró al migrar.** El booleano `ausente` marcaba tres cosas distintas con el mismo
+gris en itálica:
+
+| Fixture | Qué era en realidad |
+|---|---|
+| *Dominio: no evaluado* | Una ausencia. Correcto |
+| *Recorrido: conserva su estado* | Un no-cambio **declarado por el owner**. Ver [ADR-020](decisions.md#adr-020) |
+| *Estado: **incumplido*** | **No es una ausencia**: es un dato presente y adverso |
+
+El tercero importa más de lo que parece. Atenuar *"incumplido"* con el gris del vacío es **ablandar
+visualmente el único estado que el dominio prohíbe ablandar** — *un `Commitment` `MISSED` nunca se
+edita para parecer cumplido*. Ahora lleva chip de urgencia, que es lo que §1.6 le da al dato adverso.
+
+**Dos de los cuatro estados de `P-09` no se dibujaron, y es deliberado:**
+
+- ***No hay dato*** → §1.6 usa em-dash porque en una **tabla** la columna conserva su lugar. Achieve
+  no es una tabla (§12.6) y su regla es más fuerte: **omitir, no inventar**; la fila desaparece
+  entera. Un em-dash sería copiar la superficie otra vez.
+- ***No cargado*** → es la primitiva `Esqueleto`, y bajo **cero red** no ocurre. Dibujar un esqueleto
+  para una carga que no existe es prometer lo que no se sostiene.
+
+**Un defecto que los tests unitarios no vieron.** `Fila` dibujaba el chip bien y `FilaDato` llevaba
+el `tono`, pero **seis de las siete llamadas no lo pasaban**: *"incumplido"* salía como texto común.
+Verde en 378 tests, mal en la pantalla. **Lo encontró abrir el navegador**, que es exactamente para
+lo que sirve. Se corrigió y se agregó el guard que faltaba: si una llamada proyecta `ausencia`,
+proyecta también `tono` — son las dos mitades de *qué clase de cosa es este valor*.
+
+> ✅ **Cerrado el 1 de septiembre de 2026.** [ADR-020](decisions.md#adr-020): un no-cambio declarado
+> **es un dato, no una ausencia**, y se muestra con su fuente. Lo que sigue abajo es cómo estaba
+> cuando la etapa se cerró.
+
+**Lo que quedó abierto y no se cerró solo:** [ADR-020](decisions.md#adr-020) `PENDING`. Un fixture
+declaraba *"tres estados de no-cambio, distinguibles entre sí"* y **dos de los tres se ven igual**.
+Distinguirlos exige decidir si un no-cambio declarado es una ausencia o un dato — que es dominio, no
+estilo. Se dejó de afirmar la distinción en vez de fabricarla.
+
+---
+
+#### ✅ Etapa A2.5 — Las nueve dentro del shell, y la comparación · COMPLETA · 30 de agosto de 2026
+
+**La mitad de esta etapa ya estaba hecha, y decirlo es parte del trabajo.** La A2.1 recolocó las
+nueve superficies dentro del shell cuando construyó el marco. No había nada que mover.
+
+Lo que **no** estaba hecho es lo que la etapa verifica y lo que la fase pedía como criterio de Done:
+
+| Criterio | Resultado |
+|---|---|
+| Las nueve dentro del shell, sin cambiar su contenido | ✅ **ahora con guard estático**: toda ruta de `app/(student)/` envuelve su superficie en `Shell` con un nodo propio y sin repetir |
+| Recorrido de focus group de punta a punta | ✅ sigue verde |
+| Auditoría de conformidad §9 | ✅ sin regresiones; `P-09` pasó a `[x]` en la A2.3 |
+| **Comparación lado a lado con las capturas** | ✅ **corrida por primera vez** — 1440 × 900, build de producción, las nueve. `design-system-capturas.md` §14 |
+| `lint` · `build` · `test` | ✅ verde · verde · **381 tests en 17 archivos** |
+
+**Nueve coincidencias y siete diferencias**, todas escritas en §14 con su evidencia. Las que más
+importan:
+
+- **`D-01` — ninguna superficie tiene `<h1>`, y cuatro no tienen encabezado alguno.** Es el hallazgo
+  más caro y no es estético: es el ítem *"lector de pantalla"* de §9 bloque 6, que estaba sin correr.
+- **`D-02` y `D-04` — falta la subcopy de panel y los vacíos no explican.** Las capturas dicen *qué
+  es esto y por qué importa*; Achieve dice el título y la fecha.
+- **`D-05` — la columna mide 1120 px y el contenido no la usa.** Sólo `UX08` tiene dos columnas.
+
+**Las siete diferencias son de densidad y estructura, no de lenguaje visual.** Tokens, tipografía,
+hairlines, racionamiento de color y shell ya son los de las capturas.
+
+**`D-06` se reportó y no se tocó.** El único badge del menú está en Progreso, y la regla de la
+captura 02 dice que el único badge es el del **trabajo pendiente que caduca** — la Bitácora no
+caduca. Moverlo exige definir qué es, en Achieve, ese trabajo: es dominio, no estilo. Ver §14.3.
+
+---
+
+#### ✅ Etapa A2.4 — Cabecera de panel · COMPLETA · 30 de agosto de 2026
+
+**La etapa entró con cinco diferencias asignadas y sale con dos cerradas, una andamiada y dos
+bloqueadas.** El desglose está abajo; ninguna se escondió.
+
+| Criterio | Resultado |
+|---|---|
+| `D-01` — toda superficie con `<h1>` | ✅ **cerrada.** Las nueve tienen exactamente uno, con guard estático |
+| `D-07` — acciones del objeto arriba a la derecha | ✅ **cerrada.** `AccionDeObjeto` en píldora de borde fino; `CTA-009` se movió en `UX01` |
+| `D-02` — subcopy explicativa | 🟡 **hueco listo, texto pendiente.** Ver abajo |
+| `D-03` — segmentados · `D-05` — densidad | ⚠️ **bloqueadas por contenido**, no diferidas. §14.5 |
+| `lint` · `build` · `test` | ✅ verde · verde · **390 tests en 18 archivos** |
+
+**`D-01` no era estético.** Ninguna de las nueve superficies tenía `<h1>`: para un lector de
+pantalla, **ninguna pantalla se llamaba nada**. Era el ítem *"lector de pantalla"* de §9 bloque 6,
+que figuraba sin correr.
+
+**Cuatro superficies no tienen título propio**, sólo un eyebrow. `TituloDePanel` **promueve el
+eyebrow a `h1`** en vez de inventarles un nombre: les da título de documento **sin agregar una
+palabra**. La flecha de retorno queda fuera del nombre accesible — es afordancia visual, no parte
+del nombre.
+
+**`D-02` está andamiado y vacío a propósito.** `SUBCOPY_PENDIENTE` en
+[`lib/content/es-AR.ts`](../lib/content/es-AR.ts) tiene una entrada por superficie, en `null`, con
+qué debería contestar cada una. **Mientras valga `null`, el panel no dibuja subcopy** — omitir, no
+inventar. Se completa reemplazando el `null` por la frase: **no hay que tocar ningún componente**.
+`npm test` imprime en cada corrida cuáles siguen pendientes, para que la deuda no se pierda por no
+verse.
+
+**Un defecto propio, encontrado en una captura de pantalla y no en un test.** Al mover `CTA-009`
+arriba dejé el botón viejo al pie: *"Ver progreso"* aparecía **dos veces** en la única superficie
+donde el estudiante decide. Es `C-02` roto —un concepto, un lugar—. Corregido, con guard nuevo que
+falla si una superficie ofrece la misma acción arriba y abajo.
+
+---
+
+#### ✅ Etapa A2.6 — Subcopy de panel · COMPLETA · 30 de agosto de 2026
+
+**Las nueve frases las escribió el owner**, que es como tenía que pasar: `D-02` afirma qué contiene
+cada pantalla y qué se espera del estudiante, y eso es dominio. La capa visual dejó el hueco listo
+en la A2.4 y no lo llenó.
+
+| Criterio | Resultado |
+|---|---|
+| `D-02` — subcopy en las nueve | ✅ **cerrada.** Cada frase sale del JTBD de su spec (`Parte VI`) |
+| Cita textual verificada | ✅ un test compara cada cita del comentario contra `product-spec-source.md`. **Siete estaban parafraseadas** y se corrigieron a la cita exacta |
+| Título propio en las cuatro que no lo tenían | ✅ `Progreso`, `Activación`, `Modo Examen`, `Paso` |
+| `D-06` — el badge del menú | ✅ cerrada por [ADR-021](decisions.md#adr-021) |
+| `lint` · `build` · `test` | ✅ verde · verde · **392 tests en 18 archivos** |
+
+**`UX07` tenía dos cosas peleando por el mismo lugar.** Su `h1` era el banner de estado
+—*"RECOMENDACIÓN DE ACTIVACIÓN"*, *"FALTAN DATOS PARA ACTIVAR"*…—, así que **la pantalla se llamaba
+distinto en cada estado** y un lector de pantalla la anunciaba con otro nombre cada vez. Ahora la
+superficie se llama `Activación` y el banner volvió a ser lo que es: estado.
+
+**El test de citas no es decoración.** Si mañana la spec cambia y una cita deja de existir, la
+subcopy pasa a afirmar algo que ya nadie respalda — que es justo lo que `C-07` intenta evitar. Lee
+las citas del propio comentario, así que no hay una segunda lista que mantener sincronizada.
+
+---
+
+#### ✅ `D-06` — el badge del menú · [ADR-021](decisions.md#adr-021)
+
+**Lo que caduca en Achieve es el `Commitment`**: es el único objeto que el estudiante acordó hacer
+*para un momento*, y al pasar ese momento cambia a `MISSED` de forma irreversible. Una `Action` se
+reemplaza, una `Evidence` `SUBMITTED` espera a otra persona, la Bitácora sólo acumula.
+
+Así que el badge **no iba en Progreso** — estaba en la única superficie sin nada que vencer.
+
+**Y apareció un segundo problema, peor:** el número era un **literal `1`**, una cifra sin un hecho
+detrás. Se retiró. Vuelve cuando haya de dónde contarlo, en `Hoy`. Un badge que aparece en una ruta
+y desaparece en las otras tres **miente más que un badge ausente**.
+
+---
+
+#### ✅ `D-04` — los vacíos argumentan · [ADR-022](decisions.md#adr-022) · 30 de agosto de 2026
+
+**`C-04` elevado por el owner**, con una condición que cambia la regla más de lo que parece.
+
+| Cláusula | Cuándo |
+|---|---|
+| Qué va a aparecer | Siempre |
+| Por qué importa | Siempre |
+| **Cómo hacer que aparezca** | **Sólo si depende del estudiante** |
+
+**La condición es lo que sostiene la regla.** Cuando el dato no aparece por algo que el estudiante
+pueda hacer, el vacío queda en dos cláusulas: **no se inventa una acción falsa para completar el
+patrón**. De los tres vacíos de Achieve, sólo `EVIDENCIA.SIN_ADJUNTO` lleva las tres — la próxima
+acción la produce el Engine y el recorrido lo arma el servicio propietario.
+
+**Dos precisiones que quedaron en el ADR**, porque cambian de dónde partía la decisión: la cláusula
+*"por qué importa"* **es decisión nueva de ese día** —`design-system.md` sólo tenía la primera—, y el
+manual normativo ya pedía una tercera que §12.2 no mencionaba (*"y cómo hacer que aparezca"*), que
+entró condicional.
+
+**`OVERVIEW.SIN_RECORRIDO` era un rótulo con nada debajo**, el caso más puro del defecto.
+**`HOY.VACIO` pasó a decir *"Hoy no hay"*** en vez de *"No hay"*: es una ausencia confirmada por el
+ADE, no una carga pendiente, y el copy no debe dejar creer que algo está por llegar.
+
+**Y el vacío dejó de usar itálica.** La itálica atenuada es el tratamiento de `SIN_ASIGNAR`
+([ADR-019](decisions.md#adr-019)): un vacío que explica **no es un dato que falta**, y pintarlos
+igual rompía la distinción que `P-09` obliga a sostener.
+
+**Dos guards, los dos probados contra su regresión:** ninguno de los tres vacíos puede volver a ser
+una sola frase de ausencia, y **sólo lleva instrucción el que el estudiante puede resolver**.
+
+---
+
+### Done cuando… — ✅ los cinco, 30 de agosto de 2026
+
+- [x] Las nueve superficies viven dentro del shell, sin haber cambiado su contenido ni sus estados
+      — con guard estático desde la A2.5
+- [x] El recorrido del focus group sigue funcionando de punta a punta
+- [x] La auditoría de conformidad de [`design-system.md`](design-system.md) §9 sigue en verde —
+      **`P-09` pasó a `[x]`** en la A2.3; ningún ítem retrocedió
+- [x] Lint, build y tests en verde — **396 tests en 19 archivos**
+- [x] **Comparación lado a lado con las capturas**, con las diferencias reportadas y no escondidas
+      — §14, **siete diferencias, seis cerradas**, la séptima con su bloqueo escrito
+
+---
+
+## Fase A1 — Operador e Institución · ❌ RETIRADA DEL ALCANCE
+
+**Estado:** ❌ **Retirada del alcance de la Plataforma** por
+[ADR-033](decisions.md#adr-033), 1 de septiembre de 2026. *(Antes: ⏸️ diferida al Track B por
+[ADR-012](decisions.md#adr-012), 28 de agosto de 2026.)*
+
+**No está diferida: no es nuestra.** Las cuatro superficies de operador —`WF-O01` cola priorizada,
+`WF-O02` contexto de estudiante, `WF-O03` registrar intervención, `WF-O04` revisión de evidencia—
+**pertenecen al CRM**. El CTO lo confirmó y el spec fuente ya lo decía: la sección que las define se
+llama *"8. Wireframes low-fi — **Operador / CRM**"*.
+
+El operador **no interactúa con la Plataforma y no tiene sesión acá**. No es que falte construirla:
+no debe existir.
+
+**`WF-I01`** (dashboard institucional) queda **abierto**: es una superficie de cliente B2B, no de
+operador, y la confirmación del CTO no dispone de ella. Ver `product.md` §10.1.1.
+
+**Lo que ADR-012 dejó pendiente se cierra por no-aplicable:** *"evaluar en B6 si `WF-O04` merece una
+versión mínima anticipada"*. Es una superficie de operador. El lifecycle `UNDER_REVIEW` que el
+estudiante **sí** ve sigue siendo dominio canónico de la Plataforma y no se toca.
 
 > **Con esto, cerrar la Fase 0 cierra el Track A completo.**
 
 ---
 
-# TRACK B — MVP real
+# TRACK B — MVP persistente, sintético hasta B7
 
 > ⚠️ Ninguna fase del Track B empieza sin que su gate esté resuelto. La regla de
 > [ADR-006](decisions.md#adr-006) es absoluta: **ninguna fase que procese datos de una persona real
@@ -330,32 +1536,295 @@ no cambian por sí solos el estado de los ADRs ni habilitan datos reales.
 
 | Decisión | ADR | Quién decide |
 |---|---|---|
-| Backend, auth, persistencia | [ADR-005](decisions.md#adr-005) | Producto + CTO |
-| Pipeline del ADE | [ADR-004](decisions.md#adr-004) | Producto |
-| Convergencia con Dashboard_Achieve | [ADR-003](decisions.md#adr-003) | Producto + CTO |
-| Privacidad y consentimiento | [ADR-006](decisions.md#adr-006) | Producto + asesoría legal |
-| Respuestas `DD1`–`DD10` | [ADR-010](decisions.md#adr-010) | Producto |
+| ✅ Backend, auth, persistencia | [ADR-005](decisions.md#adr-005) — **`ACCEPTED`**, sólo operación/runtime `DEFERRED` | Producto + CTO |
+| ✅ Pipeline del ADE | [ADR-004](decisions.md#adr-004) — **`ACCEPTED (v1 provisional)`** | Producto |
+| ✅ Convergencia con Dashboard_Achieve | [ADR-003](decisions.md#adr-003) — **`ACCEPTED`**, se integra el dominio y no los frontends | Producto + CTO |
+| Privacidad y consentimiento | [ADR-006](decisions.md#adr-006) — **`PROVISIONAL — LEGAL CONFIRMATION REQUIRED`** | Producto + asesoría legal |
+| ✅ Respuestas `DD1`–`DD10` | [ADR-010](decisions.md#adr-010) — **`ACCEPTED`**, `DD4` `DEFERRED` | Producto |
 
 **Done cuando:** cada ADR está `ACCEPTED` o explícitamente `DEFERRED` con su fase bloqueada marcada.
+
+### Los cuatro no se deciden en el mismo orden — 30 de agosto de 2026
+
+Al preparar las decisiones apareció que **la secuencia importa más que el conjunto**:
+
+**1. `ADR-006` no bloquea el arranque de B1.** El encabezado de la Fase B1 dice que entra *"desde el
+momento en que exista **un solo usuario real**"*, y `B1.6` exige explícitamente datos sintéticos.
+`B1.1`–`B1.5` corren enteras sin tocar un dato de una persona.
+
+**2. `ADR-005` no hace falta cerrarlo entero.** Sus seis ítems se separan en un **Bloque A** —tres
+ratificaciones de un diseño que ya existe— y un **Bloque B** —tres cosas todavía por diseñar—.
+Verificado contra este roadmap: `B1.1`–`B1.5` no tocan Storage de `Evidence` (aparece en `B2.3`) ni
+Broadcast, y sólo `B1.6` necesita el mapping de `institutionId`.
+
+**3. `ADR-006` tiene el plazo más largo** porque necesita asesoría legal, y **sus cinco preguntas no
+son todas legales**: tres las puede contestar producto hoy.
+
+**Secuencia recomendada, no vinculante:**
+
+| Orden | Qué | Por qué |
+|---|---|---|
+| 1.º ✅ | Aceptar **`ADR-005` Bloque A**, con Bloque B `DEFERRED` — **hecho el 30 ago 2026** | Desbloqueó `B1.1`–`B1.5` sin comprometer lo no diseñado |
+| 2.º ✅ | Completar **B1 sobre datos sintéticos** — **hecho el 30 ago 2026** | El trabajo de fundación no esperó al abogado |
+| 3.º | **`ADR-006`** con asesoría, en paralelo desde ya | Es el de plazo más largo y **debe cerrar antes del primer usuario real** |
+| 4.º 🟡 | `ADR-003` y `ADR-004` | `ADR-004` quedó aceptado para el MVP; `ADR-003` sigue bloqueando Operador en B6 |
+
+> ⚠️ **Lo que esta secuencia no relaja.** `ADR-006` sigue siendo bloqueo absoluto para cualquier dato
+> de una persona real. Arrancar B1 antes **no** adelanta ese permiso: lo separa de un trabajo que
+> genuinamente no lo necesita.
 
 ---
 
 ## Fase B1 — Fundación
 
-**Estado:** 🔒 [ADR-005](decisions.md#adr-005). Además [ADR-006](decisions.md#adr-006) desde el
-momento en que exista **un solo usuario real**.
+**Estado:** ✅ **COMPLETA — 6 / 6**, el 30 de agosto de 2026. [ADR-005](decisions.md#adr-005) cerró
+el Bloque A y después los ítems 4 y 6, que eran los que faltaban.
+
+⚠️ **Toda la fase corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) entra desde el
+momento en que exista **un solo usuario real**, y sigue sin confirmación legal.
 
 **Objetivo.** Backend en capas, base de datos, auth, tenancy y esquema base de la Academic Data Layer,
 sin acceso del frontend a tablas de negocio.
 
 | # | Etapa |
 |---|---|
-| B1.1 | Proyecto Supabase + migraciones iniciales + entorno local reproducible *(sujeto a aceptación de ADR-005)* |
-| B1.2 | Schema de la capa académica ([`data-model.md`](data-model.md) §7) |
-| B1.3 | Auth + `student` + `institution`; JWT en `/api/*`; RLS deny-by-default |
-| B1.4 | Frontera Controller → Service → Repository; máquinas de estado, scoping e idempotencia en Service |
-| B1.5 | `product_event` y `audit_log` append-only |
-| B1.6 | Cliente de autorización CRM v1 con contract tests y datos sintéticos; uso real gateado por ADR-006 |
+| B1.1 | ✅ **COMPLETA** — proyecto Supabase propio, migración de bootstrap y entorno local reproducible |
+| B1.2 | ✅ **COMPLETA** — schema de la capa académica ([`data-model.md`](data-model.md) §7), 13 tablas |
+| B1.3 | ✅ **COMPLETA EN SU ALCANCE** — auth, `student` y JWT en `/api/*`; el rol institucional quedó explícitamente diferido a B6 |
+| B1.4 | ✅ **COMPLETA** — frontera Controller → Service → Repository, con §9 y los cuatro criterios de aislamiento probados |
+| B1.5 | ✅ **COMPLETA** — `product_event` y `audit_log`, append-only **probado contra el propio backend** |
+| B1.6 | ✅ **COMPLETA** — cliente de autorización CRM v1 con contract tests y datos sintéticos; uso real gateado por ADR-006 |
+
+#### ✅ Etapa B1.1 — COMPLETA · 30 de agosto de 2026
+
+**Proyecto Supabase propio**, decidido por el owner: separado de Dashboard_Achieve. El spec prohíbe
+base compartida con el CRM (Parte II §18.1) y **compartir proveedor no relaja esa regla** — es la
+pendiente que [ADR-005](decisions.md#adr-005) dejó anotada al ratificar Supabase.
+
+| Criterio | Resultado |
+|---|---|
+| Proyecto propio, aislado | ✅ `project_id = achieve-platform`, **puertos 54420–54429** para que los dos stacks locales convivan |
+| Migración inicial | ✅ `20260830000000_bootstrap.sql` — las convenciones de `data-model.md` §6 como código, **sin tablas de dominio** (eso es B1.2) |
+| Entorno reproducible | ✅ **verificado con `db:reset`**: se tira abajo y se reconstruye desde cero, y queda conforme |
+| Verificación | ✅ `npm run db:verify` |
+
+**Lo que la migración hace, y por qué no es sólo scaffolding.** `data-model.md` §6 dice *"todas las
+tablas quedan con RLS deny-by-default"*. Eso era una afirmación que había que confiar. Ahora
+`tablas_sin_rls()` la vuelve **comprobable**, y `db:verify` falla si alguna tabla de `public` se
+queda sin RLS. **Probado contra su regresión:** con una tabla sin RLS devuelve 1; al habilitarla,
+0.
+
+**Una decisión que conviene mirar:** `updated_at` va en un **trigger**, no en el Repository. No
+contradice la regla de ADR-005 de no poner reglas de negocio en la base —esto es plomería de
+auditoría, no dominio— y va ahí porque tiene que valer **sin importar qué camino de código
+escribió**: en el Repository, un método que se olvide produce un timestamp falso en silencio. Cada
+tabla lo engancha explícitamente; no hay magia que lo aplique sola.
+
+**`db:verify` queda fuera de `npm test`.** La suite tenía 396 tests en este hito y hoy tiene 531;
+corre sin Docker. Atarla al stack haría que todos fallaran en una máquina sin él.
+
+⚠️ **Todo corre sobre datos sintéticos.** [ADR-006](decisions.md#adr-006) sigue
+`PROVISIONAL — LEGAL CONFIRMATION REQUIRED`.
+
+---
+
+#### ✅ Etapa B1.2 — Capa académica · COMPLETA · 30 de agosto de 2026
+
+Las **13 tablas** de `data-model.md` §7, implementadas **literalmente**: constraints y `CHECK` salen
+del documento sin reinterpretarlos.
+
+| Criterio | Resultado |
+|---|---|
+| 13 tablas de §7 | ✅ |
+| RLS deny-by-default | ✅ en las 13, y `tablas_sin_rls()` lo verifica |
+| Constraints que rechazan | ✅ **10 invariantes probados** con `npm run db:verify` |
+| Reproducible | ✅ `db:reset` reconstruye desde cero y queda conforme |
+
+**Un `CHECK` escrito no es un `CHECK` que funciona**, así que `scripts/db-invariantes.sh` intenta
+insertar lo que el spec declara imposible y falla si la base lo acepta: un `topic` que no cuelga de
+nada, un tema prerequisito de sí mismo, un `source_type` inventado, un `confidence` fuera de `[0,1]`,
+una `modality` que no existe.
+
+Y comprueba lo simétrico, que es donde se cuelan los errores: **`modality='oral'` se acepta** —el
+spec dice que se *almacena* aunque quede fuera de P0 (`C01-047`)—, una `assessment` **sin fecha** se
+acepta porque una fecha desconocida no se estima, y `rights_status` arranca en **`unknown`** y no en
+`allowed`: no se presume permiso sobre material de terceros.
+
+**Dos cosas que la migración agrega y §7 no escribe**, ambas ancladas en §6: el `ENABLE ROW LEVEL
+SECURITY` de las 13, y los **índices sobre las claves foráneas** — Postgres no los crea solo, y sin
+ellos cada borrado del padre escanea la tabla hija entera.
+
+**Lo que no lleva, y no es olvido:** `updated_at`. En este diseño la capa académica no se edita en
+sitio —una corrección crea una fila nueva, ver `class_event_record.supersedes_id`—, así que la
+convención de §6 aplica a §8 y §9, que es donde el documento sí lo escribe.
+
+**Un error propio que vale registrar.** El script de invariantes daba los 10 en verde con el schema
+roto y luego 3 en rojo con el schema sano: primero grepeaba la palabra `ERROR` en la salida de
+`psql` en vez de mirar el código de salida, y después el helper devolvía `0` en caso de éxito
+mientras se llamaba `falla`. **Un test que miente es peor que no tenerlo**, y las dos veces lo delató
+que el resultado fuera implausible, no que fallara.
+
+---
+
+#### ✅ Etapa B1.3 — Auth y capa del estudiante · COMPLETA EN SU ALCANCE · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Las 5 tablas de §8 | ✅ |
+| `student.auth_user_id` ligado al proveedor | ✅ **FK real a `auth.users`**, habilitada por ADR-005 |
+| JWT en `/api/*` | ✅ verificado de punta a punta: **401 / 401 / 401 / 200 / 403** |
+| RLS deny-by-default | ✅ en las 18 tablas |
+| Rol `institution` | 🔴 **no se pudo hacer: no existe el modelo.** Ver abajo |
+| `lint` · `build` · `test` | ✅ verde · verde · **400 tests en 20 archivos** |
+
+**Los invariantes que ahora hace cumplir la base, no la prosa.** `topic_progress` guarda cinco
+dimensiones con su estado, y hasta hoy nada impedía guardar `domain_state='not_evaluated'` **con un
+`0` al lado** — que es literalmente *"sin datos es cero"*, el invariante que `AGENTS.md` §2 marca
+como el que más se rompe. Cuatro `CHECK` nuevos lo vuelven imposible, y un quinto exige que **la
+confianza lleve su fecha**: sin cuándo no es confianza, es un número.
+
+**Un defecto encontrado al probar, no al escribir.** `/api/sesion` devolvía **500** con *"permission
+denied for table student"*: las migraciones no daban `GRANT` a `service_role`. Se declara explícito
+en vez de heredarlo del proveedor —un privilegio que nadie revisó falla el día que cambia el
+default— y quedó **simétricamente verificable**: `tablas_sin_acceso_de_servicio()` comprueba que el
+backend **puede** entrar, y `tablas_expuestas_al_cliente()` que `anon`/`authenticated` **no**.
+Sin la segunda, un `GRANT` de más pasa inadvertido.
+
+**Una corrección de capa.** `tokenDelHeader` estaba en el Service, que es el lugar equivocado: §3.2
+dice que un Service *"no lee headers"*. Se movió a `lib/server/http.ts`. El síntoma fue que el test
+no podía importarlo por `server-only`, pero el problema no era el test.
+
+#### 🔴 El rol institucional no tiene modelo — hallazgo de la B1.3
+
+`data-model.md` **no define ninguna tabla de usuario institucional**: no hay `operator`, no hay
+`institution_user`, no hay columna de rol. El único rastro es `owner_operator_id UUID NOT NULL` en
+§10, **sin `REFERENCES`**: un UUID que no apunta a ninguna tabla.
+
+**No se inventó.** Crear una tabla de identidad institucional sería definir quién puede ver datos de
+un estudiante, que es exactamente lo que `C01-030` (autorización, permisos y privacidad
+institucional) tiene `OPEN` y lo que [ADR-006](decisions.md#adr-006) gatea.
+
+Así que la B1.3 entrega **el rol `student` completo** y deja el institucional registrado. No bloquea
+`B1.4` ni `B1.5`; sí bloquea cualquier endpoint institucional, y hay que cerrarlo antes de la
+Fase B6, que [ADR-012](decisions.md#adr-012) ya había diferido.
+
+---
+
+#### ✅ Etapa B1.4 — La frontera, y §9 · COMPLETA · 30 de agosto de 2026
+
+Las **7 tablas** de `data-model.md` §9 —el loop diario— y la frontera de tres capas funcionando.
+
+| Criterio de Done de la Fase B1 | Resultado |
+|---|---|
+| Un tenant no puede leer datos de otro | ✅ el `institution_id` va **en el `WHERE`**, no se compara después de leer |
+| Las transiciones prohibidas fallan **incluso bajo concurrencia** | ✅ compare-and-swap: el estado esperado viaja en el `WHERE` |
+| Ningún código cliente accede a tablas de negocio | ✅ **guard estático**, `tests/frontera-backend.test.ts` |
+| `lint` · `build` · `test` | ✅ verde · verde · **417 tests en 22 archivos** |
+
+**La máquina de estados no se reescribió.** El Service ejecuta la misma
+`commitmentTransitions` de `lib/domain/` que el Track A usa para proyectar — el módulo ya lo
+anticipaba: *"el Track B la ejecuta en Service"*. Dos tablas de transiciones serían dos verdades
+sobre el mismo dominio, y divergirían. Un test recorre **todos los pares prohibidos** de la tabla y
+verifica que ninguno llega a escribir.
+
+**La concurrencia se prueba contra Postgres, no contra un mock.** Dos transiciones válidas desde
+`CONFIRMED` compiten; **gana una sola** porque la segunda no encuentra el estado esperado. Simular
+esa carrera con un doble sólo probaría que el doble la simula.
+
+**Un `MISSED` no vuelve.** Verificado en las dos capas: la máquina no tiene la arista, y el
+compare-and-swap tampoco encuentra el estado. El incumplimiento no se borra ni por código ni por
+carrera.
+
+**Dos defectos propios que cazó el guard nuevo, no una relectura:**
+
+1. **El Service de sesión importaba el cliente de Supabase.** §3.2 dice que un Service *"no conoce
+   SQL"*, y conocer el cliente ya es conocerlo. Se invirtió la dependencia.
+2. **El Controller importaba Repositories**, o sea conocía dos capas abajo. Apareció
+   `lib/server/composicion.ts` como **composition root**: el único lugar donde las implementaciones
+   concretas se atan.
+
+**Y un tercero en el propio guard.** `sinComentarios` sólo borraba comentarios a principio de línea,
+así que un `// .from("x")` al final de una línea seguía contando como violación. Lo encontró su
+auto-prueba. **Un guard con falsos positivos enseña a no documentar la regla que vigila.**
+
+---
+
+#### ✅ Etapa B1.5 — Eventos y auditoría · COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| `product_event` registra actor, timestamp, institución, objeto y causa | ✅ los cinco, en columnas propias |
+| Append-only (I12) | ✅ **revocado también a `service_role`**, y probado con un `UPDATE` real |
+| `lint` · `build` · `test` | ✅ verde · verde · **421 tests en 22 archivos** |
+
+**Append-only que aguanta al propio backend.** I12 dice *"revocar `UPDATE`/`DELETE`"*, y se revocó
+**incluyendo `service_role`** — el rol con el que entra el backend. Una regla que sólo vale para
+roles que nadie usa no es una regla: el riesgo real no es un cliente anónimo que ya no llega a la
+tabla, es un `UPDATE` del propio backend. El test lo comprueba **ejecutando** el `UPDATE`, no
+leyendo el catálogo de privilegios, y verifica además que la revocación **no se llevó puesto el
+resto del schema**.
+
+**El evento se publica después de que la escritura ganó**, nunca antes: un evento de algo que perdió
+la carrera sería un hecho que no ocurrió. Y el nombre es semántico —`CommitmentDue`, no
+`commitment_update`—: `product_event` es el registro de lo que pasó en el producto, no un diario de
+escrituras.
+
+#### Dónde choca esto con [ADR-006](decisions.md#adr-006), y qué se hizo
+
+Un log append-only y un derecho de supresión empujan en direcciones opuestas. **No se resolvió, y
+tampoco se cerró ninguna de las dos salidas:**
+
+- **El hecho y el contenido viven en columnas distintas.** `event_name`, `actor_id`, `subject_*` y
+  `occurred_at` son el hecho; `payload`, `before_value` y `after_value` son lo único que podría
+  contener dato personal. Vaciar esas tres conservando la fila es una operación de una línea el día
+  que asesoría lo autorice.
+- **No se construyó ningún mecanismo de borrado.** Inventarlo hoy sería adelantar la decisión — y
+  además el propio append-only lo impide: haría falta levantar la revocación, que es fricción
+  deliberada.
+
+Un test verifica que **el hecho no viaja dentro del `payload`**: si empezara a viajar ahí, la
+separación existiría en el schema y no en la práctica.
+
+---
+
+#### ✅ Etapa B1.6 — Autorización de padrón · COMPLETA · 30 de agosto de 2026
+
+**Cierra la Fase B1.** Habilitada por ADR-005 ítem 6, cerrado por el owner: **tabla de
+correspondencia, con alta manual.**
+
+| Criterio de Done | Resultado |
+|---|---|
+| El contrato cubre `authorized:true` | ✅ |
+| **Los tres rechazos** — `not_in_roster`, `institution_terminated`, `ambiguous` | ✅ y **viajan sin reinterpretarse** |
+| `400` y `401` | ✅ separados: uno es el body, el otro el secreto. Ninguno es *"tu institución no te habilitó"* |
+| Reintento de red / `5xx` | ✅ misma clase, reintentable |
+| Datos sintéticos | ✅ ninguna llamada sale a un CRM real |
+| `lint` · `build` · `test` | ✅ verde · verde · **450 tests en 24 archivos**, **63 verificaciones** contra Postgres |
+
+**La identidad no se adopta, se traduce.** El `institutionId` del CRM es una identidad externa;
+`institution_crm_ref` la mapea a la de Plataforma. Lo decidió un precedente que ya estaba escrito:
+`data-model.md` §6.1 dice que el `studentId` del CRM *"nunca reemplaza `student.id`"*. Y el propio
+contrato: *"cada uno tiene su propio proyecto Supabase… **nadie toca la base del otro**"*.
+
+**Una institución desconocida no se crea sola.** Si el CRM autoriza a alguien de una institución que
+Plataforma no tiene mapeada, **se rechaza**. Dar de alta una institución es firmar un convenio, no un
+efecto secundario de un login — y por eso el repositorio **no tiene método de alta**: un `crear()`
+ahí sería la puerta por la que la institución termina apareciendo sola.
+
+**Una caída de red no es un "no".** Se distingue `INTEGRACION_CAIDA` de `RECHAZADO`: decirle al
+estudiante que su institución no lo habilitó cuando se cayó una conexión es mentirle sobre su
+situación, y además le esconde que hay que reintentar.
+
+**Dos cosas de herramienta que hubo que resolver bien, no rápido:**
+
+1. **`server-only` lanza bajo `jsdom`**, así que los contract tests no podían cargar el cliente. Se
+   stubeó **sólo en tests**; quitarlo del código de producción habría cambiado el código para
+   acomodar la herramienta y perdido la garantía que da en el build.
+2. **El guard de *cero datos reales* prohibía todo email**, y el contrato tiene un campo `email`. Se
+   acotó a **los dominios que RFC 2606 reserva** —inasignables por definición—, con auto-pruebas de
+   que `ana@uni.edu.ar` y `x@example.com.ar` siguen siendo delito.
+
+---
 
 **Done cuando:** un test de aislamiento demuestra que un tenant **no puede** leer datos de otro; las
 transiciones prohibidas fallan en Service incluso bajo concurrencia; ningún código cliente accede a
@@ -367,34 +1836,585 @@ la autorización CRM, el mapping institucional de `C01-039`.
 
 ---
 
-## Fase B2 — Dominio de ejecución
+## Fase B2 — Dominio de ejecución · ✅ COMPLETA
 
-**Estado:** 🔒 B1.
+**Estado:** ✅ **6 / 6 — el 1 de septiembre de 2026.** `B2.4` cerró cuando el owner decidió
+`C01-051` ([ADR-026](decisions.md#adr-026)); `B2.5` pasó a ✅ el mismo día —su alcance era `UX01`
+desde la base y estaba cumplido; lo que la dejaba en amarillo era el trabajo que hizo la `B2.6`—. `B1.1`–`B1.5` la desbloquearon; **`B1.6` no la bloquea** —es el cliente de
+autorización CRM, no dominio—. Corre sobre datos sintéticos: [ADR-006](decisions.md#adr-006) sigue
+`PENDING`.
 
 **Objetivo.** El loop diario completo con persistencia real: `Action`, `Commitment`, `Evidence`,
 `Reflection`.
 
 | # | Etapa |
 |---|---|
-| B2.1 | `Action` + `ActionRecommendation` + máquina de estados |
-| B2.2 | `Commitment` + renegociación + rescate + idempotencia |
-| B2.3 | `Evidence` + resubmission + storage + revisión real |
-| B2.4 | `Reflection` configurable `OPTIONAL`/`REQUIRED` |
-| B2.5 | Reemplazo de `lib/fixtures/` por llamadas reales — **sin tocar las pantallas** |
+| B2.1 | ✅ **COMPLETA** — `Action` + `ActionRecommendation` + máquina de estados |
+| B2.2 | ✅ **COMPLETA** — `Commitment` + renegociación + rescate + idempotencia |
+| B2.3 | ✅ **COMPLETA** — `Evidence` + resubmission + storage + revisión real |
+| B2.4 | ✅ **COMPLETA** — `Reflection`, con su configuración cerrada por [ADR-026](decisions.md#adr-026) |
+| B2.5 | ✅ **COMPLETA** — `UX01` desde la base. Estuvo 🟡 hasta que la `B2.6` conectó las demás |
+| B2.6 | ✅ **COMPLETA** — `UX02`–`UX06` desde la base, con sesión real y `Ausencia` |
 
 **Done cuando:** los 12 invariantes de [`data-model.md`](data-model.md) §11 tienen test; el mismo
 request enviado dos veces produce una sola entidad; `UNDER_REVIEW` es imposible sin instancia real.
 
 **Contratos a cerrar:** `C01-007`…`C01-016`, `C01-051`.
 
+##### El Done, auditado · 1 de septiembre de 2026
+
+`tests/invariantes.test.ts` audita el criterio de cierre. Estaba escrito y **nadie lo había
+verificado**: los invariantes se prueban en once archivos, la mitad en `npm test` y la otra mitad en
+scripts que necesitan Docker, y saber si faltaba alguno exigía buscar a mano. Un criterio que se
+audita a mano se marca cumplido sin auditar — es lo que ya pasó con la deuda de `npm audit` en la
+Fase 0.
+
+| Estado | Invariantes |
+|---|---|
+| ✅ Con test | `I1`–`I6`, `I8`–`I12` — **once** |
+| 🔒 Sin test, y no puede tenerlo | **`I7`**: habla de `ExamPreparation` y esa tabla no está migrada |
+
+**`I7` no es de esta fase.** El objetivo de B2 es el loop diario —`Action`, `Commitment`, `Evidence`,
+`Reflection`— y `ExamPreparation` es de la [Fase B5](#fase-b5--modo-examen-real). El Done citó §11
+entera, que incluye un invariante fuera del alcance de la fase. Escribirle un test hoy exigiría crear
+la tabla, o sea adelantar una fase para poner un tilde. **Queda declarado con un guard que rompe el
+día que `exam_preparation` se migre**, igual que la lista de CTAs bloqueadas de la Fase 0.
+
+> ⚠️ **Decisión para el owner.** Con `I7` fuera de alcance y `B2.4` bloqueada por `C01-051`, lo que
+> resta para cerrar B2 no es trabajo de código: es **una respuesta humana** y una corrección del
+> criterio. El roadmap no se corrige solo.
+
+**Dos citas eran promesas, no pruebas.** La primera versión de la tabla decía que `I1` se probaba en
+`servicio-compromiso.test.ts` y que `I11` se probaba en `db-aislamiento.sh`. Los dos lo hacían
+—`"un MISSED no vuelve a COMPLETED"` y el aislamiento entre dos instituciones— pero **sin nombrar el
+invariante**, así que la afirmación no era verificable. Ahora lo nombran. Y `I6` viaja con su residuo
+textual: el índice único parcial garantiza **como máximo una recomendación primaria por `action_id`**,
+no por contexto, porque *"contexto"* todavía no tiene identidad canónica. Marcar verde un invariante
+a medias es peor que no tener el test.
+
+#### 🟡 Etapa B2.5 — `UX01` desde la base · 30 de agosto de 2026
+
+**La frontera aguantó.** `UX01` muestra datos persistidos y **`components/screens/` no se tocó**:
+cero líneas. Era lo que la separación de la Fase 0 venía preparando desde el primer commit.
+
+| Qué | Cómo |
+|---|---|
+| La pantalla recibe lo mismo | `GET /api/hoy` devuelve **el mismo `HoyProps`** que daba el fixture. Hay test de que las claves coinciden |
+| La precedencia no se duplicó | La misma `selectHeroLevel` de `lib/domain/`, con sus nueve niveles |
+| El catálogo sintético **no se retiró** | Con `?escenario=` sigue proyectando fixtures: es el guion del focus group y el mapa de estados críticos |
+| `lint` · `build` · `test` | ✅ verde · verde · **531 tests en 31 archivos** |
+
+**El idioma no lo decide la base.** El primer intento formateaba la fecha en SQL y salía *"Sun 30
+Aug"*. El formato es **presentación**, y se movió a la proyección — que además permite usar **la zona
+del estudiante**: un compromiso de las 23:00 en Córdoba no puede aparecer como del día siguiente
+porque el servidor esté en UTC. Con test.
+
+**Mientras carga no se dibuja el fixture.** Mostrar un estado que no es el del estudiante y
+reemplazarlo un segundo después es peor que esperar (`P-12`: nada salta al cargar).
+
+**Un guard con falso positivo, corregido.** El de *"sólo el composition root ata implementaciones
+concretas"* buscaba `Real` **en cualquier lado** y marcó como violación una variable local llamada
+`setReal`. La regla es *"no importes una implementación concreta"*: ahora mira **los `import`**, con
+auto-prueba. **Un guard que castiga un nombre de variable enseña a nombrar mal.**
+
+**Faltan las otras superficies**, y al preparar la etapa que las conecta apareció que **no eran
+ocho ni eran mecánicas**. Ver abajo.
+
 ---
 
-## Fase B3 — Progreso, Bitácora y eventos
+#### ✅ Etapa B2.6 — Las superficies restantes desde la base · COMPLETA · 31 de agosto de 2026
 
-**Estado:** 🔒 B2.
+**Decisiones de diseño — ✅ aprobadas por el owner el 31 de agosto de 2026.**
 
-**Objetivo.** `TopicProgress` con las cinco dimensiones separadas, `ProgressEntry`, Bitácora y el
-Product Event Model completo.
+**1. El alcance real son cinco superficies, no ocho.** `UX07`–`UX09` proyectan `ExamPreparation` y
+`ExamProtocol`, y la base tiene **cero tablas de examen**: son de la [Fase B5](#fase-b5--modo-examen-real),
+que además dependía de [ADR-007](decisions.md#adr-007) (contenido) y
+[ADR-011](decisions.md#adr-011) (readiness), los dos `PENDING` cuando se escribió esto. Conectarlas
+acá sería resolver dos decisiones abiertas de contrabando. **La etapa cubre `UX02`–`UX06`**, y el
+roadmap deja de prometer ocho.
+
+> **Actualización del 31 ago 2026 — la decisión no cambia.** [ADR-025](decisions.md#adr-025) cerró
+> `ADR-007`, así que hoy queda una sola bloqueante (`ADR-011`, readiness) en vez de dos. **`UX07`–`UX09`
+> siguen fuera de esta etapa igual**, y por el motivo principal, que nunca fue un ADR: **la base no
+> tiene tablas de examen**. Se conectan en la Fase B5, que además ahora tiene tres requisitos nuevos
+> de schema — ver esa fase.
+
+**2. El navegador se autentica con Supabase Auth y `Authorization: Bearer`.** No es una decisión
+nueva: es la que [ADR-005](decisions.md#adr-005) y `AGENTS.md` §6 ya ratificaron —*Supabase del lado
+cliente se limita a Auth; nunca `supabase.from(...)`*—. **Lo que se corrige es que no estaba
+implementada:** hoy `app/(student)/hoy/page.tsx` hace `fetch("/api/hoy")` **sin header de
+autorización**, el endpoint responde `401` y la ruta cae al fixture. Verificado contra el server
+corriendo. Como el spec no tiene pantalla de login —y **no se inventa una**—, la sesión sintética se
+da de alta fuera de las nueve superficies.
+
+**3. Sin sesión o con la API caída, la superficie muestra `Ausencia`, no el fixture.** El fallback
+silencioso de hoy le muestra al estudiante un día que no es el suyo y lo hace **indistinguible de uno
+real**. Contradice dos invariantes que el propio repo declara: *omitir, no inventar* y *la UI
+proyecta, nunca decide*. La primitiva es la que se construyó en la [Etapa A2.3](#etapas), que existía
+exactamente para esto. **El catálogo sintético no se retira:** sigue disponible bajo `?escenario=`
+explícito, que es el guion del focus group.
+
+**4. Una RPC por superficie**, como `estado_del_dia`. El argumento es el mismo que lo justificó en la
+`B2.5`: varias lecturas por pantalla dan una foto inconsistente entre sí. El costo aceptado es más
+SQL versionado en migraciones.
+
+| # | Superficie | Función de lectura |
+|---|---|---|
+| 1 | `UX02` — Materia | `estado_de_materia()` |
+| 2 | `UX03` — Próxima acción | `estado_de_accion()` |
+| 3 | `UX04` — Compromiso | `estado_de_compromiso()` |
+| 4 | `UX05` — Evidencia | `estado_de_evidencia()` |
+| 5 | `UX06` — Progreso | `estado_de_progreso()` |
+
+⚠️ **`UX05` toca `C01-051`** (`OPEN` **cuando se escribió esto; respondido el 1 sep 2026 por
+[ADR-026](decisions.md#adr-026)**, gate `H`): muestra el requisito de `Reflection`, cuya
+configuración no está cerrada. Se sostiene el criterio de la `B2.4` —**el requisito entra por
+parámetro, no se lee de una tabla de configuración que nadie decidió**— y la superficie no inventa un
+default. Si eso no alcanza al implementarla, `UX05` sale del alcance y se dice acá.
+
+**Done cuando:** las cinco proyectan datos persistidos con sesión real; ninguna dibuja un fixture sin
+`?escenario=` explícito; `components/screens/` sigue sin tocarse; `lint`, `build` y `test` en verde.
+
+---
+
+##### El cierre de la etapa
+
+| Qué prometía el Done | Cómo quedó |
+|---|---|
+| Las cinco proyectan datos persistidos con sesión real | ✅ `UX02`–`UX06`, cada una con **una** función de lectura y su ruta `/api/*`. Verificado en el navegador: `/progreso` muestra el cambio confirmado, el bloque de conservadas y la Bitácora del ciclo, sin errores de consola, a 1440 y a 360 px |
+| Ninguna dibuja un fixture sin `?escenario=` | ✅ guard estático sobre las nueve páginas — y **fue el guard el que obligó a mover `UX06` de lista** cuando se conectó |
+| `components/screens/` sigue sin tocarse | 🟡 **una excepción más**, declarada abajo |
+| `lint` · `build` · `test` | ✅ verde · verde · **613 tests en 34 archivos**, y **118 comprobaciones** contra Postgres |
+
+**`UX06` exigió crear una tabla, y por eso la etapa casi la deja afuera.** El primer recorte fue
+sacarla: proyecta `ProgressEntry` y la base no tenía la tabla, así que parecía el mismo caso que
+`UX07`–`UX09`. **No lo era.** `data-model.md` §10 ya declaraba `progress_entry` entera —columnas,
+`changed_dimensions`, `explicit_no_change`— y su invariante `I10`; lo que faltaba era la migración,
+no la decisión. Las tablas de examen, en cambio, dependen de tres requisitos de schema que
+[ADR-025](decisions.md#adr-025) recién destapó.
+
+Lo que **no** se hizo, y es lo que separa esta etapa de la Fase B3: nadie escribe `progress_entry`.
+No hay Service de `ProgressUpdated`, `entry_kind` **no lleva `CHECK`** —cerrar su vocabulario es
+`C01-018`— y la proyección **se niega a mostrar magnitudes** que el owner no haya escrito como texto,
+porque `C01-019` sigue `OPEN`. Con la tabla vacía, `UX06` dice *"todavía no hay un cambio de progreso
+confirmado"*, que es la única lectura honesta.
+
+**La Bitácora sale de `product_event`.** `data-model.md` §12 dice que no tiene tabla propia: es
+composición de lectura. Reconstruirla desde las columnas de estado **no alcanza** —`evidence` no
+guarda `validated_at`, así que *"la validaron"* no tendría instante y habría que inventarle uno—, y
+`product_event` es el único registro con fecha, actor y causa, además de append-only.
+
+**Y no dice *"la cátedra la validó"*.** El fixture del Track A sí lo decía, porque un escenario
+**declara** su mundo. En la base, `evidence` no guarda `source_type` ni `verification_status`: quién
+validó no es un dato que exista. La entrada dice *"La validaron"* y su procedencia queda en *"Fuente
+o estado no disponible"*. Es la misma regla que ya había cazado el recurso de `UX03`: **ninguna capa
+eleva la verificación** (`I9`).
+
+**Tercer cambio autorizado en `components/screens/`.** La Bitácora usaba el título de la entrada como
+key de React. Con fixtures nunca colisionó —los títulos de un ciclo eran únicos—; con datos reales,
+una resubmission emite dos veces *"Presentaste evidencia"* en el mismo ciclo y React reutiliza el
+nodo equivocado. La key ahora lleva la posición. Es un bug que **sólo aparece cuando los datos dejan
+de estar curados**, que es exactamente lo que esta etapa vino a probar.
+
+**Una duplicación que ya iba por la tercera copia.** `fechaCorta` estaba dos veces, con el mismo
+comentario, en `proyeccion-hoy` y `proyeccion-materia`; `UX06` necesitaba ésa y `haceCuanto`. Las
+cuatro funciones de formato viven ahora en `lib/server/servicios/tiempo.ts`. **El formato es
+presentación, no base:** es la lección de la `B2.5`, y ahora está en un solo lugar.
+
+**Lo que el mundo vacío enseñó.** La primera corrida contra la base sin evidencia mostraba la misma
+frase en el chip, en el detalle y en el aviso. Tres líneas idénticas no son tres datos. Ahora el chip
+dice el estado, el detalle dice qué falta y el aviso habla del progreso — y hay un test que exige que
+las tres sean distintas.
+
+---
+
+#### ✅ Etapa B2.4 — `Reflection` · COMPLETA · 1 de septiembre de 2026
+
+> **Cerró cuando el owner decidió, no cuando el código se cansó de esperar.**
+> Estuvo `PARCIAL` desde el 30 de agosto: la regla se hacía cumplir y **la
+> configuración no se inventó**. [ADR-026](decisions.md#adr-026) la decidió el 1
+> de septiembre y el requisito pasó a vivir donde corresponde. Lo que sigue
+> abierto —en qué pasos del protocolo la reflexión es obligatoria— es criterio
+> pedagógico y va con la psicopedagoga, junto con los residuos de
+> [ADR-025](decisions.md#adr-025).
+
+**Se implementó lo que está cerrado. La configuración no se inventó.**
+
+`product.md` §407 dice, textual: *"Obligatoriedad de `Reflection`: configurable `OPTIONAL`/`REQUIRED`
+por Action o paso. **La configuración exacta no está cerrada**"* — es **`C01-051`, `OPEN`, gate `H`**.
+El propio anexo advierte: *"antes de mover cualquier pantalla a high-fidelity, revisá si toca una
+fila con gate `H` (hoy: `C01-008`, `C01-019`, `C01-051`) y conseguí la respuesta real primero"*.
+
+**Lo abierto es dónde vive el flag y quién lo pone**, no qué hace. Así que el Service **recibe el
+requisito por parámetro**: no hay tabla de configuración, ni default, ni lectura de nada. Elegir uno
+habría cerrado `C01-051` desde el código.
+
+| Qué | Estado |
+|---|---|
+| La Reflection es un **objeto separado**, no se fusiona ni se infiere | ✅ |
+| Requerida y ausente **bloquea el envío**, y sólo eso | ✅ con test de que no emite juicio sobre la Evidence ni el dominio |
+| Una Reflection **vacía no es una Reflection** | ✅ un objeto en blanco aparecería en la Bitácora como si el estudiante hubiera reflexionado |
+| **Dónde se configura `OPTIONAL`/`REQUIRED`** | 🔴 **`C01-051`, lo cierra una persona** |
+| `lint` · `build` · `test` | ✅ verde · verde · **469 tests en 26 archivos** |
+
+##### El cierre · 1 de septiembre de 2026 · [ADR-026](decisions.md#adr-026)
+
+| Qué se decidió | Cómo quedó implementado |
+|---|---|
+| El requisito vive en la **configuración versionada del contenido**, nunca en una tabla de preferencias | `action.reflection_requirement`, y el paso del protocolo cuando la B5 lo migre |
+| Se **congela en la instancia** al crearla | Lo escribe `materializar_recomendacion`; si mañana cambia la política, las Actions ya creadas conservan la regla con la que el estudiante se comprometió |
+| El **default del loop diario es `OPTIONAL`** | El ADE lo pone al crear la Action. El default de **columna** es `NO_CONFIGURADA`: ninguna Action histórica empieza a ofrecer algo que nadie configuró |
+| **Válida = no vacía**, salvo criterio declarado | Ya estaba, desde la parte de agosto |
+| `lint` · `build` · `test` · `db:verify` | ✅ · ✅ · **632 tests en 35 archivos** · **120 comprobaciones** |
+
+**Eran tres estados y el backend modelaba dos.** El registro canónico de CTAs ya los distinguía
+—`CTA-016.aparece` mira `reflectionConfigurada`, no `reflectionRequerida`—, pero la capa de servidor
+usaba un booleano: con `false` no se ofrecía nada. **La Reflection opcional no existía en la UI**, y
+nadie lo había visto porque el único valor con el que se llamaba era `false`. El tipo es ternario
+ahora, y hay un test de que `OPTIONAL` y `NO_CONFIGURADA` **no se ven igual**.
+
+**El parámetro se fue, y eso es parte de la decisión.** Mientras `C01-051` estaba abierto, que el
+requisito entrara por parámetro era la forma de no elegir un default desde el código. Con la decisión
+tomada, un parámetro que el caller pueda cambiar es una puerta trasera a una regla de negocio
+cerrada: `evidenciaDe` ya no lo acepta y la función de base lo lee de la Action.
+
+**Una migración aplicada no se edita.** El primer intento cambió `20260831040000_estado_de_evidencia.sql`
+en el lugar; `db:reset` desde cero falló, porque esa migración pasaba a referir una columna que en ese
+punto de la historia todavía no existía. La forma correcta —la que el repo ya usaba en
+`estado_sin_afirmacion.sql`— es reemplazar la función **desde una migración nueva**. Con `DROP` y no
+sólo `CREATE OR REPLACE`: cambió la firma, y un replace habría dejado dos sobrecargas conviviendo.
+
+**Y una trampa de Postgres que costó un rato.** La comprobación de que el ADE congela el requisito
+hacía `select … from materializar_recomendacion(…) m join action a on a.id = m.action_id`, y volvía
+vacía: **dentro de una misma sentencia, el resto del plan ya tomó su snapshot y no ve la fila que la
+función acaba de insertar.** Ahora son dos sentencias.
+
+**`0` minutos es un dato, no un vacío** — el mismo invariante que `topic_progress` ya sostiene en la
+base. Tiene test, porque es el que más fácil se rompe al validar "campos completos".
+
+---
+
+#### ✅ Etapa B2.3 — `Evidence`, resubmission y storage · COMPLETA · 30 de agosto de 2026
+
+Habilitada por ADR-005 ítem 4, cerrado por el owner: **Supabase Storage, bucket privado, subida
+directa con URL firmada.**
+
+| Invariante | Resultado |
+|---|---|
+| `I4` — la resubmission **preserva** la anterior | ✅ crea fila nueva; la vieja conserva **estado, contenido y fecha** |
+| `I5` — `UNDER_REVIEW` exige instancia real | ✅ y **un método configurado no alcanza**, con test |
+| Storage privado | ✅ verificado contra el storage real: **leer sin firma da `400`** |
+| `lint` · `build` · `test` | ✅ verde · verde · **459 tests en 25 archivos**, **69 verificaciones** contra Postgres |
+
+**Cómo se leen juntas la máquina e `I4`.** `evidenceOwnerTransitions` tiene
+`RESUBMISSION_REQUESTED → SUBMITTED`, e `I4` dice que una resubmission **crea una Evidence nueva**.
+No se contradicen: **la máquina dice qué se permite, `I4` dice cómo se persiste.** Implementar esa
+arista como un `UPDATE` de la misma fila habría sido lo natural y habría roto `I4` en silencio — la
+entrega anterior desaparecería, y con ella la prueba de qué se entregó primero.
+
+**Un bug propio que encontró el test, no la relectura.** `resubmitir()` validaba con
+`canTransition(…, "SUBMITTED")`, y **`EXPECTED` también admite `SUBMITTED`** — pero eso es la
+*primera* entrega. Con esa validación, resubmitir una evidencia nunca entregada creaba una segunda
+fila para algo que no existía. Ahora exige explícitamente `RESUBMISSION_REQUESTED`.
+
+**La clave del objeto no la elige el cliente.** Se deriva de `institution_id` y `evidence_id`. Si el
+cliente propusiera la ruta, pediría una firma para la carpeta de otra institución y escribiría ahí.
+Hay un test con `../../` que verifica que no se escapa del prefijo.
+
+**El flujo de storage, probado contra el storage real** y no contra un doble: se firma la subida, se
+sube **sin credenciales** usando sólo la firma, **leer sin firma devuelve `400`**, y leer con firma
+funciona.
+
+⚠️ **Retención y borrado siguen en [ADR-006](decisions.md#adr-006).** No se construyó ningún borrado
+de archivos — el mismo criterio que en `audit_log`: hacerlo sería adelantar esa decisión.
+
+---
+
+#### ✅ Etapa B2.2 — Renegociación y rescate · COMPLETA · 30 de agosto de 2026
+
+Los tres invariantes más delicados del producto, probados contra Postgres.
+
+| Invariante | Resultado |
+|---|---|
+| `I2` — renegociar **crea una fila nueva**; el original queda `RENEGOTIATED` | ✅ y **la fecha y los minutos del original no se tocan** |
+| `I3` — un rescate sólo apunta a un `MISSED` | ✅ y **el incumplido sigue `MISSED`** |
+| `I8` — la misma clave no crea dos entidades | ✅ |
+| `lint` · `build` · `test` | ✅ verde · verde · **434 tests en 23 archivos**, **54 verificaciones** contra Postgres |
+
+**La tensión que había que resolver antes de escribir nada.** `data-model.md` §11 pide
+**transacción** para `I2` e `I3`; ADR-005 prohíbe lógica de negocio en la base. La salida está en la
+propia separación:
+
+| Qué | Dónde | Por qué |
+|---|---|---|
+| **Qué estados se pueden renegociar** | Service, TypeScript, `commitmentTransitions` | Es la regla |
+| **Que las dos escrituras ocurran juntas** | Función de base | Es atomicidad, que §6 asigna explícitamente a la base |
+| El `WHERE state = …` de adentro | Función de base | Es el mismo compare-and-swap del Repository: control de concurrencia, no regla |
+
+**La prueba de que la regla no quedó en la base:** si mañana `commitmentTransitions` admite
+renegociar desde un estado nuevo, **las funciones SQL no cambian**.
+
+**`STARTED` no se renegocia**, y lo decide el Service: renegociar es válido sólo **antes** del
+vencimiento. El test verifica que ni siquiera llega a la base.
+
+**Y lo que más importa:** rescatar un `MISSED` crea otro objeto y **no toca el incumplimiento**.
+Verificado en las dos capas. Es *No Cortar* — el incumplido sigue incumplido para siempre, y el
+rescate lo apunta sin borrarlo.
+
+**Renegociar dos veces en carrera produce un solo sucesor.** Sin el compare-and-swap dentro de la
+transacción, dos requests concurrentes dejan al estudiante con dos compromisos nuevos para el mismo
+original.
+
+---
+
+#### ✅ Etapa B2.1 — `Action` · COMPLETA · 30 de agosto de 2026
+
+| Criterio | Resultado |
+|---|---|
+| Máquina de estados de `Action` | ✅ la misma `actionTransitions` de `lib/domain/`; un test recorre **todos** los pares prohibidos |
+| **Aceptar una Action NO crea un Commitment** | ✅ con test que verifica que no aparece nada de `commitment` |
+| `I6` — una sola recomendación primaria | ✅ probado contra la base |
+| `lint` · `build` · `test` | ✅ verde · verde · **427 tests en 24 archivos**, y **46 verificaciones** contra Postgres |
+
+**La secuencia de transición se extrajo en vez de duplicarse.** `Action` y `Commitment` hacen
+exactamente lo mismo —leer con scoping, validar contra la máquina, escribir con compare-and-swap,
+publicar el hecho— y sólo difieren en la tabla y en qué columnas extra tocan. Dos copias divergirían
+**en el orden**, que es donde están los errores: publicar antes de escribir, o escribir sin comparar.
+Vive en `lib/server/servicios/transiciones.ts`; el refactor pasó los tests de `Commitment` sin
+tocarlos.
+
+**`BLOCKED` explica, o no ocurre.** Bloquear sin razón se rechaza antes de tocar la base: `P-01` pide
+que la interfaz explique la regla, y un estado bloqueado sin motivo deja al estudiante con una
+pantalla y nada que hacer. **Y salir de `BLOCKED` limpia la razón** — conservarla haría que `UX03`
+mostrara un bloqueo que ya no existe.
+
+**Hasta dónde llega `I6`, dicho en el test.** El índice parcial garantiza *"como máximo una primaria
+por `action_id`"*, no *"una por contexto"*: eso necesita una identidad canónica de contexto que el
+spec todavía no define. El propio `data-model.md` §11 lo aclara en su fila, y el test no promete más
+que eso.
+
+---
+
+<a id="fase-b2b--ingesta-del-academic-data-layer--en-curso"></a>
+
+## Fase B2b — Ingesta del Academic Data Layer · 🟡 EN CURSO
+
+**Estado:** 🟡 **2 / 3.** Abierta por [ADR-023](decisions.md#adr-023) el 30 de agosto de 2026, a
+pedido del owner. **B2b.3 depende de `C01-042`**, que es de una persona.
+
+**Por qué existe.** Al mirar la B2.5 apareció que **el producto no se mueve solo**: faltan dos
+productores —el reloj del lifecycle (ADR-005 ítem 5) y el ADE ([ADR-004](decisions.md#adr-004))—. El
+owner pidió construir el Engine, y lo que describió era **la ingesta del ADL, no el ADE**: el
+glosario los separa, y el ADE decide **sobre** el ADL, así que sin ADL poblado no tiene sobre qué
+decidir.
+
+| # | Etapa |
+|---|---|
+| B2b.1 | ✅ **Ingesta asistida**: una guía estructurada → ADL, con procedencia obligatoria |
+| B2b.2 | ✅ **Corroboración**: la operación explícita que **sí** puede elevar un `verification_status` |
+| B2b.3 | Otra fuente para el mismo ingestor — scraping. **Requiere `C01-042`** |
+
+**Done del MVP sintético cuando:** una materia sintética representativa está cargada con su
+procedencia y el ADE tiene sobre qué decidir. Cargar una materia real requiere cerrar
+[ADR-006](decisions.md#adr-006) y `C01-042`.
+
+#### ✅ Etapa B2b.1 — Ingesta asistida · COMPLETA · 30 de agosto de 2026
+
+| Regla | Cómo se sostiene |
+|---|---|
+| **Procedencia obligatoria** | El tipo no compila sin `fuente`. Y una fuente **sin referencia concreta se rechaza**: *"lo dijo alguien"* no se puede volver a mirar, así que no se puede corroborar nunca |
+| **Todo entra `unverified`** (`I9`) | `verification_status` **no es parámetro de nada**. No es que el ingestor no deba elevarlo: **no tiene por dónde** |
+| **El ingestor no declara autoridad** | El tipo `Fuente` no admite `institution` ni `instructor` — sólo `student`, `community`, `public_web`, `inference` |
+| **El orden no es un prerequisito** | Se cargan sólo los **declarados**. Que la Unidad 2 vaya después de la 1 no dice que la necesite |
+| **Re-ingerir no duplica** | Reemplazo por cursada. Sin esto, cargar dos veces el mismo PDF duplica el programa entero |
+| **Sin identidad de docente** | ADR-023: un programa suele traer el nombre del profesor, y un docente es una persona real |
+| `lint` · `build` · `test` | ✅ verde · verde · **482 tests en 27 archivos**, **79 verificaciones** contra Postgres |
+
+**Una fecha desconocida no se estima**, y hay test: la evaluación sin fecha queda sin fecha.
+**`oral` se almacena** aunque quede fuera de P0 (`C01-047`).
+
+**Lo que esta etapa no hace:** no recomienda nada. Estructura conocimiento; decidir es el ADE.
+
+#### ✅ Etapa B2b.2 — Corroboración · COMPLETA · 2 de septiembre de 2026
+
+La operación explícita que el invariante **`I9`** exigía y que no existía. Migración
+`20260910000000_corroboracion.sql`.
+
+> *"Ninguna capa eleva un `verification_status`. **Operación explícita del owner en Service +
+> autorización y auditoría**; Repository no expone un update genérico del campo."* — `data-model.md`
+> §11
+
+**Por qué hacía falta.** La B2b.1 dejó al ingestor sin ninguna forma de elevar el campo —no es que no
+deba: **no tiene por dónde**—, y eso estaba bien. Pero sin esto **todo el ADL quedaba `unverified`
+para siempre**, y la distinción entre *"lo cargó un estudiante"* y *"alguien lo verificó"* nunca se
+podía ejercer.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | Corroborar es un **hecho append-only**, no un `UPDATE` | Si sólo se cambiara el campo, nadie podría decir después contra qué se verificó ni quién lo hizo |
+| D2 | **Una tabla polimórfica**, no cinco | Cinco tablas serían la misma máquina escrita cinco veces, que es como se desincronizan |
+| D3 | **`official` inalcanzable**, y declarado | Significa que la institución lo afirma, y el secreto de servicio autentica al sistema llamante, no a una autoridad académica. `C01-030` sigue `OPEN` |
+| D4 | **`disputed` no es terminal** | Dejarla terminal dejaría varada para siempre una fila disputada por error. Mismo criterio que ADR-034 con `ACKNOWLEDGED` |
+| D5 | `source_ref` y `reason` obligatorios | *"Lo dijo alguien"* no se puede volver a mirar. Una corroboración sin motivo es indistinguible de un clic |
+| D6 | Secreto de servicio, **nunca JWT de estudiante** | Alguien confirmando lo que él mismo declaró no es verificación: es la misma afirmación dos veces |
+
+**Lo que quedó construido:**
+
+| Pieza | Qué hace |
+|---|---|
+| `provenance_corroboration` | El hecho: qué, de qué estado a cuál, contra qué fuente, por qué y quién |
+| `corroborar_procedencia()` | Escribe el hecho **y después** actualiza, en una transacción, con la fila tomada |
+| `provenanceTransitions` | La máquina en el dominio, legible y testeable sin base. **Un test verifica que dice lo mismo que la función** |
+| `POST /api/corroboracion` | Con secreto de servicio. `official` se rechaza **nombrando la decisión que falta** |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run typecheck` · `npm run build` | ✅ los tres en verde, con `/api/corroboracion` registrada |
+| `npm test` | ✅ **953 tests en 52 archivos** |
+| `npm run db:verify` | ✅ **275 comprobaciones**, **11 nuevas** de esta etapa, cero fallos |
+| Circuito completo por HTTP | ✅ `unverified → corroborated`, con entrada de `audit_log` que lleva antes, después **y la referencia** |
+| `official` por HTTP | ✅ `422`, con el mensaje que nombra `C01-030` |
+| Una disputa resuelta vuelve | ✅ y el historial conserva las tres corroboraciones |
+| Ningún otro SQL escribe el campo | ✅ guard sobre las 46 migraciones |
+
+**⚠️ Un defecto operativo que sólo apareció al correr el script dos veces.**
+`provenance_corroboration.institution_id` es `ON DELETE RESTRICT` —correcto para un registro de
+auditoría—, así que una corrida que fallara a mitad dejaba filas que **trancaban el setup de la
+corrida siguiente**, con un error que no decía nada (*"no se pudieron cargar"*). Se agregaron a
+`limpiar_mundo` esa tabla y las tres de la B6.7 que tenían el mismo problema latente
+(`error_classification_correction`, `support_need_observation`, `learning_objective`). **Dos corridas
+seguidas sin reset, en verde.**
+
+**Lo que esta etapa NO hizo:**
+
+1. **No definió quién puede corroborar.** `C01-030` sigue `OPEN`; `corroborated_by` no se valida
+   contra nada.
+2. **No hizo alcanzable `official`.** Ver D3.
+3. **No corrobora nada por su cuenta.** Deducirlo —*"si dos estudiantes cargaron lo mismo, está
+   corroborado"*— sería fabricar verificación, que es lo que `I9` existe para impedir.
+
+---
+
+> ## 🟢 Modo MVP — 30 de agosto de 2026
+>
+> [ADR-024](decisions.md#adr-024): **se construye todo sobre datos sintéticos**, para un MVP interno
+> demostrable a inversores. Lo que frenaba el roadmap era casi siempre *procesar dato real*, no
+> *construir*, así que casi nada estaba realmente bloqueado.
+>
+> **Lo único que sigue en pie:** ningún flujo procesa datos de una persona real. Para este MVP **no
+> estorba** —todo es sintético— y protege el objetivo: una demo con datos de un estudiante real es un
+> pasivo, no una función.
+>
+> **La deuda no desaparece, se aplaza y queda escrita:** [ADR-006](decisions.md#adr-006) con
+> asesoría legal, `C01-042`, las 3 vulnerabilidades `high` de §3.1, `C01-030` y la identidad de
+> docente de [ADR-023](decisions.md#adr-023). **Todas antes de que entre una sola persona real.**
+
+## Fase B4 — ADE v1 y el reloj del lifecycle · ✅ COMPLETA
+
+> Esta sección es **el registro de cómo se construyó**. El cierre de la fase, con el validador
+> determinista y el reloj corriendo por endpoint, está más abajo en
+> [Fase B4 — Academic Decision Engine v1](#fase-b4--academic-decision-engine-v1--completa).
+
+**Estado:** ✅ Engine v1 y reloj construidos, **los dos puros y con el tiempo por parámetro**. El ADE
+materializa recomendaciones en la base y las seis superficies del loop diario proyectan estado
+persistido (Etapa B2.6). La ejecución operativa del reloj entró en la B4.2.
+
+#### ✅ El ADE conectado a la base · 30 de agosto de 2026
+
+El Engine lee el ADL, decide y **materializa** la `Action` con su `ActionRecommendation` primaria —
+las dos en una transacción: *media recomendación es peor que ninguna*, porque una Action sin razón no
+se puede mostrar (`P-01`) y una razón sin Action no es nada.
+
+**El ADE no apila.** Si ya hay una Action viva para la cursada, no crea otra: `UX01` muestra **una**
+acción, y dos vivas serían el frontend eligiendo. Verificado corriéndolo dos veces seguidas.
+
+**Seed de demo:** `npm run db:demo` carga *Análisis Matemático II* por el ingestor —cuatro unidades,
+dos evaluaciones, prerequisitos declarados— y deja el mundo listo. Todo sintético.
+
+#### 🔴 Un hallazgo del spec: no había cómo decir qué entra en un parcial
+
+Al conectar el Engine apareció que **`data-model.md` §7 no tiene vínculo evaluación↔tema**. Sólo
+`assessment.scope`, que es **texto libre** (*"U1 a U2"*).
+
+Consecuencia: la regla de **más peso** del ADE —*"entra en la próxima evaluación"*— era
+**inalcanzable**. El contexto traía `temas: []` siempre. **Una regla que nunca se activa es peor que
+no tenerla:** parece que el producto prioriza el examen y en realidad nunca lo hace.
+
+Se agregó `assessment_topic`, **marcada como adición estructural provisional**
+([ADR-024](decisions.md#adr-024)), para revisión junto con `C01-027`. **No se parsea `scope`:**
+convertir *"U1 a U2"* en unidades sería inferir alcance académico desde texto libre. El vínculo se
+declara, igual que los prerequisitos — y si nadie lo declaró, **la regla no se activa**, que es lo
+correcto.
+
+Con el vínculo cargado, la recomendación de la demo pasó de *"Todavía no registraste práctica"* a
+**"Entra en Parcial 1."**, que es la razón que corresponde.
+
+#### ✅ El ADE v1 · [ADR-004](decisions.md#adr-004) `ACCEPTED (v1 provisional)`
+
+Reglas deterministas, sin LLM. El validador y las reglas primero; el LLM después será **otro
+generador detrás del mismo validador** — el mismo patrón que la ingesta.
+
+- **Salida mínima completa** (Parte I §9.2), con **razón obligatoria**.
+- **Las cuatro ramas**, y `academic_context_blocker` **distinto** de `NONE` confirmado: colapsarlos
+  diría *"no hay nada que hacer"* cuando falta cargar el cursado.
+- **`priority` ordena y nunca se muestra** (`P-03`). La razón enuncia el hecho, no el cálculo.
+- **«Sin datos no es cero»:** una unidad sin información pesa **más** que una con práctica baja —
+  desconocido no es lo mismo que poco.
+- **Reproducible:** cien corridas con la misma entrada dan la misma recomendación. Sin desempate
+  estable, el estudiante ve otra cosa cada vez que refresca.
+
+#### ✅ El reloj del lifecycle
+
+`product.md` §226: *"la UI **no** declara `MISSED` ni `DUE` por el paso del tiempo. **Lo hace el
+owner del lifecycle**"*. Esto es ese owner, y era **la pieza que faltaba para que el producto se
+mueva solo**.
+
+- **No se saltea `DUE`.** Un `CONFIRMED` muy vencido pasa primero a `DUE`; saltar directo a `MISSED`
+  borraría de la Bitácora que alguna vez llegó su hora.
+- **Pasa por la misma máquina que todo lo demás.** Un camino paralelo que escribiera directo sería
+  el agujero por donde un `MISSED` podría volver.
+- **El estudiante le gana al reloj:** si mueve el compromiso mientras el reloj corre, el
+  compare-and-swap no encuentra el estado y la próxima corrida ve el estado nuevo. No es error.
+- **El actor del evento es el sistema, no una persona.** Nadie apretó nada, y la auditoría no debe
+  decir que lo hizo el estudiante.
+- **Converge:** correrlo muchas veces se detiene.
+
+⚠️ **La ventana de `MISSED` es provisional** ([ADR-024](decisions.md#adr-024)). El spec dice **quién**
+declara `MISSED`, no **cuándo**: eso es **`C01-010`**, `OPEN`. La regla actual —*el bloque acordado
+pasó entero sin empezar*— es una lectura razonable, **sin tolerancia extra a propósito**: cuánto se
+le perdona a alguien es una decisión pedagógica, no una función.
+
+---
+
+## Fase B3 — Progreso, Bitácora y eventos · ✅ COMPLETA
+
+**Estado:** ✅ **3 / 3 — el 1 de septiembre de 2026.** La Fase B2 cerró 6/6 el mismo día. **Con parte de la
+estructura ya construida:** la Etapa B2.6 migró
+`progress_entry` (`data-model.md` §10) con `I10`, y `estado_de_progreso()` ya compone la Bitácora
+desde `product_event`.
+
+**Lo que esta fase todavía debe traer, y que la B2.6 deliberadamente no hizo:**
+
+| # | Qué falta | Por qué no se hizo antes |
+|---|---|---|
+| 1 | **Quién emite el `ProgressUpdated`, con qué causalidad y qué payload** | `C01-018`, `OPEN`, gate `I`. Hoy **nadie escribe `progress_entry`** |
+| 2 | **Qué magnitud es mostrable** | `C01-019`, gate `H`. La proyección sólo muestra lo que el owner escribió como texto; un número crudo sale como *"cambió"* |
+| 3 | **El vocabulario de `entry_kind`** | Un `CHECK` lo habría cerrado desde el schema |
+| 4 | **El Product Event Model completo** | Los hechos sin copy aprobada hoy **se omiten** de la Bitácora en vez de mostrarse con su enum |
+
+**Objetivo.** `TopicProgress` con las cinco dimensiones separadas, `ProgressEntry` **escrita por un
+Service real**, Bitácora y el Product Event Model completo.
+
+> ✅ **La fase cerró 3/3 el 1 de septiembre de 2026**, con una parte del objetivo **explícitamente no
+> hecha**: mostrar las cinco dimensiones con sus valores es `C01-019`, gate `H`, y sigue `OPEN`. Las
+> dimensiones están separadas en el schema y en la proyección desde la B2.6; lo que falta es la
+> semántica para mostrarlas, y eso lo responde una persona. El resto del objetivo está: la
+> `ProgressEntry` la escribe un Service real, la Bitácora existe sobre una sola fuente y el Product
+> Event Model está declarado con su cobertura.
 
 **Done cuando:** una dimensión solo se muestra como cambiada con un `ProgressUpdated` real; los tres
 estados de no-cambio son distinguibles; la Bitácora agrupa los eventos del mismo ciclo sin
@@ -402,11 +2422,206 @@ duplicarlos como cuatro avances independientes.
 
 **Contratos a cerrar:** `C01-018`, `C01-019`, `C01-020`, `C01-023`.
 
+### Etapas
+
+| # | Etapa |
+|---|---|
+| B3.1 | ✅ **COMPLETA** — el resultado de progreso **se escribe**, y nadie lo infiere |
+| B3.2 | 🔵 **EN CURSO** — el Product Event Model, declarado y verificado contra lo que el código emite |
+| B3.3 | ✅ **COMPLETA** — la misma verdad histórica, en las dos superficies |
+
 ---
 
-## Fase B4 — Academic Decision Engine v1
+#### ✅ Etapa B3.3 — La misma verdad histórica, en las dos superficies · COMPLETA · 1 de septiembre de 2026
 
-**Estado:** 🔒 [ADR-004](decisions.md#adr-004).
+**El alcance cambió, y conviene decir por qué.** Esta etapa se había anotado como *"`TopicProgress`
+con sus cinco dimensiones desde el ADL"*. Al preparar el trabajo, eso resultó **no construible hoy**,
+y por dos motivos que no son de esfuerzo:
+
+1. **Mostrar las dimensiones medidas es `C01-019`**, gate `H`, `OPEN`. `UX02` ya las proyecta como
+   ausencias tipadas justamente porque el número existe y la unidad no.
+2. **Derivar `recorrido` o `recencia` de la actividad sería exactamente lo que la B3.1 prohibió:**
+   una dimensión de progreso derivada de una Evidence. El guard de esa etapa lo rompería, y tendría
+   razón.
+
+Lo que sí falta, es construible y cierra la fase es otra cosa: **`UX02` no tiene Actividad
+reciente**, que `VI.2` §8.7 describe y la Fase 0 nunca construyó.
+
+**Decisiones de diseño — escritas antes de codear.**
+
+**1. Una sola fuente histórica, y verificada.** `VI.6` §8.3 es explícito: *"Bitácora es el historial
+completo de la misma verdad derivada. **No existe una segunda fuente histórica.** Ambas consumen
+`ProgressEntry` o el mismo bundle derivado de eventos"*. Así que la preview de `UX02` y la Bitácora
+de `UX06` salen de **la misma función de base**, no de dos consultas parecidas. Va con guard: dos
+consultas con la misma intención divergen, y la que se usa menos es la que envejece.
+
+**2. La preview usa la forma de la Bitácora, no una nueva.** Las capturas no tienen patrón de lista
+de actividad, y el repositorio ya construyó uno en `UX06` que pasó el focus group. Es la misma
+verdad: que se vea igual no es ahorro, es coherencia. **`components/screens/` se toca**, y esta etapa
+es la que lo autoriza.
+
+**3. Dos o tres entradas, y el corte lo hace la base.** `VI.2` fija *"Actividad reciente muestra 2–3
+entradas"*. El límite viaja como parámetro de la función de lectura: traer cincuenta y cortar en la
+pantalla es pedirle a la red y a Postgres un trabajo que se tira.
+
+**4. `RescueSucceeded` se empieza a emitir.** Es uno de los 23 del P0 y la Etapa B3.2 lo dejó
+declarado como no instrumentado: hoy existe `CommitmentRescueCreated` —crear el rescate— y **nadie
+registra si funcionó**. Un rescate que llega a `COMPLETED` es el *"retorno después de
+incumplimiento"* que §16 nombra, y es justamente lo que el producto quiere medir. Se emite **además**
+de `CommitmentCompleted`: son dos hechos distintos que ocurren juntos, no uno con dos nombres.
+
+**Done cuando:** la preview y la Bitácora salen de la misma función de base, con guard; `UX02`
+muestra a lo sumo 3 entradas con su procedencia; `RescueSucceeded` se emite y aparece en las dos
+superficies; y `lint`, `build`, `test` y `db:verify` en verde.
+
+##### El cierre
+
+| Qué prometía el Done | Cómo quedó |
+|---|---|
+| Una sola función de base, con guard | ✅ `hechos_de_cursada()`. El guard recorre **la última versión de cada función** del schema y falla si alguna consulta `product_event` por su cuenta |
+| A lo sumo 3 entradas, con procedencia | ✅ el corte lo hace la base; verificado contra Postgres y en el navegador |
+| `RescueSucceeded` emitido | ✅ al completar un rescate, **además** de `CommitmentCompleted`, con la referencia al incumplido que rescata |
+| `lint` · `build` · `test` · `db:verify` | ✅ · ✅ · **674 tests en 40 archivos** · 134 comprobaciones |
+
+**La traducción también es una sola.** No alcanzaba con compartir el `SELECT`: si cada proyección
+tradujera el hecho por su cuenta, `UX02` y `UX06` dirían frases distintas del mismo evento. Vive en
+`lib/server/servicios/hechos.ts`, y hay guard de que ninguna otra proyección importe `tituloDeHecho`.
+
+**El guard tuvo que aprender que las migraciones viejas no se editan.** Su primera versión miraba
+todas las definiciones del schema y cazó la versión **anterior** de `estado_de_progreso` —la que
+componía la Bitácora sola, y que el repositorio conserva a propósito—. Auditar el pasado no sirve:
+ese SQL ya no corre en ninguna base. Ahora se queda con la última definición de cada función.
+
+**Y una comprobación que escribí mal y saqué.** La de `RescueSucceeded` contra Postgres verificaba
+que existiera una función, no que el evento se emitiera: habría pasado en verde para siempre. La
+regla vive en el Service, así que se prueba ahí, con cuatro casos —incluido *"empezar un rescate no
+es recuperarse"*.
+
+**`C-02` tuvo su primera excepción, y con respaldo.** El guard de vocabulario prohíbe *"actividad"*
+como sinónimo de `Action`; `VI.2` §8.7 llama a la sección **"Actividad reciente"**. La excepción es
+por clave exacta, y un test verifica que la frase esté en el spec — si no estuviera, sería deriva.
+
+---
+
+#### ✅ Etapa B3.2 — El Product Event Model, declarado · COMPLETA · 1 de septiembre de 2026
+
+**Decisiones de diseño — escritas antes de codear.**
+
+**1. El catálogo P0 existe y está en el spec.** `C01-023` dice *"artifact ausente"*, y es cierto que
+no hay un documento de Product Event Model — pero `product-spec-source.md` §16 **sí tiene la
+instrumentación P0**: 23 eventos con su uso. Se transcribe como registro ejecutable, igual que la
+Etapa 0.3 hizo con las 18 CTAs, y **con la misma regla**: el spec es el owner canónico y esto es la
+transcripción, no una segunda fuente.
+
+**2. Lo que el código emite y no está en el catálogo se declara, no se borra ni se esconde.** El
+spec es explícito —*"evento nuevo para cada interacción: no está aprobado en Product Event Model"*—
+y hoy el backend emite un evento por **cada transición de estado**: `CommitmentConfirmed`,
+`EvidenceSufficient`, `ActionCommitted` y una docena más que el P0 no lista. No se borran —son
+hechos reales y `product_event` es append-only— pero **dejan de estar invisibles**: se registran como
+extensiones declaradas, con el motivo, y quedan como insumo de `C01-023`.
+
+**3. El guard corre en las dos direcciones.** Todo evento que el código pueda emitir tiene que estar
+declarado; y todo evento declarado como *emitido* tiene que tener quién lo emita. Un catálogo que se
+desincroniza del código en silencio es peor que no tenerlo. Los nombres se derivan de las máquinas de
+estado, no de una lista escrita a mano que envejece.
+
+**4. El P0 no instrumentado se declara con su fase.** De los 23, la mayoría corresponde a superficies
+que todavía no existen —`ExamPreparationActivated`, `RiskSignalCreated`, `InterventionResolved`—.
+Marcarlos *pendientes con su fase* convierte el catálogo en un mapa de cobertura; dejarlos sin marcar
+lo convierte en una lista de deseos.
+
+**5. La Bitácora se define desde el catálogo, no al revés.** Qué hechos se le muestran al estudiante
+es una propiedad declarada de cada evento, y hay guard de que todo evento marcado como visible tenga
+copy aprobada — y de que ninguna copy exista para un evento que no lo está.
+
+**Done cuando:** los 23 del P0 están transcriptos con su uso textual, verificado contra el spec; todo
+evento emitible está declarado; ningún evento declarado como emitido carece de emisor; y la copy de
+la Bitácora coincide exactamente con los eventos marcados como visibles.
+
+---
+
+#### ✅ Etapa B3.1 — El resultado de progreso se escribe, y nadie lo infiere · COMPLETA · 1 de septiembre de 2026
+
+**Decisiones de diseño — escritas antes de codear.**
+
+**1. El Service recibe el resultado; no decide cuándo hay uno.** `C01-018` —quién emite el
+`ProgressUpdated`, con qué causalidad y qué payload— sigue `OPEN` con gate `I`. El criterio es el
+mismo que la Etapa B2.4 sostuvo con la `Reflection`: **la regla se hace cumplir, la decisión no se
+inventa.** El Service valida y persiste un resultado que el owner del progreso ya produjo, y hace
+cumplir `I10`, el vocabulario de dimensiones y la causa.
+
+Lo que esto habilita hoy: un operador, un job del ADL o una carga asistida pueden registrar un
+resultado, y `UX06` lo proyecta. Lo que **no** habilita: que el sistema decida por su cuenta que
+alguien aprendió algo.
+
+**2. Ningún camino automático desde `Evidence`.** No se construye ninguna función que, al validar una
+evidencia, escriba progreso. Es el invariante central del producto —*validar no es dominio*— y el que
+más barato sale de romper, porque el dato está ahí. **Va con guard estático**, no con una convención.
+
+**3. Las magnitudes viajan como el owner las declara.** El input trae, por dimensión, el valor nuevo
+**y su texto mostrable si el owner lo dio**. El Service no formatea, no infiere unidades y no elige
+qué se ve: eso ya lo decide la proyección, que con un número crudo dice *"cambió"* (`C01-019`).
+
+**4. Una escritura, una transacción.** `progress_entry`, `topic_progress` y el evento se escriben
+juntos o no se escribe nada. Media escritura deja la Bitácora afirmando un cambio que las dimensiones
+no reflejan, y eso es peor que no registrar nada.
+
+**5. Idempotencia (`I8`).** El mismo registro enviado dos veces produce **una** entrada. Un
+reintento de red no puede duplicar el avance de un estudiante.
+
+**6. `entry_kind` sigue sin `CHECK`.** Cerrar su vocabulario es `C01-018`, y un enum en el schema lo
+cerraría sin que nadie lo decida.
+
+**7. Dos nombres de evento, y el segundo no está en el spec.** `ProgressUpdated` es el evento
+aprobado y se emite cuando hay dimensiones cambiadas. Para un no-cambio declarado se emite
+**`ProgressNoChangeConfirmed`**, que **el spec no nombra**: reusar *"Updated"* para decir que nada
+cambió es exactamente la clase de confusión que el producto entero evita. Queda rotulado acá como
+vocabulario del Product Event Model —objetivo declarado de esta fase—, no como regla de negocio.
+
+**Done cuando:** una entrada inválida (`I10`) es rechazada por el Service **y** por la base; el mismo
+registro dos veces produce una sola entrada; ninguna ruta escribe progreso al validar una Evidence; y
+`UX06` proyecta lo registrado sin cambiar una línea de la pantalla.
+
+##### El cierre
+
+| Qué prometía el Done | Cómo quedó |
+|---|---|
+| `I10` rechazada en el Service **y** en la base | ✅ las dos: el Service devuelve `NO_AFIRMA_NADA` sin tocar nada, y la función de base la rechaza aunque alguien la llame directo |
+| El mismo registro dos veces, una sola entrada | ✅ `I8` con índice único parcial, y el segundo intento **vuelve marcado como duplicado** — el evento no se publica de nuevo |
+| Ninguna ruta escribe progreso al validar una Evidence | ✅ **guard estático** sobre los cuatro caminos de `Evidence`, sobre `transiciones.ts` y sobre **los triggers del schema** |
+| `UX06` proyecta lo registrado | ✅ verificado contra Postgres: se escribe con `registrar_progreso` y se lee con `estado_de_progreso`, sin tocar la pantalla |
+| `lint` · `build` · `test` · `db:verify` | ✅ · ✅ · **652 tests en 36 archivos** · **131 comprobaciones** |
+
+**El guard más importante no es sobre lo que el código hace, sino sobre lo que no debe hacer.**
+`VALIDATED` no produce progreso, y el error es barato: la Evidence ya dice `VALIDATED` y escribir ahí
+la fila de progreso parece *cerrar el ciclo*. El guard cubre los cuatro caminos de `Evidence`, la
+maquinaria compartida de transiciones —que es por donde pasa `VALIDATED`— y **los triggers de la
+base**, porque un trigger que escribiera progreso sería invisible desde el código de aplicación. El
+criterio no es sobre qué tabla cuelga cada trigger sino **qué ejecuta**: el único permitido es la
+fontanería de `updated_at`.
+
+**El duplicado se declara, no se esconde.** `registrar_progreso` devuelve `duplicado: true` cuando la
+clave ya escribió, y el Service **no vuelve a publicar el evento**. Dos eventos harían que la Bitácora
+muestre dos avances donde hubo uno — el mismo error que `VI.6` §1 prohíbe para los eventos del mismo
+ciclo.
+
+**Dos nombres de evento, y uno no está en el spec.** `ProgressUpdated` para el cambio;
+`ProgressNoChangeConfirmed` para el no-cambio declarado. Reusar *"Updated"* para decir que nada cambió
+volvería a fundir en la Bitácora las dos cosas que [ADR-020](decisions.md#adr-020) acababa de separar
+en la pantalla.
+
+**Lo que sigue sin decidirse, y por eso el Service recibe en vez de decidir:** `C01-018` —quién emite
+el resultado y con qué causalidad— sigue `OPEN`. Hoy esto habilita que un operador, un job del ADL o
+una carga asistida registren un resultado y `UX06` lo proyecte. No habilita que el sistema decida por
+su cuenta que alguien aprendió algo.
+
+---
+
+## Fase B4 — Academic Decision Engine v1 · ✅ COMPLETA
+
+**Estado:** ✅ **COMPLETA — 1 de septiembre de 2026.** [ADR-004](decisions.md#adr-004) está
+`ACCEPTED (v1 provisional)`. El Engine puro, su materialización en Postgres y el reloj estaban
+construidos desde el 30 de agosto; faltaban **el validador** y **que el reloj corriera**.
 
 **Objetivo.** Un ADE real que emita `ActionRecommendation` con las cuatro ramas
 `NEW` / `NONE` / `ERROR` / `PENDING`.
@@ -415,36 +2630,2286 @@ duplicarlos como cuatro avances independientes.
 determinista impide publicar una recomendación que afirme dominio, progreso o readiness inexistente;
 las cuatro ramas son observables.
 
+| # | Etapa |
+|---|---|
+| B4.1 | ✅ **COMPLETA** — el validador determinista, y con él la rama `ERROR` deja de ser teórica |
+| B4.2 | ✅ **COMPLETA** — el reloj tiene ejecución operativa |
+
+---
+
+#### ✅ Etapa B4.1 — El validador determinista · 1 de septiembre de 2026
+
+**El Done de la fase lo exigía desde el primer día y no existía.**
+[ADR-004](decisions.md#adr-004) lo describe con estas palabras: *"un validador determinista […]
+verifica que la Action sea ejecutable, que respete disponibilidad y que **no se afirma dominio,
+progreso ni readiness inexistente**. Ese validador es la parte que no se puede saltear"*. Y fija el
+orden: **la v1 construye el validador y las reglas; el LLM no.**
+
+**Sus reglas salen de `product.md` §13**, el copy prohibido, y **cada una cita la fila que la
+origina** — con un test que verifica la cita contra el documento. No están las 22 filas: están las
+**diez** que un motor de recomendación puede violar al escribir un objetivo o una razón. Las que
+hablan del protocolo de examen o de la revisión humana no las puede producir esta salida, y
+agregarlas habría sido teatro.
+
+**Valida sólo lo que el estudiante lee** —objetivo, razón, evidencia esperada, criterio de cierre—.
+`prioridad` ordena y nunca se muestra (`P-03`); validar copy invisible daría una cobertura que no
+existe.
+
+**Y va antes de materializar**, no después: lo que no se puede mostrar **no se persiste**. Una Action
+con una razón que afirma dominio ya es un dato malo en la base aunque nadie la vea, y el próximo que
+la lea no va a saber que estaba mal. Tampoco se publica evento: no ocurrió ningún hecho de producto.
+
+**Con esto la rama `ERROR` se vuelve real.** Estaba en el tipo desde el principio y **no la producía
+nada**; una recomendación rechazada **es** el caso de error del ADE: se decidió algo y no se puede
+publicar. `PENDING` sigue sin producirse en la v1 —no hay cálculo asincrónico— pero **dejó de
+colapsarse con `CONTEXTO_INCOMPLETO`**: tiene su propio estado, para que el día que la v2 la
+produzca nadie lea una cosa por otra.
+
+**¿Por qué construir un guard que la v1 no puede violar?** Porque no es un lint sino el **guard de
+publicación**: el día que la razón venga de otra fuente —un LLM, una plantilla editada, contenido de
+la cátedra— ya está puesto, y no hay que acordarse de agregarlo. Que hoy no dispare es la prueba de
+que el Engine se porta bien, no de que el guard sobre.
+
+---
+
+#### ✅ Etapa B4.2 — El reloj tiene ejecución operativa · 1 de septiembre de 2026
+
+**El reloj estaba construido, probado y nadie lo llamaba.** `correrReloj` existía en el composition
+root desde el 30 de agosto y sus únicos llamadores eran los tests. `product.md` §226 dice que la UI
+no declara `MISSED` ni `DUE` por el paso del tiempo —lo hace el owner del lifecycle—, y ese owner
+**no servía de nada sin nadie que lo despierte**.
+
+| Pieza | Qué es |
+|---|---|
+| `POST /api/reloj?institucion=<uuid>` | La ejecución que cualquier scheduler puede llamar |
+| `npm run reloj -- <uuid>` | La misma, a mano, para la demo y desarrollo |
+
+**Con qué frecuencia corre no lo decide esta etapa.** Eso es operación, y
+[ADR-005](decisions.md#adr-005) la dejó `DEFERRED`. Acá está la pieza; elegir Vercel Cron, GitHub
+Actions o `pg_cron` es una decisión de despliegue que no bloquea nada.
+
+**No lo dispara una persona**, así que no se autentica con el JWT de un estudiante: secreto de
+servicio en `Authorization: Bearer`, comparado **en tiempo constante** —un `===` sobre strings sale
+antes en el primer byte distinto y filtra el secreto de a un byte a quien mida—. Y **sin
+`RELOJ_SHARED_SECRET` configurado no entra nadie**: un endpoint que se abre cuando falta una variable
+de entorno es peor que uno que no existe.
+
+**`POST` y no `GET`**, porque muta estado. Un `GET` que cambia el mundo es lo que hace que un
+prefetch del navegador declare incumplido un compromiso.
+
+**La institución es explícita.** Un reloj que corre sobre *"todas"* es un reloj que un día corre
+sobre una que no debía (`I11`).
+
+**El script llama al endpoint, no al Service.** Si importara `correrReloj` directo, la demo
+ejercitaría un camino que en producción no existe —sin autenticación, sin borde HTTP— y el primer
+problema aparecería recién al desplegar.
+
+**Verificado de punta a punta, contra el servidor y la base:**
+
+| Qué | Resultado |
+|---|---|
+| Sin secreto · secreto equivocado · sin institución · correcto | `401` · `401` · `400` · `200` |
+| Un `CONFIRMED` vencido hace 3 h, primera corrida | → `DUE`. **No salta a `MISSED`** |
+| Segunda corrida | → `MISSED` |
+| Tercera | `0 · 0 · 0` — **converge** |
+| Los eventos | `CommitmentDue` y `CommitmentMissed`, los dos con **actor = sistema** |
+
+Que no salte `DUE` importa: saltar directo a `MISSED` borraría de la Bitácora que alguna vez llegó su
+hora.
+
+---
+
 ---
 
 ## Fase B5 — Modo Examen real
 
-**Estado:** 🔒 [ADR-007](decisions.md#adr-007) para el **contenido**, [ADR-011](decisions.md#adr-011)
-para readiness. La **estructura** no está bloqueada.
+**Estado:** ✅ **COMPLETA — 1 de septiembre de 2026.**
 
-**Objetivo.** `ExamPreparation` real con `ExamProtocol` como configuración versionada.
+Con esto **las nueve superficies del estudiante leen de Postgres**. `UX07`, `UX08` y `UX09` eran las
+tres últimas que proyectaban fixtures, y la lista de superficies sin conectar quedó vacía.
 
-**Regla:** los pasos son configuración, nunca código. Los defaults `HUMAN-P0` se usan tal como están
-documentados y se rotulan como asunción provisional.
+### Lo que había que resolver antes de la primera migración, resuelto
 
-**Contratos a cerrar:** `C01-005`, `C01-024`…`C01-029`.
+Las respuestas de [ADR-025](decisions.md#adr-025) trajeron tres requisitos que el schema de §10 no
+satisfacía. **Ninguno era de copy**, y los tres se cerraron con el owner antes de escribir una línea
+de SQL — porque una migración aplicada no se edita, y las tres afirmaciones habrían quedado
+congeladas en la base.
+
+| # | Qué decía el schema | Qué se decidió |
+|---|---|---|
+| 1 | `UNIQUE (exam_preparation_id, protocol_step_id)` — un paso se completa una vez y no vuelve | [ADR-028](decisions.md#adr-028) — **la completion es un hecho**: cada vuelta es una fila con su `occurrence` y **su tema**. La garantía vieja no se perdió: se volvió configurable en `protocol_step.is_reentrant` |
+| 2 | La pauta de la cátedra no tenía dónde vivir | [ADR-029](decisions.md#adr-029) — **`assessment_criterion` con Provenance completa**. Es la única forma de guardarla y a la vez negarse a decir que es oficial |
+| 3 | El núcleo H24 era un componente y `HUMAN-P0-04 v1.0` le da siete | [ADR-030](decisions.md#adr-030) — entra como **versión de protocolo propia**, transcripta literal, sin inventar a qué paso de los 20 corresponde cada componente |
+
+**Y una cuarta que no requirió decisión porque ya estaba tomada:** [ADR-011](decisions.md#adr-011).
+`ExamPreparation` **perdió** `BUILDING`, `READY_BY_PROTOCOL` y `NOT_READY` —del `CHECK`, del tipo y
+de la máquina de transiciones—, y `preparation_readiness` es la fuente canónica. La segunda verdad no
+quedó desalentada: quedó imposible de escribir.
+
+### El hueco que apareció al cargar el contenido, y que se cerró el mismo día
+
+`HUMAN-P0-01 v1.0` confirma la secuencia `PE-PSY-01…20` **como base**, y al ir a cargarla apareció
+esto: **el texto de esos 20 pasos no estaba en el repositorio.** Lo que ADR-025 había desbloqueado era
+**el criterio**, no el contenido, y escribir los 20 desde los 12 del spec habría sido inventar
+criterio pedagógico. Por eso arrancó con `EP-SPEC v0.1` rotulado como provisional
+([ADR-030](decisions.md#adr-030)).
+
+**Horas después apareció el documento.** Se llama *Roadmap Modo Examen*, es de la misma profesional, y
+trae los veinte pasos desarrollados y agrupados en cinco fases. Está transcripto literal en
+[`roadmap-modo-examen-source.md`](roadmap-modo-examen-source.md) y cargado como
+`HUMAN-ROADMAP v1.0` ([ADR-031](decisions.md#adr-031)).
+
+**`EP-SPEC v0.1` no se borró: se apagó.** Las preparaciones que ya arrancaban contra esa versión
+conservan su recorrido. Cambiar el protocolo entero fue un `INSERT` y un `UPDATE is_current` — **es la
+segunda vez en un día que tratarlo como configuración versionada se paga sola.**
+
+### Etapas
+
+| Etapa | Qué entró |
+|---|---|
+| **B5.1** · La capa de examen | Siete tablas con RLS, índices y las tres correcciones de arriba. `action.exam_preparation_id` recibió su FK, que esperaba desde la B1.4 |
+| **B5.2** · El contenido, cargado y rotulado | `EP-SPEC v0.1` (12 pasos, provisional, por modalidad) y `HUMAN-P0-04 v1.0` (los 7 del núcleo de 24 h, criterio confirmado, transcripto literal) |
+| **B5.3** · El lifecycle | `examPreparationTransitions` sobre la maquinaria compartida de `Action` y `Commitment`, y `completar_paso_de_protocolo`, que asigna el ordinal **dentro de la transacción** |
+| **B5.4** · Las tres lecturas | `estado_de_activacion`, `estado_de_preparacion` y `estado_de_paso`: una por superficie, como las seis de la B2.6 |
+| **B5.5** · Las superficies conectadas | `UX07` escribe (`CTA-011` activa antes de navegar), `UX08` y `UX09` proyectan. Ninguna cae al fixture en silencio |
+| **B5.6** · Los veinte pasos, con su texto | `HUMAN-ROADMAP v1.0` verbatim, con `source_text` atado al documento fuente por test. Lo que la fuente no define —evidencia, criterio de cierre, obligatoriedad— **entró vacío, no completado** |
+
+### Lo que estas superficies siguen sin decir, y es la decisión
+
+- **Readiness.** Sin card, sin score, sin porcentaje. La tabla existe y **nadie la escribe**: los
+  umbrales son `C01-029`. Lo que sale es el `status` recibido con su descargo al lado.
+- **"Paso 5 de 12".** Prohibido por [`product.md`](product.md) §8.1, y desde `HUMAN-P0-01 v1.0`
+  además **falso**: en el tramo reentrante no existe "el siguiente".
+- **El paso actual.** `current_step_id` lo escribe el owner del protocolo y hoy nadie lo escribe.
+  `UX08` dice *"todavía no hay un paso para abrir"* en vez de elegir uno por posición en la lista.
+- **La ventana de recomendación.** `C01-024` sigue abierto: sin una preparación en `RECOMMENDED`,
+  `UX07` dice que no hay recomendación en vez de inventarse un umbral de días.
+
+### Un bug que apareció por el camino, y era viejo
+
+La fecha del examen salía **un día antes** en cualquier zona al oeste de UTC: `assessment_date` es un
+`DATE` y se estaba formateando como instante en la zona del estudiante, así que un Parcial del 15
+aparecía como del 14. **Ya estaba en `UX02` desde la Etapa B2.6**, y su test no lo vio porque
+comprobaba sólo el mes. Corregido en las tres superficies con `fechaDeCalendario`, y con un test que
+ahora compara el día.
+
+**Contratos:** `C01-026` y `C01-028` avanzan con ADR-028; `C01-027` con ADR-029 y ADR-030. Siguen
+abiertos `C01-029` (umbrales de readiness), `C01-031` y `C01-034` (obligatoriedad de los pasos),
+`C01-037` (peso de los criterios) y `C01-024` (la ventana). **Los cierra su owner, no esta fase.**
 
 ---
 
 ## Fase B6 — Risk Engine, Intervención y Operador
 
-**Estado:** 🔒 [ADR-003](decisions.md#adr-003).
+**Estado:** 🟡 **DOMINIO COMPLETO · integración ⏸️ DIFERIDA — 2 de septiembre de 2026.**
+Desbloqueada por [ADR-003](decisions.md#adr-003), ejecutada según [ADR-032](decisions.md#adr-032),
+con el lifecycle corregido por [ADR-034](decisions.md#adr-034) y la frontera por
+[ADR-033](decisions.md#adr-033).
+
+**El circuito cierra por construcción y está probado contra Postgres.** Lo que falta no es código
+nuestro: son tres decisiones humanas, y la integración con el CRM, que
+[ADR-035](decisions.md#adr-035) difirió al final del Track B **por prioridad, no por bloqueo** — el
+diseño del contrato ya está aceptado por los dos lados, sin objeciones.
 
 **Objetivo.** `RiskSignal` rule-based explicable, `Intervention` con playbook/SLA/outcome, y la
-consola operativa P0.
+consola operativa P0 — **esta última en el CRM**, no acá ([ADR-033](decisions.md#adr-033)).
 
-**Absorbe la ex-Fase A1:** las cinco superficies `WF-O01`…`WF-O04` y `WF-I01`, diferidas por
-[ADR-012](decisions.md#adr-012).
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `risk_rule` | Las tres situaciones de `HUMAN-P0-06 v1.0` como **configuración versionada**, con su texto y **sin umbral**. Un `CHECK` impide que una regla sin umbral pase a modo automático |
+| `risk_signal` | Con **causa obligatoria en la base** —`CHECK` sobre `reason`, no una convención—, la regla que la produjo y sus marcas de transición |
+| `intervention` | Con dueño obligatorio y `owner_verified`, que distingue *verificado* de *no se pudo consultar* |
+| `intervention_outcome` | PK compartida: **como mucho un resultado por intervención** |
+| Los cuatro escritores | `registrar_senal`, `abrir_intervencion`, `cerrar_intervencion`, `resolver_senal` |
+| `circuito_de_senales()` | **Audita el Done** y **nombra el contrato que falta** en vez de dar el circuito por cerrado |
+| El puerto `DirectorioDeOperadores` | Aísla la integración con el CRM **sin inventar su contrato**. ⚠️ **Transitorio y superado en dirección** por [ADR-033](decisions.md#adr-033): se retira cuando exista un contrato aceptado |
+| `audit_log`, por fin escrita | Existía desde la B1.5 y nadie la usaba. Toda escritura de riesgo pasa por el `Auditor` |
+| El reloj, ampliado | Expira las señales vencidas — **sólo `OPEN` y `ACKNOWLEDGED`** |
+| `UX01` | El riesgo como **modificador**: cambia el estado general y nada más |
+
+**Done, verificado y no declarado:** `circuito_de_senales()` devuelve `cerradasSinOutcome: 0` y
+`resueltasSinOutcome: 0` **por construcción** —no hay función que permita lo contrario—, y hay 25
+comprobaciones contra Postgres que lo prueban.
+
+### Lo que NO se construyó, y por qué
+
+| Qué | Por qué |
+|---|---|
+| **Un motor que produzca señales** | `C01-021` (qué regla, qué severidad, qué sujeto) y `C01-036` (cuántas repeticiones hacen a un error *"reiterativo"*, **que es de la psicopedagoga**). Hay un guard estático que rompe si alguien agrega un evaluador |
+| **Los playbooks y sus SLA** | `C01-044`, gate `P`, textual: *"no se inventan valores"*. La tabla está vacía y el circuito lo declara |
+| **Las superficies de operador** (`WF-O01`…`WF-O04`) | **No se construyen acá nunca: son del CRM** ([ADR-033](decisions.md#adr-033)). No falta la sesión de operador — **no debe existir**. `WF-I01` queda abierto, por ser superficie de institución y no de operador |
+| **Cualquier endpoint HTTP de riesgo** | Falta la **forma y el versionado del contrato**, que lleva el CTO. El mecanismo de autenticación **no** es el bloqueo: la persona nunca se autentica contra la Plataforma, se autentica el CRM como sistema, y ese patrón ya corre en `POST /api/reloj` con secreto de servicio |
+
+**Ya no absorbe la ex-Fase A1.** [ADR-012](decisions.md#adr-012) había mandado las cinco superficies
+a esta fase; [ADR-033](decisions.md#adr-033) las retiró del alcance de la Plataforma por pertenecer
+al CRM. La consola operativa P0 del objetivo de arriba **se construye en el CRM**, alimentada por los
+contratos de §5 más abajo.
+
+**El dominio de esta fase no cambió una línea por esa corrección**, y eso es consecuencia de no haber
+inventado el contrato v2: se construyó sin asumir en ningún momento una superficie de operador. Si se
+hubiera fabricado una sesión para poder mostrar una cola, hoy habría que borrarla.
 
 **Done cuando:** toda señal relevante cierra su circuito causa → owner → playbook → SLA →
-intervención → outcome; ninguna señal queda sin outcome registrado.
+intervención → outcome; ninguna señal queda sin outcome registrado. **Cuatro de seis eslabones están
+garantizados por construcción**; playbook y SLA esperan a `C01-044`.
 
-**Contratos a cerrar:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`.
+**Los tres flujos, congelados.** El CTO mandó un contrato candidato, la Plataforma lo corrigió y el
+CRM lo revisó contra su código: **`CRM ACCEPTS WITH REQUIRED CHANGES`, sin una sola objeción de
+diseño**. Todo está en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), con
+su matriz de diferencias, su plan de migración y cómo se retoma (§11).
+
+| # | Flujo | Dirección | Estado |
+|---|---|---|---|
+| A | Señal que requiere intervención humana | Plataforma → CRM | ⏸️ Push con webhook firmado. **Exige outbox** |
+| B | Comandos de intervención y outcome | CRM → Plataforma | ⏸️ Los tres comandos **ya existen** como funciones transaccionales: falta el Controller, no la lógica |
+| C | Lectura de contexto académico | CRM → Plataforma | ⏸️ Desde `estado_del_dia()`, que **ya expone sus identificadores** (§7.6) |
+
+**Tres definiciones de forma para descongelarlo:** envelope de error, `cause.code` y el esquema de
+secretos con rotación. Las tres están propuestas con su fundamento en §11.1 del contrato.
+
+**`C01-022` quedó cerrada** por [ADR-034](decisions.md#adr-034): la necesidad de una persona la
+declara la Plataforma desde `risk_rule.modo`, se habilita `OPEN → INTERVENTION_REQUIRED` y
+`ACKNOWLEDGED` pasa a legacy. ✅ **Implementado** el 2 de septiembre de 2026: el
+lifecycle (§7.1–§7.2), el cierre transaccional con validación de dueño (§7.4–§7.5) y los
+identificadores del flujo C (§7.6). Quedan §7.3 (`crmCaseId`) y §7.7 (outbox), **los dos diferidos
+con la integración**. El outbox arrastra el ítem 5 de [ADR-005](decisions.md#adr-005), que es el
+mismo trabajo que la rotación de secretos del contrato: conviene hacerlos juntos.
+
+⚠️ **El ítem 5 de [ADR-005](decisions.md#adr-005) —outbox y observabilidad— vuelve a estar en el
+camino crítico.** Estaba `DEFERRED`; el flujo A es push, y push sin outbox durable pierde señales en
+silencio.
+
+**Contratos a cerrar:** `C01-021`, `C01-022`, `C01-039`, `C01-040`, `C01-044`. **Ninguno se cerró en
+esta fase**, y ninguno lo cierra un agente.
+
+---
+
+## Fase B6.6 — El recorrido del MVP, visible · ✅ COMPLETA
+
+**Estado:** ✅ **3 / 3** — 2 de septiembre de 2026. Habilitada por
+[ADR-036](decisions.md#adr-036). **No depende de nadie de afuera.**
+
+**Por qué existe.** La B6.5 dejó la regla construida y probada, y **nadie la llamaba** — exactamente
+la situación del reloj antes de la B4. El circuito corría en los tests y en ningún otro lado, así que
+el MVP no podía demostrar el eslabón que más importa: *detectar que el estudiante está trabado*.
+
+**Por qué antes que B2b.2.** La corroboración del ADL es valiosa y no está en el camino del MVP. Lo
+que el owner pidió es *"demostrar que Achieve puede detectar que está trabado y escalar el caso"*, y
+eso pasa por acá.
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.6.1 | El endpoint que dispara la regla, y el mundo demo que siembra **hechos y no resultados** | ✅ **Completa** |
+| B6.6.2 | Qué ve el estudiante de su propia señal, más allá del estado general | ✅ **Completa** |
+| B6.6.3 | La cola interna sintética: dónde aterriza un caso escalado mientras el CRM está congelado | ✅ **Completa** |
+
+**Fase completa.** El recorrido entero es reproducible desde cero y está escrito en
+[`demo-mvp.md`](demo-mvp.md), con su salida real.
+
+> ⚠️ **Lo que sigue congelado, y hay que decirlo cada vez:** la regla que dispara este recorrido ya
+> usa el criterio profesional de [ADR-037](decisions.md#adr-037); la integración con el CRM sigue **congelada**
+> ([ADR-035](decisions.md#adr-035)); y **no hay autorización para datos reales**
+> ([ADR-006](decisions.md#adr-006)).
+
+### ✅ Etapa B6.6.1 — 2 de septiembre de 2026
+
+`POST /api/observacion`, con **secreto de servicio**. Registrar un error **no es una acción del
+estudiante**: es de quien evalúa su entrega, y ese rol —Reviewer `R1`— **no tiene superficie acá**
+([ADR-033](decisions.md#adr-033) lo dejó abierto). Darle un JWT de estudiante le permitiría declarar
+sus propios errores, y como una observación sin corroborar no cuenta, sería una función que no hace
+nada o una que miente.
+
+**El mundo demo dejó de sembrar la señal.** Hasta acá insertaba una fila de `risk_signal` a mano, con
+un comentario que decía *"no hay motor que la produzca"* — y desde la B6.5 **eso era falso**. Ahora
+siembra **dos entregas evaluadas y sus dos errores**, y deja el mundo a una aparición de que el
+sistema llame a una persona.
+
+**Verificado de punta a punta** contra el stack local: la tercera observación devolvió
+`{"apariciones":3,"necesitaPersona":true}`, la señal quedó en `INTERVENTION_REQUIRED` con la
+versión profesional vigente y su causa en texto, y `/api/hoy` pasó a
+**`NECESITA RECUPERACIÓN`** con el Hero intacto en `NO_ACTION_AVAILABLE` — que es exactamente lo que
+`VI.1` §3.3 exige: **el riesgo modifica, no reemplaza**.
+
+### ✅ Etapa B6.6.2 — lo que ve el estudiante
+
+Seis estados observables, **derivados de dos campos canónicos** —el de la señal y el de la
+intervención—. No hay lifecycle paralelo: la presentación **traduce, no evalúa**.
+
+El estudiante puede saber **que su caso fue tomado** y en qué estado está, porque la matriz de
+visibilidad §4.1 le da *"intervenciones propias relevantes"*. **Nunca sabe quién lo acompaña**: esa
+identidad es del CRM y no le suma nada; el SLA sería una promesa que nadie asumió (`C01-044`).
+
+**La sección no lleva CTA.** Un botón ahí competiría con la única CTA primaria de la superficie —`C-02`
+roto en la pantalla donde el estudiante decide—. El Hero queda **idéntico** con señal y sin señal.
+
+### ✅ Etapa B6.6.3 — la cola sintética
+
+Un puerto `DestinoDeEscalamiento` con **un método y ningún endpoint**, y una cola local detrás. El
+dominio no sabe adónde va el caso, y hay guard estático de que el Service **no nombra** al CRM, HMAC,
+webhooks, outbox ni `fetch`.
+
+Se inspecciona con `GET /api/escalamiento`, con **tres cerrojos**: apagada por defecto —`404`, no
+`403`—, secreto de servicio, y **sólo lectura**. Cuando llegue el adaptador del flujo A, la ruta y la
+tabla **se borran**.
+
+**Done cuando:** el recorrido *error → repetición → corrección → recaída → escalamiento* se puede
+mostrar en una pantalla, sin explicar nada de arquitectura. ✅ — ver [`demo-mvp.md`](demo-mvp.md).
+
+---
+
+## Fase B6.7 — La validación profesional, aplicada · ✅ COMPLETA
+
+**Estado:** ✅ **4 / 4** — abierta y cerrada el 2 de septiembre de 2026 por
+[ADR-037](decisions.md#adr-037).
+
+**Por qué existe.** La psicopedagoga respondió los seis valores provisionales del Product Owner con
+**seis `CAMBIAR` y un `APROBAR`** — y sin mover un solo umbral. Lo que cambió es **qué cuenta como
+una repetición**: su objeción no fue *"tres es poco"*, fue que *"los umbrales numéricos por sí solos
+no distinguen entre una dificultad persistente, una consigna ambigua, una ayuda inadecuada, fatiga,
+ansiedad, barreras de accesibilidad o falta de enseñanza previa"*.
+
+La frase que ordena la fase entera: **«el sistema debe reconocer patrones, no etiquetar personas»**.
+
+| # | Etapa | Qué cierra | Estado |
+|---|---|---|---|
+| B6.7.1 | **El vocabulario** — cinco familias, principal + secundaria, *clasificación incierta*, y *"dependencia de ayuda externa"* fuera como error | `9.5` | ✅ **Completa** |
+| B6.7.2 | **El denominador** — objetivo/demanda en la unidad de conteo, calidad de evidencia y confianza de clasificación; separar *repetición detectada* de *dificultad confirmada* | `9.1`, `9.6` | ✅ **Completa** |
+| B6.7.3 | **Acelerar y reiniciar** — las cinco condiciones de corrección válida, dos aciertos limpios, el episodio vinculado, y los disparadores cualitativos tempranos | `9.2`, `9.3`, `9.4` | ✅ **Completa** |
+| B6.7.4 | **Replanificar y volver** — `replanned` sin cerrar la preparación, reentrada al primer paso necesario, y la explicación previa al estudiante | `9.7` | ✅ **Completa** |
+
+**Fixtures obligatorios**, que ella pidió por nombre: error repetido comparable; errores del mismo
+tipo en **temas no comparables**; corrección válida e inválida; evidencia insuficiente interpretable y
+no interpretable; recuperación y recaída; reentrada mínima.
+
+**Done cuando:** las siete decisiones están como **configuración versionada**, los valores del Product
+Owner quedaron apagados **sin borrarse**, y ningún umbral vive en el código.
+
+### ✅ Etapa B6.7.4 — Replanificar y volver · COMPLETA · 2 de septiembre de 2026
+
+**Readiness:** habilitado. `9.7` fue respondido por la psicopedagoga y ADR-037 resolvió la colisión
+con `I7`; ADR-006 limita toda verificación a datos sintéticos.
+
+**Decisiones de diseño — aprobadas antes de codear:** [ADR-038](decisions.md#adr-038). Una
+replanificación agrega una versión dentro de la misma preparación; la reentrada es una propuesta
+persistida que no mueve el paso hasta ser aceptada. El tramo y los motivos son configuración
+versionada. La Plataforma valida el límite configurado, pero no elige el *primer paso necesario*.
+`UX09` explica motivo, actividad y evidencia conservada, y ofrece pedir otra opción antes del cambio.
+
+**Lo que quedó construido:**
+
+| Pieza | Qué garantiza |
+|---|---|
+| `exam_preparation_plan_version` | Versiones dentro de la misma preparación; `I7` permanece intacto |
+| `REPLANNED`, `CANCELLED`, `EXPLICITLY_ABANDONED` | Replanificar sigue vivo; cancelación y abandono son decisiones explícitas; inactividad no transiciona |
+| `protocol_reentry_policy` + `protocol_reentry_reason` | Tramo 9–18 y seis motivos en `v1.0-psicopedagogia`, fuera del Service |
+| `protocol_reentry_proposal` | Motivo, origen, destino, justificación, actividad y evidencia conservada antes de mover el paso |
+| `replanificar_preparacion()` | Agrega versión y deja la preparación en `REPLANNED`, sin crear otra |
+| `proponer_reentrada()` + `responder_reentrada()` | Proponer no mueve; aceptar u override mueven; pedir otra opción conserva el origen |
+| `UX09` + `FX-LOCAL-PASO-REENTRADA-MINIMA` | Panel previo con una CTA primaria y una secundaria, sin castigo ni pérdida de progreso |
+
+Las rutas del estudiante pasan su `student_id` desde la sesión y las funciones lo validan junto con
+la institución. Es intencional: `service_role` saltea RLS y un UUID de la misma institución no puede
+dar acceso a la preparación o propuesta de otro alumno.
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde; tres rutas B6.7.4 registradas |
+| `npm test` | ✅ **953 tests en 52 archivos** |
+| Migraciones desde cero | ✅ **46** aplicadas |
+| Schema/configuración | ✅ 4 tablas con RLS, 3 funciones, 6 motivos, tramo 9–18 |
+| Flujo transaccional sobre datos sintéticos | ✅ aislamiento por alumno; `REPLANNED` admite trabajo; propuesta no mueve; alternativa conserva; aceptación y override mueven; `I7`, Evidence, progreso y completions intactos; `ROLLBACK` final |
+| Conformidad UI | ✅ 34 capturas revisadas; panel con hairline, subcopy y jerarquía primaria/secundaria; auditoría automatizada completa en verde |
+
+**Lo que no se inventó:** cuál es el primer paso necesario. Lo declara el owner de la propuesta; la
+Plataforma valida que sea una vuelta válida, no rankea rutas. El override humano existe en Service y
+persistencia, pero no se expone en la superficie del estudiante ni crea una UI de operador.
+
+> ⚠️ **Su validación no autoriza datos reales.** Es de producto, y ella condicionó el uso con
+> estudiantes reales a *"piloto, revisión humana, explicabilidad, accesibilidad y monitoreo de
+> equidad"*. [ADR-006](decisions.md#adr-006) sigue siendo bloqueo absoluto.
+
+### ✅ Etapa B6.7.1 — El vocabulario · COMPLETA · 2 de septiembre de 2026
+
+Cierra el punto **`9.5`**. Migración `20260906000000_vocabulario_psicopedagogico.sql`.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | `v2.0-psicopedagogia` con los **`canonical_id` estables** | Es la misma familia redefinida, no una nueva. Cambiarlos cortaría el vínculo con lo ya observado |
+| D2 | **El contador cuenta por familia, no por fila de versión** | Ver el hallazgo, abajo |
+| D3 | `dependencia` deja de ser familia **sin editar la fila que la afirmó** | Editarla sería reescribir lo que el Product Owner afirmó. Lo que la retira es no tener versión vigente |
+| D4 | «Necesidad de apoyo para avanzar» en **tabla propia** | Guardarla en `error_observation` contradiría *"no es un error"* justo donde más se lee: el modelo de datos |
+| D5 | Principal + secundaria, y **la secundaria nunca cuenta** | *"Sin usarlo solo para escalar"*. No llega al evaluador puro |
+| D6 | *Clasificación incierta* es **fila del catálogo con `es_familia = FALSE`** | *"No se pudo determinar"* es una respuesta; `NULL` no lo es. Y "no cuenta" queda como propiedad de la configuración, no del código |
+| D7 | La corrección humana es **append-only**, y **no retracta señales** | Una señal fue cierta bajo la clasificación vigente entonces. Retractarla exige una transición que nadie definió |
+
+**⚠️ El hallazgo que hizo falta resolver antes de cargar la versión nueva.**
+`error_observation.error_type_id` es FK a una **fila de versión**. Al entrar `v2.0`, lo ya observado
+queda apuntando a `v1.0`, y el contador —que filtraba por ese id— habría visto **dos tipos distintos
+donde hay una sola familia**: se habría partido al medio, en silencio, justo en el eslabón que el MVP
+existe para demostrar. La identidad de un error es el `canonical_id`; la versión dice **qué
+definición estaba vigente** cuando alguien lo clasificó.
+
+**Lo que quedó construido:**
+
+| Pieza | Qué hace |
+|---|---|
+| `error_type` `v2.0-psicopedagogia` | Las cinco familias + *clasificación incierta*. Los seis `v1.0-po-provisional` **apagados, no borrados** |
+| `error_type.es_familia` | Estar en el catálogo no es contar. Default `TRUE`: no reescribe lo que ya se afirmó |
+| `error_observation.secondary_error_type_id` | Categoría secundaria. `CHECK` de que difiere de la principal, y validación de que **es una familia** |
+| `support_need_type` · `support_need_observation` | «Necesidad de apoyo para avanzar», **una fila** porque ella nombró una condición. Ningún contador las lee |
+| `error_classification_correction` | Append-only, `reason` `NOT NULL`, `corrected_by` como identidad externa **sin FK** |
+| `corregir_clasificacion_de_error()` | Registra la corrección **y después** actualiza, en una transacción. Devuelve **las dos familias** a re-evaluar |
+| `POST /api/observacion/correccion` · `POST /api/apoyo` | Con secreto de servicio. La de apoyo **no recibe con qué escalar**: la firma no tiene `senales` ni `destino` |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde, con las dos rutas nuevas registradas |
+| `npm test` | ✅ **905 tests en 49 archivos** |
+| `npm run db:verify` | ✅ **249 comprobaciones**, **18 nuevas** de esta etapa |
+| Cinco familias vigentes, ni una sexta | ✅ contra Postgres |
+| La fila de `dependencia` quedó **intacta** | ✅ su `label` sigue siendo el que escribió el Product Owner |
+| Una versión apagada ya no clasifica nada nuevo | ✅ el escritor la rechaza |
+| **Una observación de `v1.0` y una de `v2.0` son la misma familia** | ✅ y contar por fila de versión habría dicho `1` |
+| **El circuito completo, contra el stack local** | ✅ dos apariciones históricas con `v1.0` + una nueva con `v2.0` ⇒ `{"apariciones":3,"necesitaPersona":true}`, señal en `INTERVENTION_REQUIRED` |
+| Registrar una necesidad de apoyo **no agrega una observación de error** | ✅ medido antes y después |
+| La corrección deja rastro de qué familia venía | ✅ y sin motivo no entra |
+
+**⚠️ Un defecto que sólo apareció en la verificación funcional.** `secondary_error_type_id` creó una
+**segunda FK** de `error_observation` a `error_type`, y el embed de PostgREST dejó de resolver —*"more
+than one relationship was found"*—. Ni los tests unitarios ni las comprobaciones por `psql` lo veían:
+lo encontró la corrida real contra el stack, con un `500`. El embed ahora **nombra la FK de la
+principal**, lo que además garantiza que el contador no lee la secundaria, y hay guard estático.
+
+**Lo que esta etapa NO hizo, y hay que decirlo:**
+
+1. **No movió un solo umbral.** `repeat_signal_at = 2` y `human_review_at = 3` son los que había
+   puesto el Product Owner. Ella no objetó los números: objetó **qué cuenta como una repetición**. El
+   denominador —objetivo de aprendizaje o demanda en la unidad de conteo— es la **B6.7.2**, y hasta
+   que entre, el evaluador **sigue contando como contaba**. Está declarado en el propio
+   `lib/domain/reiteracion.ts`.
+2. **No definió quién puede corregir una clasificación.** Ella lo puso entre lo que hay que evaluar
+   antes de un piloto. `corrected_by` no se valida contra nada y la ruta va con secreto de servicio.
+3. **No retracta señales.** Ver D7.
+
+### ✅ Etapa B6.7.2 — El denominador · COMPLETA · 2 de septiembre de 2026
+
+Cierra los puntos **`9.1`** y **`9.6`**. Migración
+`20260907000000_denominador_psicopedagogico.sql`.
+
+**El umbral nunca fue el problema.** `2` y `3` no se movieron —ella los recomendó tal cual después
+de mirar los del Product Owner—. Lo que cambió es **qué se cuenta**.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | La unidad de conteo pasa a `(estudiante, preparación, familia, objetivo/demanda)` | Su corrección textual. El estudiante ya venía implícito en la preparación |
+| D2 | **Dos números, no uno**: `repeticionDetectada` y `apariciones` comparables | *"Separar 'repetición detectada' de 'dificultad confirmada'"*. Sólo el comparable lee el umbral |
+| D3 | Sin objetivo declarado **no hay comparabilidad**, y no se escala | *"Deben coincidir el tipo de error **y** el objetivo."* Si no lo sabemos, no podemos afirmar que coinciden |
+| D4 | `learning_objective`, **tabla nueva y vacía** | El concepto es de ella; la lista de objetivos no la inventa un agente. *"Cómo se define una tarea comparable"* sigue abierto |
+| D5 | `evidence_quality` **no se funde** con `evidence.lifecycle_state` | Una entrega `INSUFFICIENT` puede ser perfectamente legible. Fundirlos rompería *"enviar no es suficiencia"* |
+| D6 | `classification_confidence` **ordinal**, no numérico | Nadie calcula esa probabilidad. Un `0.73` a mano parece medición y no lo es |
+
+**Lo que quedó construido:**
+
+| Pieza | Qué hace |
+|---|---|
+| `learning_objective` | La identidad contra la que se compara, con `kind` y Provenance completa. **Nace vacía** |
+| `error_observation` +6 columnas | `learning_objective_id`, `evidence_quality`, `error_identifiable`, `classification_confidence`, `task_format`, `support_offered` |
+| `HP0-06-1 v3.0-psicopedagogia` | La unidad de conteo como configuración. `v2.0-po-provisional` **apagada, no borrada** |
+| `evaluarReiteracion()` | Cuenta los dos números y reinicia **en el mismo alcance en que cuenta** |
+| `registrar_observacion_de_error()` | Rechaza corroborar contra evidencia `no_interpretable`, sin calidad declarada, o con un error que nadie identificó |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde |
+| `npm test` | ✅ **921 tests en 49 archivos** |
+| `npm run db:verify` | ✅ **263 comprobaciones**, **14 nuevas** de esta etapa, cero fallos |
+| **Tres del mismo tipo en objetivos distintos** | ✅ contra el stack: `{"apariciones":1,"repeticionDetectada":3}` y **cero señales** |
+| **Tres en el mismo objetivo** | ✅ `{"apariciones":3,"necesitaPersona":true}`, señal en `INTERVENTION_REQUIRED` con `rule_version: v3.0-psicopedagogia` |
+| Una entrega `INSUFFICIENT` con el error identificable **cuenta** | ✅ su único `APROBAR` |
+| `learning_objective` vacía en el schema | ✅ y un objetivo declarado entra `unverified` |
+
+**⚠️ Un cambio que hubo que revertir en la verificación funcional.** La causa nueva decía *"3 veces
+en **tareas comparables** de esta preparación. Del mismo tipo hubo 4 en total…"*, y `risk_signal.reason`
+**llega a la pantalla del estudiante** como el detalle de su propia señal (B6.6.2). Eso es
+vocabulario interno que nadie revisó, y ella pidió *"una revisión experta de lenguaje, accesibilidad,
+privacidad y no estigmatización **antes de probar con personas**"*. **El texto quedó como estaba** —
+sigue siendo cierto, porque las comparables **son** apariciones en esta preparación—, y la distinción
+viaja en el resultado estructurado. Llega a la persona que recibe el caso en la **B6.7.3**, que es
+donde ella la pidió.
+
+**Lo que esta etapa NO hizo:**
+
+1. **No definió qué hace comparables a dos tareas.** Se declara. `learning_objective` está vacía.
+2. **No tocó `9.2`, `9.3` ni `9.4`.** Dos claves de `threshold_config` siguen llevando el valor del
+   Product Owner, y **están nombradas una por una** en `pendiente_b6_7_3` en vez de disimuladas.
+3. **No estrenó copy para el estudiante.** Ver arriba.
+
+⚠️ **Consecuencia operativa:** el mundo demo **tuvo que declarar un objetivo de aprendizaje**. Sin
+eso el circuito ya no escala — y ése es exactamente el punto.
+
+### ✅ Etapa B6.7.3 — Acelerar y reiniciar · COMPLETA · 2 de septiembre de 2026
+
+Cierra los puntos **`9.2`, `9.3` y `9.4`**. Migración
+`20260908000000_acelerar_y_reiniciar.sql`.
+
+**Decisiones de diseño — aprobadas antes de codear:**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| D1 | `HP0-06-1 v4.0-psicopedagogia`; `v3.0` se apaga y no se borra | Cada señal histórica conserva la versión que la produjo |
+| D2 | `after_action_id` solo **no acelera** | `9.3` exige juntas las cinco condiciones profesionales |
+| D3 | Dos aciertos independientes, de intentos distintos, y uno espaciado o sin modelo inmediato | Un único acierto puede ser azar o memoria inmediata (`9.4`) |
+| D4 | Recuperar cierra un `reiteration_episode`; nunca borra observaciones | *Reiniciar* deja de significar poner la historia en cero |
+| D5 | Una recaída abre otro episodio con `previous_episode_id` | La recuperación previa sigue siendo cierta y queda vinculada |
+| D6 | Los seis `early_review_triggers` viven en configuración y tienen escritor propio | El contador deja de ser el único camino hacia una persona (`9.2`) |
+| D7 | `review_context` lleva observaciones e historial de apoyos a la cola | La persona recibe el caso con evidencia, no sólo con un contador |
+
+**Verificación real:**
+
+| Criterio | Resultado |
+|---|---|
+| `npm run lint` · `npm run build` | ✅ verde · verde; `/api/revision-temprana` aparece en el build |
+| `npm test` | ✅ **929 tests en 50 archivos** |
+| Migraciones desde cero | ✅ las **44** aplican; `v4.0` es la única vigente |
+| Schema de B6.7.3 | ✅ 8 columnas, 2 tablas con RLS y 4 funciones; comprobado con lecturas SQL |
+| `npm run db:verify` | ⚠️ no corrido: el entorno bloqueó sus borrados amplios. Se sustituyó por comprobaciones de schema estrictamente de solo lectura |
+
+**Lo que esta etapa NO hizo:** no resolvió el lifecycle de una señal que ya pidió persona. Aunque el
+episodio académico se recupere, `INTERVENTION_REQUIRED` sigue exigiendo una intervención con outcome
+para llegar a `RESOLVED` ([ADR-032](decisions.md#adr-032)); cerrar el episodio no borra esa obligación.
+
+---
+
+## Fase B6.8 — El camino de ejecución escribe en Postgres · ✅ COMPLETA
+
+**Estado:** ✅ **5 / 5** — 3 de septiembre de 2026. Decidida por el **CTO** y registrada en
+[ADR-040](decisions.md#adr-040). **No dependió de nadie de afuera.**
+
+> ⚠️ **Esta fase se registró retroactivamente**, el mismo día, a partir de los commits que la
+> implementan. El roadmap había quedado un día atrás del código, que bajo Spec Driven Development es
+> el defecto que primero hay que corregir: **la fuente de verdad son los documentos**.
+
+**Por qué existe.** Después de la B6.7 el backend tenía **el dominio construido y sin quién lo
+llamara**, en cinco lugares a la vez: el ADE corría sólo en los tests, no existía `POST` de
+compromiso, `/api/evidencia` era sólo `GET`, `registrarProgreso` no tenía ningún caller y ninguna
+pantalla usaba los endpoints. Es **el mismo hueco que la Etapa B4.2 le cerró al reloj**, repetido del
+otro lado del loop: construido, probado y sin ejecución operativa.
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.8.1 | **El disparador del ADE** — `POST /api/recomendacion` con secreto de servicio y `npm run recomendar`, **la misma forma que el repositorio ya eligió para el reloj**. No toca dominio | ✅ |
+| B6.8.2 | **El `Commitment` nace de una confirmación explícita** (`D1·A`, `D2·A`) — la fila nace en `CONFIRMED`, `DRAFT` no se persiste, y el `GET` proyecta una propuesta sin escribir nada | ✅ |
+| B6.8.3 | **La entrega crea una `Evidence` real** (`D3·A`) — firmar, subir, registrar: **el cliente no elige la ruta del objeto** | ✅ |
+| B6.8.4 | **La validación orquesta el lifecycle y registra el progreso** (`D4·A`, `D5·A`) — declarativa, con secreto de servicio, reentrante | ✅ |
+| B6.8.5 | **Las pantallas reales reemplazan a los fixtures en el camino principal**, y el cierre de `C01-009` completa la `Action` con causalidad explícita | ✅ |
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/recomendacion` · `npm run recomendar` | Despierta al ADE. Qué unidad conviene lo sigue decidiendo el Engine puro, y **el validador determinista sigue decidiendo antes de materializar** |
+| `POST /api/compromiso` | Crea el primer `Commitment` de una `Action`, con clave de idempotencia del cliente. Repetida con el mismo payload devuelve la fila; con otro contenido, `409` **sin exponer la fila** |
+| `POST /api/evidencia` (+ `?firmar=`) | La entrega en dos tiempos. Abandonar a mitad deja un objeto huérfano y **ninguna fila que afirme una entrega que no ocurrió** |
+| `POST /api/validacion` · `npm run validar` | Orquesta `SUBMITTED → SUFFICIENT → VALIDATED` y **después invoca** `registrarProgreso`. Nunca con JWT de estudiante |
+| El cierre de la `Action` | `Evidence` suficiente → validación registrada → progreso registrado → `Action` completada. **Cada flecha es una operación que ocurre porque la anterior ocurrió** |
+| El cableado en `app/(student)/*` | `UX04` confirma y `UX05` firma/sube/entrega. **`components/screens/*` no se tocó**: las pantallas siguen siendo proyección pura |
+
+### Un incumplimiento falso que apareció al cerrar
+
+El `Commitment` quedaba `CONFIRMED` para siempre, y **el reloj lo habría pasado a `MISSED` al vencer
+su hora: un incumplimiento sobre trabajo hecho y validado.** El cierre recorre ahora también su
+máquina —`CONFIRMED → STARTED → COMPLETED`—, y **el original no se edita para parecer otra cosa**:
+cada escalón publica su hecho.
+
+### Lo que esta fase NO hizo, y por qué
+
+| Qué | Por qué |
+|---|---|
+| **No definió quién valida** | `reviewer_id` queda `NULL` y el actor del evento es `null` —lo produjo un proceso, no una persona—, con el validador declarado en el payload. **`C01-030` sigue `OPEN` y esto no lo adelanta** |
+| **No hizo que `VALIDATED` produzca progreso** | El progreso lo escribe la operación, no el estado. El guard estático de los cuatro caminos **sigue valiendo** |
+| **No tocó el schema** | Cinco tramos, **cero migraciones**: las columnas y los `UNIQUE` ya existían |
+| **No incorporó a nadie real** | Todo corre sobre datos sintéticos. [ADR-006](decisions.md#adr-006) sigue siendo bloqueo absoluto |
+
+⚠️ **El instante que propone el compromiso está marcado en el código como `PROVISIONAL — REVISAR
+ANTES DE INCORPORAR ESTUDIANTES REALES`**, ratificado por el CTO para el MVP sintético. Es reversible
+sin migrar: **lo que se persiste es el instante que el estudiante confirmó, no la regla que lo
+propuso**.
+
+**Done cuando:** el recorrido *recomendación → compromiso → entrega → validación → progreso → nueva
+recomendación* se completa contra Postgres, dos vueltas seguidas, sin tocar la base a mano. ✅ —
+verificado el 3 de septiembre de 2026, con la cadena de eventos append-only de la segunda vuelta.
+
+---
+
+## Fase B6.9 — La salida del camino que no salió bien · ✅ COMPLETA
+
+**Estado:** ✅ **2 / 2** — 4 de septiembre de 2026. Abierta por la directiva del Product Owner:
+*"primero se termina y verifica el loop actual del MVP de Plataforma"*
+([fuente](respuesta-po-flujos-crm-source.md)).
+
+**Por qué existe.** El loop de la [Fase B6.8](#fase-b68--el-camino-de-ejecución-escribe-en-postgres-·--completa)
+cerró **el camino feliz**. El otro no existía: tres operaciones del dominio estaban construidas,
+probadas y **sin un solo llamador** — el mismo patrón del reloj antes de la B4 y del ADE antes de la
+B6.8.
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.9.1 | **El rescate**: un incumplimiento vuelve a tener salida | ✅ **Completa** |
+| B6.9.2 | **El reenvío**: una entrega devuelta se puede volver a presentar | ✅ **Completa** |
+| — | ~~La renegociación~~ | 🔒 **Fuera de alcance**: ver abajo |
+
+⚠️ **La renegociación queda afuera, y se dice en vez de improvisarla.** `renegociar()` también existe
+sin llamador, pero `CTA-017` exige `renegociacionElegible`, y **eso sólo existe en fixtures: nada lo
+calcula**. Qué hace elegible a un compromiso es **`C01-010`, `OPEN`**. Cablearla obligaría a inventar
+la regla.
+
+### ✅ Etapa B6.9.1 — El rescate · COMPLETA · 4 de septiembre de 2026
+
+**Lo que estaba roto, y era peor que un hueco.** El reloj llevaba un compromiso a `DUE` y después a
+`MISSED`, y ahí el estudiante quedaba **sin ninguna salida**: la máquina no admite `MISSED →
+CONFIRMED` —es *No Cortar*, y está bien— y `POST /api/compromiso` sólo crea el **primer** compromiso
+de una `Action` `RECOMMENDED`/`ACCEPTED`. Con lo cual:
+
+⚠️ **`RescueSucceeded` no era alcanzable por ningún camino** — y es uno de los **cuatro eventos que
+[ADR-041](decisions.md#adr-041) volvió cláusula del contrato con el CRM**, firmada el día anterior.
+
+**Y había un defecto visible.** `UX01` decía `RESCUE_REQUIRED`; `UX04` proyectaba una **propuesta de
+compromiso con la CTA «Me comprometo» habilitada**, y esa CTA devolvía `409`. La pantalla ofrecía algo
+que el backend no podía hacer, porque `propuestaDeCompromiso` leía *"no hay compromiso vivo"* y un
+`MISSED` no está vivo.
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/rescate` | Con **JWT del estudiante**: decidir volver a comprometerse después de fallar es suyo, y de nadie más |
+| `rescatarCompromiso()` | Autorización —`porId` scopea por institución, y dos alumnos la comparten— e idempotencia por clave del cliente, la misma disciplina de `D2·A` |
+| `incumplidoSinRescateDeAccion()` | Distingue *"todavía no hay compromiso"* de *"hubo uno y se incumplió"*. Con un incumplimiento pendiente, `UX04` **deja de proponer** |
+| La proyección de `MISSED` | Pasa a ofrecer **`CTA-015` · «Retomar»** con su aviso. Hasta acá devolvía `null`, y eso **contradecía a `product.md` §10.2** —*"Commitment `MISSED` sin resolución → «Retomar»"*— y al fixture `FX-LOCAL-COM-MISSED`. **Los documentos decían lo correcto: el código era el defectuoso**, que es exactamente el orden que fija el SDD |
+
+**Lo que no cambió, y es el punto:** el incumplido **sigue `MISSED` para siempre**. El rescate es otro
+objeto que lo apunta sin borrarlo, y esa garantía no está en la ruta: está en `crear_rescate` y en la
+máquina de estados, donde no se afloja por descuido.
+
+**Verificación de punta a punta, contra Postgres:**
+
+| Criterio | Resultado |
+|---|---|
+| Los cinco gates | ✅ `lint` · `typecheck` · `build` con `/api/rescate` registrada · **986 tests en 55 archivos** · **275 comprobaciones** |
+| El callejón, antes | ✅ Reproducido: `UX04` ofrecía «Me comprometo» y `POST /api/compromiso` devolvía `409` |
+| El circuito entero | ✅ compromiso → reloj → `MISSED` → **«Retomar»** → rescate → entrega → validación |
+| La Bitácora | ✅ *Te comprometiste · Compromiso incumplido · **Creaste un rescate** · Presentaste evidencia · … · **Recuperaste lo que habías incumplido*** |
+| El original | ✅ Sigue `MISSED`, y viaja como filas de sólo lectura en la pantalla del rescate |
+| Idempotencia | ✅ Misma clave y mismo payload → `200 duplicado`; otro payload → `409` **sin exponer la fila** |
+| Ajeno o inexistente | ✅ `404` seco, el mismo para los dos: distinguirlos sería un detector de compromisos de otros |
+| No incumplido | ✅ `409` nombrando el estado |
+
+**Sin migraciones.** `crear_rescate` existe desde la Fase B2; lo que faltaba era el camino hasta ella.
+
+### ✅ Etapa B6.9.2 — El reenvío · COMPLETA · 4 de septiembre de 2026
+
+**El otro extremo del mismo hueco:** una entrega `INSUFFICIENT` no se podía volver a presentar.
+`resubmitir()` existía sin llamador, y **faltaba un eslabón antes**: `RESUBMISSION_REQUESTED` **no lo
+escribía nadie** — la validación dejaba `INSUFFICIENT` y ahí se cortaba, con lo cual la operación que
+exige ese estado era inalcanzable.
+
+**Son dos decisiones, no una**, y la máquina ya las tenía separadas: juzgar que algo no alcanza
+(`SUBMITTED → INSUFFICIENT`) **no obliga** a pedir otra cosa (`INSUFFICIENT →
+RESUBMISSION_REQUESTED`). Por eso son dos operaciones y dos rutas.
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/pedido-de-reenvio` | **Del que evalúa**, con secreto de servicio: nadie se pide a sí mismo que vuelva a entregar. **El motivo es obligatorio** |
+| `POST /api/reenvio` | **Del estudiante**, con su JWT. Firmar → subir → registrar, el mismo orden de `D3·A` |
+| `devueltaDe()` | A qué evidencia sucede el reenvío. No es contenido de la pantalla: es lo que el cliente no puede inventar |
+| `npm run pedir-reenvio` | El pedido a mano, para la demo |
+
+**La migración 47 — y por qué hubo que tocar una función que ya existía.** `resubmitir_evidencia`
+generaba el id de la fila nueva **adentro de la base**, y la clave del objeto en Storage **se deriva
+del id**: el cliente no tenía a qué ruta subir. O la fila nacía antes que el archivo —lo que `D3·A`
+decidió no hacer— o el reenvío no podía llevar nada. **Ahora el id entra por parámetro**, igual que en
+la primera entrega. Se reemplazó la función en vez de agregar una segunda: dos versiones de la misma
+operación es como se desincronizan.
+
+⚠️ **Y apareció un defecto que nadie podía ver mientras la función no tenía llamador:** el reenvío
+nacía con `signal_execution` y `signal_production` en **`NULL`**, mientras la primera entrega las
+escribe en `not_evaluated`. `NULL` es un cuarto significado que nadie definió. Corregido, con su
+comprobación en `db:verify`.
+
+⚠️ **Un `500` real, encontrado corriéndolo:** el primer intento aceptaba `pedidoPor` y lo pasaba como
+actor del evento. `product_event.actor_id` es `uuid` y quien evalúa es **identidad externa sin FK**
+(`C01-030`). **La ruta dejó de recibir esa identidad**: el actor es `null` —lo produjo un proceso— y
+lo que queda escrito es el motivo, en la fila. Es la misma decisión que tomó la validación en
+[ADR-040](decisions.md#adr-040).
+
+**Verificación de punta a punta, contra Postgres:**
+
+| Criterio | Resultado |
+|---|---|
+| Los cinco gates | ✅ `lint` · `typecheck` · `build` con las dos rutas · **991 tests en 56 archivos** · **276 comprobaciones** |
+| El circuito entero | ✅ entrega → **insuficiente** → **pedido con motivo** → reenvío → validación → progreso |
+| La Bitácora | ✅ *Presentaste evidencia · **Necesita cambios** · **Volviste a entregarla** · … · Cerraste el compromiso* |
+| La anterior | ✅ Conserva estado, contenido y fecha; las dos filas quedan enlazadas en los dos sentidos |
+| Pedir sin motivo | ✅ `400`, y **no escribe nada** |
+| Reenviar dos veces | ✅ `409`: la cadena es lineal |
+| Reenviar lo no devuelto | ✅ `409` nombrando el estado |
+| Ajena o inexistente | ✅ `404` seco, el mismo para las dos |
+
+⚠️ **Lo que esta etapa no hizo:** no define **quién** puede pedir un reenvío. `C01-030` sigue `OPEN`,
+y la ruta va con secreto de servicio como todas las demás de ese lado.
+
+---
+
+## Fase B6.10 — La reflexión existe y se exige · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026. Sigue la misma directiva del Product Owner:
+*"primero se termina y verifica el loop actual del MVP"*.
+
+**Por qué existe.** Tercera aparición del mismo patrón, y la peor de las tres:
+
+| Qué | Estado antes de esta fase |
+|---|---|
+| `chequearParaEnviar()` y `cuelgaDeAlgo()` | Construidos y probados desde la B2.4, **llamados sólo por sus tests** |
+| La tabla `reflection` | Existe desde la Fase B1. **Nadie la escribía** |
+| El bloqueo de `REQUIRED` | Vivía **sólo en la proyección**: `envioBloqueadoPorReflexion()` apagaba la CTA y `POST /api/evidencia` nunca lo consultaba |
+
+⚠️ **Lo único que impedía entregar sin la reflexión requerida era un botón deshabilitado.** Es la
+inversión exacta de *"la UI proyecta, nunca decide"*: ahí la UI era **lo único** que decidía, y
+cualquier cliente que llamara al endpoint pasaba por encima de [ADR-026](decisions.md#adr-026) — la
+decisión con la que el owner cerró `C01-051`.
+
+**Estaba latente, no roto:** `reflection_requirement` es `NO_CONFIGURADA` por default y nada pone
+`REQUIRED` todavía, así que el hueco no se podía ver corriendo la demo. Se ve el día que alguien
+configure una Action con reflexión obligatoria — y entonces es un dato perdido, no un botón.
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `POST /api/reflexion` | Con JWT del estudiante. **Cuelga de algo** —Action, Evidence o paso— y **no está vacía**; la Action tiene que ser suya |
+| `reflexionesReal` | El primer repositorio que escribe la tabla, más la lectura de `(requisito, hayReflexion)` |
+| `entregarEvidencia()` | Consulta `chequearParaEnviar` **antes de escribir**. Falta la requerida → `409`, y **no nace la fila** |
+| La proyección de la **primera** entrega | Proyecta el requisito. Antes devolvía `reflection: null` fijo |
+
+### Un defecto que apareció al hacerlo cumplir
+
+**La pantalla prometía lo que el servidor ya rechazaba.** `entregaEsperadaDe` —la vista de la primera
+entrega— devolvía `reflection: null` y la CTA habilitada, con el motivo escrito *"acá todavía no hay
+Evidence de la cual colgarlo"*. Era cierto para la fila y **falso para la pantalla**: el requisito
+vive en la **`Action`**, congelado al crearla, y la primera entrega es justamente la que no puede
+tener una Evidence previa. Es el mismo defecto que tenía `UX04` con un incumplimiento, al revés.
+
+**Y un segundo, de vocabulario:** la proyección real llamaba ***"Agregar reflexión (opcional)"*** aun
+cuando el requisito era `REQUIRED`. Decirle *opcional* a lo que apaga el botón es decirle al
+estudiante lo contrario de lo que va a pasar.
+
+### ✅ La superficie, y la decisión de copy — resueltas el 4 de septiembre
+
+**El campo vive dentro de `UX05`** ([ADR-045](decisions.md#adr-045)): *"la reflexión y la evidencia
+forman parte de la misma intención del estudiante"*. Desplegado si es obligatoria, contraído detrás de
+la CTA secundaria si es opcional, y la CTA principal **no cambia**.
+
+**Verificado en navegador**, con una Action en `REQUIRED`: el campo aparece desplegado, *"Enviar
+evidencia"* arranca deshabilitada, **se habilita al escribir**, y el clic produce —en este orden—
+`POST /api/reflexion` → firma → `POST /api/evidencia`. La reflexión quedó escrita con su texto.
+
+⚠️ **El bloqueo real sigue en el servidor.** El campo no lo reemplaza: una pantalla que valide y un
+servidor que no es como estaba antes, al revés.
+
+### ~~Una decisión de copy que quedó levantada~~ — ✅ resuelta
+
+El fixture `FX-LOCAL-EVD-REFLECTION-REQUERIDA` —el diseño aprobado— dice **"Contanos cómo te fue
+(requerido)"**, y el guard `C-01` de `auditoria-conformidad` **prohíbe `Contanos`** en su lista de
+imperativos. Los dos no pueden tener razón: *contanos* **es** voseo (*contá* + *nos*), así que la
+lista del guard parece tener un defecto.
+
+**No se tocó el guard, y esa fue la decisión correcta.** El Product Owner resolvió
+([ADR-044](decisions.md#adr-044)) que **la lista del guard era la equivocada**: se usa la copy del
+fixture y **`Contanos` sale de la lista** — *"el cambio debe ser específico: no se afloja el resto del
+control"*. Las otras cinco son tuteo y siguen prohibidas.
+
+### Lo que esta fase NO hizo
+
+| Qué | Por qué |
+|---|---|
+| ~~**La superficie para escribirla**~~ | ✅ **Construida el 4 de septiembre** — [ADR-045](decisions.md#adr-045) la autorizó explícitamente, así que la regla 6 dejó de aplicar **a este cambio**, y el owner confirmó que **no hacía falta esperar un rediseño**: se reutiliza la composición existente |
+| **Emitir un evento de producto** | El Product Event Model **no declara ninguno** para `Reflection`, y `product_event` es append-only: inventar un nombre es lo que el guard de [ADR-027](decisions.md#adr-027) impide. Si la Bitácora tiene que mostrarla, es decisión de producto |
+| **Poner `REQUIRED` en algún lado** | ADR-026 fijó `OPTIONAL` como default del loop diario, y `REQUIRED` **sólo donde el contenido versionado lo declare** |
+
+**Verificación de punta a punta, contra Postgres:**
+
+| Criterio | Resultado |
+|---|---|
+| Los cinco gates | ✅ `lint` · `typecheck` · `build` con `/api/reflexion` · **995 tests en 57 archivos** · **276 comprobaciones** |
+| Sin colgar de nada · vacía · ajena | ✅ `400` · `400` · `404` |
+| Con una Action en `REQUIRED`, entregar sin reflexión | ✅ **`409`, y la fila no nace** |
+| La pantalla, antes de reflexionar | ✅ CTA **deshabilitada** y el aviso diciendo por qué |
+| Reflexionar y volver a entregar | ✅ `201` la reflexión, CTA habilitada, `201` la entrega |
+| `OPTIONAL` y `NO_CONFIGURADA` | ✅ No bloquean nada |
+
+---
+
+## Fase B6.11 — La renegociación, alcanzable · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026. Cierra el trabajo que la B6.9 dejó explícitamente
+afuera: *"la renegociación queda fuera hasta `C01-010`"*.
+
+**Por qué existía y no se podía usar.** Cuarta aparición del mismo patrón, y la última de las tres
+operaciones huérfanas de la B6.9:
+
+| Qué | Estado antes de esta etapa |
+|---|---|
+| `renegociar()` y `renegociar_compromiso()` | Transaccionales y probadas desde la Fase B2, **llamadas sólo por sus tests** |
+| `CommitmentRenegotiated` | En el catálogo `P0`, **sin ningún camino que lo produjera** |
+| `CTA-017` | Exige `renegociacionElegible`, y **eso sólo existía en fixtures**: nada lo calculaba |
+
+Un estudiante que no podía a la hora que había acordado **no tenía por dónde moverla**. Su única
+salida real era dejar que venciera y rescatarlo después — es decir, incumplir a propósito.
+
+### La contradicción que apareció al implementar, y por qué se paró ahí
+
+[ADR-046](decisions.md#adr-046) §5 pide *"el mismo día calendario, **en la zona horaria de la
+institución**"*, y [ADR-048](decisions.md#adr-048) pide lo mismo para su ventana. **Esa zona no
+existía en el schema:** `institution` tenía `id`, `name`, `tenant_config` (vacío, sin lectores) y
+`created_at`. Lo único que el producto sabía era la zona del **estudiante** y la **congelada en el
+acuerdo**.
+
+Se detuvo la implementación y se reportó, que es literalmente lo que la fuente del Product Owner
+pedía: *"si la implementación revela una contradicción concreta con el schema (…), detenerse
+únicamente en esa contradicción y reportarla"*. Se resolvió con
+[ADR-049](decisions.md#adr-049): `institution.timezone`, con el mismo default que `student.timezone`
+tiene desde la B1.2.
+
+⚠️ **No se sustituyó por `student.timezone`, que era gratis.** Dos estudiantes de la misma institución
+en husos distintos tendrían distinto *"mismo día calendario"*. Habría sido cambiar la regla en
+silencio.
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `lib/domain/renegociacion.ts` | Las cinco condiciones, puras. Las dos primeras **no se reescriben**: son `commitmentTransitions` |
+| `POST /api/renegociacion` | Con JWT del estudiante. `404` seco si no es suyo; `409` distinguiendo lo que se arregla eligiendo otra hora de lo que no |
+| `renegociarCompromiso()` | Autorización, zona institucional e idempotencia por clave del cliente |
+| `institution.timezone` + `db:verify` | El dato, y una comprobación de que toda institución tiene una zona que el motor reconoce |
+
+**La condición 5 tenía una ambigüedad y se resolvió declarándola:** *"el mismo día calendario"* no
+dice contra qué día. Se lee **contra el del acuerdo original** —renegociar mueve la hora dentro del
+día prometido—, y está escrito en el módulo. La otra lectura obligaría a mover un compromiso de mañana
+a hoy.
+
+### Verificación contra Postgres
+
+| Caso | Resultado |
+|---|---|
+| Otro día calendario | ✅ `409 OTRO_DIA_CALENDARIO`, **sin tocar la base** |
+| Dentro de los 15 minutos | ✅ `409 ANTICIPACION_INSUFICIENTE`, sin tocar la base |
+| Otra hora del mismo día | ✅ `201`; original `RENEGOTIATED` **con su `start_at` intacto**, sucesor `CONFIRMED` apuntándolo |
+| Segunda renegociación de la cadena | ✅ `409 CADENA_YA_RENEGOCIADA` |
+| El hecho | ✅ **Un solo** `CommitmentRenegotiated`, con el sucesor en el payload |
+
+### Lo que esta etapa NO hace, y no es un olvido
+
+**`UX04` todavía no ofrece renegociar.** `CTA-017` necesita un lugar en la pantalla y `CompromisoProps`
+tiene **una sola CTA**; el fixture aprobado para `CONFIRMED` la usa para *"Empezar"*. Agregar una CTA
+secundaria es una decisión de diseño que ningún ADR autorizó, así que **queda declarada, no
+improvisada**. El estado `RENEGOCIACION_NO_ELEGIBLE` del fixture sigue, por lo mismo, sin producirse.
+
+---
+
+## Fase B6.12 — El disparador de Modo Examen · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026.
+
+**Por qué existe.** `ExamPreparationRecommended` está en el catálogo `P0` desde la Fase B5 y **nadie lo
+emitía**: no faltaba código, faltaba la ventana, que era `C01-024`.
+[ADR-048](decisions.md#adr-048) la cerró.
+
+### Dónde vive cada cosa, y por qué
+
+| Pieza | Dónde | Por qué ahí |
+|---|---|---|
+| La ventana de 14 días | `lib/domain/ventana-de-examen.ts`, pura | Es la decisión. En PL/pgSQL sería la regla invisible que `data-model.md` §11 prohíbe |
+| El disparador | **El reloj** | Es lo que el reloj hace: aplicar una regla que depende del tiempo y que nadie apretó. Un endpoint propio pedía otro secreto y otro scheduler para lo mismo |
+| «Una sola vez por intento» | `UNIQUE (student_id, assessment_id)` | Existe desde la B5 y es `I7`. Un contador aparte sería una segunda verdad sobre el mismo hecho |
+
+**Si ya había preparación, la función devuelve cero filas y el evento NO se publica.** Un
+`ExamPreparationRecommended` por corrida convertiría el registro de hechos en un latido.
+
+### Los dos desacoples que evitan un error caro
+
+⚠️ **No depende de `PreparationReadiness`.** El módulo no importa nada de readiness, y **un test guarda
+esa firma**: si alguien la agrega, deja de compilar y la conversación se reabre. `C01-029` sigue
+abierta y no bloquea este disparador.
+
+⚠️ **Sin fecha no se emite, y no se estima una.** `SIN_FECHA` es un motivo propio y no se confunde con
+`TODAVIA_LEJOS`: uno dice *no sabemos*, el otro *todavía no*. Colapsarlos sería el primer paso hacia
+inventar la fecha.
+
+### Verificación contra Postgres
+
+| Caso | Resultado |
+|---|---|
+| Evaluación a 10 días | ✅ `exam_preparation` en `RECOMMENDED` y un `ExamPreparationRecommended` con **actor `NULL`** —lo produjo el tiempo, no una persona— y el payload que lo explica |
+| Evaluación a 30 días | ✅ Nada |
+| Evaluación **sin fecha** | ✅ Nada, y ni siquiera viaja como candidata |
+| Segunda corrida del reloj | ✅ `0 recomendados`, y **sigue habiendo un solo evento** |
+
+---
+
+## Fase B6.13 — «Cambiar horario»: la renegociación, en la pantalla · ✅ COMPLETA
+
+**Estado:** ✅ **Completa** — 4 de septiembre de 2026. Cierra el residuo que dejó la B6.11: la
+operación funcionaba y **no había por dónde llegar**.
+
+**La decisión** es [ADR-050](decisions.md#adr-050), del Product Owner, y tiene dos mitades. Una es
+dónde va: **acción secundaria debajo de «Empezar»**, con el bloque desplegándose en la misma
+pantalla, sin ruta nueva. La otra es de vocabulario: **«Renegociar» sale de la interfaz** — *"es
+lenguaje interno, no del estudiante"*.
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `cambioDeHorarioPosible()` | **Si hay alguna propuesta posible**, que no es lo mismo que juzgar una. A las 23:50 no queda ninguna, y ofrecer el botón sería prometer lo que el servidor rechaza |
+| `CompromisoProps.cambioDeHorario` | La oferta **o el motivo**. `null` sólo cuando no hay nada que decir |
+| `MOTIVO_DE_CAMBIO` en `es-AR.ts` | **Una sola tabla** motivo→copy, compartida por la proyección y la pantalla. Dos serían dos verdades |
+| El bloque en `UX04` | Horario actual de sólo lectura, selector, «Confirmar nuevo horario» y «Cancelar» |
+| `institution.timezone` en `estado_de_compromiso` | El dato de ADR-049 llega a la proyección. **`zona` no cambia**: sigue siendo la del estudiante |
+
+### Tres defectos que sólo aparecen al conectar algo
+
+**1 · La CTA principal salía del encuadre, no del lifecycle.** Un sucesor ya `CONFIRMED` ofrecía
+*«Confirmar compromiso»*, y uno incumplido seguía ofreciéndolo en vez de «Retomar». Se vio en la
+captura del recorrido, no en un test: el test no sabía qué debía decir.
+
+**2 · «Horario actualizado» se borraba solo.** Confirmar recarga, la vista devuelve `null` mientras
+tanto, y el mensaje se desmontaba con ella.
+
+**3 · Un solo `ESTADO_NO_RENEGOCIABLE` mentía.** La ruta mandaba el mismo código para `STARTED`,
+`MISSED` y `RENEGOTIATED`; la pantalla decía *«ya empezó»* de algo que se había incumplido.
+
+### Los cuatro recorridos que pidió el owner, contra Postgres
+
+| Recorrido | Resultado |
+|---|---|
+| Elegible y exitoso | ✅ `RENEGOTIATED` con su `start_at` **intacto**, **un** sucesor, **un** `CommitmentRenegotiated`, «Horario actualizado» y la principal de vuelta en «Empezar» |
+| Segunda vez | ✅ No ofrece cambiar, y explica: *«Ya cambiaste el horario de este compromiso una vez.»* |
+| Incumplido | ✅ No ofrece cambiar, dice que corresponde rescatarlo, y **conserva «Retomar»** |
+| `409` por elegibilidad cambiada | ✅ Estado de producto con su motivo canónico, **no** un error técnico |
+
+⚠️ **Lo que queda afuera a propósito:** *"no se agrega por ahora otra CTA en `UX01`/Hoy"*.
+
+---
+
+## Fase B6.14 — El catálogo curricular y el tramo de alta · ✅ COMPLETA
+
+**Estado:** ✅ **COMPLETA, 6 / 6** — 5 de septiembre de 2026. Abierta por instrucción escrita del
+Product Owner, que reordenó la prioridad del backlog #1.
+
+**Por qué existe.** Es el **hueco más grande del producto**, y estaba declarado desde
+[ADR-039](decisions.md#adr-039): *"entre el `authorized: true` del CRM y la primera acción del
+estudiante no hay ninguna pantalla definida"*. [ADR-042](decisions.md#adr-042) decidió el orden
+entero del alta el 4 de septiembre y lo dejó en backlog con gate *"espera a que termine el loop"*.
+
+⚠️ **El gate se levantó por decisión del mismo owner**, por escrito y con alcance acotado: el loop
+está terminado y verificado (B6.8 → B6.13, las cinco corren en [`demo-mvp.md`](demo-mvp.md)).
+**No autoriza mergear a `main` ni desplegar**, y [ADR-006](decisions.md#adr-006) sigue plenamente
+vigente.
+
+**Las tres decisiones que la habilitan:** [ADR-051](decisions.md#adr-051) (el catálogo curricular),
+[ADR-052](decisions.md#adr-052) (el tramo de alta) y [ADR-053](decisions.md#adr-053) (el Plan 2016
+en `DRAFT`).
+
+| # | Etapa | Estado |
+|---|---|---|
+| B6.14.1 | **Las tres decisiones, escritas antes de codear** — ADR-051, ADR-052, ADR-053 y `C01-052` | ✅ |
+| B6.14.2 | **El requisito curricular existe**: `academic_unit`, `curriculum_requirement` con sus siete tipos, `elective_option`, `publication_status` | ✅ |
+| B6.14.3 | **El importador y los cinco datasets** — CSV administrativo, `ingerir_plan_de_estudios()`, UCC en `DRAFT` y dos instituciones sintéticas `PUBLISHED` | ✅ |
+| B6.14.4 | **El mapa académico mínimo se confirma y se persiste** — Service, rutas, el gate `409 ALTA_INCOMPLETA` y la llamada al ADE | ✅ |
+| B6.14.5 | **Las tres pantallas**, y el estudiante sin materias deja de recibir un veredicto | ✅ |
+| B6.14.6 | **El recorrido, corrido de punta a punta** y documentado en `demo-mvp.md` | ✅ |
+
+### Lo que quedó construido
+
+| Pieza | Qué hace |
+|---|---|
+| `curriculum_requirement` | La fila del plan, con **siete tipos**. `UNKNOWN` declara ignorancia en vez de fingir un default |
+| `elective_option` | Qué materia concreta puede satisfacer un cupo. **Lo que el estudiante elige no entra acá** |
+| `curriculum_plan.publication_status` | `DRAFT`/`PUBLISHED`/`RETIRED`. **No es `verification_status`**, y ninguna tabla nueva lleva el segundo |
+| `ingerir_plan_de_estudios()` + `publicar_plan_de_estudios()` | Ingerir y publicar son dos operaciones. Publicar exige motivo y **rechaza un plan con `needs_review`** |
+| `scripts/importar-catalogo.mjs` + `catalogo/*.csv` | La *"importación institucional CSV"* del spec §26.2. Parser propio, sin dependencia nueva |
+| `enrollment.confirmed_at` | El estado del alta. La tabla existía desde la B1.3 **sin un solo lector** |
+| `whatsapp_consent` | Append-only, **sin columna de teléfono** |
+| `requirement_declaration` | Qué requisito satisface cada cosa que el estudiante declaró — incluida la electiva que escribió a mano |
+| `confirmar_mapa_academico()` | Una transacción. La idempotencia la dan los `UNIQUE` que ya existían |
+| `409 ALTA_INCOMPLETA` en las nueve rutas | El gate, en el backend. Uno que viva sólo en el cliente no es un gate |
+| `app/alta/*` + `components/alta/*` | Tres pantallas **fuera** del registro canónico, como `/login` |
+| Variante `PREPARANDO_INFORMACION` | Los nueve niveles siguen siendo nueve |
+| `scripts/db-catalogo.sh` | **33 comprobaciones** contra Postgres, dentro de `db:verify` |
+
+### Tres defectos que sólo aparecieron al conectarlo
+
+**1 · `periodoActual` se exportaba desde un `page.tsx`** y lo importaba otro. Next no lo admite, y la
+navegación a `/alta/materias` rebotaba **sin decir nada**. La función es pura: vive en el dominio.
+
+**2 · El redirect de `/alta/materias` corría en fase de render.** `useSearchParams()` devuelve vacío
+en el primer render dentro de `Suspense`, así que la pantalla se saltaba sola. React lo avisaba.
+
+**3 · La carrera sin plan era inalcanzable**, y era un caso que el propio pedido exigía. El selector
+listaba sólo carreras con plan publicado. **No aparecer es peor que aparecer sin plan:** el
+estudiante concluye que Achieve no cubre su universidad cuando lo que pasa es que todavía no
+cargamos su plan.
+
+**Done cuando:** un estudiante sintético recién habilitado entra por `/login`, **no cae en `HOY`**,
+declara universidad, carrera y año, confirma sus materias —desmarcando una y agregando una de otro
+año—, y llega a `HOY` con una acción real del ADE. Con el doble submit sin duplicar, el reingreso sin
+repetir el alta, la carrera sin plan diciendo la verdad, y **cero respuestas ≥ 400** en el recorrido.
+
+⚠️ **Lo que esta fase NO hace:** no escribe `student.whatsapp` · no emite los flujos E/E′ al CRM
+([ADR-035](decisions.md#adr-035)) · no construye la superficie «WhatsApp y privacidad» (backlog #2) ·
+no construye el diagnóstico personal mínimo del Golden Path A · **no publica el plan de la UCC**,
+que es `C01-052` y espera un documento oficial.
+
+---
+
+<a id="fase-b615--el-gantt-de-preparacion"></a>
+
+## Fase B6.15 — El Gantt de preparación · ✅ COMPLETA
+
+**Qué es.** Que `UX02 · Materia / Cursado` conteste su propia pregunta canónica
+—*"¿Cómo vengo en esta materia y qué hago?"*— con una línea de tiempo en vez de una lista: qué temas
+entran, cuáles tienen evidencia enviada, y cuántos minutos quedan hasta la evaluación.
+
+**Fuentes:** [`gantt-de-preparacion.md`](gantt-de-preparacion.md) ·
+[`inventario-corpus.md`](inventario-corpus.md) · [ADR-066](decisions.md#adr-066) …
+[ADR-069](decisions.md#adr-069).
+
+> ⚠️ **No es una superficie nueva.** [ADR-066](decisions.md#adr-066): *"es lo que Materia debería
+> haber sido siempre"*. No se crea `UX10`, no hay wireframe nuevo, no hay ruta nueva. El registro de
+> CTAs se toca **una sola vez**, por `CTA-020`.
+
+### Lo que hizo corta esta fase
+
+La capa académica ya estaba entera —`topic` con `parent_id`, `topic_prerequisite` explícita,
+`class_session_topic` muchos a muchos, `assessment_topic`, `learning_objective`, `topic_progress` con
+sus cinco dimensiones— y `estado_de_materia()` ya devolvía el examen ordenado `ASC NULLS LAST`, las
+unidades por `sequence`, y `contextoIncompleto` como hecho de la base.
+
+**Faltaban dos cosas: el tiempo, y un escritor de `assessment`.**
+
+### Los ADR que la sostienen
+
+| ADR | Qué cerró | Quién |
+|---|---|---|
+| [ADR-066](decisions.md#adr-066) | El Gantt es `UX02` | Owner |
+| [ADR-067](decisions.md#adr-067) | El estudiante da de alta su evaluación · `CTA-020` | Owner |
+| [ADR-068](decisions.md#adr-068) | La duración entra al modelo · los minutos por tema **no se persisten** | Equipo |
+| [ADR-069](decisions.md#adr-069) | `session_kind` se propone, no se importa | Equipo |
+
+| [ADR-070](decisions.md#adr-070) | El factor de estudio es un **piso** versionado, no un valor | Owner |
+| [ADR-071](decisions.md#adr-071) | Los prerequisitos los aprueba el estudiante sobre su cursada | Owner |
+| [ADR-072](decisions.md#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | Owner |
+
+**Los siete están cerrados.** El que más costó fue [ADR-072](decisions.md#adr-072), porque roza
+[ADR-058](decisions.md#adr-058) —que cerró la readiness *sin porcentaje y sin predicción de
+aprobación*— y la salida fue distinguir dos objetos que se parecen: **cobertura no es readiness**.
+
+---
+
+#### ✅ Corte 1 — El alta de evaluación · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-067](decisions.md#adr-067).**
+
+**El agujero que tapa.** Ninguna ruta llegaba a un escritor de `assessment`, y `assessment_date`
+sostiene la cuenta regresiva del Gantt, `estado_de_materia().examen`,
+`contexto_del_ade().proximaEvaluacion`, la aparición de `CTA-019` y la ventana de 14 días de
+[ADR-048](decisions.md#adr-048). Las únicas filas las insertaban los scripts de verificación.
+
+> ⚠️ **Una corrección del mismo día, anotada porque cambia lo que hay que creer.** La primera lectura
+> concluyó que *"no existe ningún escritor de `assessment`"*. **Es falso:** `ingerirMateria()` escribe
+> evaluaciones —servicio, repositorio y la RPC `ingerir_materia`, con tests— y la búsqueda no lo
+> encontró porque el `INSERT` vive dentro de una función de Postgres. Lo que sí es cierto es que
+> **ninguna ruta lo alcanza**, y que no serviría igual: `ingerir_materia` **reemplaza** las unidades y
+> las evaluaciones de la cursada entera. Usarlo para agregar un final borraría el temario.
+
+| | |
+|---|---|
+| **Migración** | `20260919000000_alta_de_evaluacion.sql`. `assessment.declared_by` (sin FK, como `class_session.uploaded_by`), el `CHECK` del vocabulario de tipos, `declarar_evaluacion()`, y **el predicado de visibilidad en las cuatro funciones que leen `assessment`** |
+| **Dominio** | `lib/server/servicios/evaluacion.ts` — el vocabulario y la validación. **La fecha es opcional**, y una hora sin fecha se rechaza |
+| **Contrato** | `POST /api/evaluacion` · `201` con el id · `400` con el motivo en castellano · `404` si la cursada no es suya |
+| **Registro** | **`CTA-020`**, `UX02 → UX02`. El registro pasa de 19 a 20 |
+| **Pruebas** | 10 comprobaciones nuevas contra Postgres y 12 de dominio |
+
+**Las cuatro decisiones que se materializaron, y por qué cada una:**
+
+1. **Sólo la ve quien la cargó.** `assessment` cuelga del offering, así que sin `declared_by` una
+   fecha equivocada de un compañero aparecería en la pantalla de otro como propia. `NULL` = no la
+   declaró un estudiante: es de la cursada, y la ve toda la comisión.
+2. **Un `declared_by` que no se filtra al leer es una mentira.** Por eso el predicado entra en
+   `estado_de_materia()`, `estado_de_activacion()`, `contexto_del_ade()` y
+   `candidatos_de_modo_examen()` en la misma migración. `estado_de_preparacion()`, `estado_de_paso()`
+   y `protocolo_vigente()` **no se tocan**: llegan por `exam_preparation`, que ya es por estudiante.
+3. **La fecha es opcional, y es el punto.** Quien sabe que rinde pero no cuándo tiene que poder
+   registrarlo. Sin fecha no hay Modo Examen —la ventana de ADR-048 necesita contra qué contar— y
+   `CTA-019` no aparece, que es lo correcto y no un error.
+4. **Se aceptan duplicados.** No hay `UNIQUE`: lo haría que el error de tipeo de uno le bloquee la
+   carga al otro. Fusionar dos declaraciones `unverified` es corroborar, y quién corrobora sigue
+   diferido por [ADR-057](decisions.md#adr-057).
+
+> ⚠️ **Y un guard tuvo que generalizarse, no relajarse.** El registro exigía que **toda** CTA citara
+> un escenario del spec. `CTA-020` no puede: el spec no la contiene, porque asumía que las
+> evaluaciones llegaban de la institución. La trazabilidad de una corrección es **su ADR**, y el test
+> que lo verificaba estaba cableado a `ADR-016`. Ahora es un mapa `CTA → ADR` que comprueba que el ADR
+> exista, la nombre y esté `ACCEPTED`. **Exigir un escenario del spec habría obligado a fabricar uno.**
+
+`lint` · `typecheck` · `build` · **1172 tests** · **`db:verify` 340 ✓, 0 ✗, exit 0**.
+
+---
+
+#### ✅ Corte 2 — La duración entra al modelo · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-068](decisions.md#adr-068) y [ADR-069](decisions.md#adr-069).**
+
+| | |
+|---|---|
+| **Migraciones** | Dos. `20260920000000_duracion_y_tipo_de_clase.sql`: `class_session` gana `duration_min`, `session_time`, `stream` (**tres** valores) y `session_kind`; `course_offering` gana `declared_total_min` + `declared_total_source`; `topic` gana `weight`. Y `20260920010000_ingesta_de_clases.sql`, que **corrige un defecto y le da escritor a todo lo anterior** |
+| **Dominio** | `lib/domain/duracion.ts` — la reconciliación entre el total declarado y la distribución observada, versionada por `REGLA_DE_DURACION`. **No hay SQL en esto**: es una regla de producto que va a cambiar |
+| **Ingesta** | `GuiaDeMateria` gana `clases[]` y `cargaHoraria`. `ingerir_materia` escribe `class_session` y `class_session_topic` |
+| **Pruebas** | 17 comprobaciones nuevas contra Postgres y 23 de dominio |
+
+**Las cuatro decisiones que se materializaron:**
+
+1. **No hay columna de minutos por tema, y hay un guard que lo vigila.** El reparto es una derivación
+   y se calcula al leer. Persistirla la congelaría como un hecho y **se volvería mentira sola**:
+   cuando una clase posterior vuelve sobre el mismo tema, el reparto anterior deja de ser correcto y
+   nadie lo recalcula. El guard consulta `information_schema` y **se verificó que rompe** agregando
+   una columna a mano.
+2. **`stream` lleva tres valores.** El corpus usa `TEORICO-PRACTICO` mezclado dentro de una misma
+   corrida; con dos habría que elegir uno y perder el dato.
+3. **El importador no clasifica.** `session_kind` sólo entra si la guía lo trae, y la guía lo trae
+   sólo si una persona lo confirmó — la columna de tipo del libro dice `NORMAL` en 988 de ~1016 filas
+   y el parcial vive en texto libre con **25% de falsos positivos medidos**. Ausente queda `NULL`, que
+   el dominio cuenta como clase: se elige el error chico.
+4. **El denominador de la reconciliación es lo atribuible, no todo lo observado.** Una clase sin temas
+   es tiempo que no se puede repartir; si contara en el denominador, cada tema recibiría menos de lo
+   que le toca — una dilución que nadie podría explicar mirando la pantalla.
+
+> ⚠️ **Y un defecto que el corte 1 había introducido sin que nadie lo viera.** `ingerir_materia` hacía
+> `DELETE FROM assessment WHERE offering_id = ...` antes de cargar el material nuevo. Con
+> `declared_by` —que llegó el mismo día—, **una ingesta de material de cátedra le borraba al
+> estudiante el final que él había cargado**, sin aviso y sin rastro.
+>
+> La regla ahora es **la ingesta reemplaza lo que la ingesta trajo**. Y la comprobación que lo
+> sostiene tuvo que reescribirse: la primera versión declaraba la evaluación sobre *otra* comisión que
+> la ingesta nunca tocaba, así que **pasaba sin probar nada**. Ahora prueba las dos mitades — que el
+> `DELETE` corre, y que la fila del estudiante sobrevive.
+
+⚠️ **Lo que este corte NO hace:** aplicar el factor de estudio. Los minutos de `duracion.ts` son
+**minutos de clase**; convertirlos a minutos de estudio es el `1.5` que sigue abierto, y va versionado
+aparte para que se pueda saber cuál de los dos números cambió.
+
+⚠️ **El docente no se carga.** Los 80 libros del corpus traen nombre y legajo en cada fila.
+`class_session` no tiene dónde ponerlos y **no hay que agregarle un lugar**.
+
+`lint` · `typecheck` · `build` · **1195 tests** · **`db:verify` 359 ✓, 0 ✗, exit 0**.
+
+#### ✅ Corte 3 — El Gantt en `UX02` · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-070](decisions.md#adr-070), [ADR-071](decisions.md#adr-071) y
+[ADR-072](decisions.md#adr-072)**, los tres cerrados el mismo día.
+
+| | |
+|---|---|
+| **Migración** | `20260921000000_insumos_del_gantt.sql`. `estado_de_materia()` devuelve `clases[]`, `cargaDeclarada`, y por unidad su `id`, `peso` y `trabajado` |
+| **Dominio** | `lib/domain/cobertura.ts` — la cobertura ponderada por horas, versionada |
+| **Proyección** | `ganttDeMateria()` junta `duracion.ts` con `cobertura.ts`; `proyectarMateria()` lo entrega como `MateriaProps.gantt` |
+| **Pantalla** | El bloque `<Gantt>` en `materia-cursado.tsx`. **Sin ruta nueva, sin `UX10`, sin CTA nueva** |
+| **Pruebas** | 5 comprobaciones nuevas contra Postgres y 24 de dominio y proyección |
+
+**Las tres decisiones que se materializaron:**
+
+1. **La barra muestra cobertura, y la cobertura no es readiness.** El pie lleva los dos números
+   —*"1 de 2 temas · 86% de las horas"*— porque no coinciden a propósito: la ponderación por horas es
+   el motivo de que existan los dos. Y la nota al pie del owner va **textual**, porque es lo único que
+   separa un porcentaje de una nota.
+2. **`INSUFFICIENT` cuenta como trabajado.** Es contraintuitivo y es correcto: la barra mide *que
+   trabajaste*, no que lo hayas hecho bien. Descontarla sería usarla como nota, que es justo lo que la
+   aclaración niega.
+3. **El orden es el dictado, con el declarado de respaldo.** `SISTEMAS DE INFORMACIÓN` 2024 dio la
+   unidad 1 en la clase 13, a propósito; ordenar por `sequence` le mostraría al estudiante una
+   historia que no pasó. Y **un parcial no adelanta el tema que evaluó**: no dictó nada.
+
+⚠️ **Un tema sin minutos conocidos no entra al denominador.** Si entrara con un valor inventado,
+cargar el libro de temas **bajaría** la cobertura sin que el estudiante hiciera nada mal. Queda afuera
+y el conteo lo sigue incluyendo.
+
+⚠️ **`SIN_DATOS` no se degrada a cero, y hay tests que lo fijan.** Es la regresión más probable de
+todo el Gantt: alguien va a querer que la función devuelva siempre un número para que la barra no se
+rompa, y ahí una materia sin libro de temas se muestra igual que una en la que el estudiante no hizo
+nada.
+
+⚠️ **El Gantt todavía no se ve en el catálogo de escenarios.** Los fixtures del focus group declaran
+un mundo anterior a esta fase y entran con `gantt: null`; cambiarlos altera lo que ve el focus group y
+es decisión del owner.
+
+> ✅ **Pero sí se ve en la demo.** `db-demo.sh` era de antes de este corte: sembraba unidades y
+> evaluaciones y **ninguna clase**, así que la materia entraba degradada. Ahora siembra **diez
+> sesiones y una carga horaria de 60 horas**, y las `Action` se anclan al tema — sin `topic_id`, el
+> Gantt mostraba `0 de 4 temas` con dos entregas hechas, que es lo contrario de lo que pasó.
+>
+> El resultado en `/materia`, con `npm run db:demo`:
+>
+> ```
+> 1 de 4 temas · 22% de las horas
+> * temas marcados por vos sobre el total cargado. No es una nota ni una predicción.
+>
+> ○ Límites y continuidad   17 h
+> ○ Derivadas               23 h
+> ● Integrales              13 h
+> ○ Series                   7 h
+> ```
+>
+> ⚠️ **Las dos entregas son `INSUFFICIENT` y aun así Integrales figura trabajada.** No es un defecto
+> de la demo: es [ADR-072](decisions.md#adr-072) funcionando. La barra mide que trabajaste, no que lo
+> hayas hecho bien.
+>
+> ⚠️ **Y el parcial del 15/09 no aporta sus 120 minutos a nadie.** Entra con `tipo: parcial` y sin
+> temas: ocupa el aula y no dicta nada ([ADR-069](decisions.md#adr-069)).
+
+`lint` · `typecheck` · `build` · **1219 tests** · **`db:verify` 364 ✓, 0 ✗, exit 0**.
+
+---
+
+<a id="fase-b616--el-reparto-de-horas-entre-materias"></a>
+
+## Fase B6.16 — El reparto de horas entre materias · ✅ COMPLETA
+
+**Qué es.** Que el estudiante empiece de cero y **cada materia que carga reorganice las horas de las
+demás**, a partir de cuánto requiere cada una. Pedido literal del owner el 7 de septiembre.
+
+**Decide:** [ADR-073](decisions.md#adr-073).
+
+> ⚠️ **Es una capa nueva.** Toda la Fase B6.15 es **por materia**: cuánto lleva ésta, cuánto cubriste
+> de ésta. Esto es **entre materias**, y por eso introduce algo que el producto no tenía: **un
+> presupuesto finito que se reparte**.
+
+### El agujero, otra vez el mismo
+
+**`availability` no tenía escritor.** La tabla existe desde la Fase B1 con `day_of_week`,
+`start_time`, `end_time`, `capacity_min` y `source`; ninguna ruta la escribía y sólo la sembraba
+`db-demo.sh`. Y el ADE la leía así:
+
+```sql
+SELECT MIN(av.capacity_min) FROM availability av WHERE av.student_id = ce.student_id
+```
+
+**El mínimo, nunca la suma.** Sirve para dimensionar *un* bloque y no sabe cuánto tiempo hay por
+semana. Para un estudiante real eso era `NULL`, porque no tenía filas. Mismo patrón que
+[ADR-067](decisions.md#adr-067) encontró con `assessment`.
+
+---
+
+#### ✅ Corte 1 — La disponibilidad se declara · COMPLETO · 7 de septiembre de 2026
+
+| | |
+|---|---|
+| **Migración** | `20260922000000_disponibilidad_declarada.sql`. `student.availability_declared_at`, `declarar_disponibilidad()`, y `estado_del_alta()` conoce el paso nuevo |
+| **Dominio** | `siguientePaso()` gana `DISPONIBILIDAD`; `validarBloques()` y `minutosPorSemana()` en el servicio del alta |
+| **Contrato** | `POST /api/alta/disponibilidad` · `201` incluso con lista vacía |
+| **Pantalla** | `/alta/disponibilidad`, el **cuarto** paso del alta. `PASOS_DEL_ALTA` pasa a vivir en una constante |
+| **Pruebas** | 10 comprobaciones nuevas contra Postgres y 15 de dominio |
+
+**Las tres decisiones, y la cuarta que no estaba en la pregunta:**
+
+1. **Se declara en el alta**, como `source = 'declared'`. La columna ya prevé `observed` e
+   `inferred`: el Personal Engine la corrige después con lo que el estudiante efectivamente cumplió,
+   porque nadie estima bien sus propias horas.
+2. **Cuando no alcanza, el hueco se muestra como hecho y sin veredicto.** Ni *"no llegás"* ni
+   *"apurate"*: las dos son predicciones y [ADR-058](decisions.md#adr-058) las cerró.
+3. **El reparto es una proyección.** No crea `Commitment` y no agenda: [ADR-064](decisions.md#adr-064)
+   deja el *cuándo* en el compromiso.
+4. ⚠️ **No declarar la disponibilidad NO bloquea el alta.** No estaba en la pregunta y se decidió por
+   precedente: [ADR-042](decisions.md#adr-042) §2 dice que rechazar WhatsApp no quita acceso, y
+   `siguientePaso()` ya comentaba que *"un alta que se trabara en `DECLINED` sería exactamente lo que
+   esa regla prohíbe"*. Trabar las nueve superficies hasta que alguien diga cuántas horas tiene sería
+   peor: es la pregunta más difícil del alta y la que más gente contestaría mal con tal de pasar.
+
+> ⚠️ **Y hubo que distinguir «no contestó» de «no tiene bloques».** Cero filas en `availability`
+> significaba las dos cosas a la vez, así que el alta le habría vuelto a preguntar para siempre al que
+> ya dijo que no sabe. De ahí `student.availability_declared_at`: **cuándo contestó, haya declarado
+> bloques o no.** Es la misma forma con que `whatsapp_consent` resolvió su equivalente.
+
+**Dos guards del alta rompieron, y era lo correcto:** la máquina de pasos cambió y los tests que
+afirmaban *"confirmado, el alta terminó"* dejaron de ser ciertos. Se actualizaron declarando el paso
+nuevo, más uno que fija que **«no sé» cuenta como contestada**. Y `I-01` de la auditoría de
+conformidad exigió sumar `/alta/disponibilidad` a las rutas que **no** son superficie: es un paso del
+alta, sus estados dependen de qué contestó este estudiante, y un `?escenario=` ahí ofrecería una demo
+de un alta ajena.
+
+`lint` · `typecheck` · `build` · **1234 tests** · **`db:verify` 374 ✓, 0 ✗, exit 0**.
+
+---
+
+#### ✅ Corte 2 — El reparto, visible en `UX01` · COMPLETO · 7 de septiembre de 2026
+
+| | |
+|---|---|
+| **Migración** | `20260923000000_insumos_de_reparto.sql`. `insumos_de_reparto()` entrega **hechos** por materia: días hasta la evaluación, alcance declarado, carga horaria, unidades y clases crudas |
+| **Dominio** | `minutosPendientes()` en `cobertura.ts`, y `proyeccion-reparto.ts` encadena las tres derivaciones |
+| **Pantalla** | El bloque de reparto en `hoy-autogestion.tsx`, debajo de la cola de materias |
+| **Pruebas** | 6 comprobaciones nuevas contra Postgres y 11 de proyección |
+
+**Dos decisiones de implementación, y la segunda fue un defecto propio:**
+
+1. **Es una consulta aparte de `estado_del_dia()`, y `proyectarDia()` la recibe como argumento
+   opcional.** Repartir necesita, de cada materia, lo mismo que `estado_de_materia()` devuelve de una
+   sola; con dieciséis materias eso pesa más que el resto de `HOY` junto, y `estado_del_dia()` es el
+   camino caliente. Quien lo quiere lo pide; quien no, no lo paga.
+
+2. ⚠️ **El reparto exigía la materia entera para un parcial que cubre dos unidades.** Apareció
+   mirando la demo: decía **41 h por semana** donde correspondían 35. La causa era usar todos los
+   temas pendientes en vez de los del **alcance declarado**. Corregido con la misma salida que
+   `contexto_del_ade()`: si `assessment_topic` está declarado se usa; si está vacío se cuenta todo,
+   y **nunca se infiere del texto de `scope`**.
+
+Lo que se ve hoy con `npm run db:demo`, en `/hoy`:
+
+```
+TUS HORAS ESTA SEMANA
+5 h por semana · 35 h es lo que piden tus materias
+
+Cálculo Avanzado                                      5 h
+
+Es una estimación, no una agenda. Nada se agenda desde acá.
+```
+
+⚠️ **Ninguna de las dos cifras concluye nada.** El déficit está a la vista y no hay un *"no llegás"*
+en ninguna parte: `falta` es un booleano sobre dos números y la pantalla sólo lo usa para elegir qué
+línea escribir.
+
+⚠️ **El copy del déficit sigue sin validar.** Mostrar un hueco puede aplastar aunque sea cierto, y la
+regla de la casa es *"reconocer patrones, no etiquetar personas"*. El hecho está decidido; **cómo se
+dice, no** — eso es de la psicopedagoga, antes del piloto.
+
+`lint` · `typecheck` · `build` · **1245 tests** · **`db:verify` 380 ✓, 0 ✗, exit 0**.
+
+---
+
+#### ✅ Corte 3 — El Personal Engine calibra · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-074](decisions.md#adr-074), que empieza corrigiendo lo que este roadmap había
+anotado.**
+
+> ⚠️ **La corrección.** El corte 1 dejó escrito que `availability.source = 'observed'` era el paso
+> siguiente: *"el Personal Engine la corrige con lo que el estudiante efectivamente cumplió"*.
+> **Estaba mal planteado.**
+>
+> `availability` es **cuándo podés estudiar** —capacidad—. Un `Commitment` cumplido es **cuándo
+> estudiaste** —conducta—. Derivar lo primero de lo segundo tiene una consecuencia concreta: un
+> estudiante con cinco horas que tuvo una mala semana y estudió dos **no perdió disponibilidad, no la
+> usó**. Escribirle `observed = 2 h` le reduciría el presupuesto por haber tenido una mala semana, y
+> después le repartiría menos porque hizo menos. **Es un espiral, y lo construiría el producto.**
+>
+> `observed` queda sin escribir hasta que exista una señal que mida capacidad de verdad.
+
+**Lo que sí se calibra: cuánto te lleva a vos el trabajo, comparado con lo estimado.** Sale de
+`reflection.actual_minutes` contra la estimación de la `Action`.
+
+| | |
+|---|---|
+| **Dominio** | `lib/domain/multiplicador.ts`, versionado por `REGLA_DE_MULTIPLICADOR` |
+| **Migración** | `insumos_de_reparto()` devuelve también `observaciones` |
+| **Proyección** | Los dos factores se multiplican **en la proyección y nunca antes**, para que cada mitad se pueda explicar por separado |
+| **Pruebas** | 5 comprobaciones nuevas contra Postgres y 18 de dominio |
+
+**Las cuatro reglas que lo hacen usable:**
+
+1. **Nunca baja de `1.0`.** [ADR-070](decisions.md#adr-070) fijó el `1.5` como **piso**: el Personal
+   Engine puede pedir más tiempo, nunca prometer que vas a necesitar menos. Hay un test que lo fija
+   con un estudiante que tarda la mitad de lo estimado y **sigue en `1.0`**.
+2. **Mediana, no promedio.** Una sesión de tres horas que se fue de cauce no mueve las demás.
+3. **Con menos de cinco observaciones, `1.0` y `SIN_HISTORIA`.** Con dos, la mediana es ruido con
+   forma de dato.
+4. **Techo en `2.0`, y el techo significa algo.** Más del doble sistemáticamente **no es un caso de
+   calibración**: es que algo más está pasando, y eso lo tiene que ver una persona.
+
+⚠️ **El multiplicador no se le muestra al estudiante como un número sobre él.** *"Tardás 1,8× lo
+normal"* es etiquetar. Se ve el efecto —más minutos— no el coeficiente.
+
+**En la demo**, con cinco reflexiones de 75 minutos sobre una estimación de 40–60, el multiplicador
+queda en `1,5×` y lo requerido pasa de 35 h a **52,5 h por semana**.
+
+⚠️ **Ese número es correcto y es durísimo**, y refuerza lo que ya estaba anotado: el copy del déficit
+no está validado. Mostrarlo es honesto; **cómo se dice sigue siendo decisión de la psicopedagoga.**
+
+`lint` · `typecheck` · `build` · **1264 tests** · **`db:verify` 385 ✓, 0 ✗, exit 0**.
+
+**Lo que el dominio ya fija, y los tests lo protegen:**
+
+- **Cargar una materia le baja la asignación a las demás.** Es el pedido, hecho test: con una, se
+  lleva las 600; con dos de la misma urgencia, 300 cada una.
+- **La urgencia manda.** El mismo pendiente con el examen cuatro veces más cerca pesa cuatro veces
+  más.
+- **Cuando no alcanza, todas se achican en la misma proporción.** El sistema **no elige cuál se
+  sacrifica**: si una recibiera cero, eso sería proponer abandonarla.
+- **Sin fecha, el horizonte es una constante declarada** (12 semanas). Dejarla fuera diría que no hay
+  que estudiarla; estimarle una fecha sería inventarla por la puerta de atrás.
+- **Una materia degradada entra sin pedir nada, y se dice.** `SIN_ESTIMACION` no es *"no necesita
+  tiempo"*: es que no sabemos cuánto.
+
+---
+
+## Fase B6.33 — Requisitos de cursado, simulados · ✅ COMPLETA
+
+**14 de septiembre de 2026** · [ADR-108](decisions.md#adr-108). Pedido del owner con la captura de un
+desplegable de otro software. `SIMULADO — SÓLO MODO_PRUEBA`.
+
+| Qué | Estado |
+|---|---|
+| Dominio puro `lib/domain/requisitos-de-cursado.ts`: piden, venís, quedan, faltas disponibles, cuatro estados | ✅ |
+| Simulación determinística `lib/server/simulacion/requisitos.ts` sobre el horario real de la materia | ✅ |
+| `GET /api/requisitos`: `404` sin `MODO_PRUEBA`, JWT y sólo sobre una cursada propia | ✅ |
+| Desplegable en `UX02` rotulado *Simulado*, promoción y regular, `Escape` lo cierra | ✅ |
+
+⛔ **Lo que no se hizo, a propósito:** condiciones reales del programa (llegan con procedencia),
+asistencia y notas reales (ADR-006), y cualquier veredicto de la materia. Cuando existan los datos, la ruta
+y la simulación **se borran** y la cuenta del dominio se reusa.
+
+`lint` · `typecheck` · `build` · **2590 tests** · **`db:verify` 545 ✓, 0 ✗** — verificado ya unido.
+
+---
+
+## Fase B6.32 — Onboarding académico · ✅ COMPLETA *(sintético; ver lo que sigue abierto)*
+
+**13–14 de septiembre de 2026** · [ADR-105](decisions.md#adr-105), [ADR-106](decisions.md#adr-106),
+[ADR-107](decisions.md#adr-107) · [fuente literal](respuesta-po-onboarding-academico-source.md) ·
+[`onboarding-academico.md`](onboarding-academico.md). El owner, sobre el diagnóstico: *"2-a ·
+3-autorizo · 4-no se llevan, que no se impida nada · hace lo recomendado y segui"*.
+
+| Etapa | Qué | Commit |
+|---|---|---|
+| B6.32.0 | La respuesta del owner y las tres ADR | `docs(onboarding)` |
+| B6.32.1 | **El período se pregunta** (ADR-061, corte 2 del plan) | `feat(alta) — el período se pregunta` |
+| B6.32.2 | **`/alta/cursada`**: comisión y horario, cinco pasos, `bloques_de_cursada()` (cortes 3 y 4) | `feat(alta) — el cuarto paso` |
+| B6.32.3 | **`/recorrido`: el analítico** sintético, revisión y borrado | `feat(recorrido) — el analítico` |
+| B6.32.4 | **Preguntas del recorrido e hipótesis de perfil** (`RECORRIDO-v0.1`) | `feat(recorrido) — preguntas` |
+| B6.32.5 | `UX02` dice la comisión y *«todavía no sabés tu horario»* | `feat(materia)` |
+
+⚠️ **Tres correcciones al plan que quedaron escritas en ADR-105**: la cursada no se muda de offering;
+`commission_status` arranca `NULL` y no `NOT_APPLICABLE`; y con dos dueños de horario hace falta una
+sola precedencia.
+
+⛔ **Lo que no se hizo:** la electiva pendiente (corte 6), el temario en la materia (corte 7), cambiar
+comisión u horario después del alta (fila 19 y segunda salida de ADR-064), extracción real (ADR-006,
+ADR-080) y que el ADE lea el perfil (filas 21 y 22).
+
+---
+
+## Fase B6.31 — Modo Focus · ✅ COMPLETA
+
+**13 de septiembre de 2026** · [ADR-104](decisions.md#adr-104). El owner: *"hacé todo lo recomendado y
+empezá, no dejes nada pending"*. Informe, API y QA en [`modo-focus.md`](modo-focus.md).
+
+| Qué | Estado |
+|---|---|
+| Dominio puro: presets 25/5/15 · 40/8/20 · 50/10/25, personalizado, tramos, recuperación, resumen | ✅ |
+| Migración: `focus_session`, `focus_segment`, `focus_preference`; dos funciones atómicas; `hechos_de_cursada()` con `datos` | ✅ |
+| Service, Repository, cinco rutas `/api/focus/*`; `FocusSessionStarted` y `FocusSessionEnded` | ✅ |
+| Nodo `FOCUS`, `CTA-026` y `CTA-027`; `CTA-006` y `CTA-009` ganan el origen; ficha *Focus · materia* | ✅ |
+| Concentración oscura, pausa, lista, descanso, recuperación, cierre con avance, sesión cerrada | ✅ |
+| Hoy, Materia y Compromiso llevan a Focus; la Bitácora muestra la sesión y el avance, nunca el anotador | ✅ |
+| Recorrido en navegador (Chromium), desktop y 360 px | ✅ |
+| **Enm. 1** · lluvia, mar, viento y chimenea calculados; *Probar* antes de empezar; `focus_preference.sound` con siete valores | ✅ |
+
+✅ **Se cierra una costura que la Fase 0 dejó dicha:** `EJECUCION` ya tiene con qué vivirse y `UX05` se
+alcanza por clic, desde *Terminé · Subir evidencia*. El nodo del spec sigue sin ruta: la pantalla es
+`FOCUS`.
+
+⚠️ **Desvío declarado:** *Terminé* no lleva el compromiso a `COMPLETED`, porque la entrega exige un
+compromiso vivo. El día que la entrega acepte uno cerrado, se mueve (ADR-104 §15).
+
+`lint` · `typecheck` · `build` · **2444 tests** · **`db:verify` 512 ✓, 0 ✗, exit 0**.
+
+---
+
+## Fase B6.30 — Gimnasia cognitiva: Memoria · ✅ COMPLETA *(sin preguntas reales todavía)*
+
+**13 de septiembre de 2026** · [ADR-102](decisions.md#adr-102). Pedido del owner por escrito
+([fuente](gimnasia-cognitiva-source.md)). Plan, API y QA en [`gimnasia-cognitiva.md`](gimnasia-cognitiva.md).
+
+| Qué | Estado |
+|---|---|
+| Dominio puro versionado: `CF-1`, `CI-1`, `RR-1`, con semilla | ✅ |
+| Migración aditiva: `gym_session`, `gym_attempt`, `recall_item`, `recall_review` | ✅ |
+| Service, Repository y cinco rutas `/api/gimnasia/*`; cuatro eventos `TRANSICION` | ✅ |
+| Nodo `GIMNASIA`, ítem de menú, `CTA-024` y `CTA-025`, ficha *Gimnasia · Memoria* | ✅ |
+| Portada, los tres juegos, rutina con salida y cierre que vuelve a Hoy | ✅ |
+| Siembra sintética `npm run db:gimnasia` | ✅ |
+| Recorrido en navegador (Chromium) | ✅ |
+
+⛔ **Queda abierto:** quién escribe y publica preguntas reales, la revisión psicopedagógica del
+vocabulario y de los intervalos, y si una rutina entra a la Bitácora o a Hoy.
+
+---
+
+## Fase B6.29 — Modo Clase, segunda vuelta · ✅ COMPLETA
+
+**13 de septiembre de 2026** · [ADR-099](decisions.md#adr-099). El owner: *"quiero que apruebes lo que
+haga falta"*. Detalle en [`modo-clase.md`](modo-clase.md) §H.
+
+| Qué | Estado |
+|---|---|
+| Rediseño de `/clase` con el lenguaje de `UX02` | ✅ |
+| Apuntes por entrada (Enter guarda) · `class_note_entry` | ✅ |
+| Grabación de audio opt-in con aviso, etiquetas y borrado · `class_recording`, `class_recording_tag` | ✅ |
+| Material: archivos (≤ 25 MB) y links · `class_attachment` | ✅ |
+| Comisión, aula, inscriptos y tipo de clase simulados (`MODO_PRUEBA=1`) | ✅ |
+| Unidades de la clase y *cómo venís*, desde el Gantt de Materia | ✅ |
+| Miga *Materias › materia › clase* | ✅ |
+| `db:verify` — 473 comprobaciones, con la demo copiada y restaurada | ✅ |
+
+⛔ **No levanta ADR-006**: grabar en un aula real, transcribir y compartir siguen afuera.
+
+---
+
+## Fase B6.28 — Modo Clase · ✅ COMPLETA *(el MVP de ADR-098, sin audio ni checkpoint)*
+
+**13 de septiembre de 2026** · [ADR-098](decisions.md#adr-098). El owner: *"todos los D hacé los
+recomendados"*. Plan, API y recorrido de QA en [`modo-clase.md`](modo-clase.md).
+
+| Corte | Qué | Estado |
+|---|---|---|
+| 0 | ADR-098, informe, glosario, agendas de la psicopedagoga (§10) y legal (§5.1) | ✅ |
+| 1 | Dominio puro | ✅ |
+| 2 | Migración y aislamiento | ✅ |
+| 3 | API y eventos | ✅ |
+| 4 | Pantalla `/clase` | ✅ |
+| 5 | Hoy | ✅ |
+| 6 | Materia · *Tus clases* | ✅ |
+
+⛔ **Lo que esta fase no hace:** audio, transcripción, checkpoint de comprensión, Bitácora, barra de
+objetos, unidad de la clase, fotos y señales en Modo Examen. Cada una con su dueño en el ADR.
+
+---
+
+## Fase B6.27 — La vista simulada de Formación · ✅ COMPLETA *(sin `db:verify`)*
+
+**12 de septiembre de 2026** · [ADR-087 Enmienda 3](decisions.md#adr-087-enmienda-3), delegada por el
+owner: *"solo queremos simular como se veria el modo formacion, pero necesitamos verlo"*.
+
+| | qué se hizo |
+|---|---|
+| **La lectura de la demo** | `vista_previa_de_formacion()`: `DRAFT` y `PUBLISHED`, nunca `RETIRED`, **sólo `service_role`**. No publica nada |
+| **El interruptor** | `formacionDe()` la usa **sólo con `MODO_PRUEBA=1`**. Sin la variable, V1 intacta |
+| **Lo simulado** | `lib/server/simulacion/formacion.ts`: grupos, duración, tips, ejemplo de entrega y cinco piezas. **No es esquema** |
+| **Los grupos** | Los cinco ejes del índice —Planificar · Ejecutar · Aprender · Monitorear · Ajustar—, literales |
+| **La pantalla** | Biblioteca por eje con portadas; pieza abierta con video simulado, qué hacés, qué entregás + ejemplo, tips y material |
+| **Los rótulos** | *Borrador* en las piezas de la autora, *Pieza simulada* en las inventadas, *Simulado* en video, tips y ejemplo |
+
+⚠️ **La portada no es un control y el material no se descarga.** Hay guard: con la pieza abierta el
+único botón es *Volver*, y no hay `video`, `iframe` ni enlace.
+
+⚠️ **`db:verify` no se corrió**, por la misma razón que la deuda 11 de la B6.26: vacía la base que la
+demo necesita ver. La migración se aplicó a mano sobre la base local y se verificó (5 piezas,
+`authenticated` sin permiso). Las otras cuatro puertas están en verde.
+
+**Queda para la psicopedagoga:** revisar la asignación a ejes y reemplazar tips y ejemplos simulados
+por los suyos, además de la vigencia y los guiones que ya estaban pendientes.
+
+---
+
+## Fase B6.26 — El rescate del árbol · ✅ COMPLETA
+
+**10 de septiembre de 2026** · [ADR-091](decisions.md#adr-091) y la Enmienda 2 de
+[ADR-087](decisions.md#adr-087).
+
+Seis ADR quedaron fuera del historial mientras dos sesiones escribían sobre el mismo árbol: 85
+archivos sin commitear y 21 ya en el índice. **El MVP está timeboxed**, así que el rescate entró en
+**un solo commit** en vez de doce, con respaldo recuperable tomado antes.
+
+⚠️ **Lo que se corrigió antes de commitear, y era lo único que bloqueaba:** `CTA-021` estaba en el
+registro canónico prometiendo *«Action creada sobre el CourseEnrollment elegido»* **sin que
+existiera esa escritura**. Formación entró como **V1 de solo lectura** y la CTA salió del registro.
+
+### Deuda posterior al MVP — registrada, no olvidada
+
+| # | deuda | de dónde sale |
+|---|---|---|
+| 1 | **V2 de Formación** — `origin`, `formative_content_id`, selección de cursada, creación de `Action`, `CTA-021` con su escritura, `Evidence` | ADR-087 Enmienda 2 `E2.4` |
+| 2 | **Ciclo de vida de la acción de Formación** y sus invariantes | Enmienda 2 `E2.2` |
+| 3 | **Concurrencia de la aplicación** — advisory lock o tabla-cerrojo. `action` no tiene `student_id`, así que *una viva por estudiante* **no es expresable como índice único** | Enmienda 2 `E2.2` |
+| 4 | ⛔ **Acotar `materializar_recomendacion()` por origen.** Sin esto, cuando V2 exista, aplicar una pieza **impediría al ADE emitir la acción del día** de esa cursada | Enmienda 2 `E2.2` |
+| 5 | **Sincronización entre pestañas del espacio de trabajo.** No hay listener de `storage`: dos pestañas del mismo estudiante se pisan y **la última escritura gana**. Se pierden atajos, no datos | ADR-088 |
+| 6 | **Cuatro mutadores del espacio leen `espacio` de la clausura** (`abrir`, `activar`, `verComoPagina`, `cerrar`) en vez de usar la forma funcional, como sí hacen los otros cinco | ADR-088 |
+| 7 | **Pruebas faltantes de ADR-088:** escritura de `localStorage` que falla, aislamiento A/B, aperturas concurrentes, sincronización entre pestañas | ADR-088 |
+| 8 | **Prueba faltante de ADR-089:** que el repliegue lo determina el nivel del dominio y no una condición local en `seRepliega` | ADR-089 |
+| 9 | **La fila del índice debería ser un enlace único con `href`**, sin `onClick` de contenedor ni controles anidados | [ADR-091](decisions.md#adr-091) |
+| 10 | **El radar académico** sigue `PROPOSED` y bloqueado por `C01-021`, `C01-036` y `C01-044` | [ADR-090](decisions.md#adr-090) |
+| 11 | **`db:verify` no se corrió en el rescate.** Es destructivo para la base local y necesita su propio respaldo y recuperación | decisión del owner |
+| 12 | **`scripts/db-demo.sh` sigue afirmando que ADR-006 es bloqueo absoluto.** Sólo se corrige citando la Enmienda a ADR-006, **que todavía no existe como decisión escrita** | ADR-006 |
+
+---
+
+## Fase B6.25 — La biblioteca de Formación · ✅ V1 DE SOLO LECTURA
+
+**10 de septiembre de 2026** · [ADR-087](decisions.md#adr-087) y su Enmienda 1.
+
+`Formación` era un ítem de menú de un mockup, diferido tres veces. El concepto **sí** estaba
+decidido en el spec original (§13, §3.9, `D5`, `D23`), y el 10 de septiembre llegó el contenido: los
+cinco temas más recurrentes del consultorio de la psicopedagoga.
+
+| | qué se hizo |
+|---|---|
+| **La entidad** | `formative_content`, con **las seis partes que dicta el contenido**: problema, objetivo, explicación, acción posterior, evidencia y material |
+| **El vínculo** | `action.formative_content_id`, **aditivo**: `course_enrollment_id` conserva su `NOT NULL` |
+| **La carga** | `scripts/cargar-formacion.mjs` parsea la **fuente literal**, no una copia |
+| **La lectura** | `biblioteca_de_formacion()`, que devuelve **sólo `PUBLISHED`** |
+| **La navegación** | nodo con `wireframe: null`, ítem **sin contador**, arista de retorno a `UX01` |
+| **La pantalla** | listado y pieza abierta con sus seis partes. **Sin CTA y sin selector** |
+
+⚠️ **La biblioteca está vacía, y es correcto.** `D5`: el contenido queda fuera de producción hasta
+que la psicopedagoga confirme vigencia. Las cinco piezas están cargadas en `DRAFT`.
+
+⚠️ **`D1` prohíbe clasificar al estudiante.** Sin Student Model, **nada** de proxies, puntajes ni
+umbrales: la biblioteca es la misma para todos. Hay guard sobre el SQL y sobre la proyección.
+
+⚠️ **Leer y aplicar se separan.** Sin cursadas la pieza **se lee igual** y lo que se apaga es
+`CTA-021`. Pedir la materia para leer convertiría la biblioteca en un embudo.
+
+⚠️ **No hay video, y no se anuncia uno.** La autora declara que faltan los guiones.
+
+⚠️ **Entró como V1 de solo lectura** (Enmienda 2). No toca `action`, no pide cursada y **`CTA-021` no
+está en el registro**: se lee aunque no haya ninguna cursada. La vertical de aplicación es **V2**, y
+la CTA vuelve con su escritura.
+
+---
+
+## Fase B6.24 — Las 51 materias tienen contenido, y el ADE lo usa · ✅ COMPLETA
+
+**9 de septiembre de 2026** · [ADR-086](decisions.md#adr-086).
+
+El Plan 2016 tiene 51 materias: **25 con temario real** de los programas oficiales de la UCC y
+**26 sin nada**. Ninguna tenía calendario —un programa no trae fechas— así que el Gantt estaba
+vacío y no existía la cuenta *"cuánto te falta estudiar"*.
+
+Ahora **las 51 tienen unidades, pesos, calendario, evaluación y material**, y lo que generó el
+sistema **lo dice en pantalla**.
+
+| | qué se hizo |
+|---|---|
+| **Marcar lo estimado** | `source_type = 'inference'`, sin columna nueva. `estado_de_materia` devuelve `contenido`: `estimado` · `calendario_estimado` · `NULL` |
+| **El peso** | `ingerir_materia` acepta `peso` por unidad; de ahí salen los minutos por tema que `duracion.ts` ya calculaba |
+| **El ADE** | el peso entra al ranking: más peso, más prioridad. Aporta hasta `120`, contra `300` de práctica y `1000` de evaluación |
+| **El plan** | `UCC/08/2016` pasa a `PUBLISHED`: sin eso el alta no ofrece la carrera y **nadie puede inscribirse solo** |
+| **El aviso** | en `UX02`, en el slot `aviso` que ya existía, arriba del Gantt |
+
+**Verificado de punta a punta:** cuenta nueva → alta → *UCC Sistemas* → seis materias de 3er año →
+`recomendadas: 6`, y el ADE eligió la unidad más pesada dentro del alcance del examen en las seis.
+
+⚠️ **La cursada vive en el período del alta.** `confirmar_mapa_academico()` la crea con
+`(course, term, NULL)`. Ingerir bajo el año lectivo del programa dejaba **dos ofertas**: la del
+contenido y la del estudiante, vacía.
+
+⚠️ **Una unidad pesada ocupa más clases.** `minutosPorTema()` reparte lo **observado**: con una
+clase por unidad, el peso no cambiaba nada.
+
+⚠️ **Dar por revisado no es auditar.** Los 57 `needs_review` los levantó el owner para habilitar el
+MVP. Los diez nombres cortados **siguen cortados**.
+
+⚠️ **Tres guards se mudaron a `INFORMATICA/web-2026`**, que sigue `DRAFT`. La regla del borrador
+sigue teniendo test.
+
+⛔ **Los 80 libros de temas siguen afuera** — nombre y legajo del docente en cada fila.
+
+---
+
+## Fase B6.23 — `UX02` se rearma alrededor del Gantt por tema · ✅ COMPLETA
+
+**Decide:** [ADR-085](decisions.md#adr-085), con las capturas del owner delante — que es como
+[ADR-054](decisions.md#adr-054) pidió que se tomaran las decisiones de esta pantalla.
+
+El layout de la captura con la paleta actual: **el Gantt por tema con eje de fechas** en el panel
+principal, la **tarjeta de evaluación** con la entrada a Modo Examen, el registro, las clases de la
+semana, el próximo paso y la actividad reciente.
+
+**`CTA-019` por fin es alcanzable por clic.** Estaba declarada desde
+[ADR-016](decisions.md#adr-016) —1 de septiembre— y **nunca se había renderizado**.
+
+### Las dos puntas de cada barra son hechos
+
+Cuándo se dictó (`class_session_topic`) y para cuándo se evalúa (`assessment_topic`). ⚠️ **Un tema
+sin esas fechas no se ubica**, y la fila lo dice: *«todavía no se dictó»*. Ponerlo en «+7 días»
+porque es el séptimo de la lista sería inventar un plan de estudio que nadie hizo.
+
+El eje es **el mismo que el índice de materias**: `marcasDelEje` se movió al dominio y la usan las
+dos.
+
+### ⛔ Tres palabras de la captura no se copiaron
+
+`Dominado` ([ADR-072](decisions.md#adr-072)), `nivel` ([ADR-075](decisions.md#adr-075) §C1) y `3/3`
+—un puntaje—. La columna dice el **estado de la evidencia**: `Sin registro · Entregado · Requiere
+revisión · Criterio alcanzado`, que describen **actividad, no conocimiento**.
+
+⚠️ **Y la razón de fondo:** la escala de la captura **es la dimensión Confianza**, que el estudiante
+autodeclara y que todavía no tiene escritor. Es el corte 2, bloqueado hasta la revisión de
+vocabulario.
+
+También quedó afuera el color por estado —verde «dominado», ámbar «leído»—: es la escala de
+calificación que §C1 descarta.
+
+### Tres decisiones que el mockup forzó
+
+**El orden va contra el spec y es del owner:** `VI.2` §1 pide la acción en el primer viewport y la
+captura la manda al pie. **El `CURSÁS` de la tarjeta no se copió**, porque repetía el panel de clases
+—`C-02`—. Y **Modo Examen es CTA secundaria**: `I-06` admite una sola primaria, y la que esta
+pantalla propone sigue siendo la próxima acción.
+
+### Lo que se perdió
+
+**La lista «Unidades» con su recencia por tema.** El Gantt la reemplaza y muestra estado de
+evidencia, no el *«hace 2 días»* de cada unidad. Se sacó la prop en vez de dejarla sin renderizar, y
+la regla que protegía se reescribió contra la forma nueva.
+
+**Verificación:** 19 comprobaciones nuevas en `npm test`. Cuatro reglas verificadas rompiéndolas a
+propósito.
+
+---
+
+## Fase B6.22 — El compromiso no cae encima de una clase · ✅ COMPLETA
+
+**Decide:** [ADR-084](decisions.md#adr-084), que **construye**
+[ADR-064](decisions.md#adr-064) — decidido el 5 de septiembre. Es el Corte 5 del
+[plan](plan-periodo-comision-horarios.md), y sólo se pudo hacer ahora: hasta la B6.21 **no había
+contra qué comparar**.
+
+### Las dos mitades, porque el ADR pide las dos
+
+| | |
+|---|---|
+| **Validación** | `confirmarCompromiso` y `renegociar` rechazan con `CONFLICTO_DE_HORARIO` **antes de escribir**, y el `409` lleva el hecho: *"Tenés clase el miércoles de 14:00 a 16:00"* |
+| **Propuesta** | El horario propuesto se corre hasta el primer hueco **y se dice**; el selector de [ADR-050](decisions.md#adr-050) deja de ofrecer franjas con clase encima |
+
+Ofrecer un horario que el servidor va a rechazar es el defecto que ADR-050 corrigió una vez —*"la
+pantalla ofrecía algo que el backend no podía hacer"*—, y media fase existe para no repetirlo.
+
+### Los tres detalles que no eran obvios
+
+**Los bordes.** Terminar justo cuando empieza la clase **no es conflicto**. Tratarlo como conflicto
+haría imposible lo más razonable que alguien puede hacer: estudiar pegado a la cursada.
+
+**Instantes absolutos, no minutos de pared.** Cada bloque se materializa en su día concreto
+preguntándole el offset a la zona. Un `-03:00` a mano se rompe en la primera institución con horario
+de verano, y se rompe **en silencio**.
+
+**Todas las cursadas.** Estudiar Cálculo el martes a las 18:30 choca con la clase de **Física** igual
+que con la de Cálculo.
+
+### El riesgo, acotado a una sola propiedad
+
+Era **el más alto del plan**: una regla nueva sobre el camino que ya funciona. Se acota con esto:
+**una lista vacía de bloques nunca da conflicto**. Sin horarios cargados el comportamiento es
+idéntico al de antes, y hay test en las tres capas.
+
+### ⛔ Falta la segunda salida, y no es un olvido
+
+ADR-064 pide dos: *"elegir otro horario **o corregir el bloque de clase**"*. La primera existe. La
+segunda **no tiene dónde hacerse**: el único escritor de horarios es la ingesta, y el que declara el
+estudiante necesita el cuarto paso del alta ([ADR-062](decisions.md#adr-062)). Por eso la copy
+enuncia el hecho y ninguna salida: describir una puerta que no está es peor que no mencionarla.
+
+### Dos correcciones que salieron del camino
+
+**`renegociarCompromiso` habría convertido el conflicto en una mentira.** Su `switch` termina en
+`default: { estado: "CONFLICTO" }` —*"ese compromiso cambió de estado"*—, y **el `default` hace que
+el compilador no lo señale**. Ahora tiene su caso explícito, con guard de que esté antes del
+catch-all.
+
+**Y había una copia privada de aritmética de husos** en `renegociacion.ts`. Se extrajo a
+`lib/domain/zona.ts`: dos verdades sobre horarios de verano divergen en el primero.
+
+**Verificación:** 27 comprobaciones nuevas en `npm test` y 5 en `npm run db:verify`. ⚠️ Una quinta
+rotura **no falló**, y se deja anotado: sacar el atajo `if (bloques.length === 0)` no cambia nada
+porque el bucle sobre una lista vacía tampoco encuentra nada. **La garantía es estructural**, no el
+atajo.
+
+---
+
+## Fase B6.21 — El horario de cursado · ✅ COMPLETA *(entidad, ingesta y pantalla)*
+
+**Decide:** [ADR-083](decisions.md#adr-083), que **construye** [ADR-063](decisions.md#adr-063) —
+decidido el 5 de septiembre y sin tocar desde entonces. Es el corte 3 de
+[`cursado-de-materia.md`](cursado-de-materia.md) §8, con el alcance que eligió el owner.
+
+**La única entidad genuinamente nueva del bloque ADR-060…065 existe.**
+`class_schedule_block`, con **exactamente un dueño**: la oferta —el horario publicado de la
+comisión— o la cursada —el que declara el estudiante que no sabe cuál es la suya—. Dos FK reales,
+`CHECK` de exclusividad, **sin `owner_type` y sin JSON**, que son las dos prohibiciones de forma que
+el ADR escribió textualmente.
+
+### Las tres cosas que no es, y cada una tiene guard
+
+| No es | Por qué se confunde | Qué lo impide |
+|---|---|---|
+| `class_session` | Las dos hablan de clases | La sesión es **una clase dictada**, con fecha; el bloque es **la regla semanal**. Guard: se cargan tres sesiones de un lunes y el horario sigue sin ningún lunes |
+| `availability` | Las dos tienen día y hora | *"Uno expresa cuándo está cursando y el otro cuándo puede estudiar"*. Guard: `insumos_de_reparto` no menciona la tabla |
+| Una agenda | Un panel con días se lee como una | *«Solo mostrar, no agendar»*, del owner. Guard: el panel no contiene ni un `button`, ni un `a`, ni un `input` |
+
+### ⛔ Lo que se decidió NO hacer, y el argumento
+
+**El descuento del reparto no se construyó.** El corte lo proponía; contradice tres cosas ya
+decididas, y el detalle está en [ADR-083](decisions.md#adr-083). En una línea: **`availability` ya
+es el tiempo que queda**, así que restarle las clases las descuenta dos veces, y donde sí hay
+superposición [ADR-064](decisions.md#adr-064) manda mostrarla porque *"la pantalla no puede asumir
+que el equivocado es él"*.
+
+**Dos columnas quedaron fuera.** `kind` —ningún ADR declara su vocabulario— y
+`course_enrollment.schedule_status`, que **el ADR sí pide**: se escribió, se probó y se sacó porque
+la cursada se crea **después** de la ingesta, así que el `UPDATE` no tocaba nada y las tres materias
+del demo quedaban `UNKNOWN` con sus bloques cargados. **Llega con su escritor**, que es el cuarto
+paso del alta.
+
+### Una corrección que salió del camino
+
+**Había dos listas de nombres de día**, y este corte iba a agregar una tercera. Se unificaron en
+`lib/content/es-AR.ts` —traducir un `SMALLINT` a una palabra visible es contenido— con guard de que
+no reaparezca una copia en ningún componente. Las dos tablas comparten la escala `0`–`6`, que es lo
+que va a permitir compararlas el día que se construya [ADR-064](decisions.md#adr-064).
+
+**Verificación:** 19 comprobaciones nuevas en `npm test` y 18 en `npm run db:verify`. ⚠️ Y un defecto
+propio que encontraron los guards: la sección de base ingería contra la oferta compartida con
+`p_unidades: []`, y desde [ADR-081](decisions.md#adr-081) eso **retira las unidades de la oferta** —
+nueve comprobaciones aguas abajo se caían sin que hubiera un invariante roto. Ahora tiene su propio
+mundo.
+
+---
+
+## Fase B6.20 — La Bitácora es de una materia · ✅ COMPLETA
+
+**Decide:** [ADR-082](decisions.md#adr-082). **Es el corte 1** de los cuatro que propuso
+[`cursado-de-materia.md`](cursado-de-materia.md) §8, y **el único autorizado**: el owner dijo
+*"empezá por el 1"* el 9 de septiembre de 2026.
+
+### El defecto, en una línea
+
+**Con tres materias en curso, mirar el registro de Álgebra abría el de Cálculo.**
+
+`hechos_de_cursada()` siempre fue por cursada —eso lo cerró la B3.3—, pero `estado_de_progreso` no
+tenía cómo recibir cuál: su CTE `cursada` tomaba **la primera activa** por `created_at`. Con una
+materia, «la primera activa» y «la que pediste» son la misma y el defecto no se ve. El alta deja
+tres.
+
+Es el mismo error que [ADR-054](decisions.md#adr-054) cerró en `CTA-001`, una superficie más allá:
+**no una ausencia —de esas el repo tiene muchas y son honestas— sino una respuesta equivocada**.
+
+### Qué se construyó
+
+| Pieza | Cambio |
+|---|---|
+| `estado_de_progreso` | Quinto parámetro `p_course_enrollment_id`, **opcional**. `NULL` conserva entero el comportamiento anterior |
+| `GET /api/progreso` | Acepta `?cursada=<uuid>`. La identidad **sigue saliendo de la sesión**: pedir la cursada de otro devuelve `404`, no su Bitácora |
+| `CTA-009` | Transporta `cursada`, con el nombre declarado en el registro canónico. Es el **segundo** parámetro del registro, y el guard de ADR-054 pasó a ser una lista cerrada de dos |
+| `MateriaProps` | `cursadaId` —para que la CTA sepa a dónde ir— y `verRegistro` —la copy, o `null`— |
+| `UX02` | La CTA arriba a la derecha, en píldora, **una sola vez** |
+
+### Las dos decisiones que no eran obvias
+
+**Se filtran las dos puntas.** `estado_de_progreso` deriva la cursada de la última evidencia del
+estudiante. Acotar sólo la CTE `cursada` dejaba la URL diciendo «Álgebra» y la evidencia siendo de
+Cálculo; acotar sólo la evidencia devolvía `NULL`. **Hay un check de base por cada punta**, y los dos
+se verificaron rompiendo la regla a propósito.
+
+**La puerta aparece si hay algo detrás.** `verRegistro` es `null` exactamente cuando
+`actividadReciente` lo es: las dos salen de la misma función y de la misma traducción, así que una
+preview vacía **es** una Bitácora vacía. ⚠️ La preview mira los últimos **tres** hechos, no todos: si
+esos tres no tienen copy aprobada y hay otros viejos que sí, la puerta queda escondida. Se eligió el
+error conservador y **está escrito en el tipo**, no tapado.
+
+### Lo que NO se hizo, y no por falta de tiempo
+
+⛔ **La Bitácora no se mudó adentro de `UX02`.** El spec reparte —2–3 entradas acá, el historial
+allá— y copiarlo sería la segunda fuente histórica que `VI.6` §8.3 prohíbe: la regla que esta fase
+viene a cumplir.
+
+⛔ **El checklist de Confianza es el corte 2 y sigue bloqueado** por la revisión de vocabulario de la
+psicopedagoga. `Dominado` viola [ADR-072](decisions.md#adr-072) y `nivel` viola
+[ADR-075](decisions.md#adr-075) §C1.
+
+**Verificación:** 20 comprobaciones nuevas en `npm test` y 8 en `npm run db:verify`.
+
+---
+
+<a id="fase-b617--la-respuesta-de-la-psicopedagoga"></a>
+
+## Fase B6.19 — El andamio para probar el MVP · ✅ COMPLETA
+
+**Decide:** [ADR-079](decisions.md#adr-079).
+
+**El golden path se recorrió entero contra Postgres, y funciona.** ADE → `Commitment` → `Evidence`
+→ validación → progreso → siguiente acción, con todo lo derivado moviéndose detrás: cobertura
+22% → 61%, reparto 95,5 h → 43 h, `HOY` de *Derivadas* a *Límites y continuidad*.
+
+⚠️ **Y un estudiante que se da de alta desde cero no podía empezarlo.** El alta deja
+`course_enrollment` y **nada adentro**, así que `HOY` decía `FALTA CONTEXTO DE CURSADO`, el reparto
+`SIN_DATOS` y el ADE no tenía sobre qué decidir. El producto decía la verdad; faltaba por dónde entra
+el contenido.
+
+### Los dos andamios
+
+| Comando / control | Qué cierra |
+|---|---|
+| `npm run db:materia -- <email> "<materia>"` | Carga unidades, clases, evaluación, alcance y **material por unidad** en la cursada que el alta ya creó |
+| Dock de `MODO_PRUEBA`: `correr el ADE` · `validar la entrega` · `correr el reloj` | Los tres pasos que hoy sólo existen en la terminal |
+
+**Con eso, el recorrido completo desde una cuenta nueva es por navegador**, verificado de punta a
+punta: alta → seed → ADE → compromiso → entrega → validación → `BAJO CONTROL` con la unidad
+siguiente y la cobertura al 25%.
+
+### ⚠️ El cerrojo que el dock abre a propósito
+
+**`validar` deja al estudiante validando su propia evidencia**, que es la regla que el producto más
+protege. Es la consecuencia de que `C01-030` siga `OPEN`: hasta que se cierre **no hay a quién darle
+ese botón**. Vive detrás de `404` sin `MODO_PRUEBA=1`, sin secreto de servicio, y **se borra con
+[ADR-006](decisions.md#adr-006)**.
+
+### Dos defectos que el andamio destapó
+
+**`ingerir_materia` sin `p_curriculum_plan_id` crea una cursada nueva** y deja la del estudiante
+vacía mientras el script dice «listo». Lo encontró un chequeo posterior a la ingesta, no una lectura
+del SQL — y ese chequeo queda como guard.
+
+**`ingerir_materia` no crea recursos, y sin recursos el ADE no recomienda**:
+`CONTEXTO_INCOMPLETO — «Fundamentos» no tiene material configurado`.
+
+### Lo que sigue sin resolverse
+
+No se puede **crear una cuenta** ([ADR-039](decisions.md#adr-039): el padrón lo decide el CRM).
+**Quién valida** es `C01-030`, `OPEN`. **El reloj no corre solo** —sin scheduler los compromisos
+nunca vencen y el camino del rescate no se alcanza—. Y **la ruta de validación no re-dispara el
+ADE**: sólo lo hace `scripts/validar.mjs`.
+
+---
+
+## Fase B6.18 — El área «Materias» · ✅ COMPLETA *(las dos vistas)*
+
+**Decide:** [ADR-077](decisions.md#adr-077), sobre lo que
+[ADR-054](decisions.md#adr-054) dejó reservado el 5 de septiembre.
+
+> *"esta pantalla de materias no me gusta, prefiero más el estilo de la segunda, la de color, primero
+> una pantalla con todas las materias y luego podés entrar a cada una"*
+
+**No es una superficie nueva: es la que faltaba desde el principio.** Parte II §10 del spec nombra
+dos áreas —**Materias** (*"espacios persistentes de cursado y evaluaciones"*) y **Materia > Cursado**—
+y el producto las había colapsado en una: el ítem del menú decía el plural y llevaba a `UX02`, que es
+el cursado de **una**.
+
+### Qué se construyó
+
+| Pieza | Qué hace |
+|---|---|
+| `insumos_de_reparto()`, extendida | Suma la próxima evaluación **con fecha futura** y el último avance, por materia |
+| `proyeccion-materias.ts` | Ordena por evaluación y calcula cobertura reusando `duracion.ts` + `cobertura.ts` |
+| `/api/materias` · `/materias` | El controller y la pantalla |
+| `UX02_INDICE` en `surfaces.ts` | Nodo **sin wireframe**: ruta propia, y no es una décima superficie |
+
+⚠️ **Se extendió la función del reparto en vez de escribir una nueva.** El índice necesita
+exactamente los mismos hechos; una segunda consulta podría divergir, y entonces la barra del índice
+contradiría al reparto de `HOY` **sobre la misma materia**.
+
+⚠️ **`textoDeCobertura()` se extrajo a una sola función.** El pie de la barra ya cambió una vez por
+revisión clínica ([ADR-075](decisions.md#adr-075) §C1); dos copias significan que la próxima revisión
+arregla una pantalla y deja la otra afirmando lo que la psicopedagoga objetó.
+
+### Lo que el mockup pedía y no se hizo
+
+**`1/9 dominados`.** Es la primera prohibición de [ADR-072](decisions.md#adr-072) —no leer
+`domain_value`— y el corte que sostiene `preparar ≠ enviar ≠ suficiencia ≠ validación ≠ dominio`. Se
+usa el copy vigente, que es el de `UX02`.
+
+~~**El «Gantt del período».**~~ ⚠️ **Se difirió con un argumento falso, y se construyó el mismo día**
+— [ADR-078](decisions.md#adr-078). La leyenda del propio mockup lo desmentía: *"relleno = cobertura
+de temas"*. El relleno **no es asignación de horas**, así que el Gantt y el reparto no afirman la
+misma magnitud y no pueden contradecirse. La pregunta era correcta; el supuesto, no.
+
+**El botón `+ Agregar materia o evaluación`.** El único elemento del mockup **sin destino definido**:
+son dos flujos —el alta ([ADR-052](decisions.md#adr-052), de una sola vez y sin reingreso
+especificado) y `CTA-020`, que vive dentro de una cursada—.
+
+### Tres guards que rompen de verdad
+
+Cada uno se verificó rompiendo la regla a propósito:
+
+- `✓ una cobertura alta NO adelanta a una materia con la evaluación más cerca` — ordenar por cobertura
+  invierte el orden y el test cae
+- `✓ declarar el alcance de un parcial no sube la barra` — recortar la cobertura al alcance la llevaría
+  del 50% al 100% sin que el estudiante hiciera nada
+- `✓ con la evaluación ya pasada, no se ofrece una próxima que no existe` — el fallback a la más
+  reciente le inventaría una fecha al estudiante
+
+### Y dos guards que rompieron, con razón
+
+`tests/shell.test.tsx` pedía que **todo ítem del menú fuera una superficie** y que hubiera **nueve
+rutas**. Las dos afirmaciones eran proxies que alcanzaban mientras el menú sólo llevara a las nueve.
+Ahora se verifica lo que su nombre siempre dijo —el nodo existe y tiene ruta— y **las dos cifras por
+separado**: once rutas, nueve superficies. La regla *"ninguna superficie del menú depende sólo del
+menú"* se acotó a los nodos **con wireframe**, que es donde su motivo aplica.
+
+### La segunda vista · ADR-078
+
+Un selector `Gantt del período` / `Lista` sobre **los mismos datos**: mismo orden, misma cobertura,
+misma fila. Lo que cambia es la forma, nunca lo que se afirma.
+
+| Pieza | Qué hace |
+|---|---|
+| `lib/domain/ventana.ts` | `[primera clase , evaluación]`, versionada por `REGLA_DE_VENTANA` |
+| `insumos_de_reparto()`, otra vez | Suma `primeraClase`: un `MIN`, la punta izquierda |
+| `ejeDelPeriodo()` | `−2` a `+3` semanas, **y se estira** si una evaluación cae más lejos |
+
+⚠️ **Las dos puntas son hechos, y ninguna se completa.** Sin fecha de evaluación **no hay ventana**:
+barra punteada, *"sin ventana de preparación"*. Sin primera clase hay ventana desde el borde **con la
+marca puesta** — es distinto de haber empezado ahí.
+
+⚠️ **Y dos cosas del mockup no se construyeron.** `Cursás Lun 14:00-16:00` necesita el bloque horario
+de [ADR-062](decisions.md#adr-062), que está **decidido y no existe en el schema**; derivarlo de las
+horas de las clases dictadas sería inferir la regla desde sus instancias. Y `frenada hace 7 días` se
+muestra como el hecho —*"última actividad hace 7 días"*—: siete días sin actividad en una materia que
+se cursa una vez por semana **es lo normal**, y la etiqueta convierte una cadencia en un problema.
+
+### El mundo demo creció, y no es relleno
+
+Tres materias en vez de una, elegidas por sus estados: **Cálculo** completa, **Álgebra** con unidades
+y sin clases —sin barra, el estado en el que entran **13 de las 36 materias del corpus real**— y
+**Física** con clases y sin evaluación. Con una sola materia el índice no muestra nada de lo que
+decide.
+
+---
+
+## Fase B6.17 — La respuesta de la psicopedagoga · ✅ COMPLETA *(salvo §E, fuera del MVP)*
+
+**Decide:** [ADR-075](decisions.md#adr-075) ·
+[fuente literal](respuesta-psicopedagoga-tiempo-y-carga-source.md).
+
+> *"La pantalla, tal como está escrita, **no debería aprobarse todavía**."*
+
+Es lo primero que contestó, sobre el mensaje del déficit. **Y tenía razón, aunque no exactamente por
+lo que dedujo.**
+
+Su lectura fue que podía estar comparando una tasa semanal con un total acumulado.
+⚠️ **La aritmética ya estaba sobre el mismo horizonte** —`demandaSemanal()` divide los pendientes por
+las semanas que quedan, así que las dos cifras eran tasas semanales—. **El defecto era del copy:**
+sólo una de las dos decía «por semana».
+
+**Eso no salva la pantalla: la confirma.** Si la persona con autoridad profesional sobre el mensaje
+leyó una comparación inválida, un estudiante también.
+
+---
+
+#### ✅ Corte 1 — El déficit, reescrito · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta [ADR-075](decisions.md#adr-075) §A.**
+
+| | |
+|---|---|
+| **Dominio** | `tramoDeBrecha()` y `UMBRAL_DE_BRECHA_CRITICA` en `reparto.ts`; `Reparto` lleva `demandaSemanalTotal` |
+| **Copy** | El bloque entero reescrito con sus palabras |
+| **Proyección** | `tramo`, `titulo`, `cifras`, `aclaracion` y `acciones` |
+| **Pantalla** | En `CRITICA`, el mensaje va primero y **el número baja a detalle secundario** |
+| **Pruebas** | 11 nuevas, seis de ellas sobre **lo que el copy tiene prohibido decir** |
+
+**Los tres tramos, por `requerido / disponible`:**
+
+| Tramo | Qué muestra |
+|---|---|
+| `≤1` **ENTRA** | *"Tu plan entra en el tiempo que declaraste."* Sin prometer resultados, y sin acciones: no hay nada que reorganizar |
+| `1–2` **AJUSTABLE** | Las dos cifras en primer plano, y las tres acciones |
+| `>2` **CRITICA** | El mensaje cualitativo primero; el número **sigue estando** pero baja de jerarquía |
+| — **SIN_DATOS** | *"Faltan datos para estimar tus horas."* **No se muestra media comparación** |
+
+**Lo que cambió en las palabras, y por qué:**
+
+- Las dos cifras **llevan su período las dos**: *"Esta semana declaraste 5 h disponibles. El trabajo
+  pendiente estimado es de 52,5 h."*
+- **«Las materias no piden».** Esa personificación *"puede sonar a exigencia"*; se dice *"trabajo
+  pendiente estimado"*.
+- **Siempre hay una salida cuando falta tiempo** — *Elegir qué priorizar · Revisar mis horas · Pedir
+  ayuda*—, porque un déficit sin acción *"puede sentirse como un veredicto y favorecer evitación"*.
+- Hay un test que verifica que **ninguna frase** diga *"no vas a llegar"*, *"deberías poder"* o
+  *"estás atrasado"*, y que **ninguna acción** proponga abandonar una materia.
+
+⚠️ **El horizonte elegido difiere de su ejemplo, y queda para confirmarle.** Ella escribió el mensaje
+sobre *"hasta el parcial del 15 de septiembre"* y admitió las dos opciones. **Se eligió la semanal**
+porque con varias materias y varias fechas no existe un único *"hasta la evaluación"*, y sumar sobre
+horizontes distintos reintroduce el defecto que este corte corrige.
+
+`lint` · `typecheck` · `build` · **1275 tests** · **`db:verify` 385 ✓, 0 ✗, exit 0**.
+
+---
+
+#### ✅ Corte 2 — La barra: tres medidas, no una · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta §C.**
+
+> *"La aclaración sola no alcanza: un porcentaje grande junto a una barra suele adquirir significado
+> evaluativo aunque el texto inferior lo niegue."*
+
+Y encontró algo que el equipo había justificado como virtud: *"«1 de 9 temas» y «26% de las horas»
+usan **denominadores diferentes** y pueden parecer dos medidas contradictorias."*
+
+| | |
+|---|---|
+| **Migración** | `20260924000000_estados_de_unidad.sql`. `trabajado BOOLEAN` → `evidencia` con **cuatro valores**, en las **dos** funciones de lectura |
+| **Dominio** | `EstadoDeUnidad`, `hayActividad()`, `alcanzaCriterio()` y `estadoDeEvidencia()` en `cobertura.ts` |
+| **Copy** | El rótulo pasa de *Preparación* a **`Actividad registrada`**, y la aclaración la reescribió ella |
+| **Pantalla** | Cuatro marcas por unidad, línea de *entregas que requieren revisión*, sin colores de calificación |
+| **Pruebas** | 3 comprobaciones nuevas contra Postgres y 9 de dominio |
+
+**§C2 corrigió la pregunta antes de contestarla:**
+
+> *"La pregunta actual fuerza una elección falsa porque **mezcla dos constructos**: actividad y
+> calidad del resultado."*
+
+Un booleano no podía expresar eso. Ahora son cuatro estados —`sin_evidencia` · `enviada` ·
+`requiere_revision` · `criterio_alcanzado`— y una entrega insuficiente es **trabajo intentado** y
+**no** contenido cubierto: no reconocerla *"invisibiliza el esfuerzo y castiga dos veces"*; contarla
+como cobertura plena *"puede producir una falsa sensación de preparación"*.
+
+**Lo que se ve ahora en la demo:**
+
+```
+ACTIVIDAD REGISTRADA
+1 de 4 temas tiene alguna evidencia · 22% del tiempo estimado tiene evidencia asociada
+Entregas que requieren revisión: 1
+Esto muestra trabajo registrado. No mide comprensión, no es una nota y no predice el resultado.
+
+○ Límites y continuidad   17 h
+○ Derivadas               23 h
+◑ Integrales              13 h
+○ Series                   7 h
+```
+
+⚠️ **El rótulo lo fijó ella**, y hay un guard que lo protege: no puede decir `dominio`, `nivel`,
+`rendimiento` ni `avance de aprendizaje`. Y como *"actividad"* es una palabra que el guard `C-02`
+persigue como deriva de `Action`, la excepción entró **con su fuente verificada**, igual que la del
+spec: hay un test que comprueba que la frase está en el documento que la autoriza.
+
+⚠️ **Y `minutosPendientes` NO cambió de base, deliberadamente.** Sigue midiendo sobre *"hubo
+actividad"*, no sobre *"alcanzó el criterio"*. Cambiarlo haría que una entrega insuficiente vuelva a
+costar el estimado completo y el déficit crecería — justo el eje sobre el que ella advirtió—, y no
+hay dato de avance parcial que permita cobrar sólo una parte. **Su §C es sobre cómo se representa la
+barra, no sobre cómo se estima el tiempo restante.** Queda anotado para preguntárselo.
+
+**Dos guards viejos rompieron, y era lo correcto:** uno leía `trabajado` y lo cazó el día que la
+columna dejó de existir; el otro, `C-02`, exigió justificar la palabra *actividad*.
+
+`lint` · `typecheck` · `build` · **1285 tests** · **`db:verify` 388 ✓, 0 ✗, exit 0**.
+
+#### ✅ Corte 3 — El multiplicador: comparabilidad y transparencia · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta §B.** El piso `1,0` y el techo `2,0` **se mantienen**: los confirmó los dos.
+
+| | |
+|---|---|
+| **Migración** | `20260925000000_calibracion_apagable.sql`. `student.time_calibration_enabled`, y las observaciones ganan **día** y **tipo de actividad** |
+| **Dominio** | `porTipo()`, `validas()`, `revisionDeCalibracion()` y la `Confianza` interna |
+| **Pruebas** | 6 comprobaciones nuevas contra Postgres y 11 de dominio |
+
+**§B3 — comparabilidad, no sólo cantidad.** *"Importa tanto la calidad y comparabilidad de las
+observaciones como la cantidad."*
+
+- **Tres días distintos como mínimo.** Cinco registros de una misma tarde describen una tarde, no una
+  tendencia — y hay un test que lo fija.
+- **El mismo tipo general de actividad.** Sale de `action.verb`, que es el vocabulario que el ADE ya
+  usa: **inventar una taxonomía nueva sería exactamente lo que ella advirtió** sobre las etiquetas.
+- **La confianza es `baja` entre 5 y 9 observaciones, y es interna.** *"No exponer ese rótulo como
+  evaluación personal."*
+
+**§B4 — el interruptor.** *"Un sistema que cambia la carga sin explicar por qué puede parecer
+arbitrario."*
+
+El estudiante puede **apagar el ajuste**, y apagarlo **no borra la historia**: volver a encenderlo no
+empieza de cero. Si se perdiera, pagaría por haber querido entender qué estaba pasando.
+
+**§B2 — la señal de revisión de calibración.** No basta con superar el techo una vez: `≥2` en **3 de
+las últimas 5** observaciones válidas, **en al menos dos días**. Un tramo malo viejo, ya superado, no
+convoca a nadie hoy.
+
+> ⚠️ **La señal se detecta y todavía no tiene a dónde ir, y eso se dice en vez de improvisarlo.**
+> `risk_signal.student_id` es `NOT NULL`: el sujeto de una señal de riesgo es siempre el estudiante.
+> Y ella fue explícita en que el primer destino es **el owner académico de la estimación** —*"puede
+> señalar un error de estimación, una tarea mal definida, interrupciones, registro inexacto, material
+> insuficiente o ayuda no contabilizada"*— y en que **«psicopedagogía no debe ser el primer destino
+> automático de un error de tiempo»**.
+>
+> Meterla en `risk_signal` la convertiría en lo que ella dijo que no fuera. Es el mismo hueco que
+> [ADR-071](decisions.md#adr-071): **no existe una superficie de owner académico**, y cablear una
+> señal a nadie es peor que dejarla detectada y anotada.
+
+⚠️ **Y dos exclusiones de §B2 no se pueden implementar todavía**, porque el dato no existe: *"no
+computar registros corregidos […] ni sesiones con interrupción declarada"*. `reflection` no tiene ni
+marca de corrección ni de interrupción, y **tampoco hay un camino para corregir un tiempo**, que §B4
+pide explícitamente. Queda como lo que falta, no como algo que se olvidó.
+
+`lint` · `typecheck` · `build` · **1296 tests** · **`db:verify` 394 ✓, 0 ✗, exit 0**.
+
+#### ✅ Corte 4 — El `1,5` baja al último escalón · COMPLETO · 7 de septiembre de 2026
+
+**Ejecuta §D.**
+
+> *"No encontré respaldo para afirmar que **1,5 horas de estudio autónomo por cada hora de clase** sea
+> una constante psicopedagógica universal."*
+
+Y trajo la normativa: la [Resolución 2598/2023](https://www.argentina.gob.ar/normativa/nacional/resoluci%C3%B3n-2598-2023-393382/actualizacion)
+define el Crédito de Referencia del Estudiante en 25–30 horas por crédito y **no prescribe una
+relación fija de 1,5 a 1**.
+
+| | |
+|---|---|
+| **Migración** | `20260926000000_factor_de_estudio.sql`. `course_offering.declared_study_min` + `declared_study_source`, y `ingerir_materia` los escribe |
+| **Dominio** | `factorDeEstudio()`, `minutosDeEstudio()` y `FACTOR_DE_ESTUDIO_FALLBACK` en `duracion.ts` |
+| **Pruebas** | 3 comprobaciones nuevas contra Postgres y 6 de dominio |
+
+⚠️ **Y acá el `1,5` se aplica por primera vez.** Hasta este corte `duracion.ts` devolvía **minutos de
+clase** y nadie los convertía a minutos de estudio: el factor estaba decidido desde
+[ADR-070](decisions.md#adr-070) y **no lo usaba nadie**.
+
+**Los cuatro escalones de §D, y dónde vive cada uno:**
+
+| Escalón | Dónde está |
+|---|---|
+| 1 · Carga institucional o de cátedra | 🆕 `course_offering.declared_study_min`, con su texto literal |
+| 2 · Estimación por actividad concreta | Ya existía: `action.estimated_minutes_*`, que produce el ADE **por Action**. `duracion.ts` estima **temas**, no tareas |
+| 3 · Mediana histórica de comparables | Ya existía: es el multiplicador de [ADR-074](decisions.md#adr-074), y se aplica **aparte** |
+| 4 · Fallback `1,5` | El último recurso, rotulado como tal |
+
+⚠️ **Los escalones 2 y 3 no se reimplementaron, y eso se dice en vez de omitirlo.** Plegar el 3 dentro
+del factor lo contaría dos veces: el multiplicador ya multiplica.
+
+**Lo que cambió en la demo, y una lección de paso.** El número pasó de 52,5 a **79 h por semana**…
+pero no sólo por el factor. Las cinco reflexiones de la demo se sembraban **todas el mismo día**, así
+que la regla de comparabilidad del corte 3 **se negaba a calibrar** — correctamente. Corregido el
+seed para que abarquen cinco días, el multiplicador vuelve a `1,5×` y los dos factores se componen.
+
+⚠️ **79 h por semana es correcto y es un caso extremo**: un parcial en ocho días, cuarenta horas de
+contenido sin tocar y cinco horas declaradas. El tramo `CRITICA` hace lo que ella pidió —el mensaje
+primero, el número como detalle— pero **la validación del copy sigue pendiente**, y este número la
+hace más urgente.
+
+`lint` · `typecheck` · `build` · **1302 tests** · **`db:verify` 397 ✓, 0 ✗, exit 0**.
+
+#### Fuera del MVP — §E, el método
+
+Los datos actuales *"permiten descripción, no determinar el método eficaz"*. Faltan ocho, empezando
+por **qué estrategia se usó** y el **desempeño diferido a 24–72 h**. No es una postergación por costo.
 
 ---
 
@@ -477,14 +4942,23 @@ desvío, riesgo y recuperación.
 
 ## 2. Mapa de bloqueos
 
-| Decisión abierta | Bloquea |
-|---|---|
-| [ADR-005](decisions.md#adr-005) Backend | **Todo el Track B desde B1** |
-| [ADR-006](decisions.md#adr-006) Privacidad | **Cualquier fase con datos reales.** Absoluto |
-| [ADR-004](decisions.md#adr-004) ADE | Fase B4 |
-| [ADR-003](decisions.md#adr-003) Convergencia | Fase B6 |
-| [ADR-007](decisions.md#adr-007) HUMAN-P0 | Contenido de Fase B5 |
-| [ADR-011](decisions.md#adr-011) Readiness | Readiness visible en B5 |
+| Qué sigue abierto | Bloquea | Quién lo cierra |
+|---|---|---|
+| **El dictamen legal** de [ADR-006](decisions.md#adr-006) | **Cualquier fase con datos reales.** Absoluto | Asesoría jurídica — [paquete de preguntas](legal-package.md) |
+| **La autorización institucional** del golden dataset (`C01-042`) | Fase B8 · piloto | Producto + la institución |
+| **Los residuos profesionales todavía abiertos** ([ADR-025](decisions.md#adr-025), [ADR-037](decisions.md#adr-037)) | Intervención automática sobre personas reales y calibración del piloto | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md) |
+| **El contrato de integración v2** | Las **cinco superficies de operador** y la verificación del dueño de una intervención. **No bloquea el dominio de B6**, que ya está | CTO — [propuesta](platform-integration-contract.md) §2.1 |
+| **Las dos reglas de Risk todavía humanas** (`C01-021`) | Automatizar `HP0-06-2` y `HP0-06-3`. `HP0-06-1` ya produce señales con el denominador profesional | Risk owner + validación del piloto |
+| **Los 4–6 playbooks del piloto y sus SLA** (`C01-044`) | Los dos eslabones del circuito que faltan. La tabla está vacía **a propósito** | Product Operations |
+| **La confirmación de vigencia del Roadmap** | Que el protocolo deje de rotularse *"vigencia sin confirmar"*. **Dos frases**, y no bloquea código: los veinte pasos ya corren con su texto ([ADR-031](decisions.md#adr-031)) | La psicopedagoga — [agenda](agenda-cierre-psicopedagoga.md), arriba de todo |
+
+### ✅ La contradicción del Product Event Model, resuelta — [ADR-027](decisions.md#adr-027)
+
+`product.md` §11 declaraba que ocho nombres de evento *"no existen"* y el backend los emitía. **Los
+ocho entraron al modelo** como eventos de nivel `TRANSICION`, y el catálogo pasó a clasificar por
+nivel —`NEGOCIO`, `TRANSICION`, `TELEMETRIA`— para que aprobarlos no significara mezclarlos con los
+hechos que el producto existe para medir. Los nombres históricos **no se cambian**: `product_event`
+es append-only, y renombrar dejaría filas que ningún consumidor sabe leer.
 
 ✅ **Resueltos el 28 de agosto de 2026,** y por eso ya no aparecen arriba:
 [ADR-008](decisions.md#adr-008) (stack), [ADR-009](decisions.md#adr-009) (nomenclatura `DD`),
@@ -492,7 +4966,42 @@ desvío, riesgo y recuperación.
 [ADR-012](decisions.md#adr-012) (alcance del Track A) y
 [ADR-013](decisions.md#adr-013) (anexo deduplicado).
 
-> **Nada bloquea la Fase 0. Está lista para arrancar.**
+✅ **Resuelto el 29 de agosto de 2026:** [ADR-014](decisions.md#adr-014) (desktop-first; el contrato
+del primer viewport pasa a orden semántico, con 360 px como piso móvil).
+
+✅ **Resueltos el 1 de septiembre de 2026:** [ADR-026](decisions.md#adr-026) (obligatoriedad de
+`Reflection`, que cerró `C01-051` y la Etapa B2.4), [ADR-016](decisions.md#adr-016) (**se agrega
+`CTA-019`**: el registro pasa a 19 y `UX07` deja de alcanzarse sólo por el menú),
+[ADR-020](decisions.md#adr-020) (**un no-cambio declarado es un dato, no una ausencia**),
+[ADR-011](decisions.md#adr-011) (**`PreparationReadiness` es la fuente canónica** de readiness),
+[ADR-003](decisions.md#adr-003) (**se integra el dominio, no los frontends**; Achieve es canónico y
+Dashboard consume) y [ADR-027](decisions.md#adr-027) (**los ocho eventos de transición entran al
+Product Event Model**, clasificados por nivel).
+
+🟡 **Y [ADR-006](decisions.md#adr-006) pasó a `PROVISIONAL — LEGAL CONFIRMATION REQUIRED`:** las
+decisiones de producto están tomadas —visibilidad institucional, retención, material académico— y
+**el gate sigue cerrado**. Lo que se destrabó es que el producto dejó de construir contra el vacío;
+lo que falta es el dictamen. Las preguntas están en [`legal-package.md`](legal-package.md).
+
+✅ **Resueltos el 1 de septiembre de 2026, cerrando la Fase B5:** [ADR-028](decisions.md#adr-028)
+(**la completion de un paso es un hecho**, no un estado: se cayó el `UNIQUE` y cada vuelta lleva su
+tema), [ADR-029](decisions.md#adr-029) (**la pauta de la cátedra tiene entidad propia**, con
+Provenance, para guardarla sin declararla oficial) y [ADR-030](decisions.md#adr-030) (**el protocolo
+corre con contenido provisional y lo dice en sus columnas**) y [ADR-031](decisions.md#adr-031) (**los
+veinte pasos entran con el texto de la psicopedagoga**, verbatim y atado a su fuente por test).
+
+✅ **Resuelto el 31 de agosto de 2026:** [ADR-007](decisions.md#adr-007) — **las ocho decisiones
+`HUMAN-P0` fueron respondidas por la psicopedagoga real.** Ver [ADR-025](decisions.md#adr-025) y la
+fuente literal en [`human-p0-source.md`](human-p0-source.md). **El criterio de la Fase B5 deja de
+estar bloqueado.** Su readiness también, desde el 1 de septiembre: ver
+[ADR-011](decisions.md#adr-011).
+
+> ⚠️ **Lo que se desbloqueó fue el criterio, no el texto** — y el texto llegó después, el mismo día:
+> el *Roadmap Modo Examen* de la misma profesional, con los veinte pasos desarrollados. Ver
+> [ADR-030](decisions.md#adr-030) (el hueco) y [ADR-031](decisions.md#adr-031) (la carga).
+
+> **La Fase 0 está cerrada.** `ADR-016` sigue pendiente como deuda del registro canónico, pero el
+> recorrido de focus group declara la navegación del facilitador y ya no bloquea el cierre.
 
 **Único pendiente que no bloquea nada de la Fase 0:** `DD4` (vocabulario del oficio), en `DEFERRED`.
 Se revisa junto con el glosario de [`product.md`](product.md) §3.
@@ -503,17 +5012,101 @@ Se revisa junto con el glosario de [`product.md`](product.md) §3.
 
 | Fase | Estado | Etapas completas |
 |---|---|---|
-| Fase 0 — Cerrar Track A | ⬜ **NO INICIADA · lista para arrancar** | 0 / 8 |
+| Fase 0 — Cerrar Track A | ✅ **COMPLETA** — 8/8 etapas y el test de 10 segundos corrido | 8 / 8 |
+| Fase A2 — Shell de aplicación | ✅ **5 / 5 etapas completas** | 5 / 5 |
 | Fase A1 — Operador e Institución | ⏸️ DIFERIDA al Track B | — |
-| Fase B0 — Cerrar decisiones | ⬜ NO INICIADA | 0 / 5 |
-| Fase B1 — Fundación | 🔒 BLOQUEADA | — |
-| Fase B2 — Dominio de ejecución | 🔒 BLOQUEADA | — |
-| Fase B3 — Progreso y eventos | 🔒 BLOQUEADA | — |
-| Fase B4 — ADE v1 | 🔒 BLOQUEADA | — |
-| Fase B5 — Modo Examen real | 🔒 BLOQUEADA | — |
-| Fase B6 — Risk e Intervención | 🔒 BLOQUEADA | — |
-| Fase B7 — Privacidad | 🔒 BLOQUEADA | — |
-| Fase B8 — Piloto | 🔒 BLOQUEADA | — |
+| Fase B0 — Cerrar decisiones | 🟡 EN CURSO — `ADR-003`, `ADR-004`, `ADR-005` y `ADR-010` aceptados; ADR-006 espera confirmación legal | 4 / 5 |
+| Fase B1 — Fundación | ✅ **COMPLETA** | 6 / 6 |
+| Fase B2 — Dominio de ejecución | ✅ **COMPLETA** — `C01-051` cerrado por [ADR-026](decisions.md#adr-026). Done auditado: **los 12 invariantes tienen test** desde que la B5 migró `exam_preparation` e `I7` dejó de estar pendiente | 6 / 6 |
+| Fase B2b — Ingesta ADL | 🟡 **EN CURSO** — ingesta asistida y corroboración completas. **B2b.3 espera a `C01-042`**, que no lo cierra un agente | 2 / 3 |
+| Fase B3 — Progreso y eventos | ✅ **COMPLETA** — el resultado se escribe con sus invariantes, el Product Event Model está declarado con guards en tres direcciones, y `UX02`/`UX06` comparten una sola fuente histórica. Quién emite el progreso sigue siendo `C01-018` | 3 / 3 |
+| Fase B4 — ADE v1 | ✅ **COMPLETA** — el validador determinista hace real la rama `ERROR`, y el reloj corre por endpoint de servicio | 5 / 5 |
+| Fase B5 — Modo Examen real | ✅ **COMPLETA** — 1 de septiembre de 2026. Los tres requisitos de schema cerrados por [ADR-028](decisions.md#adr-028), [ADR-029](decisions.md#adr-029) y [ADR-030](decisions.md#adr-030); **las nueve superficies del estudiante leen de Postgres**; y los **veinte pasos reales cargados** con el texto de la psicopedagoga ([ADR-031](decisions.md#adr-031)) | 6 / 6 |
+| Fase B6.7 — Validación profesional aplicada | ✅ **COMPLETA.** Las siete decisiones profesionales están implementadas como configuración/versiones trazables; B6.7.4 cerró `9.7` sin romper `I7` y con explicación previa en UX09 | 4 / 4 |
+| Fase B6.14 — Catálogo curricular y tramo de alta | ✅ **COMPLETA** — 5 de septiembre de 2026 ([ADR-051](decisions.md#adr-051), [ADR-052](decisions.md#adr-052), [ADR-053](decisions.md#adr-053)). El estudiante declara qué cursa y llega a `HOY` con una acción real. ⚠️ **Y le movió el mundo debajo a una decisión de la B2.6**: el apartado «Materias» sigue mostrando una sola — [ADR-054](decisions.md#adr-054), `PENDING` | 6 / 6 |
+| Fase B6.13 — «Cambiar horario» en `UX04` | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-050](decisions.md#adr-050)). La renegociación llega a la pantalla, y aparecieron tres defectos que sólo se ven al conectar algo: la CTA salía del encuadre y no del lifecycle, la confirmación se desmontaba con la recarga, y un único código de rechazo decía *«ya empezó»* de algo incumplido | 1 / 1 |
+| Fase B6.12 — El disparador de Modo Examen | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-048](decisions.md#adr-048)). `ExamPreparationRecommended` dejó de ser el único evento `P0` sin emisor. **No depende de readiness**, y un test guarda esa firma | 1 / 1 |
+| Fase B6.11 — La renegociación, alcanzable | ✅ **COMPLETA** — 4 de septiembre de 2026 ([ADR-046](decisions.md#adr-046)). La tercera operación huérfana de la B6.9 tiene llamador. Requirió [ADR-049](decisions.md#adr-049): la institución no tenía zona horaria. La CTA en `UX04` llegó en la B6.13 | 1 / 1 |
+| Fase B6.10 — La reflexión existe y se exige | ✅ **COMPLETA** — 4 de septiembre de 2026. El estudiante puede reflexionar y el requisito de [ADR-026](decisions.md#adr-026) lo hace cumplir el servidor. **Falta la superficie para escribirla**, que toca `components/screens/*` | 1 / 1 |
+| Fase B6.9 — La salida del camino que no salió bien | ✅ **COMPLETA** — 4 de septiembre de 2026. Rescate y reenvío alcanzables; `RescueSucceeded` dejó de ser inalcanzable. ~~La renegociación queda fuera hasta `C01-010`~~ → **cerrada en la B6.11** | 2 / 2 |
+| Fase B6.8 — El camino de ejecución escribe en Postgres | ✅ **COMPLETA** — 3 de septiembre de 2026 ([ADR-040](decisions.md#adr-040), decidido por el CTO). El ADE tiene disparador, el camino principal escribe contra Postgres y **`C01-009` quedó cerrada**. Sin migraciones | 5 / 5 |
+| Fase B6 — Risk e Intervención | 🟡 **DOMINIO COMPLETO** — 2 de septiembre de 2026 ([ADR-032](decisions.md#adr-032)). El circuito cerrado se garantiza por construcción y `circuito_de_senales()` audita el Done. `HP0-06-1` ya corre con criterio profesional; faltan `C01-021` para las otras dos reglas, `C01-044` y el contrato v2 | dominio ✅ · operador 🔒 |
+| Fase B7 — Privacidad | 🔒 **BLOQUEADA por el dictamen legal.** Las decisiones de producto de [ADR-006](decisions.md#adr-006) están tomadas en `PROVISIONAL`; falta confirmarlas | — |
+| Fase B8 — Piloto | 🔒 **BLOQUEADA: hay personas reales** | — |
 
-**Estado de los 51 contratos `C01`: 51 `OPEN`, 0 `CLOSED`.** Ver
+**Estado de los 51 contratos `C01`: 32 `OPEN`, 13 `ANSWERED — RESIDUO ABIERTO`, 5 `CLOSED`, 1
+`DEFERRED`.** ⬅️ **Cinco se movieron el 5 de septiembre de 2026**, con la respuesta del Product Owner
+a la agenda de decisiones abiertas ([fuente](respuesta-po-agenda-decisiones-source.md)): `C01-029`
+cerró ([ADR-058](decisions.md#adr-058)); `C01-019`, `C01-021` y `C01-044` pasaron a
+`ANSWERED — RESIDUO ABIERTO` ([ADR-059](decisions.md#adr-059), [ADR-055](decisions.md#adr-055),
+[ADR-056](decisions.md#adr-056)); y `C01-030` quedó **`DEFERRED` con motivo** hasta
+[ADR-006](decisions.md#adr-006) ([ADR-057](decisions.md#adr-057)). Ocho
+de las respondidas son las `HUMAN-P0` (`C01-031`…`C01-038`), el 31 de agosto de 2026; la novena es
+`C01-051` ([ADR-026](decisions.md#adr-026)), el 1 de septiembre; la décima es `C01-010`
+([ADR-046](decisions.md#adr-046)), el 4. `C01-022` cerró por [ADR-034](decisions.md#adr-034),
+**`C01-009` por [ADR-040](decisions.md#adr-040)** el 3 de septiembre, y **`C01-018` y `C01-024`**
+por [ADR-047](decisions.md#adr-047) y [ADR-048](decisions.md#adr-048) el 4. Ver
 [`pending-decisions-annex.md`](pending-decisions-annex.md).
+
+### 3.1 Seguridad de dependencias — cerrada y firmada
+
+> ✅ **`ACCEPTED — AMENDED AND SIGNED`** · **el CTO ratificó la
+> [Enmienda 1 de ADR-008](decisions.md#adr-008-enmienda-1) el 3 de septiembre de 2026**: la versión,
+> `agentRules: false` y el push de `feat/fase-0-track-a`. Ejecutada como opción A del brief: `next` y
+> `eslint-config-next` de `16.2.6` a **`16.3.4`**, fijadas exactas, sin tocar React.
+> **`npm audit`: 3 `high` → 0**, y cero en todas las severidades. Los cinco gates en verde sin desvío
+> contra la baseline —**953 tests**, y `db:reset && db:verify` completo con **275 comprobaciones** y
+> los dos códigos de salida en `0`—, más el recorrido del focus group a 1440 y 360 px y el del MVP
+> entero.
+>
+> ⚠️ **La firma autoriza el push, y nada más.** **No hay autorización de merge a la rama principal
+> ni de despliegue**: las dos necesitan decisión propia, y el despliegue además sigue bloqueado por
+> [ADR-006](decisions.md#adr-006).
+>
+> ✅ **La revisión de trazabilidad se resolvió el 3 de septiembre de 2026: los cuatro commits locales
+> se conservan.** Rehacerlos no habría recuperado una separación verificable entre etapas ya
+> superpuestas, y deshacerlos habría devuelto trabajo validado a un árbol sin custodia. El defecto
+> documental de `e703d10` se corrigió **por commit posterior**, conservando el rastro.
+>
+> ✅ **`AGENTS.md` volvió a estar íntegramente bajo control del repositorio.** El bloque que `next dev`
+> inyectaba se **desactivó en el origen** con `agentRules: false` en `next.config.ts`, y el archivo se
+> restauró. `193140b` **se conserva en el historial**: el rastro de lo que pasó no se borra.
+>
+> Queda **una** deuda de higiene del entorno, sin tocar: el `package-lock.json` huérfano del directorio
+> padre. Y `git diff --check` reporta tres líneas de `docs/decisions.md` que **no son un defecto**: son
+> saltos Markdown intencionales, heredados de la etapa B6.7.4.
+>
+> Todo el resultado, en §10 de [`brief-adr-008-seguridad.md`](brief-adr-008-seguridad.md).
+
+**El estado que tenía antes de la actualización, para poder leer el antes/después:**
+
+| Paquete | Instalado | Corregido en | De dónde viene |
+|---|---|---|---|
+| `next` | `16.2.6` | **`16.3.0`** | Declarado en `package.json` |
+| `postcss` | `8.4.31` | `8.5.23` | **Dependencia directa de `next`**, fijada por él |
+| `sharp` | `0.34.5` | `0.35.0` | **Opcional de `next`** |
+
+**Las tres son la misma deuda contada tres veces:** ni `postcss` ni `sharp` están en `package.json`.
+
+> ⚠️ **Corrección de dato — 2 de septiembre de 2026.** Este párrafo decía que arreglarlo *"sube la
+> versión mayor del framework"*. **Es falso, y estuvo mal cuatro días en tres documentos.**
+> `16.2.6 → 16.3.4` es un **minor**. Lo que dispara el *"outside the stated dependency range"* de npm
+> es que `package.json` fija la versión **exacta, sin `^`** — cualquier versión distinta queda fuera,
+> incluso un parche. El costo real es el de un minor, y la exageración probablemente explica parte de
+> por qué se difirió tantas veces.
+
+**Ningún parche de la línea `16.2` sirve:** el rango afectado llega hasta `16.3.0-preview.10`, así que
+`16.2.7`…`16.2.12` siguen adentro. **El mínimo que corrige es `16.3.0`.**
+
+**Lo que sí sigue en pie:** no se corre `npm audit fix --force` sobre la rama principal. No por la
+versión que elige —es la correcta— sino porque una decisión de stack no puede quedar como efecto
+colateral de un comando. La elige [ADR-008](decisions.md#adr-008).
+
+**Lo incómodo:** la Etapa 0.1 registró esto como *"deuda a evaluar **antes de la Fase 0 Done**"*, y
+**la Fase 0 se cerró 8/8 sin evaluarla**. El gate estaba escrito y no se cumplió. Queda acá visible
+en vez de enterrado en la narrativa de una etapa vieja.
+
+**Qué mitiga el riesgo hoy, y qué no.** El MVP actual usa persistencia local con datos sintéticos y
+no está desplegado, así que el árbol vulnerable no está expuesto a usuarios. Eso deja de valer al
+desplegar o incorporar una sola persona real: la deuda debe resolverse antes de producción y no es
+una nota al pie.

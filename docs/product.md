@@ -3,7 +3,7 @@
 **Documento:** `docs/product.md`
 **Rol:** owner canónico del vocabulario, los roles, las máquinas de estado observables y el alcance.
 **Deriva de:** `docs/product-spec-source.md` (Partes I, II, IV, VI, IX).
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 2 de septiembre de 2026
 
 > **Regla de precedencia.** Si este documento entra en conflicto con `product-spec-source.md`, gana
 > el spec fuente y este documento es el defectuoso. Si entra en conflicto con el código, gana este
@@ -109,6 +109,12 @@ es exactamente la deriva de vocabulario).
 | **TopicProgress** | Estado personal por tema, en cinco dimensiones separadas |
 | **Availability** | Restricciones y ventanas horarias útiles del estudiante |
 | **AcademicGoal** | Objetivo de semestre, materia o examen |
+| **StudentClassSession** | **La clase que el estudiante abre** mientras cursa: de una cursada, con apuntes y marcas. En la UI, *«clase»*. ⚠️ **No es `ClassSession`**, que es la clase dictada de la comisión ([ADR-098](decisions.md#adr-098)) |
+| **ClassMarker** | Una marca de un toque durante la clase —`QUESTION`, `IMPORTANT`, `ASSESSMENT`, `REVIEW`— con su momento. **Señalador privado**: no es un reporte de clase (`class_event_record`) ni voz de la cátedra |
+| **ClassNoteEntry** | Una entrada de apuntes: lo que el estudiante escribe entre dos Enter, con el momento de la clase. Reemplaza el texto único de ADR-098 ([ADR-099](decisions.md#adr-099)) |
+| **ClassRecording** | Una grabación de audio de la clase, **opt-in**, nunca automática y sin transcripción. Se escucha y se borra. Grabar en un aula real espera a ADR-006 ([ADR-099](decisions.md#adr-099)) |
+| **ClassRecordingTag** | Una etiqueta de texto sobre una grabación, en un segundo o para la grabación entera. **No es una marca** |
+| **ClassAttachment** | Un archivo o link que el estudiante guardó de su clase. **No es `Evidence`** ni material de cátedra |
 
 ### 3.4 Entidades de ejecución — el loop diario
 
@@ -118,6 +124,8 @@ es exactamente la deriva de vocabulario).
 | **Action** | Unidad ejecutable de trabajo: verbo + alcance + objetivo | No es un compromiso |
 | **Commitment** | Acuerdo conductual: qué, cuándo, cuánto tiempo, qué evidencia | No es ejecución ni producción |
 | **Evidence** | Presentación canónica de la producción acordada | No es suficiencia, validación ni dominio |
+| **Evidencia de trabajo** | Prueba de que el estudiante **hizo una actividad**: cronograma, foto del material, checklist, ficha, resumen | **No prueba aprendizaje.** Nunca alimenta una afirmación de dominio |
+| **Evidencia de aprendizaje** | Instancia que comprueba **qué puede hacer con el contenido de manera autónoma** | No es una entrega más: exige desempeño observable, con condiciones y criterios claros |
 | **Reflection** | Feedback breve y contextual del alumno. **Objeto separado de Evidence** | No es un diario ni un diagnóstico |
 | **ProgressEntry** | Bundle derivado de eventos que reconstruye la Bitácora | No es una entidad de verdad paralela |
 
@@ -151,6 +159,7 @@ es exactamente la deriva de vocabulario).
 |---|---|
 | **Desvío académico** | Diferencia relevante entre dónde debería estar el estudiante y dónde está |
 | **Perception–Evidence Gap** | Brecha entre la confianza declarada y el dominio demostrado |
+| **Recuperación activa** | Traer el contenido a la memoria **sin el material a la vista**. `HUMAN-P0-03 v1.0`: es un proceso cognitivo **distinto** de producir un apoyo, y ninguno reemplaza al otro |
 | **No Cortar** | Rescate mínimo que evita el cero sin borrar el incumplimiento original |
 | **Golden Path** | Recorrido pequeño pero completo que representa la promesa real de Achieve |
 | **Golden Dataset** | Datos académicos de una carrera suficientemente completos para demostrar la experiencia objetivo |
@@ -169,6 +178,12 @@ es exactamente la deriva de vocabulario).
 | **Reviewer (R1)** | Quien aplica el criterio a una `Evidence` que requiere revisión humana | El contenido necesario para aplicar el criterio, según assignment |
 | **Institución** | Cliente B2B | **Agregado por defecto.** Caso individual solo si está autorizado y es necesario para intervenir |
 
+> **El Operador es un rol del producto, no un usuario de la Plataforma**
+> ([ADR-033](decisions.md#adr-033)). Su alcance sigue siendo el que fija el spec —*"el operador no es
+> un parche humano detrás de la app"* (Parte I §21.0)—, pero lo ejerce **desde el CRM**: sus
+> superficies viven ahí (§10.1) y su identidad y asignación son fuente de verdad del CRM (Parte II
+> §18.1). La Plataforma no le da sesión.
+
 ### 4.1 Matriz de visibilidad (Parte II §17)
 
 | Dato | Estudiante | Operador | Institución |
@@ -177,15 +192,23 @@ es exactamente la deriva de vocabulario).
 | Compromisos | Sí | Sí | Agregado por defecto |
 | Evidencias | Sí | Según rol | **No por defecto** |
 | Reflexiones personales | Sí | Según necesidad | **No por defecto** |
-| RiskSignal | Explicación útil | Completo operativo | Agregado; individual solo autorizado y accionable |
-| Intervenciones | Propias relevantes | Completo | Métricas, estado y outcome; detalle solo autorizado |
+| RiskSignal | **Explicación útil** — implementada en `UX01` como `recuperacion` (B6.6.2): qué pasó, por qué pide atención y qué sigue. **Nunca** la severidad, la regla, su versión ni el estado interno | Completo operativo | Agregado; individual solo autorizado y accionable |
+| Intervenciones | Propias relevantes — el estudiante puede saber **que su caso fue tomado**, y en qué estado está. **Nunca quién lo acompaña**: esa identidad es del CRM ([ADR-033](decisions.md#adr-033)) y no le suma nada. Tampoco el playbook ni el SLA | Completo | Métricas, estado y outcome; detalle solo autorizado |
 | Bitácora | Sí | Sí | **No por defecto**; resumen agregado |
 
 > **Regla (Parte II §17).** No asumir que porque la universidad paga puede ver toda la información
 > individual del estudiante. La institución **no** recibe chats, reflexiones íntimas ni evidencia
 > cruda por defecto.
 
-Todo esto queda gateado por [ADR-006](decisions.md#adr-006) antes de tocar datos reales.
+**La columna Operador se satisface por contrato, no por pantalla.** Lo que un operador ve llega por
+el flujo de contexto académico vivo (CRM → Plataforma, de lectura), no porque tenga acceso a una
+superficie de acá. La fila `human_assignment` —*qué estudiantes son "sus asignados"*— es del CRM
+(`C01-039`).
+
+Todo esto queda gateado por [ADR-006](decisions.md#adr-006) antes de tocar datos reales. **Cualquier
+contrato que transporte notas, causas detalladas, evidencias o información individual de un
+estudiante entre los dos sistemas queda condicionado por las decisiones de privacidad,
+consentimiento, minimización y retención de la Fase B7.**
 
 ---
 
@@ -224,6 +247,11 @@ DRAFT → CONFIRMED → DUE → STARTED → COMPLETED
   Action. No sobrescribe.
 - `DRAFT` es **no autoritativo**: no aparece en Hoy, Materia ni CRM, y no cambia la Action.
 - La UI **no** declara `MISSED` ni `DUE` por el paso del tiempo. Lo hace el owner del lifecycle.
+- **`STARTED` lo escribe *Empezar*, en el servidor** ([ADR-104](decisions.md#adr-104) §3): la primera
+  sesión de Focus lleva el compromiso a `STARTED` y la acción a `IN_PROGRESS` por sus máquinas. Un
+  reloj local no inicia nada, y **una sesión no completa el compromiso**: el tiempo registrado no es
+  cumplimiento, y *Terminé* tampoco lo cierra (la entrega exige un compromiso vivo; lo cierra la
+  validación).
 - `RESCUE_REQUIRED` y `RESCUE_MATERIALIZED` son **condiciones derivadas de la proyección**, no
   estados persistidos: la primera indica que no existe rescate concreto, la segunda que sí existe una
   Action o Commitment de rescate vinculada.
@@ -252,31 +280,117 @@ EXPECTED → SUBMITTED ─┬→ UNDER_REVIEW ─┬→ SUFFICIENT → VALIDATED
 ### 5.4 ExamPreparation
 
 ```
-RECOMMENDED → ACTIVE → BUILDING → READY_BY_PROTOCOL → EXAM_TAKEN → CLOSED
-                    ↘ NOT_READY / BLOCKED
-                    ↘ ABANDONED (conserva historial)
+RECOMMENDED → ACTIVE → REPLANNED ─→ EXAM_TAKEN → CLOSED
+                    ↘ BLOCKED       ↘ CANCELLED
+                    ↘ CANCELLED     ↘ EXPLICITLY_ABANDONED
+                    ↘ EXPLICITLY_ABANDONED
 ```
+
+✅ **[ADR-011](decisions.md#adr-011), implementada en la Fase B5.** `BUILDING`, `READY_BY_PROTOCOL` y
+`NOT_READY` **salieron de este lifecycle**: son estados de `PreparationReadiness`, su única fuente.
+La cadena central se cierra en `ACTIVE → EXAM_TAKEN`, que no es un atajo nuevo sino el mismo camino
+sin los nodos que dejaron de pertenecer a esta entidad.
+
+✅ **[ADR-038](decisions.md#adr-038), implementada en B6.7.4.** `REPLANNED` conserva activa la
+misma preparación y agrega una versión del plan; `CANCELLED` y `EXPLICITLY_ABANDONED` son cierres
+explícitos. La inactividad sola no transiciona la preparación.
 
 **Invariantes:**
 - Activar produce `ACTIVE` y **nada más**: no crea Action, Commitment, Evidence, Progress, protocolo
-  completo ni readiness.
+  completo ni readiness. Lo único que se anota además es **contra qué versión del protocolo corre**,
+  que no es crear un protocolo: sin eso, cambiar la versión vigente le reescribiría el recorrido a
+  alguien que ya empezó.
+- Replanificar el mismo examen no crea otra `ExamPreparation`: agrega una versión dentro del mismo
+  historial (`I7`).
+- Una propuesta de reentrada no mueve el paso. Aceptarla u override humano sí; pedir otra opción no.
+- Ninguna reentrada borra Evidence, completions ni progreso.
+- **La activación es siempre del estudiante.** El spec fuente lo fija: *"la misma entrada produce
+  siempre `RECOMMENDED` → CTA → `ACTIVE`"*. No existe camino que cree una preparación ya activa.
 - `READY_BY_PROTOCOL` significa que se cumplieron las condiciones del protocolo vigente.
   **No predice ni garantiza aprobación.** Nunca se dice "listo para rendir".
 - Volver a Cursado, al Overview o a Hoy **no** abandona la preparación.
-- Ver [ADR-011](decisions.md#adr-011) sobre la contradicción entre este `status` y la entidad
-  `PreparationReadiness`.
+- `BLOCKED` **no tiene salida declarada**, y no se le inventa una: el diagrama no dibuja el retorno y
+  `C01-025` sigue `OPEN`.
+- Abandonar explícitamente **conserva el historial**: es un estado, no un borrado. Sus completions quedan.
 
 ### 5.5 RiskSignal
 
+**Máquina canónica** — [ADR-034](decisions.md#adr-034), que cerró `C01-022`:
+
 ```
-OPEN → ACKNOWLEDGED → INTERVENTION_REQUIRED → RESOLVED
-                                            ↘ ESCALATED
+OPEN ──────────────► INTERVENTION_REQUIRED ──► RESOLVED
+ │                                          ↘  ESCALATED
+ └──► EXPIRED
+
+ACKNOWLEDGED  ·  legacy
 ```
 
-Una señal puede expirar si deja de ser relevante; se guarda la causa histórica.
+> ✅ **Implementada** el 2 de septiembre de 2026 (§7.1–§7.2 del plan). El resto de la integración
+> —`crmCaseId`, cierre y resolución en una transacción, validación de owner, outbox— sigue pendiente
+> en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md) §7.
+
+**La necesidad de una persona la declara la Plataforma**, desde `risk_rule.modo`, y **no depende de
+que alguien haya visto la señal**. Mientras el operador trabajaba acá, *"alguien la miró"* era un
+paso real del recorrido; con el operador en el CRM ([ADR-033](decisions.md#adr-033)) ese paso no
+tiene quién lo produzca.
+
+**`ACKNOWLEDGED` queda legacy y no se borra.** Ni el valor, ni la columna `acknowledged_at`, ni el
+evento, ni las filas que lo tengan: una señal histórica conserva su significado y sus salidas.
+Ninguna señal nueva entra ahí. **Hacerse cargo es un hecho de la `Intervention`** —§5.5.1—, y ya
+tenía dónde vivir desde la B6.
+
+**`EXPIRED` sale sólo de `OPEN`.** Al salir `ACKNOWLEDGED` del recorrido vivo, es la única puerta que
+queda: una señal que ya pide una persona no se vence sola.
 
 **Closed-loop obligatorio (Parte I §8.6):** toda señal relevante tiene causa → owner → playbook →
 SLA → intervención → outcome. *El dashboard no es el final del Risk Engine.*
+
+✅ **Implementado en la Fase B6** ([ADR-032](decisions.md#adr-032)), con tres reglas que salen del
+diagrama y que no son restricciones de más:
+
+- **`RESOLVED` sólo se alcanza desde `INTERVENTION_REQUIRED`, y sólo con una intervención que
+  registró outcome.** Una señal que se pudiera marcar resuelta sin que nadie la trabajara **es** el
+  tablero en verde con nada detrás.
+- **`EXPIRED` sale sólo de `OPEN`.** Una señal puede expirar si deja de ser relevante y se guarda la causa histórica; una
+  que **ya pidió una persona** no dejó de serlo, y vencerla borraría una obligación humana pendiente.
+  Lo ejecuta el reloj del lifecycle, sobre el `valid_until` que declaró quien la creó.
+- **`RESOLVED`, `ESCALATED` y `EXPIRED` son terminales.** Qué pasa después de escalar es `C01-022`.
+
+✅ **Una regla produce señales con criterio profesional** — [ADR-037](decisions.md#adr-037).
+
+`HP0-06-1` corre en `v4.0-psicopedagogia`: la segunda aparición comparable da `atencion` y la
+tercera da `intervencion`. No basta con compartir una etiqueta: la unidad de conteo incluye familia
+y objetivo/demanda; acelerar exige las cinco condiciones de corrección válida, y una recaída abre
+otro episodio sin borrar el anterior. Los umbrales siguen en `risk_rule.threshold_config`, nunca en
+el código.
+
+`HP0-06-2` y `HP0-06-3` **siguen en modo `HUMANA`**. `C01-021` permanece abierto para definir su
+operación, y los datos reales siguen bloqueados hasta el dictamen legal y el piloto con revisión,
+explicabilidad, accesibilidad y monitoreo de equidad.
+
+### 5.5.1 Intervention
+
+```
+open → acknowledged → closed
+```
+
+`data-model.md` §10 declara los tres estados y **no** su tabla de transiciones; el orden sale del
+Golden Path D del spec —*selecciona caso → contexto → intervención → resultado*—. Reconocer no es
+decorativo: es el momento en que una persona se hace cargo, y sin él *"cerrada"* no distingue una
+intervención trabajada de una despachada.
+
+**Cerrar, registrar el resultado y resolver la señal son una sola escritura** — ✅ implementado por
+[ADR-034](decisions.md#adr-034) §7.4. No existe camino que deje una intervención cerrada sin outcome,
+ni una señal pidiendo una persona que ya la atendió.
+
+**Y sólo la reconoce y la cierra su dueño** (§7.5). Que la tome un tercero dejaría
+`owner_operator_id` diciendo una cosa y el outcome diciendo que lo registró otro; la reasignación
+necesita un comando propio, y no existe en v1. `closed` es terminal: reabrirla sería editar un hecho con su resultado ya
+registrado — la misma regla de *No Cortar* que impide tocar un `Commitment` `MISSED`.
+
+⚠️ **Playbook y SLA quedan en `null` y el circuito lo declara.** `C01-044` es explícito —*"no se
+inventan valores"*— y su gate es antes del piloto. Un playbook inventado sería una instrucción
+escrita por un agente sobre qué hacer con un estudiante que está mal.
 
 ### 5.6 ProtocolStep
 
@@ -287,6 +401,20 @@ por el owner del protocolo (`ProtocolStepCompleted` o una lectura autoritativa e
 confianza, aceptar una recomendación, crear o cumplir un Commitment, iniciar o completar una Action,
 subir Evidence, ni ninguno de los estados `SUBMITTED`, `UNDER_REVIEW`, `SUFFICIENT`, `VALIDATED`,
 `ProgressUpdated`, recibir feedback, pasar tiempo o alcanzar una fecha.
+
+**Y un paso completado puede volver a trabajarse.** `HUMAN-P0-01 v1.0` confirma que en el tramo 9–18
+—estudio, recuperación, revisión y práctica— el recorrido es reentrante: el estudiante vuelve sobre
+un tema, corrige y recupera de nuevo, **varias veces sobre el mismo tema**. Repetir un paso **no es
+retroceder** y no se presenta como incumplimiento ni como pérdida de progreso.
+
+✅ **El modelo de datos ya lo admite** ([ADR-028](decisions.md#adr-028)): cada vuelta es una fila con
+su ordinal y su tema, y `ProtocolStepCompleted` se emite **una vez por vuelta**. La reentrancia viaja
+con el contenido del protocolo (`protocol_step.is_reentrant`), no con el código: un paso no
+reentrante conserva la garantía de completarse una sola vez.
+
+**Completar un paso no es progreso.** Sigue estando en la lista de arriba, y ahora que las
+completions existen importa más: `UX08` las muestra como pasos trabajados, nunca como dimensiones
+cambiadas.
 
 ---
 
@@ -319,6 +447,33 @@ subir Evidence, ni ninguno de los estados `SUBMITTED`, `UNDER_REVIEW`, `SUFFICIE
 | Resultado pendiente | *"Todavía no hay un cambio de progreso confirmado."* |
 | No-cambio confirmado | *"Esta actividad quedó registrada, pero no cambió las dimensiones de progreso."* |
 | Dato no disponible | *"No pudimos cargar el progreso. Tu evidencia conserva su estado."* |
+
+### 6.1 La escala breve, confirmada — y el vocabulario que todavía no cierra
+
+`HUMAN-P0-02 v1.0` ([ADR-025](decisions.md#adr-025)) confirma el **modelo mixto**: una **escala
+breve para el día a día**, y **las dimensiones separadas cuando hay desempeño observable**. La razón
+que dio la profesional es de carga, no de precisión: un registro simple que no le coma el tiempo al
+estudiante, y detalle sólo cuando hay evidencia concreta.
+
+Eso **no relaja** ninguna regla de abajo. La escala breve es **proyección de lectura**: se deriva,
+nunca se persiste como verdad, nunca reemplaza a las dimensiones y **nunca es la fuente de un
+`ProgressUpdated`**. La UI sintetiza; el modelo no colapsa.
+
+⚠️ **Los dos vocabularios todavía no se reconciliaron.** La profesional nombra **contacto,
+recuperación, aplicación y corrección**, con la **confianza aparte**. La tabla de arriba tiene
+**Recorrido, Práctica, Dominio, Confianza y Recencia**. No son el mismo conjunto:
+
+| Lo que dijo la profesional | Dónde cae hoy |
+|---|---|
+| Contacto con el contenido | **Recorrido** — coincide |
+| Recuperación sin ayuda | Colapsada dentro de **Dominio** |
+| Aplicación | Colapsada dentro de **Dominio** |
+| Corrección de errores | **No tiene eje propio** |
+| Confianza, aparte | **Confianza** — coincide, y ya está separada |
+| — | **Recencia** no es una dimensión que ella nombre |
+
+Traducir un conjunto al otro **es exactamente el tipo de inferencia que este producto no hace**.
+Queda abierto en `C01-019` (gate `H`), y hasta que se cierre **el modelo no gana ni pierde ejes**.
 
 ---
 
@@ -363,26 +518,27 @@ Todo dato académico que pueda cambiar o discutirse conserva:
 
 ---
 
-## 8. Reglas provisionales — `HUMAN-P0`
+## 8. Las ocho reglas `HUMAN-P0` — confirmadas por la psicopedagoga
 
-> ⚠️ **Las ocho reglas de esta sección son defaults provisionales pendientes de confirmación
-> profesional.** No son decisiones cerradas. Ningún agente de IA puede resolverlas ni cambiarlas:
-> requieren la voz de una psicopedagoga real. Ver [ADR-007](decisions.md#adr-007).
+> ✅ **Las ocho fueron respondidas por la psicopedagoga real el 31 de agosto de 2026.** Dejaron de
+> ser defaults provisionales del equipo: son **criterio profesional confirmado, `v1.0`**. Ver
+> [ADR-025](decisions.md#adr-025), y la **fuente literal** en
+> [`human-p0-source.md`](human-p0-source.md) — cuando esta tabla y esa transcripción discrepen,
+> **manda la transcripción**.
 >
-> **Se sigue usando cada default tal como está documentado** hasta que se confirme lo contrario.
-> Cuando un default afecta copy, criterio o comportamiento visible, la UI lo rotula internamente como
-> asunción provisional.
+> **Lo que sigue abierto son los residuos** de la columna derecha. Ésos siguen bajo la regla de
+> siempre: ningún agente de IA los cierra, se preguntan y no se aproximan.
 
-| ID | Cláusula | Qué decide | Default provisional en uso | Qué falta confirmar |
+| ID | Versión | Qué decide | Criterio confirmado | Residuo abierto |
 |---|---|---|---|---|
-| `HUMAN-P0-01` | `PROVISIONAL-HUMAN-P0-01 v0.1` | Contenido base de los 20 pasos del protocolo de examen | Usar la matriz `PE-PSY-01…20` completa como baseline, con granularidad y trazabilidad **por paso**, no como bloque indivisible | Obligatoriedad, dependencias, repetición y variantes H24 de cada uno de los 20 pasos, uno por uno |
-| `HUMAN-P0-02` | `PROVISIONAL-HUMAN-P0-02 v0.1` | Cómo se resume el seguimiento del aprendizaje | Modelo híbrido: escala breve para lectura rápida **+ dimensiones separadas** (contacto, recuperación, aplicación, corrección, confianza) cuando hay desempeño observable | Si la escala breve es aceptable como lectura secundaria reversible, o si debe eliminarse |
-| `HUMAN-P0-03` | `PROVISIONAL-HUMAN-P0-03 v0.1` | Si producir un apoyo (mapa, ficha, resumen) cuenta como aprendizaje | **No.** La recuperación activa sin ayuda es el resultado central; producir un apoyo es opcional y contextual | Excepciones por disciplina, nivel previo o modalidad donde construir la representación **sí** sea parte de la tarea evaluada |
-| `HUMAN-P0-04` | `PROVISIONAL-HUMAN-P0-04 v0.1` | Qué hacer cuando quedan menos de 24 h para el examen | Priorizar logística + **una única** actividad cognitiva de mayor retorno + proteger descanso. **Jerarquía adaptable, no checklist fijo** | Composición exacta del núcleo adaptable; qué es indelegable vs. omitible |
-| `HUMAN-P0-05` | `PROVISIONAL-HUMAN-P0-05 v0.1` | Qué cuenta como señal real de aprendizaje | Solo **desempeño observable** bajo condiciones y criterios claros. Fotos, checklists y mapas no alcanzan | Alcance exacto de "producciones admisibles" por disciplina. **Estado especial: `POTENTIALLY ANSWERED — REQUIRES SOURCE CONFIRMATION`** |
-| `HUMAN-P0-06` | `PROVISIONAL-HUMAN-P0-06 v0.1` | Cuándo se necesita revisión humana vs. corrección automática | Pauta objetiva cuando existe; **persona real** ante respuesta abierta, ambigua o de alto impacto | Definición operativa de "alto impacto"; qué producciones admiten autoevaluación |
-| `HUMAN-P0-07` | `PROVISIONAL-HUMAN-P0-07 v0.1` | Criterios de corrección para práctico y teórico escrito | Familias generales (procedimiento/resultado para práctico; precisión/relación conceptual/aplicación para teórico). **La pauta de la materia tiene precedencia** | Peso relativo de cada criterio; mínimos por disciplina |
-| `HUMAN-P0-08` | `PROVISIONAL-HUMAN-P0-08 v0.1` | Qué es el análisis posterior al examen | Revisión narrativa **breve y no culpabilizante**, sin número fijo de ajustes obligatorios | Momento exacto (antes/después de la nota); contenido mínimo obligatorio |
+| `HUMAN-P0-01` | `v1.0` | Contenido base de los 20 pasos del protocolo de examen | La secuencia `PE-PSY-01…20` **se confirma como base**, con granularidad y trazabilidad **por paso**. **Los pasos 9 a 18 no son lineales ni rígidos:** el orden es variable, modificable y transversal según contenido, modalidad y nivel de dominio, y **una misma acción puede repetirse varias veces sobre el mismo tema** | **Cuáles de los 20 son obligatorios.** La respuesta confirma la secuencia y no cambia ningún paso, pero no declara obligatoriedad caso por caso (`C01-031`) |
+| `HUMAN-P0-02` | `v1.0` | Cómo se resume el seguimiento del aprendizaje | **Modelo mixto:** una **escala breve** para el día a día **+ dimensiones separadas cuando hay desempeño observable**. Razón dada: mantener un registro simple que no le coma el tiempo al estudiante, y profundizar sólo cuando hay evidencia concreta de desempeño | **Cómo se reconcilian los dos vocabularios.** La profesional nombra *contacto, recuperación, aplicación y corrección* (+ confianza aparte); el modelo tiene las cinco de §6. No son el mismo conjunto (`C01-019`, gate `H`) |
+| `HUMAN-P0-03` | `v1.0` | Si producir un apoyo (mapa, ficha, resumen) cuenta como aprendizaje | Son **dos resultados separados dentro del mismo paso**, y **según el caso uno puede no aplicar**. Organizar el contenido y recuperarlo sin ayuda son **procesos cognitivos distintos**: una buena ficha no reemplaza la recuperación, y una buena recuperación no obliga a producir una ficha. **La técnica se usa cuando cumple una función concreta** — si el estudiante ya comprende y organiza el tema, exigirle producirla es tiempo perdido | **Si la recuperación también puede omitirse.** La opción dice *"uno puede no aplicar"* sin decir cuál; la justificación sólo cubre la ficha (`C01-033`) |
+| `HUMAN-P0-04` | `v1.0` | Qué hacer cuando quedan menos de 24 h para el examen | **Siete componentes:** situación real y logística · contenidos críticos · **una prueba breve sin ayuda** · priorización · práctica parecida al examen · **corrección de los errores importantes** · descanso y estrategia. *"Consolidar y no incorporar contenido nuevo"* supone un ideal donde **todo ya fue visto y recuperado**: si hay un **contenido central que nunca se trabajó, puede ser necesario abordarlo**, con expectativas realistas. El descanso se mide en **efectividad, no en horas** | **Si los siete son obligatorios o priorizables**, y en qué orden se sacrifican cuando no entran todos (`C01-034`) |
+| `HUMAN-P0-05` | `v1.0` | Qué cuenta como señal real de aprendizaje | **Confirmado, y con nombre propio: evidencia de trabajo ≠ evidencia de aprendizaje.** Un cronograma, una foto del material, un checklist, una ficha o un resumen **muestran que hubo actividad**; por sí solos **no permiten afirmar que el estudiante aprendió**. Hace falta una instancia que compruebe **qué puede hacer con ese contenido de manera autónoma** | **Qué tareas "exigen comprensión" por sí mismas.** La excepción está declarada, su alcance por disciplina no (`C01-035`) |
+| `HUMAN-P0-06` | `v1.0` | Cuándo se necesita revisión humana vs. corrección automática | **Selectiva y proporcional.** Lo comprobable **se automatiza**: no es pedagógicamente necesario que una persona mire cada entrega. **La persona entra por la situación del estudiante, no por el tipo de entrega** — error reiterado que exige corregir el método, no avanzar a pesar de las devoluciones, o factores subjetivos (frustración, inseguridad, desmotivación, ansiedad frente al examen). Ahí **ya no se trata de verificar si una respuesta está bien o mal, sino de entender qué le está pasando** | **Cuántas repeticiones hacen a un error "reiterativo"** y qué umbral dispara la intervención (`C01-036`, `C01-021`) |
+| `HUMAN-P0-07` | `v1.0` | Criterios de corrección para práctico y teórico escrito | Se conservan **las dos familias**, distintas entre sí — **práctico:** procedimiento, resultado, elección del método, resolver variaciones; **teórico escrito:** precisión, relaciones entre conceptos, aplicación, claridad, responder la consigna — **y la pauta de la cátedra manda cuando existe**, porque *"es lo que va a determinar qué se espera del estudiante en ese examen"* | **Peso relativo de cada criterio**, y qué pasa cuando la pauta de la cátedra **contradice** las familias generales (`C01-037`) |
+| `HUMAN-P0-08` | `v1.0` | Qué es el análisis posterior al examen | Separar **preparación, desempeño, estrategia y contexto**; registrar aprendizajes; **uno o más ajustes viables cuando correspondan, sin cantidad fija** — el *"exactamente dos cambios"* de la intervención #32 era un ejemplo, **no una regla**. Y **también se registra lo que funcionó y debe mantenerse** | **El momento**: antes o después de conocer la nota (`C01-038`) |
 
 ### 8.1 Consecuencia arquitectónica
 
@@ -394,19 +550,62 @@ provisional**. La propia fuente prohíbe hardcodearlos. Por eso:
 - No se deriva el paso actual desde la posición en una lista.
 - Cambiar la versión de un default **no reescribe historia**.
 
+**Esto ya se cobró dos veces.** Las respuestas del 31 de agosto cambiaron el contenido de cuatro de
+las ocho reglas. Y el 1 de septiembre entraron **los veinte pasos reales**
+([ADR-031](decisions.md#adr-031)), que reemplazaron a los doce provisionales: fue un `INSERT` y un
+`UPDATE is_current`, con la versión vieja **apagada y conservada** para las preparaciones que ya
+corrían contra ella. Hardcodeado, cada una de las dos habría sido migrar el dominio para cambiar una
+regla pedagógica.
+
+> **El protocolo vigente es `HUMAN-ROADMAP v1.0`**, transcripto literal en
+> [`roadmap-modo-examen-source.md`](roadmap-modo-examen-source.md) — con los tipeos de la autora
+> intactos y un test que rompe si alguien los corrige. Lo que la fuente **no** define
+> —evidencia esperada, criterio de cierre, obligatoriedad— entró vacío, no completado.
+
+### 8.2 El tramo 9–18 es reentrante — ✅ y el modelo ya lo admite
+
+`HUMAN-P0-01 v1.0` dice que en estudio, recuperación, revisión y práctica el estudiante **avanza,
+vuelve sobre un tema, recupera, detecta un error, corrige, practica, repasa y vuelve a recuperar**, y
+que **algunas de esas acciones pueden darse varias veces sobre el mismo tema**.
+
+El modelo de examen de [`data-model.md`](data-model.md) §10 asumía lo contrario: **una sola completion
+por paso**, `UNIQUE (exam_preparation_id, protocol_step_id)`. Un paso se completaba una vez y no
+volvía.
+
+✅ **[ADR-028](decisions.md#adr-028) lo cerró antes de la primera migración de la Fase B5.** El
+`UNIQUE` se cayó, cada vuelta es una fila con su `occurrence` y **su `topic_id`** —la fuente no dice
+"varias veces", dice *"varias veces sobre un mismo tema"*—, y la garantía vieja no se perdió: se
+volvió configurable en `protocol_step.is_reentrant`.
+
+Las consecuencias siguen siendo las mismas, y ahora tienen dónde verificarse:
+
+- **Volver sobre un tema no es retroceder.** Ninguna superficie presenta una repetición como
+  incumplimiento, recaída ni pérdida de progreso.
+- **El paso actual no se deriva de la posición en la lista** — ya era regla, y ahora además sería
+  falso: en el tramo central no hay "el siguiente".
+- **El orden depende del contenido, la modalidad y el nivel de dominio.** Un protocolo que fuerce una
+  única secuencia en 9–18 contradice el criterio profesional confirmado.
+
 ---
 
 ## 9. Otras reglas marcadas como provisionales o pendientes
 
-Además de las ocho `HUMAN-P0`, estas reglas visibles del producto corren sobre un default no cerrado:
+Las ocho `HUMAN-P0` ya no están en esta lista: [ADR-025](decisions.md#adr-025) las cerró. Estas
+reglas visibles del producto **sí** siguen corriendo sobre un default no cerrado:
 
 | Regla | Estado | Referencia |
 |---|---|---|
-| Activación de Modo Examen a los **14 días** | **Default UX documentado, no regla pedagógica rígida.** La UI **no calcula la ventana**: consume una señal ya emitida | `C01-024`, `SCP-01`/`SCP-02` |
-| Umbrales de `BUILDING` → `READY_BY_PROTOCOL` | Criterios generales definidos; **umbrales exactos pendientes** de psicopedagogía | `C01-029`, [ADR-011](decisions.md#adr-011) |
-| Obligatoriedad de `Reflection` | Configurable `OPTIONAL` / `REQUIRED` por Action o paso. **La configuración exacta no está cerrada** | `C01-051` (gate `H`) |
-| Secuencia y criterio de cierre del Exam Protocol | Abiertos deliberadamente | `C01-027` |
-| `TopicProgress` y resumen de materia | Semántica técnica pendiente | `C01-019` (gate `H`) |
+| Activación de Modo Examen a los **14 días** | **Default UX documentado, no regla pedagógica rígida.** La UI **no calcula la ventana**: consume una señal ya emitida. Desde la Fase B5 esa señal es concreta —una preparación en `RECOMMENDED`— y **nadie la emite todavía**: sin ella `UX07` dice que no hay recomendación, en vez de inventarse un umbral de días | `C01-024`, `SCP-01`/`SCP-02` |
+| Owner canónico de readiness | ✅ **Cerrado e implementado:** `PreparationReadiness` es la fuente canónica y `ExamPreparation` perdió sus tres estados. **Sigue sin card, sin score y sin cálculo**, porque los umbrales son otra cosa | ✅ [ADR-011](decisions.md#adr-011) |
+| Umbrales de `BUILDING` → `READY_BY_PROTOCOL` | Criterios generales definidos; umbrales exactos pendientes. **Ya hay insumo profesional** para fijarlos: `HUMAN-P0-04` y `HUMAN-P0-05` | `C01-029` |
+| Obligatoriedad de `Reflection` | **Tres estados**, no dos: `NO_CONFIGURADA` no ofrece nada, `OPTIONAL` ofrece la `CTA-016` y omitirla es válido, `REQUIRED` bloquea **sólo el submit dependiente**. Vive en la Action y en el paso del protocolo, **congelado al crearlos**; el default del loop diario es `OPTIONAL` | ✅ [ADR-026](decisions.md#adr-026) · residuo: en qué pasos del protocolo es obligatoria |
+| Secuencia y criterio de cierre del Exam Protocol | **La secuencia dejó de estar abierta** (`HUMAN-P0-01 v1.0`) y **el tramo reentrante ya tiene modelo** ([ADR-028](decisions.md#adr-028)). Sigue abierto **el criterio de cierre** | `C01-027` |
+| Dónde vive la **pauta de la cátedra** | ✅ **`assessment_criterion`, con Provenance completa.** Cargada por el estudiante entra `student`/`unverified` y no se eleva. Sigue abierto qué pasa cuando **contradice** las familias generales | ✅ [ADR-029](decisions.md#adr-029) · residuo: `C01-037` |
+| **El texto de los 20 pasos `PE-PSY`** | ✅ **Cargado el 1 de septiembre** desde el *Roadmap Modo Examen* de la psicopedagoga, verbatim y con test que lo ata a la fuente. Falta **su confirmación escrita de vigencia**, y hasta que llegue el rótulo dice *"vigencia todavía sin confirmar"* | ✅ [ADR-031](decisions.md#adr-031) |
+| **Qué pasos del protocolo se repiten** | Cargados **9–18**, por `HUMAN-P0-01 v1.0`. Leyendo sólo el Roadmap saldrían 14 y 15: la respuesta del cuestionario es más específica porque contesta por número de paso | [ADR-031](decisions.md#adr-031) · falta confirmación |
+| **Evidencia esperada de cada paso** | El Roadmap dice qué hacer, no qué se entrega. El [cuadro de acciones](cuadro-problemas-source.md) de la misma profesional lo propone y **no se carga**: no está mapeado uno a uno y conserva preguntas suyas sin resolver | `C01-027` |
+| **Cuáles pasos son obligatorios** | `protocol_step.requirement` es ternario y todos están en `NO_CONFIGURADA`. El booleano anterior afirmaba que los 20 eran obligatorios | `C01-031`, `C01-034` |
+| `TopicProgress` y resumen de materia | Semántica técnica pendiente, **más la reconciliación de vocabularios** que abre `HUMAN-P0-02` — ver §6 | `C01-019` (gate `H`) |
 | Contenido ejecutable de Action y Resource | Pendiente | `C01-008` (gate `H`) |
 
 ---
@@ -427,15 +626,39 @@ Además de las ocho `HUMAN-P0`, estas reglas visibles del producto corren sobre 
 
 **Mapeo canónico obligatorio:** `WF-S10 → UX08` y `WF-S11 → UX09`. **No existe `UX10`.**
 
-### 10.1 Superficies de Operador e Institución
+### 10.1 Superficies de Operador — **pertenecen al CRM**
 
-| ID | Nombre | Estado |
+**No están en el inventario de construcción de la Plataforma, y no van a estarlo**
+([ADR-033](decisions.md#adr-033)). El spec fuente ya las ubicaba ahí: la sección que las define se
+llama *"8. Wireframes low-fi — **Operador / CRM**"*, y el mockup de `WF-O01` lleva dibujado su propio
+encabezado, `ACHIEVE CRM · Cola de intervención`.
+
+| ID | Nombre | Dónde vive |
 |---|---|---|
-| `WF-O01` | Cola priorizada de intervención | No construida. Ver [ADR-012](decisions.md#adr-012) |
-| `WF-O02` | Contexto de estudiante (<10 s) | No construida |
-| `WF-O03` | Registrar intervención + outcome | No construida |
-| `WF-O04` | Revisión de evidencia | No construida |
-| `WF-I01` | Dashboard institucional mínimo | No construida |
+| `WF-O01` | Cola priorizada de intervención | **CRM** |
+| `WF-O02` | Contexto de estudiante (<10 s) | **CRM** — lo alimenta el flujo de contexto académico vivo |
+| `WF-O03` | Registrar intervención + outcome | **CRM** — el hecho canónico lo produce la Plataforma, por comando |
+| `WF-O04` | Revisión de evidencia | **CRM** |
+
+**El operador no interactúa con la Plataforma y no tiene sesión acá.** No es que falte construirla:
+no debe existir. A la Plataforma acceden únicamente los estudiantes que el CRM autoriza
+([`platform-integration-contract.md`](platform-integration-contract.md) §1). En las integraciones
+que correspondan, la Plataforma **autentica al CRM como sistema**, nunca a la persona.
+
+> `WF-O04` sale del alcance **como superficie de operador**, y nada más. El lifecycle `UNDER_REVIEW`
+> de `Evidence` sigue siendo dominio canónico de la Plataforma. Si el **Reviewer (R1)** de §4 —un rol
+> distinto del Operador— es o no un operador, sigue abierto.
+
+### 10.1.1 `WF-I01` — dashboard institucional · sin resolver
+
+| ID | Nombre | Dónde vive |
+|---|---|---|
+| `WF-I01` | Dashboard institucional mínimo | ⬜ **Abierto** |
+
+Está en la sección **9 — Institución** del spec, no en la 8, y su usuario es el **cliente B2B**, no
+el operador. La confirmación del CTO fue sobre superficies de operador y **no dispone de ésta**: el
+spec §18.1 le da al CRM la relación B2B, pero lo que `WF-I01` muestra son agregados académicos, que
+son de la Plataforma. Se decide aparte ([ADR-033](decisions.md#adr-033)).
 
 ### 10.2 Precedencia operativa del Hero (UX01)
 
@@ -448,13 +671,15 @@ La selección de qué ocupa el Hero separa dos responsabilidades:
 ```
 1. Action IN_PROGRESS                          → "Continuar"
 2. Action EVIDENCE_PENDING                     → "Subir evidencia"
-3. Commitment CONFIRMED/DUE, o rescate         → "Ver compromiso" / "Empezar"
-   materializado
+3. Commitment CONFIRMED/DUE                    → "Ver compromiso" si es próximo
+                                                  "Empezar" si es startable now
+                                                  "Empezar rescate" si es un rescate
 4. RESCUE_REQUIRED sin rescate concreto        → "Retomar"
 5. Commitment MISSED sin resolución            → "Retomar"
 6. ACTION_RECOMMENDED (principal del ADE)      → "Comprometerme"
 7. ACADEMIC_CONTEXT_INCOMPLETE que bloquea     → "Completar información"
-8. Evidence informativa sin acción posterior   → "Ver evidencia" / "Ver avance"
+8. Evidence informativa sin acción posterior   → "Ver evidencia" si está enviada
+                                                  "Ver avance" si está validada
 9. NO_ACTION_AVAILABLE                         → "Ver materias"
 ```
 
@@ -462,14 +687,37 @@ La selección de qué ocupa el Hero separa dos responsabilidades:
 > examen, riesgo, dificultad, brecha, antigüedad o starvation. Los estados de riesgo y de examen
 > activo son **modificadores**, no reemplazantes: cambian el estado general y el contexto, no la CTA.
 
-Esta función ya está implementada como `selectHeroLevel()` en
-`components/screens/hoy-autogestion.tsx`.
+Esta función vive como **función pura** en
+[`lib/domain/precedence.ts`](../lib/domain/precedence.ts), extraída de
+`components/screens/hoy-autogestion.tsx` en la Etapa 0.2. Los nueve niveles tienen test propio.
+
+✅ **La función cubre los nueve niveles y `UX01` los dibuja todos** desde la Etapa 0.7.
+
+**Los discriminadores de los niveles 3 y 8** los fija `product-spec-source.md` §VI.1 §3.2 y los
+cerró [ADR-017](decisions.md#adr-017): el nivel 3 se decide **por lifecycle y tiempo acordado**, no
+por prioridad académica; el nivel 8, **por lifecycle de la Evidence**.
+
+> **`RESCUE_MATERIALIZED` no es un nivel propio.** §VI.1 §3.2: *"no describe por sí solo qué necesita
+> hacer el alumno ahora, por eso participa en la precedencia según su lifecycle real"*. Una Action de
+> rescate `IN_PROGRESS` es nivel 1; `EVIDENCE_PENDING`, nivel 2; un Commitment de rescate
+> `CONFIRMED`/`DUE`, nivel 3. **Un compromiso actual no es desplazado por un rescate anterior sólo
+> por tratarse de un rescate.**
+
+---
 
 ### 10.3 Registro canónico de CTAs
 
 `CTA-001`…`CTA-018`. El registro normativo completo, con condición de aparición, acción solicitada,
 destino, resultado autoritativo, fallback y estado de error, vive en `product-spec-source.md`
-Parte III §5.
+Parte III §5. Su **transcripción ejecutable** está en
+[`lib/navigation/cta-registry.ts`](../lib/navigation/cta-registry.ts), con un test que verifica que
+cada condición siga siendo literalmente la del spec.
+
+**Aparición ≠ habilitación** (Etapa 0.3). Si la *condición de aparición* no se cumple, la CTA **no se
+renderiza** — no en gris, no oculta: no está. Si aparece pero falta algo que el estudiante puede
+completar en esa misma pantalla, se renderiza **deshabilitada** con tratamiento propio (`A-08`). El
+propio registro distingue los dos casos: el estado de error de `CTA-017` dice *"ocultar **o** no
+habilitar"*.
 
 | CTA | Condición | Resultado autoritativo |
 |---|---|---|
@@ -494,10 +742,40 @@ Parte III §5.
 
 ---
 
+### 10.4 Qué muestra `UX01`, además del Hero
+
+Desde [ADR-093](decisions.md#adr-093) y [ADR-094](decisions.md#adr-094), `UX01` es un **tablero**. El
+orden es el de §10.2 —conducta primero, contexto después— y **la única CTA primaria sigue siendo la
+del Hero** (`I-06`).
+
+| Bloque | Qué afirma | Qué NO afirma |
+|---|---|---|
+| **Tu día** | Clases de hoy con su hora, su aula y `Un. N`; unidades dadas sin evidencia; evaluaciones, compromisos y franjas declaradas de hoy | No agenda nada: no propone cuándo estudiar y no tiene botones. **`Un.` es la unidad de la última clase dada, no la de hoy** |
+| **Riesgos detectados** | Cinco reglas sobre fechas, temas, avance y horas declaradas (`PLAN-v0.1`) | **No son `RiskSignal`**: no se persisten, no emiten eventos, no abren intervención y **no cambian el estado general**. `C01-021` sigue abierto |
+| **Próximas evaluaciones** | Por materia: tipo, fecha, modalidad, días que faltan y cobertura, con la nota al pie de [ADR-072](decisions.md#adr-072) | La cobertura **no es readiness** ni un pronóstico |
+
+⚠️ **Nada de esto rankea.** El orden es por próxima evaluación —el que ADR-072 aceptó— y los riesgos
+se ordenan **por fecha, no por gravedad**: elegir qué riesgo pesa más no lo decidió nadie.
+
+⚠️ **En rescate o incumplimiento, todo el tablero se repliega.** Al que está atrasado se le muestra
+menos, no más ([ADR-089](decisions.md#adr-089) §4).
+
+---
+
 ## 11. Product Event Model
 
 Eventos aprobados. Los nombres son provisionales; lo obligatorio es preservar **actor, timestamp,
 institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`C01-023`, `OPEN`).
+
+> **El catálogo ejecutable vive en `lib/domain/product-events.ts`** desde la Etapa B3.2, con **la
+> cobertura real**: cuáles se emiten hoy, cuáles esperan a qué fase y cuáles se le muestran al
+> estudiante en la Bitácora. **De los 23 se emiten 11** desde la Fase B5: los ocho del loop diario,
+> `RescueSucceeded` (B3.3) y los dos de examen —`ExamPreparationActivated` y `ProtocolStepCompleted`—.
+> Hay guard en **tres** direcciones: ningún evento emitible queda sin declarar, ninguno declarado como
+> emitido se queda sin emisor, y **nada declarado como pendiente se está emitiendo ya**. El tercero se
+> agregó en la B5, cuando esos dos eventos pasaron a emitirse y el catálogo los siguió declarando
+> *"pendientes por falta de tablas de examen"* en verde. Un catálogo que miente sobre lo que ya
+> ocurre es peor que uno vacío.
 
 | Evento | Cuándo |
 |---|---|
@@ -514,9 +792,9 @@ institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`
 | `EvidenceSubmitted` | Evidencia recibida. **Una vez por Evidence canónica** |
 | `EvidenceValidated` | Evidencia validada |
 | `ProgressUpdated` | Cambió `TopicProgress`/`CourseProgress`. **Único evento que habilita mostrar un cambio confirmado** |
-| `ExamPreparationRecommended` | Modo Examen recomendado |
-| `ExamPreparationActivated` | El alumno activó la preparación |
-| `ProtocolStepCompleted` | Hito cerrado |
+| `ExamPreparationRecommended` | Modo Examen recomendado. ✅ Emitido desde la Etapa B6.12 por el reloj: **14 días calendario o menos, incluyendo el día 14**, una sola vez por intento ([ADR-048](decisions.md#adr-048)) |
+| `ExamPreparationActivated` | El alumno activó la preparación. ✅ Emitido desde la Fase B5 |
+| `ProtocolStepCompleted` | Hito cerrado. ✅ Emitido desde la Fase B5, **una vez por vuelta** ([ADR-028](decisions.md#adr-028)) |
 | `SimulationCompleted` | Simulación registrada |
 | `RiskSignalCreated` | Señal generada |
 | `InterventionStarted` / `InterventionResolved` | Intervención humana |
@@ -529,6 +807,37 @@ institución, objeto relacionado, causa/origen y outcome** cuando corresponda (`
 `EvidenceSufficient`, `EvidenceInsufficient`, `EvidenceResubmissionRequested`, `EvidenceDeleted`,
 `RescueCreated` ni `HumanFollowupRequested`. Si la telemetría necesita observar upload, error o
 funnel, su naming queda pendiente y **no reemplaza** a los eventos de dominio.
+
+> ### ✅ Resuelto — [ADR-027](decisions.md#adr-027), 1 de septiembre de 2026
+>
+> **Los ocho entraron al modelo.** La lista de arriba decía que no existían `CommitmentDue`,
+> `CommitmentCompleted`, `CommitmentClosed`, `EvidenceUnderReview`, `EvidenceSufficient`,
+> `EvidenceInsufficient`, `EvidenceResubmissionRequested` ni `CommitmentRescueCreated` — y el backend
+> los emitía desde B1/B2, uno por cada transición de estado.
+>
+> No se podía sostener un catálogo normativo que negara ocho hechos **almacenados de forma
+> append-only y que sostienen experiencias visibles para el estudiante**: *"En revisión"*, *"Cumplió
+> el criterio"*, *"Necesita cambios"* y *"Te pidieron volver a entregarla"* salen de ahí.
+>
+> **Son eventos de `TRANSICION`, no de negocio**, y esa clasificación es la mitad de la decisión.
+
+## 11.1 Los tres niveles del modelo — `ADR-027`
+
+Aprobar los eventos de transición no significa mezclarlos con los de negocio. El catálogo ejecutable
+—`lib/domain/product-events.ts`— clasifica cada hecho, y hay guard de que ninguno quede sin nivel:
+
+| Nivel | Qué es | Ejemplos |
+|---|---|---|
+| **`NEGOCIO`** | Lo que el producto existe para producir y medir | `ActionRecommended`, `ProgressUpdated`, `RescueSucceeded`, `ProgressNoChangeConfirmed` |
+| **`TRANSICION`** | El objeto cambió de estado. Trazabilidad del lifecycle | `CommitmentDue`, `EvidenceSufficient`, `ActionReplaced` |
+| **`TELEMETRIA`** | Uso e interacción. **Ninguno instrumentado**, y su naming sigue pendiente (`C01-023`) | `CourseViewed` |
+
+**Los nombres históricos no se cambian.** `product_event` es append-only: renombrar dejaría filas
+viejas que ningún consumidor sabe leer. Por eso `CommitmentCreated` de §16 sigue emitiéndose como
+`CommitmentConfirmed`, y cualquier renombre futuro necesita un plan de migración.
+
+**Lo que sigue abierto en `C01-023`:** el naming de telemetría, y la instrumentación de los 14
+eventos del P0 que esperan la fase que los produce —examen, riesgo, intervención, consentimiento—.
 
 ---
 
@@ -606,3 +915,28 @@ Lista consolidada de frases que el producto **no dice nunca**, con la razón:
 | *"Empezar a estudiar"* al activar Modo Examen | Activar no es estudiar |
 | *"Tu plan fue generado"* | Activar no crea un plan |
 | *"Completaste el paso"* por abrirlo | Abrir no completa |
+| *"Tu resumen / tu ficha / tu cronograma demuestra que aprendiste"* | `HUMAN-P0-05 v1.0`: eso es **evidencia de trabajo**, no de aprendizaje |
+| *"Retrocediste"* / *"Volviste atrás"* al repetir un paso del tramo 9–18 | `HUMAN-P0-01 v1.0`: el recorrido es reentrante. Volver sobre un tema es el método, no una recaída |
+| *"Te falta el resumen para completar el paso"* cuando el apoyo no aplica | `HUMAN-P0-03 v1.0`: producir un apoyo y recuperar son resultados separados; uno puede no aplicar |
+| *"Hacé dos cambios para el próximo examen"* | `HUMAN-P0-08 v1.0`: la cantidad de ajustes **no es fija**; salen del análisis o no salen |
+| *"No incorpores ningún contenido nuevo"* como prohibición absoluta a menos de 24 h | `HUMAN-P0-04 v1.0`: un contenido central nunca trabajado **puede** abordarse, con expectativas realistas |
+| *"Dormí 8 horas"* como requisito | `HUMAN-P0-04 v1.0`: el descanso se cuida en **efectividad**, no en una cantidad fija de horas |
+| *"No hay una acción recomendada"* **a un estudiante sin materias** | [ADR-042](decisions.md#adr-042): *"el sistema todavía no está en condiciones de evaluar eso"*. Es la misma disciplina de *sin datos no es cero*: **no evaluado no es lo mismo que evaluado y vacío**. El texto que sí corresponde está en §13.1 |
+| *"Tu WhatsApp está vinculado"* / *"Hay un operador asignado"* / *"Te van a escribir"* | [ADR-042](decisions.md#adr-042) §5-6: la Plataforma **no observa** el estado del CRM. La confirmación sólo puede decir *"Guardamos tu número"* o *"Recibimos tu solicitud"* |
+
+### 13.1 · El estudiante recién dado de alta, sin materias
+
+**Texto aprobado por el Product Owner**, literal ([ADR-042](decisions.md#adr-042); fuente:
+[`respuesta-po-flujos-crm-source.md`](respuesta-po-flujos-crm-source.md)). Entró al inventario con la
+Fase B6.14, que es cuando la etapa se construyó:
+
+> **Estamos preparando tu información académica.**
+> Todavía no contamos con información suficiente para recomendarte una acción. Te avisaremos cuando
+> tu recorrido esté listo.
+
+⚠️ **No lleva CTA.** No hay nada que el estudiante pueda apretar: el propio texto dice que le vamos a
+avisar. Ofrecer *«Ver materias»* cuando no hay materias sería una CTA que lleva a un vacío, y
+`AGENTS.md` §2.2 es explícito — una CTA cuya condición de aparición no se cumple **no se renderiza**.
+
+En el código vive en `lib/content/es-AR.ts` (`HOY.PREPARANDO.*`) y lo produce la variante
+`PREPARANDO_INFORMACION` del nivel 7. **Los nueve niveles de §10.2 siguen siendo nueve.**

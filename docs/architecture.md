@@ -2,14 +2,15 @@
 
 **Documento:** `docs/architecture.md`
 **Rol:** owner canónico de la arquitectura del repositorio.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 3 de septiembre de 2026
 
 > ⚠️ **Estado de este documento.** La arquitectura del **Track A** está **decidida y aprobada**
-> ([ADR-008](decisions.md#adr-008), 28 ago 2026). Para el **Track B** se recibió un diseño objetivo
-> concreto —Supabase gestionado detrás de un backend TypeScript en tres capas— y un contrato vigente
-> de autorización con el CRM. Se registran acá como insumos autoritativos para decidir, pero
-> [ADR-005](decisions.md#adr-005) sigue `PENDING`: nada del Track B se implementa hasta su aceptación,
-> y ningún flujo con personas reales se habilita mientras [ADR-006](decisions.md#adr-006) siga abierto.
+> ([ADR-008](decisions.md#adr-008), 28 ago 2026). La arquitectura del **Track B** también está
+> ratificada e implementada sobre datos sintéticos: Supabase detrás de un backend TypeScript en tres
+> capas, scoping institucional, Storage privado de `Evidence` y mapping manual de `institutionId`.
+> [ADR-005](decisions.md#adr-005) está `ACCEPTED`; sólo la operación/runtime de producción sigue
+> `DEFERRED`. Ningún flujo con personas reales se habilita mientras
+> [ADR-006](decisions.md#adr-006) siga abierto.
 
 ---
 
@@ -25,7 +26,10 @@ Ninguna superficie rankea, prioriza, calcula elegibilidad ni genera una `Action`
 
 **Consecuencia de implementación:** el frontend no contiene lógica de priorización académica.
 Contiene, como máximo, **precedencia operativa de lifecycle** — que es determinista, está
-especificada en `product.md` §10.2, y ya vive como función pura (`selectHeroLevel`).
+especificada en `product.md` §10.2, y vive como función pura en `lib/domain/precedence.ts`.
+
+Un fixture declara **la condición del dominio**, nunca la respuesta: el nivel del Hero lo calcula
+`selectHeroLevel` en la proyección, y un test lo verifica escenario por escenario.
 
 Si el backend devuelve varias recomendaciones sin una principal, eso es un **error de contrato**: la
 UI muestra un error técnico, **no** elige una.
@@ -75,7 +79,8 @@ decoración de la vista. Ninguna capa eleva un `verification_status`.
 ### 2.1 Objetivo
 
 Una experiencia clickeable de las 9 superficies `UX01`–`UX09`, con fixtures sintéticos, sin backend,
-apta para focus groups y test de comprensión de 10 segundos en 360 px.
+apta para focus groups y test de comprensión de 10 segundos en desktop, con 360 px como piso
+obligatorio de la variante móvil ([ADR-014](decisions.md#adr-014)).
 
 ### 2.2 Stack
 
@@ -86,7 +91,7 @@ Decidido por [ADR-008](decisions.md#adr-008) (`ACCEPTED`).
 | Framework | **Next.js 16 App Router** (`next dev` / `next build`) | ✅ Decidido — reemplaza `vinext` + Cloudflare Workers |
 | React | **19.2** | Heredado, confirmado |
 | Estilos | **Tailwind v4 CSS-first** (`@theme inline`, `@utility`, sin `tailwind.config.js`) | Heredado, confirmado |
-| Componentes | **shadcn/ui "new-york"** vendorizado, 80 componentes | Heredado, confirmado |
+| Componentes | **shadcn/ui "new-york"** vendorizado, 61 componentes | Heredado, confirmado |
 | Iconos | `lucide-react` | Heredado |
 | Validación | `zod` | Heredado |
 | Tests | **Vitest** + Testing Library | ✅ Decidido — alinea con Dashboard_Achieve |
@@ -107,14 +112,27 @@ Achieve_Platform/
 │   ├── roadmap.md               ← fases y etapas
 │   ├── decisions.md             ← ADRs
 │   ├── domain-translation-dd1-dd10.md  ← respuestas DD1–DD10
-│   ├── pending-decisions-annex.md   ← las 51 C01 + 8 HUMAN-P0 (documento vivo)
+│   ├── pending-decisions-annex.md   ← las 51 C01: 41 abiertas, 9 respondidas, 1 cerrada
+│   ├── legal-package.md             ← las preguntas para asesoría jurídica
+│   ├── agenda-cierre-psicopedagoga.md ← los 8 residuos de ADR-025
+│   ├── brief-adr-008-seguridad.md   ← el brief del CTO para las 3 `high`
+│   ├── human-p0-source.md           ← respuestas de la psicopedagoga, literales
 │   ├── product-spec-source.md       ← spec maestro (referencia, no se edita)
 │   └── design-system-source.md     ← manual de diseño (referencia, no se edita)
 │
 ├── app/
 │   ├── layout.tsx
+│   ├── page.tsx                 ← redirige a /hoy
 │   ├── globals.css              ← tokens del sistema visual · REUSADO
 │   └── (student)/               ← rutas del Golden Path
+│       ├── layout.tsx
+│       ├── hoy/                 ← UX01
+│       ├── materia/             ← UX02
+│       ├── accion/              ← UX03
+│       ├── compromiso/          ← UX04
+│       ├── evidencia/           ← UX05
+│       ├── progreso/            ← UX06
+│       └── examen/              ← UX07–UX09 · Etapas 0.4–0.6
 │
 ├── components/
 │   ├── ui/                      ← shadcn vendorizado · REUSADO · no se edita
@@ -123,8 +141,9 @@ Achieve_Platform/
 ├── lib/
 │   ├── utils.ts                 ← cn() · REUSADO
 │   ├── domain/                  ← tipos y máquinas de estado (puras, sin I/O)
-│   ├── fixtures/                ← catálogo de escenarios sintéticos
-│   └── navigation/              ← grafo del Golden Path + registro de CTAs
+│   ├── content/                 ← el copy, con ID tipado (regla C-07)
+│   ├── navigation/              ← grafo del Golden Path + registro de las 26 CTAs
+│   └── fixtures/                ← catálogo de escenarios sintéticos
 │
 └── hooks/
 ```
@@ -140,8 +159,10 @@ Achieve_Platform/
                                 │ props tipadas
 ┌───────────────────────────────┴──────────────────────────────────┐
 │  lib/navigation/              Golden Path                         │
-│  Grafo de transiciones UX01–UX09. Registro de CTAs con su         │
-│  condición de aparición y su destino. Precedencia operativa.      │
+│  Grafo de transiciones con dos clases de arista —canónica y de    │
+│  retorno seguro—, ambas hacia nodos reales. Registro de las 19    │
+│  CTAs con su condición de aparición, habilitación y destino.      │
+│  NO importa lib/fixtures/: la dirección es fixtures → navigation.  │
 └───────────────────────────────┬──────────────────────────────────┘
                                 │ lee escenario
 ┌───────────────────────────────┴──────────────────────────────────┐
@@ -167,10 +188,10 @@ de presentación.
 |---|---|---|
 | `app/globals.css` | `app/globals.css` | **Verbatim.** Tiene auditoría de contraste anotada |
 | `vendor/shadcn-tailwind-4.13.0.css` | `vendor/` | Verbatim |
-| `components/ui/*` (80) | `components/ui/*` | Verbatim. **No se editan** (registro vendorizado) |
+| `components/ui/*` (61) | `components/ui/*` | Verbatim. **No se editan** (registro vendorizado) |
 | `components/screens/design-system.tsx` | idem | Verbatim + se extiende con primitivas faltantes |
 | `components/screens/{hoy,materia,proxima,compromiso,evidencia,progreso}.tsx` | idem | **Parametrizados con props tipadas.** El JSX y el copy se preservan |
-| `components/screens/hoy-autogestion.tsx` → `selectHeroLevel()` | `lib/domain/precedence.ts` | Extraída como función pura y ampliada a los 9 niveles |
+| `components/screens/hoy-autogestion.tsx` → `selectHeroLevel()` | `lib/domain/precedence.ts` | ✅ Extraída como función pura en la Etapa 0.2. Ya cubría los 9 niveles; lo que faltaba era renderizarlos |
 | `components/screens/recorrido-diseno-visual.tsx` | `lib/navigation/` | **Reemplazado.** Es un pager lineal de 6 pasos, no el grafo del Golden Path |
 | `lib/utils.ts`, `hooks/use-mobile.ts` | idem | Verbatim |
 | `lib/targeted-correction.ts` | — | **Descartado como código.** `evidenceOwnerTransitions` se hereda como especificación en `data-model.md` |
@@ -184,16 +205,19 @@ de presentación.
   sesión y el reset lo devuelve al inicial.
 - **Cero datos reales.** Solo identificadores sintéticos (`ACT-SYN-*`, `COM-SYN-*`, `EVD-SYN-*`) y
   nombres genéricos.
-- **Mobile-first a 360 px.** El test de 10 segundos corre sobre el primer viewport.
+- **Desktop-first** ([ADR-014](decisions.md#adr-014)). El test de 10 segundos corre sobre el primer
+  viewport de desktop; **360 px es el piso obligatorio** de la variante móvil. El contrato de orden
+  semántico de `design-system.md` §6.1 rige en los dos anchos.
 - **Una sola CTA primaria por pantalla y por estado.**
 
 ---
 
-## 3. Arquitectura del Track B — diseño objetivo pendiente de aceptación
+## 3. Arquitectura del Track B — baseline implementada
 
-> **Todo lo que sigue define el diseño objetivo recibido, no una autorización para implementarlo.**
-> Requiere [ADR-005](decisions.md#adr-005) `ACCEPTED`. La política de privacidad, consentimiento,
-> retención y visibilidad de datos reales sigue bloqueada por [ADR-006](decisions.md#adr-006).
+> **Todo lo que sigue define la arquitectura vigente del MVP sintético.**
+> [ADR-005](decisions.md#adr-005) está `ACCEPTED` y B1 la implementó. La política de privacidad,
+> consentimiento, retención y visibilidad de datos reales sigue bloqueada por
+> [ADR-006](decisions.md#adr-006).
 
 ### 3.1 Requisitos que cualquier opción debe cumplir
 
@@ -248,6 +272,8 @@ en el owner de las reglas:
 - La autorización fina y el scoping por institución/recurso ocurren en el backend.
 - Todas las tablas habilitan RLS **deny-by-default** para cerrar la API autoexpuesta por Supabase.
   Como `service_role` saltea RLS, esa política es defensa en profundidad, no el control primario.
+- Los escritores atómicos repiten el scope de la sesión en su predicado. En operaciones de
+  estudiante no alcanza con `institution_id`: también validan `student_id` contra el recurso.
 - Storage se usa para Evidence cuando su contrato y política de acceso estén cerrados.
 
 ### 3.4 Fronteras del frontend y Realtime
@@ -298,7 +324,7 @@ dos requests concurrentes no violen el resultado.
 El acoplamiento a Supabase queda confinado a Repositories, proveedor de JWT, Storage y transporte de
 Broadcast. Cambiar uno de ellos no debe modificar las reglas de Service.
 
-Estructura orientativa, ajustable al runtime que finalmente acepte ADR-005:
+Estructura orientativa. El runtime físico quedó explícitamente movible en la aceptación de ADR-005:
 
 ```text
 backend/src/
@@ -319,27 +345,178 @@ capa de servicio propia. Desplaza dos aspectos de la propuesta anterior:
 - Las reglas de dominio dejan de proponerse como triggers; los triggers quedan limitados a funciones
   técnicas que no deciden el negocio.
 
-La elección todavía no es ejecutable: ADR-005 debe ratificar proveedor/runtime, aislamiento,
-Storage y operación. Hasta entonces se conserva como diseño objetivo y no se crean migraciones.
+Proveedor, aislamiento y capas quedaron ratificados por ADR-005. Storage privado y las migraciones
+locales ya están implementados; el runtime operativo de producción sigue `DEFERRED`.
 
-### 3.9 Frontera Plataforma ↔ CRM
+### 3.9 El código que hoy la implementa
+
+Actualizado el 5 de septiembre de 2026, con B1–B6.14 completas en su alcance disponible y B2b en
+2/3. **§3.2 describe el diseño; esto dice dónde vive**, para no tener que deducirlo del `grep`.
+
+```text
+app/
+├── (student)/            ← las nueve superficies. Piden a /api/* con Bearer y
+│                            dibujan `Ausencia` si la carga falla: nunca el fixture
+└── api/                  ← Controller. Valida sesión, llama a UN Service, traduce a HTTP
+    │
+    │  ── Con JWT del estudiante ──────────────────────────────────────────
+    ├── hoy · materia · accion · compromiso · evidencia · progreso
+    ├── tablero           ← GET. El tablero de `UX01` (ADR-093) con el cuadro de
+    │                        hoy (ADR-094). **Se pide APARTE de `hoy`**: quien lo
+    │                        quiere lo paga, y si falla `UX01` se dibuja sin él
+    ├── reflexion         ← POST. La Reflection existe y se escribe por acá.
+    │                        NO hay formulario: la superficie no está construida
+    ├── rescate           ← POST. La salida de un `MISSED`. Empieza OTRO objeto;
+    │                        el incumplido sigue `MISSED` para siempre
+    ├── renegociacion     ← POST. Las cinco condiciones de ADR-046
+    ├── reenvio           ← POST. Del estudiante. Distinto de `pedido-de-reenvio`:
+    │                        juzgar que algo no alcanza no obliga a pedir otra cosa
+    ├── examen/           ← Modo Examen. Activación y paso; replanificación y
+    │                        reentrada explicada en dos tiempos
+    ├── alta/             ← El tramo de alta (B6.14): whatsapp · carrera · materias.
+    │                        El gate es un `409 ALTA_INCOMPLETA` del BACKEND, y las
+    │                        nueve rutas lo devuelven. Un gate en el cliente no es un gate
+    ├── catalogo/plan     ← GET. El plan de estudios que el alta ofrece
+    ├── sesion            ← alta de la sesión sintética, fuera de las nueve
+    │
+    │  ── Con secreto de SERVICIO: no lo dispara una persona con superficie ──
+    ├── recomendacion     ← POST. El disparador del ADE. Lo que escriba pasa por
+    │                        el validador determinista ANTES de materializar
+    ├── validacion        ← POST. Registra la validación y el progreso.
+    │                        ⚠️ `VALIDATED` NO produce `ProgressUpdated`
+    ├── observacion/      ← POST + correccion/. Registrar un error es de quien
+    │                        evalúa la entrega, y ese rol no tiene superficie acá.
+    │                        La corrección es append-only
+    ├── pedido-de-reenvio ← POST. Del que evalúa. MOTIVO OBLIGATORIO.
+    │                        `actor_id` va `null`: es identidad externa sin FK
+    ├── corroboracion     ← POST. Eleva procedencia con auditoría
+    ├── apoyo · escalamiento · revision-temprana
+    │                     ← POST. El circuito de riesgo e intervención
+    ├── examen/reentrada/propuesta
+    │                     ← POST. Explicar primero; mover el paso sólo al aceptar
+    └── reloj             ← POST. No lo dispara una persona. Además de los
+                             compromisos, expira las señales vencidas
+
+    (y `prueba/alta` ← ANDAMIO, no producto. Sólo con `MODO_PRUEBA=1`;
+     sin la variable la ruta responde 404. Se borra cuando ADR-006 abra)
+
+lib/
+├── client/               ← el cliente de /api/*: token, tipo suma de respuesta, hook
+├── domain/               ← PURO. Tipos, máquinas de estado, precedencia,
+│   ├── product-events.ts    el Product Event Model (§16) con su cobertura
+│   ├── riesgos-de-planificacion.ts
+│   │                        las cinco reglas de `UX01` (ADR-093). NO es el Risk
+│   │                        Engine: no persiste, no emite y no llama a nadie
+│   ├── cuadro-de-hoy.ts     clases, «podés avanzar» y horarios del día (ADR-094)
+│   └── view-models.ts       lo que cada pantalla recibe
+└── server/
+    ├── composicion.ts    ← composition root: EL único lugar que ata implementaciones
+    ├── servicios/        ← reglas, transacciones, eventos. No leen headers ni SQL
+    │   ├── operadores.ts    PUERTO al directorio del CRM. TRANSITORIO: ADR-033 lo dejó
+    │   │                    superado en dirección, pendiente de retiro
+    │   ├── auditoria.ts     PUERTO de `audit_log`. Distinto de `product_event`:
+    │   │                    uno dice qué le pasó al estudiante, el otro quién tocó qué
+    │   ├── reiteracion.ts   la regla profesional HP0-06-1. Umbrales y denominador
+    │   │                    llegan de configuración versionada, no viven acá
+    │   ├── proyeccion-*     traducen estado persistido al view model de cada superficie
+    │   ├── hechos.ts        la traducción de un hecho a entrada visible. UNA, para UX02 y UX06
+    │   ├── tiempo.ts        formato en la zona del estudiante. El formato es presentación
+    │   └── transiciones.ts  el núcleo compartido: leer, validar, compare-and-swap, publicar
+    └── repositorios/     ← única capa que toca Postgres. No decide permisos ni transiciones
+
+supabase/migrations/      ← 98 migraciones. Una aplicada NO se edita: se reemplaza
+                             la función desde una nueva
+scripts/                  ← db:verify — 545 comprobaciones que npm test no puede hacer
+```
+
+**Una lectura, una función de base.** Las nueve superficies tienen la suya —`estado_del_dia`,
+`estado_de_materia`, `estado_de_accion`, `estado_de_compromiso`, `estado_de_evidencia`,
+`estado_de_progreso`, `estado_de_activacion`, `estado_de_preparacion` y `estado_de_paso`— porque
+varias lecturas por pantalla dan una foto inconsistente entre sí. El
+historial es la excepción a la regla de *una por superficie*, y a propósito: `hechos_de_cursada()` la
+comparten `UX02` y `UX06`, porque `VI.6` §8.3 dice que **no existe una segunda fuente histórica**.
+
+**El reloj del lifecycle** corre por `POST /api/reloj`, con secreto de servicio: es lo que hace que
+un compromiso vencido pase a `DUE` y después a `MISSED` sin que nadie apriete nada. **Con qué
+frecuencia se lo llama es operación**, y [ADR-005](decisions.md#adr-005) la dejó `DEFERRED`.
+
+**Y ya no está solo.** Desde [ADR-040](decisions.md#adr-040) y la Fase B6.9 son **seis los endpoints
+que corren con secreto de servicio y sin persona detrás** —`/api/reloj`, `/api/recomendacion`,
+`/api/validacion`, `/api/pedido-de-reenvio`, `/api/observacion` y `/api/corroboracion`—, más
+`/api/escalamiento`, que es sólo lectura y está apagado por defecto. **El criterio que los junta es siempre el mismo:** ninguno es una acción del
+estudiante, y darle un JWT de estudiante a cualquiera de ellos lo dejaría declarando sobre sí mismo
+—validando su propia evidencia, corroborando lo que él mismo cargó, registrando sus propios errores—.
+**Quién es esa identidad externa sigue sin definirse:** `C01-030` está `OPEN`, y ninguno de los seis
+la valida contra nada.
+
+⚠️ **Y por eso ninguno la recibe.** `product_event.actor_id` es `uuid`: aceptar un identificador que
+no es UUID obliga a fabricar uno —inventar una identidad— o revienta al publicar el hecho. En estas
+rutas **el actor del evento es `null`** —lo produjo un proceso, no una persona— y lo que queda escrito
+es **el motivo**, en la fila. Lo aprendió la validación en ADR-040 y lo repitió el pedido de reenvío
+con un `500` en la primera corrida.
+
+**Las escrituras que existen hoy:** las transiciones de `Action`, `Commitment`, `Evidence`,
+`ExamPreparation`, `RiskSignal` e `Intervention`; **la creación del primer `Commitment` de una
+`Action` y la de una `Evidence` entregada** ([ADR-040](decisions.md#adr-040)); **el rescate de un
+`Commitment` incumplido y el reenvío de una `Evidence` devuelta** (Fase B6.9 — las dos crean **otra
+fila** y preservan la original, `I3` e `I4`); `registrar_progreso`;
+`completar_paso_de_protocolo`; replanificación y reentrada; `registrar_senal`, `abrir_intervencion`,
+`cerrar_intervencion` y `resolver_senal`; `materializar_recomendacion` del ADE;
+`ingerir_materia` y `corroborar_procedencia` del ADL. Todas publican su hecho en
+`product_event` **después** de que la escritura ganó — un evento de algo que perdió la carrera sería
+un hecho que no ocurrió.
+
+**Seis entidades comparten `transiciones.ts`**, y es a propósito: `ExamPreparation` entró en la
+Fase B5 sin escribir una quinta copia de *leer con scoping → validar contra la máquina →
+compare-and-swap → publicar*. Las copias divergen en el orden, que es justo donde están los errores.
+
+### 3.10 Frontera Plataforma ↔ CRM
 
 Congelada por el spec (Parte II §18.1), independientemente de qué opción se elija:
 
 | | Fuente de verdad de |
 |---|---|
-| **Plataforma** | Materias, evaluaciones, progreso, acciones, compromisos académicos, evidencias, `ExamPreparation`, `RiskSignal` académico y Bitácora |
+| **Plataforma** | Materias, evaluaciones, progreso, acciones, compromisos académicos, evidencias, `ExamPreparation`, `RiskSignal` académico, `Intervention` y Bitácora |
 | **CRM** | Institución cliente, elegibilidad/padrón, operadores, asignaciones, contratos/cobranza y métricas de negocio |
 
 - **No existe base de datos compartida.**
 - Integración por contratos HTTP/eventos versionados.
+
+#### Quién usa cada sistema, y quién escribe qué — [ADR-033](decisions.md#adr-033)
+
+**A la Plataforma acceden únicamente los estudiantes que el CRM autoriza.** El operador no interactúa
+con ella y **no tiene sesión acá**: sus superficies (`WF-O01`…`WF-O04`) viven en el CRM, y el spec
+fuente ya las ubicaba ahí — la sección que las define se llama *"8. Wireframes low-fi — Operador /
+CRM"*.
+
+| Dirección | Qué es | Quién se autentica |
+|---|---|---|
+| Estudiante → Plataforma | El loop diario, las nueve superficies | **La persona**, con su JWT |
+| Plataforma → CRM | Autorización de padrón (§1 del contrato), y a futuro actividad | La Plataforma, con secreto compartido |
+| CRM → Plataforma | Lectura de contexto académico, y **comandos de intervención y outcome** | **El CRM como sistema.** Nunca la persona |
+
+**El CRM no escribe el dominio de la Plataforma: envía comandos.** La Plataforma los valida contra
+sus máquinas de estados —el mismo `transiciones.ts` que usa todo lo demás— y produce el hecho
+canónico. La identidad del operador viaja **asertada por el CRM**: `intervention.owner_operator_id`
+es `UUID NOT NULL` sin FK, porque no hay nada de este lado contra qué verificarla.
+
+El mecanismo no es nuevo. `POST /api/reloj` ya corre con secreto de servicio y sin persona detrás; lo
+que falta es la forma del contrato, que versiona el CTO.
 - **Contrato existente hoy:** Plataforma consulta elegibilidad con
   `POST /api/service/v1/authorize`. El request, las respuestas, la autenticación y la idempotencia
   segura para reintentos están especificados en
   [`platform-integration-contract.md`](platform-integration-contract.md). El presupuesto concreto
   del cliente —timeouts, cantidad máxima de intentos, jitter y agotamiento— sigue pendiente.
 - **Contexto futuro, sin implementar:** (2) Plataforma publica actividad académica relevante; (3) CRM
-  consulta contexto académico vivo. Todavía no existe contrato exacto para ninguno.
+  consulta contexto académico vivo; **(4) el CRM devuelve comandos de intervención y outcome —que el
+  contrato actual no contempla y sin el cual no se cierra el tramo operativo entre sistemas**; y (5)
+  la Plataforma le informa el teléfono que el estudiante vinculó. Ninguno está implementado, y
+  **ninguno tiene contrato firmado**: los tres primeros están congelados por
+  [ADR-035](decisions.md#adr-035) en
+  [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), y los flujos de actividad
+  y teléfono los especificó el CRM el 3 de septiembre de 2026, con la respuesta de la Plataforma en
+  [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md). El requerimiento original
+  sigue en [`platform-integration-contract.md`](platform-integration-contract.md) §2.2.
 - **Si el CRM no recibió un Commitment confirmado, el Commitment no se duplica ni se revierte.**
   Plataforma sigue siendo la fuente; la reparación pertenece al contrato de sincronización.
 
@@ -353,12 +530,12 @@ capa puede igualarlos por inferencia. Los pagos pertenecen al CRM/institución: 
 pagos de estudiantes.
 
 Aunque el endpoint exista, su uso procesa email/nombre/legajo de una persona y por eso **no se llama
-con datos reales** mientras ADR-006 siga `PENDING`.
+con datos reales** mientras ADR-006 no tenga confirmación legal.
 
 Cómo interactúa esto con la convergencia hacia Dashboard_Achieve es exactamente
 [ADR-003](decisions.md#adr-003).
 
-### 3.10 WhatsApp
+### 3.11 WhatsApp
 
 **WhatsApp es un canal, no la base de datos del producto.** Puede recibir foto, archivo, texto o
 audio como Evidence, pero esa Evidence se **normaliza dentro de Plataforma**: misma entidad, mismo
@@ -367,7 +544,34 @@ origen preservada para deduplicación y auditoría.
 
 Si el estudiante o la Action son ambiguos, la integración **no vincula por inferencia**.
 
+⚠️ **Hoy la Plataforma no tiene el número, y no es un olvido.** `student.whatsapp` existe desde la
+capa del estudiante rotulada como dato personal gateada por [ADR-006](decisions.md#adr-006), **nadie
+la escribe**, el repositorio **ni siquiera la selecciona**, y **ninguna de las nueve superficies pide
+un teléfono**. Que el CRM necesite el mapeo teléfono → alumno para acompañar por WhatsApp no crea la
+pantalla donde el estudiante lo daría: eso es [ADR-042](decisions.md#adr-042), está `PENDING`, y **es
+la misma decisión que el onboarding del spec §19** que [ADR-039](decisions.md#adr-039) dejó abierto.
+Es, además, **el primer flujo del contrato que transportaría un identificador directo de una
+persona**.
+
 ---
+
+### El alta, y por qué su gate está en el Controller — Fase B6.14
+
+`resolverSesion()` devuelve el estado del alta junto con la identidad, y **las nueve rutas de lectura
+lo traducen a `409 ALTA_INCOMPLETA`** con la ruta a la que ir. Va en la sesión y no en cada
+Controller porque es la misma pregunta para las nueve, y resolverla nueve veces serían nueve lugares
+donde olvidarse; lo que cada Controller decide es qué hacer con ella.
+
+**Las rutas del propio alta no la aplican.** Si el alta se gateara a sí misma, no habría forma de
+completarla.
+
+**`409` y no `403`:** `403` ya significa *sin habilitación de padrón*, que el estudiante no puede
+resolver. Éste sí puede, y la salida viaja en la respuesta.
+
+⚠️ **Confirmar el mapa académico llama al ADE desde el Service, no desde la ruta.** El estudiante no
+autoriza una recomendación: la Plataforma reacciona a un hecho de dominio, con el mismo patrón que
+[ADR-040](decisions.md#adr-040) usa tras cerrar una `Action`. `POST /api/recomendacion` sigue siendo
+secreto de servicio.
 
 ## 4. Contratos pendientes que bloquean implementación
 
@@ -412,7 +616,7 @@ deben cerrarse en el Track B antes de codear la superficie que las consume:
 | **Componente** | Cada pantalla renderiza correctamente cada estado crítico de su spec |
 | **Invariantes de fixture** | Todos los escenarios del catálogo son alcanzables y su reset es determinista |
 | **Estático** | Cero `fetch`/`localStorage`; cero identificadores no sintéticos; todas las CTAs declaradas existen |
-| **Comprensión** | Test de 10 segundos en 360 px — **con personas, no simulado** |
+| **Comprensión** | Test de 10 segundos en desktop — **con personas, no simulado** |
 
 La verificación estática hereda el espíritu de `scripts/verify-low-fi.mjs`: existen `UX01`–`UX09`, no
 existe `UX10`, `CTA-001`…`CTA-018` están declaradas, y ninguna capacidad de red o persistencia se
@@ -431,9 +635,9 @@ sobre eventos de dominio y sobre el endpoint vigente de CRM.
 
 Explícitamente fuera de alcance de este documento hasta que se resuelvan sus ADRs:
 
-- Aceptación formal del diseño objetivo, runtime y operación de Supabase → [ADR-005](decisions.md#adr-005)
-- Pipeline del ADE → [ADR-004](decisions.md#adr-004)
-- Runtime de producción del Track B → depende de ADR-005
+- ✅ Proveedor, aislamiento y capas → [ADR-005](decisions.md#adr-005) Bloque A, `ACCEPTED`. **Operación y runtime de producción siguen `DEFERRED`** (Bloque B, ítem 5)
+- ✅ Pipeline del ADE v1 determinista → [ADR-004](decisions.md#adr-004), `ACCEPTED (v1 provisional)`
+- Runtime de producción del Track B → ADR-005 Bloque B, ítem 5, `DEFERRED`
 - Convergencia con Dashboard_Achieve → [ADR-003](decisions.md#adr-003)
 - Política de privacidad, retención y consentimiento → [ADR-006](decisions.md#adr-006)
 - Owner de `PreparationReadiness` → [ADR-011](decisions.md#adr-011)

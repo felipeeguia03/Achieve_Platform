@@ -1,0 +1,295 @@
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+import { copy, type CopyId } from "@/lib/content/es-AR";
+
+/**
+ * Auditoría de conformidad de `design-system.md` §9, en lo que es verificable
+ * mecánicamente.
+ *
+ * **Lo que no se puede automatizar no se marca como pasado.** El recorrido con
+ * `Tab`, el lector de pantalla y la prueba de datos sucios reales se corren
+ * aparte y se reportan en `docs/roadmap.md` con su resultado real.
+ */
+
+const ROOT = process.cwd();
+
+function archivos(dir: string): string[] {
+  const abs = resolve(ROOT, dir);
+  let entradas: string[];
+  try {
+    entradas = readdirSync(abs);
+  } catch {
+    return [];
+  }
+  return entradas.flatMap((e) => {
+    const full = join(abs, e);
+    if (statSync(full).isDirectory()) return archivos(join(dir, e));
+    return /\.(ts|tsx)$/.test(e) ? [join(dir, e)] : [];
+  });
+}
+
+const pantallas = archivos("components/screens").map((p) => ({
+  path: p,
+  code: readFileSync(resolve(ROOT, p), "utf8"),
+}));
+
+const textos = Object.entries(copy) as [CopyId, string][];
+
+describe("Bloque 2 · Contenido", () => {
+  it("`C-01` — una sola persona gramatical: voseo, sin usted", () => {
+    // El anti-patrón A-05 es exactamente una grieta de tono.
+    const enUsted = /\b(usted|debe usted|su evidencia|ingrese|complete|suba|envíe|revise)\b/i;
+    const grietas = textos.filter(([, texto]) => enUsted.test(texto));
+    expect(grietas.map(([id]) => id)).toEqual([]);
+  });
+
+  it("`C-01` — las formas imperativas usan voseo", () => {
+    // "Entregá", "Subí", "Resolvé": acento en la última sílaba.
+    //
+    // ⚠️ **`Contanos` salió de esta lista el 4 de septiembre de 2026**
+    // ([ADR-044](../docs/decisions.md#adr-044)), y la lista era la equivocada:
+    // *contanos* **es** voseo —`contá` + `nos`, que al enclitizarse pierde el
+    // acento—, a diferencia de `cuéntanos`. Las cinco que quedan son tuteo.
+    //
+    // **El cambio es específico y así se queda:** el owner fue explícito en que
+    // no se afloja el resto del control. Sacar otra palabra de acá exige su
+    // propia decisión.
+    const imperativosProhibidos = /\b(Entrega|Sube|Resuelve|Elige|Agrega)\b/;
+    // Sin excepciones desde la Etapa 0.7: "Entrega:" de UX02 se unificó a
+    // "Entregá:", la forma de UX01.
+    const grietas = textos.filter(([, texto]) => imperativosProhibidos.test(texto));
+    expect(grietas.map(([id]) => id)).toEqual([]);
+  });
+
+  it("`C-02` — un concepto, una palabra: no hay deriva de vocabulario (A-04)", () => {
+    // AGENTS.md §4. Si un mismo objeto aparece con dos nombres, es A-04.
+    const derivas: [string, RegExp][] = [
+      ["Action", /\b(tarea|to-?do|actividad)\b/i],
+      ["Commitment", /\b(promesa|cita)\b/i],
+      ["Evidence", /\b(adjunto formal|archivo entregado)\b/i],
+      ["Reflection", /\b(diario|comentario)\b/i],
+    ];
+    /**
+     * La única excepción, y no es una concesión: **`VI.2` §8.7 llama a la
+     * sección "Actividad reciente"**, y es el nombre de un historial de hechos,
+     * no otro nombre para una `Action`. El guard sigue cazando cualquier otro
+     * uso de la palabra; esta clave se exceptúa por su nombre exacto y con el
+     * spec como respaldo, verificado abajo.
+     */
+    const DEL_SPEC = new Set(["MATERIA.ACTIVIDAD"]);
+
+    /**
+     * La segunda excepción, y tampoco es una concesión: **`actividad
+     * registrada` es el rótulo que fijó la psicopedagoga**
+     * ([ADR-075](../docs/decisions.md#adr-075) §C1), textual: *"si se conserva
+     * una barra, su rótulo visible debe ser `actividad registrada`, no
+     * `dominio`, `nivel`, `rendimiento` ni `avance de aprendizaje`"*.
+     *
+     * No es otro nombre para una `Action`: nombra **trabajo registrado**, que es
+     * justamente el constructo que ella separó de la calidad del resultado. Su
+     * fuente se verifica en el test de abajo.
+     */
+    const DE_LA_PSICOPEDAGOGA = new Set([
+      "MATERIA.GANTT",
+      "MATERIA.GANTT.REVISION",
+      "HOY.REPARTO.MOTIVO.SIN_ESTIMACION",
+    ]);
+
+    for (const [concepto, patron] of derivas) {
+      const grietas = textos.filter(
+        ([id, texto]) => patron.test(texto) && !DEL_SPEC.has(id) && !DE_LA_PSICOPEDAGOGA.has(id),
+      );
+      expect(grietas.map(([id]) => id), `deriva de ${concepto}`).toEqual([]);
+    }
+  });
+
+  it("una excepción de vocabulario existe porque el spec la nombra así", () => {
+    // Sin esto, "está en el spec" sería una afirmación de un comentario.
+    const spec = readFileSync(resolve(process.cwd(), "docs/product-spec-source.md"), "utf8");
+    expect(spec).toContain("Actividad reciente");
+  });
+
+  it("y la otra, porque la psicopedagoga la nombró así", () => {
+    // Mismo criterio: una excepción de vocabulario tiene que poder señalar el
+    // documento que la autoriza, no un comentario que lo afirme.
+    const fuente = readFileSync(
+      resolve(process.cwd(), "docs/respuesta-psicopedagoga-tiempo-y-carga-source.md"),
+      "utf8",
+    );
+    expect(fuente).toContain("actividad registrada");
+    // Y lo que prohibió, para que no vuelva por otro lado.
+    for (const prohibido of ["dominio", "nivel", "rendimiento", "avance de\naprendizaje"]) {
+      expect(fuente).toContain(prohibido);
+    }
+  });
+
+  it("el rótulo de la barra no usa ninguna de las palabras que ella prohibió", () => {
+    // `dominio`, `nivel`, `rendimiento` y `avance de aprendizaje`: un porcentaje
+    // con cualquiera de esos rótulos se lee como calificación.
+    const rotulos = textos.filter(([id]) => id.startsWith("MATERIA.GANTT"));
+    expect(rotulos.length).toBeGreaterThan(0);
+    for (const [id, texto] of rotulos) {
+      expect(texto, id).not.toMatch(/\b(dominio|nivel|rendimiento|avance de aprendizaje)\b/i);
+    }
+  });
+
+  it("`C-03` — ningún placeholder genérico", () => {
+    const genericos = ["Lorem", "TODO", "TBD", "Texto de ejemplo", "xxx"];
+    for (const [id, texto] of textos) {
+      for (const g of genericos) expect(texto, id).not.toContain(g);
+    }
+  });
+
+  it("`C-06` — ninguna etiqueta emite un veredicto sobre la persona", () => {
+    // A-06: se describe la situación, nunca se rotula al estudiante.
+    const veredictos = /\b(en riesgo|irresponsable|vago|desorganizado|mal alumno|abandonó)\b/i;
+    const grietas = textos.filter(([, texto]) => veredictos.test(texto));
+    expect(grietas.map(([id]) => id)).toEqual([]);
+  });
+
+  it("`C-07` — las frases de regla viven en contenido versionado, no en el JSX", () => {
+    const literales = /"(Porque:|Entregá:|Después:|Cerrás cuando:|Fuente:)/;
+    expect(pantallas.filter(({ code }) => literales.test(code)).map(({ path }) => path)).toEqual([]);
+  });
+});
+
+describe("Bloque 4 · Datos", () => {
+  it("`P-03` — ninguna magnitud de máquina llega cruda", () => {
+    // DD5: sin scores, porcentajes, readiness numérica ni probabilidad.
+    for (const [id, texto] of textos) {
+      expect(texto, id).not.toMatch(/\d+\s?%/);
+      expect(texto, id).not.toMatch(/\bscore\b/i);
+    }
+  });
+
+  it("`P-09` — vacío, no-cargado, sin-asignar y cero se ven distinto", () => {
+    // Las cuatro formas tienen copy propio y ninguno se reusa para otra.
+    const formas = [
+      "COMUN.SIN_AVANCE",
+      "HOY.ESTADO.EVIDENCE_INFO",
+      "HOY.ESTADO.CONTEXT_INCOMPLETE",
+      "HOY.VACIO",
+    ] as CopyId[];
+    const valores = formas.map((f) => copy[f]);
+    expect(new Set(valores).size).toBe(formas.length);
+  });
+});
+
+describe("Bloque 5 · Visual", () => {
+  it("`A-08` — deshabilitado tiene tratamiento propio, distinto de secundario", () => {
+    const ds = readFileSync(resolve(ROOT, "components/screens/design-system.tsx"), "utf8");
+    const cta = ds.slice(ds.indexOf("export function CTAPrincipal"));
+    // Opacidad/color propios más el atributo nativo que los lectores anuncian.
+    expect(cta).toContain("disabled");
+    expect(cta).toContain('disabled ? "var(--border)"');
+    expect(cta).toContain('disabled ? "var(--muted-foreground)"');
+  });
+
+  it("`P-06` — ningún estado se comunica sólo por color", () => {
+    // Todo chip lleva texto además del tono: EstadoChip recibe children.
+    const ds = readFileSync(resolve(ROOT, "components/screens/design-system.tsx"), "utf8");
+    const chip = ds.slice(ds.indexOf("export function EstadoChip"));
+    expect(chip).toContain("children");
+  });
+
+  it("`V-02` — la monoespaciada sólo para lo que se compara carácter por carácter", () => {
+    // El título de sección (antes eyebrow) se corrigió a sans; que no vuelva.
+    const css = readFileSync(resolve(ROOT, "app/globals.css"), "utf8");
+    const seccion = css.slice(css.indexOf(".titulo-de-seccion {"), css.indexOf(".titulo-de-seccion {") + 400);
+    expect(seccion).toContain("--font-sans");
+    expect(seccion).not.toContain("--font-mono");
+    expect(seccion).not.toContain("uppercase");
+  });
+});
+
+describe("Bloque 6 · Interacción", () => {
+  it("`I-01` — todo estado compartible tiene URL", () => {
+    // Cada ruta acepta ?escenario= y por eso cualquier estado crítico se puede
+    // abrir y compartir por link.
+    /*
+      La excepción no es "la raíz": es **no ser una superficie de producto**.
+      La raíz sólo redirige, y `/login` es la puerta —no tiene estados críticos
+      que compartir, y aceptar `?escenario=` ahí sería ofrecer una demo de un
+      formulario de ingreso—. Se nombran todas para que una superficie real
+      que se olvide de `?escenario=` siga rompiendo este test.
+
+      **Las cuatro del alta entran por el mismo motivo que `/login`** — Fase
+      B6.14, [ADR-052](../docs/decisions.md#adr-052), y la cuarta por
+      [ADR-073](../docs/decisions.md#adr-073). No están en el registro canónico
+      de navegación, que sigue teniendo nueve nodos, y sus estados no son
+      compartibles: dependen de **qué contestó este estudiante**, no de un
+      escenario. Un `?escenario=` ahí ofrecería una demo de un alta ajena.
+
+      ⚠️ Si alguna vez se agrega una superficie de producto nueva, **no va acá**:
+      va con su `?escenario=`, como las nueve.
+    */
+    const NO_SON_SUPERFICIE = [
+      "app/page.tsx",
+      "app/login/page.tsx",
+      "app/alta/whatsapp/page.tsx",
+      "app/alta/carrera/page.tsx",
+      "app/alta/materias/page.tsx",
+      /*
+        **Modo Clase** — ADR-098. Nodo sin wireframe, no superficie, y su estado
+        es **la clase de este estudiante**: los apuntes que escribió y los
+        momentos que marcó. Un escenario sintético ahí sería una clase ajena
+        dibujada como propia.
+      */
+      "app/(student)/clase/page.tsx",
+      /*
+        **El Calendario** — ADR-100. Nodo sin wireframe, no superficie. **Lo que
+        se comparte por URL sí existe** —`?vista=`, `?fecha=`, `?clases=0`—, que
+        es lo que `I-01` pide; lo que no tiene es escenario, porque su contenido
+        es el horario, las evaluaciones y los compromisos **de este estudiante**.
+      */
+      "app/(student)/calendario/page.tsx",
+      /*
+        **Gimnasia cognitiva** — ADR-102. Nodo sin wireframe, no superficie. Su
+        estado compartible sí tiene URL (`?sesion=`); lo que no tiene es
+        escenario, porque sus partidas y repasos son **de este estudiante**.
+      */
+      "app/(student)/gimnasia/page.tsx",
+      /*
+        **Modo Focus** — ADR-104. Nodo sin wireframe, no superficie. Su estado
+        compartible tiene URL (`?sesion=`); no tiene escenario porque la sesión,
+        sus tiempos y su anotador son **de este estudiante**.
+      */
+      "app/(student)/focus/page.tsx",
+      /*
+        **El cuarto paso del alta** — ADR-105. Como las otras pantallas del alta,
+        no es superficie: comisión y horarios son **de este estudiante**.
+      */
+      "app/alta/cursada/page.tsx",
+      /*
+        **Tu recorrido** — ADR-106. Nodo sin wireframe: el analítico y las
+        respuestas son **de este estudiante**, no hay escenario que proyectar.
+      */
+      "app/(student)/recorrido/page.tsx",
+      /*
+        **Mi plan** — ADR-110 · Enm. 1. Nodo sin wireframe, no superficie. Su
+        contenido son las cursadas, la disponibilidad y los compromisos **de este
+        estudiante**: no hay escenario que proyectar.
+      */
+      "app/(student)/plan/page.tsx",
+    ];
+    const rutas = archivos("app")
+      .filter((p) => p.endsWith("page.tsx"))
+      .filter((p) => !NO_SON_SUPERFICIE.includes(p));
+    const conEscenario = rutas.filter((p) =>
+      readFileSync(resolve(ROOT, p), "utf8").includes("escenario"),
+    );
+    expect(conEscenario.length).toBe(rutas.length);
+    // Y que las excepciones sigan existiendo: si alguna se renombra, se ve acá.
+    for (const p of NO_SON_SUPERFICIE) expect(existsSync(resolve(ROOT, p))).toBe(true);
+  });
+
+  it("`I-05` — el bloqueante va arriba de la CTA, no debajo", () => {
+    for (const { path, code } of pantallas) {
+      const aviso = code.indexOf("{aviso &&");
+      const cta = code.indexOf("<CTAPrincipal");
+      if (aviso === -1 || cta === -1) continue;
+      expect(aviso, `${path}: el aviso bloqueante va después de la CTA`).toBeLessThan(cta);
+    }
+  });
+});

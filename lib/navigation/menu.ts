@@ -1,0 +1,123 @@
+/**
+ * El menú de la navegación lateral.
+ *
+ * Deriva del grafo: cada ítem apunta a un nodo que **ya existe** en
+ * `surfaces.ts`. No se inventan destinos ni se agregan superficies por el
+ * hecho de necesitar una entrada de menú.
+ *
+ * **La navegación lateral no es una CTA.** No solicita una acción de dominio,
+ * no muta nada y no compite con la acción primaria de la pantalla: es
+ * orientación. Por eso vive acá y no en `cta-registry.ts`.
+ */
+
+import { nodos, type NodoId } from "./surfaces";
+
+export interface ItemDeMenu {
+  nodo: NodoId;
+  /** El nombre corto que se ve en la barra. */
+  etiqueta: string;
+  /**
+   * Contador a la derecha del ítem. `null` ⇒ no se muestra nada.
+   *
+   * Sólo lleva número lo que **cambia una decisión**. Un contador que no cambia
+   * qué hace el estudiante es ruido.
+   */
+  contador: number | null;
+}
+
+/**
+ * El orden es el del loop diario, no alfabético ni por frecuencia: primero
+ * dónde estoy hoy, después el contexto de la materia, después el historial.
+ *
+ * `UX03`–`UX05` **no están** en el menú: son pasos de un flujo que se abren
+ * desde su origen, no destinos que uno elige. Ponerlos sería ofrecer entrar a
+ * una evidencia sin la acción que la pide.
+ */
+export const menu: readonly ItemDeMenu[] = [
+  { nodo: "UX01", etiqueta: "Hoy", contador: null },
+  /*
+    ADR-110 · Enmienda 1. **Segundo, pegado a Hoy**, y no junto al Calendario:
+    los dos primeros ítems son los que responden *qué hago* —Hoy da la acción de
+    ahora, Mi plan dice dónde entra el resto—, mientras que el Calendario
+    responde *qué tengo y cuándo* sobre lo ya comprometido. Ponerlo al lado del
+    Calendario reponía justamente la vecindad que la enmienda vino a deshacer.
+
+    ⚠️ **Siempre visible** — ADR-110 · Enmienda 2. Hubo un flag `PLAN_VIVO` que
+    lo escondía, y el owner lo sacó: *Mi plan* es una decisión tomada.
+
+    ⚠️ **`contador: null`** por lo mismo que Formación y Gimnasia: en el plan no
+    vence nada. Lo que caduca es el `Commitment`, y eso se cuenta en Hoy.
+  */
+  { nodo: "PLAN_VIVO", etiqueta: "Mi plan", contador: null },
+  // ADR-077. El plural deja de ser una promesa incumplida: apunta al índice,
+  // no al cursado de una sola materia. Cierra la opción `A` de ADR-054.
+  { nodo: "UX02_INDICE", etiqueta: "Materias", contador: null },
+  // ADR-100. Va **pegado a Materias**: responde *cuándo* sobre los mismos objetos
+  // —la cursada, sus evaluaciones y los compromisos tomados—. Sin contador: el
+  // calendario no tiene nada que venza que no esté ya en su propio objeto.
+  { nodo: "CALENDARIO", etiqueta: "Calendario", contador: null },
+  /*
+    ⚠️ **Progreso y Modo Examen ya no están acá** — pedido del owner, 13 sep 2026
+    (ADR-100 · Enmienda 1): *"no tienen sentido que vivan ahí"*. Los dos son de
+    **una materia**: la Bitácora transporta la cursada (`CTA-009`, ADR-082) y Modo
+    Examen se activa desde ella (`CTA-019`). Siguen alcanzables por esas CTAs.
+  */
+  // ADR-087 `D1`. Va **después** del cursado y antes de Modo Examen: es apoyo
+  // de método, no el trabajo del día.
+  //
+  // ⚠️ **`contador: null`, y no es que falte el dato.** `D1` la declaró
+  // *opcional y no obligatoria*, y ADR-021 fijó que el único badge posible es
+  // el del trabajo que **caduca**. En Formación no vence nada: un número acá
+  // sería una urgencia inventada sobre algo que el estudiante puede no abrir
+  // nunca sin consecuencia.
+  { nodo: "FORMACION", etiqueta: "Formación", contador: null },
+  // ADR-102. **Después de Formación**, al final: es práctica breve de
+  // autogestión, no el trabajo del día. El nombre corto es el del menú; adentro
+  // la pantalla dice *Gimnasia cognitiva*.
+  //
+  // ⚠️ **`contador: null`** por lo mismo que Formación: nada vence. Un número de
+  // repasos pendientes acá sería una urgencia inventada sobre algo opcional.
+  { nodo: "GIMNASIA", etiqueta: "Gimnasia", contador: null },
+  // ADR-106. **Al final**: es opcional y es el pasado, no el trabajo del día.
+  // ⚠️ **`contador: null`**: nada vence. Un «5 por revisar» acá sería una urgencia
+  // inventada sobre algo que el estudiante puede no abrir nunca.
+  { nodo: "RECORRIDO", etiqueta: "Recorrido", contador: null },
+] as const;
+
+/**
+ * **Hoy ningún ítem lleva contador, y es una decisión** — `D-06` de
+ * `design-system-capturas.md` §14.2, cerrada por
+ * [ADR-021](../../docs/decisions.md#adr-021).
+ *
+ * La regla de la captura 02 es precisa: *"un solo badge numérico en todo el
+ * menú: **el del trabajo pendiente que caduca**. Si todo tiene badge, nada
+ * tiene badge."*
+ *
+ * **En Achieve, lo que caduca es el `Commitment`.** Es el único objeto que el
+ * estudiante acordó hacer *para un momento*, y al pasar ese momento cambia a
+ * `MISSED` de forma irreversible —nunca se edita para parecer cumplido—. Nada
+ * más caduca: una `Action` se reemplaza, una `Evidence` `SUBMITTED` espera a
+ * otra persona, y la Bitácora sólo acumula.
+ *
+ * Así que el badge **no va en Progreso**, donde estaba: iba en la única
+ * superficie que no tiene nada que vencer.
+ *
+ * **Y todavía no va en ninguna.** El número que había en Progreso era un
+ * literal `1`, no un dato: una cifra en pantalla sin un hecho detrás. Bajo el
+ * Track A cada ruta proyecta su propio escenario y sólo `/hoy` conoce el
+ * estado del `Commitment`, así que un badge real aparecería en `Hoy` y
+ * desaparecería en las otras tres — que es peor que no tenerlo, porque el
+ * estudiante leería su ausencia como *"no hay nada por vencer"*.
+ *
+ * **Vuelve cuando haya de dónde contarlo**, con el `Commitment` como fuente y
+ * en `Hoy`. El componente ya sabe dibujarlo, y `tests/shell.test.tsx` verifica
+ * el anti-patrón `A-03` sobre un ítem sintético para no depender de que el
+ * menú de producción tenga un número.
+ */
+
+/** Todo ítem apunta a un nodo con ruta: un menú no lleva a un lugar que no existe. */
+export function rutaDelItem(item: ItemDeMenu): string {
+  const ruta = nodos[item.nodo].ruta;
+  if (ruta === null) throw new Error(`El menú apunta a ${item.nodo}, que no tiene ruta`);
+  return ruta;
+}

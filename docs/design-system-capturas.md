@@ -8,7 +8,7 @@ tokens, principios y auditoría. **Este documento no redefine nada de allí.**
 **Deriva de:** una revisión local de 34 capturas —27 páginas del manual visual y 7 capturas crudas
 del software de referencia—. Los originales no se versionan porque contienen datos reales; este
 documento conserva únicamente observaciones visuales sin identidad personal, conforme a ADR-006.
-**Última actualización:** 28 de agosto de 2026
+**Última actualización:** 30 de agosto de 2026
 
 ---
 
@@ -51,16 +51,16 @@ error estimado de ±2 px. Donde la lectura fue ambigua, está declarado.
 buena parte de pantallas vacías o en carga. Todo lo de acá está validado por coherencia, no por
 telemetría. Son hipótesis fuertes.
 
-### 0.4 Discrepancia abierta sobre el viewport
+### 0.4 El viewport — resuelto
 
-> ⚠️ **Sin resolver.** [`AGENTS.md`](../AGENTS.md) y [`design-system.md`](design-system.md) §6.1
-> establecen **mobile-first 360 px** como regla del Track A. La conducción del producto indicó el
-> 28 de agosto de 2026 que el diseño se piensa **desktop-first**, con el mismo lenguaje visual
-> escalado a móvil.
+> ✅ **Resuelto por [ADR-014](decisions.md#adr-014), 29 de agosto de 2026.** Achieve es
+> **desktop-first**, con el mismo lenguaje visual escalado a móvil. **360 px es el piso obligatorio**
+> de la variante móvil, no la medida de referencia.
 >
-> **Este documento está escrito desktop-first**, siguiendo esa indicación. La contradicción
-> documental **no está resuelta**: requiere un ADR que decida cuál de las dos reglas queda y que
-> actualice el documento perdedor. Ver §12.1.
+> **Este documento está escrito desktop-first** y ya no contradice a `AGENTS.md` ni a
+> [`design-system.md`](design-system.md) §6.1, que se corrigieron en el mismo commit. El contrato del
+> primer viewport de §6.1 se conservó entero, reencuadrado como contrato de **orden semántico**
+> obligatorio en todo ancho. Ver §12.1.
 
 ---
 
@@ -117,7 +117,7 @@ a aparecer: dice **por qué importa que aparezca**.
 > quien la abrió."*
 
 `C-04` en `design-system.md` pide que el vacío explique qué va a aparecer. Esto es un escalón más
-arriba. Ver §12.2 — es un candidato a modificar `C-04`.
+arriba. **Modificó `C-04`**: ver §12.2 y [ADR-022](decisions.md#adr-022).
 
 ### 1.5 Lo inaplicable se atenúa, no se oculta
 
@@ -254,9 +254,15 @@ dato destacado de una fila. **No hay `700` en ninguna captura.**
 
 ### 3.3 Mayúsculas
 
-Solo en dos sitios: header de columna de tabla y eyebrow de sección (`CONTACTOS`, `COBERTURA`,
-`PLAZO DE OPOSICIÓN`). Siempre en 11 px, `letter-spacing: .06em`, ink-3. **Nunca en un botón, nunca
-en un título.**
+Solo en **un** sitio: el encabezado de columna de una tabla o grilla (eje del Gantt, días del
+calendario). Siempre en 11 px, `letter-spacing: .06em`, ink-3. **Nunca en un botón, nunca en un
+título, nunca en un rótulo de sección.**
+
+⚠️ **13 sep 2026 — el eyebrow se fue.** El owner sacó todos los rótulos en mayúsculas. Los que sólo
+decoraban se borraron; los que distinguen un bloque de otro (*Qué cambia* / *Qué no cambia*,
+*Cambio confirmado*, *Compromiso original*) son `TituloDeSeccion`: 15 px, peso 600, tinta, caja
+normal. Las líneas de estado que llegan en mayúsculas desde una proyección o un fixture se dibujan
+en caja normal con `enCajaNormal` — **presentación, no renombre**: el dato sigue como está.
 
 ### 3.4 Monoespaciada
 
@@ -305,6 +311,24 @@ mono en tamaño de cuerpo. Los identificadores observados en los originales no s
 | Gap horizontal ícono ↔ label | `--esp-3` | 12 |
 | Gap en grilla de chips | `--esp-2` | 8 |
 
+### 4.2.1 El encuadre de pantalla es uno solo — 13 sep 2026
+
+Pedido del owner con las capturas delante: *"siempre es igual, siempre misma distancia y tamaño"*.
+El título de toda pantalla del shell cae **en el mismo punto y con el mismo cuerpo**:
+
+| Qué | Valor | Dónde vive |
+|---|---|---|
+| Padding del contenido | 40 arriba · 48 a los lados (16/24 en móvil) · ancho máx. 1120 centrado | `components/shell/shell.tsx` |
+| Título | `--text-title-lg` (30), peso 600, interlineado 1.2 | `TituloDePanel` — **sin `escala`** |
+| Primer elemento de la pantalla | **el título**. No hay eyebrow en mayúsculas arriba | `TituloDePanel` — **sin `eyebrow`** |
+| Título → línea de contexto | 6 · materia, evaluación, comisión, en caja normal | `TituloDePanel`, prop `meta` |
+| Título → subcopy | 8 (4 si hay línea de contexto) · subcopy de 660 máx. | `TituloDePanel` |
+| Cabecera → primer contenido | 32 | `TituloDePanel`, `marginBottom` en línea |
+
+⚠️ **Ninguna pantalla agrega padding propio alrededor de su contenido**, y la cabecera no va dentro de
+un contenedor con `gap` (el margen se sumaría). Los controles de minimizar y achicar **flotan en la
+franja de padding** y no bajan el título.
+
 ### 4.3 La regla que gobierna la escala
 
 **El espacio dentro de un grupo es siempre menor que el espacio entre grupos, en al menos un
@@ -319,6 +343,10 @@ internos** y se lee como cinco bloques distintos, por espaciado puro.
 > La paleta **ya está cerrada** en [`design-system.md`](design-system.md) §2.1–§2.3: tres semánticos
 > (`exito`, `urgencia`, `humano`), base acromática, cuatro niveles de tinta. **No se agrega ningún
 > color.** Acá va solo la distribución observada.
+>
+> ⚠️ **[ADR-097](decisions.md#adr-097) no abre la paleta.** Los chips pasan a tintados —los mismos tres
+> semánticos en baja intensidad— y el color de identidad de materia llega a más lugares. Ningún
+> semántico nuevo.
 
 ### 5.1 Los cuatro planos de superficie
 
@@ -435,7 +463,7 @@ categoría + fecha absoluta 11 px en ink-3.
 | Patrón | Por qué no |
 |---|---|
 | **Sidebar de 7 destinos** | Achieve no tiene 7 destinos paralelos. Tiene un Golden Path. Ver §10.1 |
-| **Dock inferior de fichas** | Requiere multiventana. El manual mismo lo desaconseja fuera de escritorio |
+| **Dock inferior de fichas** | Requiere multiventana. El manual mismo lo desaconseja fuera de escritorio. ⚠️ **Caducado el 10 sep 2026** por [ADR-088](decisions.md#adr-088): la premisa era *«Achieve no tiene dos objetos abiertos a la vez»*, y dejó de ser cierta. Ver §12.8 |
 | **Multiventana con barra de título** | Los 6 requisitos innegociables (URL por ficha, trampa de foco, jerarquía de `Escape`, límite duro…) son costo puro para 9 pantallas encadenadas |
 | **Selector de contexto de organización** | Un estudiante no cambia de organización |
 | **Panel de notificaciones** | **No hay superficie de notificaciones en `UX01`–`UX09`.** El spec Parte II §22.3 prohíbe agregar navegación para ideas sin función. Queda registrado como patrón disponible, no como pantalla |
@@ -604,7 +632,7 @@ reportes no vuelven.
 | Un registro por destino | **Una decisión por pantalla** (`DD9`) |
 | Cola `N de M` en pantalla de decisión | Cola paginable **solo en la lista de materias** de `UX01`, resuelto en `design-system.md` §1.4 |
 | Dos objetos comparados en espejo | **No aplica.** Achieve nunca compara dos objetos |
-| Dock + multiventana | **No aplica.** Ver §7.4 |
+| Dock + multiventana | **No aplica.** Ver §7.4. ⚠️ **Caducado** por [ADR-088](decisions.md#adr-088) — se construyó como **espacio de trabajo**, con los seis requisitos cumplidos |
 
 ### 10.2 Patrón → superficie
 
@@ -616,7 +644,7 @@ reportes no vuelven.
 | **Ausencia en tres tratamientos** (§1.6) | `UX02`, `UX06`, `UX08` | Especifica la primitiva `Ausencia`, pendiente en §3.2 |
 | **Esqueleto isomorfo** (§9.1) | Todas | Especifica la primitiva `Esqueleto`, pendiente en §3.2 |
 | **Anatomía de campo con regla** (§8.2) | `UX04`, `UX05` | Compromiso y Evidencia son los dos formularios reales del producto |
-| **Interruptor con default profesional** (§8.3) | `UX04`, `UX07` | ⚠️ Los defaults de Achieve son `HUMAN-P0` provisionales ([ADR-007](decisions.md#adr-007)) |
+| **Interruptor con default profesional** (§8.3) | `UX04`, `UX07` | ✅ Los defaults `HUMAN-P0` son **criterio profesional confirmado** desde el 31 ago 2026 ([ADR-025](decisions.md#adr-025)) |
 | **Segmentado con opciones atenuadas** (§8.3) | `UX05`, `UX07` | Método de evidencia / tipo de examen, con lo inaplicable visible y atenuado |
 | **Umbral con escala de juicio** (§8.3) | **Ninguna** | `DD5`: Achieve no muestra magnitudes de máquina. Se documenta, no se usa |
 | **Encabezado de entidad** (§10.3) | `UX02`, `UX08` | Materia y Examen son las dos entidades con ficha propia |
@@ -682,7 +710,7 @@ falta para reconocerlos:
 | `A-04` | El mismo flujo se nombra de cuatro maneras según dónde estés |
 | `A-05` | Todo el producto vosea **menos una etiqueta en la pantalla más importante** |
 | `A-06` | El objeto externo rotulado **«LA AMENAZA»** — el sistema enuncia la conclusión antes de que el usuario la saque, y esa palabra queda escrita si la pantalla se comparte |
-| `A-07` | El dock **ya trunca títulos con dos elementos abiertos** |
+| `A-07` | El dock **ya trunca títulos con dos elementos abiertos**. ⚠️ **Sigue en la lista**: [ADR-088](decisions.md#adr-088) no lo borra, lo evita — hasta 5 objetos a ancho legible, y el resto a desbordamiento explícito |
 | `A-08` | Deshabilitado sin tratamiento propio, indistinguible del secundario |
 | `A-09` | **`Secured by Clerk`** al pie del menú de cuenta: lenguaje visual ajeno en el único lugar donde el usuario administra su identidad |
 
@@ -690,7 +718,7 @@ falta para reconocerlos:
 
 | Elemento | Por qué no en Achieve |
 |---|---|
-| **Dock + multiventana** | Seis requisitos innegociables de costo alto, para un producto de 9 pantallas encadenadas |
+| **Dock + multiventana** | Seis requisitos innegociables de costo alto, para un producto de 9 pantallas encadenadas. ⚠️ **Caducado** por [ADR-088](decisions.md#adr-088): ya no son 9 pantallas encadenadas, y **los seis se cumplen** |
 | **Sidebar de 7 destinos** | Achieve no tiene 7 destinos. Imponerla obligaría a inventar navegación (spec Parte II §22.3) |
 | **Cuarto color semántico (ámbar)** | `DD6`: tres, con la cuarta ranura vacía a propósito |
 | **Umbral con score visible** | `DD5`: el spec prohíbe magnitudes de máquina visibles |
@@ -711,47 +739,125 @@ el lenguaje sin quedar vacío.
 
 ---
 
+## 11.9 El shell de aplicación — lo que Achieve todavía no tiene
+
+Registrado el 30 de agosto de 2026 por [ADR-018](decisions.md#adr-018). **Este documento es el único
+artefacto del lenguaje visual que viaja**: las capturas no se versionan
+([ADR-006](decisions.md#adr-006)), así que un patrón que no esté descrito acá, para cualquier máquina
+que no sea la del owner, **no existe**.
+
+### 11.9.1 Navegación lateral
+
+- Persistente a la izquierda, **colapsable** con un control en la cabecera.
+- Ítems con **ícono + etiqueta**, agrupados sin separadores visibles.
+- El **ítem activo** es una píldora de superficie clara con sombra suave — no un fondo de color ni
+  una barra lateral.
+- **Contadores** a la derecha del ítem, en píldora oscura con número en blanco. Sólo donde el número
+  cambia una decisión.
+- Al pie: el conmutador de tema.
+
+### 11.9.2 Topbar
+
+- **Breadcrumb** a la izquierda, con el camino completo y el objeto actual al final.
+- **Buscador** centrado, con el atajo visible dentro del control.
+- **Notificaciones** con contador, y **selector de cuenta** con avatar a la derecha.
+- La topbar **no lleva la CTA primaria de la pantalla**: lleva navegación y contexto.
+
+### 11.9.3 Acciones secundarias del objeto
+
+Arriba a la derecha del título, en **píldora de borde fino con ancho de contenido**. Son
+**navegación** —abrir en otro lado, ver en otro contexto—, nunca la decisión principal.
+
+> Esto **no contradice** [ADR-015](decisions.md#adr-015). Aquél decidió dónde va la **CTA primaria**
+> —a ancho completo, al final de la columna principal— y sigue vigente. Las píldoras de arriba a la
+> derecha son secundarias.
+
+### 11.9.4 Densidad de panel
+
+- Tarjeta blanca, radio generoso, hairline.
+- **Título + subcopy explicativa** debajo: la subcopy dice **qué es esto y por qué importa**, en
+  lenguaje llano. Es `P-01` aplicado al panel entero.
+- Contenido en dos columnas cuando hay una lista y un detalle.
+
+### 11.9.5 Controles segmentados
+
+Grupo de píldoras para alternar vistas del mismo objeto. El activo es superficie clara con sombra;
+los inactivos, texto atenuado. **Alternar no muta nada.**
+
+### 11.9.6 Vacíos que explican
+
+El vacío **no dice que no hay dato**: dice **qué va a aparecer ahí y por qué importa**. Es la
+elevación de `C-04` que §12.2 dejó como propuesta, y las capturas la usan de forma consistente.
+
+### 11.9.7 Dock inferior
+
+Barra persistente con lo que quedó abierto, cada ítem con su identificador y un cierre. Sobrevive a
+la navegación entre superficies.
+
+---
+
 ## 12. Decisiones que necesitan interpretación propia
 
 Cada una es **candidata a ADR**. Ninguna se resuelve en este documento
 ([`AGENTS.md`](../AGENTS.md): *no inventes reglas; registralas como `PENDING` y preguntá*).
 
-### 12.1 Desktop-first vs. mobile-first — `PENDING`, y bloquea
+### 12.1 Desktop-first vs. mobile-first — ✅ `RESUELTO` por [ADR-014](decisions.md#adr-014)
 
-**El conflicto.** [`AGENTS.md`](../AGENTS.md) y [`design-system.md`](design-system.md) §6.1
-establecen mobile-first 360 px. La conducción indicó desktop-first el 28 de agosto de 2026. **Hoy el
-repositorio dice dos cosas distintas.**
+**Resuelto el 29 de agosto de 2026.** Achieve es **desktop-first**. El contrato del primer viewport de
+`design-system.md` §6.1 —los siete elementos, su orden y lo prohibido entre el estado y la CTA— **no
+cambió**: dejó de estar atado a 360 px y pasó a ser un contrato de **orden semántico**, obligatorio en
+todo ancho. Se verifica en **desktop** (viewport primario, donde corre el test de 10 segundos) y a
+**360 px** (piso obligatorio de la variante móvil).
 
-**Qué está en juego.** `design-system.md` §6.1 define el contrato del primer viewport —el orden
-exacto de siete elementos above the fold y qué está prohibido entre el estado y la CTA— y ese
-contrato está escrito **a 360 px**. Desktop-first no lo invalida, pero lo deja sin la restricción que
-lo hacía verificable.
+`AGENTS.md` §5, `CLAUDE.md`, `architecture.md` §2.1/§2.6, `design-system.md` §6.1/§6.2 y `roadmap.md`
+se corrigieron en el mismo commit. Este documento, escrito desktop-first, **ya no contradice a
+ninguno**.
 
-**Lo que este documento hizo:** escribir desktop-first, y **no tocar** `design-system.md` §6.1.
+### 12.2 ¿Se eleva `C-04`? — ✅ `RESUELTO` por [ADR-022](decisions.md#adr-022): sí, con condición
 
-**Qué resuelve el ADR:** cuál de los dos documentos se corrige, y si el contrato del primer viewport
-se reescribe para desktop o se conserva como el piso de la variante móvil.
+**Decidido por el owner el 30 de agosto de 2026.** `C-04` pasa a pedir **qué va a aparecer** y **por
+qué importa** siempre, y **cómo hacer que aparezca sólo cuando la aparición depende del estudiante**.
 
-### 12.2 ¿Se eleva `C-04`? — `PENDING`
+**Dos correcciones al planteo original de esta sección**, anotadas porque cambian de dónde partía la
+decisión:
 
-**A favor:** el vacío que dice *por qué importa el dato* (§1.4) es medible como mejor. Es `P-01`
-aplicado a la ausencia.
+1. `design-system.md` tenía **sólo la primera cláusula**. La de «por qué importa» **es decisión nueva
+   de ese día**, no una regla escrita que faltara aplicar.
+2. El manual normativo ya pedía una tercera que esta sección no mencionaba: *"y **cómo hacer que
+   aparezca**"*. Entró a la regla, pero **condicional**.
 
-**En contra:** multiplica la deuda de contenido que `C-07` ya declara. Cada vacío pasa de una frase a
-dos, y las dos mienten si cambia la regla.
+**La condición es lo que responde al argumento en contra.** Cuando el dato no aparece por algo que el
+estudiante pueda hacer, el vacío queda en dos cláusulas: **no se inventa una acción falsa para
+completar el patrón**. De los tres vacíos de Achieve, sólo uno lleva las tres.
 
-**Qué decidir:** si `C-04` pasa a *"el vacío explica qué va a aparecer **y por qué importa**"*, o si
-queda como está y esto es solo una recomendación.
+**Deuda acotada, no negada.** Son tres frases con ID en `lib/content/es-AR.ts`, que es exactamente
+para lo que `C-07` pide contenido versionado.
 
-### 12.3 Escala de espaciado — propuesta, no observación pura
+### 12.3 Escala de espaciado — ✅ `CONFIRMADA` por medición
 
-§4 es **una escala inferida** de medidas con ±2 px de error. Los valores caen limpio en base 4, lo
-que sugiere que el original la usa, pero **no está confirmado**.
+**Resuelto el 30 de agosto de 2026**, al arrancar la Fase A2. §4 era una escala **inferida** con ±2 px
+de error. Se midió sobre las capturas, detectando los hairlines por gradiente de luminancia en vez de
+a ojo:
 
-**Qué decidir:** adoptar §4.1 como canónica y moverla a `design-system.md` §2, o tratarla como
-provisional hasta la primera pantalla implementada.
+| Elemento | Medido | Sobre grilla de 8 |
+|---|---|---|
+| Sidebar expandida | **255,5 px** → 256 | 32 × 8 |
+| Sidebar colapsada | **79,5 px** → 80 | 10 × 8 |
+| Topbar | **55,5 px** → 56 | 7 × 8 |
 
-### 12.4 Modo oscuro — sin decidir, y el checklist lo exige
+Los tres caen limpio en múltiplos de 8. **La escala de base 4/8 queda confirmada por medición, no
+por inferencia**, y §4.1 pasa a canónica.
+
+> El hairline entre sidebar y página tiene una diferencia de luminancia de **~1,6 sobre 255**: son
+> casi el mismo gris. La separación la hace la línea, no el contraste de fondos.
+
+### 12.4 Modo oscuro — ⚠️ `REVERTIDO` por [ADR-097](decisions.md#adr-097) el 12 de septiembre de 2026
+
+> **Hay modo noche.** La condición de abajo —*una segunda tabla de contrastes medida*— se cumplió: es
+> `tests/tema.test.ts`, que lee los tokens de `app/globals.css` y mide cada par en los dos temas. Lo
+> que sigue es la decisión original, conservada como historia.
+
+#### Lo que se había decidido el 30 de agosto
 
 El checklist del manual incluye *"Modo oscuro: los colores semánticos siguen funcionando"*, y el
 software tiene toggle de tema. **`design-system.md` no define paleta oscura.**
@@ -760,8 +866,18 @@ software tiene toggle de tema. **`design-system.md` no define paleta oscura.**
 `--exito-texto` `#23883c` da 4.51:1 sobre card blanco; sobre una superficie oscura **falla**. Un modo
 oscuro exige una segunda tabla de contrastes medida, no estimada.
 
-**Qué decidir:** si el Track A tiene modo oscuro. Si no lo tiene, ese ítem del checklist se marca
-`N/A` con justificación escrita, no se deja en blanco.
+**Decidido el 30 de agosto de 2026: el Track A no tiene modo oscuro, y no se dibuja el conmutador.**
+
+La Fase A2 construye el shell en claro, que es lo que muestran todas las capturas de producto. **El
+conmutador de tema de las capturas no se replica**: un control de tema que no cambia nada es
+exactamente *"no prometas lo que no podés sostener"*.
+
+El ítem del checklist de §9 se marca **`N/A` con justificación escrita** —que es lo que el propio
+checklist exige en vez de dejarlo en blanco—: *"no hay paleta oscura definida; los tres semánticos
+están medidos sobre superficie clara y sobre oscuro fallan"*.
+
+**Deuda declarada:** un modo oscuro exige una **segunda tabla de contrastes medida**, no estimada.
+Mientras no exista, no hay modo oscuro.
 
 ### 12.5 Estados de error — no hay fuente
 
@@ -772,23 +888,141 @@ imágenes muestra un error.
 abiertos hasta tener referencia. El Track A los necesita: `UX05` (Evidencia) tiene siete estados y
 varios son de falla.
 
-### 12.6 Densidad de `UX06` — `PENDING`
+### 12.6 Densidad de `UX06` — ✅ `DECIDIDO`: lista de tarjetas
 
 La tabla de referencia muestra **7 columnas y 204 filas** para un usuario experto que la mira ocho
 horas por día. La Bitácora de Achieve la mira un estudiante, ocasionalmente.
 
-**Qué decidir:** si `UX06` es una tabla o una lista de tarjetas. §10.4 especifica la tabla; la
-decisión de usarla no está tomada.
+**Decidido el 30 de agosto de 2026: `UX06` es una lista de tarjetas, no una tabla.**
 
-### 12.7 Dónde vive la CTA principal en desktop
+El patrón de tabla de las capturas está diseñado para **densidad de trabajo diario**. La Bitácora la
+mira un estudiante **ocasionalmente**, y ya viene agrupada por ciclo desde la Etapa 0.7. Una tabla de
+siete columnas para eso agrega ruido sin agregar información, y a 360 px obliga a scroll horizontal,
+que el contrato de `design-system.md` §6.1 no admite.
 
-`I-06` exige una sola acción destacada por pantalla, y `design-system.md` §6.1 la pone **a ancho
-completo al final del primer viewport** — una definición móvil. En las capturas, la acción primaria
-va **arriba a la derecha**, en píldora negra, con ancho de contenido.
+§10.4 sigue describiendo la tabla como patrón observado; **Achieve no la usa en `UX06`.**
 
-**Qué decidir:** la posición de la CTA en desktop. Depende de §12.1 y no se puede resolver antes.
+### 12.7 Dónde vive la CTA principal en desktop — ✅ `RESUELTO` por [ADR-015](decisions.md#adr-015)
+
+**Resuelto el 29 de agosto de 2026.** La CTA principal va **a ancho completo al final de la columna
+principal**, en el layout de dos columnas de `design-system.md` §6.2. La píldora negra arriba a la
+derecha **se descartó**.
+
+**Esta sección estaba mal planteada.** Preguntaba razonando desde las capturas, que son de **otro
+producto**. La spec de Achieve tiene wireframes desktop propios y normativos: `VI.7` §21.2 y §24.1
+ya contestaban, y [`AGENTS.md`](../AGENTS.md) §8 pone `product-spec-source.md` por encima de este
+documento.
+
+**Regla general que dejó ADR-015:** cuando este documento y una spec `VI.*` describan lo mismo,
+**manda la spec**. Lo de acá es vocabulario visual, no contrato de layout.
 
 ---
+
+### 12.8 El dock inferior — ⚠️ `REABIERTO Y RESUELTO DE NUEVO` por [ADR-088](decisions.md#adr-088)
+
+**Registrado el 30 de agosto de 2026.** No era una decisión abierta: era un **choque entre dos
+documentos del propio repositorio**, y §1.5 de [`AGENTS.md`](../AGENTS.md) exige que un choque así
+se registre acá en vez de resolverse en silencio.
+
+| Documento | Qué decía |
+|---|---|
+| `roadmap.md`, tabla de brecha de la Fase A2 | *"Dock inferior con lo que quedó abierto → **no existe**"*, como brecha a cerrar |
+| **Este documento**, §7.4 · §10.1 · §11.3 | *"requiere multiventana"* · *"no aplica"* · *"lo que no se copia aunque esté bien hecho"* |
+
+Ganó este documento, por tres razones que no dependen de quién escribió cada línea:
+
+1. **La captura 07 lo dice ella misma.** *"**Dónde no:** productos de tarea única, **flujos
+   lineales**, o cualquier cosa que se use mayoritariamente en móvil. Ahí el dock es puro costo."*
+2. **Los seis requisitos innegociables del multiventana** cierran con *"si no podés cumplirlo, no lo
+   hagas: una vista dividida de dos paneles resuelve el 80 % del problema al 10 % del costo"*.
+3. **`A-07` es un defecto del dock**, no de su implementación: ya trunca títulos con dos elementos
+   abiertos. Está en la lista de anti-patrones de §11.2.
+
+**Qué hace Achieve en su lugar.** El trabajo real —*no perder el lugar*— lo resuelve el **breadcrumb**
+de la Etapa A2.1, que muestra el camino completo y el objeto actual. Un dock encima sería una segunda
+lista de destinos compitiendo con la navegación lateral.
+
+**Cómo entró el error.** La tabla de brecha se armó **mirando las capturas y listando lo que Achieve
+no tenía**, sin cruzar cada patrón contra §7.4 y §11.3. Es el mismo mecanismo que produjo `A-03` en
+la A2.1. La corrección quedó en `AGENTS.md` §1.5: **cruzar contra §7.4/§11.3 antes de anotar un
+patrón como brecha**, no sólo antes de implementarlo.
+
+**Había un test que lo sostenía** (`tests/ausencia.test.tsx`): ningún archivo de `app/`,
+`components/` o `lib/` podía llamarse dock ni multiventana, y este documento tenía que seguir
+descartándolo en más de un lugar. Una regla que vive sólo en un markdown vuelve en dos meses.
+
+---
+
+#### Lo que pasó después — 10 de septiembre de 2026
+
+**El descarte de arriba se conserva entero, con su fecha y su razón.** No se borra: un documento que
+tacha por qué dijo que no se equivoca dos veces, y la segunda es peor.
+
+Lo que caducó es **una premisa, no el razonamiento**. ADR-019 aplicó bien la regla del manual
+—*"flujos lineales → el dock es puro costo"*— sobre un producto que entonces era, textualmente,
+*"un flujo lineal `UX01`→`UX09` que **no tiene dos objetos abiertos a la vez** porque su unidad de
+trabajo es una `Action`"*.
+
+Entre el 8 y el 9 de septiembre de 2026 eso dejó de ser verdad: [ADR-077](decisions.md#adr-077) abrió
+el área «Materias» con 51 cursadas, [ADR-086](decisions.md#adr-086) les puso contenido a las 51,
+[ADR-085](decisions.md#adr-085) rearmó `UX02` alrededor del Gantt por tema —la unidad pasó a ser un
+objeto navegable— y [ADR-082](decisions.md#adr-082) hizo que la Bitácora fuera **de una materia**.
+
+**[ADR-088](decisions.md#adr-088) lo construye, y con los seis requisitos innegociables cumplidos los
+seis** — incluido el límite duro, que es justamente el que ADR-019 citó para descartarlo.
+
+⚠️ **No se llama dock, y no por cosmética.** Es **el espacio de trabajo**, y lo que contiene son
+**objetos abiertos** (`AGENTS.md` §4: un concepto, una palabra).
+
+⚠️ **El punto 2 de ADR-019 sobrevive intacto:** el breadcrumb **no se reemplaza**. La miga contesta
+*"¿dónde estoy?"* y el espacio *"¿qué tengo abierto?"*. Un espacio que contestara las dos sería la
+segunda lista de destinos que ADR-019 temía — con razón, y la advertencia sigue en pie.
+
+**El test no se borró: se reescribió contra la decisión nueva.** `tests/ausencia.test.tsx` verifica
+ahora **los seis requisitos**, por el mismo motivo que daba ADR-019 §3: una regla sin test se pierde
+en dos meses.
+
+⚠️ **Y el 10 de septiembre se volvió multiventana de verdad** —
+[Enmienda 3](decisions.md#adr-088-enmienda-3). Abrir una materia **va a su superficie completa**;
+desde ahí un semáforo arriba a la izquierda la minimiza a la barra, la reduce a ventana o la cierra.
+Las ventanas **conviven todas**, se apilan y se traen al frente tocándolas, y el escritorio entero
+vive en `?abierto=<a>,<b>` — el orden de la lista es el apilamiento.
+
+⚠️ **`A-07` sigue evitado, y aparece un riesgo nuevo que también se maneja.** Tres ventanas del mismo
+tamaño una encima de otra son *una sola ventana* para el que las mira: por eso el tamaño por defecto
+se achicó a `940 × 660` y la cascada a 32 px — medido en el navegador, con `1080 × 760` la segunda
+tapaba el 96 % de la primera.
+
+⚠️ **La trampa de foco de la Enmienda 1 se retiró**, con su razón escrita: era correcta para una
+ventana modal y, con varias no modales, encerraría al teclado en la última que se abrió.
+
+
+### 12.9 El tablero de Hoy contra la referencia del owner — ✅ `RESUELTO` por [ADR-093](decisions.md#adr-093)
+
+El 11 de septiembre el owner trajo una pantalla de referencia para `UX01` —no una de las 34 capturas—
+y pidió su **estilo comunicacional**. Se tomó: el propósito de la pantalla en mono al lado del título, la
+píldora con **un solo número**, tarjetas con color de identidad y días grandes, *riesgos detectados* con
+contador, la vista del día y la nota al pie que define la métrica.
+
+⚠️ **Y las tarjetas de evaluación de la referencia duraron dos días**: se construyeron, se miraron
+con datos reales y el owner las descartó junto con el carril que se le propuso al lado
+([ADR-096](decisions.md#adr-096)). Lo que la referencia aportó y **sí quedó** es el mecanismo: un
+bloque por pregunta, un renglón por cosa, y la nota al pie que define la métrica.
+
+⚠️ **Los *próximos 7 días* duraron un día.** El owner los cambió por **Tu día**
+([ADR-094](decisions.md#adr-094)): clases de hoy con su unidad y su aula, *Podés avanzar* y horarios.
+Lo que se conservó de la referencia es el mecanismo —un bloque, un renglón por cosa, la nota al pie—,
+no la ventana de siete días.
+
+**Donde la referencia y la spec hablaban del mismo píxel, ganó la spec** (ADR-015), y queda anotado:
+
+| En la referencia | En Achieve | Qué manda |
+|---|---|---|
+| Tres CTAs apiladas a la derecha del Hero | Una, a ancho completo al final de la columna | `I-06`, §12.7 |
+| El Hero a todo el ancho | 2/3, con los 7 días en el tercio | ADR-015: la columna secundaria es *continuidad* |
+| *"hace 12 días"* en rojo | El hecho sin color | ADR-078 |
+| Tarjeta de la operadora con una cita | No existe | `product.md` §13, ADR-033 |
+| Títulos y cifras con serifa | La tipografía de `globals.css` | Regla 6 |
 
 ## 13. Qué le agrega este documento a `design-system.md`
 
@@ -802,11 +1036,132 @@ Registro de reconciliación, para cuando se sincronicen los documentos.
 | §9.1 | **Especifica** la primitiva `Esqueleto`, declarada faltante en §3.2 |
 | §9.2 / §1.6 | **Especifica** la primitiva `Ausencia`, declarada faltante en §3.2 |
 | §10.2 | **Especifica** la primitiva `Provenance` vía el patrón de partición sin fusión |
-| §1.4 | **Propone** modificar `C-04`. Sujeto a §12.2 |
+| §1.4 | ✅ **Modificó `C-04`** por [ADR-022](decisions.md#adr-022) |
 | §5.3 | **Confirma** los tres semánticos. Rechaza explícitamente el cuarto color del original |
 | §11.2 | **Ancla** los nueve anti-patrones a evidencia visual concreta |
-| §12.1 | ⚠️ **Abre conflicto** con §6.1 (mobile-first). Sin resolver |
+| §12.3 | ✅ **Confirmada por medición** el 30 ago 2026: 256 / 80 / 56 px, todos múltiplos de 8 |
+| §12.4 | ⚠️ **Revertido por ADR-097:** hay modo noche, con la tabla de contrastes como test |
+| §12.6 | ✅ **Decidido:** `UX06` es lista de tarjetas, no tabla |
+| §12.1 | ✅ **Conflicto cerrado** por [ADR-014](decisions.md#adr-014): §6.1 se reencuadró como contrato de orden semántico y §6.2 pasó a primaria |
+| §12.7 | ✅ **Cerrado** por [ADR-015](decisions.md#adr-015) con los wireframes desktop de `VI.7` §24: CTA a ancho completo al final de la columna principal |
 | §12.4 | ⚠️ **Abre laguna**: modo oscuro sin paleta ni contrastes medidos |
 
-**Ninguna de estas modificaciones se aplica** hasta que los ADR de §12 estén resueltos. Este
+**Ninguna de estas modificaciones se aplica** hasta que los ADR de §12 estén resueltos, **salvo §12.1,
+que ya se aplicó** por [ADR-014](decisions.md#adr-014) el 29 de agosto de 2026. Para el resto este
 documento las registra; no las ejecuta.
+
+---
+
+## 14. Comparación lado a lado — Achieve contra las capturas
+
+**Corrida el 30 de agosto de 2026, Etapa A2.5**, a 1440 × 900 sobre el build de producción, las
+nueve superficies. Es el criterio de Done que la Fase A2 dejó explícito: *"comparación lado a lado
+con las capturas, **con las diferencias reportadas y no escondidas**"*. Formato de §9: no se
+esconden las que fallan.
+
+### 14.1 Lo que ya coincide
+
+| Patrón | Evidencia |
+|---|---|
+| Sidebar 256 / 80 px, topbar 56 px | Medido en el build; idéntico a la captura (§12.3) |
+| Ítem activo por **inversión de contraste**, no por color de marca | Píldora blanca sólida. Regla 3 de la captura 02 |
+| **Un solo badge numérico** en todo el menú | Regla 2 de la captura 02. Ver §14.2 · `D-06`: está en el ítem equivocado |
+| Máximo siete destinos de primer nivel | Achieve tiene cuatro |
+| Colapsar reduce tamaño, nunca información | `A-03` corregido en la A2.1, con test. **Desde [ADR-101](decisions.md#adr-101) la etiqueta recogida se va** (queda en `aria-label`/`title`); el contador sigue siendo número |
+| `⌘K` impreso **dentro** del control que dispara | Regla 4 de la captura 01 |
+| Cola `N de M` con flechas | Lista de materias de `UX01` |
+| CTA primaria a ancho completo al final de la columna | [ADR-015](decisions.md#adr-015) |
+| Fondo acromático, color racionado a tres semánticos | `P-06`, con la auditoría AA medida |
+
+### 14.2 Las diferencias, sin esconder ninguna
+
+**Seis de las siete están cerradas.** Queda `D-03`, con su bloqueo escrito en §14.5.
+
+| ID | Diferencia | Evidencia | Dónde se cierra |
+|---|---|---|---|
+| `D-01` ✅ | **Cerrada en A2.4.** Ninguna de las nueve tenía `<h1>`, y cuatro no tienen encabezado alguno (`UX06`, `UX07`, `UX08`, `UX09`) | `grep '<h1'` da 0 en `components/screens/`; el probe de navegador devuelve título `null` en cuatro rutas | ✅ **A2.4** — cada superficie tiene exactamente un `h1`, con guard. Las cuatro sin título propio promueven su eyebrow: título de documento **sin agregar una palabra** |
+| `D-02` ✅ | **Cerrada en A2.6.** Faltaba la subcopy explicativa de panel. Las capturas ponen título + párrafo que dice *qué es esto y por qué importa*; Achieve pone eyebrow + título + fecha | §11.9.4. La pantalla `Revisión` de la captura 03 lleva tres líneas de subcopy bajo el título | ✅ Las nueve las escribió el owner, del JTBD de cada spec. Un test verifica que cada cita sea **textual** |
+| `D-03` ⚠️ | **Cero controles segmentados** en las nueve superficies | `[role=tablist],[role=radiogroup]` da 0 en las nueve, y §10.2 los asigna a `UX05` y `UX07` | ⚠️ **Bloqueada, no diferida.** Ver §14.5 |
+| `D-04` ✅ | **Cerrada por [ADR-022](decisions.md#adr-022).** Los vacíos decían que no hay dato, no qué va a aparecer ni por qué importa | `UX08` mostraba el rótulo *"RECORRIDO TODAVÍA NO DISPONIBLE"* **y nada debajo** | ✅ Los tres vacíos argumentan. La tercera cláusula es condicional: dos de los tres no la llevan |
+| `D-05` ✅ | **Cerrada al re-medirla: el diagnóstico se dio vuelta.** Decía que la columna de 1120 px no se usaba y que faltaban dos columnas | Re-medido tras la subcopy: `UX02` **desborda**, y las tres superficies más vacías son las que **ya tienen dos columnas** | ✅ Ver §14.5. Lo que sobrevive es contenido faltante en la columna secundaria, no layout |
+| `D-06` ✅ | **Cerrada por [ADR-021](decisions.md#adr-021).** El único badge del menú estaba en Progreso, y la regla dice que el único badge es el del **trabajo pendiente que caduca**. La Bitácora no caduca | Regla 2 de la captura 02: *"un solo badge numérico en todo el menú: el del trabajo pendiente que caduca"* | ✅ Lo que caduca es el **`Commitment`**, y su lugar es `Hoy`. **No se dibuja todavía:** el `1` era un literal sin fuente. Ver §14.3 |
+| `D-07` ✅ | **Cerrada en A2.4.** No había acciones secundarias del objeto arriba a la derecha. Achieve las pone abajo y centradas | `UX01`: *"Ver progreso"* centrado al pie. `UX08`: *"VOLVER A CURSADO"* ídem. §11.9.3 las quiere en píldora de borde fino junto al título | ✅ `AccionDeObjeto` en píldora de borde fino. `CTA-009` se movió en `UX01` |
+
+### 14.3 `D-06`, resuelto — lo que caduca es el `Commitment`
+
+**Cerrado el 30 de agosto de 2026 por [ADR-021](decisions.md#adr-021)**, delegado por el owner.
+
+El `Commitment` es el único objeto que el estudiante **acordó hacer para un momento**, y al pasar ese
+momento cambia a `MISSED` de forma irreversible. Esa irreversibilidad **es** la caducidad. Una
+`Action` se reemplaza, una `Evidence` `SUBMITTED` espera a otra persona, la Bitácora sólo acumula, y
+la preparación de un examen no vence aunque el examen tenga fecha.
+
+Así que el badge **no iba en Progreso**: estaba en la única superficie sin nada que vencer. Su lugar
+es `Hoy`.
+
+**Y no se dibuja todavía.** Al abrirlo apareció un segundo problema, peor que el primero: el número
+era un **literal `1`** en `menu.ts`, una cifra sin un hecho detrás. Bajo el Track A sólo `/hoy`
+conoce el estado del `Commitment`, así que un badge real aparecería ahí y desaparecería en las otras
+tres, y esa ausencia se leería como *"no hay nada por vencer"*. **Un badge intermitente miente más
+que un badge ausente.**
+
+Se retiró, y vuelve cuando haya de dónde contarlo. Sigue habiendo **cero badges**, que es lo que la
+regla pide mientras ninguno se gane el lugar.
+
+### 14.4 Lectura de conjunto
+
+Las siete diferencias eran **de densidad y de estructura, no de lenguaje visual**. Los tokens, la
+tipografía, los hairlines, el racionamiento de color y el shell ya eran los de las capturas; lo que
+faltaba era que **cada pantalla dijera qué es y para qué sirve**.
+
+**Seis están cerradas.** `D-02` la cerró el owner escribiendo las nueve subcopys desde el JTBD de
+cada spec —no la capa visual, que habría inventado reglas de negocio—, y `D-04` la cerró
+[ADR-022](decisions.md#adr-022) elevando `C-04`.
+
+### 14.5 `D-03`, bloqueada — y `D-05`, que cambió de signo al re-medirla
+
+**`D-03` — segmentados.** §10.2 los asigna a *"método de evidencia / tipo de examen, **con lo
+inaplicable visible y atenuado**"*. Ninguna de las dos listas de opciones existe en los view models:
+`UX07` tiene `opciones`, pero son **Assessments a elegir** —la primitiva `SeleccionExplicita`, no un
+segmentado—, y `UX05` no tiene lista de métodos. Fabricar esas opciones sería inventar dominio.
+
+**Se decidió no construir el primitivo vacío.** Un `Segmentado` que ninguna pantalla renderiza es lo
+mismo que el em-dash de la Etapa A2.3 o el conmutador de tema de §12.4: dibujar un mecanismo sin el
+hecho que lo justifica.
+
+#### `D-05` — la medición de la A2.5 ya no describe el producto
+
+`D-05` decía: *"una sola columna centrada donde las capturas ponen lista y detalle"*, con el vacío
+concentrado en las superficies de una columna. **Re-medido el 30 de agosto de 2026**, después de la
+subcopy, a 1440 × 900:
+
+| Superficie | Columnas | Alto del contenido | Espacio libre bajo el pliegue |
+|---|---|---|---|
+| `UX02` | 1 | 870 px | **−50 px — pide scroll** |
+| `UX06` | 1 | 768 px | 52 px |
+| `UX03` | 1 | 691 px | 129 px |
+| `UX09` | **2** | 686 px | 134 px |
+| `UX04` · `UX05` | 1 | 643 px | 177 px |
+| `UX01` | 1 | 636 px | 184 px |
+| `UX07` | **2** | 556 px | 264 px |
+| `UX08` | **2** | 521 px | **299 px** |
+
+**El diagnóstico se dio vuelta.** Las superficies de una columna ya no son las vacías —`UX02`
+pide scroll y `UX06` casi llena—, y **las tres más vacías son justamente las que ya tienen dos
+columnas**. Agregar una segunda columna a las de una haría lo contrario de lo que `D-05` pedía.
+
+**El scroll de `UX02` no rompe nada, y se verificó en vez de suponerse.** Lo único que no puede
+caer bajo el pliegue es la CTA primaria (§6.1, [ADR-015](decisions.md#adr-015)). Medido en las nueve
+superficies, a **1440 × 900 y 1280 × 800**: la CTA termina entre **436 y 741 px**, siempre sobre el
+pliegue, en los dos viewports. Lo que queda abajo en `UX02` son las listas secundarias, que es donde
+corresponde que estén.
+
+> ⚠️ **Esta medición no está automatizada.** Es layout: `jsdom` no la puede verificar, así que se
+> corre con el navegador y se anota acá. Si el contenido de una superficie crece, hay que repetirla.
+
+**`D-05` queda cerrada como estaba escrita, y lo que sobrevive es otra cosa:** la columna secundaria
+de `UX07`/`UX08`/`UX09` es corta y deja el pliegue vacío. Eso **no** se arregla con layout — se
+arregla con lo que esa columna tenga para decir, que hoy son avisos de dominio que vienen del
+fixture. No es una diferencia contra las capturas: es contenido que todavía no existe.
+
+

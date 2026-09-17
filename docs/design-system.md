@@ -5,7 +5,11 @@
 **Deriva de:** `docs/design-system-source.md` (manual normativo), la extracción visual anonimizada
 en [`design-system-capturas.md`](design-system-capturas.md) y `app/globals.css` (implementación
 auditada). Los originales visuales no se versionan por ADR-006.
-**Última actualización:** 28 de agosto de 2026
+
+> **La fuente del lenguaje visual son las capturas de `docs/diseño/`**
+> ([ADR-018](decisions.md#adr-018)). **Se miran antes de tocar UI.** No están versionadas: si la
+> carpeta está vacía, se dice y se para — no se improvisa un diseño. Ver `AGENTS.md` §1.5.
+**Última actualización:** 29 de agosto de 2026
 
 ---
 
@@ -69,7 +73,13 @@ Resolución adoptada:
 > más de una materia con algo pendiente el mismo día, esa lista deja de ser plana y se vuelve
 > paginable, con flechas y contador. **No se agrega pantalla ni CTA nuevo.**
 
-Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.
+~~Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.~~
+
+⚠️ **Retirado de Hoy el 11 de septiembre de 2026 por [ADR-093](decisions.md#adr-093)**, por pedido del
+owner: *"no hace falta la tabla de estados ni las materias"*. Una cola de a una no sirve para una vista
+rápida. Las materias se ven ahora como **tarjetas de evaluación**, todas a la vez; entrar a una sigue
+siendo `CTA-001` **con su cursada** ([ADR-054](decisions.md#adr-054)). La resolución de arriba —el Hero no
+cambia— sigue valiendo.
 
 ### 1.5 Deuda detectada por `DD6`
 
@@ -230,7 +240,7 @@ no duplicar ni divergir el sistema de tokens.
 | `EstadoChip` | Chip de estado con relleno sólido + ink encima | `P-06` |
 | `CTAPrincipal` | Una sola por pantalla, en negro/inversión | `I-06` |
 | `CTASecundaria` | Acción secundaria, nunca compite | `I-06` |
-| `Fila` | Par label/valor con hairline, con estilo propio para ausencia | **`P-09`** |
+| `Fila` | Par label/valor con hairline. Delega en `Ausencia` (tipada) o en `EstadoChip` (dato adverso) | **`P-09`** |
 | `PasoDelRecorrido` | Progreso del recorrido de diseño — **no es parte del producto** | — |
 
 ### 3.1 `ReglaDeNegocio` es la primitiva más importante
@@ -260,8 +270,8 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 | Primitiva | Para qué | Principio |
 |---|---|---|
 | `Provenance` | Label de fuente + `verification_status` junto al dato | `P-08` |
-| `Ausencia` | Los cuatro estados de vacío tipados | `P-09` |
-| `Esqueleto` | Estados de carga con la geometría real del contenido | `P-12` |
+| ~~`Ausencia`~~ | ✅ **Extraída** en la Etapa A2.3. Dos tratamientos dibujados; *no hay dato* omite la fila y *no cargado* no ocurre bajo cero red. Ver [ADR-019](decisions.md#adr-019) | `P-09` |
+| ~~`Esqueleto`~~ | ✅ **Construida** el 13 de septiembre de 2026 en `components/screens/esqueleto.tsx`. Cada pantalla que carga tiene el suyo, **en su mismo archivo y con sus mismas primitivas**; lo fijo va real, los datos en bloques mudos (`aria-hidden`, sin color de materia, `motion-safe`). Ver `tests/esqueletos.test.tsx` | `P-12` |
 | `SeleccionExplicita` | Elegir entre varios Assessment sin ranking local | `UX07` |
 
 ---
@@ -274,7 +284,7 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 |---|---|---|
 | `P-01` | La interfaz explica **la regla del negocio**, no la función del control | `ReglaDeNegocio` en cada Hero. *"Porque: prepara la próxima clase."* |
 | `P-02` | Vocabulario del oficio intacto + glosa | Se dice "Unidad 3", "Parcial 1", "cátedra", "comisión". No se traduce a lenguaje llano |
-| `P-04` | Los defaults toman partido profesional | ⚠️ Varios defaults son `HUMAN-P0` **provisionales**. Ver [ADR-007](decisions.md#adr-007) |
+| `P-04` | Los defaults toman partido profesional | ✅ Los defaults `HUMAN-P0` **son criterio profesional confirmado** (`v1.0`, 31 ago 2026). Ver [ADR-025](decisions.md#adr-025). Sus residuos siguen abiertos |
 | `P-06` | El color se raciona a eventos semánticos | Base acromática + exactamente 3 semánticos |
 | `P-08` | La procedencia del dato es parte del dato | `source_type` + `verification_status` junto a cada dato discutible |
 | `P-09` | La ausencia se tipa | Cuatro estados distintos. *"Dominio: no evaluado"* ≠ *"no disponible"* ≠ `0` |
@@ -285,10 +295,34 @@ Detectadas al comparar las primitivas existentes con lo que exigen las specs de 
 | ID | Principio | Estado |
 |---|---|---|
 | `P-05` | Ordená por costo de no actuar | ✅ **Resuelto por `DD2`:** Commitment por vencer primero, proximidad del examen después |
-| `P-07` | Ningún atajo elimina su camino visible | Aplica poco: la interfaz del estudiante es mobile-first, con pocos atajos |
+| `P-07` | Ningún atajo elimina su camino visible | Aplica poco: la interfaz del estudiante tiene pocos atajos |
 | `P-10` | Una decisión por vez, con el reloj a la vista | ✅ **Resuelto por `DD7`:** cola paginable en la lista de materias, sin tocar el Hero. Ver §1.4 |
-| `P-12` | Los estados de carga tienen la forma del contenido real | Pendiente: falta la primitiva `Esqueleto` |
+| `P-12` | Los estados de carga tienen la forma del contenido real | ✅ **Aplicado** en las superficies del estudiante, el Calendario y el alta. Se dibuja **el caso completo**: si al llegar falta una sección opcional la pantalla se acorta, pero lo que está no se corre (§9.1 obliga a elegir). Lo que llega aparte —el tablero de `UX01`, *Tus clases* de `UX02`— tiene su esqueleto en su lugar. Queda fuera la ventana de la barra de objetos (`components/shell/panel-de-objeto.tsx`) |
 | `P-13` | Canal de feedback de alcance angosto | `N/A` en el Track A |
+
+### 4.4 `C-04` elevado — el vacío argumenta
+
+**Elevado el 30 de agosto de 2026** por [ADR-022](decisions.md#adr-022). Antes pedía una sola cosa:
+*"los estados vacíos explican qué va a aparecer"*. Ahora pide hasta tres.
+
+| Cláusula | Obligatoria | Ejemplo |
+|---|---|---|
+| **Qué va a aparecer** | Siempre | *"Acá va a aparecer el orden de pasos de esta preparación."* |
+| **Por qué importa** | Siempre | *"Es lo que te dice por dónde seguir sin tener que reconstruirlo vos."* |
+| **Cómo hacer que aparezca** | **Sólo si depende del estudiante** | *"Hacé clic para adjuntarla."* |
+
+**La tercera es condicional, y esa condición es la parte importante de la regla.** Cuando la
+aparición del dato **no** depende del estudiante —el recorrido lo arma el servicio propietario, la
+próxima acción la produce el Engine—, el vacío queda en **dos cláusulas**. No se inventa una acción
+falsa para completar el patrón: darle una palanca que no tiene es peor que un vacío corto.
+
+**Tratamiento.** Párrafo, `--text-label`, ancho máximo ~380 px (§9.2 de
+[`design-system-capturas.md`](design-system-capturas.md)). **Nunca en itálica atenuada**: ése es el
+tratamiento de `SIN_ASIGNAR` ([ADR-019](decisions.md#adr-019)), y un vacío que explica **no es un
+dato que falta** — usar el mismo tratamiento para las dos cosas rompe la distinción que `P-09` pide.
+
+**Lo que el vacío no hace:** no promete cuándo va a estar el dato, no emite veredicto sobre el
+estudiante (`C-06`) y no repite lo que ya está al lado.
 
 ### 4.3 `P-03` — mayormente `N/A`, y es una decisión fuerte
 
@@ -309,7 +343,7 @@ que el manual exime explícitamente de anclaje.
 | `C-01` | Una sola persona gramatical | **Voseo rioplatense en todo el producto.** *"Entregá"*, *"Subí"*, *"Comprometerme"*. El anti-patrón `A-05` es exactamente una grieta de tono en la pantalla más importante |
 | `C-02` | Un concepto = una palabra | El glosario de [`product.md`](product.md) §3 es normativo. `A-04` es la deriva de vocabulario |
 | `C-03` | Placeholders con ejemplos reales | Nunca *"Ingresá un valor"* |
-| `C-04` | Los estados vacíos explican qué va a aparecer | *"Tu trabajo registrado en esta materia va a aparecer acá."* |
+| `C-04` | **Elevado ([ADR-022](decisions.md#adr-022)).** El vacío explica **qué va a aparecer** y **por qué importa**, y —**sólo si la aparición depende del estudiante**— **cómo hacer que aparezca**. Ver §4.4 | *"Acá va a aparecer el orden de pasos de esta preparación. Es lo que te dice por dónde seguir sin tener que reconstruirlo vos."* |
 | `C-05` | Nombrá roles en la situación, no estados de base | *"Compromiso incumplido"*, no *"state: MISSED"* |
 | `C-06` | Las etiquetas describen, no juzgan | `INSUFFICIENT` se dice *"Todavía no cumple el criterio mínimo"*, nunca *"Fallaste"* |
 | `C-07` | Las frases de regla en archivo de contenido versionado | ⚠️ **Deuda: hoy están hardcodeadas** |
@@ -327,9 +361,14 @@ Lista consolidada en [`product.md`](product.md) §13.
 
 ## 6. Layout y responsive
 
-### 6.1 Mobile-first a 360 px
+> **Desktop-first** ([ADR-014](decisions.md#adr-014), 29 ago 2026). El viewport primario de diseño y
+> de verificación es **desktop**. **360 px es el piso obligatorio** de la variante móvil, no la medida
+> de referencia. El contrato de §6.1 **no cambió**: dejó de enunciarse como una propiedad de la
+> pantalla de 360 px y pasó a ser un contrato de **orden semántico**, obligatorio en todo ancho.
 
-El contrato del primer viewport, para toda pantalla de decisión:
+### 6.1 El contrato del primer viewport — orden semántico
+
+Rige en **todo viewport**. Para toda pantalla de decisión:
 
 ```
 estado en una línea
@@ -346,11 +385,40 @@ qué pasa después, en una línea
 último mensaje, indicador de progreso, link secundario que compita, o presencia humana sin hecho
 operacional.
 
-### 6.2 Desktop
+**Dónde se verifica:**
 
-Mantiene **el mismo orden semántico**. El espacio adicional se usa para conciencia periférica, no
-para sumar información al Hero. Proporción aproximada: 2/3 Hero + 1/3 contexto. El panel lateral no
-contiene CTAs competidoras.
+| Ancho | Rol | Qué se verifica |
+|---|---|---|
+| **Desktop** | Primario | El contrato de orden completo. Es donde corre el test de 10 segundos |
+| **360 px** | Piso obligatorio de la variante móvil | El mismo orden, sin pérdida de información |
+
+Una pantalla que cumple el contrato en desktop y lo pierde a 360 px **no está terminada**. La
+reducción a 360 px baja el **tamaño**, nunca la **cantidad de información** — es el anti-patrón
+`A-03`.
+
+### 6.2 Desktop — el viewport primario
+
+Mantiene **el mismo orden semántico** de §6.1. El espacio adicional se usa para conciencia periférica,
+no para sumar información al Hero. Proporción aproximada: 2/3 Hero + 1/3 contexto.
+
+**Las dos columnas tienen contenido asignado** ([ADR-015](decisions.md#adr-015), derivado de
+`product-spec-source.md` §VI.7 §21.2):
+
+| Columna | Qué lleva |
+|---|---|
+| **Principal** (2/3) | Identidad, datos, razón y **decisión** |
+| **Secundaria** (1/3) | Efecto real, continuidad y provenance expandida |
+
+**La CTA principal va a ancho completo, al final de la columna principal.** Una sola por pantalla y
+por estado. El retorno seguro vive en la columna secundaria y **nunca se estiliza como primaria** —
+el panel lateral no contiene CTAs competidoras.
+
+> **La píldora negra arriba a la derecha se descartó.** Pertenece al producto de las capturas
+> anonimizadas, no a Achieve. Regla general de ADR-015: cuando
+> [`design-system-capturas.md`](design-system-capturas.md) y una spec `VI.*` describan lo mismo,
+> **manda la spec**. Las capturas aportan vocabulario visual, no contrato de layout.
+
+**El ancho adicional no agrega información al Hero.** Ni protocolo, ni analytics, ni cronograma.
 
 ### 6.3 Un dato, un dueño visual
 
@@ -431,7 +499,12 @@ en una línea`. **No se esconden los que fallan.**
 ### Bloque 4 — Datos
 - [ ] `P-03` Ninguna magnitud de máquina llega cruda → ✅ el spec prohíbe mostrarlas
 - [ ] `P-08` Las dos fuentes de verdad son visibles; las ediciones locales están marcadas
-- [ ] `P-09` Vacío, no-cargado, sin-asignar y cero se ven distinto
+- [x] `P-09` Vacío, no-cargado, sin-asignar y cero se ven distinto — **A2.3**, con matiz declarado:
+      *sin-asignar* y *cero* se dibujan y se testean sin depender del color; *vacío* omite la fila
+      entera (*omitir, no inventar*); *no cargado* es `N/A` bajo cero red. **Cerrado del todo el 1 de
+      septiembre de 2026:** las dos clases que compartían tratamiento se separaron por
+      [ADR-020](decisions.md#adr-020) — un no-cambio **declarado** dejó de ser una ausencia y se
+      muestra como dato, con su fuente
 - [ ] `A-01` Con datos sucios reales, ninguna celda quedó ilegible
 
 ### Bloque 5 — Visual
@@ -443,12 +516,15 @@ en una línea`. **No se esconden los que fallan.**
 
 ### Bloque 6 — Interacción
 - [ ] `P-07` Cada atajo tiene su camino visible en la misma pantalla
-- [ ] `P-12` Los esqueletos tienen la forma real y nada salta al cargar
+- [x] `P-12` Los esqueletos tienen la forma real y nada salta al cargar
 - [ ] `I-01` Todo estado compartible tiene URL
 - [ ] `I-05` El bloqueante está arriba de todo
 - [ ] Recorrido completo con `Tab`
 - [ ] Lector de pantalla sobre la pantalla más compleja
-- [ ] **La pantalla de decisión sirve en 360 px**
+- [x] **La pantalla de decisión cumple el contrato de orden de §6.1 en desktop, y no lo pierde a 360 px**
+      — medido el 30 ago 2026 en las nueve superficies a **1440×900 y 1280×800**: la CTA primaria
+      termina entre 436 y 741 px, **siempre sobre el pliegue**; a 360 px no hay scroll horizontal.
+      ⚠️ **No automatizado:** es layout, `jsdom` no lo verifica. Se repite si crece el contenido
 
 ---
 

@@ -1,0 +1,191 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+
+import { TituloDePanel, AccionDeObjeto, CTAPrincipal, CTASecundaria, enCajaNormal } from "@/components/screens/design-system";
+import { SUBCOPY } from "@/lib/content/es-AR";
+
+/**
+ * Etapa A2.4 — `D-01`, `D-02` y `D-07` de `design-system-capturas.md` §14.2.
+ */
+
+const RAIZ = process.cwd();
+
+function pantallas(): string[] {
+  const dir = "components/screens";
+  return readdirSync(resolve(RAIZ, dir))
+    // Los dos archivos de primitivas no son pantallas: no tienen cabecera propia.
+    .filter((f) => f.endsWith(".tsx") && f !== "design-system.tsx" && f !== "esqueleto.tsx")
+    .map((f) => join(dir, f));
+}
+
+// ── D-01 · toda superficie tiene título de documento ─────────────────────────
+
+describe("D-01 · cada superficie tiene un `h1`, y uno solo", () => {
+  /**
+   * Antes de la A2.4 ninguna de las nueve tenía `<h1>` y cuatro no tenían
+   * encabezado alguno: para un lector de pantalla, la pantalla no se llamaba
+   * nada. El guard es estático porque la alternativa —renderizar las nueve— ya
+   * la cubren `screens-render`, `ux07`, `ux08` y `ux09`.
+   */
+  it("las nueve superficies dibujan su cabecera con `TituloDePanel`", () => {
+    const sinCabecera = pantallas().filter(
+      (f) => !/<TituloDePanel\b/.test(readFileSync(resolve(RAIZ, f), "utf8")),
+    );
+    expect(sinCabecera).toEqual([]);
+  });
+
+  it("ninguna superficie se dibuja su propio `h1` por fuera de la primitiva", () => {
+    const propios = pantallas().filter((f) => /<h1\b/.test(readFileSync(resolve(RAIZ, f), "utf8")));
+    expect(propios).toEqual([]);
+  });
+
+  it("hay exactamente un `h1` y es el título", () => {
+    const { container } = render(<TituloDePanel titulo="Cursado" meta="Programación" />);
+    const h1 = container.querySelectorAll("h1");
+    expect(h1).toHaveLength(1);
+    expect(h1[0].textContent).toBe("Cursado");
+  });
+
+  /**
+   * El owner sacó la línea en mayúsculas arriba del título (13 sep 2026): *"no
+   * sirven de nada"*. El título es lo primero de la cabecera; el contexto va
+   * debajo, en `meta`.
+   */
+  it("la cabecera no dibuja eyebrow: el título es lo primero", () => {
+    const { container } = render(<TituloDePanel titulo="Cursado" meta="Programación" />);
+    expect(container.querySelectorAll(".eyebrow")).toHaveLength(0);
+    expect(container.querySelector("header > div")?.firstElementChild?.tagName).toBe("H1");
+  });
+
+  it("ninguna superficie le pasa un eyebrow a la cabecera", () => {
+    const conEyebrow = pantallas().filter((f) =>
+      /<TituloDePanel\b[\s\S]*?\beyebrow=/.test(readFileSync(resolve(RAIZ, f), "utf8")),
+    );
+    expect(conEyebrow).toEqual([]);
+  });
+});
+
+// ── D-02 · la subcopy se omite mientras no esté escrita ──────────────────────
+
+describe("D-02 · la subcopy no se inventa", () => {
+  it("`null` no dibuja subcopy: omitir, no inventar", () => {
+    const { container } = render(<TituloDePanel titulo="Y" subcopy={null} />);
+    expect(container.querySelectorAll("p.subcopy")).toHaveLength(0);
+  });
+
+  it("escrita, se dibuja bajo el título", () => {
+    const { container } = render(<TituloDePanel titulo="Y" subcopy="Qué es y por qué importa." />);
+    expect(container.textContent).toContain("Qué es y por qué importa.");
+  });
+
+  /**
+   * No falla: **informa**. Mientras haya superficies sin subcopy, esta lista
+   * las nombra en cada corrida, para que la deuda de contenido no se olvide por
+   * no verse. Cuando se escriban todas, el `console.info` desaparece solo.
+   */
+  /**
+   * Cada frase declara de qué parte del spec sale. Si esa cita deja de existir
+   * —porque la spec cambió— la subcopy pasa a afirmar algo que ya nadie
+   * respalda, y eso es exactamente lo que `C-07` intenta evitar. El test lee
+   * las citas del propio comentario, así que no hay una segunda lista que
+   * mantener sincronizada.
+   */
+  it("cada subcopy cita un texto que existe en el spec, palabra por palabra", () => {
+    const spec = readFileSync(resolve(RAIZ, "docs/product-spec-source.md"), "utf8");
+    const fuente = readFileSync(resolve(RAIZ, "lib/content/es-AR.ts"), "utf8");
+    const bloque = fuente.slice(fuente.indexOf("export const SUBCOPY"), fuente.indexOf("export const copy"));
+
+    const citas = [...bloque.matchAll(/\*"([\s\S]*?)"\*/g)]
+      .map((m) => m[1].replace(/\n\s*\*/g, " ").replace(/\s+/g, " ").trim())
+      // Las citas largas se abrevian con "…": cada mitad se verifica aparte.
+      .flatMap((c) => c.split("...").map((t) => t.trim()))
+      .filter((c) => c.length > 20);
+
+    expect(citas.length).toBeGreaterThanOrEqual(9);
+    const inventadas = citas.filter((c) => !spec.includes(c));
+    expect(inventadas).toEqual([]);
+  });
+
+  it("informa qué superficies siguen sin subcopy", () => {
+    const pendientes = Object.entries(SUBCOPY)
+      .filter(([, v]) => v === null)
+      .map(([k]) => k);
+    if (pendientes.length > 0) {
+      console.info(`D-02 · subcopy pendiente en: ${pendientes.join(", ")} — la escribe una persona.`);
+    }
+    expect(Object.keys(SUBCOPY)).toHaveLength(9);
+    expect(pendientes, "las nueve las escribió el owner en la A2.6").toEqual([]);
+  });
+});
+
+// ── D-07 · las acciones del objeto no compiten con la CTA primaria ───────────
+
+describe("D-07 · acciones secundarias arriba a la derecha", () => {
+  /**
+   * El defecto que introduje al mover `CTA-009` arriba: la pill quedó en la
+   * cabecera **y** el botón viejo siguió al pie. La misma acción dos veces en
+   * una pantalla rompe `C-02` —un concepto, un lugar— y agrega ruido en la
+   * única superficie donde el estudiante decide. Lo vi en una captura de
+   * pantalla, no en un test; ahora hay test.
+   */
+  it("ninguna superficie ofrece la misma acción arriba y al pie", () => {
+    const duplicadas = pantallas().flatMap((f) => {
+      const src = readFileSync(resolve(RAIZ, f), "utf8");
+      const arriba = [...src.matchAll(/<AccionDeObjeto[^>]*>\{?([^<}]+)\}?<\/AccionDeObjeto>/g)].map((m) => m[1].trim());
+      const abajo = [...src.matchAll(/<CTASecundaria[^>]*>\{?([^<}]+)\}?<\/CTASecundaria>/g)].map((m) => m[1].trim());
+      return arriba.filter((a) => abajo.includes(a)).map((a) => `${f}: ${a}`);
+    });
+    expect(duplicadas).toEqual([]);
+  });
+
+  it("`AccionDeObjeto` no es una CTA primaria", () => {
+    const { container } = render(<AccionDeObjeto>Ver progreso</AccionDeObjeto>);
+    const boton = container.querySelector("button") as HTMLElement;
+    expect(boton.getAttribute("data-cta-primaria")).toBeNull();
+    // Ancho de contenido, no ancho completo: §11.9.3.
+    expect(boton.className).not.toContain("w-full");
+  });
+});
+
+// ── Sin rótulos en mayúsculas — 13 sep 2026 ─────────────────────────────────
+
+describe("los rótulos y las líneas de estado se dibujan en caja normal", () => {
+  it("un texto TODO EN MAYÚSCULAS sale con mayúscula inicial", () => {
+    expect(enCajaNormal("PREPARACIÓN ACTIVA")).toBe("Preparación activa");
+    expect(enCajaNormal("SIN ACCIONES POR AHORA")).toBe("Sin acciones por ahora");
+  });
+
+  it("respeta el nombre propio, las siglas con dígitos y los romanos", () => {
+    expect(enCajaNormal("MODO EXAMEN ACTIVO")).toBe("Modo Examen activo");
+    expect(enCajaNormal("RECORRIDO FUERA DE P0")).toBe("Recorrido fuera de P0");
+    expect(enCajaNormal("ANALISIS MATEMATICO II")).toBe("Analisis matematico II");
+  });
+
+  it("lo que ya está bien escrito, o no es texto, no se toca", () => {
+    expect(enCajaNormal("Cálculo Avanzado")).toBe("Cálculo Avanzado");
+    expect(enCajaNormal(3)).toBe(3);
+  });
+
+  it("tampoco un botón: el texto que llega en mayúsculas se dibuja en caja normal", () => {
+    const { getByRole } = render(
+      <>
+        <CTAPrincipal>ABRIR PASO ACTUAL</CTAPrincipal>
+        <CTASecundaria>VOLVER A CURSADO</CTASecundaria>
+      </>,
+    );
+    expect(getByRole("button", { name: "Abrir paso actual" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Volver a cursado" })).toBeInTheDocument();
+  });
+
+  it("ninguna pantalla vuelve a poner `uppercase` en un rótulo", () => {
+    // Los encabezados de columna (tablas, calendario, eje del Gantt) sí van en
+    // mayúsculas, como en las capturas: son los únicos permitidos.
+    const PERMITIDOS = ["calendario.tsx", "indice-de-materias.tsx"];
+    const con = pantallas()
+      .filter((f) => !PERMITIDOS.some((p) => f.endsWith(p)))
+      .filter((f) => /uppercase/.test(readFileSync(resolve(RAIZ, f), "utf8")));
+    expect(con).toEqual([]);
+  });
+});

@@ -4,6 +4,9 @@
 **Rol:** owner canónico del contrato máquina-a-máquina actualmente disponible entre Plataforma y CRM.
 **Última verificación documental:** 28 de agosto de 2026
 **Estado:** el endpoint de autorización de §1 existe; los flujos de §2 son contexto futuro sin contrato implementable.
+**Última corrección:** 3 de septiembre de 2026 — §2.1: se tacha el selector *"sólo `NEGOCIO`"* del
+flujo 2 y entran los flujos **D** y **E** propuestos por el CRM. **§1 no se tocó**, y sigue siendo el
+único contrato vigente entre los dos sistemas.
 
 > Este documento registra un contrato externo. No acepta por sí mismo [ADR-005](decisions.md#adr-005),
 > no habilita datos reales mientras [ADR-006](decisions.md#adr-006) siga `PENDING` y no cierra por
@@ -151,6 +154,216 @@ Se listan solo para que tengan el mapa completo. **No hay que construir nada de 
   del alumno (materias, evaluaciones, próxima acción) para mostrárselo al operador. Esto lo tiene que
   **exponer la Plataforma** como una **API de servicio** (autenticada con token de servicio, no con token de
   alumno). Se acordará el contrato cuando toque.
+
+## 2.1 Contrato v2 — propuesta · [ADR-003](decisions.md#adr-003), 1 de septiembre de 2026
+
+> **Es una propuesta para el CTO, no un contrato acordado.** ADR-003 decidió el reparto de
+> responsabilidades; el versionado del contrato lo lleva el CTO, con OpenAPI y/o esquemas de eventos
+> versionados, compatibilidad explícita y registro de cambios.
+
+### Qué decidió ADR-003, y qué implica para el contrato
+
+| Quién | Rol |
+|---|---|
+| **Achieve Plataforma** | **Fuente canónica** de compromisos, evidencias, lifecycle, readiness e intervenciones |
+| **Dashboard_Achieve** | **Superficie operativa** que consume esos contratos |
+
+Los dos codebases **siguen separados**; lo que converge es el dominio. La consecuencia directa para
+el contrato: **Dashboard no escribe dominio de Achieve**. Lee, muestra y opera; los hechos los
+produce Achieve.
+
+> **Cómo se cumple esa frase ahora que el operador trabaja en el CRM**
+> ([ADR-033](decisions.md#adr-033)). El CRM **no escribe: envía comandos autenticados**. La
+> Plataforma los valida contra sus máquinas de estados y produce el hecho canónico. Sin esa
+> distinción, esta frase y la propiedad canónica de `Intervention` que declaró ADR-003 no podían ser
+> ciertas al mismo tiempo, porque la intervención y su outcome ocurren en el otro sistema. Con ella,
+> las dos se cumplen literales: sin DB compartida y sin saltear el lifecycle.
+
+### La tabla de reconciliación, completa
+
+Las filas que ADR-003 dejaba *"a confirmar"* quedaron resueltas. **La fila que importa es la de
+`Checkpoint`**, que parecía ser `Commitment` + `Evidence` fusionados y **no lo es**:
+
+| Concepto | Definición canónica | En Dashboard hoy | Estado |
+|---|---|---|---|
+| `Commitment` | **Obligación concreta acordada con el estudiante** | — | Canónico en Achieve |
+| `Checkpoint` | **Momento planificado de revisión o control** | `checkpoints` | Concepto propio de Dashboard |
+| `Evidence` | **Prueba presentada para demostrar el cumplimiento** | — | Canónico en Achieve |
+| `CheckpointResult` | **Resultado de revisar uno o más compromisos y evidencias** | `checkpoint_validations` (parcial) | A construir |
+| Operador | Persona que acompaña | `coaches` | Mismo rol — confirmar permisos |
+| Estudiante | Titular de los datos | `users` | Mismo |
+| `human_assignment` | A qué operador está asignado | `users.coach_id` | Mismo |
+| `Intervention` | Acción del operador con playbook, SLA y outcome | `coach_notes` / `activities` | **Parcial:** una nota no tiene SLA ni outcome |
+| `ProgressEntry` / Bitácora | Historial derivado de hechos | `achieve_daily_logs` | **Parcial:** el log es diario; la Bitácora se agrupa por ciclo |
+| — | — | `challenges`, `streaks`, `payments`, `leads` | **Sin equivalente**, y no se importan: rachas y puntos son gamificación, que el spec de Achieve excluye |
+
+**Un `Checkpoint` puede** revisar un compromiso, solicitar una evidencia y producir un resultado —
+pero son entidades distintas con lifecycle propio. Fusionarlas borraría el primer eslabón de
+*enviar no es suficiencia, suficiencia no es validación, validación no es dominio*.
+
+### Los tres flujos de v2
+
+| # | Flujo | Dirección | Estado |
+|---|---|---|---|
+| 1 | **Autorización de padrón** | Plataforma → CRM | ✅ **v1, vigente.** §1 de este documento |
+| 2 | **Actividad** | Plataforma → CRM | 🟡 **Especificado por el CRM el 3 de septiembre de 2026** como **Flujo D**, y aceptado con cambios: [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §1. Falta [ADR-041](decisions.md#adr-041) |
+| 3 | **Contexto vivo** | CRM → Plataforma | ⬜ a definir. API de servicio, token de servicio |
+| **4** | **Comandos de intervención y outcome** | **CRM → Plataforma** | ⬜ **Falta en esta lista, y hace falta.** Ver §2.2 |
+| **5** | **Vinculación de teléfono** | **Plataforma → CRM** | 🟡 **Propuesto por el CRM el 3 de septiembre de 2026** como **Flujo E**. El transporte no tiene objeciones; **la Plataforma no tiene el número ni dónde pedirlo** ([ADR-042](decisions.md#adr-042)) |
+
+> ⚠️ **Los tres flujos originales son dos de lectura y uno de alta de estudiante: ninguno permite al
+> CRM devolverle a la Plataforma un hecho de intervención.** Es el hallazgo de
+> [ADR-033](decisions.md#adr-033), y se detalla en §2.2.
+
+**Propuesta para el flujo 2 — actividad.** Que transporte **los eventos del Product Event Model que
+ya existen**, no un formato nuevo: el catálogo está declarado en `lib/domain/product-events.ts` con
+sus niveles ([ADR-027](decisions.md#adr-027)). ~~Sugerencia concreta: **sólo los de nivel
+`NEGOCIO`**. Los de `TRANSICION` son trazabilidad interna del lifecycle y empujarlos al CRM sería
+exportar ruido.~~
+
+> ⚠️ **La segunda mitad de esa propuesta quedó superada el 3 de septiembre de 2026, y se tacha en vez
+> de borrarse.** *"Sólo los de nivel `NEGOCIO`"* **no sirve como selector de actividad**, y se
+> descubrió al especificar el flujo con el CRM:
+>
+> - **`EvidenceSubmitted` —la entrega, que es *el* caso de "produjo"— es nivel `TRANSICION`.** Con
+>   ese filtro, el evento más facturable del producto no viajaría.
+> - **`InterventionStarted` e `InterventionResolved` son `NEGOCIO` y los produce un operador**, no el
+>   estudiante. Facturar por ellos sería facturar porque alguien está en problemas.
+>
+> **El nivel clasifica para qué sirve un evento, no quién lo produjo.** El selector correcto es una
+> marca propia y explícita en el mismo catálogo, y **cuáles la llevan es
+> [ADR-041](decisions.md#adr-041), que está `PENDING`: no se construye contra esto.** El desarrollo
+> completo, con la lista candidata, está en
+> [`respuesta-crm-flujos-d-e-v0.1.md`](respuesta-crm-flujos-d-e-v0.1.md) §1.3.
+>
+> **Lo que sí sigue en pie es la primera mitad:** el vocabulario es el catálogo que ya existe, no uno
+> nuevo. Su estabilidad está garantizada por construcción —guard en las dos direcciones y nombres que
+> no se cambian, porque `product_event` es append-only—.
+
+**Propuesta para el flujo 3 — contexto vivo.** Que devuelva **la misma proyección que ya consume
+`UX02`**, que es exactamente *"materias, evaluaciones, próxima acción"*: `estado_de_materia()` ya la
+compone en una sola lectura consistente. Construir una segunda vista para el operador crearía dos
+verdades sobre el mismo estudiante — el mismo error que `VI.6` §8.3 prohíbe para el historial.
+
+⚠️ **Ninguno de los dos se implementa hasta que el CTO versione el contrato.** Y ninguno transporta
+datos de una persona real mientras [ADR-006](decisions.md#adr-006) siga sin dictamen legal.
+
+### 2.2 Lo que la Fase B6 necesita del contrato v2 — 1 de septiembre de 2026
+
+> **Hay candidato, y su diseño está aceptado por los dos lados.** El CTO respondió el 1 de
+> septiembre de 2026, la Plataforma lo revisó y corrigió, y el CRM lo contrastó contra su código el
+> 2 de septiembre: `CRM ACCEPTS WITH REQUIRED CHANGES`, **sin una sola objeción de diseño**. Todo
+> vive en [`contrato-riesgo-candidato-v0.2.md`](contrato-riesgo-candidato-v0.2.md), que es ahora el
+> owner de los tres flujos.
+>
+> ⏸️ **Diferido por [ADR-035](decisions.md#adr-035)** al final del Track B — **prioridad, no
+> bloqueo**. Cómo se retoma: §11 de ese documento. Esta sección queda como el **requerimiento** que
+> lo originó, y **§1 de acá sigue siendo el único contrato vigente entre los dos sistemas**.
+
+**Esto no es una propuesta de contrato: es la lista de lo que Achieve no puede saber solo.** El
+dominio de riesgo e intervención está construido ([ADR-032](decisions.md#adr-032)) y **no está
+esperando a este documento**. Endpoint, payload, nombres de campo, autenticación y SLA **los define
+el CTO**: proponerlos acá obligaría a rehacerlos después, que es exactamente lo que ADR-003 quiso
+evitar.
+
+> **Reemplaza a la versión del 2 de septiembre de 2026**, que pedía un *directorio de operadores*.
+> Esa versión partía de un supuesto que [ADR-033](decisions.md#adr-033) corrigió: que existirían
+> superficies de operador dentro de la Plataforma. **No existen y no deben existir.** Lo que hace
+> falta no es poder preguntarle al CRM quién es un operador — es un canal por el que el CRM le
+> devuelva hechos a la Plataforma.
+
+#### 1 · La frontera confirmada
+
+El CTO confirmó, y coincide con el spec fuente (§8 *"Wireframes low-fi — Operador / CRM"*, Parte II
+§18.1):
+
+- El operador **no interactúa con la Plataforma** y **nunca inicia sesión** en ella.
+- **Todas** las superficies de operador pertenecen al CRM.
+- A la Plataforma acceden **únicamente los estudiantes autorizados por el CRM**, por §1.
+
+Consecuencia para el contrato: **la Plataforma no autentica personas del lado operativo. Autentica al
+CRM como sistema.** La identidad del operador viaja **asertada por el CRM** dentro del comando;
+`intervention.owner_operator_id` es `UUID NOT NULL` **sin FK**, y así se queda.
+
+#### 2 · Los tres flujos que faltan
+
+Descritos como **requerimiento**: qué necesita saber cada lado y qué garantías necesita. Nada de
+esto fija un endpoint.
+
+**Flujo A — Señal que requiere intervención humana · Plataforma → CRM**
+
+| | |
+|---|---|
+| **Qué necesita saber el CRM** | Que existe una señal que pide una persona, sobre qué estudiante, **con su causa** y su severidad |
+| **Por qué la causa es obligatoria** | `WF-O01` es explícito: *"cada caso muestra causa y playbook sugerido"*, y el spec prohíbe *"un score opaco como única salida"* |
+| **Garantías** | Idempotencia por identificador de evento; que un reenvío no duplique el caso en la cola |
+| **Abierto** | Si es push (webhook firmado, la forma que anticipa el flujo 2) o pull (el CRM consulta la cola). El spec §18.1 admite las dos |
+| **Qué NO viaja** | El orden de la cola. *"No ordenar por último mensaje"* es una regla del CRM, y priorizar la cartera es suyo |
+
+**Flujo B — Comandos de intervención y outcome · CRM → Plataforma · ⚠️ no existe hoy**
+
+| | |
+|---|---|
+| **Qué necesita la Plataforma** | Que el CRM le informe tres hechos: que una intervención **se abrió** con un dueño, que alguien **se hizo cargo**, y que **se cerró con su resultado** |
+| **Por qué es indispensable** | ADR-003 hace a la Plataforma fuente canónica de intervenciones, y el operador trabaja en el CRM. **Sin este canal el circuito de la B6 no puede cerrarse nunca**, porque el eslabón que lo cierra ocurre en el otro sistema |
+| **Qué hay del lado de Achieve** | Los comandos **ya existen y son transaccionales**: `abrir_intervencion()`, `reconocer` y `cerrar_intervencion()`. No les falta lógica; les falta un Controller y este contrato |
+| **Garantías** | Autenticación de servicio; idempotencia (cada escritor ya tiene su clave); que el cierre traiga **su outcome en el mismo comando** — cerrar sin resultado no es un camino que exista del lado de Achieve, y el contrato no debería poder pedirlo |
+| **Vocabulario congelado** | Los cinco outcomes (`recuperado`, `replanificado`, `sin_respuesta`, `escalado`, `falso_positivo`) los posee la Plataforma: `data-model.md` §10 |
+| **Abierto** | **Quién produce cada transición entre `OPEN`, `ACKNOWLEDGED` e `INTERVENTION_REQUIRED`.** *"Un operador la vio"* es un hecho del CRM; *"esto necesita una persona"* lo declara `risk_rule.modo = 'HUMANA'`, que es configuración de la Plataforma. Es `C01-022` |
+
+**Flujo C — Lectura de contexto académico · CRM → Plataforma**
+
+| | |
+|---|---|
+| **Qué necesita el CRM** | El contexto que `WF-O02` exige: *"materias, evaluaciones, próxima acción"*, en menos de 10 segundos de lectura humana |
+| **Propuesta** | **La misma proyección que ya consume `UX02`**. `estado_de_materia()` la compone en una sola lectura consistente. Construir una segunda vista crearía dos verdades sobre el mismo estudiante — el error que `VI.6` §8.3 prohíbe para el historial |
+| **Garantías** | Token de servicio, no token de alumno |
+
+#### 3 · Lo que este contrato no puede saltear
+
+⚠️ **Cualquier contrato que transporte notas, causas detalladas, evidencias o información individual
+de un estudiante queda condicionado por la Fase B7**: consentimiento, minimización, retención y
+borrado, bajo [ADR-006](decisions.md#adr-006). Que un flujo esté especificado no lo habilita a
+transportar datos de una persona real.
+
+Lo que se transporte debe ser **el mínimo que hace posible la intervención**, no todo lo que la
+Plataforma sabe. La matriz de visibilidad (`product.md` §4.1) sigue rigiendo del lado de Achieve.
+
+#### 4 · Qué sigue gateado, y qué no
+
+| Bloqueado | Por qué |
+|---|---|
+| El flujo B, y con él el cierre real del circuito | No existe el contrato. **Es lo único que la Fase B6 espera de afuera** |
+| `human_assignment` — qué estudiantes ve cada operador | `C01-039`. La matriz de visibilidad dice *"sus asignados"*, y quién es asignado a quién vive en el CRM |
+
+**Lo que NO está bloqueado, y conviene decirlo:** el circuito cerrado entero —señal con causa,
+intervención con dueño, outcome obligatorio para cerrar, auditoría— ya corre y está probado contra
+Postgres. Y **el mecanismo de autenticación tampoco es el bloqueo**: la persona nunca se autentica
+contra la Plataforma, y el patrón de secreto de servicio ya corre acá en `POST /api/reloj`.
+
+#### 5 · El componente transitorio
+
+`DirectorioDeOperadores` sigue en el código, **superado en dirección y pendiente de retiro**
+([ADR-033](decisions.md#adr-033)): preguntarle al CRM *"¿existe este operador?"* sobre una identidad
+que el propio CRM asertó en un comando autenticado es pedirle a un emisor que valide su propia
+afirmación. Se retira cuando exista un contrato aceptado.
+
+Hasta entonces es lo único que hace que `intervention.owner_verified = false` sea un hecho registrado
+y no un descuido. **Su significado no se redefine en el lugar:** cuando el contrato llegue, columna,
+valor o versión nuevos que preserven las filas históricas.
+
+#### 6 · Ownership por eslabón
+
+| Eslabón | Lo produce | Canónico en |
+|---|---|---|
+| **causa** | Plataforma | Plataforma |
+| **severidad** | Plataforma (`risk_rule`, `C01-021` abierta) | Plataforma |
+| *orden de la cola* | CRM | CRM |
+| **owner** | CRM | CRM; la Plataforma guarda la referencia |
+| **playbook** | ⬜ **Propuesta pendiente de `C01-044`** — el spec pone el Intervention Engine del lado del CRM (§15.3, §21), pero **no está decidido** | ⬜ |
+| **SLA** | ⬜ Ídem: parte del playbook | ⬜ |
+| **intervención** | CRM la ejecuta | **Plataforma** |
+| **outcome** | CRM lo elige; el vocabulario es de la Plataforma | **Plataforma** |
 
 ## 3. Checklist para la Plataforma (lo de HOY)
 

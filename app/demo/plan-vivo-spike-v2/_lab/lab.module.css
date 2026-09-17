@@ -1,0 +1,1414 @@
+/*
+ * 🧪 LABORATORIO DESCARTABLE — estilos de «Mi Plan vivo» V2.
+ *
+ * Copia deliberada del lenguaje de V1 (no se comparte para no tocar V1), con los
+ * agregados de V2. Sólo tokens de app/globals.css, en los dos temas. Ningún estado
+ * depende sólo del color: cada uno tiene texto, ícono y borde o fondo.
+ *
+ * ⚠️ El movimiento sigue en 480 ms, no en los 180–220 ms de
+ * design-system-capturas §2.5: acá el movimiento es la explicación.
+ */
+
+.pagina {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  padding: 16px 24px 64px;
+}
+
+.ribete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.ribeteMarca {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.reloj {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.saltar {
+  position: absolute;
+  left: -9999px;
+}
+.saltar:focus {
+  position: static;
+  color: var(--foreground);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* ── Encabezado e indicadores ─────────────────────────────────────────────── */
+
+.encabezado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px 32px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+.titulo {
+  font-size: var(--text-title-lg);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.bajada {
+  font-size: var(--text-body);
+  color: var(--muted-foreground);
+  margin: 6px 0 0;
+  max-width: 64ch;
+  line-height: 1.45;
+}
+.indicadoresBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+}
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, auto));
+  gap: 12px 24px;
+  margin: 0;
+}
+.indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.indicador dt {
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+}
+.indicador dd {
+  margin: 0;
+  font-size: var(--text-title-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.indicadorAntes {
+  font-size: var(--text-meta);
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.indicadorDetalle {
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+  max-width: 26ch;
+}
+.indicadorNota {
+  font-size: var(--text-meta);
+  color: var(--foreground);
+  background: var(--muted);
+  border-radius: var(--radius-control);
+  padding: 6px 10px;
+  margin: 0;
+  line-height: 1.4;
+}
+.queEs {
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+  max-width: 30ch;
+}
+.queEs summary {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  width: fit-content;
+}
+.queEs p {
+  margin: 4px 0 0;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+
+/* ── Próxima acción ───────────────────────────────────────────────────────── */
+
+.proxima {
+  --lab-materia: var(--muted-foreground);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  background: var(--card);
+  border: 2px solid var(--foreground);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 0 0 var(--lab-materia);
+  padding: 12px 16px 12px 20px;
+  margin-bottom: 12px;
+}
+.proximaTexto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  min-width: 0;
+}
+.proximaEtiqueta {
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+}
+.proximaTitulo {
+  font-size: var(--text-title-sm);
+  font-weight: 600;
+}
+
+/* ── Controles ─────────────────────────────────────────────────────────────── */
+
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.segmentado {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pildora);
+  background: var(--muted);
+}
+.segmento {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: var(--radius-pildora);
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 500;
+  cursor: pointer;
+}
+.segmento[aria-pressed="true"] {
+  background: var(--foreground);
+  color: var(--background);
+}
+.menuContenedor {
+  position: relative;
+}
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: 300px;
+  max-width: calc(100vw - 48px);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--sombra-menu);
+  padding: 8px;
+}
+.menuTitulo {
+  font-size: var(--text-meta);
+  font-weight: 600;
+  margin: 4px 8px;
+}
+.menuAyuda {
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+  margin: 6px 8px 2px;
+  line-height: 1.4;
+}
+
+.boton,
+.botonPrimario,
+.botonTexto,
+.botonChico {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  text-align: left;
+}
+.botonPrimario {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+/* En el camino hay muchos: secundarios, para que la única CTA primaria siga siendo la de arriba. */
+.botonChico {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--foreground);
+  font-weight: 600;
+  width: fit-content;
+}
+.botonTexto {
+  border-color: transparent;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.botonIcono {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-control);
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.boton:disabled,
+.botonPrimario:disabled,
+.botonChico:disabled,
+.opcion:disabled {
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+.opcion {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: var(--radius-control);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-body);
+  color: inherit;
+  cursor: pointer;
+}
+.opcion:hover:not(:disabled) {
+  background: var(--accent);
+}
+.boton:focus-visible,
+.botonPrimario:focus-visible,
+.botonTexto:focus-visible,
+.botonChico:focus-visible,
+.botonIcono:focus-visible,
+.segmento:focus-visible,
+.opcion:focus-visible,
+.bloque:focus-visible,
+.ventana:focus-visible,
+.hueco:focus-visible,
+.pilaPaso:focus-visible,
+.estacionBoton:focus-visible,
+.planScroll:focus-visible,
+.inspector h2:focus-visible,
+.calEvento:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-pildora);
+  padding: 4px 10px;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.pastillaEscenario {
+  background: var(--foreground);
+  color: var(--background);
+}
+.pastillaVistaPrevia {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1.5px dashed var(--foreground);
+}
+.pastillaNeutra {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.avisoDemo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-radius: var(--radius-control);
+  padding: 6px 6px 6px 12px;
+  font-size: var(--text-label);
+  margin-bottom: 12px;
+}
+
+/* ── Cuerpo ────────────────────────────────────────────────────────────────── */
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+.tarjeta {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.tarjetaCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.tarjetaTitulo {
+  font-size: var(--text-body);
+  font-weight: 600;
+  margin: 0;
+}
+.desplazar {
+  display: none;
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+}
+.resumenLimpio {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: var(--text-label);
+}
+
+/* ── Plan semanal ──────────────────────────────────────────────────────────── */
+
+.planScroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.grilla {
+  display: grid;
+  grid-template-columns: 88px repeat(7, minmax(112px, 1fr));
+  min-width: calc(88px + 7 * 112px);
+}
+.fila {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+.diaCabecera {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  font-size: var(--text-label);
+  font-weight: 600;
+  border-left: 1px solid var(--border);
+  min-height: 40px;
+}
+.diaCabeceraHoy {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: inset 0 -3px 0 var(--foreground);
+}
+.ahora {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: var(--radius-pildora);
+  padding: 2px 8px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.esquina {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--card);
+}
+.etiquetaCarril {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 10px 8px;
+  font-size: var(--text-meta);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--muted-foreground);
+}
+.celda {
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+}
+.celdaHoy {
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-size: 100% 100%;
+  background-blend-mode: normal;
+}
+.envoltorio {
+  min-width: 0;
+}
+.rotuloTiempo {
+  font-size: var(--text-meta);
+  font-weight: 600;
+  color: var(--accent-foreground);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2px;
+}
+
+.bloque {
+  --lab-materia: var(--muted-foreground);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: var(--text-meta);
+  line-height: 1.3;
+  color: var(--foreground);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px 6px 11px;
+  cursor: pointer;
+  box-shadow: inset 3px 0 0 var(--lab-materia);
+}
+.bloqueFila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px 6px;
+  min-width: 0;
+}
+.bloqueMateria {
+  font-weight: 600;
+}
+.bloqueEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.bloqueTitulo {
+  font-size: var(--text-label);
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bloqueMeta {
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.confirmado .bloqueMeta,
+.simulado .bloqueMeta {
+  color: inherit;
+}
+
+.fijo {
+  background: var(--muted);
+}
+.evaluacion {
+  border: 2px solid var(--foreground);
+}
+.hecho {
+  background: var(--exito-tinte);
+  color: var(--exito-tinte-texto);
+  border-color: transparent;
+}
+.hecho .bloqueMeta {
+  color: inherit;
+}
+.hechoEvidencia {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px dashed var(--muted-foreground);
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--border) 6px 8px);
+}
+.hechoEvidencia .bloqueMeta {
+  color: var(--muted-foreground);
+}
+.confirmado {
+  background: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
+}
+.promesa {
+  background: transparent;
+  border: 1.5px dashed var(--muted-foreground);
+  color: var(--foreground);
+}
+.propuesta {
+  border: 1.5px solid var(--muted-foreground);
+}
+.recomendada {
+  border: 2px solid var(--foreground);
+  box-shadow: inset 3px 0 0 var(--lab-materia), var(--sombra-flotante);
+}
+.simulado {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border: 1.5px dashed var(--foreground);
+}
+.intento {
+  background: var(--urgencia-tinte);
+  color: var(--urgencia-tinte-texto);
+  border: 1.5px dashed var(--urgencia-texto);
+}
+.intento .bloqueMeta {
+  color: inherit;
+}
+.incumplido {
+  background: var(--urgencia-tinte);
+  color: var(--urgencia-tinte-texto);
+  border: 2px solid var(--urgencia-texto);
+}
+.incumplido .bloqueMeta {
+  color: inherit;
+}
+/* Lo pasado se atenúa sin bajar el contraste del texto: fondo y borde, no opacidad. */
+.bloquePasado {
+  border-style: dotted;
+}
+.bloqueSeleccionado {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.huella {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-height: 44px;
+  border: 1.5px dashed var(--muted-foreground);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: var(--text-meta);
+  color: var(--foreground);
+  background: transparent;
+}
+.huellaChica {
+  min-height: 0;
+  padding: 4px 8px;
+}
+.huellaMotivo {
+  font-weight: 600;
+}
+.huellaDestino {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.ventana {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 6px;
+  align-items: baseline;
+  width: 100%;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+  border: 1px dotted var(--muted-foreground);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+}
+.ventanaExcepcion {
+  border: 1.5px dashed var(--foreground);
+}
+.ventanaQuitada {
+  text-decoration: line-through;
+  color: var(--muted-foreground);
+}
+.ventanaOrigen {
+  color: var(--muted-foreground);
+}
+.margen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 6px;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+.margenHora {
+  font-weight: 400;
+}
+
+.banda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.bandaEtiqueta {
+  flex: 0 0 96px;
+  font-size: var(--text-meta);
+  font-weight: 600;
+  color: var(--muted-foreground);
+  padding-top: 8px;
+}
+.bandaItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.bandaItems > * {
+  width: 240px;
+  max-width: 100%;
+}
+.bandaVacia {
+  font-size: var(--text-label);
+  color: var(--muted-foreground);
+  padding-top: 6px;
+}
+.porUbicar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.motivo {
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+  line-height: 1.35;
+}
+
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+}
+.leyendaTitulo {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.leyendaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.muestra {
+  display: inline-block;
+  width: 18px;
+  height: 11px;
+  border-radius: 3px;
+  padding: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+}
+
+/* ── Inspector ─────────────────────────────────────────────────────────────── */
+
+.inspector {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 12px;
+}
+.inspectorCabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.inspectorCabecera h2 {
+  font-size: var(--text-title-sm);
+  line-height: 1.25;
+}
+.inspectorCuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  display: inline-flex;
+  border-radius: var(--radius-pildora);
+  padding: 2px 10px;
+  font-size: var(--text-meta);
+  font-weight: 600;
+  background: var(--muted);
+  color: var(--foreground);
+}
+.inmovil {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--text-label);
+  color: var(--muted-foreground);
+}
+.selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1.5px dashed var(--foreground);
+  border-radius: var(--radius-control);
+  padding: 12px;
+}
+.huecos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.hueco {
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.hueco[aria-pressed="true"] {
+  background: var(--foreground);
+  color: var(--background);
+}
+.detalles summary {
+  cursor: pointer;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.detalles[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.seccionTitulo {
+  font-size: var(--text-label);
+  font-weight: 600;
+  margin: 0;
+}
+.texto {
+  font-size: var(--text-label);
+  line-height: 1.45;
+  margin: 0;
+}
+.textoSuave {
+  font-size: var(--text-label);
+  line-height: 1.45;
+  margin: 0;
+  color: var(--muted-foreground);
+}
+.lista {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--text-label);
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pasos {
+  margin: 0;
+  padding-left: 20px;
+  font-size: var(--text-label);
+  line-height: 1.45;
+}
+.datos {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0;
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+.datos dt {
+  color: var(--muted-foreground);
+}
+.datos dd {
+  margin: 0;
+}
+.aviso {
+  border-radius: var(--radius-control);
+  padding: 8px 12px;
+  font-size: var(--text-label);
+  line-height: 1.45;
+  background: var(--muted);
+  margin: 0;
+}
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.soloLectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Pila ──────────────────────────────────────────────────────────────────── */
+
+.pila {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.pilaCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pilaPasos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.pilaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pilaFlecha {
+  color: var(--muted-foreground);
+}
+.pilaPaso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pildora);
+  border: 1.5px dashed var(--foreground);
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+.pilaPaso[aria-pressed="true"] {
+  background: var(--foreground);
+  color: var(--background);
+}
+.pilaMarca {
+  font-size: var(--text-meta);
+  font-weight: 500;
+}
+.pilaDetalle {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.pilaColumnas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.pilaCierre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+/* ── Camino y Gantt ────────────────────────────────────────────────────────── */
+
+.inferior {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+.camino {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.caminoLienzo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.caminoConectores {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.caminoConectores path {
+  fill: none;
+  stroke: var(--muted-foreground);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.nivel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+}
+.riel {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.riel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: -14px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.rielLleno::before {
+  background: var(--foreground);
+}
+.rielPunto {
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: 999px;
+  border: 2px solid var(--foreground);
+  background: var(--card);
+}
+.rielLleno .rielPunto {
+  background: var(--foreground);
+}
+.nivelTitulo {
+  font-size: var(--text-label);
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+.estaciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.estacion {
+  --lab-materia: var(--muted-foreground);
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 200px;
+  max-width: 100%;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  box-shadow: inset 3px 0 0 var(--lab-materia);
+  padding: 8px 10px 8px 13px;
+}
+.estacionActual {
+  border: 2px solid var(--foreground);
+  box-shadow: inset 3px 0 0 var(--lab-materia), var(--sombra-flotante);
+}
+.estacionSimulada {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border: 1.5px dashed var(--foreground);
+}
+.estacionHecha {
+  background: var(--muted);
+}
+.estacionBloqueada {
+  border-style: dotted;
+  border-color: var(--muted-foreground);
+}
+.estacionSeleccionada {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+.estacionBoton {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.estacionTitulo {
+  font-size: var(--text-label);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.estacionMeta {
+  font-size: var(--text-meta);
+  line-height: 1.35;
+}
+.estacionEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-meta);
+  font-weight: 600;
+}
+
+.gantt {
+  position: sticky;
+  top: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ganttMateria {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ganttMateriaTitulo {
+  font-size: var(--text-label);
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ganttMarca {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--lab-materia);
+}
+.ganttFrases {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-meta);
+  line-height: 1.4;
+}
+.ganttScroll {
+  overflow-x: auto;
+}
+.ganttTabla {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: var(--text-meta);
+  table-layout: fixed;
+}
+.ganttTabla th {
+  font-weight: 600;
+  text-align: left;
+  padding: 2px 4px;
+  vertical-align: top;
+}
+.ganttTabla th:first-child {
+  width: 88px;
+}
+.ganttCelda {
+  border-radius: 6px;
+  padding: 4px 6px;
+  line-height: 1.25;
+  vertical-align: top;
+  border: 1px solid var(--border);
+}
+.ganttLleno {
+  background: var(--exito-tinte);
+  color: var(--exito-tinte-texto);
+  border-color: transparent;
+}
+.ganttDada {
+  background: var(--muted);
+}
+.ganttEsperada {
+  border: 1.5px dashed var(--muted-foreground);
+}
+.ganttEvidencia {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, var(--border) 6px 8px);
+}
+.ganttSimulado {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border: 1.5px dashed var(--foreground);
+}
+.ganttResaltado {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.ganttNota {
+  font-size: var(--text-label);
+  line-height: 1.4;
+  background: var(--muted);
+  border-radius: var(--radius-control);
+  padding: 8px 10px;
+  margin: 0;
+}
+
+/* ── Calendario ────────────────────────────────────────────────────────────── */
+
+.calendario {
+  display: grid;
+  grid-template-columns: 48px repeat(7, minmax(110px, 1fr));
+  min-width: calc(48px + 7 * 110px);
+}
+.calHora {
+  height: 36px;
+  font-size: var(--text-meta);
+  color: var(--muted-foreground);
+  text-align: right;
+  padding-right: 6px;
+  transform: translateY(-6px);
+}
+.calColumna {
+  position: relative;
+  border-left: 1px solid var(--border);
+  background-image: repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px 36px);
+}
+.calEvento {
+  --lab-materia: var(--muted-foreground);
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  overflow: hidden;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: var(--text-meta);
+  line-height: 1.2;
+  box-shadow: inset 3px 0 0 var(--lab-materia);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* ── Diálogo ───────────────────────────────────────────────────────────────── */
+
+.velo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--foreground) 35%, transparent);
+}
+.dialogo {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border-radius: var(--radius);
+  box-shadow: var(--sombra-menu);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dialogoTitulo {
+  font-size: var(--text-title-sm);
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ── Movimiento ────────────────────────────────────────────────────────────── */
+
+.aparece {
+  animation: aparecer 480ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aparece {
+    animation: none;
+  }
+}
+
+/* ── Anchos ────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  .encabezado {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .indicadoresBloque {
+    max-width: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .cuerpo {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  .inferior {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gantt {
+    position: static;
+  }
+  .pilaColumnas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .inspector .datos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .inspector .datos dd {
+    margin-bottom: 6px;
+  }
+}
+
+@media (max-width: 900px) {
+  .pagina {
+    padding: 12px 16px 48px;
+  }
+  .cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inspector {
+    position: static;
+    max-height: none;
+  }
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .indicador dd {
+    white-space: normal;
+  }
+  .desplazar {
+    display: inline;
+  }
+  .grilla {
+    grid-template-columns: 80px repeat(7, minmax(160px, 1fr));
+    min-width: calc(80px + 7 * 160px);
+  }
+  .bandaEtiqueta {
+    flex-basis: 100%;
+    padding-top: 0;
+  }
+  .reloj {
+    margin-left: 0;
+  }
+  .pilaColumnas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .boton,
+  .botonPrimario,
+  .botonChico,
+  .segmento {
+    min-height: 44px;
+  }
+}
+
+/* ── Estabilidad frente a la vista previa ──────────────────────────────────── */
+/* Lo que está arriba de un disparador de vista previa no puede cambiar de alto. */
+.indicadores {
+  grid-template-columns: repeat(4, minmax(9.5rem, 11rem));
+}
+.indicadorDetalle {
+  min-height: 2.8em;
+}
+.tarjetaCabecera .indicadorNota {
+  flex-basis: 100%;
+}
+@media (max-width: 900px) {
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

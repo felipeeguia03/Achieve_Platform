@@ -1,0 +1,391 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { Item, NavegacionLateral } from "@/components/shell/navegacion-lateral";
+import { recogerBarra, useBarraRecogida } from "@/lib/client/barra-lateral";
+import { BarraSuperior } from "@/components/shell/barra-superior";
+import { menu, rutaDelItem } from "@/lib/navigation/menu";
+import { desdeElPlan, migasDe, origenDeLaConsulta, padreDeMiga } from "@/lib/navigation/migas";
+import { nodoIds, nodos, superficieIds, type NodoId } from "@/lib/navigation/surfaces";
+import { ctaIds, ctaRegistry } from "@/lib/navigation/cta-registry";
+
+describe("El menú deriva del grafo", () => {
+  it("todo ítem apunta a un nodo que existe y tiene ruta", () => {
+    // ⚠️ **Se verifica el nodo y su ruta, no que sea superficie.** Antes se
+    // pedía `superficieIds`, que era un proxy: alcanzaba mientras el menú sólo
+    // llevara a las nueve. El índice de materias
+    // ([ADR-077](../docs/decisions.md#adr-077)) es un nodo **con ruta y sin
+    // wireframe** —no es una décima superficie— y el proxy lo rechazaba por la
+    // razón equivocada. Esto es lo que el nombre del test siempre dijo.
+    for (const item of menu) {
+      expect(nodoIds, item.nodo).toContain(item.nodo);
+      expect(nodos[item.nodo].ruta, item.nodo).not.toBeNull();
+      expect(rutaDelItem(item)).toBe(nodos[item.nodo].ruta);
+    }
+  });
+
+  it("el menú no ofrece ninguna de las nueve salvo las que son destino propio", () => {
+    // El corte que el proxy anterior daba gratis, ahora explícito: si un ítem
+    // apunta a una superficie, tiene que ser una superficie de verdad.
+    for (const item of menu) {
+      const esSuperficie = superficieIds.includes(item.nodo);
+      const esArea = nodos[item.nodo].wireframe === null;
+      expect(esSuperficie || esArea, item.nodo).toBe(true);
+    }
+  });
+
+  it("no incluye pasos de flujo que sólo se abren desde su origen", () => {
+    // UX03–UX05 son pasos del loop, no destinos que uno elige. Ofrecerlos en el
+    // menú sería dejar entrar a una evidencia sin la acción que la pide.
+    const enMenu = new Set(menu.map((m) => m.nodo));
+    for (const nodo of ["UX03", "UX04", "UX05"] as NodoId[]) {
+      expect(enMenu, `${nodo} no debería estar en el menú`).not.toContain(nodo);
+    }
+  });
+
+  it("ninguna superficie del menú depende sólo del menú para existir", () => {
+    // La navegación lateral es orientación, no una acción de dominio: cada
+    // destino tiene que ser alcanzable **también** por una CTA con contrato.
+    //
+    // `UX07` era la excepción —ninguna CTA llegaba (ADR-016)— y el menú tapaba
+    // el hueco. Desde el 1 de septiembre de 2026 lo alcanza `CTA-019`, así que
+    // ya no queda ninguno.
+    //
+    // ⚠️ **La regla se acota a las superficies, y no es un ablande.** Lo que
+    // hacía falso a `UX07` era ser una superficie con acciones de dominio
+    // alcanzable sólo por orientación. Un **área** de la arquitectura de
+    // información —`wireframe: null`, [ADR-077](../docs/decisions.md#adr-077)—
+    // no tiene acción propia: es orientación, y el menú es su entrada legítima.
+    // Cualquier nodo con wireframe sigue exigiendo su CTA.
+    const destinosDeCta = new Set(ctaIds.map((id) => ctaRegistry[id].destino));
+    const soloPorMenu = menu
+      .filter((m) => nodos[m.nodo].wireframe !== null)
+      .filter((m) => !destinosDeCta.has(m.nodo));
+    expect(soloPorMenu.map((m) => m.nodo)).toEqual([]);
+  });
+
+  it("un contador sólo aparece si tiene número", () => {
+    for (const item of menu) {
+      expect(item.contador === null || typeof item.contador === "number").toBe(true);
+    }
+  });
+});
+
+describe("Breadcrumb", () => {
+  it("cada superficie tiene su camino, y termina en sí misma sin enlace", () => {
+    for (const id of superficieIds) {
+      const migas = migasDe(id);
+      expect(migas.length, id).toBeGreaterThan(0);
+      expect(migas[migas.length - 1].href, `${id} no debe enlazarse a sí misma`).toBeNull();
+    }
+  });
+
+  it("UX01 es raíz: su breadcrumb tiene un solo elemento", () => {
+    expect(migasDe("UX01")).toHaveLength(1);
+  });
+
+  it("el árbol de padres no tiene ciclos", () => {
+    for (const id of superficieIds) {
+      const vistos = new Set<NodoId>();
+      let actual: NodoId | undefined = id;
+      while (actual !== undefined) {
+        expect(vistos, `ciclo en el breadcrumb de ${id}`).not.toContain(actual);
+        vistos.add(actual);
+        actual = padreDeMiga[actual];
+      }
+    }
+  });
+
+  it("todo eslabón intermedio enlaza a una ruta real", () => {
+    for (const id of superficieIds) {
+      for (const miga of migasDe(id).slice(0, -1)) {
+        expect(miga.href, `${id}`).not.toBeNull();
+        expect(Object.values(nodos).map((n) => n.ruta)).toContain(miga.href);
+      }
+    }
+  });
+});
+
+describe("Navegación lateral", () => {
+  const render1 = (colapsada: boolean, activo: NodoId | null = "UX01") =>
+    render(<NavegacionLateral nodoActivo={activo} colapsada={colapsada} onAlternar={() => {}} />);
+
+  // ADR-110 · Enm. 2: *Mi plan* está siempre, sin flag, y va segundo.
+  it("«Mi plan» se dibuja siempre, segundo después de Hoy", () => {
+    const { container } = render1(false);
+    const etiquetas = [...container.querySelectorAll("[data-item-menu]")].map((e) =>
+      e.getAttribute("data-item-menu"),
+    );
+    expect(etiquetas).toHaveLength(menu.length);
+    expect(etiquetas.slice(0, 2)).toEqual(["UX01", "PLAN_VIVO"]);
+  });
+
+  it("marca el ítem activo con aria-current, no sólo con color", () => {
+    render1(false);
+    const activo = screen.getByRole("link", { current: "page" });
+    expect(activo).toHaveTextContent("Hoy");
+  });
+
+  /**
+   * [ADR-101](../docs/decisions.md#adr-101): recogida, **sólo el ícono**, como el
+   * software de las capturas. Revierte la mitad de `A-03` que dejaba el nombre
+   * chico debajo; el nombre no se pierde para quien no ve: queda como nombre
+   * accesible del link y como `title` al pasar el mouse.
+   */
+  it("recogida no dibuja el nombre, y el link lo conserva como nombre accesible", () => {
+    const { container } = render1(true);
+    for (const item of menu) {
+      const link = screen.getByRole("link", { name: item.etiqueta });
+      expect(link).toHaveAttribute("title", item.etiqueta);
+      expect(link.textContent, item.etiqueta).not.toContain(item.etiqueta);
+    }
+    expect(container.querySelector("nav")!.textContent).not.toMatch(/Hoy|Materias|Calendario|Formación/);
+  });
+
+  it("expandida, el nombre de cada ítem se ve", () => {
+    const { container } = render1(false);
+    for (const item of menu) expect(container.textContent, item.etiqueta).toContain(item.etiqueta);
+  });
+
+  it("el logo de Achieve está en los dos estados, y el nombre sólo expandida", () => {
+    const { unmount, container } = render1(false);
+    expect(screen.getByAltText("Achieve")).toBeInTheDocument();
+    expect(container.textContent).toContain("Achieve");
+    unmount();
+    const recogida = render1(true);
+    expect(screen.getByAltText("Achieve")).toBeInTheDocument();
+    expect(recogida.container.textContent).not.toContain("Achieve");
+  });
+
+  /**
+   * `A-03` es una regla del **componente**, no del menú de producción: un modo
+   * compacto reduce tamaño, nunca cantidad de información. Se prueba sobre un
+   * ítem sintético con contador porque hoy ningún ítem real lleva número
+   * ([ADR-021](../docs/decisions.md#adr-021)) — atar el test al menú de
+   * producción haría que la regla dejara de verificarse justo cuando el menú
+   * cambia, que es cuando más falta hace.
+   */
+  it("colapsar NO degrada el contador a un punto (anti-patrón A-03)", () => {
+    const conNumero = { nodo: "UX01", etiqueta: "Hoy", contador: 17 } as const;
+
+    for (const colapsada of [false, true]) {
+      const { container, unmount } = render(
+        <Item item={conNumero} activo={false} colapsada={colapsada} />,
+      );
+      const contador = container.querySelector("[data-contador]");
+      expect(contador, `colapsada=${colapsada}`).not.toBeNull();
+      // Sigue siendo un número, no un punto: es la regla entera.
+      expect(contador!.textContent, `colapsada=${colapsada}`).toBe("17");
+      unmount();
+    }
+  });
+
+  /**
+   * El contador que había en Progreso era un literal `1`: una cifra en pantalla
+   * sin un hecho detrás. Este guard impide que vuelva a colarse un número
+   * inventado en el menú.
+   */
+  it("ningún contador del menú es un literal sin fuente", () => {
+    for (const item of menu) {
+      expect(item.contador, `${item.etiqueta}`).toBeNull();
+    }
+  });
+
+  it("el control de colapsar declara su estado", () => {
+    const { unmount } = render1(false);
+    expect(screen.getByLabelText("Colapsar la navegación")).toHaveAttribute("aria-expanded", "true");
+    unmount();
+    render1(true);
+    expect(screen.getByLabelText("Expandir la navegación")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("la misma flecha abre y cierra: ‹ expandida, › recogida", () => {
+    const { unmount } = render1(false);
+    expect(screen.getByLabelText("Colapsar la navegación").querySelector(".lucide-chevron-left")).not.toBeNull();
+    unmount();
+    render1(true);
+    expect(screen.getByLabelText("Expandir la navegación").querySelector(".lucide-chevron-right")).not.toBeNull();
+  });
+
+  /**
+   * ⚠️ **El defecto que reportó el owner:** recogía la barra, abría otra
+   * pantalla y se volvía a abrir. Cada ruta monta su propio `Shell`, así que el
+   * estado no puede vivir adentro: un `Shell` que monta de nuevo tiene que leer
+   * la barra recogida.
+   */
+  it("recogida sobrevive a que el Shell monte de nuevo (navegar no la reabre)", () => {
+    function Sonda() {
+      const [recogida, alternar] = useBarraRecogida();
+      return <button onClick={alternar}>{recogida ? "recogida" : "expandida"}</button>;
+    }
+    try {
+      const primera = render(<Sonda />);
+      expect(screen.getByRole("button")).toHaveTextContent("expandida");
+      fireEvent.click(screen.getByRole("button"));
+      expect(screen.getByRole("button")).toHaveTextContent("recogida");
+      primera.unmount();
+
+      render(<Sonda />);
+      expect(screen.getByRole("button")).toHaveTextContent("recogida");
+    } finally {
+      act(() => recogerBarra(false));
+    }
+  });
+
+  it("el Shell no guarda la barra en un useState propio", () => {
+    const shell = readFileSync(resolve(__dirname, "../components/shell/shell.tsx"), "utf8");
+    expect(shell).toContain("useBarraRecogida()");
+    expect(shell).not.toContain("setColapsada");
+  });
+
+  it("alterna al hacer clic", () => {
+    let veces = 0;
+    render(<NavegacionLateral nodoActivo="UX01" colapsada={false} onAlternar={() => veces++} />);
+    fireEvent.click(screen.getByLabelText("Colapsar la navegación"));
+    expect(veces).toBe(1);
+  });
+
+  it("no dibuja conmutador de tema", () => {
+    // §12.4: no hay paleta oscura. Un control que no cambia nada sería prometer
+    // lo que no se sostiene.
+    const { container } = render1(false);
+    expect(container.textContent).not.toMatch(/tema|oscuro|claro/i);
+  });
+
+  it("no contiene ninguna CTA primaria", () => {
+    // I-06: una sola acción destacada por pantalla, y la barra no lo es.
+    const { container } = render1(false);
+    expect(container.querySelectorAll("[data-cta-primaria]")).toHaveLength(0);
+  });
+});
+
+describe("Barra superior", () => {
+  it("el elemento actual no se enlaza", () => {
+    render(<BarraSuperior migas={migasDe("UX09")} onAbrirPaleta={() => {}} />);
+    expect(screen.getByText("Paso")).toHaveAttribute("aria-current", "page");
+  });
+
+  it("el buscador muestra su atajo adentro del control que dispara (I-04)", () => {
+    render(<BarraSuperior migas={migasDe("UX01")} onAbrirPaleta={() => {}} />);
+    const boton = screen.getByRole("button", { name: /Buscar/ });
+    expect(boton).toHaveTextContent("⌘K");
+    expect(boton).toHaveAttribute("aria-keyshortcuts");
+  });
+
+  it("el atajo no elimina su camino visible (P-07): el control se puede tocar", () => {
+    let abierto = 0;
+    render(<BarraSuperior migas={migasDe("UX01")} onAbrirPaleta={() => abierto++} />);
+    fireEvent.click(screen.getByRole("button", { name: /Buscar/ }));
+    expect(abierto).toBe(1);
+  });
+
+  it("no lleva la CTA primaria de la pantalla", () => {
+    const { container } = render(<BarraSuperior migas={migasDe("UX01")} onAbrirPaleta={() => {}} />);
+    expect(container.querySelectorAll("[data-cta-primaria]")).toHaveLength(0);
+  });
+});
+
+
+// ── A2.5 · las nueve superficies viven dentro del shell ──────────────────────
+
+const RAIZ = process.cwd();
+
+function paginas(dir: string): string[] {
+  const abs = resolve(RAIZ, dir);
+  return readdirSync(abs).flatMap((entrada) => {
+    const full = join(abs, entrada);
+    if (statSync(full).isDirectory()) return paginas(join(dir, entrada));
+    return entrada === "page.tsx" ? [join(dir, entrada)] : [];
+  });
+}
+
+describe("A2.5 · las nueve superficies dentro del shell", () => {
+  /**
+   * El criterio de la etapa, hecho verificable. Una superficie fuera del shell
+   * no se rompe: se ve *casi* igual y pierde la navegación, que es la clase de
+   * regresión que nadie nota hasta que un estudiante se queda sin salida.
+   */
+  it("toda ruta del estudiante envuelve su superficie en `Shell`, con un nodo real", () => {
+    const rutas = paginas("app/(student)");
+
+    // ⚠️ **Diecisiete rutas, nueve superficies** — la decimoséptima es Mi plan
+    // ([ADR-110 · Enm. 1](../docs/decisions.md#adr-110-enmienda-1)); la
+    // decimosexta, Tu recorrido ([ADR-106](../docs/decisions.md#adr-106)); la
+    // decimoquinta, Modo Focus ([ADR-104](../docs/decisions.md#adr-104)). El
+    // índice de materias ([ADR-077](../docs/decisions.md#adr-077)), la
+    // biblioteca de Formación ([ADR-087](../docs/decisions.md#adr-087)), Modo
+    // Clase ([ADR-098](../docs/decisions.md#adr-098)), el Calendario
+    // ([ADR-100](../docs/decisions.md#adr-100)), Gimnasia cognitiva
+    // ([ADR-102](../docs/decisions.md#adr-102)) y Mi plan son nodos sin
+    // wireframe: tienen ruta y no son superficies. Las dos cifras se verifican
+    // por separado, abajo, justamente para que una no tape a la otra.
+    expect(rutas.length).toBe(17);
+
+    const sinShell = rutas.filter((f) => {
+      const src = readFileSync(resolve(RAIZ, f), "utf8");
+      const nodo = src.match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1];
+      // Más estricto que antes: el nodo declarado tiene que **existir en el
+      // grafo**. La regex anterior aceptaba cualquier `UX0n`, existiera o no.
+      return nodo === undefined || !(nodoIds as string[]).includes(nodo);
+    });
+    expect(sinShell).toEqual([]);
+  });
+
+  it("exactamente nueve rutas declaran una de las nueve superficies", () => {
+    // La afirmación del spec —*"No existe `UX10`"*— hecha verificable sobre las
+    // rutas, y no sobre el conteo total de páginas.
+    const superficies = paginas("app/(student)")
+      .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1])
+      .filter((n): n is string => n !== undefined && (superficieIds as string[]).includes(n));
+    expect(new Set(superficies).size).toBe(9);
+  });
+
+  /**
+   * Cada ruta declara un nodo distinto. Dos rutas con el mismo nodo darían un
+   * breadcrumb que miente y un ítem activo en el lugar equivocado.
+   */
+  it("cada ruta declara un nodo propio, sin repetirse", () => {
+    const declarados = paginas("app/(student)")
+      .map((f) => readFileSync(resolve(RAIZ, f), "utf8").match(/<Shell\s+nodo="([A-Z0-9_]+)"/)?.[1])
+      .filter(Boolean);
+    // Diecisiete rutas, diecisiete nodos distintos: nueve superficies, el índice
+    // de materias, la biblioteca de Formación, Modo Clase, el Calendario,
+    // Gimnasia, Modo Focus (ADR-104), Tu recorrido (ADR-106) y Mi plan
+    // (ADR-110 · Enm. 1).
+    //
+    // ⚠️ **Los dos números miden cosas distintas y por eso están los dos.** El
+    // `Set` detecta que dos rutas declaren el mismo nodo —una copiaría el
+    // breadcrumb y el resaltado de menú de la otra—; el `length`, que alguna
+    // ruta no declare ninguno. **Los dos se mueven juntos**: si sólo se toca uno,
+    // el test deja de decir lo que dice su nombre.
+    expect(new Set(declarados).size).toBe(17);
+    expect(declarados.length).toBe(17);
+  });
+});
+
+describe("ADR-110 · Enm. 6 · lo abierto desde Mi plan vuelve a Mi plan", () => {
+  it("la materia abierta desde el plan dice «Mi plan › Análisis II», con la semana", () => {
+    const origen = origenDeLaConsulta("plan:2026-09-14");
+    expect(migasDe("UX02", "ANALISIS MATEMATICO II", null, origen)).toEqual([
+      { etiqueta: "Mi plan", href: "/plan?semana=2026-09-14" },
+      { etiqueta: "Analisis matematico II", href: null },
+    ]);
+  });
+
+  it("la clase conserva su materia en el medio", () => {
+    const migas = migasDe("CLASE", "Clase del jueves", { etiqueta: "Física", href: "/materia?cursada=c1" }, origenDeLaConsulta("plan"));
+    expect(migas.map((m) => m.etiqueta)).toEqual(["Mi plan", "Física", "Clase del jueves"]);
+    expect(migas[0].href).toBe("/plan");
+  });
+
+  it("un origen desconocido no cambia nada, y sin origen la miga es la de siempre", () => {
+    expect(origenDeLaConsulta("otra-cosa")).toBeNull();
+    expect(migasDe("UX02", "Física", null, null)[0].etiqueta).toBe("Materias");
+  });
+
+  it("la ruta abierta desde el plan lleva el camino de vuelta sin perder sus parámetros", () => {
+    expect(desdeElPlan("/materia?cursada=c1", "2026-09-14")).toBe("/materia?cursada=c1&desde=plan%3A2026-09-14");
+    expect(origenDeLaConsulta(new URLSearchParams("cursada=c1&desde=plan%3A2026-09-14").get("desde"))?.href).toBe("/plan?semana=2026-09-14");
+  });
+});

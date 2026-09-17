@@ -1,0 +1,108 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
+import { pedir, type Respuesta } from "./api";
+
+/**
+ * El hook que las cinco superficies de la Etapa B2.6 comparten.
+ *
+ * Existe para que el patrón sea **uno solo**: `UX02`–`UX06` no repiten cinco
+ * veces el `useEffect` con su bandera de vigencia, su manejo de `401` y su
+ * estado de carga. Cinco copias de eso son cinco lugares donde arreglar el
+ * próximo bug de carga, y la `B2.5` ya mostró que uno solo alcanza para que
+ * `UX01` mintiera durante una etapa entera.
+ *
+ * `omitir` es para la rama de `?escenario=`: con un escenario explícito no se
+ * pide nada a la red, porque el catálogo sintético es la fuente por decisión y
+ * no un fallback.
+ *
+ * ## Sin sesión, al ingreso
+ *
+ * Desde [ADR-039](../../docs/decisions.md#adr-039) el navegador ya no abre
+ * sesión solo. Cuando `/api/*` contesta que no hay sesión, la superficie no
+ * dibuja un error: manda a `/login` con la ruta actual, para volver acá después
+ * de entrar. Es **el único lugar** donde vive esa redirección, por lo mismo que
+ * el hook existe: nueve copias son nueve lugares donde arreglar el próximo bug.
+ *
+ * ⚠️ Con `?escenario=` no redirige. El catálogo sintético no necesita sesión, y
+ * mandar al login desde una demo del Track A rompería el recorrido del focus
+ * group, que corre sin backend. Lo mismo vale para el alta: una demo con
+ * escenario explícito no pide nada, así que no puede recibir un `409`.
+ */
+/**
+ * Lo que una pantalla puede recibir.
+ *
+ * **`ALTA_INCOMPLETA` no está, y no es un olvido:** el hook redirige antes de
+ * guardarlo, así que ninguna superficie lo ve nunca. Dejarlo en el tipo
+ * obligaría a las nueve a manejar una rama inalcanzable, y `NoSePudoCargar`
+ * tendría que aprender un motivo que no es un fallo.
+ */
+export type EstadoDeSuperficie<T> =
+  | Exclude<Respuesta<T>, { estado: "ALTA_INCOMPLETA" }>
+  | { estado: "CARGANDO" };
+
+export function useSuperficie<T>(ruta: string, opciones: { omitir?: boolean } = {}) {
+  const omitir = opciones.omitir ?? false;
+  // Cambiarlo fuerza el `useEffect` a correr de nuevo. Un `reintentar` que sólo
+  // volviera a llamar a `pedir` dejaría el estado de carga sin tocar.
+  const [intento, setIntento] = useState(0);
+  const clave = `${ruta}#${intento}`;
+
+  /**
+   * **La respuesta se guarda junto con la clave que la produjo.**
+   *
+   * La primera versión hacía `setRespuesta({ estado: "CARGANDO" })` al empezar
+   * el efecto, y eso es un `setState` síncrono dentro de un efecto: dispara un
+   * render en cascada, y el lint lo rechaza con razón.
+   *
+   * Guardando la clave, *cargando* deja de ser un estado que alguien setea y
+   * pasa a ser **lo que se deduce** cuando la respuesta que hay no corresponde a
+   * lo que se está pidiendo. Y de paso cierra un agujero que la bandera de
+   * vigencia no cubría: una respuesta vieja no puede quedar en pantalla bajo una
+   * ruta nueva, porque su clave ya no coincide.
+   */
+  const [resultado, setResultado] = useState<{
+    clave: string;
+    r: Exclude<Respuesta<T>, { estado: "ALTA_INCOMPLETA" }>;
+  } | null>(null);
+
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (omitir) return;
+    let vigente = true;
+    pedir<T>(ruta).then((r) => {
+      if (!vigente) return;
+      if (r.estado === "SIN_SESION") {
+        router.replace(`/login?volver=${encodeURIComponent(pathname)}`);
+        return;
+      }
+      /*
+        El alta primero — B6.14, ADR-052.
+
+        Va junto al `401` y por el mismo motivo: es **el único lugar** donde vive
+        esa redirección. `siguiente` lo decide el backend, no la pantalla; el
+        cliente no calcula en qué paso está nadie.
+      */
+      if (r.estado === "ALTA_INCOMPLETA") {
+        router.replace(r.siguiente);
+        return;
+      }
+      // Sin esta guarda se setea estado sobre un componente que ya se fue.
+      setResultado({ clave, r });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [ruta, omitir, clave, router, pathname]);
+
+  const reintentar = useCallback(() => setIntento((i) => i + 1), []);
+
+  const respuesta: EstadoDeSuperficie<T> =
+    resultado && resultado.clave === clave ? resultado.r : { estado: "CARGANDO" };
+
+  return { respuesta, reintentar };
+}

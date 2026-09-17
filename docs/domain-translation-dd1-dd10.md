@@ -130,7 +130,12 @@ navegación para acomodar ideas que todavía no tienen función"*), resuelta as�
 > más de una materia con algo pendiente el mismo día, esa lista deja de ser plana y se convierte en
 > paginable (`1 de N`, con flechas). No se agrega pantalla ni CTA nuevo.
 
-Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.
+~~Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `MateriasQueue`.~~
+
+⚠️ **La cola salió de Hoy el 11 de septiembre de 2026** ([ADR-093](decisions.md#adr-093)), por pedido
+del owner: de a una no se puede ver nada rápido. `P-10` se cumple ahora con las **tarjetas de
+evaluación** —todas a la vez, cuatro a la vista y el resto con scroll—, y entrar a una materia sigue
+siendo `CTA-001` **con su cursada**.
 
 ---
 
@@ -143,8 +148,10 @@ Ya implementado en `components/screens/hoy-autogestion.tsx`, componente `Materia
 - El progreso se muestra con las **5 dimensiones separadas**, nunca fusionadas en un solo número.
 
 **Nota:** varios defaults del dominio pedagógico específico (protocolo de examen, criterios de
-corrección) **no** entran acá — son las 8 `HUMAN-P0`, que siguen `PENDING` de confirmación
-profesional real, no de "mejor criterio" inferido. Ver [ADR-007](decisions.md#adr-007).
+corrección) **no** entran acá — son las 8 `HUMAN-P0`, que se resolvieron como corresponde: **con
+confirmación profesional real**, no con "mejor criterio" inferido. Respondidas el 31 de agosto de
+2026; ver [ADR-025](decisions.md#adr-025) y la fuente en
+[`human-p0-source.md`](human-p0-source.md). **Sus residuos siguen abiertos y se preguntan igual.**
 
 ---
 
@@ -191,5 +198,5 @@ hasta que se revise el glosario completo — **no bloquea ninguna etapa de la Fa
 | `DD1` | Cerrar `P-11` en la auditoría de conformidad: no hace falta patrón de deshacer |
 | `DD2` | Definir el orden por defecto de las listas (`P-05`) en la Etapa 0.2 |
 | `DD6` | Reconciliar `--chart-2` en la Etapa 0.1 |
-| `DD7` | `MateriasQueue` ya cumple `P-10`; queda verificarlo en la auditoría |
+| `DD7` | `P-10` lo cumplen las **tarjetas de evaluación** de `UX01` desde [ADR-093](decisions.md#adr-093); `MateriasQueue` se retiró |
 | `DD9` | Confirma el layout base de una Action por vez — ya implementado |
