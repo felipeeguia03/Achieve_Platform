@@ -37,7 +37,7 @@ export interface Intervalo {
 // ── De dónde sale cada afirmación ───────────────────────────────────────────────
 
 export interface Fuente {
-  tipo: "assessment" | "topic" | "topic_progress" | "topic_prerequisite" | "action";
+  tipo: "assessment" | "topic" | "topic_progress" | "topic_prerequisite" | "action" | "class_session" | "planning_risk";
   id: string | null;
 }
 
@@ -46,7 +46,16 @@ export interface Fuente {
  * cálculo (`P-03`, `C-06`): *«Entra en Primer parcial.»*, no *«prioridad alta»*.
  */
 export interface RazonDePrioridad {
-  tipo: "EVALUACION" | "SIN_PRACTICA" | "PRACTICA_REGISTRADA" | "RECENCIA" | "PESO";
+  tipo:
+    | "EVALUACION"
+    | "SIN_PRACTICA"
+    | "PRACTICA_REGISTRADA"
+    | "RECENCIA"
+    | "PESO"
+    /** ADR-110 · Enm. 5: la semana también mira qué viene. */
+    | "EVALUACION_CERCA"
+    | "CLASE_CERCA"
+    | "RIESGO";
   texto: string;
   fuente: Fuente;
 }
@@ -108,6 +117,13 @@ export interface PlanningWorkItem {
    * más urgente.
    */
   costo: number;
+  /**
+   * Lo que suma **la semana** al orden del ADE — [ADR-110 · Enmienda 5](../../../docs/decisions.md#adr-110-enmienda-5):
+   * evaluación cerca, clase cerca, riesgo de la materia. Es **por materia**, así
+   * que no cambia el orden del ADE dentro de una materia. Tampoco se muestra.
+   * Ausente ⇒ `0`.
+   */
+  urgencia?: number;
   priority: PriorityExplanation;
   dependencies: readonly Dependency[];
   deadline: Plazo | null;
@@ -193,6 +209,8 @@ export type MotivoDeConflicto =
   | "FUERA_DE_DISPONIBILIDAD"
   | "PROPUESTA"
   | "FIJADA"
+  /** Pisa más de `MAX_SUPERPOSICION_MIN` a un trabajo que ubicó el estudiante (ADR-110 · Enm. 4). */
+  | "SUPERPOSICION"
   | "FECHA_LIMITE"
   | "DEPENDENCIA"
   | "SIN_DURACION";
@@ -205,15 +223,20 @@ export interface PlanningConflict {
 }
 
 export interface PlanningMetrics {
-  /** Minutos probables de todo el trabajo pendiente. No cambia al ubicar ni al comprometerse. */
+  /**
+   * Minutos probables del trabajo **de la semana**: la selección recomendada
+   * (10–14 h), lo comprometido y lo que entró por disponibilidad extra. El
+   * backlog no cuenta. No cambia al ubicar ni al comprometerse.
+   */
   pendiente: number;
+  /** Minutos probables del backlog. */
+  backlog: number;
   /** Minutos probables del trabajo ubicado o comprometido. */
   asignado: number;
   sinUbicar: number;
   disponibilidadTotal: number;
   disponibilidadOcupada: number;
   disponibilidadLibre: number;
-  noEntra: number;
   /** Cuántos trabajos no tienen duración. **Sin datos no es cero**: se cuentan aparte. */
   sinDuracion: number;
 }
@@ -233,6 +256,13 @@ export interface PlanningProjection {
   unplacedItems: readonly PlanningWorkItem[];
   /** Lo que el planificador ubicaría con la disponibilidad libre (manual guiado). */
   feasiblePrioritySet: readonly string[];
+  /**
+   * **El backlog** — ADR-110 · Enm. 5. Trabajo que no entra en la semana
+   * recomendada (10–14 h) ni en la disponibilidad libre. No es *sin ubicar*: la
+   * semana no lo pide. Entra solo si el estudiante agrega disponibilidad, o si
+   * lo arrastra al calendario.
+   */
+  backlog: readonly PlanningWorkItem[];
   notFittingItems: readonly NotFittingItem[];
   conflicts: readonly PlanningConflict[];
   metrics: PlanningMetrics;

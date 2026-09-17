@@ -96,7 +96,7 @@ export function Recorrido({
   return (
     <div>
       <TituloDePanel titulo={t("RECORRIDO.TITULO")} subcopy={t("RECORRIDO.SUBCOPY")} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16, maxWidth: 820 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
         {aviso && (
           <p role="alert" style={{ margin: 0, fontSize: "var(--text-label)", color: "var(--urgencia-texto)" }}>
             {aviso}

@@ -9,8 +9,11 @@ import type { Intervalo, PlanVivoBase } from "./tipos";
  * [ADR-110](../../../docs/decisions.md#adr-110).
  *
  * ⚠️ **`availability` es semanal.** Lo que se agregó o quitó un martes vale para
- * **todos** los martes: la pantalla lo dice antes de guardar. Las filas sin hora
- * (*«90 minutos los martes»*) no se dibujan y **se devuelven tal cual**.
+ * **todos** los martes: la pantalla lo dice antes de guardar.
+ *
+ * ⚠️ **Toda fila lleva hora** — [ADR-110 · Enmienda 3](../../../docs/decisions.md#adr-110-enmienda-3).
+ * Las filas sin hora (*«90 minutos los martes»*) venían del paso del alta, que
+ * ya no existe. Guardar desde el plan **las borra**: sólo cuenta lo dibujado.
  */
 export interface BloqueParaGuardar {
   dia: number;
@@ -32,9 +35,6 @@ export function filasSemanales(base: PlanVivoBase, efectiva: readonly Intervalo[
         minutos: Math.round((Math.min(f.fin, dia.fin) - f.ini) / MINUTO),
       });
     }
-  }
-  for (const s of base.disponibilidadSemanal) {
-    if (s.desde === null && s.minutos > 0) filas.push({ dia: s.dia, minutos: s.minutos });
   }
   return filas;
 }

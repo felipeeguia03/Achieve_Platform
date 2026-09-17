@@ -204,6 +204,55 @@ function redactarHorario(h: HorarioDeHoy): ItemDeHorario {
   }
 }
 
+type FilaDeRiesgo = {
+  f: ReturnType<typeof proyectarMaterias>["materias"][number];
+  m: InsumosDeReparto["materias"][number];
+};
+
+function entradaDeRiesgos(filas: readonly FilaDeRiesgo[], ahora: string, zona: string): MateriaParaRiesgo[] {
+  const rotulo = (e: NonNullable<InsumosDeReparto["materias"][number]["evaluacion"]>) => e.titulo ?? e.tipo;
+  return filas.map(({ f, m }) => ({
+    cursadaId: m.cursadaId,
+    nombre: nombreDeObjeto(m.nombre),
+    evaluacion:
+      m.evaluacion && m.diasHastaEvaluacion !== null
+        ? { fecha: m.evaluacion.fecha, dias: m.diasHastaEvaluacion, rotulo: rotulo(m.evaluacion) }
+        : null,
+    temasCargados: m.unidades.length,
+    cobertura: f.cobertura?.fraccion ?? null,
+    diasSinActividad: m.ultimoAvanceEn ? diasEntre(m.ultimoAvanceEn, ahora, zona) : null,
+  }));
+}
+
+/**
+ * Los riesgos de Hoy, **por materia** — para el Plan vivo
+ * ([ADR-110 · Enmienda 5](../../../docs/decisions.md#adr-110-enmienda-5)).
+ *
+ * Mismas reglas y mismo texto que *Riesgos detectados*: el plan prioriza una
+ * materia en riesgo **por lo que Hoy ya dice**, no por un criterio propio. Las
+ * evaluaciones encimadas marcan a cada materia del grupo; el riesgo del reparto
+ * no es de ninguna.
+ */
+export function riesgosPorMateria(i: InsumosDeReparto, ahora: string, zona: string): Map<string, string> {
+  const indice = proyectarMaterias(i, ahora, zona);
+  const crudas = new Map(i.materias.map((m) => [m.cursadaId, m]));
+  const filas = indice.materias.flatMap((f) => {
+    const m = crudas.get(f.cursadaId);
+    return m ? [{ f, m }] : [];
+  });
+  const reparto = proyectarReparto(i);
+  const salida = new Map<string, string>();
+  for (const r of riesgosDePlanificacion({ materias: entradaDeRiesgos(filas, ahora, zona), tramoDelReparto: null })) {
+    const texto = redactarRiesgo(r, reparto).titulo;
+    if (r.regla === "EVALUACIONES_ENCIMADAS") {
+      for (const m of r.materias) if (!salida.has(m.cursadaId)) salida.set(m.cursadaId, texto);
+    } else if (r.regla !== "PLAN_NO_ENTRA" && !salida.has(r.cursadaId)) {
+      salida.set(r.cursadaId, texto);
+    }
+  }
+  return salida;
+}
+
 export function proyectarTablero(
   i: InsumosDeReparto,
   s: InsumosDelDia,
@@ -219,7 +268,6 @@ export function proyectarTablero(
     const m = crudas.get(f.cursadaId);
     return m ? [{ f, m }] : [];
   });
-  const rotulo = (e: NonNullable<InsumosDeReparto["materias"][number]["evaluacion"]>) => e.titulo ?? e.tipo;
 
   // ⚠️ **La única cifra de evaluaciones que queda** (ADR-096): la de la píldora.
   // Las dos formas de listarlas se descartaron; el listado vive en `/materias`.
@@ -228,17 +276,7 @@ export function proyectarTablero(
     .filter((d): d is number => d !== null && d >= 0);
 
   const reparto = proyectarReparto(i);
-  const entrada: MateriaParaRiesgo[] = filas.map(({ f, m }) => ({
-    cursadaId: m.cursadaId,
-    nombre: nombreDeObjeto(m.nombre),
-    evaluacion:
-      m.evaluacion && m.diasHastaEvaluacion !== null
-        ? { fecha: m.evaluacion.fecha, dias: m.diasHastaEvaluacion, rotulo: rotulo(m.evaluacion) }
-        : null,
-    temasCargados: m.unidades.length,
-    cobertura: f.cobertura?.fraccion ?? null,
-    diasSinActividad: m.ultimoAvanceEn ? diasEntre(m.ultimoAvanceEn, ahora, zona) : null,
-  }));
+  const entrada = entradaDeRiesgos(filas, ahora, zona);
 
   return {
     proximaEvaluacion: dias.length > 0 ? { dias: Math.min(...dias) } : null,

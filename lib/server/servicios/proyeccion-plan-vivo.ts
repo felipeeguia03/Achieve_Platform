@@ -12,7 +12,8 @@ import type {
   Plazo,
   RazonDePrioridad,
 } from "@/lib/domain/plan-vivo/tipos";
-import { diaDeSemana, instanteEnZona } from "@/lib/domain/zona";
+import { DIAS_LARGOS } from "@/lib/content/es-AR";
+import { diaDeSemana, fechaEnZona, instanteEnZona } from "@/lib/domain/zona";
 import { rutaDeCtaCon } from "@/lib/navigation";
 import { nodos } from "@/lib/navigation/surfaces";
 import { proyectarCalendario, type InsumosDelCalendario } from "./proyeccion-calendario";
@@ -76,11 +77,69 @@ function rango(min: number | null, max: number | null) {
   return { minMinutes: min, likelyMinutes: Math.round((min + max) / 2 / 5) * 5, maxMinutes: max };
 }
 
+/**
+ * Lo que suma la semana al orden del ADE — [ADR-110 · Enmienda 5](../../../docs/decisions.md#adr-110-enmienda-5).
+ *
+ * **Por materia**: todos los trabajos de una materia reciben lo mismo, así que
+ * el orden del ADE adentro de la materia no cambia (el plan no contradice a
+ * Hoy). Entre materias, adelanta la que tiene la evaluación más cerca, clase
+ * pronto o un riesgo que Hoy ya muestra. Los pesos están por debajo de la
+ * señal de evaluación del ADE (`1000`) sumada a su cercanía: entrar en un
+ * parcial próximo sigue siendo lo que más pesa.
+ */
+export const URGENCIA_SEMANAL = {
+  /** Evaluación a `horizonteDias` o menos: hasta `evaluacion`, lineal con la cercanía. */
+  horizonteDias: 21,
+  evaluacion: 800,
+  /** Clase en los próximos 7 días: hasta `clase`, lineal con la cercanía. */
+  clase: 150,
+  /** Hoy muestra un riesgo de la materia. */
+  riesgo: 400,
+  /** Trabajo a esta distancia o más de lo que se puede hacer ya **no se genera**. */
+  distanciaMaxima: 2,
+} as const;
+
+const DIA_MS = 86_400_000;
+
+function cuandoEs(dias: number): string {
+  if (dias === 0) return "hoy";
+  if (dias === 1) return "mañana";
+  return `en ${dias} días`;
+}
+
+/**
+ * Qué tan lejos está un trabajo de poder hacerse **por prerrequisitos
+ * declarados**: `0` sin prerrequisitos pendientes, `1` si espera a uno que ya
+ * se puede hacer, y así.
+ */
+function distancias(items: readonly PlanningWorkItem[]): Map<string, number> {
+  const porId = new Map(items.map((x) => [x.id, x]));
+  const memo = new Map<string, number>();
+  const de = (id: string, visitando: Set<string>): number => {
+    const hecho = memo.get(id);
+    if (hecho !== undefined) return hecho;
+    const item = porId.get(id);
+    if (!item || visitando.has(id)) return 0;
+    visitando.add(id);
+    let d = 0;
+    for (const dep of item.dependencies) {
+      if (dep.itemId === null) continue;
+      d = Math.max(d, 1 + (porId.has(dep.itemId) ? de(dep.itemId, visitando) : 0));
+    }
+    visitando.delete(id);
+    memo.set(id, d);
+    return d;
+  };
+  for (const x of items) de(x.id, new Set());
+  return memo;
+}
+
 export function armarBaseDelPlan(
   i: InsumosDelPlan,
   ahoraIso: string,
   zona: string,
   semana: string,
+  riesgos: ReadonlyMap<string, string> = new Map(),
 ): PlanVivoBase {
   const ahora = Date.parse(ahoraIso);
   const hasta = sumarDias(semana, 6);
@@ -200,6 +259,8 @@ export function armarBaseDelPlan(
   const itemDeCompromiso = new Map(
     i.compromisosVivos.map((c) => [c.id, idDeAccion(c.actionId)]),
   );
+  // Con los ids de **todos** los trabajos: el recorte por distancia viene después
+  // y nunca saca uno comprometido (la acción viva es siempre `ACTION`).
   const idsDeItems = new Set(items.map((x) => x.id));
   const fijos: BloqueFijo[] = [];
   const evaluacionesDelDia: Array<PlanVivoBase["evaluacionesDelDia"][number]> = [];
@@ -233,6 +294,69 @@ export function armarBaseDelPlan(
     });
   }
 
+  // ── La semana: urgencia por materia y recorte de lo lejano (Enm. 5) ──────────
+  const hoy = fechaEnZona(ahora, zona);
+  const U = URGENCIA_SEMANAL;
+  const urgenciaDe = new Map<string, { puntos: number; razones: RazonDePrioridad[] }>();
+  for (const { cursadaId, contexto } of i.contextos) {
+    const razones: RazonDePrioridad[] = [];
+    let puntos = 0;
+    const ev = contexto.proximaEvaluacion;
+    if (ev?.fecha) {
+      const dias = Math.round((Date.parse(ev.fecha) - Date.parse(hoy)) / DIA_MS);
+      if (dias >= 0 && dias <= U.horizonteDias) {
+        puntos += Math.round((U.evaluacion * (U.horizonteDias - dias)) / U.horizonteDias);
+        razones.push({ tipo: "EVALUACION_CERCA", texto: `${ev.titulo} es ${cuandoEs(dias)}.`, fuente: { tipo: "assessment", id: null } });
+      }
+    }
+    const clase = fijos
+      .filter((f) => f.tipo === "CLASE" && f.cursadaId === cursadaId && f.ini > ahora)
+      .sort((a, b) => a.ini - b.ini)[0];
+    if (clase) {
+      const dias = Math.round((Date.parse(fechaEnZona(clase.ini, zona)) - Date.parse(hoy)) / DIA_MS);
+      if (dias < 7) {
+        puntos += Math.round((U.clase * (7 - dias)) / 7);
+        const cuando = dias <= 1 ? cuandoEs(dias) : `el ${DIAS_LARGOS[diaDeSemana(fechaEnZona(clase.ini, zona))]}`;
+        razones.push({ tipo: "CLASE_CERCA", texto: `Tenés clase ${cuando}.`, fuente: { tipo: "class_session", id: clase.id } });
+      }
+    }
+    const riesgo = riesgos.get(cursadaId);
+    if (riesgo) {
+      puntos += U.riesgo;
+      razones.push({ tipo: "RIESGO", texto: riesgo, fuente: { tipo: "planning_risk", id: cursadaId } });
+    }
+    urgenciaDe.set(cursadaId, { puntos, razones });
+  }
+  const lejos = distancias(items);
+  /*
+    ⚠️ **El orden del programa también es distancia** (Enm. 5, el owner: *«sí,
+    el orden cuenta como distancia»*): cuántas unidades **anteriores** de la
+    misma materia siguen pendientes. *Unidad 3 sin haber hecho la 1 ni la 2* está
+    a 2. **Es distancia, no dependencia**: no crea `Dependency` (ADR-110 sigue
+    diciendo que una dependencia nunca sale del número de unidad) y el ADE no lo
+    lee.
+
+    Lo que entra en la próxima evaluación **no** se recorta por orden: el parcial
+    lo pide ahora, sea la unidad que sea.
+  */
+  const ordenDe = new Map<string, number | null>();
+  for (const { cursadaId, contexto } of i.contextos) {
+    for (const u of contexto.unidades) ordenDe.set(`${cursadaId}:${u.topicId}`, u.orden);
+  }
+  const orden = (x: PlanningWorkItem) => (x.topicId ? (ordenDe.get(`${x.cursadaId}:${x.topicId}`) ?? null) : null);
+  const porOrden = (x: PlanningWorkItem): number => {
+    const n = orden(x);
+    if (n === null || x.deadline) return 0;
+    return items.filter((y) => y.cursadaId === x.cursadaId && y.id !== x.id && (orden(y) ?? Infinity) < n).length;
+  };
+  const semanales = items
+    .filter((x) => x.sourceType === "ACTION" || Math.max(lejos.get(x.id) ?? 0, porOrden(x)) < U.distanciaMaxima)
+    .map((x): PlanningWorkItem => {
+      const u = urgenciaDe.get(x.cursadaId);
+      if (!u || u.puntos === 0) return x;
+      return { ...x, urgencia: u.puntos, priority: { ...x.priority, razones: [...u.razones, ...x.priority.razones] } };
+    });
+
   return {
     ahora,
     zona,
@@ -241,7 +365,7 @@ export function armarBaseDelPlan(
     disponibilidad,
     disponibilidadSemanal,
     fijos,
-    items,
+    items: semanales,
     materias: i.calendario.materias.map((m) => ({ cursadaId: m.cursadaId, nombre: nombreDeObjeto(m.nombre) })),
     evaluacionesDelDia,
   };

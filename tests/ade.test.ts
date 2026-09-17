@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { recomendar, type ContextoDelAde, type UnidadCandidata } from "@/lib/domain/ade";
+import { nivelDeLaUnidad, RANGO_POR_NIVEL, recomendar, type ContextoDelAde, type UnidadCandidata } from "@/lib/domain/ade";
 
 /**
  * ADE v1 determinista ([ADR-004](../docs/decisions.md#adr-004)).
@@ -195,11 +195,38 @@ describe("ADE v1 · es reproducible", () => {
   });
 });
 
-describe("ADE v1 · respeta la disponibilidad declarada", () => {
-  it("no propone un bloque más largo del que el estudiante declaró", () => {
-    const r = recomendar(ctx({ minutosDisponibles: 20 }));
-    if (r.rama !== "NEW") throw new Error("esperaba NEW");
-    expect(r.recomendacion.minutosMax).toBeLessThanOrEqual(20);
+describe("ADR-110 · Enm. 4 · la duración es de la unidad, no de la disponibilidad", () => {
+  it("la disponibilidad no achica el bloque", () => {
+    const corta = recomendar(ctx({ minutosDisponibles: 15 }));
+    const larga = recomendar(ctx({ minutosDisponibles: 600 }));
+    if (corta.rama !== "NEW" || larga.rama !== "NEW") throw new Error("esperaba NEW");
+    expect(corta.recomendacion.minutosMin).toBe(larga.recomendacion.minutosMin);
+    expect(corta.recomendacion.minutosMax).toBe(larga.recomendacion.minutosMax);
+  });
+
+  it("todo rango queda entre 30 y 120 minutos", () => {
+    for (const { min, max } of Object.values(RANGO_POR_NIVEL)) {
+      expect(min).toBeGreaterThanOrEqual(30);
+      expect(max).toBeLessThanOrEqual(120);
+      expect(max).toBeGreaterThan(min);
+    }
+  });
+
+  it("sin pesos ni dominio es nivel 2; entrar en la evaluación sube uno; dominio alto baja uno", () => {
+    const u = unidad({ topicId: "t" });
+    const sin = ctx({ unidades: [u], proximaEvaluacion: null });
+    expect(nivelDeLaUnidad(u, sin, new Map())).toBe(2);
+    const conExamen = ctx({ unidades: [u], proximaEvaluacion: { titulo: "P1", fecha: "2026-09-10", temas: ["t"] } });
+    expect(nivelDeLaUnidad(u, conExamen, new Map())).toBe(3);
+    const domina = unidad({ topicId: "t", dominioEstado: "value", dominioValor: 8 });
+    expect(nivelDeLaUnidad(domina, sin, new Map())).toBe(1);
+  });
+
+  it("la unidad más pesada de la materia lleva más tiempo", () => {
+    const u = unidad({ topicId: "t" });
+    const c = ctx({ unidades: [u], proximaEvaluacion: null });
+    expect(nivelDeLaUnidad(u, c, new Map([["t", 1]]))).toBe(3);
+    expect(nivelDeLaUnidad(u, c, new Map([["t", 0.1]]))).toBe(1);
   });
 });
 

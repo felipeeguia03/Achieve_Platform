@@ -20,7 +20,8 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { NavegacionLateral } from "./navegacion-lateral";
 import { BarraSuperior } from "./barra-superior";
 import { PaletaDeComandos } from "./paleta-de-comandos";
-import { migasDe } from "@/lib/navigation/migas";
+import { useSearchParams } from "next/navigation";
+import { migasDe, origenDeLaConsulta, PARAM_ORIGEN, type Miga } from "@/lib/navigation/migas";
 import { ProveedorDeMigaDelObjeto, type MigaIntermedia } from "./miga-del-objeto";
 import { ProveedorDeEspacioDeTrabajo } from "./espacio-de-trabajo";
 import { BarraDeObjetos } from "./barra-de-objetos";
@@ -81,7 +82,10 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
           />
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <BarraSuperior migas={migasDe(nodo, objeto, intermedia)} onAbrirPaleta={() => setPaleta(true)} />
+            <BarraConOrigen
+              migas={(origen) => migasDe(nodo, objeto, intermedia, origen)}
+              onAbrirPaleta={() => setPaleta(true)}
+            />
             {/*
               ⚠️ **El encuadre es uno solo para todas las pantallas**, y es la
               identidad del software de las capturas: el título cae siempre en el
@@ -89,7 +93,15 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
               pantalla agrega padding propio alrededor de su contenido.
             */}
             <main className="min-w-0 flex-1 px-4 pt-6 md:px-12 md:pt-10" style={{ paddingBottom: 88 }}>
-              <div style={{ maxWidth: 1120, margin: "0 auto", position: "relative" }}>
+              {/*
+                ⚠️ **Con la barra recogida no hay tope** — ADR-101 · Enmienda 1,
+                pedido del owner: cada pantalla ocupa todo el ancho de la ventana.
+                Abierta, sigue centrada en 1120 px.
+              */}
+              <div
+                data-ancho-completo={colapsada || undefined}
+                style={{ maxWidth: colapsada ? "none" : 1120, margin: "0 auto", position: "relative" }}
+              >
                 {/*
                   El semáforo de **esta** pantalla, cuando es la de un objeto —
                   ADR-088, Enmiendas 3 y 7. Va acá y no adentro de la superficie:
@@ -126,4 +138,19 @@ export function Shell({ nodo, children }: { nodo: NodoId; children: React.ReactN
       </ProveedorDeEspacioDeTrabajo>
     </Suspense>
   );
+}
+
+/**
+ * La topbar con la miga de origen — ADR-110 · Enm. 6. Lee `?desde=` acá adentro,
+ * bajo el `Suspense` del Shell: `useSearchParams` necesita esa frontera.
+ */
+function BarraConOrigen({
+  migas,
+  onAbrirPaleta,
+}: {
+  migas: (origen: ReturnType<typeof origenDeLaConsulta>) => Miga[];
+  onAbrirPaleta: () => void;
+}) {
+  const params = useSearchParams();
+  return <BarraSuperior migas={migas(origenDeLaConsulta(params.get(PARAM_ORIGEN)))} onAbrirPaleta={onAbrirPaleta} />;
 }

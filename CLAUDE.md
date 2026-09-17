@@ -99,8 +99,9 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-🆕 **Hay «Mi plan», en `/plan`, detrás de `PLAN_VIVO=1`** —
-[ADR-110](docs/decisions.md#adr-110) y su [Enmienda 1](docs/decisions.md#adr-110-enmienda-1), 16–17 de
+🆕 **Hay «Mi plan», en `/plan`, siempre visible** —
+[ADR-110](docs/decisions.md#adr-110) y sus enmiendas [1](docs/decisions.md#adr-110-enmienda-1) y
+[2](docs/decisions.md#adr-110-enmienda-2), 16–17 de
 septiembre · [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md). El owner cerró ADR-109 D-01/D-02
 (opción A) y D-09: el sistema propone dónde entra el trabajo y el estudiante lo mueve, fija, vacía o
 simula. **Segundo en la barra lateral**, pegado a Hoy.
@@ -110,13 +111,18 @@ y la **Enmienda 1 lo sacó**: el Calendario responde *qué tengo y cuándo* sobr
 el plan propone **dónde entra lo que todavía no**. Se tapaban. `/calendario` volvió a ser **exactamente
 ADR-100**, sin flag y sin rastro del plan —hay test—. **No los vuelvas a juntar.**
 
-⚠️ **Sin `PLAN_VIVO=1` no hay Plan vivo en ningún lado:** `/plan` da `404`, `GET /api/plan-vivo` da `404`
-y **el ítem del menú no se dibuja** (no se esconde con CSS: no está). El flag **se llamaba**
-`PLAN_VIVO_CALENDAR_INTEGRATION`, y el nombre dejó de ser cierto con la enmienda.
+⚠️ **«Mi plan» no tiene flag** ([Enmienda 2](docs/decisions.md#adr-110-enmienda-2), pedido del owner:
+*«es una decisión tomada»*). Hubo `PLAN_VIVO=1` (antes `PLAN_VIVO_CALENDAR_INTEGRATION`) y **se borró**:
+no lo vuelvas a poner. `PLAN_VIVO` sigue siendo el **nodo**, no una variable.
 
-⚠️ **El menú no lee `process.env`.** `menu.ts` es puro: el ítem declara `detrasDeFlag: "PLAN_VIVO"`, el
-layout de `(student)` baja el valor por contexto y la barra filtra con `menuVisible`. Un `process.env`
-ahí rompe los tests, que importan el menú sin Next.
+⚠️ **La duración de un work item es de la unidad** ([Enm. 4](docs/decisions.md#adr-110-enmienda-4)):
+30–120 min por nivel (`RANGO_POR_NIVEL` en `ade.ts`), **nunca** de la disponibilidad. Asignar fuera de la
+disponibilidad se confirma y la crea; pisar lo que ubicó el estudiante, **hasta 15 min** y con confirmación.
+
+⚠️ **La semana pide 10–14 h** ([Enm. 5](docs/decisions.md#adr-110-enmienda-5)): el resto es **backlog**
+(no es *sin ubicar*), entra más con disponibilidad libre, y lo que está a distancia 2 no se genera —por
+prerrequisito **o por orden del programa** (sólo en el plan; el ADE no lee el orden)—.
+La urgencia (evaluación, clase, riesgo) es **por materia** para no contradecir el orden del ADE en Hoy.
 
 ⚠️ **Antes de tocar el Plan vivo:** sólo la `Action` viva de cada cursada es fila; el resto son
 **candidatos** de `candidatosDelAde` y **no se comprometen**. **Sin prioridad visible** (`P-03`). Propuestas,
@@ -153,8 +159,10 @@ materia** (ni *«estás promocionando»* ni *«3 de 4»*) y un parcial sin rendi
 
 🆕 **Onboarding académico** — [ADR-105](docs/decisions.md#adr-105), [ADR-106](docs/decisions.md#adr-106) y
 [ADR-107](docs/decisions.md#adr-107), 13–14 de septiembre · [`onboarding-academico.md`](docs/onboarding-academico.md).
-**El alta tiene cinco pasos** (enmienda ADR-061): `/alta/carrera` pregunta año lectivo y semestre y
-`/alta/cursada` —antes de disponibilidad— pregunta comisión y horario por materia. Y hay **`/recorrido`**,
+**El alta tiene cuatro pasos** (enmienda ADR-061): `/alta/carrera` pregunta año lectivo y semestre y
+`/alta/cursada` —el último— pregunta comisión y horario por materia. ⚠️ **No hay paso de disponibilidad**
+([ADR-110 · Enm. 3](docs/decisions.md#adr-110-enmienda-3)): se declara **sólo en Mi plan**, y toda fila
+`declared` lleva horario (hay `CHECK`). No lo vuelvas a poner en el alta. Y hay **`/recorrido`**,
 opcional y después de HOY: analítico sintético, revisión de lo ambiguo, pocas preguntas y un perfil de
 hipótesis.
 

@@ -160,17 +160,20 @@ export function aniosDelPlan(requisitos: readonly { curriculumYear: number | nul
 }
 
 /**
- * Los cinco pasos del alta: el orden de ADR-042, con disponibilidad (ADR-073) y
- * comisión y horarios **antes** de ella ([ADR-105](../../docs/decisions.md#adr-105) §1).
+ * Los cuatro pasos del alta: el orden de ADR-042, con comisión y horarios al
+ * final ([ADR-105](../../docs/decisions.md#adr-105)).
+ *
+ * ⚠️ **No hay paso de disponibilidad** — [ADR-110 · Enmienda 3](../../docs/decisions.md#adr-110-enmienda-3).
+ * Existió (ADR-073) y preguntaba minutos por día, sin horario. El owner lo sacó:
+ * la disponibilidad se declara **sólo en Mi plan**, dibujando franjas.
  */
-export type PasoDelAlta = "WHATSAPP" | "CARRERA" | "MATERIAS" | "CURSADA" | "DISPONIBILIDAD";
+export type PasoDelAlta = "WHATSAPP" | "CARRERA" | "MATERIAS" | "CURSADA";
 
 export const RUTA_DEL_PASO: Record<PasoDelAlta, string> = {
   WHATSAPP: "/alta/whatsapp",
   CARRERA: "/alta/carrera",
   MATERIAS: "/alta/materias",
   CURSADA: "/alta/cursada",
-  DISPONIBILIDAD: "/alta/disponibilidad",
 };
 
 /**
@@ -195,22 +198,11 @@ export function siguientePaso(estado: {
    * Sin cursadas activas no hay nada que preguntar, y cuenta como contestado.
    */
   cursadaRespondida: boolean;
-  /**
-   * `student.availability_declared_at IS NOT NULL` — **contestó la pregunta**,
-   * haya declarado bloques o no ([ADR-073](../../docs/decisions.md#adr-073)).
-   */
-  disponibilidadRespondida: boolean;
 }): PasoDelAlta | null {
   if (!estado.consentimientoRespondido) return "WHATSAPP";
   if (!estado.carreraDeclarada) return "CARRERA";
   if (!estado.materiasConfirmadas) return "MATERIAS";
-  // ADR-105 §1: antes de disponibilidad. Saber cuándo cursás es lo que permite
-  // contestar cuándo podés estudiar — y las dos preguntas siguen separadas.
   if (!estado.cursadaRespondida) return "CURSADA";
-  // Va última porque necesita saber **cuántas materias** para que la pregunta
-  // signifique algo. Antes de las materias, «¿cuántas horas tenés?» no tiene
-  // contra qué compararse.
-  if (!estado.disponibilidadRespondida) return "DISPONIBILIDAD";
   return null;
 }
 

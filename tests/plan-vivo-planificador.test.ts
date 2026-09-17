@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { candidatosDelAde, recomendar, type ContextoDelAde, type UnidadCandidata } from "@/lib/domain/ade";
 import { primerHueco, MINUTO } from "@/lib/domain/plan-vivo/intervalos";
 import {
+  CARGA_RECOMENDADA_MIN,
+  compararPrioridad,
   planificar,
   validarIntercambio,
   validarUbicacion,
@@ -200,8 +202,21 @@ describe("validar lo que el estudiante hace", () => {
     expect(validar(base(), vacio(), "a", t(0, 7))).toMatchObject({ tipo: "CONFLICTO", motivo: "PASADO" });
   });
 
-  it("en un horario vacío no declarado pide agregar disponibilidad", () => {
-    expect(validar(base(), vacio(), "a", t(3, 10))).toEqual({ tipo: "SIN_DISPONIBILIDAD", franja: { ini: t(3, 10), fin: t(3, 11) } });
+  it("en un horario vacío no declarado pide confirmar y agregar disponibilidad", () => {
+    expect(validar(base(), vacio(), "a", t(3, 10))).toEqual({
+      tipo: "CONFIRMAR",
+      sinDisponibilidad: { ini: t(3, 10), fin: t(3, 11) },
+      superpone: [],
+      reubica: [],
+      pierden: [],
+    });
+  });
+
+  it("confirmar sin disponibilidad agrega la franja y deja el trabajo ahí", () => {
+    const b = base();
+    const s = correr(vacio(), operar({ tipo: "AGREGAR_Y_UBICAR", franja: { ini: t(3, 10), fin: t(3, 11) }, itemId: "a", ini: t(3, 10) }));
+    expect(posicion(b, s, "a")).toBe(t(3, 10));
+    expect(proyectar(b, s).conflicts).toEqual([]);
   });
 
   it("una prioridad menor sin consecuencias no avisa", () => {
@@ -210,15 +225,44 @@ describe("validar lo que el estudiante hace", () => {
 
   it("avisa sólo cuando trabajo más prioritario pierde su lugar", () => {
     const b = base({ disponibilidad: [franja(0, 19, 20)] });
-    expect(validar(b, vacio(), "c", t(0, 19))).toEqual({ tipo: "CONSECUENCIA", pierden: ["a"] });
+    expect(validar(b, vacio(), "c", t(0, 19))).toMatchObject({ tipo: "CONFIRMAR", sinDisponibilidad: null, pierden: ["a"] });
   });
 
-  it("sobre una propuesta elegida la desplaza, y sobre una fijada no", () => {
-    const b = base();
-    const s = correr(vacio(), operar({ tipo: "UBICAR", itemId: "b", ini: t(1, 18), salen: [] }));
-    expect(validar(b, s, "a", t(1, 18))).toEqual({ tipo: "DESPLAZA", desplazados: ["b"] });
-    const fijada = correr(vacio(), operar({ tipo: "FIJAR", itemId: "b", ini: t(1, 18) }));
-    expect(validar(b, fijada, "a", t(1, 18))).toEqual({ tipo: "CONFLICTO", motivo: "FIJADA", contra: "b" });
+  describe("ADR-110 · Enm. 4 · se puede pisar hasta 15 minutos lo que ubicó el estudiante", () => {
+    const conB = () => correr(vacio(), operar({ tipo: "UBICAR", itemId: "b", ini: t(1, 18), salen: [] }));
+
+    it("más de 15 minutos encima de un trabajo elegido o fijado es un conflicto", () => {
+      const b = base();
+      expect(validar(b, conB(), "a", t(1, 18))).toEqual({ tipo: "CONFLICTO", motivo: "SUPERPOSICION", contra: "b" });
+      expect(validar(b, conB(), "a", t(1, 17, 44))).toEqual({ tipo: "CONFLICTO", motivo: "SUPERPOSICION", contra: "b" });
+      const fijada = correr(vacio(), operar({ tipo: "FIJAR", itemId: "b", ini: t(1, 18) }));
+      expect(validar(b, fijada, "a", t(1, 18, 30))).toEqual({ tipo: "CONFLICTO", motivo: "SUPERPOSICION", contra: "b" });
+    });
+
+    it("hasta 15 minutos pide confirmar, y dice cuánto pisa", () => {
+      const b = base();
+      expect(validar(b, conB(), "a", t(1, 18, 45))).toEqual({
+        tipo: "CONFIRMAR",
+        sinDisponibilidad: null,
+        superpone: [{ itemId: "b", minutos: 15 }],
+        reubica: [],
+        pierden: [],
+      });
+    });
+
+    it("confirmado, los dos quedan en su lugar", () => {
+      const b = base();
+      const s = correr(conB(), operar({ tipo: "UBICAR", itemId: "a", ini: t(1, 18, 45), salen: [] }));
+      expect(posicion(b, s, "b")).toBe(t(1, 18));
+      expect(posicion(b, s, "a")).toBe(t(1, 18, 45));
+      expect(proyectar(b, s).conflicts).toEqual([]);
+    });
+
+    it("una propuesta automática no se pisa: Achieve la reubica, y lo avisa", () => {
+      const b = base();
+      const r = validarUbicacion(entradaDe(b, ESTADO_INICIAL), "c", t(1, 18));
+      expect(r).toMatchObject({ tipo: "CONFIRMAR", superpone: [], reubica: ["b"] });
+    });
   });
 });
 
@@ -536,7 +580,8 @@ describe("una sola proyección", () => {
     const p = proyectar(b);
     const ubicado = p.placedItems.reduce((s, x) => s + (x.fin - x.ini) / MINUTO, 0);
     expect(p.metrics.asignado).toBe(ubicado);
-    expect(p.metrics.noEntra).toBe(p.notFittingItems.length * 60);
+    // ADR-110 · Enm. 5: «No entra» salió de las métricas; «Sin ubicar» es la única cifra.
+    expect(p.metrics).not.toHaveProperty("noEntra");
     expect(new Set([...p.placedItems.map((x) => x.itemId), ...p.unplacedItems.map((x) => x.id)])).toEqual(new Set(b.items.map((i) => i.id)));
   });
 
@@ -545,5 +590,64 @@ describe("una sola proyección", () => {
     const copia = JSON.stringify(e);
     aplicar(e, { tipo: "VACIAR" });
     expect(JSON.stringify(e)).toBe(copia);
+  });
+});
+
+describe("ADR-110 · Enm. 5 · la semana recomendada y el backlog", () => {
+  // Veinte trabajos de una hora, en orden de prioridad.
+  const veinte = Array.from({ length: 20 }, (_, k) => item(`w${String(k).padStart(2, "0")}`, { costo: 1000 - k }));
+  const toda = (dias: number) => Array.from({ length: dias }, (_, d) => franja(d, 8, 23));
+
+  it("con poca disponibilidad, la semana pide 14 h y el resto va al backlog", () => {
+    const b = base({ items: veinte, fijos: [], disponibilidad: [franja(1, 18, 23)] });
+    const p = proyectar(b);
+    expect(p.metrics.pendiente).toBe(CARGA_RECOMENDADA_MIN.max);
+    expect(p.placedItems).toHaveLength(5);
+    expect(p.unplacedItems).toHaveLength(9);
+    expect(p.backlog.map((i) => i.id)).toEqual(veinte.slice(14).map((i) => i.id));
+    expect(p.metrics.backlog).toBe(6 * 60);
+    // Lo que la semana no pide no «no entra»: no se reclama.
+    expect(p.notFittingItems.map((n) => n.itemId)).toEqual(veinte.slice(5, 14).map((i) => i.id));
+  });
+
+  it("con más disponibilidad libre, entra trabajo del backlog: nunca se está completo", () => {
+    const b = base({ items: veinte, fijos: [], disponibilidad: toda(7) });
+    const p = proyectar(b);
+    expect(p.placedItems).toHaveLength(20);
+    expect(p.backlog).toEqual([]);
+    expect(p.metrics.pendiente).toBe(20 * 60);
+  });
+
+  it("lo que el estudiante arrastra desde el backlog pasa a ser de la semana", () => {
+    const b = base({ items: veinte, fijos: [], disponibilidad: [franja(1, 18, 23)] });
+    const s = correr(SESION_INICIAL, operar({ tipo: "AGREGAR_Y_UBICAR", franja: franja(3, 10, 11), itemId: "w19", ini: t(3, 10) }));
+    const p = proyectar(b, s);
+    expect(p.placedItems.some((x) => x.itemId === "w19")).toBe(true);
+    expect(p.backlog.some((i) => i.id === "w19")).toBe(false);
+    expect(p.metrics.pendiente).toBe(CARGA_RECOMENDADA_MIN.max);
+  });
+
+  it("no se recomienda algo antes de lo que necesita", () => {
+    const largo = { minMinutes: 700, likelyMinutes: 800, maxMinutes: 900 };
+    const b = base({
+      fijos: [],
+      disponibilidad: [franja(1, 18, 20)],
+      items: [
+        item("grande", { costo: 900, durationRange: largo }),
+        item("chica", { costo: 800, durationRange: { minMinutes: 60, likelyMinutes: 60, maxMinutes: 60 } }),
+        item("depende", {
+          costo: 700,
+          dependencies: [{ topicId: "t-x", itemId: "espera", kind: "HARD", reason: "X", source: { tipo: "topic_prerequisite", id: "t-x" } }],
+        }),
+      ],
+    });
+    const p = proyectar(b);
+    expect(p.backlog.map((i) => i.id)).toEqual(["depende"]);
+  });
+
+  it("la urgencia de la semana suma al costo del ADE", () => {
+    const a = item("a", { costo: 100, urgencia: 500 });
+    const z = item("z", { costo: 500 });
+    expect(compararPrioridad(a, z)).toBeLessThan(0);
   });
 });

@@ -87,7 +87,7 @@ export function GimnasiaEsqueleto() {
         <section>
           <h2 style={{ margin: 0, fontSize: "var(--text-title-sm)", fontWeight: 600 }}>{t("GIMNASIA.CATEGORIA.TITULO")}</h2>
           <p className="subcopy" style={{ margin: "2px 0 12px" }}>{t("GIMNASIA.CATEGORIA.DESCRIPCION")}</p>
-          <ul aria-hidden style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
+          <ul aria-hidden style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }}>
             {[0, 1, 2].map((i) => (
               <li key={i} style={{ ...estiloPanel, display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -217,7 +217,7 @@ export function Gimnasia(props: GimnasiaScreenProps) {
             {t("GIMNASIA.CATEGORIA.TITULO")}
           </h2>
           <p className="subcopy" style={{ margin: "2px 0 12px" }}>{t("GIMNASIA.CATEGORIA.DESCRIPCION")}</p>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))" }}>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))" }}>
             <TarjetaDeJuego
               icono={<Grid3x3 size={22} aria-hidden />}
               nombre={t("GIMNASIA.CUADRICULA.NOMBRE")}

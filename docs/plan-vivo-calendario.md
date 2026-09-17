@@ -2,7 +2,7 @@
 
 **Estado:** 🟡 `IMPLEMENTED BEHIND FLAG` · 16 sep 2026 · rama `feature/plan-vivo-calendar-integration`
 **Decisión:** [ADR-110](decisions.md#adr-110) (cierra ADR-109 D-01, D-02 y D-09) · diferido: [ADR-111](decisions.md#adr-111)
-**Flag:** `PLAN_VIVO_CALENDAR_INTEGRATION=1` · **Auditoría previa:** [`experiments/plan-vivo-v3/INTEGRATION_AUDIT.md`](experiments/plan-vivo-v3/INTEGRATION_AUDIT.md)
+**Flag:** ~~`PLAN_VIVO_CALENDAR_INTEGRATION=1`~~ — **ya no hay flag**: el plan vive en `/plan`, siempre visible ([ADR-110 · Enm. 2](decisions.md#adr-110-enmienda-2)) · **Auditoría previa:** [`experiments/plan-vivo-v3/INTEGRATION_AUDIT.md`](experiments/plan-vivo-v3/INTEGRATION_AUDIT.md)
 
 > ⛔ **No se promueve a producción.** Corre sobre datos sintéticos ([ADR-006](decisions.md#adr-006)), el
 > copy no pasó por la psicopedagoga (ADR-075) y la hipótesis *«el calendario alcanza como plan»* se

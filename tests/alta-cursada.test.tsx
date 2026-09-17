@@ -230,11 +230,14 @@ describe("la pantalla /alta/cursada", () => {
 describe("las ausencias que protege ADR-105", () => {
   const MIGRACION = sinComentariosSql(LEER("supabase/migrations/20261102000000_cursada_en_el_alta.sql"));
 
-  it("el paso va entre materias y disponibilidad", () => {
+  it("el paso va después de materias y es el último", () => {
     expect(RUTA_DEL_PASO.CURSADA).toBe("/alta/cursada");
     expect(
-      siguientePaso({ consentimientoRespondido: true, carreraDeclarada: true, materiasConfirmadas: true, cursadaRespondida: true, disponibilidadRespondida: false }),
-    ).toBe("DISPONIBILIDAD");
+      siguientePaso({ consentimientoRespondido: true, carreraDeclarada: true, materiasConfirmadas: true, cursadaRespondida: false }),
+    ).toBe("CURSADA");
+    expect(
+      siguientePaso({ consentimientoRespondido: true, carreraDeclarada: true, materiasConfirmadas: true, cursadaRespondida: true }),
+    ).toBeNull();
   });
 
   it("contestar el paso no crea ninguna class_session: el horario semanal no es una clase dictada", () => {

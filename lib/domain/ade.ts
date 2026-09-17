@@ -57,7 +57,12 @@ export interface ContextoDelAde {
   unidades: readonly UnidadCandidata[];
   /** Evaluación más próxima, si la hay. Sin fecha **no se estima**. */
   proximaEvaluacion: { titulo: string; fecha: string | null; temas: readonly string[] } | null;
-  /** Minutos que el estudiante declaró tener. `null` = no declaró. */
+  /**
+   * Minutos que el estudiante declaró tener. `null` = no declaró.
+   *
+   * ⚠️ **Ya no dimensiona el bloque** (ADR-110 · Enm. 4): la duración es de la
+   * unidad. Llega igual porque la base lo sigue mandando.
+   */
   minutosDisponibles: number | null;
   /** ¿Ya hay una Action viva para esta cursada? El ADE no propone encima. */
   hayAccionViva: boolean;
@@ -91,8 +96,53 @@ export type SalidaDelAde =
   | { rama: "PENDING"; detalle: string }
   | { rama: "ERROR"; detalle: string };
 
-/** Minutos por defecto cuando el estudiante no declaró disponibilidad. */
-const BLOQUE_POR_DEFECTO = { min: 30, max: 45 };
+/**
+ * **Cuánto lleva una unidad** — [ADR-110 · Enmienda 4](../../docs/decisions.md#adr-110-enmienda-4).
+ *
+ * Un rango **fijo por unidad**, entre 30 y 120 minutos, y **nunca** sale de la
+ * disponibilidad: el plan suma el promedio de cada rango para decir cuánto
+ * trabajo pendiente hay, y ese número tiene que ser del trabajo, no de la
+ * semana. Si la semana no alcanza, se agrega disponibilidad.
+ *
+ * El nivel lo decide el ADE con lo que ya sabe de la unidad:
+ *
+ * | Señal | Nivel |
+ * |---|---|
+ * | Tamaño (peso relativo en la materia) | base 1…3 · sin pesos declarados, 2 |
+ * | Dominio registrado bajo (< 4) / alto (≥ 7) | +1 / −1 · sin dato, 0 |
+ * | Entra en la próxima evaluación | +1 |
+ *
+ * ⚠️ **Es una estimación, no una dificultad declarada.** Nadie declaró qué tan
+ * difícil es una unidad (ADR-086): el nivel resume tamaño y dominio, y así se
+ * explica.
+ */
+export const RANGO_POR_NIVEL: Readonly<Record<1 | 2 | 3 | 4 | 5, { min: number; max: number }>> = {
+  1: { min: 30, max: 40 },
+  2: { min: 45, max: 60 },
+  3: { min: 60, max: 75 },
+  4: { min: 75, max: 90 },
+  5: { min: 90, max: 120 },
+};
+
+export function nivelDeLaUnidad(u: UnidadCandidata, ctx: ContextoDelAde, pesoRelativo: ReadonlyMap<string, number>): 1 | 2 | 3 | 4 | 5 {
+  const peso = pesoRelativo.get(u.topicId);
+  let nivel = peso === undefined ? 2 : 1 + Math.round(peso * 2);
+  if (u.dominioEstado === "value" && u.dominioValor !== null) {
+    if (u.dominioValor < 4) nivel += 1;
+    else if (u.dominioValor >= 7) nivel -= 1;
+  }
+  if (ctx.proximaEvaluacion?.temas.includes(u.topicId)) nivel += 1;
+  return Math.min(5, Math.max(1, nivel)) as 1 | 2 | 3 | 4 | 5;
+}
+
+const bloqueDe = (u: UnidadCandidata, ctx: ContextoDelAde, pesoRelativo: ReadonlyMap<string, number>) =>
+  RANGO_POR_NIVEL[nivelDeLaUnidad(u, ctx, pesoRelativo)];
+
+/** El rango de una unidad de la materia, o `null` si no está en el contexto. */
+export function rangoDeLaUnidad(ctx: ContextoDelAde, topicId: string): { min: number; max: number } | null {
+  const u = ctx.unidades.find((x) => x.topicId === topicId);
+  return u ? bloqueDe(u, ctx, pesosRelativos(ctx.unidades)) : null;
+}
 
 /**
  * ¿Está habilitada? Una unidad con prerequisitos sin trabajar no se recomienda:
@@ -226,9 +276,7 @@ export function recomendar(ctx: ContextoDelAde): SalidaDelAde {
     };
   }
 
-  const bloque = ctx.minutosDisponibles
-    ? { min: Math.min(30, ctx.minutosDisponibles), max: ctx.minutosDisponibles }
-    : BLOQUE_POR_DEFECTO;
+  const bloque = bloqueDe(elegida, ctx, pesoRelativo);
 
   return {
     rama: "NEW",
@@ -302,9 +350,6 @@ export function candidatosDelAde(ctx: ContextoDelAde): CandidatoDelAde[] {
     ctx.unidades.filter((u) => u.practicaEstado === "value").map((u) => u.topicId),
   );
   const pesoRelativo = pesosRelativos(ctx.unidades);
-  const bloque = ctx.minutosDisponibles
-    ? { min: Math.min(30, ctx.minutosDisponibles), max: ctx.minutosDisponibles }
-    : BLOQUE_POR_DEFECTO;
 
   return ctx.unidades
     .filter((u) => u.practicaEstado !== "value")
@@ -324,8 +369,8 @@ export function candidatosDelAde(ctx: ContextoDelAde): CandidatoDelAde[] {
         razon: razonDe(u, ctx),
         senales,
         entraEnEvaluacion: entra,
-        minutosMin: bloque.min,
-        minutosMax: bloque.max,
+        minutosMin: bloqueDe(u, ctx, pesoRelativo).min,
+        minutosMax: bloqueDe(u, ctx, pesoRelativo).max,
         tieneRecurso: u.recursos.length > 0,
       };
     })

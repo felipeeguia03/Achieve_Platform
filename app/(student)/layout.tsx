@@ -12,8 +12,6 @@
  */
 import { PanelDePrueba } from "@/components/prueba/panel";
 import { Asistente } from "@/components/shell/asistente";
-import { ProveedorDePlanVivo } from "@/lib/client/plan-vivo-flag";
-import { planVivoActivo } from "@/lib/server/plan-vivo-flag";
 
 export default function StudentLayout({
   children,
@@ -22,13 +20,7 @@ export default function StudentLayout({
     // El centrado y el padding los pone el Shell (Fase A2.1). Acá sólo queda
     // el color base, para que el fondo no lo pinte el navegador.
     <div style={{ background: "var(--background)", color: "var(--foreground)" }}>
-      {/*
-        🧪 **Plan vivo en el Calendario** — ADR-110. El flag baja por contexto
-        para el Calendario abierto **en una ventana**. Como el resto del layout,
-        se fija al compilar (igual que `MODO_PRUEBA`); la página `/calendario` lo
-        vuelve a leer en cada pedido.
-      */}
-      <ProveedorDePlanVivo activo={planVivoActivo()}>{children}</ProveedorDePlanVivo>
+      {children}
       {/*
         ⚠️ **MODO PRUEBA.** El dock para reiniciar el alta. Se monta acá —en el
         layout, que es Server Component— y no en el `Shell`, por dos razones:

@@ -38,14 +38,41 @@ export const REGLA_DEL_PLANIFICADOR = "plan-vivo-v1";
 
 const probable = (i: PlanningWorkItem): number | null => i.durationRange?.likelyMinutes ?? null;
 
+/**
+ * Cuánto puede pisar un trabajo a otro que ubicó el estudiante —
+ * [ADR-110 · Enmienda 4](../../../docs/decisions.md#adr-110-enmienda-4).
+ *
+ * **Flexible pero con orden:** hasta 15 minutos se confirma y los dos quedan en
+ * su lugar; más que eso no se puede. Una propuesta automática no cuenta: es de
+ * Achieve, y se reubica.
+ */
+export const MAX_SUPERPOSICION_MIN = 15;
+
+/**
+ * **La semana recomendada** — [ADR-110 · Enmienda 5](../../../docs/decisions.md#adr-110-enmienda-5).
+ *
+ * Achieve arma la semana con **entre 10 y 14 horas** de trabajo, en orden de
+ * prioridad. No es un tope: con más disponibilidad libre entra más trabajo del
+ * backlog, y el estudiante puede arrastrar lo que quiera. Nunca se está
+ * «completo» por la semana.
+ */
+export const CARGA_RECOMENDADA_MIN = { min: 10 * 60, max: 14 * 60 } as const;
+
+/** Minutos en común entre dos franjas. */
+export const minutosEnComun = (a: Intervalo, b: Intervalo) =>
+  Math.max(0, Math.round((Math.min(a.fin, b.fin) - Math.max(a.ini, b.ini)) / MINUTO));
+
 // ── Orden ───────────────────────────────────────────────────────────────────────
 
 /**
- * Comparación lexicográfica: costo del ADE (mayor primero) → plazo más cercano
+ * Comparación lexicográfica: costo del ADE más la urgencia de la semana
+ * (mayor primero; ADR-110 · Enm. 5) → plazo más cercano
  * → materia → id. **El id cierra el empate** para que dos corridas den lo mismo.
  */
+const peso = (i: PlanningWorkItem) => i.costo + (i.urgencia ?? 0);
+
 export function compararPrioridad(a: PlanningWorkItem, b: PlanningWorkItem): number {
-  if (a.costo !== b.costo) return b.costo - a.costo;
+  if (peso(a) !== peso(b)) return peso(b) - peso(a);
   const pa = a.deadline?.instante ?? Number.POSITIVE_INFINITY;
   const pb = b.deadline?.instante ?? Number.POSITIVE_INFINITY;
   if (pa !== pb) return pa - pb;
@@ -247,9 +274,10 @@ function respetar(c: Contexto): { ubicadas: Map<string, PlacedPlanningItem>; con
       conflictos.push({ itemId: item.id, motivo: "FUERA_DE_DISPONIBILIDAD", contra: null });
       continue;
     }
-    const otra = [...ubicadas.values()].find((p) => seSuperponen(p, franja));
+    // Hasta 15 minutos en común se toleran: el estudiante lo confirmó al ubicar.
+    const otra = [...ubicadas.values()].find((p) => minutosEnComun(p, franja) > MAX_SUPERPOSICION_MIN);
     if (otra) {
-      conflictos.push({ itemId: item.id, motivo: otra.fijada ? "FIJADA" : "PROPUESTA", contra: otra.itemId });
+      conflictos.push({ itemId: item.id, motivo: "SUPERPOSICION", contra: otra.itemId });
       continue;
     }
     ubicadas.set(item.id, { ...u, fin: franja.fin });
@@ -271,6 +299,48 @@ function respetar(c: Contexto): { ubicadas: Map<string, PlacedPlanningItem>; con
   return { ubicadas, conflictos };
 }
 
+// ── La semana ───────────────────────────────────────────────────────────────────
+
+/** Minutos de un trabajo: su bloque si está comprometido, si no el probable. */
+function minutosDe(c: Contexto, i: PlanningWorkItem): number {
+  const bloque = c.bloqueDe.get(i.id);
+  return bloque ? Math.round((bloque.fin - bloque.ini) / MINUTO) : (probable(i) ?? 0);
+}
+
+/**
+ * Qué trabajo pide la semana. Primero lo que ya está decidido —comprometido y
+ * lo que el estudiante ubicó—, después el resto **en orden de prioridad**
+ * mientras no pase de `CARGA_RECOMENDADA_MIN.max`. Un trabajo cuyo
+ * prerrequisito no quedó en la semana (ni está hecho) queda afuera: no se
+ * recomienda hacer algo antes de lo que necesita.
+ */
+function seleccionSemanal(
+  c: Contexto,
+  pendientes: readonly PlanningWorkItem[],
+  movibles: readonly PlanningWorkItem[],
+  respetadas: ReadonlyMap<string, PlacedPlanningItem>,
+): Set<string> {
+  const sel = new Set<string>();
+  let carga = 0;
+  for (const i of pendientes) {
+    if (!esMovible(c, i) || respetadas.has(i.id)) {
+      sel.add(i.id);
+      carga += minutosDe(c, i);
+    }
+  }
+  const satisfecha = (itemId: string | null) =>
+    itemId === null || c.hechos.has(itemId) || sel.has(itemId) || (c.items.has(itemId) && !esMovible(c, c.items.get(itemId)!));
+  for (const i of ordenTopologico(movibles)) {
+    if (sel.has(i.id)) continue;
+    const d = probable(i) ?? 0;
+    if (carga + d > CARGA_RECOMENDADA_MIN.max) continue;
+    if (!i.dependencies.every((dep) => satisfecha(dep.itemId))) continue;
+    sel.add(i.id);
+    carga += d;
+  }
+  return sel;
+}
+
 // ── La proyección ───────────────────────────────────────────────────────────────
 
 export function planificar(input: PlanningInput): PlanningProjection {
@@ -282,16 +352,25 @@ export function planificar(input: PlanningInput): PlanningProjection {
   const automatico = input.strategy === "AUTOMATIC";
   // En manual el recorrido corre **a la sombra**: dice qué entraría, sin ubicar nada.
   const retenidas = new Set(input.retenidas);
-  const reparto = llenar(c, respetadas, movibles.filter((i) => !(automatico && retenidas.has(i.id))));
-  const ubicadas = automatico ? reparto.ubicadas : respetadas;
+  const libre = (i: PlanningWorkItem) => !(automatico && retenidas.has(i.id));
+
+  // 1. La semana recomendada. 2. Con lo que sobra de disponibilidad, entra backlog.
+  const recomendada = seleccionSemanal(c, pendientes, movibles, respetadas);
+  const reparto = llenar(c, respetadas, movibles.filter((i) => recomendada.has(i.id) && libre(i)));
+  const extra = llenar(c, reparto.ubicadas, movibles.filter((i) => !recomendada.has(i.id) && libre(i)));
+  const semana = new Set([...recomendada, ...extra.ubicadas.keys()]);
+
+  const ubicadas = automatico ? extra.ubicadas : respetadas;
   const feasible = automatico
     ? []
-    : ordenTopologico(movibles.filter((i) => !respetadas.has(i.id) && reparto.ubicadas.has(i.id))).map((i) => i.id);
+    : ordenTopologico(movibles.filter((i) => !respetadas.has(i.id) && extra.ubicadas.has(i.id))).map((i) => i.id);
+  // Sólo el trabajo de la semana «no entra»: el backlog no se reclama.
   const noEntran = reparto.noEntran;
   // Una retenida en automático no «no entra»: el estudiante la sacó. Queda en la cola, sin causa.
 
   const placedItems = [...ubicadas.values()].sort((a, b) => a.ini - b.ini || (a.itemId < b.itemId ? -1 : 1));
-  const unplacedItems = ordenTopologico(movibles.filter((i) => !ubicadas.has(i.id)));
+  const unplacedItems = ordenTopologico(movibles.filter((i) => semana.has(i.id) && !ubicadas.has(i.id)));
+  const backlog = ordenTopologico(movibles.filter((i) => !semana.has(i.id) && !ubicadas.has(i.id)));
 
   const explanations: PlacementExplanation[] = [
     ...placedItems.map((p): PlacementExplanation => {
@@ -307,9 +386,10 @@ export function planificar(input: PlanningInput): PlanningProjection {
     placedItems,
     unplacedItems,
     feasiblePrioritySet: feasible,
+    backlog,
     notFittingItems: noEntran,
     conflicts: conflictos,
-    metrics: metricas(c, pendientes, placedItems, noEntran),
+    metrics: metricas(c, pendientes.filter((i) => semana.has(i.id)), placedItems, backlog),
     explanations,
   };
 }
@@ -318,15 +398,11 @@ function metricas(
   c: Contexto,
   pendientes: readonly PlanningWorkItem[],
   ubicadas: readonly PlacedPlanningItem[],
-  noEntran: readonly NotFittingItem[],
+  backlog: readonly PlanningWorkItem[],
 ): PlanningMetrics {
   const minutos = (ms: number) => Math.round(ms / MINUTO);
-  const deItem = (i: PlanningWorkItem): number | null => {
-    const bloque = c.bloqueDe.get(i.id);
-    return bloque ? minutos(bloque.fin - bloque.ini) : probable(i);
-  };
-  const pendiente = pendientes.reduce((s, i) => s + (deItem(i) ?? 0), 0);
-  const comprometido = pendientes.filter((i) => !esMovible(c, i)).reduce((s, i) => s + (deItem(i) ?? 0), 0);
+  const pendiente = pendientes.reduce((s, i) => s + minutosDe(c, i), 0);
+  const comprometido = pendientes.filter((i) => !esMovible(c, i)).reduce((s, i) => s + minutosDe(c, i), 0);
   const asignado = comprometido + ubicadas.reduce((s, p) => s + minutos(p.fin - p.ini), 0);
 
   const ocupantes: Intervalo[] = [
@@ -335,32 +411,45 @@ function metricas(
   ];
   const total = minutos(duracion(c.disponible));
   const ocupada = minutos(duracion(intersectar(c.disponible, unir(ocupantes))));
-  const noEntra = noEntran.reduce((s, n) => s + (probable(c.items.get(n.itemId)!) ?? 0), 0);
 
   return {
     pendiente,
+    backlog: backlog.reduce((s, i) => s + (probable(i) ?? 0), 0),
     asignado,
     sinUbicar: Math.max(0, pendiente - asignado),
     disponibilidadTotal: total,
     disponibilidadOcupada: ocupada,
     disponibilidadLibre: Math.max(0, total - ocupada),
-    noEntra,
     sinDuracion: pendientes.filter((i) => esMovible(c, i) && probable(i) === null).length,
   };
 }
 
 // ── Validar lo que el estudiante hace ───────────────────────────────────────────
 
+export interface Superposicion {
+  itemId: string;
+  minutos: number;
+}
+
 export type ResultadoDeUbicacion =
   | { tipo: "OK" }
   /** Duro: no se ubica, y no hay «ubicar igual». */
   | { tipo: "CONFLICTO"; motivo: MotivoDeConflicto; contra: string | null }
-  /** El horario está libre pero nadie lo declaró disponible. */
-  | { tipo: "SIN_DISPONIBILIDAD"; franja: Intervalo }
-  /** Pisa propuestas movibles: se ubica sólo si se confirma que salen. */
-  | { tipo: "DESPLAZA"; desplazados: readonly string[] }
-  /** Entra, pero trabajo más prioritario pierde su lugar. */
-  | { tipo: "CONSECUENCIA"; pierden: readonly string[] };
+  /**
+   * Se puede, pero el estudiante tiene que confirmar **todo** lo que pasa —
+   * ADR-110 · Enm. 4. Cada campo vacío es una cosa menos que avisar.
+   */
+  | {
+      tipo: "CONFIRMAR";
+      /** El horario no estaba disponible: al confirmar, se agrega esta franja. */
+      sinDisponibilidad: Intervalo | null;
+      /** Trabajos ubicados por el estudiante a los que pisa (≤ 15 min cada uno). Quedan donde están. */
+      superpone: readonly Superposicion[];
+      /** Propuestas automáticas que Achieve va a reubicar. */
+      reubica: readonly string[];
+      /** Trabajo más prioritario que deja de entrar en la semana. */
+      pierden: readonly string[];
+    };
 
 /** Las ubicaciones de la entrada con `itemId` puesto en `ini`, y sin las que salen. */
 export function conUbicacion(input: PlanningInput, itemId: string, ini: number, salen: readonly string[] = []): PlanningInput {
@@ -401,24 +490,34 @@ export function validarUbicacion(input: PlanningInput, itemId: string, ini: numb
 
   const franja = { ini, fin: ini + probable(item)! * MINUTO };
   const pisadas = [...ubicadas.values()].filter((p) => seSuperponen(p, franja));
-  const fijada = pisadas.find((p) => p.fijada);
-  if (fijada) return { tipo: "CONFLICTO", motivo: "FIJADA", contra: fijada.itemId };
+  // Lo que ubicó el estudiante (elegido o fijado) no se mueve: se lo puede pisar
+  // hasta 15 minutos, y más no.
+  const delEstudiante = pisadas.filter((p) => p.fijada || p.origen === "MANUAL");
+  const demasiado = delEstudiante.find((p) => minutosEnComun(p, franja) > MAX_SUPERPOSICION_MIN);
+  if (demasiado) return { tipo: "CONFLICTO", motivo: "SUPERPOSICION", contra: demasiado.itemId };
   // Mover un trabajo que depende de éste a antes de su prerrequisito también es duro.
   const dependiente = [...ubicadas.values()].find((p) =>
     c.items.get(p.itemId)!.dependencies.some((d) => d.itemId === itemId) && p.ini < franja.fin,
   );
   if (dependiente) return { tipo: "CONFLICTO", motivo: "DEPENDENCIA", contra: dependiente.itemId };
-  if (pisadas.length > 0) return { tipo: "DESPLAZA", desplazados: pisadas.map((p) => p.itemId) };
 
-  if (!contenido(franja, c.disponible)) return { tipo: "SIN_DISPONIBILIDAD", franja };
+  const sinDisponibilidad = contenido(franja, c.disponible) ? null : franja;
+  const superpone = delEstudiante.map((p) => ({ itemId: p.itemId, minutos: minutosEnComun(p, franja) }));
+  const reubica = pisadas.filter((p) => !delEstudiante.includes(p)).map((p) => p.itemId);
 
   const antes = queEntra(input, actual);
-  const siguiente = conUbicacion(input, itemId, ini);
+  const siguiente = conUbicacion(
+    sinDisponibilidad ? { ...input, disponibilidad: unir([...input.disponibilidad, franja]) } : input,
+    itemId,
+    ini,
+  );
   const despues = queEntra(siguiente, planificar(siguiente));
   const pierden = input.items
     .filter((i) => i.id !== itemId && antes.has(i.id) && !despues.has(i.id) && compararPrioridad(i, item) < 0)
     .map((i) => i.id);
-  return pierden.length > 0 ? { tipo: "CONSECUENCIA", pierden } : { tipo: "OK" };
+
+  const nada = !sinDisponibilidad && superpone.length === 0 && reubica.length === 0 && pierden.length === 0;
+  return nada ? { tipo: "OK" } : { tipo: "CONFIRMAR", sinDisponibilidad, superpone, reubica, pierden };
 }
 
 export type ResultadoDeIntercambio =

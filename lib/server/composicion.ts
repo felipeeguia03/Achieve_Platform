@@ -156,7 +156,7 @@ import {
 import { datosSimuladosDeClase, simulacionDeClaseActiva } from "./simulacion/clase";
 import type { UnidadDeMateria } from "@/lib/domain/unidades-de-clase";
 import type { ClaseEnLista, ClaseProps } from "@/lib/domain/view-models";
-import { numeroDeUnidad, proyectarTablero } from "./servicios/proyeccion-tablero";
+import { numeroDeUnidad, proyectarTablero, riesgosPorMateria } from "./servicios/proyeccion-tablero";
 import { diaDeSemana, fechaEnZona } from "@/lib/domain/zona";
 import type { CalendarioProps, TableroProps } from "@/lib/domain/view-models";
 import { ganttDeMateria, proyectarMateria } from "./servicios/proyeccion-materia";
@@ -1546,8 +1546,12 @@ export async function planVivoDe(
   ahora: string = new Date().toISOString(),
 ): Promise<PlanVivoBase> {
   const hoy = fechaEnZona(Date.parse(ahora), zona);
-  const insumos = await planVivoReal.insumos(institutionId, studentId, semana, hoy);
-  return armarBaseDelPlan(insumos, ahora, zona, semana);
+  // ADR-110 · Enm. 5: los riesgos que prioriza la semana son los mismos de Hoy.
+  const [insumos, reparto] = await Promise.all([
+    planVivoReal.insumos(institutionId, studentId, semana, hoy),
+    repartoReal.insumos(institutionId, studentId, ahora),
+  ]);
+  return armarBaseDelPlan(insumos, ahora, zona, semana, riesgosPorMateria(reparto, ahora, zona));
 }
 
 /**

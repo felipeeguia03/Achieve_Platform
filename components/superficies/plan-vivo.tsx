@@ -31,6 +31,7 @@ import {
 } from "@/lib/domain/plan-vivo/sesion";
 import type { Intervalo, ManualPresentation, PlanningInput, PlanVivoBase } from "@/lib/domain/plan-vivo/tipos";
 import type { MateriaProps } from "@/lib/domain/view-models";
+import { desdeElPlan } from "@/lib/navigation/migas";
 
 /**
  * **Plan vivo en el Calendario** — [ADR-110](../../docs/decisions.md#adr-110).
@@ -137,12 +138,8 @@ function Plan({ base, recargar, irA }: { base: PlanVivoBase; recargar: () => voi
         return operar({ tipo: "UBICAR", itemId, ini, salen: [] }, `${titulo(itemId)}: ubicada.`);
       case "CONFLICTO":
         return setDialogo({ tipo: "CONFLICTO", itemId, motivo: r.motivo, contra: r.contra, alternativas: alternativas(entrada, itemId, 2) });
-      case "SIN_DISPONIBILIDAD":
-        return setDialogo({ tipo: "SIN_DISPONIBILIDAD", itemId, ini, franja: r.franja });
-      case "DESPLAZA":
-        return setDialogo({ tipo: "DESPLAZA", itemId, ini, afectados: r.desplazados });
-      case "CONSECUENCIA":
-        return setDialogo({ tipo: "CONSECUENCIA", itemId, ini, afectados: r.pierden });
+      case "CONFIRMAR":
+        return setDialogo({ tipo: "CONFIRMAR", itemId, ini, sinDisponibilidad: r.sinDisponibilidad, superpone: r.superpone, reubica: r.reubica, pierden: r.pierden });
     }
   };
 
@@ -281,19 +278,18 @@ function Plan({ base, recargar, irA }: { base: PlanVivoBase; recargar: () => voi
           setSeleccion(null);
         }
       }}
-      onAbrir={(ruta) => router.push(ruta)}
+      onAbrir={(ruta) => router.push(desdeElPlan(ruta, base.semana))}
       onCerrarDialogo={() => {
         clave.current = null;
         setDialogo(null);
       }}
       onAceptarDialogo={(d) => {
         switch (d.tipo) {
-          case "SIN_DISPONIBILIDAD":
-            return operar({ tipo: "AGREGAR_Y_UBICAR", franja: d.franja, itemId: d.itemId, ini: d.ini }, `${titulo(d.itemId)}: ubicada con disponibilidad nueva.`);
-          case "DESPLAZA":
-            return operar({ tipo: "UBICAR", itemId: d.itemId, ini: d.ini, salen: d.afectados }, `${titulo(d.itemId)}: ubicada.`);
-          case "CONSECUENCIA":
-            return operar({ tipo: "UBICAR", itemId: d.itemId, ini: d.ini, salen: [] }, `${titulo(d.itemId)}: ubicada.`);
+          case "CONFIRMAR":
+            // Con disponibilidad nueva, la franja se agrega en la misma operación: deshacer saca las dos cosas.
+            return d.sinDisponibilidad
+              ? operar({ tipo: "AGREGAR_Y_UBICAR", franja: d.sinDisponibilidad, itemId: d.itemId, ini: d.ini }, `${titulo(d.itemId)}: asignada. Se agregó disponibilidad.`)
+              : operar({ tipo: "UBICAR", itemId: d.itemId, ini: d.ini, salen: [] }, `${titulo(d.itemId)}: asignada.`);
           case "INTERCAMBIO":
             return operar({ tipo: "INTERCAMBIAR", a: d.a, b: d.b, salen: d.salen }, "Intercambiadas.");
           case "VACIAR":

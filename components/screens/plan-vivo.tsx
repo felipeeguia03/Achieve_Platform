@@ -19,7 +19,7 @@
  * 5. **Depender sólo del color.** Cada estado tiene texto o forma.
  */
 
-import { CalendarCheck, ChevronLeft, ChevronRight, Lock, LockOpen, Redo2, Timer, Undo2, X } from "lucide-react";
+import { CalendarCheck, ChevronLeft, ChevronRight, HelpCircle, Lock, LockOpen, Redo2, Timer, Undo2, X } from "lucide-react";
 import { useId, useMemo, useRef, useState } from "react";
 
 import { Gantt } from "./materia-cursado";
@@ -31,8 +31,10 @@ import { fechasEntre, sumarDias } from "@/lib/domain/calendario";
 import { colorDeMateria } from "@/lib/domain/color-de-materia";
 import { enHoras, fechaEnZona, horaEnZona, instanteDelDia, minutoDelDia, tramo } from "@/lib/domain/plan-vivo/formato";
 import { ganttConSupuestos, impactoDelEscenario, impactoIndividual } from "@/lib/domain/plan-vivo/impacto";
-import { compararPrioridad } from "@/lib/domain/plan-vivo/planificador";
+import { CARGA_RECOMENDADA_MIN, compararPrioridad, MAX_SUPERPOSICION_MIN, minutosEnComun } from "@/lib/domain/plan-vivo/planificador";
 import type { EstadoEditable } from "@/lib/domain/plan-vivo/sesion";
+import { rutaDeCtaCon } from "@/lib/navigation";
+import { nodos } from "@/lib/navigation/surfaces";
 import type {
   BloqueFijo,
   Intervalo,
@@ -53,8 +55,16 @@ export type ModoDeImpacto = "ACTUAL" | "SELECCION" | "ESCENARIO";
 
 export type DialogoDelPlan =
   | { tipo: "CONFLICTO"; itemId: string; motivo: MotivoDeConflicto | "NO_UBICADA"; contra: string | null; alternativas: readonly number[] }
-  | { tipo: "SIN_DISPONIBILIDAD"; itemId: string; ini: number; franja: Intervalo }
-  | { tipo: "DESPLAZA" | "CONSECUENCIA"; itemId: string; ini: number; afectados: readonly string[] }
+  /** ADR-110 · Enm. 4: todo lo que pasa si se asigna igual, en un solo diálogo. */
+  | {
+      tipo: "CONFIRMAR";
+      itemId: string;
+      ini: number;
+      sinDisponibilidad: Intervalo | null;
+      superpone: readonly { itemId: string; minutos: number }[];
+      reubica: readonly string[];
+      pierden: readonly string[];
+    }
   | { tipo: "INTERCAMBIO"; a: Placement; b: Placement; salen: readonly string[]; afectados: readonly string[] }
   | { tipo: "VACIAR" }
   | { tipo: "ELEGIR"; itemId: string; opciones: readonly number[] }
@@ -244,6 +254,7 @@ function PlanCargado(p: Props) {
   const itemPorId = useMemo(() => new Map(base.items.map((i) => [i.id, i])), [base]);
   const colocadoPorId = useMemo(() => new Map(proyeccion.placedItems.map((x) => [x.itemId, x])), [proyeccion]);
   const seleccionado = p.seleccion ? (itemPorId.get(p.seleccion) ?? null) : null;
+  const fijoSeleccionado = p.seleccion && !seleccionado ? (base.fijos.find((f) => f.id === p.seleccion) ?? null) : null;
   const manual = estado.strategy === "MANUAL";
   const [colaAbierta, setColaAbierta] = useState(false);
 
@@ -370,7 +381,11 @@ function PlanCargado(p: Props) {
           className="flex flex-col lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"
           style={{ gap: 12, overscrollBehavior: "contain" }}
         >
-          {seleccionado && <Inspector p={p} item={seleccionado} colocado={colocadoPorId.get(seleccionado.id) ?? null} />}
+          {/* `key`: otra selección arranca con la explicación cerrada. */}
+          {seleccionado && (
+            <Inspector key={seleccionado.id} p={p} item={seleccionado} colocado={colocadoPorId.get(seleccionado.id) ?? null} itemPorId={itemPorId} />
+          )}
+          {fijoSeleccionado && <InspectorDeFijo key={fijoSeleccionado.id} p={p} f={fijoSeleccionado} itemPorId={itemPorId} />}
           {/* Debajo de `lg` la cola se pliega: el calendario queda primero. */}
           <div className="lg:hidden">
             <Boton activo={colaAbierta} onClick={() => setColaAbierta(!colaAbierta)}>
@@ -418,11 +433,17 @@ function Metricas({ p }: { p: Props }) {
     </div>
   );
   return (
-    <section aria-label="Cómo viene tu semana" className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 10 }}>
+    <section aria-label="Cómo viene tu semana" className="grid grid-cols-1 sm:grid-cols-3" style={{ gap: 10 }}>
       {tarjeta(
         t("PLAN_VIVO.METRICA.PENDIENTE"),
         <>
           {cifra(m.pendiente, r?.pendiente)}
+          <span style={META} data-recomendado>
+            {" "}
+            · {t("PLAN_VIVO.METRICA.RECOMENDADO")
+              .replace("{min}", enHoras(CARGA_RECOMENDADA_MIN.min))
+              .replace("{max}", enHoras(CARGA_RECOMENDADA_MIN.max))}
+          </span>
           {m.sinDuracion > 0 && (
             <span style={META}>
               {" "}
@@ -432,8 +453,6 @@ function Metricas({ p }: { p: Props }) {
         </>,
         t("PLAN_VIVO.METRICA.PENDIENTE_AYUDA"),
       )}
-      {tarjeta(t("PLAN_VIVO.METRICA.SIN_UBICAR"), cifra(m.sinUbicar, r?.sinUbicar))}
-      {tarjeta(t("PLAN_VIVO.METRICA.NO_ENTRA"), cifra(m.noEntra, r?.noEntra))}
       {tarjeta(
         t("PLAN_VIVO.METRICA.DISPONIBLE"),
         <>
@@ -444,6 +463,7 @@ function Metricas({ p }: { p: Props }) {
           </span>
         </>,
       )}
+      {tarjeta(t("PLAN_VIVO.METRICA.SIN_UBICAR"), cifra(m.sinUbicar, r?.sinUbicar))}
     </section>
   );
 }
@@ -715,7 +735,10 @@ function Dia({
 
         {colocados.map((c) => {
           const item = itemPorId.get(c.itemId);
-          return item ? <BloquePropuesto key={c.itemId} c={c} item={item} p={p} top={top(c.ini)} alto={alto(c)} /> : null;
+          const superpone = Math.max(0, ...colocados.filter((o) => o !== c).map((o) => minutosEnComun(o, c)));
+          return item ? (
+            <BloquePropuesto key={c.itemId} c={c} item={item} p={p} top={top(c.ini)} alto={alto(c)} superpone={superpone} />
+          ) : null;
         })}
 
         {sobre !== null && (
@@ -769,7 +792,10 @@ function BloqueFijoVista({ f, p, top, alto }: { f: BloqueFijo; p: Props; top: nu
       data-fijo={f.tipo}
       aria-label={etiqueta}
       title={etiqueta}
-      onClick={() => f.enlace && p.onAbrir(f.enlace)}
+      aria-pressed={p.seleccion === f.id}
+      // ADR-110 · Enm. 6: un toque explica, dos abren.
+      onClick={() => p.onSeleccionar(p.seleccion === f.id ? null : f.id)}
+      onDoubleClick={() => f.enlace && p.onAbrir(f.enlace)}
       onDragOver={(e) => MIME_OK(e) && e.preventDefault()}
       onDrop={(e) => {
         if (!MIME_OK(e)) return;
@@ -790,6 +816,7 @@ function BloqueFijoVista({ f, p, top, alto }: { f: BloqueFijo; p: Props; top: nu
         overflow: "hidden",
         fontSize: "var(--text-meta)",
         zIndex: 1,
+        outline: p.seleccion === f.id ? "3px solid var(--ring)" : undefined,
       }}
     >
       <span className="inline-flex items-center" style={{ gap: 4, fontWeight: 600 }}>
@@ -802,11 +829,29 @@ function BloqueFijoVista({ f, p, top, alto }: { f: BloqueFijo; p: Props; top: nu
   );
 }
 
-function BloquePropuesto({ c, item, p, top, alto }: { c: PlacedPlanningItem; item: PlanningWorkItem; p: Props; top: number; alto: number }) {
+function BloquePropuesto({
+  c,
+  item,
+  p,
+  top,
+  alto,
+  superpone,
+}: {
+  c: PlacedPlanningItem;
+  item: PlanningWorkItem;
+  p: Props;
+  top: number;
+  alto: number;
+  /** Minutos en común con otro trabajo del día (ADR-110 · Enm. 4). */
+  superpone: number;
+}) {
   const color = colorDeMateria(item.cursadaId);
   const seleccionado = p.seleccion === item.id;
   const tipo = c.fijada ? t("PLAN_VIVO.FIJADA") : c.origen === "MANUAL" ? t("PLAN_VIVO.ELEGIDA") : t("PLAN_VIVO.PROPUESTA");
-  const etiqueta = [tipo, item.title, item.materia, tramo(c.ini, c.fin, p.base.zona), t("PLAN_VIVO.NO_ES_COMPROMISO")].join(". ");
+  const avisoDeSuperposicion = superpone > 0 ? t("PLAN_VIVO.SUPERPUESTA").replace("{min}", String(superpone)) : null;
+  const etiqueta = [tipo, item.title, item.materia, tramo(c.ini, c.fin, p.base.zona), avisoDeSuperposicion, t("PLAN_VIVO.NO_ES_COMPROMISO")]
+    .filter(Boolean)
+    .join(". ");
   return (
     <button
       type="button"
@@ -817,7 +862,7 @@ function BloquePropuesto({ c, item, p, top, alto }: { c: PlacedPlanningItem; ite
       aria-pressed={seleccionado}
       title={etiqueta}
       onClick={() => p.onSeleccionar(seleccionado ? null : item.id)}
-      onDoubleClick={() => item.comprometible && !p.simulando && p.onComprometerme(item.id)}
+      onDoubleClick={() => abrirMateria(p, item)}
       onDragStart={(e) => {
         e.dataTransfer.setData(ARRASTRE, item.id);
         e.dataTransfer.effectAllowed = "move";
@@ -825,10 +870,22 @@ function BloquePropuesto({ c, item, p, top, alto }: { c: PlacedPlanningItem; ite
       onDragOver={(e) => MIME_OK(e) && e.preventDefault()}
       onDrop={(e) => {
         if (!MIME_OK(e)) return;
+        const arrastrado = e.dataTransfer.getData(ARRASTRE);
+        // ADR-110 · Enm. 4. Soltar en el medio de un trabajo ya ubicado los
+        // intercambia. Cerca de un borde —o desde la lista— se ubica en el
+        // minuto donde se soltó: la columna lo resuelve, y si pisa hasta 15
+        // minutos pide confirmación.
+        const r = e.currentTarget.getBoundingClientRect();
+        const minuto = ((e.clientY - r.top) / ALTO_HORA) * 60;
+        const largo = (c.fin - c.ini) / 60_000;
+        const enElBorde = minuto < MAX_SUPERPOSICION_MIN || minuto > largo - MAX_SUPERPOSICION_MIN;
+        const yaUbicado = p.proyeccion.placedItems.some((x) => x.itemId === arrastrado);
+        if (enElBorde || !yaUbicado) return;
         e.preventDefault();
         e.stopPropagation();
-        p.onSoltarSobre(e.dataTransfer.getData(ARRASTRE), item.id);
+        p.onSoltarSobre(arrastrado, item.id);
       }}
+      data-superpone={superpone > 0 ? superpone : undefined}
       className="text-left motion-safe:transition-[top] motion-safe:duration-200"
       style={{
         position: "absolute",
@@ -836,6 +893,7 @@ function BloquePropuesto({ c, item, p, top, alto }: { c: PlacedPlanningItem; ite
         right: 4,
         top,
         height: alto,
+        // El que empieza después queda encima: la parte pisada se ve tapada.
         zIndex: 2,
         borderRadius: 6,
         padding: "2px 6px",
@@ -852,6 +910,9 @@ function BloquePropuesto({ c, item, p, top, alto }: { c: PlacedPlanningItem; ite
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
       </span>
       <span style={{ display: "block", color: "var(--muted-foreground)" }}>{tipo}</span>
+      {avisoDeSuperposicion && (
+        <span style={{ display: "block", color: "var(--urgencia-texto)", fontWeight: 600 }}>{avisoDeSuperposicion}</span>
+      )}
     </button>
   );
 }
@@ -877,50 +938,205 @@ function Leyenda() {
 
 // ── Columna: inspector y cola ─────────────────────────────────────────────────
 
-function Inspector({ p, item, colocado }: { p: Props; item: PlanningWorkItem; colocado: PlacedPlanningItem | null }) {
+/** Doble toque en un trabajo: su materia (ADR-110 · Enm. 6). */
+function abrirMateria(p: Props, item: PlanningWorkItem) {
+  const ruta = rutaDeCtaCon("CTA-001", item.cursadaId);
+  if (ruta) p.onAbrir(ruta);
+}
+
+/** Pares rótulo–dato del inspector. Un dato `null` no se dibuja. */
+function Datos({ filas }: { filas: ReadonlyArray<readonly [string, React.ReactNode | null]> }) {
+  return (
+    <dl className="grid" style={{ gridTemplateColumns: "minmax(96px, auto) 1fr", gap: "4px 12px", fontSize: "var(--text-label)", margin: "8px 0 0" }}>
+      {filas
+        .filter(([, v]) => v !== null && v !== "")
+        .map(([k, v]) => (
+          <Fragmento key={k} rotulo={k} valor={v} />
+        ))}
+    </dl>
+  );
+}
+
+function Fragmento({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
+  return (
+    <>
+      <dt style={META}>{rotulo}</dt>
+      <dd style={{ margin: 0 }}>{valor}</dd>
+    </>
+  );
+}
+
+function CabeceraDeInspector({
+  p,
+  rotulo,
+  titulo,
+  color,
+  explicando,
+  onExplicar,
+}: {
+  p: Props;
+  rotulo: string;
+  titulo: string;
+  color: string | null;
+  explicando: boolean;
+  onExplicar: () => void;
+}) {
+  return (
+    <div className="flex items-start" style={{ gap: 8 }}>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ ...META, display: "flex", alignItems: "center", gap: 6 }}>
+          {color && <span aria-hidden style={{ width: 8, height: 8, borderRadius: 99, background: color, flexShrink: 0 }} />}
+          {rotulo}
+        </p>
+        <h3 style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: "2px 0" }}>{titulo}</h3>
+      </div>
+      <span className="flex" style={{ marginLeft: "auto", gap: 6 }}>
+        {/* ADR-110 · Enm. 7: el detalle se pide; por defecto, tiempo y acciones. */}
+        <Boton etiqueta={t("PLAN_VIVO.INSPECTOR.EXPLICACION")} activo={explicando} onClick={onExplicar}>
+          <HelpCircle size={14} aria-hidden />
+        </Boton>
+        <Boton etiqueta="Cerrar selección" onClick={() => p.onSeleccionar(null)}>
+          <X size={14} aria-hidden />
+        </Boton>
+      </span>
+    </div>
+  );
+}
+
+const RECUADRO: React.CSSProperties = {
+  background: "var(--muted)",
+  borderRadius: 8,
+  padding: "8px 10px",
+  fontSize: "var(--text-label)",
+  margin: "8px 0 0",
+};
+
+const LISTA: React.CSSProperties = { paddingLeft: 18, margin: "2px 0 0", fontSize: "var(--text-label)", listStyle: "disc" };
+
+/**
+ * **El inspector de un trabajo** — [ADR-110 · Enmienda 6](../../docs/decisions.md#adr-110-enmienda-6),
+ * con la forma del spike v3.
+ *
+ * ⚠️ **Por defecto, sólo el tiempo aproximado y las acciones** —
+ * [Enmienda 7](../../docs/decisions.md#adr-110-enmienda-7)—. Qué es, dónde está y por qué, cuánto
+ * lleva, qué necesita y qué destraba se abren con *Explicación* (el signo de pregunta). Nada que no
+ * salga de la proyección.
+ */
+function Inspector({
+  p,
+  item,
+  colocado,
+  itemPorId,
+}: {
+  p: Props;
+  item: PlanningWorkItem;
+  colocado: PlacedPlanningItem | null;
+  itemPorId: Map<string, PlanningWorkItem>;
+}) {
+  const [explicando, setExplicando] = useState(false);
+  const zona = p.base.zona;
   const comprometido = p.base.fijos.find((f) => f.itemId === item.id) ?? null;
   const hecha = p.estado.hechos.includes(item.id);
   const futuro = colocado !== null && colocado.ini > p.base.ahora;
+  const enBacklog = p.proyeccion.backlog.some((i) => i.id === item.id);
+  const noEntra = p.proyeccion.notFittingItems.find((n) => n.itemId === item.id) ?? null;
+  const explicacion = p.proyeccion.explanations.find((e) => e.itemId === item.id)?.causa ?? null;
+  const tipo = colocado ? (colocado.fijada ? t("PLAN_VIVO.FIJADA") : colocado.origen === "MANUAL" ? t("PLAN_VIVO.ELEGIDA") : t("PLAN_VIVO.PROPUESTA")) : null;
+
+  const estadoTexto = hecha
+    ? `${t("PLAN_VIVO.SUPUESTA")}. ${t("PLAN_VIVO.SUPUESTO_AYUDA")}`
+    : comprometido
+      ? `${t("PLAN_VIVO.INSPECTOR.COMPROMETIDA")} · ${tramo(comprometido.ini, comprometido.fin, zona)}. ${t("PLAN_VIVO.EXPLICA.COMPROMETIDA")}`
+      : colocado
+        ? `${tipo} · ${tramo(colocado.ini, colocado.fin, zona)}. ${t("PLAN_VIVO.NO_ES_COMPROMISO")}`
+        : enBacklog
+          ? t("PLAN_VIVO.INSPECTOR.EN_BACKLOG")
+          : noEntra
+            ? `${t("PLAN_VIVO.INSPECTOR.POR_UBICAR")} ${causaTexto(noEntra.causa, noEntra.requiere)}`
+            : t("PLAN_VIVO.INSPECTOR.POR_UBICAR");
+
+  // Si usa el máximo: ¿con qué choca?
+  let siMaximo: string | null = null;
+  if (colocado && item.durationRange) {
+    const finMax = colocado.ini + item.durationRange.maxMinutes * 60_000;
+    const extra = { ini: colocado.fin, fin: finMax };
+    const choca =
+      p.base.fijos.find((f) => f.ini < extra.fin && f.fin > extra.ini)?.titulo ??
+      p.proyeccion.placedItems
+        .filter((x) => x.itemId !== item.id && x.ini < extra.fin && x.fin > extra.ini)
+        .map((x) => itemPorId.get(x.itemId)?.title)
+        .find(Boolean) ??
+      null;
+    siMaximo = `${t("PLAN_VIVO.INSPECTOR.TERMINARIA")} ${horaEnZona(finMax, zona)}${choca ? ` y se superpondría con «${choca}»` : ` ${t("PLAN_VIVO.INSPECTOR.SIN_CHOQUE")}`}.`;
+  }
+
+  const desbloquea = p.base.items.filter((x) => x.dependencies.some((d) => d.itemId === item.id));
+  const razones = item.priority.razones.length > 0 ? item.priority.razones.map((r) => r.texto) : [item.priority.principal];
+  const porQueAca =
+    explicacion && ["FIJADA", "ELEGIDA", "PRIMER_HUECO", "ANTES_DEL_PLAZO"].includes(explicacion) ? t(`PLAN_VIVO.EXPLICA.${explicacion}` as CopyId) : null;
+
   return (
-    <section aria-label="Seleccionada" data-inspector style={{ ...TARJETA, padding: 14 }}>
-      <div className="flex items-start" style={{ gap: 8 }}>
-        <div style={{ minWidth: 0 }}>
-          <p style={META}>
-            {item.materia} · {item.sourceType === "ACTION" ? t("PLAN_VIVO.ACCION") : t("PLAN_VIVO.CANDIDATO")}
+    <section aria-label="Inspector" data-inspector={item.id} style={{ ...TARJETA, padding: 14 }}>
+      <CabeceraDeInspector
+        p={p}
+        rotulo={`${item.materia} · ${item.sourceType === "ACTION" ? t("PLAN_VIVO.ACCION") : t("PLAN_VIVO.CANDIDATO")}`}
+        titulo={item.title}
+        color={colorDeMateria(item.cursadaId)}
+        explicando={explicando}
+        onExplicar={() => setExplicando(!explicando)}
+      />
+      <p style={{ fontSize: "var(--text-label)", margin: "6px 0 0" }} data-tiempo-aprox>
+        {t("PLAN_VIVO.INSPECTOR.TIEMPO_APROX")}: {item.durationRange ? enHoras(item.durationRange.likelyMinutes) : t("PLAN_VIVO.INSPECTOR.SIN_TIEMPO")}
+      </p>
+
+      {explicando && (
+        <div data-explicacion>
+          <p style={RECUADRO} data-estado-del-trabajo>
+            {estadoTexto}
           </p>
-          <h3 style={{ fontSize: "var(--text-title-sm)", fontWeight: 600, margin: "2px 0" }}>{item.title}</h3>
+
+          <Datos
+            filas={[
+              [t("PLAN_VIVO.INSPECTOR.TEMA"), item.tema && item.tema !== item.title ? item.tema : null],
+              [
+                t("PLAN_VIVO.COMPROMISO.DURACION"),
+                item.durationRange
+                  ? `${enHoras(item.durationRange.likelyMinutes)} · ${t("PLAN_VIVO.COMPROMISO.RANGO").replace("{min}", String(item.durationRange.minMinutes)).replace("{max}", String(item.durationRange.maxMinutes))}`
+                  : t("PLAN_VIVO.CAUSA.SIN_DURACION"),
+              ],
+              [t("PLAN_VIVO.INSPECTOR.SI_MAXIMO"), siMaximo],
+              [
+                t("PLAN_VIVO.INSPECTOR.FECHA"),
+                item.deadline ? `${t("PLAN_VIVO.INSPECTOR.ANTES_DE")} ${item.deadline.titulo} · ${tramo(item.deadline.instante, item.deadline.instante, zona).split(",")[0]}` : null,
+              ],
+              [t("PLAN_VIVO.INSPECTOR.EVIDENCIA"), item.expectedEvidence],
+              [t("PLAN_VIVO.EXPLICA.DEPENDENCIAS"), item.dependencies.length ? item.dependencies.map((d) => d.reason).join(", ") : t("PLAN_VIVO.INSPECTOR.NADA")],
+              [t("PLAN_VIVO.INSPECTOR.DESBLOQUEA"), desbloquea.length ? desbloquea.map((x) => x.title).join(", ") : t("PLAN_VIVO.INSPECTOR.NADA")],
+            ]}
+          />
+
+          {porQueAca && (
+            <div style={{ marginTop: 10 }}>
+              <TituloDeSeccion>{t("PLAN_VIVO.INSPECTOR.POR_QUE_ACA")}</TituloDeSeccion>
+              <p style={{ fontSize: "var(--text-label)", margin: "2px 0 0" }}>{porQueAca}</p>
+            </div>
+          )}
+
+          <div style={{ marginTop: 10 }}>
+            <TituloDeSeccion>{t("PLAN_VIVO.EXPLICA.RAZONES")}</TituloDeSeccion>
+            <ul style={LISTA} data-razones>
+              {razones.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </div>
+          {item.sourceType === "CANDIDATO" && !p.simulando && <p style={{ ...META, marginTop: 8 }}>{t("PLAN_VIVO.COMPROMISO.CANDIDATO")}</p>}
+          <p style={{ ...META, marginTop: 6 }}>{t("PLAN_VIVO.INSPECTOR.DOBLE_TOQUE")}</p>
         </div>
-        <span style={{ marginLeft: "auto" }}>
-          <Boton etiqueta="Cerrar selección" onClick={() => p.onSeleccionar(null)}>
-            <X size={14} aria-hidden />
-          </Boton>
-        </span>
-      </div>
-      <p style={{ fontSize: "var(--text-label)", margin: "4px 0" }}>
-        {hecha
-          ? t("PLAN_VIVO.SUPUESTA")
-          : comprometido
-            ? `Compromiso · ${tramo(comprometido.ini, comprometido.fin, p.base.zona)}`
-            : colocado
-              ? `${colocado.fijada ? t("PLAN_VIVO.FIJADA") : colocado.origen === "MANUAL" ? t("PLAN_VIVO.ELEGIDA") : t("PLAN_VIVO.PROPUESTA")} · ${tramo(colocado.ini, colocado.fin, p.base.zona)}`
-              : t("PLAN_VIVO.COLA")}
-      </p>
-      {!comprometido && !hecha && <p style={META}>{t("PLAN_VIVO.NO_ES_COMPROMISO")}</p>}
-      {hecha && <p style={META}>{t("PLAN_VIVO.SUPUESTO_AYUDA")}</p>}
-      {item.durationRange && (
-        <p style={META}>
-          {t("PLAN_VIVO.COMPROMISO.DURACION")}: {enHoras(item.durationRange.likelyMinutes)} ·{" "}
-          {t("PLAN_VIVO.COMPROMISO.RANGO").replace("{min}", String(item.durationRange.minMinutes)).replace("{max}", String(item.durationRange.maxMinutes))}
-        </p>
       )}
-      <p style={{ fontSize: "var(--text-label)", margin: "6px 0 0" }}>
-        {item.priority.principal}{" "}
-        <button type="button" onClick={() => p.onPorQue(item.id)} style={{ textDecoration: "underline", fontSize: "var(--text-label)" }}>
-          {t("PLAN_VIVO.POR_QUE")}
-        </button>
-      </p>
+
       {!comprometido && !hecha && (
-        <div className="flex flex-wrap" style={{ gap: 6, marginTop: 10 }}>
+        <div className="flex flex-wrap" style={{ gap: 6, marginTop: 12 }}>
           {item.comprometible && futuro && !p.simulando && (
             <Boton primario onClick={() => p.onComprometerme(item.id)}>
               {t("PLAN_VIVO.COMPROMETERME")}
@@ -941,7 +1157,98 @@ function Inspector({ p, item, colocado }: { p: Props; item: PlanningWorkItem; co
           {p.simulando && <Boton onClick={() => p.onSimularHecha(item.id)}>{t("PLAN_VIVO.SIMULAR_HECHA")}</Boton>}
         </div>
       )}
-      {item.sourceType === "CANDIDATO" && !p.simulando && <p style={{ ...META, marginTop: 8 }}>{t("PLAN_VIVO.COMPROMISO.CANDIDATO")}</p>}
+      <div className="flex flex-wrap" style={{ gap: 6, marginTop: 6 }}>
+        <Boton onClick={() => abrirMateria(p, item)}>{t("PLAN_VIVO.INSPECTOR.ABRIR_MATERIA")}</Boton>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * **El inspector de lo fijo** — clase, evaluación, compromiso, Focus o
+ * registro. Por defecto, el horario y el botón para abrirlo; por qué no se
+ * mueve y qué tiene que pasar antes, con *Explicación*.
+ */
+function InspectorDeFijo({ p, f, itemPorId }: { p: Props; f: BloqueFijo; itemPorId: Map<string, PlanningWorkItem> }) {
+  const [explicando, setExplicando] = useState(false);
+  const zona = p.base.zona;
+  const materia = f.cursadaId ? (p.base.materias.find((m) => m.cursadaId === f.cursadaId)?.nombre ?? null) : null;
+  const pasado = f.fin <= p.base.ahora;
+  const antes =
+    f.tipo === "EVALUACION"
+      ? p.base.items.filter((i) => i.cursadaId === f.cursadaId && i.deadline && i.deadline.instante === f.ini && !p.estado.hechos.includes(i.id))
+      : [];
+  const trabajo = f.itemId ? (itemPorId.get(f.itemId) ?? null) : null;
+  const nota: Record<BloqueFijo["tipo"], string> = {
+    CLASE: t("PLAN_VIVO.INSPECTOR.FIJO.CLASE"),
+    EVALUACION: t("PLAN_VIVO.INSPECTOR.FIJO.EVALUACION"),
+    COMPROMISO: t("PLAN_VIVO.INSPECTOR.FIJO.COMPROMISO"),
+    FOCUS: t("PLAN_VIVO.INSPECTOR.FIJO.FOCUS"),
+    HISTORIA: t("PLAN_VIVO.INSPECTOR.FIJO.HISTORIA"),
+  };
+  // El botón dice **a dónde lleva el enlace**, no qué es el bloque: una clase sin
+  // registro abierto lleva a su materia.
+  const camino = f.enlace?.split("?")[0] ?? "";
+  const textoDeAbrir =
+    camino === nodos.CLASE.ruta
+      ? pasado
+        ? t("PLAN_VIVO.INSPECTOR.ABRIR_REGISTRO")
+        : t("PLAN_VIVO.INSPECTOR.ABRIR_CLASE")
+      : camino === nodos.UX04.ruta
+        ? t("PLAN_VIVO.INSPECTOR.ABRIR_COMPROMISO")
+        : t("PLAN_VIVO.INSPECTOR.ABRIR_MATERIA");
+  return (
+    <section aria-label="Inspector" data-inspector={f.id} style={{ ...TARJETA, padding: 14 }}>
+      <CabeceraDeInspector
+        p={p}
+        rotulo={[materia, NOMBRE_DE_FIJO[f.tipo]].filter(Boolean).join(" · ")}
+        titulo={f.titulo}
+        color={f.cursadaId ? colorDeMateria(f.cursadaId) : null}
+        explicando={explicando}
+        onExplicar={() => setExplicando(!explicando)}
+      />
+      <p style={{ fontSize: "var(--text-label)", margin: "6px 0 0" }}>{tramo(f.ini, f.fin, zona)}</p>
+      {explicando && (
+        <div data-explicacion>
+          <p style={{ ...RECUADRO, display: "flex", gap: 6, alignItems: "baseline" }}>
+            <Lock size={12} aria-hidden style={{ flexShrink: 0 }} /> {nota[f.tipo]}
+          </p>
+          <Datos
+            filas={[
+              [t("PLAN_VIVO.INSPECTOR.ESTADO"), f.estado ?? (f.tipo === "CLASE" ? (pasado ? t("PLAN_VIVO.INSPECTOR.CURSADA") : t("PLAN_VIVO.INSPECTOR.PROXIMA")) : null)],
+              [t("PLAN_VIVO.INSPECTOR.FUENTE"), f.tipo === "CLASE" ? (f.estimado ? t("COMUN.HORARIO_ESTIMADO") : t("PLAN_VIVO.INSPECTOR.HORARIO_DECLARADO")) : null],
+              [t("PLAN_VIVO.INSPECTOR.TRABAJO"), trabajo ? trabajo.title : null],
+              [
+                t("PLAN_VIVO.INSPECTOR.PENDIENTE_ANTES"),
+                f.tipo === "EVALUACION"
+                  ? `${enHoras(antes.reduce((s, i) => s + (i.durationRange?.likelyMinutes ?? 0), 0))} · ${antes.length} ${antes.length === 1 ? "trabajo" : "trabajos"}`
+                  : null,
+              ],
+            ]}
+          />
+          {antes.length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <TituloDeSeccion>{t("PLAN_VIVO.INSPECTOR.ANTES_DE_ESTA")}</TituloDeSeccion>
+              <ul style={LISTA}>
+                {antes.map((i) => (
+                  <li key={i.id}>
+                    <button type="button" onClick={() => p.onSeleccionar(i.id)} style={{ textDecoration: "underline", textAlign: "left" }}>
+                      {i.title}
+                    </button>{" "}
+                    · {i.durationRange ? enHoras(i.durationRange.likelyMinutes) : "—"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {f.enlace && <p style={{ ...META, marginTop: 6 }}>{t("PLAN_VIVO.INSPECTOR.DOBLE_TOQUE")}</p>}
+        </div>
+      )}
+      {f.enlace && (
+        <div className="flex flex-wrap" style={{ gap: 6, marginTop: 12 }}>
+          <Boton onClick={() => p.onAbrir(f.enlace!)}>{textoDeAbrir}</Boton>
+        </div>
+      )}
     </section>
   );
 }
@@ -976,7 +1283,13 @@ function Tarjeta({
         listStyle: "none",
       }}
     >
-      <button type="button" aria-pressed={seleccionado} onClick={() => p.onSeleccionar(seleccionado ? null : item.id)} className="w-full text-left">
+      <button
+        type="button"
+        aria-pressed={seleccionado}
+        onClick={() => p.onSeleccionar(seleccionado ? null : item.id)}
+        onDoubleClick={() => abrirMateria(p, item)}
+        className="w-full text-left"
+      >
         <span className="flex items-baseline" style={{ gap: 6 }}>
           <strong style={{ fontSize: "var(--text-label)", fontWeight: 600 }}>{item.title}</strong>
           {item.durationRange && <span style={{ ...META, marginLeft: "auto", whiteSpace: "nowrap" }}>{enHoras(item.durationRange.likelyMinutes)}</span>}
@@ -1109,6 +1422,22 @@ function Cola({ p, itemPorId }: { p: Props; itemPorId: Map<string, PlanningWorkI
         <p style={META}>
           {t("PLAN_VIVO.MARGEN")}: {enHoras(margen)}
         </p>
+      )}
+      {/* ADR-110 · Enm. 5: lo que la semana no pide. Plegado, para que no compita con la cola. */}
+      {proyeccion.backlog.length > 0 && (
+        <details data-backlog style={{ ...TARJETA, padding: 12 }}>
+          <summary style={{ cursor: "pointer" }}>
+            <span className="titulo-de-seccion">
+              {t("PLAN_VIVO.BACKLOG")} · {proyeccion.backlog.length}
+            </span>
+            <span style={{ ...META, display: "block" }}>
+              {enHoras(proyeccion.metrics.backlog)} · {t("PLAN_VIVO.BACKLOG_AYUDA")}
+            </span>
+          </summary>
+          <ul className="flex flex-col" style={{ gap: 8, marginTop: 8, padding: 0 }}>
+            {proyeccion.backlog.map((i) => tarjeta(i, { causa: null }))}
+          </ul>
+        </details>
       )}
       {hechas.length > 0 && (
         <Lista titulo={t("PLAN_VIVO.SUPUESTA")}>
@@ -1266,36 +1595,69 @@ function Dialogos({ p, itemPorId }: { p: Props; itemPorId: Map<string, PlanningW
         )}
       </>
     );
-  } else if (d?.tipo === "SIN_DISPONIBILIDAD") {
-    titulo = t("PLAN_VIVO.SIN_DISPONIBILIDAD.TITULO");
+  } else if (d?.tipo === "CONFIRMAR") {
+    titulo = t("PLAN_VIVO.CONFIRMAR.TITULO");
+    const aviso = (clave: string, contenido: React.ReactNode) => (
+      <li key={clave} data-aviso={clave} style={{ marginBottom: 10 }}>
+        {contenido}
+      </li>
+    );
     cuerpo = (
       <>
-        <p>{t("PLAN_VIVO.SIN_DISPONIBILIDAD.TEXTO")}</p>
-        <p style={META}>{tramo(d.franja.ini, d.franja.fin, zona)}</p>
+        <p style={META}>
+          <strong>{nombre(d.itemId)}</strong> · {tramo(d.ini, d.ini + duracion(d.itemId) * 60_000, zona)}
+        </p>
+        <ul style={{ paddingLeft: 18, margin: "10px 0 0" }}>
+          {d.sinDisponibilidad &&
+            aviso(
+              "SIN_DISPONIBILIDAD",
+              <>
+                <strong>{t("PLAN_VIVO.CONFIRMAR.SIN_DISPONIBILIDAD")}</strong> {t("PLAN_VIVO.CONFIRMAR.SIN_DISPONIBILIDAD_TEXTO")}
+              </>,
+            )}
+          {d.superpone.length > 0 &&
+            aviso(
+              "SUPERPONE",
+              <>
+                <strong>{t("PLAN_VIVO.CONFIRMAR.SUPERPONE")}</strong>
+                <ul style={{ paddingLeft: 18, margin: "4px 0" }}>
+                  {d.superpone.map((s) => (
+                    <li key={s.itemId}>
+                      {nombre(s.itemId)}: {s.minutos} min
+                    </li>
+                  ))}
+                </ul>
+                <span style={META}>{t("PLAN_VIVO.CONFIRMAR.SUPERPONE_REGLA")}</span>
+              </>,
+            )}
+          {d.reubica.length > 0 &&
+            aviso(
+              "REUBICA",
+              <>
+                <strong>{t("PLAN_VIVO.CONFIRMAR.REUBICA")}</strong>
+                {lista(d.reubica)}
+              </>,
+            )}
+          {d.pierden.length > 0 &&
+            aviso(
+              "PIERDEN",
+              <>
+                <strong>{t("PLAN_VIVO.CONSECUENCIA.TEXTO")}</strong>
+                {lista(d.pierden)}
+                <Boton
+                  onClick={() => {
+                    p.onCerrarDialogo();
+                    p.onSeleccionar(d.pierden[0]);
+                  }}
+                >
+                  {t("PLAN_VIVO.CONSECUENCIA.REVISAR")}
+                </Boton>
+              </>,
+            )}
+        </ul>
       </>
     );
-    aceptar = t("PLAN_VIVO.SIN_DISPONIBILIDAD.ACEPTAR");
-  } else if (d?.tipo === "DESPLAZA") {
-    titulo = t("PLAN_VIVO.DESPLAZA.TITULO");
-    cuerpo = lista(d.afectados);
-    aceptar = t("PLAN_VIVO.DESPLAZA.ACEPTAR");
-  } else if (d?.tipo === "CONSECUENCIA") {
-    titulo = t("PLAN_VIVO.CONSECUENCIA.TITULO");
-    cuerpo = (
-      <>
-        <p>{t("PLAN_VIVO.CONSECUENCIA.TEXTO")}</p>
-        {lista(d.afectados)}
-        <Boton
-          onClick={() => {
-            p.onCerrarDialogo();
-            p.onSeleccionar(d.afectados[0]);
-          }}
-        >
-          {t("PLAN_VIVO.CONSECUENCIA.REVISAR")}
-        </Boton>
-      </>
-    );
-    aceptar = t("PLAN_VIVO.CONSECUENCIA.ACEPTAR");
+    aceptar = t("PLAN_VIVO.CONFIRMAR.ACEPTAR");
   } else if (d?.tipo === "INTERCAMBIO") {
     titulo = t("PLAN_VIVO.INTERCAMBIO.TITULO");
     cuerpo = (

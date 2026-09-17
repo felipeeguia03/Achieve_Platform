@@ -1156,18 +1156,21 @@ EST1=a5000000-0000-0000-0000-000000000001
 [ "$(q "select (availability_declared_at is null)::text from student where id='$EST1';" | tr -d '[:space:]')" = "true" ] \
   && ok "un estudiante nuevo no contestó: la marca está en NULL" || mal "la marca no arranca vacía"
 
-N=$(q "select declarar_disponibilidad('$A','$EST1','[{\"dia\":2,\"desde\":\"18:00\",\"hasta\":\"19:30\",\"minutos\":90},{\"dia\":4,\"minutos\":60}]'::jsonb);" | tr -d '[:space:]')
+N=$(q "select declarar_disponibilidad('$A','$EST1','[{\"dia\":2,\"desde\":\"18:00\",\"hasta\":\"19:30\",\"minutos\":90},{\"dia\":4,\"desde\":\"10:00\",\"hasta\":\"11:00\",\"minutos\":60}]'::jsonb);" | tr -d '[:space:]')
 [ "$N" = "2" ] && ok "declaró dos bloques" || mal "no se guardaron los bloques: $N"
 
 [ "$(q "select sum(capacity_min)::text from availability where student_id='$EST1' and source='declared';" | tr -d '[:space:]')" = "150" ] \
   && ok "los minutos semanales suman 150" || mal "la suma salió mal"
 
-# La hora es opcional: «60 minutos los jueves» es una respuesta completa.
-[ "$(q "select (start_time is null)::text from availability where student_id='$EST1' and day_of_week=4;" | tr -d '[:space:]')" = "true" ] \
-  && ok "un bloque sin hora es legítimo: se sabe cuánto, no cuándo" || mal "la hora ausente no sobrevivió"
+# ADR-110 · Enm. 3: sin hora no entra. «60 minutos los jueves» era del paso del
+# alta, que ya no existe; Mi plan dibuja franjas.
+corre "select declarar_disponibilidad('$A','$EST1','[{\"dia\":1,\"minutos\":45}]'::jsonb);" \
+  && mal "una franja declarada sin hora entró" || ok "una franja declarada sin hora se rechaza"
+[ "$(q "select count(*)::text from availability where student_id='$EST1' and source='declared';" | tr -d '[:space:]')" = "2" ] \
+  && ok "y el rechazo no borró la semana anterior" || mal "el rechazo dejó la semana a medias"
 
 # Reemplazo, no acumulación: declarar es decir cómo es tu semana.
-corre "select declarar_disponibilidad('$A','$EST1','[{\"dia\":1,\"minutos\":45}]'::jsonb);"
+corre "select declarar_disponibilidad('$A','$EST1','[{\"dia\":1,\"desde\":\"18:00\",\"hasta\":\"18:45\",\"minutos\":45}]'::jsonb);"
 [ "$(q "select count(*)::text from availability where student_id='$EST1' and source='declared';" | tr -d '[:space:]')" = "1" ] \
   && ok "redeclarar reemplaza: corregir un horario no duplica la semana" || mal "los bloques viejos quedaron"
 

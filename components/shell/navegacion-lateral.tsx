@@ -36,8 +36,7 @@ import Link from "next/link";
 import { Brain, CalendarRange, GraduationCap, ChevronLeft, ChevronRight, Library, PlayCircle, Route, Sun } from "lucide-react";
 import { ConmutadorDeTema } from "./conmutador-de-tema";
 import { DURACION_DE_BARRA, TRANSICION_DE_BARRA } from "./movimiento";
-import { menuVisible, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
-import { usePlanVivoActivo } from "@/lib/client/plan-vivo-flag";
+import { menu, rutaDelItem, type ItemDeMenu } from "@/lib/navigation/menu";
 import { nodos, type NodoId } from "@/lib/navigation/surfaces";
 import { t } from "@/lib/content/es-AR";
 
@@ -211,12 +210,6 @@ export function NavegacionLateral({
     la barra puesta, sin animarla.
   */
   const [animar, setAnimar] = useState(false);
-  /*
-    ADR-110 · Enmienda 1. Lo decide el servidor —el layout de `(student)` lee
-    `PLAN_VIVO` y lo baja por contexto—; acá sólo se consume. Sin provider es
-    `false`, así que un render suelto de la barra **no** dibuja *Mi plan*.
-  */
-  const planVivoDelContexto = usePlanVivoActivo();
   const recogiendose = useRecogiendose(colapsada, animar);
   const conNombre = !colapsada || recogiendose;
   const transicion = animar ? TRANSICION_DE_BARRA : "";
@@ -323,7 +316,7 @@ export function NavegacionLateral({
       </div>
 
       <div className="flex flex-col" style={{ gap: 4, marginTop: 12 }}>
-        {menuVisible({ planVivo: planVivoDelContexto }).map((item) => (
+        {menu.map((item) => (
           <Item
             key={item.nodo}
             item={item}

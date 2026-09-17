@@ -4,7 +4,6 @@ import { esFechaDeCalendario, lunesDe } from "@/lib/domain/calendario";
 import { fechaEnZona } from "@/lib/domain/zona";
 import { altaPendiente, tokenDelHeader } from "@/lib/server/http";
 import { planVivoDe, resolverSesion } from "@/lib/server/composicion";
-import { planVivoActivo } from "@/lib/server/plan-vivo-flag";
 
 /**
  * `GET /api/plan-vivo?semana=YYYY-MM-DD` — [ADR-110](../../../docs/decisions.md#adr-110).
@@ -13,12 +12,9 @@ import { planVivoActivo } from "@/lib/server/plan-vivo-flag";
  * compromisos y el trabajo por ubicar, **sin** nada de lo que el estudiante
  * movió. **Sólo lee.**
  *
- * ⚠️ **`404` sin `PLAN_VIVO=1`**, antes de mirar la sesión:
- * con el flag apagado la ruta no existe.
+ * Sin flag desde [ADR-110 · Enmienda 2](../../../docs/decisions.md#adr-110-enmienda-2).
  */
 export async function GET(request: Request) {
-  if (!planVivoActivo()) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
   const sesion = await resolverSesion(tokenDelHeader(request.headers.get("authorization")));
   if (sesion.estado === "NO_AUTENTICADO") {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });

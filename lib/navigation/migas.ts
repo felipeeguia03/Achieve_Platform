@@ -114,6 +114,12 @@ export function migasDe(
    * del **padre** del nodo; sin ella, el padre queda genérico (*Materia*).
    */
   intermedia?: { etiqueta: string; href: string } | null,
+  /**
+   * De dónde se llegó, cuando no es la sección de siempre — ADR-110 · Enm. 6:
+   * desde Mi plan, la materia es *Mi plan › Análisis II* y no *Materias ›
+   * Análisis II*. Reemplaza a la sección raíz de la cadena.
+   */
+  origen?: { etiqueta: string; href: string } | null,
 ): Miga[] {
   /*
     ⚠️ **La miga del objeto se escribe con mayúscula sólo en la primera letra.**
@@ -136,7 +142,36 @@ export function migasDe(
       href: ultima ? null : nodos[id].ruta,
     };
   });
-  return agrega ? [...migas, { etiqueta: propio, href: null }] : migas;
+  const completas = agrega ? [...migas, { etiqueta: propio, href: null }] : migas;
+  if (!origen || RAICES.has(nodo)) return completas;
+  const sinSeccion = RAICES.has(cadena[0]) ? completas.slice(1) : completas;
+  return [{ etiqueta: origen.etiqueta, href: origen.href }, ...sinSeccion];
+}
+
+/**
+ * **El origen viaja en la URL** — [ADR-110 · Enmienda 6](../../docs/decisions.md#adr-110-enmienda-6).
+ *
+ * `?desde=plan` (o `?desde=plan:2026-09-14`, con la semana que se estaba
+ * mirando). No hay historial que consultar, y no se inventa uno: lo que no se
+ * reconoce se ignora y la miga queda como siempre.
+ */
+export const PARAM_ORIGEN = "desde";
+
+const ORIGEN_PLAN = /^plan(?::(\d{4}-\d{2}-\d{2}))?$/;
+
+export function origenDeLaConsulta(valor: string | null): { etiqueta: string; href: string } | null {
+  const m = valor ? ORIGEN_PLAN.exec(valor) : null;
+  const ruta = nodos.PLAN_VIVO.ruta;
+  if (!m || !ruta) return null;
+  return { etiqueta: etiquetaDeMiga("PLAN_VIVO"), href: m[1] ? `${ruta}?semana=${m[1]}` : ruta };
+}
+
+/** La ruta de un objeto abierto desde Mi plan, con el camino de vuelta. */
+export function desdeElPlan(ruta: string, semana: string | null): string {
+  const [camino = "", consulta = ""] = ruta.split("?");
+  const params = new URLSearchParams(consulta);
+  params.set(PARAM_ORIGEN, semana ? `plan:${semana}` : "plan");
+  return `${camino}?${params.toString()}`;
 }
 
 export { padre as padreDeMiga, RAICES as seccionesDelMenu };

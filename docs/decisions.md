@@ -119,7 +119,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-070](#adr-070) | El factor de estudio es un **piso** versionado, no un valor | ✅ `ACCEPTED` *(7 sep 2026 · `1.5`, constante y no tabla)* | — |
 | [ADR-071](#adr-071) | Los prerequisitos los aprueba el estudiante sobre su cursada | ✅ `ACCEPTED` *(7 sep 2026)* | — |
 | [ADR-072](#adr-072) | Qué muestra la barra, y qué tiene prohibido mostrar | ✅ `ACCEPTED` *(7 sep 2026 · cobertura ≠ readiness)* | — |
-| [ADR-073](#adr-073) | La disponibilidad se declara, y el reparto entre materias es una proyección | ✅ `ACCEPTED` *(7 sep 2026 · **no bloquea el alta**)* | — |
+| [ADR-073](#adr-073) | La disponibilidad se declara, y el reparto entre materias es una proyección | ✅ `ACCEPTED` *(7 sep 2026 · **no bloquea el alta** · el paso del alta lo sacó [ADR-110 · Enm. 3](#adr-110-enmienda-3))* | — |
 | [ADR-074](#adr-074) | El Personal Engine calibra **el trabajo**, no la vida del estudiante | ✅ `ACCEPTED` *(7 sep 2026 · el multiplicador nunca baja de `1.0`)* | — |
 | [ADR-075](#adr-075) | Las respuestas de la psicopedagoga sobre tiempo y carga | ✅ `ACCEPTED` *(7 sep 2026 · **la pantalla del déficit no estaba aprobada**)* | `B6.17` |
 | [ADR-076](#adr-076) | Tres perfiles operativos, y la superficie académica **no autorizada todavía** | ✅ `ACCEPTED` *(8 sep 2026 · sólo informe de solo lectura)* | **Toda construcción de la superficie** |
@@ -159,6 +159,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-100](#adr-100) | **El Calendario**: clases del horario semanal, evaluaciones y compromisos en día · semana · mes, con enlace a cada objeto. **No agenda** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con un mockup · `CTA-001` gana el origen `CALENDARIO`)* | Recortar el horario al período real (ADR-060…065, corte 2) |
 | [ADR-100 · Enm. 1](#adr-100-enmienda-1) | **Progreso y Modo Examen salen de la barra lateral**: se abren desde la materia (`CTA-009`, `CTA-019`) | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner)* | Colgar sus migas de la materia |
 | [ADR-101](#adr-101) | **La barra lateral recogida muestra sólo íconos**, lleva el logo de Achieve, abre y cierra con la misma flecha y **no se reabre al navegar** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con el software de las capturas · **revierte la mitad de `A-03`**: el contador sigue siendo número)* | — |
+| [ADR-101 · Enm. 1](#adr-101-enmienda-1) | **Con la barra recogida, cada pantalla ocupa todo el ancho**: el tope de 1120 px sólo rige con la barra abierta | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner: «se ve muy chiquito»)* | — |
 | [ADR-102](#adr-102) | **Gimnasia cognitiva**: categoría Memoria con Cuadrícula fugaz, Cadena inversa y Recuerdo real; el resultado lo calcula el servidor, el progreso se deduce y **no toca Hoy ni el ADE** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner por escrito · `CTA-024` y `CTA-025` · 4 tablas)* | — |
 | [ADR-103](#adr-103) | **El asistente de reportes y mejoras, simulado**: botón abajo a la derecha, reportar o sugerir, pregunta aclaratoria, tarjeta que cita lo escrito y *Reporte enviado*. **Sin red ni persistencia, sólo con `MODO_PRUEBA=1`** | ✅ `ACCEPTED` *(13 sep 2026 · pedido por el owner con capturas de otro software · `SIMULADO`)* | Conectarlo al backend con el CTO; qué se guarda de un reporte toca ADR-006 |
 | [ADR-104](#adr-104) | **Modo Focus**: la sesión de trabajo sobre una acción comprometida; Pomodoro es un modo, el tiempo lo sella el servidor, el anotador es privado y **no es evidencia ni cumplimiento** | ✅ `ACCEPTED` *(13 sep 2026 · el owner: «hacé todo lo recomendado» · `CTA-026` y `CTA-027` · **enmienda ADR-088 Enm. 8**)* | Cerrar el compromiso en *Terminé* cuando la entrega acepte un compromiso cerrado |
@@ -170,6 +171,12 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-109](#adr-109) | **Experimento «Mi Plan vivo»**: una proyección de solo lectura que fija lo duro (clases, evaluaciones, compromisos), ubica propuestas no comprometidas y muestra qué cambia si se actúa o si pasa el tiempo. **Choca con ADR-064, 073, 085 y 100** | 🔴 `PENDING` *(14 sep 2026 · D-01, D-02 y D-09 cerrados por [ADR-110](#adr-110); D-03…D-08 siguen abiertas en [`experiments/plan-vivo/DECISIONS.md`](experiments/plan-vivo/DECISIONS.md))* | Los prompts 2–10 del experimento |
 | [ADR-110](#adr-110) | **Plan vivo: el sistema propone, el estudiante reorganiza**, detrás de un flag. Cierra D-01, D-02 y D-09 de ADR-109. Enmienda ADR-064, ADR-073 §3 y ADR-100 **sólo bajo el flag** | ✅ `ACCEPTED` *(16 sep 2026 · decidido por el owner)* | Persistir propuestas y fijados (hoy son efímeros) · clase cancelada y ausencia ([ADR-111](#adr-111)) |
 | [ADR-110 · Enm. 1](#adr-110-enmienda-1) | **«Mi plan» sale del Calendario**: `/calendario` vuelve a ser exactamente ADR-100 y el plan pasa a `/plan`, con ítem propio en la barra lateral, segundo después de Hoy. El flag pasa a llamarse `PLAN_VIVO` | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner mirando el resultado)* | Rediseñar la pantalla del plan, si hiciera falta (va con las capturas delante) |
+| [ADR-110 · Enm. 2](#adr-110-enmienda-2) | **«Mi plan» sin flag**: `PLAN_VIVO` desaparece; `/plan`, `GET /api/plan-vivo` y el ítem de la barra están siempre | ✅ `ACCEPTED` *(17 sep 2026 · el owner: «es una decisión tomada, que esté ahí»)* | — |
+| [ADR-110 · Enm. 3](#adr-110-enmienda-3) | **La disponibilidad se declara sólo en Mi plan**: sale el paso de disponibilidad del alta (4 pasos) y se borran las franjas sin horario que dejó | ✅ `ACCEPTED` *(17 sep 2026 · el owner: «ya no importan, solo importa lo que declare en el plan»)* | — (lo cerró la Enm. 4) |
+| [ADR-110 · Enm. 4](#adr-110-enmienda-4) | **Duración fija por unidad y asignación flexible con orden**: 30–120 min según el nivel que fija el ADE, sin mirar la disponibilidad; asignar fuera de la disponibilidad pide confirmar y la crea; se puede pisar hasta 15 min lo que ubicó el estudiante | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | Que la psicopedagoga valide los rangos |
+| [ADR-110 · Enm. 5](#adr-110-enmienda-5) | **La semana recomendada y el backlog**: Achieve arma la semana con 10–14 h en orden de prioridad (evaluación cerca, clase cerca, riesgo de Hoy); con más disponibilidad entra más; el resto es backlog, y lo que está a dos prerrequisitos de distancia no se genera | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | — |
+| [ADR-110 · Enm. 6](#adr-110-enmienda-6) | **Un toque explica, dos abren**: el inspector (con la forma del spike v3) también para clases, evaluaciones y compromisos; doble toque abre el objeto y la miga dice *Mi plan › Análisis II*, con vuelta a la misma semana. Métricas en orden: pendiente, disponibilidad, sin ubicar | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | — |
+| [ADR-110 · Enm. 7](#adr-110-enmienda-7) | **El inspector muestra poco y explica a pedido**: tiempo aproximado y acciones; el resto, con el botón *Explicación* (?) | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | — |
 | [ADR-111](#adr-111) | ***No fui a clase*** y ***Se canceló la clase***: dos hechos que hoy no tienen contrato, diferidos por ADR-110 | 🔴 `PENDING` *(16 sep 2026 · lo cierra el owner)* | Que el plan reaccione a una clase que no ocurrió |
 
 ---
@@ -5691,6 +5698,8 @@ nota, que es justo lo que la nota al pie niega.
 ## ADR-073 — La disponibilidad se declara, y el reparto entre materias es una proyección
 
 **Estado:** ✅ `ACCEPTED` · 7 de septiembre de 2026 · **decidido por el Product Owner**
+⚠️ **Enmendado por [ADR-110 · Enm. 3](#adr-110-enmienda-3)** (17 sep 2026): el paso `/alta/disponibilidad`
+ya no existe y una fila `declared` necesita horario. La disponibilidad se declara en Mi plan.
 **Relacionado:** [ADR-042](#adr-042), [ADR-052](#adr-052), [ADR-058](#adr-058), [ADR-064](#adr-064),
 [ADR-072](#adr-072).
 **Toca:** `availability`, `student`, el tramo de alta, `lib/domain/`, `UX01`.
@@ -9978,6 +9987,31 @@ achieve como el de zop, pero es igual tanto en modo día como noche"*.
 
 ---
 
+<a id="adr-101-enmienda-1"></a>
+
+### ADR-101 · Enmienda 1 — Con la barra recogida, el contenido ocupa todo el ancho
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner**: *"se ve muy chiquito, quiero que todas
+las pestañas, cuando se cierre el sidebar, se adapten al tamaño de la pantalla"*.
+
+#### Decisión
+
+- **El `Shell` saca el tope con la barra recogida.** El contenido estaba centrado en 1120 px siempre; en
+  una pantalla de 1920 px quedaban ~360 px vacíos a cada lado. Ahora `maxWidth` es `none` cuando la barra
+  está recogida (el contenedor lleva `data-ancho-completo`) y sigue en 1120 px cuando está abierta. El
+  encuadre de §4.2 —48 px de lado, 40 arriba— no cambia.
+- **Revisadas una por una** las siete secciones del menú a 1920 y 1440 px. Hoy, Mi plan, Materias y
+  Calendario ya se estiraban. Tres necesitaron un ajuste en `components/screens/*` (regla 6, con pedido
+  explícito del owner):
+  - **Formación** y **Gimnasia**: la grilla pasa de `auto-fill` a `auto-fit`. Con `auto-fill` sobraban
+    columnas vacías y las tarjetas quedaban amontonadas a la izquierda; con `auto-fit` llenan la fila.
+    En la ventana angosta de una ficha (ADR-088) se comportan igual que antes.
+  - **Recorrido**: se saca el tope de 820 px.
+- **Los textos cortos siguen con su medida** (subtítulos de ~640–720 px): una línea de lectura de 1700 px
+  no se lee mejor.
+
+---
+
 <a id="adr-102"></a>
 
 ## ADR-102 — Gimnasia cognitiva: la categoría Memoria, con tres juegos que no compiten con el día
@@ -11004,6 +11038,289 @@ envoltorio esté borrado; que `/plan` haga `notFound()` sin el flag y lea la var
 sin el flag el ítem no esté en `menuVisible` y con el flag vaya segundo; que `PLAN_VIVO` no esté en
 `superficieIds` y que sigan siendo nueve. `tests/shell.test.tsx` — diecisiete rutas, diecisiete nodos
 distintos, y la barra sin *Mi plan* con el flag apagado.
+
+---
+
+<a id="adr-110-enmienda-2"></a>
+
+### ADR-110 · Enmienda 2 — «Mi plan» sin flag
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner**
+**Revierte:** el punto 4 de la [Enmienda 1](#adr-110-enmienda-1) (*«Sin la variable no hay Plan vivo en
+ningún lado»*) y el *«detrás de un flag»* de [ADR-110](#adr-110).
+**No toca:** nada más de ADR-110 ni de la Enmienda 1 —la ruta, el nodo, el lugar en la barra y lo que
+el plan escribe siguen iguales—.
+
+#### Contexto
+
+El servidor de desarrollo arrancó sin `PLAN_VIVO=1` y *Mi plan* no apareció en la barra. El owner,
+textual: *"dejalo siempre, sin flag o lo que sea, sin llave, es una decision tomada, que este ahi"*.
+
+#### Decisión
+
+**No hay flag.** `PLAN_VIVO` deja de existir como variable (sigue existiendo como **nodo**):
+
+- `lib/server/plan-vivo-flag.ts` y `lib/client/plan-vivo-flag.tsx` **se borraron**, y con ellos el
+  proveedor de contexto del layout de `(student)`.
+- `/plan` ya no hace `notFound()` ni es dinámica por el flag (se fue el `connection()`).
+- `GET /api/plan-vivo` ya no responde `404`: va directo a la sesión.
+- `ItemDeMenu.detrasDeFlag` y `menuVisible` **se borraron**; la barra dibuja `menu` entero, *Mi plan*
+  segundo.
+
+⚠️ **El ⛔ de [`plan-vivo-calendario.md`](plan-vivo-calendario.md) sigue en pie.** Sacar la llave no
+valida la hipótesis con personas ni el copy con la psicopedagoga, y todo sigue sobre datos sintéticos
+([ADR-006](#adr-006)).
+
+#### Cómo se verifica
+
+`tests/plan-vivo-integracion.test.tsx` — que no queden los archivos del flag, que ni la página ni la API
+lean `process.env`, que la API sin `PLAN_VIVO` pida la sesión, y que *Mi plan* vaya segundo en `menu`.
+`tests/shell.test.tsx` — la barra dibuja todos los ítems, *Mi plan* segundo.
+
+---
+
+<a id="adr-110-enmienda-3"></a>
+
+### ADR-110 · Enmienda 3 — La disponibilidad se declara sólo en Mi plan
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner**, textual: *"borra todo lo de las franjas
+declaradas en el onboarding, ya no importan, solo importa lo que declare como disponibilidad en el plan"*.
+**Enmienda:** [ADR-073](#adr-073) (el paso del alta) y [ADR-105](#adr-105) §1 (el alta tenía cinco pasos).
+
+#### Contexto
+
+Todos los work items del plan duraban 15 minutos. La causa: el ADE dimensiona el bloque con
+`MIN(capacity_min)` de la disponibilidad, y la cuenta UCC tenía, del paso del alta, *«15 minutos los
+viernes»* sin horario. El alta y Mi plan escribían la **misma** tabla con el **mismo** endpoint, y la
+fila del alta sobrevivía a cada guardado del plan (se devolvía «tal cual»).
+
+#### Decisión
+
+**1. El alta tiene cuatro pasos.** WhatsApp → carrera → materias → cursada. `/alta/disponibilidad`, su
+componente y su copy **se borraron**; `siguientePaso` ya no mira `availability_declared_at` y la cursada
+es el último paso (*«Guardar y terminar»*).
+
+**2. Toda fila `declared` lleva horario.** El paso del alta preguntaba minutos sin hora; Mi plan dibuja
+franjas, que siempre tienen inicio y fin. Así que la forma de la fila dice de dónde vino:
+
+- La migración `20261105000000_disponibilidad_solo_del_plan.sql` **borra** las `declared` sin horario y
+  agrega `availability_declarada_con_horario`, un `CHECK` que no las deja volver. `observed` e
+  `inferred` no se tocan.
+- `validarBloques` rechaza una franja sin inicio o sin fin, antes de llegar a la base.
+- `filasSemanales` ya no devuelve las filas sin hora: guardar desde el plan manda **sólo lo dibujado**.
+
+**3. El endpoint sigue siendo `POST /api/alta/disponibilidad`.** Lo usa Mi plan; el nombre quedó del
+paso que ya no existe. Renombrarlo es otra decisión, sin cambio de comportamiento.
+
+⚠️ **Lo que esto no resolvía:** cuánto dura un work item. Lo cerró la [Enmienda 4](#adr-110-enmienda-4).
+
+#### En la base local
+
+Se borraron dos filas: la de la cuenta UCC (viernes, 15 min) y la del estudiante nuevo de la demo (lunes,
+45 min). `scripts/db-demo.sh` ya no las siembra y `scripts/db-aislamiento.sh` verifica el rechazo.
+
+#### Cómo se verifica
+
+`tests/alta-academica.test.ts` — la cursada es el último paso, `RUTA_DEL_PASO` tiene cuatro entradas y
+`validarBloques` rechaza la franja sin hora. `tests/plan-vivo-integracion.test.tsx` — guardar descarta la
+fila sin hora. `tests/alta-cursada.test.tsx` — tras la cursada, el alta terminó.
+
+---
+
+<a id="adr-110-enmienda-4"></a>
+
+### ADR-110 · Enmienda 4 — Duración fija por unidad, y asignar es flexible pero con orden
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner**, textual: *"el tiempo que te lleva tiene
+que ser fijo (con un rango) tomando el promedio de tiempo, es decir, para que sea real el numero de
+«trabajo pendiente», luego si el usuario no tiene tiempo en la semana tiene que crearse disponibilidad
+[…] si no hay una franja de disponibilidad le dice: este horario no esta disponible, asignar
+igualmente?, y en otro caso, si en una franja ya habia otro workitem, vos podes «robarle» maximo 15 mn
+[…] la idea es que sea flexible pero rigido para mantener cierto orden"*.
+**Revierte:** el dimensionamiento del bloque por `MIN(capacity_min)` ([ADR-004](#adr-004), v1) y el
+*«desplaza»* de ADR-110 sobre propuestas elegidas.
+
+#### Decisión
+
+**1. La duración es de la unidad, nunca de la disponibilidad.** `lib/domain/ade.ts` fija un nivel del 1
+al 5 y cada nivel tiene un rango (`RANGO_POR_NIVEL`):
+
+| Nivel | Rango |
+|---|---|
+| 1 | 30–40 min |
+| 2 | 45–60 min |
+| 3 | 60–75 min |
+| 4 | 75–90 min |
+| 5 | 90–120 min |
+
+El nivel (`nivelDeLaUnidad`): base por **tamaño** —peso relativo en la materia, 1…3; sin pesos, 2—, **+1**
+con dominio registrado bajo (< 4), **−1** con dominio alto (≥ 7), **+1** si entra en la próxima
+evaluación. El plan suma el **promedio** de cada rango (redondeado a 5) para *Trabajo pendiente*.
+`minutosDisponibles` sigue llegando del contexto y **ya no se usa para dimensionar**.
+
+⚠️ **Es una estimación, no una dificultad declarada** (ADR-086). Los rangos esperan a la psicopedagoga.
+
+**2. Asignar fuera de la disponibilidad se confirma y la crea.** *«¿Asignar igualmente?»*: al confirmar,
+la franja del trabajo se agrega a la disponibilidad (verde) en la **misma** operación —deshacer saca las
+dos cosas— y queda como cambio sin guardar, igual que dibujarla.
+
+**3. Se puede pisar hasta 15 minutos lo que ubicó el estudiante** (`MAX_SUPERPOSICION_MIN`).
+
+| Encima de… | Resultado |
+|---|---|
+| un trabajo elegido o fijado, **≤ 15 min** | se confirma; **los dos quedan donde están** y el bloque dice *«N min encima»* |
+| un trabajo elegido o fijado, **> 15 min** | conflicto `SUPERPOSICION`, con horarios donde sí entra |
+| una propuesta automática | se confirma; Achieve la **reubica** (es suya, no del estudiante) |
+| una clase, evaluación, compromiso o Focus | conflicto duro, como siempre |
+
+**4. Un solo diálogo dice todo.** `validarUbicacion` devuelve `CONFIRMAR` con `sinDisponibilidad`,
+`superpone`, `reubica` y `pierden` —cada uno vacío si no aplica—. Reemplaza `SIN_DISPONIBILIDAD`,
+`DESPLAZA` y `CONSECUENCIA`, que pedían confirmar de a una cosa.
+
+**5. Soltar sobre un bloque.** En el medio de otro trabajo ya ubicado, los **intercambia** (como antes).
+Cerca de un borde (los 15 minutos de cada punta), o desde la lista, se ubica **en el minuto soltado**.
+
+#### En la base local
+
+Las 8 acciones vivas tenían `estimated_minutes` 15–15, heredado de la franja del alta. Se recalcularon
+con la regla nueva (7 quedaron en 75–90 y 1 en 60–75). Las acciones nuevas nacen con la regla.
+
+#### Cómo se verifica
+
+`tests/ade.test.ts` — la disponibilidad no cambia el rango, los rangos están entre 30 y 120 y el nivel
+responde a tamaño, dominio y evaluación. `tests/plan-vivo-planificador.test.ts` — sin disponibilidad
+pide confirmar y la agrega; más de 15 minutos es conflicto; 15 o menos se confirma y los dos quedan; una
+propuesta automática se reubica.
+
+---
+
+<a id="adr-110-enmienda-5"></a>
+
+### ADR-110 · Enmienda 5 — La semana recomendada, y el backlog
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner** al ver *Trabajo pendiente: 55 h*,
+textual: *"quiero que solo asigne los workitems para esa semana, es decir, que el trabajo pendiente sea
+entre 10 y 14 hs […] asigna prioridades por proximidad a parciales, clases que se vienen, temas que
+tienen riesgo […] nunca se esta «completo por la semana» […] mientras más tiempo tenga, van ingresando
+workitems […] a una distancia de 2 dependencias, no existe en el «backlog» […] definimos backlog como
+lista de workitems que no entran en la columna de «sin asignar» por falta de disponibilidad"*.
+
+#### Decisión
+
+**1. La semana pide entre 10 y 14 horas** (`CARGA_RECOMENDADA_MIN`, `planificador.ts`). Se arma así:
+
+1. Lo ya decidido cuenta primero: lo comprometido y lo que el estudiante ubicó (aunque venga del backlog).
+2. Después, el resto **en orden de prioridad**, mientras la suma no pase de 14 h. Un trabajo cuyo
+   prerrequisito no quedó en la semana (ni está hecho) no entra: no se recomienda antes de lo que necesita.
+3. **Con disponibilidad libre, entra más**: después de ubicar la semana, el automático sigue con el
+   backlog en el hueco que sobra. *Nunca se está completo.*
+
+*Trabajo pendiente* es la suma de esa semana (con *«recomendado 10 h–14 h»* al lado). **Sin ubicar**
+habla sólo de la semana: el backlog no se reclama. La tarjeta **No entra** se sacó (el owner: *«son
+idénticas»*): con la semana acotada daba lo mismo que *Sin ubicar*. Quedan tres métricas; la causa de
+cada trabajo que no entra sigue en su tarjeta de la cola.
+
+**2. El backlog** es el trabajo que la semana no pide y la disponibilidad no alcanza a alojar. Va en
+una sección plegada debajo de la cola, con su total. Se puede arrastrar al calendario: lo que el
+estudiante ubica pasa a ser de la semana.
+
+**3. La prioridad de la semana** suma al costo del ADE una **urgencia por materia**
+(`URGENCIA_SEMANAL`, `proyeccion-plan-vivo.ts`) y la explica en *¿Por qué?*:
+
+| Señal | Suma | Texto |
+|---|---|---|
+| Próxima evaluación a ≤ 21 días | hasta 800, lineal con la cercanía | *«Primer parcial es en 3 días.»* |
+| Clase en los próximos 7 días | hasta 150 | *«Tenés clase el jueves.»* |
+| Hoy muestra un riesgo de la materia | 400 | el mismo texto de *Riesgos detectados* |
+
+Es **por materia**: dentro de una materia el orden del ADE no cambia, así que el plan no contradice a
+Hoy. Los riesgos salen de `riesgosPorMateria` —las mismas reglas y el mismo texto que Hoy (ADR-093)—.
+
+**4. Lo lejano no se genera.** Un trabajo a **distancia 2 o más** de poder hacerse no existe en el plan
+(`distanciaMaxima`). La distancia es la mayor de dos:
+
+- **Por prerrequisitos declarados** (`topic_prerequisite`): cuántos eslabones pendientes hay antes.
+- **Por orden del programa** — el owner, el mismo día: *«sí, el orden cuenta como distancia»*: cuántas
+  unidades **anteriores** de la misma materia siguen pendientes. *Unidad 3 sin haber hecho la 1 ni la 2*
+  está a 2. **Es distancia, no dependencia**: la regla de [ADR-110](#adr-110) —*una dependencia nunca se
+  deriva del número de unidad*— sigue en pie. El orden sólo decide qué trabajo **existe** en el plan; no
+  crea `Dependency`, el ADE no lo lee y el planificador no lo usa para secuenciar dentro de la semana.
+
+Dos excepciones: la **acción viva** nunca se recorta, y lo que **entra en la próxima evaluación** no se
+recorta por orden (el parcial lo pide ahora, sea la unidad que sea; los prerrequisitos declarados sí
+cuentan). Con la cuenta UCC, el backlog bajó de 36 trabajos (41 h 45) a 21 (26 h 30).
+
+#### Cómo se verifica
+
+`tests/plan-vivo-planificador.test.ts` — con poca disponibilidad la semana pide 14 h y el resto es
+backlog; con mucha entra todo; lo arrastrado desde el backlog es de la semana; un trabajo cuyo
+prerrequisito no está en la semana va al backlog; la urgencia suma al costo.
+`tests/plan-vivo-integracion.test.tsx` — la distancia 2 no se genera, por prerrequisito y por orden, y lo
+que pide el parcial no se recorta por orden; evaluación, clase y riesgo suman y se explican.
+
+---
+
+<a id="adr-110-enmienda-6"></a>
+
+### ADR-110 · Enmienda 6 — Un toque explica, dos abren, y la miga vuelve a Mi plan
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner**, textual: *"si tocas una vez el workitem
+aparece el inspector que explica, como en la version 3 del spike, pero no explica mucho, y luego si
+tocas dos veces por ejemplo los de las clases o evaluaciones, ahi si te lleva a la pantalla, pero
+acordate que el PATH tiene que decir: Mi plan > Analisis II, por ejemplo, y podes volver facil a Mi
+plan"*. **Enmienda:** [ADR-088 · Enm. 7](#adr-088) (cada sección del menú es raíz de su miga) sólo cuando
+la URL trae el origen.
+
+#### Decisión
+
+**1. Métricas en este orden:** *Trabajo pendiente · Disponibilidad · Sin ubicar*.
+
+**2. Un toque = inspector.** En un trabajo (calendario o lista) y también en **clases, evaluaciones,
+compromisos, Focus y registros** —antes un toque en lo fijo navegaba—. El inspector del trabajo sigue al
+del spike v3: estado en una línea (propuesta, elegida, comprometida, por ubicar y por qué, o en el
+backlog), tiempo probable y rango, *si lleva el máximo* (a qué hora terminaría y con qué choca), fecha
+relacionada, evidencia, qué necesita antes y qué destraba, *por qué en este horario* y **todas** las
+razones del orden (las del ADE y las de la semana), con sus acciones. El de lo fijo dice por qué no se
+mueve, el horario, el estado y —en una evaluación— el trabajo que tiene que ocurrir antes, cada uno
+seleccionable. El botón para abrir dice **a dónde lleva el enlace**, no qué es el bloque.
+
+**3. Dos toques = abrir.** Lo fijo abre su objeto; un trabajo abre **su materia**. Comprometerse deja
+de ser el doble toque: es la CTA del inspector.
+
+**4. La miga dice de dónde vino.** Todo lo que el plan abre lleva `?desde=plan:<semana>`
+(`desdeElPlan`). El Shell lo lee (`origenDeLaConsulta`) y `migasDe` reemplaza la sección raíz por
+**Mi plan**, enlazada a la misma semana: *Mi plan › Análisis II*, y para una clase *Mi plan › Análisis II
+› Clase…*. Un valor que no se reconoce se ignora y la miga queda como siempre. No hay historial: el
+origen viaja en la URL o no existe.
+
+#### Cómo se verifica
+
+`tests/shell.test.tsx` — la miga con origen, la clase con su materia al medio, el origen desconocido y
+la ruta que conserva sus parámetros. `tests/plan-vivo-integracion.test.tsx` — un toque selecciona, dos
+abren la materia, comprometerse es la CTA; en una clase, un toque abre su inspector y dos la abren.
+
+---
+
+<a id="adr-110-enmienda-7"></a>
+
+### ADR-110 · Enmienda 7 — El inspector explica a pedido
+
+**Estado:** ✅ `ACCEPTED` · 17 sep 2026 · **pedida por el owner** mirando el inspector de la Enm. 6:
+*"me gusta este inspector, prefiero que todo eso en blanco solo se abra cuando apretas un «boton de
+signo de pregunta» que sea como «explicacion», y solo te tire tiempo aprox y el resto de botones"*.
+
+#### Decisión
+
+- **Por defecto**, el inspector de un trabajo muestra el título, **Tiempo aprox.** y las acciones. El de
+  lo fijo, el horario y el botón para abrirlo.
+- **Explicación** (signo de pregunta, junto a cerrar; `aria-pressed`) despliega todo lo demás de la Enm.
+  6: estado, datos, por qué en este horario, las razones del orden y la ayuda del doble toque.
+- Cambiar de selección vuelve a cerrarla.
+
+#### Cómo se verifica
+
+`tests/plan-vivo-integracion.test.tsx` — sin tocar *Explicación* no están las razones ni la nota de lo
+fijo; tocándola, sí.
 
 ---
 

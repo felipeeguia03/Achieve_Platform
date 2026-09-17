@@ -6,8 +6,7 @@ import { Item, NavegacionLateral } from "@/components/shell/navegacion-lateral";
 import { recogerBarra, useBarraRecogida } from "@/lib/client/barra-lateral";
 import { BarraSuperior } from "@/components/shell/barra-superior";
 import { menu, rutaDelItem } from "@/lib/navigation/menu";
-import { ProveedorDePlanVivo } from "@/lib/client/plan-vivo-flag";
-import { migasDe, padreDeMiga } from "@/lib/navigation/migas";
+import { desdeElPlan, migasDe, origenDeLaConsulta, padreDeMiga } from "@/lib/navigation/migas";
 import { nodoIds, nodos, superficieIds, type NodoId } from "@/lib/navigation/surfaces";
 import { ctaIds, ctaRegistry } from "@/lib/navigation/cta-registry";
 
@@ -109,27 +108,16 @@ describe("Breadcrumb", () => {
 });
 
 describe("Navegación lateral", () => {
-  /*
-    ⚠️ **Con el Plan vivo prendido por defecto** — ADR-110 · Enm. 1. Así los
-    recorridos de abajo siguen cubriendo **todos** los ítems del menú, *Mi plan*
-    incluido. Que el flag apagado lo esconda se verifica aparte, justo debajo.
-  */
-  const render1 = (colapsada: boolean, activo: NodoId | null = "UX01", planVivo = true) =>
-    render(
-      <ProveedorDePlanVivo activo={planVivo}>
-        <NavegacionLateral nodoActivo={activo} colapsada={colapsada} onAlternar={() => {}} />
-      </ProveedorDePlanVivo>,
-    );
+  const render1 = (colapsada: boolean, activo: NodoId | null = "UX01") =>
+    render(<NavegacionLateral nodoActivo={activo} colapsada={colapsada} onAlternar={() => {}} />);
 
-  it("sin PLAN_VIVO no hay ítem «Mi plan», y con el flag va segundo", () => {
-    const { container, unmount } = render1(false, "UX01", false);
-    expect(container.textContent).not.toContain("Mi plan");
-    expect(container.querySelectorAll("[data-item-menu]")).toHaveLength(menu.length - 1);
-    unmount();
-    const con = render1(false, "UX01", true);
-    const etiquetas = [...con.container.querySelectorAll("[data-item-menu]")].map((e) =>
+  // ADR-110 · Enm. 2: *Mi plan* está siempre, sin flag, y va segundo.
+  it("«Mi plan» se dibuja siempre, segundo después de Hoy", () => {
+    const { container } = render1(false);
+    const etiquetas = [...container.querySelectorAll("[data-item-menu]")].map((e) =>
       e.getAttribute("data-item-menu"),
     );
+    expect(etiquetas).toHaveLength(menu.length);
     expect(etiquetas.slice(0, 2)).toEqual(["UX01", "PLAN_VIVO"]);
   });
 
@@ -332,10 +320,6 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
     // ([ADR-102](../docs/decisions.md#adr-102)) y Mi plan son nodos sin
     // wireframe: tienen ruta y no son superficies. Las dos cifras se verifican
     // por separado, abajo, justamente para que una no tape a la otra.
-    //
-    // ⚠️ **`/plan` cuenta acá aunque esté detrás de `PLAN_VIVO=1`.** El archivo
-    // existe y declara su `Shell`; lo que el flag apaga es la respuesta, no la
-    // ruta. Contar sólo lo prendido haría que este guard dependiera del entorno.
     expect(rutas.length).toBe(17);
 
     const sinShell = rutas.filter((f) => {
@@ -377,5 +361,31 @@ describe("A2.5 · las nueve superficies dentro del shell", () => {
     // el test deja de decir lo que dice su nombre.
     expect(new Set(declarados).size).toBe(17);
     expect(declarados.length).toBe(17);
+  });
+});
+
+describe("ADR-110 · Enm. 6 · lo abierto desde Mi plan vuelve a Mi plan", () => {
+  it("la materia abierta desde el plan dice «Mi plan › Análisis II», con la semana", () => {
+    const origen = origenDeLaConsulta("plan:2026-09-14");
+    expect(migasDe("UX02", "ANALISIS MATEMATICO II", null, origen)).toEqual([
+      { etiqueta: "Mi plan", href: "/plan?semana=2026-09-14" },
+      { etiqueta: "Analisis matematico II", href: null },
+    ]);
+  });
+
+  it("la clase conserva su materia en el medio", () => {
+    const migas = migasDe("CLASE", "Clase del jueves", { etiqueta: "Física", href: "/materia?cursada=c1" }, origenDeLaConsulta("plan"));
+    expect(migas.map((m) => m.etiqueta)).toEqual(["Mi plan", "Física", "Clase del jueves"]);
+    expect(migas[0].href).toBe("/plan");
+  });
+
+  it("un origen desconocido no cambia nada, y sin origen la miga es la de siempre", () => {
+    expect(origenDeLaConsulta("otra-cosa")).toBeNull();
+    expect(migasDe("UX02", "Física", null, null)[0].etiqueta).toBe("Materias");
+  });
+
+  it("la ruta abierta desde el plan lleva el camino de vuelta sin perder sus parámetros", () => {
+    expect(desdeElPlan("/materia?cursada=c1", "2026-09-14")).toBe("/materia?cursada=c1&desde=plan%3A2026-09-14");
+    expect(origenDeLaConsulta(new URLSearchParams("cursada=c1&desde=plan%3A2026-09-14").get("desde"))?.href).toBe("/plan?semana=2026-09-14");
   });
 });

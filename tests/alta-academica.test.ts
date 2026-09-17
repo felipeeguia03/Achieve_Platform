@@ -6,6 +6,7 @@ import {
   resolverVersionDePlan,
   sePreselecciona,
   siguientePaso,
+  RUTA_DEL_PASO,
   tratoEnElAlta,
   type PlanCandidato,
   type TipoDeRequisito,
@@ -18,6 +19,7 @@ import {
   resolverPlan,
   type RepositorioDelAlta,
   type RepositorioDelCatalogo,
+  validarBloques,
 } from "@/lib/server/servicios/alta";
 import { selectHeroLevel } from "@/lib/domain/precedence";
 import { ofreceCta } from "@/lib/content/hero";
@@ -167,7 +169,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: false,
         carreraDeclarada: false,
-        materiasConfirmadas: false, cursadaRespondida: false, disponibilidadRespondida: false,
+        materiasConfirmadas: false, cursadaRespondida: false,
       }),
     ).toBe("WHATSAPP");
   });
@@ -177,7 +179,7 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: false,
-        materiasConfirmadas: false, cursadaRespondida: false, disponibilidadRespondida: false,
+        materiasConfirmadas: false, cursadaRespondida: false,
       }),
     ).toBe("CARRERA");
   });
@@ -187,63 +189,32 @@ describe("B6.14 · el orden del alta es el de ADR-042", () => {
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: true,
-        materiasConfirmadas: false, cursadaRespondida: false, disponibilidadRespondida: false,
+        materiasConfirmadas: false, cursadaRespondida: false,
       }),
     ).toBe("MATERIAS");
   });
 
-  it("confirmadas las materias, todavía falta la disponibilidad", () => {
-    // ADR-073. Va **después** de las materias porque necesita saber cuántas hay
-    // para que la pregunta signifique algo: antes, «¿cuántas horas tenés?» no
-    // tiene contra qué compararse.
-    expect(
-      siguientePaso({
-        consentimientoRespondido: true,
-        carreraDeclarada: true,
-        materiasConfirmadas: true,
-        cursadaRespondida: true,
-        disponibilidadRespondida: false,
-      }),
-    ).toBe("DISPONIBILIDAD");
-  });
-
-  it("ADR-105 · confirmadas las materias, falta comisión y horarios, antes que disponibilidad", () => {
+  it("ADR-105 · confirmadas las materias, falta comisión y horarios", () => {
     expect(
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: true,
         materiasConfirmadas: true,
         cursadaRespondida: false,
-        disponibilidadRespondida: false,
       }),
     ).toBe("CURSADA");
   });
 
-  it("contestada la disponibilidad, el alta terminó", () => {
+  it("ADR-110 · Enm. 3 · contestada la cursada, el alta terminó: no hay paso de disponibilidad", () => {
     expect(
       siguientePaso({
         consentimientoRespondido: true,
         carreraDeclarada: true,
         materiasConfirmadas: true,
         cursadaRespondida: true,
-        disponibilidadRespondida: true,
       }),
     ).toBeNull();
-  });
-
-  it("«no sé» cuenta como contestada: el alta NO se traba ahí", () => {
-    // Mismo precedente que WhatsApp (ADR-042 §2): saltear la pregunta más
-    // difícil del alta no puede costarle el acceso al producto. Lo que se pierde
-    // es el reparto, y eso se muestra como estado degradado.
-    expect(
-      siguientePaso({
-        consentimientoRespondido: true,
-        carreraDeclarada: true,
-        materiasConfirmadas: true,
-        cursadaRespondida: true,
-        disponibilidadRespondida: true, // contestó; declaró cero bloques
-      }),
-    ).toBeNull();
+    expect(Object.keys(RUTA_DEL_PASO)).toEqual(["WHATSAPP", "CARRERA", "MATERIAS", "CURSADA"]);
   });
 });
 
@@ -267,9 +238,6 @@ function baseFalsa() {
         materiasConfirmadas: insc?.confirmadaEn !== null && insc?.confirmadaEn !== undefined,
         // ADR-105: estos tests miden los pasos de ADR-052; el cuarto se da por contestado.
         cursadaRespondida: true,
-        // ADR-073: el paso existe y este doble no lo ejercita. `false` mantiene
-        // la máquina en su último paso, que es lo que estos tests miden.
-        disponibilidadRespondida: false,
         declaracion: insc
           ? {
               inscripcionId: `insc-${studentId}`,
@@ -367,9 +335,6 @@ describe("B6.14 · el estado del alta y el reingreso", () => {
   });
 
   it("al reingresar con el alta completa, no se repite ningún paso", async () => {
-    // ⚠️ El doble de `estado()` devuelve `disponibilidadRespondida: false`, así
-    // que acá el alta queda en el paso nuevo. Se declara para que el test siga
-    // midiendo lo que medía: que no se repiten los pasos **ya hechos**.
     const { alta, catalogo, eventos } = baseFalsa();
     await decidirWhatsapp(alta, "inst-1", "est-1", "GRANTED");
     await confirmarMapaAcademico(
@@ -380,13 +345,10 @@ describe("B6.14 · el estado del alta y el reingreso", () => {
     );
 
     const r = await estadoDelAlta(alta, "inst-1", "est-1");
-    expect(r.siguiente).toBe("/alta/disponibilidad");
     // Ni WhatsApp ni carrera ni materias vuelven a pedirse.
-    expect(r.paso).toBe("DISPONIBILIDAD");
-
-    // Y con la disponibilidad contestada, el gate deja pasar.
-    const completa = { completa: true, siguiente: null };
-    expect(altaPendiente(completa)).toBeNull();
+    expect(r.completa).toBe(true);
+    expect(r.siguiente).toBeNull();
+    expect(altaPendiente(r)).toBeNull();
   });
 
   it("con el alta incompleta, el gate devuelve el 409 con su salida", async () => {
@@ -709,5 +671,17 @@ describe("B6.14 · el hecho que el spec §7.3 define", () => {
       { curriculumPlanId: "plan-draft", curriculumYear: 2, term: "2026-2", selecciones: SELECCION },
     );
     expect(eventosPublicados).toEqual([]);
+  });
+});
+
+describe("ADR-110 · Enm. 3 · la disponibilidad es la del plan: toda franja lleva horario", () => {
+  it("una franja sin hora se rechaza", () => {
+    expect(validarBloques([{ dia: 2, minutos: 90 }])).toBe("la franja necesita hora de inicio y de fin");
+    expect(validarBloques([{ dia: 2, desde: "18:00", minutos: 90 }])).toBe("la franja necesita hora de inicio y de fin");
+  });
+
+  it("una franja dibujada pasa, y la lista vacía también", () => {
+    expect(validarBloques([{ dia: 2, desde: "18:00", hasta: "19:30", minutos: 90 }])).toBeNull();
+    expect(validarBloques([])).toBeNull();
   });
 });

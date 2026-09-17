@@ -51,18 +51,16 @@ echo "→ Dos estudiantes sintéticos en la institución del catálogo"
 q "insert into student (id,institution_id,timezone,auth_user_id)
    values ('$EST','$INST','America/Argentina/Cordoba', nullif('$AUTH1','')::uuid);
    insert into student (id,institution_id,timezone,auth_user_id)
-   values ('$NUEVO','$INST','America/Argentina/Cordoba', nullif('$AUTH2','')::uuid);
-   insert into availability (student_id,day_of_week,capacity_min,source) values ('$EST',1,45,'declared');
-   insert into availability (student_id,day_of_week,capacity_min,source) values ('$NUEVO',1,45,'declared');" >/dev/null
+   values ('$NUEVO','$INST','America/Argentina/Cordoba', nullif('$AUTH2','')::uuid);" >/dev/null
 
 # ── La semana declarada · ADR-073 ────────────────────────────────────────────
 #
-# La fila de arriba existía desde la B1 y alcanzaba para `MIN(capacity_min)` —el
-# ADE dimensiona **un** bloque—. El reparto entre materias necesita la suma, así
-# que el estudiante del loop declara una semana entera.
+# El estudiante del loop declara una semana entera, **con horario**: desde
+# ADR-110 · Enm. 3 la disponibilidad es la que se dibuja en Mi plan, y una fila
+# `declared` sin hora no entra (`availability_declarada_con_horario`).
 #
 # ⚠️ **El estudiante nuevo NO la declara**, a propósito: es el que sirve para ver
-# el alta desde cero, y desde ADR-073 tiene un paso más.
+# el alta desde cero y la disponibilidad vacía de Mi plan.
 q "select declarar_disponibilidad('$INST','$EST',
      '[{\"dia\":1,\"desde\":\"18:00\",\"hasta\":\"19:30\",\"minutos\":90},
        {\"dia\":3,\"desde\":\"18:00\",\"hasta\":\"19:30\",\"minutos\":90},

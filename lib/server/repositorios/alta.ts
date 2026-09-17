@@ -19,8 +19,6 @@ export interface EstadoDelAltaEnBase {
   materiasConfirmadas: boolean;
   /** Contestó comisión y horarios (ADR-105), aunque sea con «no sé». */
   cursadaRespondida: boolean;
-  /** Contestó la pregunta de disponibilidad, **haya declarado bloques o no**. */
-  disponibilidadRespondida: boolean;
   declaracion: {
     inscripcionId: string;
     carreraId: string;

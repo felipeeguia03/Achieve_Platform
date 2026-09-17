@@ -230,7 +230,6 @@ describe("Bloque 6 · Interacción", () => {
       "app/alta/whatsapp/page.tsx",
       "app/alta/carrera/page.tsx",
       "app/alta/materias/page.tsx",
-      "app/alta/disponibilidad/page.tsx",
       /*
         **Modo Clase** — ADR-098. Nodo sin wireframe, no superficie, y su estado
         es **la clase de este estudiante**: los apuntes que escribió y los
@@ -270,8 +269,7 @@ describe("Bloque 6 · Interacción", () => {
       /*
         **Mi plan** — ADR-110 · Enm. 1. Nodo sin wireframe, no superficie. Su
         contenido son las cursadas, la disponibilidad y los compromisos **de este
-        estudiante**: no hay escenario que proyectar. Y además está detrás de
-        `PLAN_VIVO=1`, así que sin el flag la ruta ni siquiera responde.
+        estudiante**: no hay escenario que proyectar.
       */
       "app/(student)/plan/page.tsx",
     ];

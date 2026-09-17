@@ -21,7 +21,7 @@ import { t } from "@/lib/content/es-AR";
  * [ADR-105](../../docs/decisions.md#adr-105): WhatsApp, carrera, materias,
  * comisión y horarios, y disponibilidad.
  */
-export const PASOS_DEL_ALTA = 5;
+export const PASOS_DEL_ALTA = 4;
 
 export function MarcoDelAlta({
   paso,
@@ -30,7 +30,7 @@ export function MarcoDelAlta({
   children,
   ancho = 560,
 }: {
-  paso: 1 | 2 | 3 | 4 | 5;
+  paso: 1 | 2 | 3 | 4;
   titulo: string;
   /** La razón, pegada a la decisión (`P-01`). `null` ⇒ la línea desaparece. */
   ayuda?: string | null;

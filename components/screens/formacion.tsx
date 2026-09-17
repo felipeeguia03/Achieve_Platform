@@ -53,7 +53,7 @@ export function FormacionEsqueleto() {
           padding: 0,
           display: "grid",
           gap: 14,
-          gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 440px), 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 440px), 1fr))",
         }}
       >
         {[0, 1, 2, 3].map((i) => (
@@ -237,7 +237,7 @@ function Grilla({
         // Sin breakpoints: la superficie también se dibuja en la ventana de su
         // ficha (ADR-088), que es angosta. La grilla se acomoda al ancho que
         // tenga, no al de la pantalla.
-        gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 440px), 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 440px), 1fr))",
       }}
     >
       {piezas.map((p) => (

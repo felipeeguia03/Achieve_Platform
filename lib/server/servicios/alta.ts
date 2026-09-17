@@ -100,10 +100,11 @@ export function validarBloques(bloques: readonly BloqueDeclarado[]): string | nu
         return "la hora va en formato HH:MM";
       }
     }
-    // Una hora de fin sin una de inicio no ubica nada. Al revés sí sirve:
-    // *"desde las 18, no sé hasta cuándo"* es una respuesta.
-    if (b.hasta !== undefined && b.desde === undefined) {
-      return "una hora de fin sin hora de inicio no ubica el bloque";
+    // ADR-110 · Enm. 3: la disponibilidad se dibuja en Mi plan, y una franja
+    // dibujada siempre tiene inicio y fin. *«90 minutos los martes»* era del
+    // paso del alta, que ya no existe.
+    if (b.desde === undefined || b.hasta === undefined) {
+      return "la franja necesita hora de inicio y de fin";
     }
     if (b.desde && b.hasta && b.hasta <= b.desde) {
       return "el bloque termina antes de empezar";
