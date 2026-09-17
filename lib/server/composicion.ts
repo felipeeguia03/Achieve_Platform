@@ -120,6 +120,9 @@ import { formacionReal } from "./repositorios/formacion";
 import { repartoReal } from "./repositorios/reparto";
 import { tableroReal } from "./repositorios/tablero";
 import { calendarioReal } from "./repositorios/calendario";
+import { planVivoReal } from "./repositorios/plan-vivo";
+import { armarBaseDelPlan } from "./servicios/proyeccion-plan-vivo";
+import type { PlanVivoBase } from "@/lib/domain/plan-vivo/tipos";
 import { proyectarCalendario } from "./servicios/proyeccion-calendario";
 import { clasesReal } from "./repositorios/clase";
 import {
@@ -1529,6 +1532,22 @@ export async function calendarioDe(
   const hoy = fechaEnZona(Date.parse(ahora), zona);
   const insumos = await calendarioReal.insumos(institutionId, studentId, desde, hasta, hoy);
   return proyectarCalendario(insumos, desde, hasta, ahora, zona);
+}
+
+/**
+ * La base del **Plan vivo** — [ADR-110](../../docs/decisions.md#adr-110). Sólo
+ * lee; lo que el estudiante mueve vive en su navegador. `semana` es un lunes.
+ */
+export async function planVivoDe(
+  institutionId: string,
+  studentId: string,
+  zona: string,
+  semana: string,
+  ahora: string = new Date().toISOString(),
+): Promise<PlanVivoBase> {
+  const hoy = fechaEnZona(Date.parse(ahora), zona);
+  const insumos = await planVivoReal.insumos(institutionId, studentId, semana, hoy);
+  return armarBaseDelPlan(insumos, ahora, zona, semana);
 }
 
 /**

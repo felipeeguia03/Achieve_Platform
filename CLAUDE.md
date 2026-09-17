@@ -76,6 +76,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | Saber si algo está decidido | [`docs/pending-decisions-annex.md`](docs/pending-decisions-annex.md) |
 | Saber **qué falta decidir y quién lo decide** | [`docs/decisiones-abiertas.md`](docs/decisiones-abiertas.md) — veinte filas, **ocho abiertas**, por lo que destraban |
 | **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) y [ADR-099](docs/decisions.md#adr-099) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
+| **Plan vivo en el Calendario** (bajo flag) | [ADR-110](docs/decisions.md#adr-110) · informe en [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md) · diferido: [ADR-111](docs/decisions.md#adr-111) |
 | **Modo Focus** | [ADR-104](docs/decisions.md#adr-104) · informe, API y QA en [`modo-focus.md`](docs/modo-focus.md) |
 | Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
@@ -98,10 +99,29 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 
 ## Estado actual
 
-✅ **`feat/paralelo` entró en `feat/fase-0-track-a`** — 14 de septiembre. Onboarding académico (ADR-105…107),
-requisitos simulados (ADR-108) y los sonidos de Focus (ADR-104 · Enm. 1) conviven. El único conflicto fue
-de texto en `decisions.md`: los dos lados agregaban. Verificado después de unir: `lint` · `typecheck` · `build` · **2590 tests en 121 archivos** · **`db:verify` 545 ✓, 0 ✗**.
-**Dieciséis rutas, 26 CTAs, 98 migraciones.**
+🧪 **Plan vivo en el Calendario, detrás de `PLAN_VIVO_CALENDAR_INTEGRATION=1`** —
+[ADR-110](docs/decisions.md#adr-110), 16 de septiembre · [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md).
+El owner cerró ADR-109 D-01/D-02 (opción A) y D-09: con el flag, `/calendario` propone dónde entra el
+trabajo, y el estudiante lo mueve, fija, vacía o simula. **Sin el flag, ADR-100 intacto** y
+`GET /api/plan-vivo` da `404`.
+
+⚠️ **Antes de tocar el Plan vivo:** sólo la `Action` viva de cada cursada es fila; el resto son
+**candidatos** de `candidatosDelAde` y **no se comprometen**. **Sin prioridad visible** (`P-03`). Propuestas,
+fijados y simulación **no persisten**; sólo escriben `POST /api/compromiso` y
+`POST /api/alta/disponibilidad`. Ubicar, fijar, comprometerse o simular capacidad **no bajan el pendiente**.
+*No fui a clase* y *Se canceló la clase* esperan a [ADR-111](docs/decisions.md#adr-111), `PENDING`.
+
+✅ **Tres ramas unidas en `feat/fase-0-track-a`:** `feat/paralelo` el 14 de septiembre (onboarding
+académico ADR-105…107, requisitos simulados ADR-108, sonidos de Focus ADR-104 · Enm. 1), el **spike
+descartable** de «Mi Plan vivo» (ADR-109, `PENDING`) el 16, y **su integración en el Calendario**
+(ADR-110) el 17. Los tres conflictos fueron de texto —los dos lados agregaban— en `decisions.md` y
+`CLAUDE.md`. Verificado después de unir: `lint` · `typecheck` · `build` · **3652 tests en 129
+archivos**.
+**Dieciséis rutas, 26 CTAs, 98 migraciones** — ADR-110 §1 no cambia ninguna de las tres.
+
+⚠️ **`db:verify` no se corre desde el 14 de septiembre** (545 ✓, 0 ✗ esa vez). Ninguno de los dos
+merges posteriores trae migraciones ni tablas nuevas, así que no hay nada que agregar a
+`limpiar_mundo`; pero el número deja de estar verificado contra Postgres a partir de acá.
 
 🧪 **Hay Requisitos de cursado, SIMULADOS** — [ADR-108](docs/decisions.md#adr-108), 14 de septiembre. En
 `UX02`, un desplegable *Requisitos* con promoción y regular: notas de parciales, TPs al día, asistencia al

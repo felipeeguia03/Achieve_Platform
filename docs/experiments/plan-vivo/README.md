@@ -9,6 +9,12 @@ no es `main`)
 **Spike visual:** 🟡 `READY FOR PRODUCT REVIEW` — [`SPIKE.md`](SPIKE.md). Una demostración aislada y
 descartable en `/demo/plan-vivo-spike`, detrás de `PLAN_VIVO_SPIKE=1`, con datos de demostración y
 ubicaciones preparadas a mano. **No es el producto y no cierra ADR-109.**
+**Laboratorio V2:** 🟡 `READY FOR PRODUCT REVIEW` — [`V2_SCOPE.md`](V2_SCOPE.md) y [`V2_REVIEW.md`](V2_REVIEW.md).
+En `/demo/plan-vivo-spike-v2`, detrás de `PLAN_VIVO_SPIKE_V2=1`, en la rama `feat/plan-vivo-lab-v2`. V1 queda
+intacta.
+**Laboratorio V3:** 🟡 `READY FOR PRODUCT REVIEW` — [`../plan-vivo-v3/README.md`](../plan-vivo-v3/README.md). El
+calendario como plan, en `/demo/plan-vivo-spike-v3`, detrás de `PLAN_VIVO_SPIKE_V3=1`, en la rama
+`experiment/plan-vivo-spike-v3-calendar-first`. V1 y V2 quedan intactas.
 
 > Esta carpeta **no es una segunda fuente de verdad**. Manda el orden de `AGENTS.md` §8: spec →
 > ADRs `ACCEPTED` → `product.md`/`data-model.md`/`architecture.md` → código. Lo que se decida acá
@@ -114,4 +120,6 @@ ahí**, sin copiarlas ni commitearlas (ADR-006, AGENTS.md §1.5). Si no se puede
 | [`SYSTEM_MAP.md`](SYSTEM_MAP.md) | Entradas, engines, salidas, eventos y fronteras |
 | [`DECISIONS.md`](DECISIONS.md) | Las 12 invariantes contra los ADRs vigentes, y las decisiones para el owner |
 | [`IMPLEMENTATION_SEQUENCE.md`](IMPLEMENTATION_SEQUENCE.md) | Los nueve prompts que siguen, y qué necesita cada uno |
-| [`SPIKE.md`](SPIKE.md) | 🆕 El spike visual: cómo abrirlo, qué es preparado, qué se hizo distinto del pedido y qué mirar |
+| [`SPIKE.md`](SPIKE.md) | El spike visual V1: cómo abrirlo, qué es preparado, qué se hizo distinto del pedido y qué mirar |
+| [`V2_SCOPE.md`](V2_SCOPE.md) | 🆕 El laboratorio V2: inspector, simulación acumulativa, camino y Gantt; qué se mueve, qué no, y sus limitaciones |
+| [`V2_REVIEW.md`](V2_REVIEW.md) | 🆕 Las preguntas para el Product Owner, sin responder |

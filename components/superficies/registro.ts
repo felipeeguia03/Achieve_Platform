@@ -37,7 +37,7 @@ import { VistaDeEvidencia } from "./evidencia";
 import { VistaDeProgreso } from "./progreso";
 import { VistaDeFormacion } from "./formacion";
 import { VistaDeClase } from "./clase";
-import { VistaDeCalendario } from "./calendario";
+import { VistaDelCalendario } from "./calendario-o-plan";
 import { VistaDeGimnasia } from "./gimnasia";
 import { VistaDeFocus } from "./focus";
 import { VistaDeRecorrido } from "./recorrido";
@@ -58,7 +58,7 @@ const POR_NODO: ReadonlyArray<readonly [keyof typeof nodos, Superficie]> = [
   ["UX06", VistaDeProgreso],
   ["FORMACION", VistaDeFormacion],
   ["CLASE", VistaDeClase],
-  ["CALENDARIO", VistaDeCalendario],
+  ["CALENDARIO", VistaDelCalendario],
   ["GIMNASIA", VistaDeGimnasia],
   ["FOCUS", VistaDeFocus],
   ["RECORRIDO", VistaDeRecorrido],
