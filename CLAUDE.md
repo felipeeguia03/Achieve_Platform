@@ -78,6 +78,7 @@ Lista completa: [`AGENTS.md`](AGENTS.md) §2.
 | **Modo Clase** | [ADR-098](docs/decisions.md#adr-098) y [ADR-099](docs/decisions.md#adr-099) · informe, API y cortes en [`modo-clase.md`](docs/modo-clase.md) |
 | **Mi plan** (`/plan`, bajo flag) | [ADR-110](docs/decisions.md#adr-110) · informe en [`plan-vivo-calendario.md`](docs/plan-vivo-calendario.md) · diferido: [ADR-111](docs/decisions.md#adr-111) |
 | **Modo Focus** | [ADR-104](docs/decisions.md#adr-104) · informe, API y QA en [`modo-focus.md`](docs/modo-focus.md) |
+| **El asistente de reportes → Pull Request** | [`asistente-de-reportes.md`](docs/asistente-de-reportes.md) — **es un plan, no está empezado**: las decisiones las cierra ADR-112, que todavía no existe. Estado en su §0.0 |
 | Período, comisión y horarios de cursada | [ADR-060](docs/decisions.md#adr-060)…[ADR-065](docs/decisions.md#adr-065) · impacto en [`informe-periodo-comision-horarios.md`](docs/informe-periodo-comision-horarios.md) · plan en [`plan-periodo-comision-horarios.md`](docs/plan-periodo-comision-horarios.md) |
 | **Responder** las abiertas | [`docs/agenda-decisiones-abiertas-po.md`](docs/agenda-decisiones-abiertas-po.md) — **seis ya respondidas el 5 sep 2026**; quedan las cinco de terceros |
 | Qué decidió el owner el 5 de septiembre | [`docs/respuesta-po-agenda-decisiones-source.md`](docs/respuesta-po-agenda-decisiones-source.md) — **fuente literal**, manda sobre cualquier paráfrasis |
@@ -143,9 +144,15 @@ descartable** de «Mi Plan vivo» (ADR-109, `PENDING`) el 16, y **su integració
 archivos**.
 **Diecisiete rutas, 26 CTAs, 98 migraciones** — la decimoséptima es `/plan` (ADR-110 · Enm. 1).
 
-⚠️ **`db:verify` no se corre desde el 14 de septiembre** (545 ✓, 0 ✗ esa vez). Ninguno de los dos
-merges posteriores trae migraciones ni tablas nuevas, así que no hay nada que agregar a
-`limpiar_mundo`; pero el número deja de estar verificado contra Postgres a partir de acá.
+✅ **`db:verify` vuelve a correr entero: 552 comprobaciones, cero fallos** (18 de septiembre). Los
+dos merges de arriba no traían migraciones, pero **`74a4ec0` sí**: la 99,
+`disponibilidad_solo_del_plan`, con un `CHECK` que exige horas en toda fila `declared`. Entró sin
+correr el verificador y rompió dos comprobaciones de `db-aislamiento.sh`, que seguía declarando
+disponibilidad sin horas. **Hoy son 3675 tests en 129 archivos y 99 migraciones.**
+
+🆕 **Y desde ahora los cinco gates corren solos** — `.github/workflows/`. `ci.yml` corre lint,
+typecheck, build y test en cada PR; `db.yml` corre `db:verify` cuando cambian `supabase/**`,
+`scripts/**` o `catalogo/**`. Antes no había CI de ningún tipo.
 
 🧪 **Hay Requisitos de cursado, SIMULADOS** — [ADR-108](docs/decisions.md#adr-108), 14 de septiembre. En
 `UX02`, un desplegable *Requisitos* con promoción y regular: notas de parciales, TPs al día, asistencia al
@@ -941,7 +948,7 @@ salida; ninguna operación lo produce. **No lo hagas alcanzable.**
 sin FK y `POST /api/corroboracion` va con secreto de servicio. **Nunca un JWT de estudiante:** alguien
 confirmando lo que él mismo declaró no es verificación.
 
-**Verificación de base:** `npm run db:verify` — **545 comprobaciones** contra Postgres que `npm test`
+**Verificación de base:** `npm run db:verify` — **552 comprobaciones** contra Postgres que `npm test`
 no puede hacer porque necesitan Docker. Las dos suites son distintas a propósito. ⚠️ **Vacía la base
 de negocio a propósito, incluida la cuenta de la UCC:** copiá los datos antes y restauralos después
 ([`demo-mvp.md`](docs/demo-mvp.md) §Preparar). Resembrar sólo con `db:demo` deja la cuenta UCC sin padrón.
@@ -971,6 +978,10 @@ Conserva **una** costura declarada: `UX05` cruza el nodo `ejecución`, que no ti
 misma deuda contada tres veces**: ni `postcss` ni `sharp` estaban en `package.json`, los traía
 `next`—. Se cerraron subiendo `next` y `eslint-config-next` de `16.2.6` a **`16.3.4`**, fijadas
 exactas y sin tocar React.
+
+⚠️ **Al 18 de septiembre aparecen 2 `moderate`** en `@vitest/mocker`, dependencia de desarrollo que
+no llega a producción. El aviso es posterior al cierre de arriba. **No se tocaron**: la regla de
+abajo sigue valiendo.
 
 ✅ **`ACCEPTED — AMENDED AND SIGNED`** · 3 de septiembre de 2026. El CTO ratificó la
 [Enmienda 1 de ADR-008](docs/decisions.md#adr-008-enmienda-1): la versión, `agentRules: false` y el
