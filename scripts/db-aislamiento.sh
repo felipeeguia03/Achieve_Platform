@@ -1215,7 +1215,10 @@ corre "insert into assessment_topic (assessment_id,topic_id) values
 [ -z "$(q "select insumos_de_reparto('$A','$EST2')->>'minutosPorSemana';" | tr -d '[:space:]')" ] \
   && ok "sin contestar, los minutos por semana viajan NULL y no cero" || mal "salió un cero donde no había respuesta"
 
-corre "select declarar_disponibilidad('$A','$EST2','[{\"dia\":1,\"minutos\":300}]'::jsonb);"
+# ⚠️ Con horas: desde `20261105000000_disponibilidad_solo_del_plan.sql` toda fila `declared`
+# las lleva (hay CHECK). Sin ellas la función no escribe y `minutosPorSemana` sale NULL —
+# que es exactamente lo que hacía fallar a las dos comprobaciones de abajo.
+corre "select declarar_disponibilidad('$A','$EST2','[{\"dia\":1,\"desde\":\"09:00\",\"hasta\":\"14:00\",\"minutos\":300}]'::jsonb);"
 [ "$(q "select insumos_de_reparto('$A','$EST2')->>'minutosPorSemana';" | tr -d '[:space:]')" = "300" ] \
   && ok "declarados, suma 300 minutos por semana" || mal "la suma de disponibilidad salió mal"
 
