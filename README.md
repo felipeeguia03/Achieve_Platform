@@ -65,6 +65,10 @@ npm run build
 npm test
 ```
 
+**El CI los corre solo** (`.github/workflows/`): `ci.yml` los cuatro de arriba en cada PR, y `db.yml`
+el quinto —`npm run db:verify`, que necesita Docker— cuando cambian `supabase/`, `scripts/` o
+`catalogo/`.
+
 **Stack:** Next.js 16 App Router · React 19 · Tailwind v4 CSS-first (sin `tailwind.config.js`) ·
 shadcn/ui vendorizado · Vitest. Ver [ADR-008](docs/decisions.md#adr-008).
 
@@ -114,7 +118,7 @@ el catálogo de otra institución. **No borra el catálogo, ni la sesión, ni lo
 llega al HTML**. **No se declara en producción**, y la ruta se borra cuando
 [ADR-006](docs/decisions.md#adr-006) abra.
 
-**`db:verify` no está dentro de `npm test`** a propósito: la suite de **2590 tests en 121 archivos**
+**`db:verify` no está dentro de `npm test`** a propósito: la suite de **3675 tests en 129 archivos**
 corre sin Docker, en cualquier máquina. Mezclarlas haría que todas dependieran de tener el stack
 levantado.
 
@@ -126,7 +130,7 @@ lo suyo también al empezar y por `trap EXIT`, para que una corrida que falla no
 siguiente.
 
 ✅ **Esa limpieza se rompió con la Fase B6.14 y ya está corregida**, con la corrida entera en verde:
-hoy **545 comprobaciones, cero fallos**. Eran dos defectos encadenados —le faltaban las cinco tablas
+hoy **552 comprobaciones, cero fallos**. Eran dos defectos encadenados —le faltaban las cinco tablas
 nuevas a `limpiar_mundo`, y arreglarlo destapó que `db-aislamiento.sh` vacía el catálogo que
 `db-catalogo.sh` necesita después—. Ver [`docs/roadmap.md`](docs/roadmap.md) §0.2.
 

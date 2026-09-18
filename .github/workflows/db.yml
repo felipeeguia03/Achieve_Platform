@@ -1,0 +1,94 @@
+# Achieve Platform · el quinto gate: `npm run db:verify`.
+#
+# Son **552 comprobaciones contra Postgres** que `npm test` no puede hacer
+# porque necesitan Docker. Las dos suites son distintas a propósito: mezclarlas
+# haría que todos los tests dependieran de tener el stack levantado.
+#
+# ## Por qué existe este archivo
+#
+# El 17 de septiembre de 2026 a las 11:28 entró
+# `20261105000000_disponibilidad_solo_del_plan.sql` (commit `74a4ec0`), que
+# agrega un `CHECK` que exige horas en toda fila `declared`. Nadie corrió
+# `db:verify` —no se corría desde el 14— y dos comprobaciones de
+# `db-aislamiento.sh` quedaron rotas, porque seguían declarando disponibilidad
+# sin horas. Se encontró horas después, sólo porque alguien lo corrió a mano.
+# **Este workflow es esa lección: el gate no puede depender de acordarse.**
+#
+# ## Por qué sólo con estos `paths`
+#
+# Levantar Supabase tarda varios minutos. Corre cuando cambia lo que puede
+# romperlo: el schema, los verificadores o el catálogo que `db:verify` importa.
+#
+# ⚠️ **Regla que hay que sostener:** toda tabla nueva que referencie a las del
+# mundo académico se agrega a `limpiar_mundo` (`db-aislamiento.sh`) **en el mismo
+# commit**. Las 40 sentencias van en una sola transacción: una FK que falta
+# aborta todo y el verificador deja de correr con un error que no nombra la causa.
+
+name: Base de datos
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**', 'scripts/**', 'catalogo/**', '.github/workflows/db.yml']
+  pull_request:
+    paths: ['supabase/**', 'scripts/**', 'catalogo/**', '.github/workflows/db.yml']
+
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: db:verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v3
+        with:
+          # La versión con la que se verificó en local. `latest` haría que un
+          # release nuevo del CLI pudiera romper el gate sin que cambie nada
+          # del repo.
+          version: 2.108.0
+
+      # Aplica las 99 migraciones al arrancar. El `project_id` de
+      # `supabase/config.toml` fija el nombre del contenedor
+      # (`supabase_db_achieve-platform`), que es el que buscan los scripts.
+      - name: levantar Supabase
+        run: supabase start
+
+      # ⚠️ **No alcanza con pasar las claves por `env:`.** `db:verify` corre
+      # `npm run db:catalogo`, y `scripts/importar-catalogo.mjs` lee
+      # `.env.local` **del disco** y corta con `exit 1` si no existe: no mira el
+      # entorno del proceso. Verificado el 18 de septiembre de 2026.
+      #
+      # Así que el CI hace exactamente lo que el README le pide a quien levanta
+      # el proyecto: armar `.env.local` con lo que imprime Supabase. Las claves
+      # salen del stack recién levantado, no de este archivo.
+      - name: armar .env.local como pide el README
+        run: |
+          eval "$(supabase status -o env 2>/dev/null)"
+          if [ -z "${API_URL:-}" ] || [ -z "${SERVICE_ROLE_KEY:-}" ]; then
+            echo "✗ supabase status no devolvió API_URL o SERVICE_ROLE_KEY" >&2
+            exit 1
+          fi
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } > .env.local
+
+      - name: db:verify
+        run: npm run db:verify
