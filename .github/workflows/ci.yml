@@ -1,0 +1,67 @@
+# Achieve Platform · los cuatro gates de código.
+#
+# `AGENTS.md` §7 exige cinco antes de entregar: lint, typecheck, build, test y
+# `db:verify`. Los cuatro primeros corren sin Docker y van acá; el quinto
+# necesita Postgres y vive en `db.yml`.
+#
+# ⚠️ **`typecheck` es un gate propio, no una redundancia del build.** Medido el
+# 2 de septiembre de 2026: `npm run build` estuvo en verde con **6 errores de
+# tipos** adentro. `vitest` borra los tipos con esbuild y el build de Next no
+# alcanza los archivos de test: un mock al que le falta un campo que el dominio
+# agregó **sólo lo ve `tsc`**.
+#
+# **Sin variables de entorno, a propósito.** Verificado el 18 de septiembre de
+# 2026 corriendo los cuatro gates sin `.env.local` y sin ninguna variable: pasan
+# todos. Declarar claves que ningún paso lee sólo agrega algo que explicar.
+#
+# Cada gate es su propio step, sin `&&` ni `continue-on-error`, para que la
+# corrida diga cuál falló sin abrir el log.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un push nuevo sobre la misma rama cancela la corrida anterior: la vieja ya no
+# verifica el código que se va a mergear.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: lint · typecheck · build · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # 24 es lo que se verificó en verde. ⚠️ `package.json` declara
+          # `>=22.13.0` como piso, y ese piso **no se verifica acá**: si algún
+          # día importa, es una matriz, no un cambio de número.
+          node-version: 24
+          cache: npm
+
+      # `ci` y no `install`: respeta el lock y falla si el lock y el manifiesto
+      # no coinciden, que es justo lo que un agente puede romper sin querer.
+      - run: npm ci
+
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: build
+        run: npm run build
+
+      - name: test
+        run: npm test
