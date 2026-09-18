@@ -367,6 +367,27 @@ botón.
 
 ---
 
+## Asistente de reportes → Pull Request · 🟡 DECIDIDO, NO EMPEZADO
+
+[ADR-112](decisions.md#adr-112) · 18 de septiembre de 2026 · plan en
+[`asistente-de-reportes.md`](asistente-de-reportes.md). El asistente de [ADR-103](decisions.md#adr-103)
+deja de ser un guion: lo que el estudiante reporta termina en un Pull Request con el arreglo escrito.
+Rama `feat/reportes`, un commit por etapa.
+
+| Etapa | Estado |
+|---|---|
+| 0 · CI, arreglo de `db:verify`, plan y ADR-112 | ✅ |
+| 1 · Captura: el chat habla con el backend | ⬜ espera una API key de Anthropic |
+| — · **Punto de medición:** 20 reportes con pasos de reproducción | ⬜ sin 20, la etapa 4 no se construye |
+| 2 · Triage y deduplicación | ⬜ |
+| 3 · Compuerta humana | ⬜ |
+| 4 · El agente abre el PR | ⬜ necesita que `felipeeguia03` instale la GitHub App y proteja `main` |
+
+**No sale de `MODO_PRUEBA`** sin el dictamen legal de este flujo ([ADR-112](decisions.md#adr-112) `D-07`,
+[`legal-package.md`](legal-package.md) §5.3).
+
+---
+
 ## 1. Diagrama de dependencias
 
 ```

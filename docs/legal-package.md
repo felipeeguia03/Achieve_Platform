@@ -168,6 +168,26 @@ generados por el propio repositorio: **no hay extractor real ni proveedor extern
     qué hay que decirle al estudiante antes?
 33. ¿Puede la institución ver **algo** de esto —aunque sea agregado—? Hoy no ve nada.
 
+## 5.3 El asistente de reportes 🆕
+
+**Contexto:** [ADR-103](decisions.md#adr-103) y [ADR-112](decisions.md#adr-112), 18 de septiembre de 2026.
+El estudiante puede reportar un problema o proponer una mejora **conversando con un asistente**. Lo que
+escribe va a **Anthropic** —el proveedor del modelo que repregunta— y se guarda en la base de la
+Plataforma, junto con las capturas de pantalla que pegue y contexto técnico del navegador. A **GitHub**
+sólo sale un enunciado normalizado del problema, dentro de un Pull Request: **nunca** el texto del
+estudiante, sus capturas ni su identidad. Hoy corre **sólo detrás de `MODO_PRUEBA=1` y con datos
+sintéticos**, y **sigue así hasta que el dictamen cubra este flujo** ([ADR-112](decisions.md#adr-112)
+`D-07`).
+
+34. ¿Qué instrumento hace falta para que **Anthropic** procese lo que escribe el estudiante, y qué hay
+    que decirle antes de que escriba?
+35. **Retención:** ADR-112 fija, como provisorio, que las capturas se borran al resolverse el problema
+    y a los 30 días como máximo, y el texto a los 90 días del cierre. ¿Alcanza?
+36. El texto es **libre**: el estudiante puede escribir cualquier cosa, incluido un dato sensible suyo o
+    de otra persona. ¿Cambia eso la base legal, o exige un aviso previo?
+37. Los arreglos se publican en un repositorio **público**. ¿Hay algún requisito sobre lo que puede
+    aparecer en un Pull Request derivado de un reporte, además de no incluir datos personales?
+
 ---
 
 ## 6. Qué necesitamos de vuelta, en concreto

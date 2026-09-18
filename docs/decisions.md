@@ -178,6 +178,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-110 · Enm. 6](#adr-110-enmienda-6) | **Un toque explica, dos abren**: el inspector (con la forma del spike v3) también para clases, evaluaciones y compromisos; doble toque abre el objeto y la miga dice *Mi plan › Análisis II*, con vuelta a la misma semana. Métricas en orden: pendiente, disponibilidad, sin ubicar | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | — |
 | [ADR-110 · Enm. 7](#adr-110-enmienda-7) | **El inspector muestra poco y explica a pedido**: tiempo aproximado y acciones; el resto, con el botón *Explicación* (?) | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | — |
 | [ADR-111](#adr-111) | ***No fui a clase*** y ***Se canceló la clase***: dos hechos que hoy no tienen contrato, diferidos por ADR-110 | 🔴 `PENDING` *(16 sep 2026 · lo cierra el owner)* | Que el plan reaccione a una clase que no ocurrió |
+| [ADR-112](#adr-112) | **El asistente de reportes con backend real**: diez decisiones antes de escribir código. Incluye **autorizar el primer proveedor de IA del producto** (`D-10`) | ✅ `ACCEPTED` *(18 sep 2026 · decidido por el owner: las diez recomendaciones)* | La etapa 1 espera sólo la API key de Anthropic · la 4, la GitHub App y `main` protegida |
 
 ---
 
@@ -11354,3 +11355,259 @@ dictado, y la clase **no ocurrió**. Ninguno tiene contrato:
 
 **Mientras siga `PENDING`, no se construye ninguna de las dos, ni con adaptador local.**
 
+---
+
+<a id="adr-112"></a>
+
+## ADR-112 — El asistente de reportes con backend real: diez decisiones antes de escribir código
+
+**Estado:** ✅ `ACCEPTED` · 18 sep 2026 · **decidido por el owner**, que aceptó las diez recomendaciones
+tal como estaban redactadas y **firma solo**. Lo redactó un agente, con opciones y una recomendación en
+cada punto (regla 2 de este documento).
+**Plan:** [`asistente-de-reportes.md`](asistente-de-reportes.md). Este ADR es su §12.
+**Relacionado:** [ADR-103](#adr-103), [ADR-004](#adr-004), [ADR-006](#adr-006), [ADR-008](#adr-008),
+[ADR-027](#adr-027), [ADR-037](#adr-037), [ADR-076](#adr-076), [ADR-080](#adr-080).
+**Toca, al aceptarse:** `asistente-de-reportes.md`, `legal-package.md` (§5.3) y `roadmap.md`, en el
+mismo commit. `package.json` (`@anthropic-ai/sdk`) y `.env.local.example` (`ANTHROPIC_API_KEY`) llegan
+**con el código de la etapa 1**: agregarlos antes sería una dependencia y una variable sin lector.
+`lib/domain/product-events.ts` **no se toca**: `D-08` eligió no emitir.
+**Desbloquea:** `feat/reportes`. La etapa 1 espera sólo una API key de Anthropic; la 4, lo de «Qué
+queda» al final.
+
+### Contexto
+
+[ADR-103](#adr-103) construyó el asistente de reportes y mejoras como interfaz, con un guion fijo que no
+envía nada, y dejó escrito qué seguía: *"la máquina de fases **se reemplaza**, no se extiende"*, y
+*"qué se guarda de un reporte, a quién le llega […] y cómo se tratan las capturas […] se decide
+entonces, y **esa parte sí toca ADR-006**"*.
+
+[`asistente-de-reportes.md`](asistente-de-reportes.md) es el plan de ese reemplazo: el estudiante
+reporta conversando y eso termina en un Pull Request con el arreglo escrito. Lo técnico —capas,
+archivos, tablas, cómo se deduplica— sale del código y de ADRs aceptados, y está en el plan. **Acá van
+sólo las diez preguntas que no son técnicas.**
+
+### ⚠️ Por qué este ADR es más grande de lo que parece: `D-10`
+
+**En todo este documento no hay ninguna decisión que autorice un proveedor de IA en el producto.**
+Tampoco una que lo prohíba. Hay tres que tocan el tema, y ninguna lo resuelve:
+
+| ADR | Qué dice | Qué implica acá |
+|---|---|---|
+| [ADR-004](#adr-004) · `ACCEPTED` | El motor académico es *"v1 determinista, sin LLM"* | Vale para el ADE. Pero deja el patrón que este plan usa: **el LLM propone, un validador determinista comprueba** |
+| [ADR-080](#adr-080) · `CANDIDATO` | *"La IA no se consulta durante el uso normal del estudiante"* | No está aceptado, y es sobre el temario. Pero el chat **es** uso normal: si se autoriza, tiene que ser explícito por qué es distinto |
+| [ADR-076](#adr-076) §6 · `ACCEPTED` | *"No implementar […] hasta nueva autorización"* | Sólo para la superficie académica de operadores. No aplica |
+
+Meter a Anthropic es **la primera vez que el producto usa IA**. Es una decisión de producto, no un
+detalle de implementación.
+
+### Lo decidido — 18 de septiembre de 2026
+
+El owner aceptó las diez recomendaciones. Cada sección de abajo conserva las opciones que se evaluaron
+y el porqué de la elegida.
+
+| # | Pregunta | Decisión |
+|---|---|---|
+| `D-01` | Qué se guarda de un reporte, y qué sale del servidor | **A** — todo en la base; al modelo sólo el texto, sin capturas; afuera, sólo el enunciado normalizado |
+| `D-02` | Cuánto tiempo se guarda | **A** — capturas hasta el cierre, 30 días como máximo; texto y contexto, 90 días después del cierre |
+| `D-03` | Topes de uso y de gasto | Chat **B** — 12 turnos, 5 reportes por estudiante por día · agente **A** — 3 corridas por día, 2 PRs abiertos |
+| `D-04` | Quién aprueba, y por dónde | **A** — sólo el owner |
+| `D-05` | Qué archivos puede tocar el agente | **B** — lista blanca + `components/screens/`, tope de 3 archivos y 40 líneas |
+| `D-06` | Qué texto escribe el modelo en la pantalla | **A** — sólo la pregunta aclaratoria, validada; el resumen cita |
+| `D-07` | Qué pasa cuando ADR-006 abra | **A** — detrás de `MODO_PRUEBA` hasta que el dictamen cubra este flujo |
+| `D-08` | Si el reporte emite eventos | **A** — ninguno |
+| `D-09` | Dónde viven los issues, con el repositorio público | **C** — el problema vive en la base; a GitHub sólo sale el PR |
+| `D-10` | Autorizar a Anthropic como proveedor de IA | **A** — sólo para este asistente, con las siete condiciones |
+
+---
+
+### `D-01` · Qué se guarda de un reporte, y qué sale del servidor · 🔴 etapa 1
+
+El widget junta tres cosas: **el texto de la conversación**, **capturas** si el estudiante las pega, y
+**contexto técnico automático** —pantalla, build, navegador, sistema, tamaño de ventana, errores de
+consola y requests que fallaron—. Hay tres destinos posibles: la base propia, Anthropic y GitHub.
+
+⚠️ **Una regla que no se vota:** de un request que falló se guardan **método, ruta y código de
+respuesta. Nunca headers ni cuerpos.** El header `Authorization` lleva el JWT de la sesión del
+estudiante.
+
+| Opción | Qué implica |
+|---|---|
+| **A** | Todo se guarda en la base. **Al modelo va sólo el texto de la conversación**, sin capturas. **A GitHub, sólo el enunciado normalizado y el contexto técnico.** Capturas, texto crudo e identidad del estudiante **nunca salen de la base** |
+| **B** | Como A, pero las capturas también van al modelo. Entiende mejor el problema; es un dato sensible más que sale |
+| **C** | No se aceptan capturas. Sólo texto y contexto técnico |
+
+**Decidido: A.** Una captura es el dato más sensible del reporte —puede mostrar notas, materias y
+un nombre—, y el contexto técnico automático ya dice casi todo lo que la captura mostraría. Si la
+medición de la fase 1 muestra que faltan, B se suma después con una enmienda.
+
+### `D-02` · Cuánto tiempo se guarda · 🔴 etapa 1
+
+| Opción | Qué implica |
+|---|---|
+| **A** | **Capturas:** se borran cuando el problema se cierra, y a los 30 días como máximo. **Texto y contexto:** hasta 90 días después del cierre |
+| **B** | Todo hasta 90 días después del cierre |
+| **C** | Sin plazo, hasta que ADR-006 lo fije |
+
+**Decidido: A.** Con datos sintéticos el número todavía no protege a nadie, pero **el mecanismo de
+borrado tiene que existir desde el primer día**: agregarlo después es borrar hacia atrás lo que ya se
+juntó. Los números son provisorios y los revisa el dictamen legal (`D-07`). El borrado sigue el patrón
+que el repo ya usa en Modo Clase y en el analítico: el objeto de storage primero, la fila después.
+
+### `D-03` · Topes de uso y de gasto · 🔴 etapa 1 (el chat) · etapa 4 (el agente)
+
+**Por qué frena la etapa 1:** cada turno del chat es una llamada que se paga. Sin tope, una conversación
+no termina nunca.
+
+**El chat** — turnos por conversación · reportes por estudiante por día:
+
+| Opción | Turnos | Reportes por día |
+|---|---|---|
+| **A** | 8 | 3 |
+| **B** | 12 | 5 |
+| **C** | 20 | 10 |
+
+**El agente** — corridas por día · PRs del agente abiertos a la vez:
+
+| Opción | Corridas por día | PRs abiertos |
+|---|---|---|
+| **A** | 3 | 2 |
+| **B** | 5 | 3 |
+| **C** | 25 | 10 — los de Rondo Club, un caso real que hace esto mismo |
+
+**Decidido: B en el chat, A en el agente.** El chat necesita aire para sacar pasos de
+reproducción. El agente, con el widget detrás de `MODO_PRUEBA`, va a tener poco volumen, y **subir un
+tope es trivial; bajarlo después de un susto, no.** Además, al crear la cuenta de Anthropic conviene
+fijar un **límite de gasto mensual** en la Console, como techo que no depende del código.
+
+### `D-04` · Quién aprueba, y por dónde · etapa 3
+
+| Opción | Qué implica |
+|---|---|
+| **A** | Sólo el owner |
+| **B** | El owner o el CTO |
+| **C** | Cualquiera con permiso de escritura en el repositorio |
+
+**El canal depende de `D-09`:** con issues en GitHub, una etiqueta que pone una persona —GitHub ya exige
+permisos para etiquetar—; sin issues, una notificación al celular con dos botones.
+
+**Si nadie aprueba, no pasa nada: nunca se aprueba solo.** A los 14 días, un recordatorio.
+
+**Decidido: A**, y pasar a B cuando el CTO se sume al circuito.
+
+### `D-05` · Qué archivos puede tocar el agente · etapa 4
+
+La lista negra mecánica del plan (§6) no se vota: migraciones, `docs/`, dominio, navegación, servicios,
+repositorios, API, CI y configuración quedan afuera siempre. **Lo que se decide es el resto.**
+
+| Opción | Qué implica |
+|---|---|
+| **A** | Sólo textos: `lib/content/` |
+| **B** | La lista blanca del plan **más `components/screens/`**, para una lista cerrada de cambios —texto por `CopyId`, `aria-*` y foco, estado vacío o de carga faltante, guard contra `null`— **con tope mecánico: 3 archivos y 40 líneas** |
+| **C** | La lista blanca del plan, sin `components/screens/` |
+
+**Decidido: B.** Casi todos los bugs que ve un estudiante están en `components/screens/`, y un
+agente que sólo toca textos arregla poco. La regla 6 de `CLAUDE.md` prohíbe reescribirlo *"salvo que el
+roadmap lo pida"*: este ADR y su entrada en el roadmap son exactamente eso. **El tope es el proxy
+mecánico de "cambio mínimo"**, que es justo donde un modelo tiende a sobre-diseñar.
+
+### `D-06` · Qué texto escribe el modelo en la pantalla · 🔴 etapa 1
+
+**Es la primera vez que un texto del modelo llegaría a la pantalla de un estudiante.** Hoy cada frase es
+un `CopyId` de `lib/content/es-AR.ts`, con guards de voseo (`C-01`), sin inglés y sin vocabulario
+prohibido. Un texto del modelo se saltea todo eso.
+
+| Opción | Qué implica |
+|---|---|
+| **A** | El modelo escribe **sólo la pregunta aclaratoria**. El servidor la valida antes de mostrarla —hasta 280 caracteres, voseo, sin inglés, sin prometer contacto ni plazos—, y si no pasa se muestra una pregunta fija de `es-AR.ts`. **El resumen sigue citando** lo que escribió el estudiante, como decidió ADR-103 |
+| **B** | Como A, y además el resumen lo redacta el modelo |
+| **C** | El modelo no escribe nada: **elige cuál** de N preguntas fijas hacer. Toda la copy sigue bajo los guards |
+
+**Decidido: A.** Es lo que ADR-103 anticipó —*"la pregunta aclaratoria […] la va a escribir el
+backend"*— sin abrir el resumen, que ADR-103 decidió que cite porque *"una paráfrasis inventada pondría
+en boca del estudiante algo que no dijo"*. **C es el repliegue** si en la práctica la validación rechaza
+demasiado.
+
+### `D-07` · Qué pasa cuando ADR-006 abra · estudiantes reales
+
+| Opción | Qué implica |
+|---|---|
+| **A** | El widget **sigue detrás de `MODO_PRUEBA`** hasta que el dictamen legal cubra este flujo **explícitamente**: consentimiento, Anthropic como encargado de datos, GitHub y retención |
+| **B** | Sale junto con ADR-006 |
+
+**Decidido: A.** Este flujo manda datos a dos terceros, y ADR-006 se está evaluando sin él. Entra a
+`legal-package.md` como sección propia.
+
+### `D-08` · Si el reporte emite eventos · 🔴 etapa 1
+
+El spec es explícito: *"evento nuevo para cada interacción — **no está aprobado** en Product Event
+Model"* (`product-spec-source.md`, tabla de §16). Y el nivel `TELEMETRIA` tiene **cero eventos
+instrumentados, con guard**, porque su nombramiento sigue abierto en `C01-023`.
+
+| Opción | Qué implica |
+|---|---|
+| **A** | **Ninguno.** El estado vive en la tabla del reporte, con sus fechas. `product_event` queda para lo que el producto existe para medir |
+| **B** | Uno de nivel `TRANSICION` por cada cambio de estado —`ProductReportCaptured`, `…Triaged`, …—, fuera de la Bitácora |
+| **C** | De nivel `TELEMETRIA`. Choca con el guard y con `C01-023`, que está abierto |
+
+**Decidido: A.** Es lo que el spec pide y lo que dice *"omitir, no inventar"*. Si más adelante
+hace falta medir, se agrega con su propio ADR. ⚠️ **Esto corrige al plan**, que daba por hecho un evento.
+
+### `D-09` · Dónde viven los issues, con el repositorio público · etapa 2
+
+Verificado el 18 de septiembre de 2026:
+
+- **El repositorio es público.** Sus issues y sus PRs se ven sin iniciar sesión; los logs de Actions
+  piden iniciar sesión en GitHub, no ser colaborador.
+- **Cambiar la visibilidad lo puede hacer sólo el dueño** de un repositorio de cuenta personal
+  —`felipeeguia03`—, según la documentación de GitHub.
+- **Los minutos de Actions son gratis en repos públicos.** En uno privado se descuentan de los incluidos
+  en el plan.
+
+| Opción | Qué implica |
+|---|---|
+| **A** | Pasar el repositorio a privado. Lo hace `felipeeguia03`, y el CI empieza a consumir minutos del plan |
+| **B** | Los issues van a un repositorio privado aparte; el agente trabaja contra éste |
+| **C** | **Sin issues en GitHub.** El reporte y su problema viven en la base (`product_report_issue`); el owner aprueba desde la notificación; **a GitHub sólo sale el PR** |
+
+**Elijas la que elijas, una regla:** el pedido al agente y el PR **nunca** llevan el texto crudo del
+estudiante, sus capturas ni su identidad. Sólo el enunciado normalizado. En un repo público, el PR se ve sin
+iniciar sesión, y los logs de la corrida con cualquier cuenta de GitHub.
+
+**Decidido: C.** **El issue ya existe: es `product_report_issue`**, privado, en la base. Un issue
+de GitHub sería una copia pública de algo que ya tenemos. C funciona con el repositorio como está, no
+depende de que el dueño cambie nada, y deja a GitHub sólo lo que tiene que ver: el código.
+
+### `D-10` · Autorizar a Anthropic como proveedor de IA del producto · 🔴 etapa 1
+
+| Opción | Qué implica |
+|---|---|
+| **A** | **Autorizarlo sólo para este asistente**, con siete condiciones: **(1)** sólo desde el servidor; **(2)** sobre el reporte, **nunca sobre la persona** —el corte de [ADR-037](#adr-037)—; **(3)** nada académico se deriva: no toca el ADE, Hoy, el riesgo, el perfil ni la Bitácora; **(4)** toda salida pasa por un validador determinista antes de usarse —el patrón de [ADR-004](#adr-004)—; **(5)** la trazabilidad de [ADR-080](#adr-080) §6: modelo exacto, versión del prompt, esquema de salida y fecha; **(6)** los topes de `D-03`; **(7)** sólo datos sintéticos hasta `D-07` |
+| **B** | **Autorizarlo sólo fuera del camino del estudiante:** el triage y el agente, que corren después y en segundo plano. **El chat vuelve a ser un guion de preguntas fijas**, mejorado, y la IA no se consulta mientras el estudiante usa el producto —lo que propone ADR-080— |
+| **C** | No autorizarlo. El asistente guarda reportes estructurados sin IA en ninguna etapa, y el owner los lee |
+
+**Decidido: A**, porque es lo que se pidió: un chat que repregunta hasta tener pasos de
+reproducción. **B queda registrada como alternativa seria, no como relleno:** el propio plan dice que conseguir pasos
+de reproducción *"es un problema de formulario, no de IA"*, y B respeta lo que ADR-080 propone. **La
+elección cambia el alcance de la etapa 1:** con B, la etapa 1 no llama a ningún modelo, y `D-06` deja
+de hacer falta.
+
+Con A o con B: la dependencia (`@anthropic-ai/sdk`) entra **fijada exacta**, con el criterio de
+[ADR-008](#adr-008), y la clave es una **API key de la Console de Anthropic** —no una suscripción—, sólo
+en el servidor.
+
+### Lo que este ADR NO decide
+
+Lo que sale del código y de ADRs aceptados **no se vota**: la separación en cinco etapas, la compuerta
+humana, que el merge sea siempre de una persona, la lista negra mecánica, RLS sin políticas, que la ruta
+no devuelva `409 ALTA_INCOMPLETA`, y que **el PR sea por problema y nunca por reporte**. Todo eso está en
+el plan.
+
+### Qué queda
+
+- **La etapa 1 puede empezar** cuando haya una API key de la Console de Anthropic. Los tests y el CI no
+  la necesitan.
+- **La etapa 4 necesita además** que el dueño del repositorio, `felipeeguia03`, instale la GitHub App y
+  proteja `main` —en un repo de cuenta personal son acciones del dueño—, y verificar contra la
+  documentación oficial los detalles de `claude-code-action`.
+- **El punto de medición sigue en pie:** después de la etapa 1 se para y se cuentan los reportes
+  accionables. Sin 20 con pasos de reproducción, la etapa 4 no se construye.
