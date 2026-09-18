@@ -178,7 +178,7 @@ Cuando un ADR depende de un `C01`, lo cita. Cerrar un ADR **no cierra** el `C01`
 | [ADR-110 · Enm. 6](#adr-110-enmienda-6) | **Un toque explica, dos abren**: el inspector (con la forma del spike v3) también para clases, evaluaciones y compromisos; doble toque abre el objeto y la miga dice *Mi plan › Análisis II*, con vuelta a la misma semana. Métricas en orden: pendiente, disponibilidad, sin ubicar | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | — |
 | [ADR-110 · Enm. 7](#adr-110-enmienda-7) | **El inspector muestra poco y explica a pedido**: tiempo aproximado y acciones; el resto, con el botón *Explicación* (?) | ✅ `ACCEPTED` *(17 sep 2026 · pedida por el owner)* | — |
 | [ADR-111](#adr-111) | ***No fui a clase*** y ***Se canceló la clase***: dos hechos que hoy no tienen contrato, diferidos por ADR-110 | 🔴 `PENDING` *(16 sep 2026 · lo cierra el owner)* | Que el plan reaccione a una clase que no ocurrió |
-| [ADR-112](#adr-112) | **El asistente de reportes con backend real**: diez decisiones antes de escribir código. Incluye **autorizar el primer proveedor de IA del producto** (`D-10`) | 🔴 `PENDING` *(18 sep 2026 · lo cierra el owner; falta confirmar si firma el CTO)* | Las cuatro etapas de `feat/reportes` · la etapa 1 necesita `D-01`, `D-02`, `D-03`, `D-06`, `D-08` y `D-10` |
+| [ADR-112](#adr-112) | **El asistente de reportes con backend real**: diez decisiones antes de escribir código. Incluye **autorizar el primer proveedor de IA del producto** (`D-10`) | ✅ `ACCEPTED` *(18 sep 2026 · decidido por el owner: las diez recomendaciones)* | La etapa 1 espera sólo la API key de Anthropic · la 4, la GitHub App y `main` protegida |
 
 ---
 
@@ -11361,17 +11361,18 @@ dictado, y la clase **no ocurrió**. Ninguno tiene contrato:
 
 ## ADR-112 — El asistente de reportes con backend real: diez decisiones antes de escribir código
 
-**Estado:** 🔴 `PENDING` · 18 sep 2026 · **redactado por un agente a pedido del owner**, con opciones y
-una recomendación en cada punto. **Lo cierra el owner** (regla 2 de este documento).
-⚠️ [ADR-103](#adr-103) cita al owner: *"con el backend conectamos todo junto al cto"*. **Falta confirmar
-si también lo firma el CTO.**
+**Estado:** ✅ `ACCEPTED` · 18 sep 2026 · **decidido por el owner**, que aceptó las diez recomendaciones
+tal como estaban redactadas y **firma solo**. Lo redactó un agente, con opciones y una recomendación en
+cada punto (regla 2 de este documento).
 **Plan:** [`asistente-de-reportes.md`](asistente-de-reportes.md). Este ADR es su §12.
 **Relacionado:** [ADR-103](#adr-103), [ADR-004](#adr-004), [ADR-006](#adr-006), [ADR-008](#adr-008),
 [ADR-027](#adr-027), [ADR-037](#adr-037), [ADR-076](#adr-076), [ADR-080](#adr-080).
-**Toca, al aceptarse:** `asistente-de-reportes.md`, `legal-package.md`, `roadmap.md`,
-`.env.local.example`, `package.json`, y `lib/domain/product-events.ts` **sólo si** `D-08` elige emitir.
-**Bloquea:** las cuatro etapas de `feat/reportes`. **La etapa 1 necesita seis:** `D-01`, `D-02`,
-`D-03`, `D-06`, `D-08` y `D-10`.
+**Toca, al aceptarse:** `asistente-de-reportes.md`, `legal-package.md` (§5.3) y `roadmap.md`, en el
+mismo commit. `package.json` (`@anthropic-ai/sdk`) y `.env.local.example` (`ANTHROPIC_API_KEY`) llegan
+**con el código de la etapa 1**: agregarlos antes sería una dependencia y una variable sin lector.
+`lib/domain/product-events.ts` **no se toca**: `D-08` eligió no emitir.
+**Desbloquea:** `feat/reportes`. La etapa 1 espera sólo una API key de Anthropic; la 4, lo de «Qué
+queda» al final.
 
 ### Contexto
 
@@ -11399,23 +11400,23 @@ Tampoco una que lo prohíba. Hay tres que tocan el tema, y ninguna lo resuelve:
 Meter a Anthropic es **la primera vez que el producto usa IA**. Es una decisión de producto, no un
 detalle de implementación.
 
-### Cómo se contesta
+### Lo decidido — 18 de septiembre de 2026
 
-Alcanza con una línea por decisión: **`D-01: A`**. Si ninguna opción sirve, escribí la tuya. Las
-marcadas 🔴 frenan la etapa 1; las demás pueden esperar a su etapa.
+El owner aceptó las diez recomendaciones. Cada sección de abajo conserva las opciones que se evaluaron
+y el porqué de la elegida.
 
-| # | Pregunta | Recomendación | Frena |
-|---|---|---|---|
-| `D-01` | Qué se guarda de un reporte, y qué sale del servidor | **A** | 🔴 Etapa 1 |
-| `D-02` | Cuánto tiempo se guarda | **A** | 🔴 Etapa 1 |
-| `D-03` | Topes de uso y de gasto | **B** en el chat · **A** en el agente | 🔴 Etapa 1 · etapa 4 |
-| `D-04` | Quién aprueba, y por dónde | **A** | Etapa 3 |
-| `D-05` | Qué archivos puede tocar el agente | **B** | Etapa 4 |
-| `D-06` | Qué texto escribe el modelo en la pantalla | **A** | 🔴 Etapa 1 |
-| `D-07` | Qué pasa cuando ADR-006 abra | **A** | Estudiantes reales |
-| `D-08` | Si el reporte emite eventos | **A** — ninguno | 🔴 Etapa 1 |
-| `D-09` | Dónde viven los issues, con el repositorio público | **C** — en la base, no en GitHub | Etapa 2 |
-| `D-10` | Autorizar a Anthropic como proveedor de IA | **A**, con **B** como alternativa seria | 🔴 Etapa 1 |
+| # | Pregunta | Decisión |
+|---|---|---|
+| `D-01` | Qué se guarda de un reporte, y qué sale del servidor | **A** — todo en la base; al modelo sólo el texto, sin capturas; afuera, sólo el enunciado normalizado |
+| `D-02` | Cuánto tiempo se guarda | **A** — capturas hasta el cierre, 30 días como máximo; texto y contexto, 90 días después del cierre |
+| `D-03` | Topes de uso y de gasto | Chat **B** — 12 turnos, 5 reportes por estudiante por día · agente **A** — 3 corridas por día, 2 PRs abiertos |
+| `D-04` | Quién aprueba, y por dónde | **A** — sólo el owner |
+| `D-05` | Qué archivos puede tocar el agente | **B** — lista blanca + `components/screens/`, tope de 3 archivos y 40 líneas |
+| `D-06` | Qué texto escribe el modelo en la pantalla | **A** — sólo la pregunta aclaratoria, validada; el resumen cita |
+| `D-07` | Qué pasa cuando ADR-006 abra | **A** — detrás de `MODO_PRUEBA` hasta que el dictamen cubra este flujo |
+| `D-08` | Si el reporte emite eventos | **A** — ninguno |
+| `D-09` | Dónde viven los issues, con el repositorio público | **C** — el problema vive en la base; a GitHub sólo sale el PR |
+| `D-10` | Autorizar a Anthropic como proveedor de IA | **A** — sólo para este asistente, con las siete condiciones |
 
 ---
 
@@ -11435,7 +11436,7 @@ estudiante.
 | **B** | Como A, pero las capturas también van al modelo. Entiende mejor el problema; es un dato sensible más que sale |
 | **C** | No se aceptan capturas. Sólo texto y contexto técnico |
 
-**Recomendación: A.** Una captura es el dato más sensible del reporte —puede mostrar notas, materias y
+**Decidido: A.** Una captura es el dato más sensible del reporte —puede mostrar notas, materias y
 un nombre—, y el contexto técnico automático ya dice casi todo lo que la captura mostraría. Si la
 medición de la fase 1 muestra que faltan, B se suma después con una enmienda.
 
@@ -11447,7 +11448,7 @@ medición de la fase 1 muestra que faltan, B se suma después con una enmienda.
 | **B** | Todo hasta 90 días después del cierre |
 | **C** | Sin plazo, hasta que ADR-006 lo fije |
 
-**Recomendación: A.** Con datos sintéticos el número todavía no protege a nadie, pero **el mecanismo de
+**Decidido: A.** Con datos sintéticos el número todavía no protege a nadie, pero **el mecanismo de
 borrado tiene que existir desde el primer día**: agregarlo después es borrar hacia atrás lo que ya se
 juntó. Los números son provisorios y los revisa el dictamen legal (`D-07`). El borrado sigue el patrón
 que el repo ya usa en Modo Clase y en el analítico: el objeto de storage primero, la fila después.
@@ -11473,7 +11474,7 @@ no termina nunca.
 | **B** | 5 | 3 |
 | **C** | 25 | 10 — los de Rondo Club, un caso real que hace esto mismo |
 
-**Recomendación: B en el chat, A en el agente.** El chat necesita aire para sacar pasos de
+**Decidido: B en el chat, A en el agente.** El chat necesita aire para sacar pasos de
 reproducción. El agente, con el widget detrás de `MODO_PRUEBA`, va a tener poco volumen, y **subir un
 tope es trivial; bajarlo después de un susto, no.** Además, al crear la cuenta de Anthropic conviene
 fijar un **límite de gasto mensual** en la Console, como techo que no depende del código.
@@ -11491,7 +11492,7 @@ permisos para etiquetar—; sin issues, una notificación al celular con dos bot
 
 **Si nadie aprueba, no pasa nada: nunca se aprueba solo.** A los 14 días, un recordatorio.
 
-**Recomendación: A**, y pasar a B cuando el CTO se sume al circuito.
+**Decidido: A**, y pasar a B cuando el CTO se sume al circuito.
 
 ### `D-05` · Qué archivos puede tocar el agente · etapa 4
 
@@ -11504,7 +11505,7 @@ repositorios, API, CI y configuración quedan afuera siempre. **Lo que se decide
 | **B** | La lista blanca del plan **más `components/screens/`**, para una lista cerrada de cambios —texto por `CopyId`, `aria-*` y foco, estado vacío o de carga faltante, guard contra `null`— **con tope mecánico: 3 archivos y 40 líneas** |
 | **C** | La lista blanca del plan, sin `components/screens/` |
 
-**Recomendación: B.** Casi todos los bugs que ve un estudiante están en `components/screens/`, y un
+**Decidido: B.** Casi todos los bugs que ve un estudiante están en `components/screens/`, y un
 agente que sólo toca textos arregla poco. La regla 6 de `CLAUDE.md` prohíbe reescribirlo *"salvo que el
 roadmap lo pida"*: este ADR y su entrada en el roadmap son exactamente eso. **El tope es el proxy
 mecánico de "cambio mínimo"**, que es justo donde un modelo tiende a sobre-diseñar.
@@ -11521,7 +11522,7 @@ prohibido. Un texto del modelo se saltea todo eso.
 | **B** | Como A, y además el resumen lo redacta el modelo |
 | **C** | El modelo no escribe nada: **elige cuál** de N preguntas fijas hacer. Toda la copy sigue bajo los guards |
 
-**Recomendación: A.** Es lo que ADR-103 anticipó —*"la pregunta aclaratoria […] la va a escribir el
+**Decidido: A.** Es lo que ADR-103 anticipó —*"la pregunta aclaratoria […] la va a escribir el
 backend"*— sin abrir el resumen, que ADR-103 decidió que cite porque *"una paráfrasis inventada pondría
 en boca del estudiante algo que no dijo"*. **C es el repliegue** si en la práctica la validación rechaza
 demasiado.
@@ -11533,7 +11534,7 @@ demasiado.
 | **A** | El widget **sigue detrás de `MODO_PRUEBA`** hasta que el dictamen legal cubra este flujo **explícitamente**: consentimiento, Anthropic como encargado de datos, GitHub y retención |
 | **B** | Sale junto con ADR-006 |
 
-**Recomendación: A.** Este flujo manda datos a dos terceros, y ADR-006 se está evaluando sin él. Entra a
+**Decidido: A.** Este flujo manda datos a dos terceros, y ADR-006 se está evaluando sin él. Entra a
 `legal-package.md` como sección propia.
 
 ### `D-08` · Si el reporte emite eventos · 🔴 etapa 1
@@ -11548,7 +11549,7 @@ instrumentados, con guard**, porque su nombramiento sigue abierto en `C01-023`.
 | **B** | Uno de nivel `TRANSICION` por cada cambio de estado —`ProductReportCaptured`, `…Triaged`, …—, fuera de la Bitácora |
 | **C** | De nivel `TELEMETRIA`. Choca con el guard y con `C01-023`, que está abierto |
 
-**Recomendación: A.** Es lo que el spec pide y lo que dice *"omitir, no inventar"*. Si más adelante
+**Decidido: A.** Es lo que el spec pide y lo que dice *"omitir, no inventar"*. Si más adelante
 hace falta medir, se agrega con su propio ADR. ⚠️ **Esto corrige al plan**, que daba por hecho un evento.
 
 ### `D-09` · Dónde viven los issues, con el repositorio público · etapa 2
@@ -11572,7 +11573,7 @@ Verificado el 18 de septiembre de 2026:
 estudiante, sus capturas ni su identidad. Sólo el enunciado normalizado. En un repo público, el PR se ve sin
 iniciar sesión, y los logs de la corrida con cualquier cuenta de GitHub.
 
-**Recomendación: C.** **El issue ya existe: es `product_report_issue`**, privado, en la base. Un issue
+**Decidido: C.** **El issue ya existe: es `product_report_issue`**, privado, en la base. Un issue
 de GitHub sería una copia pública de algo que ya tenemos. C funciona con el repositorio como está, no
 depende de que el dueño cambie nada, y deja a GitHub sólo lo que tiene que ver: el código.
 
@@ -11584,8 +11585,8 @@ depende de que el dueño cambie nada, y deja a GitHub sólo lo que tiene que ver
 | **B** | **Autorizarlo sólo fuera del camino del estudiante:** el triage y el agente, que corren después y en segundo plano. **El chat vuelve a ser un guion de preguntas fijas**, mejorado, y la IA no se consulta mientras el estudiante usa el producto —lo que propone ADR-080— |
 | **C** | No autorizarlo. El asistente guarda reportes estructurados sin IA en ninguna etapa, y el owner los lee |
 
-**Recomendación: A**, porque es lo que se pidió: un chat que repregunta hasta tener pasos de
-reproducción. **Pero B es una alternativa seria, no un relleno:** el propio plan dice que conseguir pasos
+**Decidido: A**, porque es lo que se pidió: un chat que repregunta hasta tener pasos de
+reproducción. **B queda registrada como alternativa seria, no como relleno:** el propio plan dice que conseguir pasos
 de reproducción *"es un problema de formulario, no de IA"*, y B respeta lo que ADR-080 propone. **La
 elección cambia el alcance de la etapa 1:** con B, la etapa 1 no llama a ningún modelo, y `D-06` deja
 de hacer falta.
@@ -11601,5 +11602,12 @@ humana, que el merge sea siempre de una persona, la lista negra mecánica, RLS s
 no devuelva `409 ALTA_INCOMPLETA`, y que **el PR sea por problema y nunca por reporte**. Todo eso está en
 el plan.
 
-**Mientras siga `PENDING`, no se escribe código de `feat/reportes`.** El plan y este ADR se pueden
-corregir.
+### Qué queda
+
+- **La etapa 1 puede empezar** cuando haya una API key de la Console de Anthropic. Los tests y el CI no
+  la necesitan.
+- **La etapa 4 necesita además** que el dueño del repositorio, `felipeeguia03`, instale la GitHub App y
+  proteja `main` —en un repo de cuenta personal son acciones del dueño—, y verificar contra la
+  documentación oficial los detalles de `claude-code-action`.
+- **El punto de medición sigue en pie:** después de la etapa 1 se para y se cuentan los reportes
+  accionables. Sin 20 con pasos de reproducción, la etapa 4 no se construye.

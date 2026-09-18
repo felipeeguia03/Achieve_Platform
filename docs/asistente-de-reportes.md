@@ -2,11 +2,11 @@
 
 **Documento:** `docs/asistente-de-reportes.md`
 **Rol:** plan de construcción del backend del asistente de reportes y mejoras.
-**Estado:** 🟡 **PROPUESTO — NO EMPEZADO.** Última actualización: 18 de septiembre de 2026.
+**Estado:** 🟡 **DECIDIDO — NO EMPEZADO.** ADR-112 `ACCEPTED` el 18 de septiembre de 2026. Última actualización: 18 de septiembre de 2026.
 
-> ⚠️ **Esto es un plan, no un ADR.** Ninguna decisión de negocio de acá está tomada. Las cierra
-> **[ADR-112](decisions.md#adr-112)** —redactado, en `PENDING`— y las decide una persona (§12). Si estás por implementar algo
-> y este documento es tu única fuente, **parate**: falta el ADR.
+> ⚠️ **Esto es un plan, no un ADR.** Las decisiones de negocio están en
+> **[ADR-112](decisions.md#adr-112)**, `ACCEPTED` el 18 de septiembre de 2026 (§12). Si este documento y
+> el ADR discrepan, **manda el ADR**.
 
 ---
 
@@ -14,33 +14,20 @@
 
 | Rama | Estado |
 |---|---|
-| **`chore/ci`** | ✅ **Completa.** El arreglo de `db:verify`, este documento, los dos workflows de CI y los números de `CLAUDE.md` y `README.md`. Se integra a `main` por PR, y **el merge lo hace una persona** |
-| **`feat/reportes`** | ⬜ No empezada. **La bloquea ADR-112** |
-
-Los cinco gates, verificados sobre `chore/ci`: `lint` ✅ · `typecheck` ✅ · `build` ✅ ·
-`test` ✅ 3675 en 129 archivos · `db:verify` ✅ 552, cero fallos.
+| **`chore/ci`** | ✅ **Mergeada** (PR #3). El arreglo de `db:verify`, este documento, los dos workflows de CI y los números de `CLAUDE.md` y `README.md` |
+| **`docs/adr-112`** | ✅ **ADR-112 `ACCEPTED`**: el owner aceptó las diez recomendaciones. Se integra a `main` por PR |
+| **`feat/reportes`** | ⬜ No empezada |
 
 **Lo que falta, en orden:**
 
-1. **Mergear `chore/ci`**, con el CI en verde en su PR. No contiene ninguna decisión de negocio, así
-   que no espera a ADR-112.
-2. **ADR-112** (§12). Lo decide una persona.
-3. **`feat/reportes`**, etapa por etapa.
+1. **Mergear `docs/adr-112`.**
+2. **Una API key de Anthropic** —de la Console, no una suscripción—. Es lo único que espera la etapa 1.
+   Los tests y el CI no la necesitan: el acceso a Anthropic se reemplaza por un doble. Probar el chat
+   de verdad, sí.
+3. **`feat/reportes`**, etapa por etapa (§10).
 
-⚠️ **Para la etapa 1 hacen falta seis de las diez decisiones** —`D-01`, `D-02`, `D-03`, `D-06`,
-`D-08` y `D-10`—. Las demás frenan las etapas 2, 3 y 4.
-
-⚠️ **`D-10` es la más importante: autorizar el primer proveedor de IA del producto.** En todo
-`decisions.md` no hay una decisión que lo autorice ni una que lo prohíba (ADR-112, contexto).
-
-⚠️ **No hay credenciales de Anthropic en la máquina.** Los tests y el CI no las necesitan —el acceso a
-Anthropic se reemplaza por un doble—, pero probar el chat de verdad sí: una **API key de la Console**,
-no una suscripción.
-
-⚠️ **Escribir en el repositorio no es administrarlo.** El permiso de escritura alcanza para pushear
-ramas y abrir PRs. **La etapa 4 necesita más:** instalar una GitHub App y proteger `main` son
-cambios de la configuración del repositorio, y en un repo de cuenta personal los hace el dueño,
-`felipeeguia03`.
+⚠️ **Escribir en el repositorio no es administrarlo.** La etapa 4 necesita instalar una GitHub App y
+proteger `main`, y en un repo de cuenta personal eso lo hace el dueño, `felipeeguia03`.
 
 ---
 
@@ -95,7 +82,7 @@ descartable y el contenedor se destruye.
 | # | Etapa | Dónde corre | Qué hace |
 |---|---|---|---|
 | 1 | **Captura** | Navegador + `/api/reporte` | Extrae lo necesario para reproducir. La salida es un JSON, no una charla. **Sin pasos de reproducción, el pipeline corta acá** |
-| 2 | **Triage** | Servidor, asincrónico | Clasifica, **deduplica**, y recién ahí registra el problema —en la base o como issue de GitHub, según `D-09`—. El estudiante nunca toca GitHub |
+| 2 | **Triage** | Servidor, asincrónico | Clasifica, **deduplica**, y recién ahí registra el problema **en la base** —no se crean issues de GitHub, `D-09`—. El estudiante nunca toca GitHub |
 | 3 | **Compuerta humana** | Celular del owner | Aprueba cada issue antes de que vaya al agente. **Innegociable** |
 | 4 | **Agente** | Sandbox efímero | Clona, escribe el arreglo mínimo, corre los tests, abre el PR. Devuelve `IN_REVIEW` / `NEEDS_INFO` / `DECLINED` |
 | 5 | **Verificación** | CI + review | CI sobre el PR, revisor automático, **merge humano siempre** |
@@ -143,13 +130,13 @@ Si algo de esto se propone saltear, **frenar y citar esta sección**.
 | Service | `lib/server/servicios/reporte.ts` + `proyeccion-reporte.ts` |
 | Repository | `lib/server/repositorios/reporte.ts` |
 | **Llamada a Anthropic** | `lib/server/repositorios/anthropic.ts`, con `import "server-only"` |
-| Repository de GitHub | `lib/server/repositorios/github.ts`, `server-only` — en la etapa 2 **sólo si** `D-09` elige issues en GitHub; si no, recién en la etapa 4 |
+| Repository de GitHub | `lib/server/repositorios/github.ts`, `server-only` — **recién en la etapa 4**, para el PR. No se crean issues (`D-09`) |
 | Inyección de dependencias | `lib/server/composicion.ts` |
 | Dominio puro | `lib/domain/reporte.ts` — máquina de estados + criterio de accionabilidad |
 | Copy | `lib/content/es-AR.ts` (regla `C-07`) |
 | Migración | `supabase/migrations/2026…_reporte.sql` — **la número 100** |
 | Storage | bucket privado + URL firmada, patrón de `analitico` / `clase-material` |
-| Evento | **Según `D-08`.** La recomendación es **no emitir ninguno**: el spec dice que un evento nuevo por interacción *"no está aprobado"* |
+| Evento | **Ninguno** (`D-08`). El estado vive en la tabla del reporte, con sus fechas |
 | Limpieza | `scripts/db-aislamiento.sh` → `limpiar_mundo` |
 | Secretos | `ANTHROPIC_API_KEY`, `GITHUB_APP_*` en `.env.local.example`, **sólo servidor** |
 
@@ -191,8 +178,8 @@ producto, no de lo académico**.
 - **El reporte NO es un hecho de cursada.** No entra a `hechos_de_cursada()`, no aparece en la
   Bitácora (`enBitacora: false`), no toca `action`, `evidence`, el ADE ni el riesgo. Reportar un bug
   no es avance académico.
-- **Si `D-08` elige emitir eventos:** `product_event.subject_id` es `uuid NOT NULL`, así que el sujeto
-  es el id del reporte. La recomendación es no emitir.
+- **No emite eventos** (`D-08`): el spec dice que un evento nuevo por interacción *"no está aprobado
+  en Product Event Model"*.
 
 ### 4.3 Tres detalles que no son obvios
 
@@ -216,10 +203,10 @@ Hoy **cada frase que lee un estudiante es un `CopyId` de `lib/content/es-AR.ts`*
 verifican voseo (`C-01`), ausencia de inglés (`tests/copy-sin-ingles.test.ts`) y vocabulario
 prohibido. Una pregunta aclaratoria escrita por un modelo **se saltea todo ese control**.
 
-Lo que ADR-112 tiene que fijar:
+Lo que fijó ADR-112 (`D-06`):
 
 - El modelo escribe **una sola cosa: la pregunta aclaratoria.** Todo lo demás sigue siendo `CopyId`.
-- **El servidor valida su salida antes de mandarla al cliente**: largo máximo, voseo, sin inglés, y
+- **El servidor valida su salida antes de mandarla al cliente**: hasta 280 caracteres, voseo, sin inglés, y
   **sin prometer contacto ni plazos** — ADR-103 y `product.md` §13: la Plataforma no observa quién
   lee el reporte ni cuándo.
 - Si la validación falla, se cae a un `CopyId` fijo. **Nunca se muestra texto del modelo sin validar.**
@@ -247,7 +234,7 @@ Es bastante más grave que *"viaja a GitHub, un tercero"*, que es como estaba an
 hay depuración que alcance del todo**: el campo de texto es libre y el estudiante puede escribir
 cualquier cosa.
 
-Salidas posibles, y **la elección es de `D-09`**:
+Las salidas que se evaluaron (`D-09`):
 
 | Opción | Costo |
 |---|---|
@@ -255,7 +242,7 @@ Salidas posibles, y **la elección es de `D-09`**:
 | Los issues van a un repositorio privado aparte; el agente trabaja contra éste | El agente necesita acceso a los dos |
 | No crear issues en GitHub: el reporte vive en la base y sólo el PR sale afuera | Se pierde el hilo público, pero es lo más conservador |
 
-**ADR-112 recomienda la tercera:** el problema ya tiene su registro privado —`product_report_issue`—,
+**ADR-112 eligió la tercera (`D-09`):** el problema ya tiene su registro privado —`product_report_issue`—,
 y un issue de GitHub sería una copia pública. Funciona con el repositorio como está.
 
 ⚠️ **Elijas la que elijas:** el pedido al agente y el PR nunca llevan el texto crudo del estudiante, sus
@@ -333,12 +320,12 @@ tocamos `tests/` y `scripts/` —de hecho hay que hacerlo, §8— con ADR delant
 - `components/shell/**`, `components/alta/**`, `components/superficies/**`.
 - Archivos de test nuevos.
 
-### ⚠️ La tensión que hay que resolver en ADR-112
+### La tensión, y cómo la resolvió ADR-112 (`D-05`)
 
 La lista negra más la regla 6 dejan **`components/screens/**` afuera, y ahí es donde el estudiante ve
 casi todos los bugs**. Un agente que sólo toca copy arregla poco.
 
-**Propuesta:** ADR-112 autoriza `components/screens/**` **para una lista cerrada de cambios** —copy
+**Decidido:** ADR-112 autoriza `components/screens/**` **para una lista cerrada de cambios** —copy
 vía `CopyId`, `aria-*` y foco, estado vacío o de carga faltante, guard contra `null`/`undefined`—
 **con tope mecánico de diff: ≤ 3 archivos y ≤ 40 líneas**. El tope es el proxy mecánico de *"cambio
 mínimo"*, que es justo donde Claude tiende a sobre-diseñar. **Nunca estructura, layout ni lógica de
@@ -440,7 +427,8 @@ Precios verificados el 17 de septiembre de 2026 (in/out por millón de tokens). 
 | Agente escribiendo el PR | **~US$4–6** (repo de 820 archivos) |
 
 **Los tokens no son el problema. El costo real de este proyecto es tiempo de desarrollo.** No hay que
-diseñar el plan alrededor de ahorrar tokens. Palancas de control igual: `--max-turns`, timeout de
+diseñar el plan alrededor de ahorrar tokens. Los topes quedaron fijados en `D-03`: 12 turnos y 5 reportes por estudiante por día en el
+chat; 3 corridas por día y 2 PRs abiertos en el agente. Palancas de control igual: `--max-turns`, timeout de
 workflow, `concurrency` y topes diarios duros.
 
 ---
@@ -458,10 +446,10 @@ roadmap dice *"un commit **o** PR por etapa"*.
 
 | Fase | Qué se construye | Estado de bloqueo |
 |---|---|---|
-| **0a** | Este documento + **ADR-112** (§12) | ✅ Escritos. ADR-112 en `PENDING`: lo cierra el owner |
+| **0a** | Este documento + **ADR-112** (§12) | ✅ Escritos. **ADR-112 `ACCEPTED`** el 18/09 |
 | **0b** | El arreglo de `db:verify` + los workflows de CI | Listo |
-| **1** | **Captura.** Borrar el guion, cablear a `/api/reporte`, contexto del navegador, tablas + migración + `limpiar_mundo`, bucket. **Sigue detrás de `MODO_PRUEBA=1`** | Espera seis decisiones de ADR-112 y la API key |
-| **2** | **Triage.** Clasificar, deduplicar, registrar el problema | Espera `D-09` |
+| **1** | **Captura.** Borrar el guion, cablear a `/api/reporte`, contexto del navegador, tablas + migración + `limpiar_mundo`, bucket. **Sigue detrás de `MODO_PRUEBA=1`** | Espera sólo la **API key** de Anthropic |
+| **2** | **Triage.** Clasificar, deduplicar, registrar el problema en la base | Listo después de la etapa 1 y del punto de medición |
 | **3** | **Compuerta humana.** Aprobación desde el celular, dos botones | Listo |
 | **4** | **Agente.** Lista blanca, `--max-turns`, timeout, tope diario, rama `feedback/{id}-{slug}`, PR que linkea al reporte | 🔴 Requiere CI verificado sobre el PR del agente vía GitHub App, `main` protegida y **admin de `felipeeguia03`** |
 | **—** | Sacar el widget de `MODO_PRUEBA` y mostrárselo a estudiantes reales | ⛔ **[ADR-006](decisions.md#adr-006)**. Texto libre y capturas de un estudiante viajando a GitHub y a un modelo es un flujo de datos personales nuevo. Va a `legal-package.md` |
@@ -531,12 +519,12 @@ migraciones.** Se corrigieron en `chore/ci`.
 
 ---
 
-## 12. Lo que decide ADR-112
+## 12. Lo que decidió ADR-112
 
-Ninguna está tomada. **Las cierra una persona** (regla 2 de `decisions.md`). El contexto, las opciones y
-el porqué de cada recomendación están en **[ADR-112](decisions.md#adr-112)**; acá, el resumen.
+**Cerradas por el owner el 18 de septiembre de 2026:** aceptó las diez recomendaciones. Las opciones que
+se evaluaron y el porqué de cada una están en **[ADR-112](decisions.md#adr-112)**.
 
-| # | Pregunta | Recomendación | Frena |
+| # | Pregunta | Decisión | Frenaba |
 |---|---|---|---|
 | `D-01` | Qué se guarda de un reporte, y qué sale del servidor | Todo en la base; al modelo sólo el texto; a GitHub sólo el enunciado normalizado | 🔴 Etapa 1 |
 | `D-02` | Cuánto tiempo se guarda | Capturas hasta el cierre (30 días máx.); texto 90 días después | 🔴 Etapa 1 |
@@ -547,7 +535,7 @@ el porqué de cada recomendación están en **[ADR-112](decisions.md#adr-112)**;
 | `D-07` | Qué pasa cuando ADR-006 abra | Sigue detrás de `MODO_PRUEBA` hasta que el dictamen cubra este flujo | Estudiantes reales |
 | `D-08` | Si el reporte emite eventos | Ninguno | 🔴 Etapa 1 |
 | `D-09` | Dónde viven los issues, con el repositorio público | En la base, no en GitHub | Etapa 2 |
-| `D-10` | Autorizar a Anthropic como proveedor de IA | Sí, sólo para este asistente y con siete condiciones · **alternativa seria:** IA sólo en triage y agente, chat con preguntas fijas | 🔴 Etapa 1 |
+| `D-10` | Autorizar a Anthropic como proveedor de IA | Sí, sólo para este asistente y con siete condiciones | 🔴 Etapa 1 |
 
 ---
 
